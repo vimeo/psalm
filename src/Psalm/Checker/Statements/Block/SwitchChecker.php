@@ -27,7 +27,8 @@ class SwitchChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context,
-        Context $loop_context = null
+        Context $loop_context = null,
+        Context $loop_parent_context = null
     ) {
         if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
@@ -141,7 +142,7 @@ class SwitchChecker
                 $leftover_statements = [];
             }
 
-            $statements_checker->analyze($case_stmts, $case_context, $loop_context);
+            $statements_checker->analyze($case_stmts, $case_context, $loop_context, $loop_parent_context);
 
             $context->referenced_var_ids = array_merge(
                 $context->referenced_var_ids,

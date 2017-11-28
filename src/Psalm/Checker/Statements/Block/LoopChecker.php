@@ -23,17 +23,17 @@ class LoopChecker
      * @param  PhpParser\Node\Expr[]                            $post_conditions
      * @param  array<int, string>                               $asserted_vars
      * @param  Context                                          $loop_context
-     * @param  Context                                          $outer_context
+     * @param  Context                                          $loop_parent_context
      *
      * @return false|null
      */
-    public static function analyze(
+    public static function analyzeLoop(
         StatementsChecker $statements_checker,
         array $stmts,
         array $pre_conditions,
         array $post_conditions,
         Context $loop_context,
-        Context $outer_context
+        Context $loop_parent_context
     ) {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -62,7 +62,7 @@ class LoopChecker
                 );
             }
         } else {
-            $asserted_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
+            $asserted_vars = Context::getNewOrUpdatedVarIds($loop_parent_context, $loop_context);
         }
 
         if ($assignment_map) {
@@ -71,7 +71,11 @@ class LoopChecker
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
         }
 
-        $loop_context->parent_context = $outer_context;
+        $inner_context = clone $loop_context;
+
+        $inner_context->parent_context = $loop_context;
+
+        $loop_context->parent_context = $loop_parent_context;
 
         if ($assignment_depth === 0) {
             foreach ($pre_conditions as $pre_condition) {
@@ -79,14 +83,14 @@ class LoopChecker
                     $statements_checker,
                     $pre_condition,
                     $pre_condition_clauses,
-                    $loop_context,
-                    $outer_context
+                    $inner_context,
+                    $loop_parent_context
                 ) === false) {
                     return false;
                 }
             }
 
-            $statements_checker->analyze($stmts, $loop_context, $outer_context);
+            $statements_checker->analyze($stmts, $inner_context, $loop_context, $loop_parent_context);
 
             foreach ($post_conditions as $post_condition) {
                 if (ExpressionChecker::analyze($statements_checker, $post_condition, $loop_context) === false) {
@@ -96,7 +100,7 @@ class LoopChecker
         } else {
             // record all the vars that existed before we did the first pass through the loop
             $pre_loop_context = clone $loop_context;
-            $pre_outer_context = clone $outer_context;
+            $pre_outer_context = clone $loop_parent_context;
 
             IssueBuffer::startRecording();
 
@@ -105,17 +109,17 @@ class LoopChecker
                     $statements_checker,
                     $pre_condition,
                     $pre_condition_clauses,
-                    $loop_context,
-                    $outer_context
+                    $inner_context,
+                    $loop_parent_context
                 ) === false) {
                     return false;
                 }
             }
 
-            $statements_checker->analyze($stmts, $loop_context, $outer_context);
+            $statements_checker->analyze($stmts, $inner_context, $loop_context, $loop_parent_context);
 
             foreach ($post_conditions as $post_condition) {
-                if (ExpressionChecker::analyze($statements_checker, $post_condition, $loop_context) === false) {
+                if (ExpressionChecker::analyze($statements_checker, $post_condition, $inner_context) === false) {
                     return false;
                 }
             }
@@ -128,25 +132,25 @@ class LoopChecker
 
                 $has_changes = false;
 
-                foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                foreach ($inner_context->vars_in_scope as $var_id => $type) {
                     if (in_array($var_id, $asserted_vars, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if ((string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]) {
-                            $loop_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                            $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                             $has_changes = true;
                         }
                     } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
                         $pre_outer = (string)$pre_outer_context->vars_in_scope[$var_id];
 
                         if ((string)$type !== $pre_outer ||
-                            (string)$outer_context->vars_in_scope[$var_id] !== $pre_outer
+                            (string)$loop_parent_context->vars_in_scope[$var_id] !== $pre_outer
                         ) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
-                            $loop_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $inner_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $loop_context->vars_in_scope[$var_id],
-                                $outer_context->vars_in_scope[$var_id]
+                                $loop_parent_context->vars_in_scope[$var_id]
                             );
 
                             // if there's a change, invalidate related clauses
@@ -159,7 +163,7 @@ class LoopChecker
 
                 foreach ($asserted_vars as $var_id) {
                     if (!isset($loop_context->vars_in_scope[$var_id])) {
-                        $loop_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                        $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                     }
                 }
 
@@ -170,10 +174,10 @@ class LoopChecker
 
                 // remove vars that were defined in the foreach
                 foreach ($vars_to_remove as $var_id) {
-                    unset($loop_context->vars_in_scope[$var_id]);
+                    unset($inner_context->vars_in_scope[$var_id]);
                 }
 
-                $loop_context->clauses = $pre_loop_context->clauses;
+                $inner_context->clauses = $pre_loop_context->clauses;
 
                 IssueBuffer::startRecording();
 
@@ -182,17 +186,17 @@ class LoopChecker
                         $statements_checker,
                         $pre_condition,
                         $pre_condition_clauses,
-                        $loop_context,
-                        $outer_context
+                        $inner_context,
+                        $loop_parent_context
                     ) === false) {
                         return false;
                     }
                 }
 
-                $statements_checker->analyze($stmts, $loop_context, $outer_context);
+                $statements_checker->analyze($stmts, $inner_context, $loop_context, $loop_parent_context);
 
                 foreach ($post_conditions as $post_condition) {
-                    if (ExpressionChecker::analyze($statements_checker, $post_condition, $loop_context) === false) {
+                    if (ExpressionChecker::analyze($statements_checker, $post_condition, $inner_context) === false) {
                         return false;
                     }
                 }
@@ -210,27 +214,29 @@ class LoopChecker
             }
         }
 
-        foreach ($outer_context->vars_in_scope as $var_id => $type) {
+        foreach ($loop_parent_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed()) {
                 continue;
             }
 
-            if (!isset($loop_context->vars_in_scope[$var_id])) {
-                unset($outer_context->vars_in_scope[$var_id]);
+            if (!isset($inner_context->vars_in_scope[$var_id])) {
+                unset($loop_parent_context->vars_in_scope[$var_id]);
                 continue;
             }
 
-            if ($loop_context->vars_in_scope[$var_id]->isMixed()) {
-                $outer_context->vars_in_scope[$var_id] = $loop_context->vars_in_scope[$var_id];
+            if ($inner_context->vars_in_scope[$var_id]->isMixed()) {
+                $loop_parent_context->vars_in_scope[$var_id] = $loop_context->vars_in_scope[$var_id];
+                $loop_parent_context->removeVarFromConflictingClauses($var_id);
+                continue;
             }
 
-            if ((string) $loop_context->vars_in_scope[$var_id] !== (string) $type) {
-                $outer_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                    $outer_context->vars_in_scope[$var_id],
-                    $loop_context->vars_in_scope[$var_id]
+            if ((string) $inner_context->vars_in_scope[$var_id] !== (string) $type) {
+                $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $loop_parent_context->vars_in_scope[$var_id],
+                    $inner_context->vars_in_scope[$var_id]
                 );
 
-                $outer_context->removeVarFromConflictingClauses($var_id);
+                $loop_parent_context->removeVarFromConflictingClauses($var_id);
             }
         }
 
@@ -246,7 +252,7 @@ class LoopChecker
 
                 $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                     $negated_pre_condition_types,
-                    $loop_context->vars_in_scope,
+                    $inner_context->vars_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_checker,
@@ -258,14 +264,14 @@ class LoopChecker
                     return false;
                 }
 
-                foreach ($outer_context->vars_in_scope as $var_id => $type) {
+                foreach ($loop_parent_context->vars_in_scope as $var_id => $type) {
                     if (isset($vars_in_scope_reconciled[$var_id])) {
-                        $outer_context->vars_in_scope[$var_id] = $vars_in_scope_reconciled[$var_id];
+                        $loop_parent_context->vars_in_scope[$var_id] = $vars_in_scope_reconciled[$var_id];
                     }
                 }
 
                 foreach ($changed_var_ids as $changed_var_id) {
-                    $outer_context->removeVarFromConflictingClauses($changed_var_id);
+                    $loop_parent_context->removeVarFromConflictingClauses($changed_var_id);
                 }
             }
         }

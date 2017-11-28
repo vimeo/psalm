@@ -79,6 +79,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         array $stmts,
         Context $context,
         Context $loop_context = null,
+        Context $loop_parent_context = null,
         Context $global_context = null
     ) {
         $has_returned = false;
@@ -113,11 +114,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 break;
             }
 
-            /*
-            if (isset($context->vars_in_scope['$failed_reconciliation']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$failed_reconciliation']);
+            ///*
+            if (isset($context->vars_in_scope['$tag']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$tag']);
             }
-            */
+            //*/
 
             $new_issues = null;
 
@@ -147,7 +148,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                IfChecker::analyze($this, $stmt, $context, $loop_context);
+                IfChecker::analyze($this, $stmt, $context, $loop_context, $loop_parent_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 TryChecker::analyze($this, $stmt, $context, $loop_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
@@ -181,7 +182,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $has_returned = true;
                 $this->analyzeThrow($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                SwitchChecker::analyze($this, $stmt, $context, $loop_context);
+                SwitchChecker::analyze($this, $stmt, $context, $loop_context, $loop_parent_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {

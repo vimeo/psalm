@@ -39,6 +39,11 @@ class IfScope
     public $possibly_redefined_loop_vars = [];
 
     /**
+     * @var array<string, Type\Union>|null
+     */
+    public $possibly_redefined_loop_parent_vars = null;
+
+    /**
      * @var array<string, bool>
      */
     public $updated_vars = [];
@@ -57,6 +62,11 @@ class IfScope
      * @var Context|null
      */
     public $loop_context;
+
+    /**
+     * @var Context|null
+     */
+    public $loop_parent_context;
 
     /**
      * @var bool

@@ -24,9 +24,10 @@ class TryChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\TryCatch $stmt,
         Context $context,
-        Context $loop_context = null
+        Context $loop_context = null,
+        Context $outer_context = null
     ) {
-        $statements_checker->analyze($stmt->stmts, $context, $loop_context);
+        $statements_checker->analyze($stmt->stmts, $context, $loop_context, $outer_context);
 
         // clone context for catches after running the try block, as
         // we optimistically assume it only failed at the very end
@@ -88,7 +89,7 @@ class TryChecker
             // this registers the variable to avoid unfair deadcode issues
             $catch_context->hasVariable($catch_var_id);
 
-            $statements_checker->analyze($catch->stmts, $catch_context, $loop_context);
+            $statements_checker->analyze($catch->stmts, $catch_context, $loop_context, $outer_context);
 
             $context->referenced_var_ids = array_merge(
                 $catch_context->referenced_var_ids,
@@ -116,7 +117,7 @@ class TryChecker
         }
 
         if ($stmt->finally) {
-            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_context);
+            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_context, $outer_context);
         }
 
         return null;
