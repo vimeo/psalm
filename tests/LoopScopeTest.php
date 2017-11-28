@@ -125,15 +125,15 @@ class LoopScopeTest extends TestCase
                     }
                     while (rand(0,100) === 10);',
             ],
-            'objectValue' => [
+            'objectValueWithTwoTypes' => [
                 '<?php
                     class B {}
                     class A {
                         /** @var A|B */
-                        public $child;
+                        public $parent;
 
                         public function __construct() {
-                            $this->child = rand(0, 1) ? new A() : new B();
+                            $this->parent = rand(0, 1) ? new A() : new B();
                         }
                     }
 
@@ -144,10 +144,86 @@ class LoopScopeTest extends TestCase
                     $a = makeA();
 
                     while ($a instanceof A) {
-                        $a = $a->child;
+                        $a = $a->parent;
                     }',
                 'assertions' => [
                     '$a' => 'B',
+                ],
+            ],
+            'objectValueWithInstanceofProperty' => [
+                '<?php
+                    class B {}
+                    class A {
+                        /** @var A|B */
+                        public $parent;
+
+                        public function __construct() {
+                            $this->parent = rand(0, 1) ? new A() : new B();
+                        }
+                    }
+
+                    function makeA() : A {
+                        return new A();
+                    }
+
+                    $a = makeA();
+
+                    while ($a->parent instanceof A) {
+                        $a = $a->parent;
+                    }
+
+                    $b = $a->parent;',
+                'assertions' => [
+                    '$a' => 'A',
+                    '$b' => 'A|B',
+                ],
+            ],
+            'objectValueNullable' => [
+                '<?php
+                    class A {
+                        /** @var ?A */
+                        public $parent;
+
+                        public function __construct() {
+                            $this->parent = rand(0, 1) ? new A() : null;
+                        }
+                    }
+
+                    function makeA() : A {
+                        return new A();
+                    }
+
+                    $a = makeA();
+
+                    while ($a) {
+                        $a = $a->parent;
+                    }',
+                'assertions' => [
+                    '$a' => 'null',
+                ],
+            ],
+            'objectValueWithAnd' => [
+                '<?php
+                    class A {
+                        /** @var ?A */
+                        public $parent;
+
+                        public function __construct() {
+                            $this->parent = rand(0, 1) ? new A() : null;
+                        }
+                    }
+
+                    function makeA() : A {
+                        return new A();
+                    }
+
+                    $a = makeA();
+
+                    while ($a && rand(0, 10) > 5) {
+                        $a = $a->parent;
+                    }',
+                'assertions' => [
+                    '$a' => 'A|null',
                 ],
             ],
             'secondLoopWithNotNullCheck' => [

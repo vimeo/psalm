@@ -1041,25 +1041,6 @@ class TypeTest extends TestCase
                     }',
                 'error_mesage' => 'PossiblyNullReference',
             ],
-            'methodWithMeaninglessCheck' => [
-                '<?php
-                    class One {
-                        /** @return void */
-                        public function fooFoo() {}
-                    }
-
-                    class B {
-                        /** @return void */
-                        public function barBar(One $one) {
-                            if (!$one) {
-                                // do nothing
-                            }
-
-                            $one->fooFoo();
-                        }
-                    }',
-                'error_message' => 'PossiblyNullReference',
-            ],
             'nullableMethodWithGuardedNestedIncompleteRedefinition' => [
                 '<?php
                     class One {
@@ -1193,36 +1174,6 @@ class TypeTest extends TestCase
 
                     $one->barBar();',
                 'error_message' => 'PossiblyUndefinedMethod',
-            ],
-            'unnecessaryInstanceof' => [
-                '<?php
-                    class One {
-                        public function fooFoo() {}
-                    }
-
-                    $var = new One();
-
-                    if ($var instanceof One) {
-                        $var->fooFoo();
-                    }',
-                'error_message' => 'FailedTypeResolution',
-            ],
-            'unNegatableInstanceof' => [
-                '<?php
-                    class One {
-                        /** @return void */
-                        public function fooFoo() {}
-                    }
-
-                    $var = new One();
-
-                    if ($var instanceof One) {
-                        $var->fooFoo();
-                    }
-                    else {
-                        // do something
-                    }',
-                'error_message' => 'FailedTypeResolution',
             ],
             'wrongParam' => [
                 '<?php

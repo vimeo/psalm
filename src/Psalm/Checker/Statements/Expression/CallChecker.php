@@ -403,6 +403,7 @@ class CallChecker
                     $assert_type_assertions,
                     $context->vars_in_scope,
                     $changed_vars,
+                    [],
                     $statements_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()

@@ -11,6 +11,7 @@ use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -410,15 +411,18 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * Checks an array of statements in a loop
      *
      * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
+     * @param  PhpParser\Node\Expr[]                            $pre_conditions
+     * @param  PhpParser\Node\Expr[]                            $post_conditions
      * @param  array<int, string>                               $asserted_vars
      * @param  Context                                          $loop_context
      * @param  Context                                          $outer_context
      *
-     * @return void
+     * @return false|null
      */
     public function analyzeLoop(
         array $stmts,
-        array $asserted_vars,
+        array $pre_conditions,
+        array $post_conditions,
         Context $loop_context,
         Context $outer_context
     ) {
@@ -433,21 +437,78 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         $assignment_depth = 0;
 
+        $asserted_vars = [];
+
+        $pre_condition_clauses = [];
+
+        if ($pre_conditions) {
+            foreach ($pre_conditions as $pre_condition) {
+                $pre_condition_clauses = array_merge(
+                    $pre_condition_clauses,
+                    AlgebraChecker::getFormula(
+                        $pre_condition,
+                        $loop_context->self,
+                        $this
+                    )
+                );
+            }
+        } else {
+            $asserted_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
+        }
+
         if ($assignment_map) {
             $first_var_id = array_keys($assignment_map)[0];
 
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
         }
 
+        $loop_context->parent_context = $outer_context;
+
         if ($assignment_depth === 0) {
+            foreach ($pre_conditions as $pre_condition) {
+                if ($this->applyPreConditionToLoopContext(
+                    $pre_condition,
+                    $pre_condition_clauses,
+                    $loop_context,
+                    $outer_context
+                ) === false) {
+                    return false;
+                }
+            }
+
             $this->analyze($stmts, $loop_context, $outer_context);
+
+            foreach ($post_conditions as $post_condition) {
+                if (ExpressionChecker::analyze($this, $post_condition, $loop_context) === false) {
+                    return false;
+                }
+            }
         } else {
             // record all the vars that existed before we did the first pass through the loop
             $pre_loop_context = clone $loop_context;
             $pre_outer_context = clone $outer_context;
 
             IssueBuffer::startRecording();
+
+            foreach ($pre_conditions as $pre_condition) {
+                if ($this->applyPreConditionToLoopContext(
+                    $pre_condition,
+                    $pre_condition_clauses,
+                    $loop_context,
+                    $outer_context
+                ) === false) {
+                    return false;
+                }
+            }
+
             $this->analyze($stmts, $loop_context, $outer_context);
+
+            foreach ($post_conditions as $post_condition) {
+                if (ExpressionChecker::analyze($this, $post_condition, $loop_context) === false) {
+                    return false;
+                }
+            }
+
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
 
@@ -504,8 +565,28 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $loop_context->clauses = $pre_loop_context->clauses;
 
                 IssueBuffer::startRecording();
+
+                foreach ($pre_conditions as $pre_condition) {
+                    if ($this->applyPreConditionToLoopContext(
+                        $pre_condition,
+                        $pre_condition_clauses,
+                        $loop_context,
+                        $outer_context
+                    ) === false) {
+                        return false;
+                    }
+                }
+
                 $this->analyze($stmts, $loop_context, $outer_context);
+
+                foreach ($post_conditions as $post_condition) {
+                    if (ExpressionChecker::analyze($this, $post_condition, $loop_context) === false) {
+                        return false;
+                    }
+                }
+
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
+
                 IssueBuffer::stopRecording();
             }
 
@@ -515,6 +596,127 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     IssueBuffer::bubbleUp($recorded_issue);
                 }
             }
+        }
+
+        foreach ($outer_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            if (!isset($loop_context->vars_in_scope[$var_id])) {
+                unset($outer_context->vars_in_scope[$var_id]);
+                continue;
+            }
+
+            if ($loop_context->vars_in_scope[$var_id]->isMixed()) {
+                $outer_context->vars_in_scope[$var_id] = $loop_context->vars_in_scope[$var_id];
+            }
+
+            if ((string) $loop_context->vars_in_scope[$var_id] !== (string) $type) {
+                $outer_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $outer_context->vars_in_scope[$var_id],
+                    $loop_context->vars_in_scope[$var_id]
+                );
+
+                $outer_context->removeVarFromConflictingClauses($var_id);
+            }
+        }
+
+        if ($pre_conditions && $pre_condition_clauses && !ScopeChecker::doesEverBreak($stmts)) {
+            // if the loop contains an assertion and there are no break statements, we can negate that assertion
+            // and apply it to the current context
+            $negated_pre_condition_types = AlgebraChecker::getTruthsFromFormula(
+                AlgebraChecker::negateFormula($pre_condition_clauses)
+            );
+
+            if ($negated_pre_condition_types) {
+                $changed_var_ids = [];
+
+                $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $negated_pre_condition_types,
+                    $loop_context->vars_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $this,
+                    new CodeLocation($this->getSource(), $pre_conditions[0]),
+                    $this->getSuppressedIssues()
+                );
+
+                if ($vars_in_scope_reconciled === false) {
+                    return false;
+                }
+
+                foreach ($outer_context->vars_in_scope as $var_id => $type) {
+                    if (isset($vars_in_scope_reconciled[$var_id])) {
+                        $outer_context->vars_in_scope[$var_id] = $vars_in_scope_reconciled[$var_id];
+                    }
+                }
+
+                foreach ($changed_var_ids as $changed_var_id) {
+                    $outer_context->removeVarFromConflictingClauses($changed_var_id);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr $pre_condition
+     * @param  array<int, Clause>  $pre_condition_clauses
+     * @param  Context             $loop_context
+     * @param  Context             $outer_context
+     *
+     * @return false|null
+     */
+    private function applyPreConditionToLoopContext(
+        PhpParser\Node\Expr $pre_condition,
+        array $pre_condition_clauses,
+        Context $loop_context,
+        Context $outer_context
+    ) {
+        $pre_referenced_var_ids = $loop_context->referenced_var_ids;
+        $loop_context->referenced_var_ids = [];
+
+        $loop_context->inside_conditional = true;
+        if (ExpressionChecker::analyze($this, $pre_condition, $loop_context) === false) {
+            return false;
+        }
+        $loop_context->inside_conditional = false;
+
+        $new_referenced_var_ids = $loop_context->referenced_var_ids;
+        $loop_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
+        $asserted_vars = array_keys(AlgebraChecker::getTruthsFromFormula($pre_condition_clauses));
+
+        $loop_context->clauses = AlgebraChecker::simplifyCNF(
+            array_merge($outer_context->clauses, $pre_condition_clauses)
+        );
+
+        $reconcilable_while_types = AlgebraChecker::getTruthsFromFormula($loop_context->clauses);
+
+        // if the while has an or as the main component, we cannot safely reason about it
+        if ($pre_condition instanceof PhpParser\Node\Expr\BinaryOp &&
+            ($pre_condition instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
+                $pre_condition instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
+        ) {
+            // do nothing
+        } else {
+            $changed_var_ids = [];
+
+            $pre_condition_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                $reconcilable_while_types,
+                $loop_context->vars_in_scope,
+                $changed_var_ids,
+                $new_referenced_var_ids,
+                $this,
+                new CodeLocation($this->getSource(), $pre_condition),
+                $this->getSuppressedIssues()
+            );
+
+            if ($pre_condition_vars_in_scope_reconciled === false) {
+                return false;
+            }
+
+            $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
         }
     }
 
@@ -744,7 +946,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        $this->analyzeLoop($stmt->stmts, [], $do_context, $context);
+        $this->analyzeLoop($stmt->stmts, [], [], $do_context, $context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -827,6 +1029,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         if ($fq_const_name) {
             $const_name_parts = explode('\\', $fq_const_name);
+            /** @var string */
             $const_name = array_pop($const_name_parts);
             $namespace_name = implode('\\', $const_name_parts);
             $namespace_constants = NamespaceChecker::getConstantsForNamespace(

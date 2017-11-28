@@ -1197,13 +1197,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if ($param->isArray()) {
             $param_type_string = 'array';
         } else {
-            $param_class = null;
-
             try {
                 /** @var \ReflectionClass */
                 $param_class = $param->getClass();
             } catch (\ReflectionException $e) {
-                // do nothing
+                $param_class = null;
             }
 
             if ($param_class) {

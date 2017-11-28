@@ -6,6 +6,7 @@
     totallyTyped="true"
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
+    throwExceptionOnError="false"
 >
     <projectFiles>
         <directory name="src" />

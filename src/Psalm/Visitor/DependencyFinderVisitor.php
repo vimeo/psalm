@@ -182,8 +182,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->classlike_storages[] = $storage;
 
             if ($doc_comment) {
-                $docblock_info = null;
-
                 try {
                     $docblock_info = CommentChecker::extractClassLikeDocblockInfo(
                         (string)$doc_comment,
@@ -196,7 +194,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             new CodeLocation($this->file_checker, $node, null, true)
                         )
                     )) {
-                        // fall through
+                        $docblock_info = null;
                     }
                 }
 
@@ -746,7 +744,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage->signature_return_type_location = $storage->return_type_location;
         }
 
-        $docblock_info = null;
         $doc_comment = $stmt->getDocComment();
 
         if (!$doc_comment) {
@@ -767,6 +764,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             )) {
                 // fall through
             }
+
+            $docblock_info = null;
         } catch (DocblockParseException $e) {
             if (IssueBuffer::accepts(
                 new InvalidDocblock(
@@ -776,6 +775,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             )) {
                 // fall through
             }
+
+            $docblock_info = null;
         }
 
         if (!$docblock_info) {

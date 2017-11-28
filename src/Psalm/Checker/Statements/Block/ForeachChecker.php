@@ -295,33 +295,7 @@ class ForeachChecker
             }
         }
 
-        $changed_vars = Context::getNewOrUpdatedVarIds($before_context, $foreach_context);
-
-        $statements_checker->analyzeLoop($stmt->stmts, $changed_vars, $foreach_context, $context);
-
-        foreach ($context->vars_in_scope as $var => $type) {
-            if ($type->isMixed()) {
-                continue;
-            }
-
-            if (!isset($foreach_context->vars_in_scope[$var])) {
-                unset($context->vars_in_scope[$var]);
-                continue;
-            }
-
-            if ($foreach_context->vars_in_scope[$var]->isMixed()) {
-                $context->vars_in_scope[$var] = $foreach_context->vars_in_scope[$var];
-            }
-
-            if ((string) $foreach_context->vars_in_scope[$var] !== (string) $type) {
-                $context->vars_in_scope[$var] = Type::combineUnionTypes(
-                    $context->vars_in_scope[$var],
-                    $foreach_context->vars_in_scope[$var]
-                );
-
-                $context->removeVarFromConflictingClauses($var);
-            }
-        }
+        $statements_checker->analyzeLoop($stmt->stmts, [], [], $foreach_context, $context);
 
         $context->vars_possibly_in_scope = array_merge(
             $foreach_context->vars_possibly_in_scope,

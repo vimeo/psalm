@@ -461,6 +461,7 @@ class ProjectChecker
                     $has_changes = true;
                 }
             } else {
+                /** @var string */
                 $fq_classlike_name = array_shift($this->classes_to_scan);
                 $fq_classlike_name_lc = strtolower($fq_classlike_name);
 

@@ -85,6 +85,7 @@
     <xs:complexType name="IssueHandlersType">
         <xs:choice minOccurs="0" maxOccurs="unbounded">
             <xs:element name="AbstractInstantiation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="IssueHandlerType" minOccurs="0" />
@@ -93,7 +94,6 @@
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="EmptyArrayAccess" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="FailedTypeResolution" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleClassConstant" type="IssueHandlerType" minOccurs="0" />
@@ -181,6 +181,7 @@
             <xs:element name="PossiblyUnusedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RawObjectIteration" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />

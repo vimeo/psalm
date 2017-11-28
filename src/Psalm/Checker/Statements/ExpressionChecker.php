@@ -815,18 +815,31 @@ class ExpressionChecker
 
             $left_type_assertions = AlgebraChecker::getTruthsFromFormula($simplified_clauses);
 
+            $pre_referenced_var_ids = $context->referenced_var_ids;
+            $context->referenced_var_ids = [];
+
+            $pre_assigned_var_ids = $context->assigned_var_ids;
+
             if (self::analyze($statements_checker, $stmt->left, $context) === false) {
                 return false;
             }
 
-            $changed_vars = [];
+            $new_referenced_var_ids = $context->referenced_var_ids;
+            $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
+            $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+
+            $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
+
+            $changed_var_ids = [];
 
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $left_type_assertions,
                 $context->vars_in_scope,
-                $changed_vars,
+                $changed_var_ids,
+                $new_referenced_var_ids,
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
@@ -838,6 +851,10 @@ class ExpressionChecker
 
             $op_context = clone $context;
             $op_context->vars_in_scope = $op_vars_in_scope;
+
+            foreach ($changed_var_ids as $changed_var_id) {
+                $op_context->removeReconciledClauses($changed_var_ids);
+            }
 
             if (self::analyze($statements_checker, $stmt->right, $op_context) === false) {
                 return false;
@@ -868,6 +885,11 @@ class ExpressionChecker
                     $op_context->vars_possibly_in_scope,
                     $context->vars_possibly_in_scope
                 );
+
+                $context->assigned_var_ids = array_merge(
+                    $context->assigned_var_ids,
+                    $op_context->assigned_var_ids
+                );
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
@@ -887,18 +909,31 @@ class ExpressionChecker
 
             $negated_type_assertions = AlgebraChecker::getTruthsFromFormula($rhs_clauses);
 
+            $pre_referenced_var_ids = $context->referenced_var_ids;
+            $context->referenced_var_ids = [];
+
+            $pre_assigned_var_ids = $context->assigned_var_ids;
+
             if (self::analyze($statements_checker, $stmt->left, $context) === false) {
                 return false;
             }
 
-            $changed_vars = [];
+            $new_referenced_var_ids = $context->referenced_var_ids;
+            $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
+            $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+
+            $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
+
+            $changed_var_ids = [];
 
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
             $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
                 $negated_type_assertions,
                 $context->vars_in_scope,
-                $changed_vars,
+                $changed_var_ids,
+                $new_referenced_var_ids,
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
@@ -911,6 +946,10 @@ class ExpressionChecker
             $op_context = clone $context;
             $op_context->clauses = $rhs_clauses;
             $op_context->vars_in_scope = $op_vars_in_scope;
+
+            foreach ($changed_var_ids as $changed_var_id) {
+                $op_context->removeReconciledClauses($changed_var_ids);
+            }
 
             if (self::analyze($statements_checker, $stmt->right, $op_context) === false) {
                 return false;
@@ -984,12 +1023,13 @@ class ExpressionChecker
 
             $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
 
-            $changed_vars = [];
+            $changed_var_ids = [];
 
             $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $reconcilable_if_types,
                 $t_if_context->vars_in_scope,
-                $changed_vars,
+                $changed_var_ids,
+                [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->left),
                 $statements_checker->getSuppressedIssues()
@@ -1024,7 +1064,8 @@ class ExpressionChecker
                 $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                     $negated_if_types,
                     $t_else_context->vars_in_scope,
-                    $changed_vars,
+                    $changed_var_ids,
+                    [],
                     $statements_checker,
                     new CodeLocation($statements_checker->getSource(), $stmt->right),
                     $statements_checker->getSuppressedIssues()
@@ -1982,10 +2023,17 @@ class ExpressionChecker
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
     ) {
+        $pre_referenced_var_ids = $context->referenced_var_ids;
+        $context->referenced_var_ids = [];
+
         $context->inside_conditional = true;
         if (self::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
         }
+
+        $new_referenced_var_ids = $context->referenced_var_ids;
+        $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
         $context->inside_conditional = false;
 
         $t_if_context = clone $context;
@@ -2004,12 +2052,13 @@ class ExpressionChecker
 
         $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
 
-        $changed_vars = [];
+        $changed_var_ids = [];
 
         $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
-            $changed_vars,
+            $changed_var_ids,
+            $new_referenced_var_ids,
             $statements_checker,
             new CodeLocation($statements_checker->getSource(), $stmt->cond),
             $statements_checker->getSuppressedIssues()
@@ -2043,7 +2092,8 @@ class ExpressionChecker
             $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
-                $changed_vars,
+                $changed_var_ids,
+                $new_referenced_var_ids,
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->else),
                 $statements_checker->getSuppressedIssues()

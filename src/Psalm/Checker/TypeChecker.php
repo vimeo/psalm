@@ -3,7 +3,7 @@ namespace Psalm\Checker;
 
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
-use Psalm\Issue\FailedTypeResolution;
+use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
@@ -33,7 +33,7 @@ class TypeChecker
      *
      * @param  array<string, string>     $new_types
      * @param  array<string, Type\Union> $existing_types
-     * @param  array<string>             $changed_types
+     * @param  array<string>             $changed_var_ids
      * @param  StatementsChecker         $statements_checker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
@@ -43,7 +43,8 @@ class TypeChecker
     public static function reconcileKeyedTypes(
         array $new_types,
         array $existing_types,
-        array &$changed_types,
+        array &$changed_var_ids,
+        array $referenced_var_ids,
         StatementsChecker $statements_checker,
         CodeLocation $code_location,
         array $suppressed_issues = []
@@ -98,7 +99,7 @@ class TypeChecker
                         $result_type,
                         $key,
                         $statements_checker,
-                        $code_location,
+                        isset($referenced_var_ids[$key]) ? $code_location : null,
                         $suppressed_issues,
                         $failed_reconciliation
                     );
@@ -125,7 +126,7 @@ class TypeChecker
             }
 
             if ((string)$result_type !== $before_adjustment) {
-                $changed_types[] = $key;
+                $changed_var_ids[] = $key;
             }
 
             if ($failed_reconciliation) {
@@ -204,80 +205,181 @@ class TypeChecker
 
             if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
                 $non_object_types = [];
+                $did_remove_type = false;
 
                 foreach ($existing_var_type->types as $type) {
                     if (!$type->isObjectType()) {
                         $non_object_types[] = $type;
+                    } else {
+                        $did_remove_type = true;
                     }
                 }
 
-                if ($non_object_types) {
-                    return new Type\Union($non_object_types);
-                } elseif (!$existing_var_type->from_docblock) {
+                if ((!$did_remove_type || !$non_object_types) && !$existing_var_type->from_docblock) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
-                            new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
+                            new RedundantCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
                             $suppressed_issues
                         )) {
                             // fall through
                         }
                     }
-
-                    $failed_reconciliation = true;
                 }
+
+                if ($non_object_types) {
+                    return new Type\Union($non_object_types);
+                }
+
+                $failed_reconciliation = true;
 
                 return Type::getMixed();
             }
 
-            if ($new_var_type === '!scalar') {
+            if ($new_var_type === '!scalar' && !$existing_var_type->isMixed()) {
                 $non_scalar_types = [];
+                $did_remove_type = false;
 
                 foreach ($existing_var_type->types as $type) {
                     if (!($type instanceof Scalar)) {
                         $non_scalar_types[] = $type;
+                    } else {
+                        $did_remove_type = true;
+                    }
+                }
+
+                if ((!$did_remove_type || !$non_scalar_types) && !$existing_var_type->from_docblock) {
+                    if ($key && $code_location) {
+                        if (IssueBuffer::accepts(
+                            new RedundantCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
                 if ($non_scalar_types) {
                     return new Type\Union($non_scalar_types);
                 }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
             }
 
-            if ($new_var_type === '!numeric') {
+            if ($new_var_type === '!numeric' && !$existing_var_type->isMixed()) {
                 $non_numeric_types = [];
+                $did_remove_type = $existing_var_type->hasString();
 
                 foreach ($existing_var_type->types as $type) {
                     if (!$type->isNumericType()) {
                         $non_numeric_types[] = $type;
+                    } else {
+                        $did_remove_type = true;
+                    }
+                }
+
+                if ((!$non_numeric_types || !$did_remove_type) && !$existing_var_type->from_docblock) {
+                    if ($key && $code_location) {
+                        if (IssueBuffer::accepts(
+                            new RedundantCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
                 if ($non_numeric_types) {
                     return new Type\Union($non_numeric_types);
                 }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
             }
 
-            if (in_array($new_var_type, ['!falsy', '!null'], true)) {
-                $existing_var_type->removeType('null');
+            if ($new_var_type === '!falsy' && !$existing_var_type->isMixed()) {
+                $did_remove_type = $existing_var_type->hasString()
+                    || $existing_var_type->hasNumericType()
+                    || $existing_var_type->isEmpty()
+                    || $existing_var_type->hasBool();
 
-                if ($new_var_type === '!falsy') {
+                if ($existing_var_type->hasType('null')) {
+                    $did_remove_type = true;
+                    $existing_var_type->removeType('null');
+                }
+
+                if ($existing_var_type->hasType('false')) {
+                    $did_remove_type = true;
                     $existing_var_type->removeType('false');
+                }
 
-                    if ($existing_var_type->hasType('array') &&
-                        (string)$existing_var_type->types['array'] === 'array<empty, empty>'
-                    ) {
+                if ($existing_var_type->hasType('array')) {
+                    $did_remove_type = true;
+
+                    if ((string)$existing_var_type->types['array'] === 'array<empty, empty>') {
                         $existing_var_type->removeType('array');
                     }
                 }
 
-                if (empty($existing_var_type->types)) {
+                if (!$did_remove_type || empty($existing_var_type->types)) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
-                            new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
+                            new RedundantCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
                             $suppressed_issues
                         )) {
                             // fall through
                         }
+                    }
+
+                    if ($existing_var_type->types) {
+                        return $existing_var_type;
+                    }
+
+                    $failed_reconciliation = true;
+
+                    return Type::getMixed();
+                }
+
+                return $existing_var_type;
+            }
+
+            if ($new_var_type === '!null' && !$existing_var_type->isMixed()) {
+                $did_remove_type = false;
+
+                if ($existing_var_type->hasType('null')) {
+                    $did_remove_type = true;
+                    $existing_var_type->removeType('null');
+                }
+
+                if (!$did_remove_type || empty($existing_var_type->types)) {
+                    if ($key && $code_location) {
+                        if (IssueBuffer::accepts(
+                            new RedundantCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    }
+
+                    if ($existing_var_type->types) {
+                        return $existing_var_type;
                     }
 
                     $failed_reconciliation = true;
@@ -298,7 +400,7 @@ class TypeChecker
                 ) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
-                            new FailedTypeResolution('Cannot resolve types for ' . $key, $code_location),
+                            new RedundantCondition('Cannot resolve types for ' . $key, $code_location),
                             $suppressed_issues
                         )) {
                             // fall through
@@ -349,49 +451,118 @@ class TypeChecker
 
         if ($new_var_type === 'object' && !$existing_var_type->isMixed()) {
             $object_types = [];
+            $did_remove_type = false;
 
             foreach ($existing_var_type->types as $type) {
                 if ($type->isObjectType()) {
                     $object_types[] = $type;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$object_types || !$did_remove_type) && !$existing_var_type->from_docblock) {
+                if ($key && $code_location) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
             if ($object_types) {
                 return new Type\Union($object_types);
             }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
-        if ($new_var_type === 'numeric') {
+        if ($new_var_type === 'numeric' && !$existing_var_type->isMixed()) {
+            $numeric_types = [];
+            $did_remove_type = false;
+
             if ($existing_var_type->hasString()) {
+                $did_remove_type = true;
                 $existing_var_type->removeType('string');
                 $existing_var_type->types['numeric-string'] = new TNumericString;
             }
 
-            $numeric_types = [];
-
             foreach ($existing_var_type->types as $type) {
-                if ($type->isNumericType()) {
+                if ($type instanceof TNumeric || $type instanceof TNumericString) {
+                    // this is a workaround for a possible issue running
+                    // is_numeric($a) && is_string($a)
+                    $did_remove_type = true;
                     $numeric_types[] = $type;
+                } elseif ($type->isNumericType()) {
+                    $numeric_types[] = $type;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$did_remove_type || !$numeric_types) && !$existing_var_type->from_docblock) {
+                if ($key && $code_location) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
             if ($numeric_types) {
                 return new Type\Union($numeric_types);
             }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
-        if ($new_var_type === 'scalar') {
+        if ($new_var_type === 'scalar' && !$existing_var_type->isMixed()) {
             $scalar_types = [];
+            $did_remove_type = false;
 
             foreach ($existing_var_type->types as $type) {
                 if ($type instanceof Scalar) {
                     $scalar_types[] = $type;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$did_remove_type || !$scalar_types) && !$existing_var_type->from_docblock) {
+                if ($key && $code_location) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
             if ($scalar_types) {
                 return new Type\Union($scalar_types);
             }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
         $new_type = Type::parseString($new_var_type);
