@@ -87,6 +87,7 @@ class TypeChecker
             $before_adjustment = (string)$result_type;
 
             $failed_reconciliation = false;
+            $from_docblock = $result_type && $result_type->from_docblock;
 
             foreach ($new_type_parts as $new_type_part) {
                 $new_type_part_parts = explode('|', $new_type_part);
@@ -125,7 +126,9 @@ class TypeChecker
                 continue;
             }
 
-            if ((string)$result_type !== $before_adjustment) {
+            if ((string)$result_type !== $before_adjustment
+                || $result_type->from_docblock !== $from_docblock
+            ) {
                 $changed_var_ids[] = $key;
             }
 
@@ -186,7 +189,7 @@ class TypeChecker
                 return Type::parseString($new_var_type);
             }
 
-            return $new_var_type === '!falsy' ? Type::getMixed() : null;
+            return $new_var_type === '!falsy' ? Type::getMixed() : false;
         }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
