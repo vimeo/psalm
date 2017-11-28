@@ -344,17 +344,15 @@ class TypeChecker
                             // fall through
                         }
                     }
-
-                    if ($existing_var_type->types) {
-                        return $existing_var_type;
-                    }
-
-                    $failed_reconciliation = true;
-
-                    return Type::getMixed();
                 }
 
-                return $existing_var_type;
+                if ($existing_var_type->types) {
+                    return $existing_var_type;
+                }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
             }
 
             if ($new_var_type === '!null' && !$existing_var_type->isMixed()) {
