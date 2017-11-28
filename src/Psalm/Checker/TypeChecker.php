@@ -38,7 +38,7 @@ class TypeChecker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues
      *
-     * @return array<string, Type\Union>|false
+     * @return array<string, Type\Union>
      */
     public static function reconcileKeyedTypes(
         array $new_types,
@@ -111,7 +111,8 @@ class TypeChecker
                     }
 
                     if ($result_type_candidate === false) {
-                        return false;
+                        $failed_reconciliation = true;
+                        $result_type_candidate = Type::getMixed();
                     }
 
                     $orred_type = $orred_type

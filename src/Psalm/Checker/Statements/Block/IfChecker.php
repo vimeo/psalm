@@ -160,10 +160,6 @@ class IfChecker
                     $statements_checker->getSuppressedIssues()
                 );
 
-            if ($if_vars_in_scope_reconciled === false) {
-                return false;
-            }
-
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
             $if_context->vars_possibly_in_scope = array_merge(
                 $reconcilable_if_types,
@@ -200,10 +196,6 @@ class IfChecker
                 new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
-
-            if ($else_vars_reconciled === false) {
-                return false;
-            }
 
             $temp_else_context->vars_in_scope = $else_vars_reconciled;
         }
@@ -472,10 +464,6 @@ class IfChecker
                     );
                 }
 
-                if ($outer_context_vars_reconciled === false) {
-                    return false;
-                }
-
                 $outer_context->vars_in_scope = $outer_context_vars_reconciled;
                 $mic_drop = true;
             }
@@ -579,10 +567,6 @@ class IfChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($elseif_vars_reconciled === false) {
-                return false;
-            }
-
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
 
             if ($changed_var_ids) {
@@ -673,10 +657,6 @@ class IfChecker
                 new CodeLocation($statements_checker->getSource(), $elseif->cond, $outer_context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
-
-            if ($elseif_vars_reconciled === false) {
-                return false;
-            }
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
 
@@ -820,10 +800,6 @@ class IfChecker
                         $statements_checker->getSuppressedIssues()
                     );
 
-                    if ($leaving_vars_reconciled === false) {
-                        return false;
-                    }
-
                     $implied_outer_context = clone $elseif_context;
                     $implied_outer_context->vars_in_scope = $leaving_vars_reconciled;
 
@@ -943,10 +919,6 @@ class IfChecker
                 new CodeLocation($statements_checker->getSource(), $else, $outer_context->include_location),
                 $statements_checker->getSuppressedIssues()
             );
-
-            if ($else_vars_reconciled === false) {
-                return false;
-            }
 
             $else_context->vars_in_scope = $else_vars_reconciled;
 
