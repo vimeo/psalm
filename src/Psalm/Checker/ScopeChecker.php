@@ -336,6 +336,10 @@ class ScopeChecker
                 continue;
             }
 
+            if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
+                continue;
+            }
+
             return false;
         }
 

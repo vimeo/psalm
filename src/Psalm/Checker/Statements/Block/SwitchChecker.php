@@ -74,6 +74,8 @@ class SwitchChecker
             $case_context = clone $original_context;
             $case_context->parent_context = $context;
 
+            var_dump($case_exit_type);
+
             if ($case->cond) {
                 if (ExpressionChecker::analyze($statements_checker, $case->cond, $context) === false) {
                     return false;
@@ -125,6 +127,8 @@ class SwitchChecker
             // has a return/throw at end
             $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
             $has_leaving_statements = ScopeChecker::doesAlwaysBreakOrContinue($case_stmts);
+
+            var_dump($has_ending_statements, $has_leaving_statements);
 
             if (!$case_stmts || (!$has_ending_statements && !$has_leaving_statements)) {
                 $case_stmts = array_merge($case_stmts, $leftover_statements);
