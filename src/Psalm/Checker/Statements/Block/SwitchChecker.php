@@ -49,16 +49,22 @@ class SwitchChecker
 
         $has_default = false;
 
+        $case_action_map = [];
+
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
 
-            if (ScopeChecker::doesAlwaysReturnOrThrow($case->stmts)) {
-                $last_case_exit_type = 'return_throw';
-            } elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts, true)) {
-                $last_case_exit_type = 'continue';
-            } elseif (ScopeChecker::doesAlwaysBreakOrContinue($case->stmts)) {
-                $last_case_exit_type = 'break';
+            $case_actions = $case_action_map[$i] = ScopeChecker::getFinalControlActions($case->stmts);
+
+            if (!in_array(ScopeChecker::ACTION_NONE, $case_actions, true)) {
+                if ($case_actions === [ScopeChecker::ACTION_END]) {
+                    $last_case_exit_type = 'return_throw';
+                } elseif ($case_actions === [ScopeChecker::ACTION_CONTINUE]) {
+                    $last_case_exit_type = 'continue';
+                } elseif (in_array(ScopeChecker::ACTION_BREAK, $case_actions, true)) {
+                    $last_case_exit_type = 'break';
+                }
             }
 
             $case_exit_types[$i] = $last_case_exit_type;
@@ -75,7 +81,7 @@ class SwitchChecker
             $case_context->parent_context = $context;
 
             if ($case->cond) {
-                if (ExpressionChecker::analyze($statements_checker, $case->cond, $context) === false) {
+                if (ExpressionChecker::analyze($statements_checker, $case->cond, $case_context) === false) {
                     return false;
                 }
 
@@ -122,9 +128,12 @@ class SwitchChecker
 
             $case_stmts = $case->stmts;
 
+            $case_actions = $case_action_map[$i];
+
             // has a return/throw at end
-            $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($case_stmts);
-            $has_leaving_statements = ScopeChecker::doesAlwaysBreakOrContinue($case_stmts);
+            $has_ending_statements = $case_actions === [ScopeChecker::ACTION_END];
+            $has_leaving_statements = $has_ending_statements
+                || (count($case_actions) && !in_array(ScopeChecker::ACTION_NONE, $case_actions, true));
 
             if (!$case_stmts || (!$has_ending_statements && !$has_leaving_statements)) {
                 $case_stmts = array_merge($case_stmts, $leftover_statements);

@@ -21,6 +21,8 @@ trait FileCheckerValidCodeParseTestTrait
      * @param array<string|int, string> $error_levels
      * @param array<string, Union> $scope_vars
      *
+     * @small
+     *
      * @return void
      */
     public function testValidCode($code, $assertions = [], $error_levels = [], $scope_vars = [])

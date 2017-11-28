@@ -161,10 +161,10 @@ class EffectsAnalyser
                 ];
             }
 
-            if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_ &&
-                !Checker\ScopeChecker::doesAlwaysReturnOrThrow($stmts) &&
-                !$yield_types &&
-                count($return_types)
+            if (!$last_stmt instanceof PhpParser\Node\Stmt\Return_
+                && Checker\ScopeChecker::getFinalControlActions($stmts) !== [Checker\ScopeChecker::ACTION_END]
+                && !$yield_types
+                && count($return_types)
             ) {
                 // only add null if we have a return statement elsewhere and it wasn't void
                 foreach ($return_types as $return_type) {

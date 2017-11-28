@@ -95,7 +95,7 @@ class TryChecker
                 $context->referenced_var_ids
             );
 
-            if (!ScopeChecker::doesAlwaysReturnOrThrow($catch->stmts)) {
+            if (ScopeChecker::getFinalControlActions($catch->stmts) !== [ScopeChecker::ACTION_END]) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
                     if ($catch->var !== $catch_var &&
                         $context->hasVariable($catch_var) &&

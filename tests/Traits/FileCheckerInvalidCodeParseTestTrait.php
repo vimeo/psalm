@@ -14,6 +14,7 @@ trait FileCheckerInvalidCodeParseTestTrait
 
     /**
      * @dataProvider providerFileCheckerInvalidCodeParse
+     * @small
      *
      * @param string $code
      * @param string $error_message

@@ -305,9 +305,12 @@ class IfChecker
         Context $outer_context,
         array $pre_assignment_else_redefined_vars
     ) {
-        $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($stmt->stmts);
+        $final_actions = ScopeChecker::getFinalControlActions($stmt->stmts);
 
-        $has_leaving_statements = $has_ending_statements || ScopeChecker::doesAlwaysBreakOrContinue($stmt->stmts);
+        $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
+
+        $has_leaving_statements = $has_ending_statements
+            || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -601,11 +604,11 @@ class IfChecker
         }
 
         if (count($elseif->stmts)) {
+            $final_actions = ScopeChecker::getFinalControlActions($elseif->stmts);
             // has a return/throw at end
-            $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($elseif->stmts);
-
-            $has_leaving_statements = $has_ending_statements ||
-                ScopeChecker::doesAlwaysBreakOrContinue($elseif->stmts);
+            $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
+            $has_leaving_statements = $has_ending_statements
+                || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
 
             // update the parent context as necessary
             $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context);
@@ -874,11 +877,11 @@ class IfChecker
         }
 
         if (count($else->stmts)) {
+            $final_actions = ScopeChecker::getFinalControlActions($else->stmts);
             // has a return/throw at end
-            $has_ending_statements = ScopeChecker::doesAlwaysReturnOrThrow($else->stmts);
-
-            $has_leaving_statements = $has_ending_statements ||
-                ScopeChecker::doesAlwaysBreakOrContinue($else->stmts);
+            $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
+            $has_leaving_statements = $has_ending_statements
+                || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
 
             $else_redefined_vars = $else_context->getRedefinedVars($original_context);
 

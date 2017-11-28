@@ -178,6 +178,29 @@ class SwitchTypeTest extends TestCase
                       }
                     }',
             ],
+            'switchWithBadBreak' => [
+                '<?php
+                    class A {}
+
+                    function foo(): A {
+                        switch (rand(0,1)) {
+                            case true:
+                                return new A;
+                                break;
+                            default:
+                                return new A;
+                        }
+                    }',
+            ],
+            'switchCaseExpression' => [
+                '<?php
+                    switch (true) {
+                        case preg_match("/(d)ata/", "some data in subject string", $matches):
+                            return $matches[1];
+                        default:
+                            throw new RuntimeException("none found");
+                    }',
+            ],
         ];
     }
 
@@ -187,6 +210,52 @@ class SwitchTypeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'switchReturnTypeWithFallthroughAndBreak' => [
+                '<?php
+                    class A {
+                        /** @return bool */
+                        public function fooFoo() {
+                            switch (rand(0,10)) {
+                                case 1:
+                                    break;
+                                default:
+                                    return true;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchReturnTypeWithFallthroughAndConditionalBreak' => [
+                '<?php
+                    class A {
+                        /** @return bool */
+                        public function fooFoo() {
+                            switch (rand(0,10)) {
+                                case 1:
+                                    if (rand(0,10) === 5) {
+                                        break;
+                                    }
+                                default:
+                                    return true;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchReturnTypeWithNoDefault' => [
+                '<?php
+                    class A {
+                        /** @return bool */
+                        public function fooFoo() {
+                            switch (rand(0,10)) {
+                                case 1:
+                                case 2:
+                                    return true;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'getClassArgWrongClass' => [
                 '<?php
                     class A {
@@ -253,6 +322,17 @@ class SwitchTypeTest extends TestCase
 
                         case "integer":
                             testString($a);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'switchBadMethodCallInCase' => [
+                '<?php
+                    function f(string $p) : void { }
+
+                    switch (true) {
+                        case $q = (bool) rand(0,1):
+                            f($q); // this type problem is not detected
+                            break;
                     }',
                 'error_message' => 'InvalidScalarArgument',
             ],
