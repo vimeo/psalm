@@ -97,7 +97,7 @@ class AlgebraChecker
 
                     $base = array_shift($key_parts);
 
-                    $clauses[] = new Clause([$base => ['isset']]);
+                    $clauses[] = new Clause([$base => ['^isset']]);
 
                     if (count($key_parts)) {
                         $clauses[] = new Clause([$base => ['!false']]);
@@ -106,7 +106,7 @@ class AlgebraChecker
 
                     foreach ($key_parts as $i => $key_part_dim) {
                         $base .= '[' . $key_part_dim . ']';
-                        $clauses[] = new Clause([$base => ['isset']]);
+                        $clauses[] = new Clause([$base => ['^isset']]);
 
                         if ($i < count($key_parts) - 1) {
                             $clauses[] = new Clause([$base => ['!false']]);
@@ -208,7 +208,9 @@ class AlgebraChecker
         // remove impossible types
         foreach ($negated_formula2 as $clause_a) {
             foreach ($clause_a->possibilities as $key => $values) {
-                if (count($values) > 1 && count(array_unique($values)) < count($values)) {
+                if (count($values) > 1
+                    && count(array_unique($values)) < count($values)
+                ) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
                             'Found a redundant condition when evaluating ' . $key,

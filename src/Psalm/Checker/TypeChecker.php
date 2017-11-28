@@ -113,7 +113,7 @@ class TypeChecker
                         return false;
                     }
 
-                    $orred_type = $orred_type && $result_type_candidate
+                    $orred_type = $orred_type
                         ? Type::combineUnionTypes($result_type_candidate, $orred_type)
                         : $result_type_candidate;
                 }
@@ -156,7 +156,7 @@ class TypeChecker
      * @param   array               $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
      *
-     * @return  Type\Union|null|false
+     * @return  Type\Union|false
      */
     public static function reconcileTypes(
         $new_var_type,
@@ -171,7 +171,7 @@ class TypeChecker
 
         if ($existing_var_type === null) {
             if ($new_var_type === '^isset') {
-                return null;
+                return Type::getMixed();
             }
 
             if ($new_var_type === 'isset') {

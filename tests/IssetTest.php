@@ -75,6 +75,18 @@ class IssetTest extends TestCase
                     '$foo' => \Psalm\Type::getArray(),
                 ],
             ],
+            'noRedundantConditionOnMixed' => [
+                '<?php
+                    function testarray(array $data) : void {
+                        foreach ($data as $item) {
+                            if (isset($item["a"]) && isset($item["b"]) && isset($item["b"]["c"])) {
+                                echo "Found\n";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment'],
+            ],
         ];
     }
 }
