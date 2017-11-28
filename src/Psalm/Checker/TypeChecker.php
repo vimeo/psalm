@@ -1399,7 +1399,15 @@ class TypeChecker
         foreach ($union->types as $type_part) {
             $is_contained_by_other = false;
 
+            // don't try to simplify intersection types
+            if ($type_part instanceof TNamedObject && $type_part->extra_types) {
+                return $union;
+            }
+
             foreach ($union->types as $container_type_part) {
+                $string_container_part = (string)$container_type_part;
+                $string_input_part = (string)$type_part;
+
                 if ($type_part !== $container_type_part &&
                     !($container_type_part instanceof TInt
                         || $container_type_part instanceof TFloat
@@ -1407,7 +1415,7 @@ class TypeChecker
                         || ($container_type_part instanceof TString && $type_part instanceof TCallable)
                         || ($container_type_part instanceof TArray && $type_part instanceof TCallable)
                     ) &&
-                    !isset($inverse_contains[(string)$type_part][(string)$container_type_part]) &&
+                    !isset($inverse_contains[$string_input_part][$string_container_part]) &&
                     TypeChecker::isAtomicContainedBy(
                         $project_checker,
                         $type_part,
@@ -1419,7 +1427,8 @@ class TypeChecker
                     ) &&
                     !$to_string_cast
                 ) {
-                    $inverse_contains[(string)$container_type_part][(string)$type_part] = true;
+                    $inverse_contains[$string_container_part][$string_input_part] = true;
+
                     $is_contained_by_other = true;
                     break;
                 }

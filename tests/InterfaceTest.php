@@ -471,7 +471,7 @@ class InterfaceTest extends TestCase
                     'MissingReturnType',
                 ],
             ],
-            'SKIPPED-interfaceInstanceofAndTwoReturns' => [
+            'interfaceInstanceofAndTwoReturns' => [
                 '<?php
                     interface A {}
                     interface B {}
@@ -487,7 +487,7 @@ class InterfaceTest extends TestCase
                     }
 
                     foo(new C);',
-                'error_message' => 'InvalidReturnTypa',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }
