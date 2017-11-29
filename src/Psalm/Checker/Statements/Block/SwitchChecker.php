@@ -94,7 +94,7 @@ class SwitchChecker
                 );
 
                 // this will see whether any of the clauses in set A conflict with the clauses in set B
-                AlgebraChecker::checkForParadox($context->clauses, $case_clauses, $statements_checker, $stmt->cond);
+                AlgebraChecker::checkForParadox($context->clauses, $case_clauses, $statements_checker, $stmt->cond, []);
 
                 $case_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $case_clauses));
 

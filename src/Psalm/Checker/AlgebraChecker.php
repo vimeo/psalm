@@ -194,6 +194,7 @@ class AlgebraChecker
      * @param  array<int, Clause>   $formula2
      * @param  StatementsChecker    $statements_checker,
      * @param  PhpParser\Node       $stmt
+     * @param  array<string, bool>  $new_assigned_var_ids
      *
      * @return void
      */
@@ -201,7 +202,8 @@ class AlgebraChecker
         array $formula1,
         array $formula2,
         StatementsChecker $statements_checker,
-        PhpParser\Node $stmt
+        PhpParser\Node $stmt,
+        array $new_assigned_var_ids
     ) {
         $negated_formula2 = self::negateFormula($formula2);
 
@@ -210,6 +212,7 @@ class AlgebraChecker
             foreach ($clause_a->possibilities as $key => $values) {
                 if (count($values) > 1
                     && count(array_unique($values)) < count($values)
+                    && !isset($new_assigned_var_ids[$key])
                 ) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(

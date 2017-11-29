@@ -65,6 +65,7 @@ class IfChecker
         $context->referenced_var_ids = [];
 
         $pre_assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = [];
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -73,6 +74,12 @@ class IfChecker
         ) {
             return false;
         }
+
+        $first_cond_assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = array_merge(
+            $pre_assigned_var_ids,
+            $first_cond_assigned_var_ids
+        );
 
         $first_cond_referenced_var_ids = $context->referenced_var_ids;
         $context->referenced_var_ids = array_merge(
@@ -96,6 +103,9 @@ class IfChecker
 
         $if_context->inside_conditional = true;
 
+        $assigned_var_ids = $context->assigned_var_ids;
+        $if_context->assigned_var_ids = [];
+
         $referenced_var_ids = $context->referenced_var_ids;
         $if_context->referenced_var_ids = [];
 
@@ -116,10 +126,20 @@ class IfChecker
             $more_cond_referenced_var_ids
         );
 
-        $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+        /** @var array<string, bool> */
+        $more_cond_assigned_var_ids = $if_context->assigned_var_ids;
+        $if_context->assigned_var_ids = array_merge(
+            $more_cond_assigned_var_ids,
+            $assigned_var_ids
+        );
+
+        $cond_assigned_var_ids = array_merge(
+            $first_cond_assigned_var_ids,
+            $more_cond_assigned_var_ids
+        );
 
         // get all the var ids that were referened in the conditional, but not assigned in it
-        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $new_assigned_var_ids);
+        $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
 
         $if_context->inside_conditional = false;
 
@@ -132,7 +152,18 @@ class IfChecker
         );
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
-        AlgebraChecker::checkForParadox($context->clauses, $if_clauses, $statements_checker, $stmt->cond);
+        AlgebraChecker::checkForParadox(
+            $context->clauses,
+            $if_clauses,
+            $statements_checker,
+            $stmt->cond,
+            $cond_assigned_var_ids
+        );
+
+        // if we have assignments in the if, we may have duplicate clauses
+        if ($cond_assigned_var_ids) {
+            $if_clauses = AlgebraChecker::simplifyCNF($if_clauses);
+        }
 
         $if_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
@@ -614,7 +645,13 @@ class IfChecker
         );
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
-        AlgebraChecker::checkForParadox($entry_clauses, $elseif_clauses, $statements_checker, $elseif->cond);
+        AlgebraChecker::checkForParadox(
+            $entry_clauses,
+            $elseif_clauses,
+            $statements_checker,
+            $elseif->cond,
+            $new_assigned_var_ids
+        );
 
         $elseif_context->clauses = AlgebraChecker::simplifyCNF(
             array_merge(
