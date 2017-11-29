@@ -97,6 +97,10 @@ class ParseTree
                     break;
 
                 case ',':
+                    if (!$current_leaf->parent) {
+                        throw new TypeParseTreeException('Cannot parse comma in with no parent node');
+                    }
+
                     $current_parent = $current_leaf->parent;
 
                     $context_node = $current_leaf;
@@ -112,18 +116,14 @@ class ParseTree
                         throw new TypeParseTreeException('Cannot parse comma in non-generic/array type');
                     }
 
-                    if (!$current_parent) {
-                        throw new TypeParseTreeException('Cannot parse comma in with no parent node');
-                    }
-
                     if ($context_node->value === self::GENERIC && $current_parent->value !== self::GENERIC) {
                         if (!isset($current_parent->parent) || !$current_parent->parent->value) {
                             throw new TypeParseTreeException('Cannot parse comma in non-generic/array type');
                         }
 
                         $current_leaf = $current_leaf->parent;
-                    } elseif ($context_node->value === self::OBJECT_LIKE &&
-                        $current_parent->value !== self::OBJECT_LIKE
+                    } elseif ($context_node->value === self::OBJECT_LIKE
+                        && $current_parent->value !== self::OBJECT_LIKE
                     ) {
                         do {
                             $current_leaf = $current_leaf->parent;
