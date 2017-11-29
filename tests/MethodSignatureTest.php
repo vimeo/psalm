@@ -111,8 +111,8 @@ class MethodSignatureTest extends TestCase
             'nullableSubclassParam' => [
                 '<?php
                     class A {
-                        public function foo(string $s) : string {
-                            return $s;
+                        public function foo(string $s) : ?string {
+                            return rand(0, 1) ? $s : null;
                         }
                     }
 

@@ -601,7 +601,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $implementer_classlike_storage->name
                 ) : null;
 
-            if ((string)$implementer_signature_return_type !== (string)$guide_signature_return_type) {
+            $or_null_implementer_return_type = $implementer_signature_return_type
+                ? clone $implementer_signature_return_type
+                : null;
+
+            if ($or_null_implementer_return_type) {
+                $or_null_implementer_return_type->types['null'] = new Type\Atomic\TNull;
+            }
+
+            if ((string)$implementer_signature_return_type !== (string)$guide_signature_return_type
+                && (string)$or_null_implementer_return_type !== (string)$guide_signature_return_type
+            ) {
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
