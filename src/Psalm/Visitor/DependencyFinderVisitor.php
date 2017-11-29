@@ -220,6 +220,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     if ($docblock_info->properties) {
                         foreach ($docblock_info->properties as $property) {
                             $pseudo_property_type = Type::parseString($property['type']);
+                            $pseudo_property_type->setFromDocblock();
 
                             $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
                             $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
