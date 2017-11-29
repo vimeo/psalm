@@ -2279,7 +2279,7 @@ return [
 'fribidi_log2vis' => ['string', 'str'=>'string', 'direction'=>'string', 'charset'=>'int'],
 'fscanf' => ['array|int', 'stream'=>'resource', 'format'=>'string', '&...w_vars='=>'string|int|float'],
 'fseek' => ['int', 'fp'=>'resource', 'offset'=>'int', 'whence='=>'int'],
-'fsockopen' => ['resource', 'hostname'=>'string', 'port='=>'int', '&w_errno='=>'int', '&w_errstr='=>'string', 'timeout='=>'float'],
+'fsockopen' => ['resource|false', 'hostname'=>'string', 'port='=>'int', '&w_errno='=>'int', '&w_errstr='=>'string', 'timeout='=>'float'],
 'fstat' => ['array', 'fp'=>'resource'],
 'ftell' => ['int', 'fp'=>'resource'],
 'ftok' => ['int', 'pathname'=>'string', 'proj'=>'string'],
