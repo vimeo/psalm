@@ -416,7 +416,7 @@ class InterfaceTest extends TestCase
                         return "hello";
                       }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'ImplementedReturnTypeMismatch',
             ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 '<?php

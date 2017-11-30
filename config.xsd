@@ -95,6 +95,7 @@
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="EmptyArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImplementedReturnTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleClassConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleMethod" type="IssueHandlerType" minOccurs="0" />
@@ -144,6 +145,7 @@
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MoreSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="IssueHandlerType" minOccurs="0" />

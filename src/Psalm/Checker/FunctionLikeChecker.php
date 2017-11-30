@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
@@ -22,6 +23,7 @@ use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
+use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\PossiblyUnusedVariable;
@@ -643,7 +645,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 // is the declared return type more specific than the inferred one?
                 if ($type_coerced) {
                     if (IssueBuffer::accepts(
-                        new MoreSpecificReturnType(
+                        new MoreSpecificImplementedReturnType(
                             'The return type \'' . $guide_method_storage->return_type
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
@@ -656,7 +658,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
                 } else {
                     if (IssueBuffer::accepts(
-                        new InvalidReturnType(
+                        new ImplementedReturnTypeMismatch(
                             'The return type \'' . $guide_method_storage->return_type
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
