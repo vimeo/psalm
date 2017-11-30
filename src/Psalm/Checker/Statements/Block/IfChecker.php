@@ -554,8 +554,6 @@ class IfChecker
                 if ($has_continue_statement) {
                     $if_scope->redefined_loop_vars = $if_context->getRedefinedVars($if_scope->loop_context);
 
-                    var_dump($if_context->vars_in_scope['$tag'] . ' ' . $if_scope->loop_context->vars_in_scope['$tag']);
-
                     $if_scope->possibly_redefined_loop_vars = $if_scope->redefined_loop_vars;
                 } elseif ($has_break_statement) {
                     $possibly_redefined_parent_loop_vars = $if_context->getRedefinedVars($if_scope->loop_context);

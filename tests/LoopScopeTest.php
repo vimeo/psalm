@@ -459,6 +459,74 @@ class LoopScopeTest extends TestCase
 
                     if ($a) {}',
             ],
+            'bleedVarIntoOuterContext' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                    }',
+                'assignments' => [
+                    '$tag' => 'null|string',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithRedefinedAsNull' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                      } else {
+                        $tag = null;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithRedefinedAsNullAndBreak' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                        break;
+                      } else {
+                        $tag = null;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithBreak' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                      } else {
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null|string',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithRedefineAndBreak' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                      } else {
+                        $tag = null;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null',
+                ],
+            ],
         ];
     }
 
