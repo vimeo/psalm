@@ -22,4 +22,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var int
      */
     public $visibility;
+
+    /**
+     * @var bool
+     */
+    public $final;
 }

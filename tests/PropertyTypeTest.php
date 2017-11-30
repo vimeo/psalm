@@ -441,49 +441,49 @@ class PropertyTypeTest extends TestCase
             ],
             'extendsClassWithPrivateConstructorSet' => [
                 '<?php
-namespace Q;
+                    namespace Q;
 
-class Base
-{
-    /**
-     * @var string
-     */
-    private $aString;
+                    class Base
+                    {
+                        /**
+                         * @var string
+                         */
+                        private $aString;
 
-    public function __construct()
-    {
-        $this->aString = "aa";
-        echo($this->aString);
-    }
-}
+                        public function __construct()
+                        {
+                            $this->aString = "aa";
+                            echo($this->aString);
+                        }
+                    }
 
-class Descendant extends Base
-{
-    /**
-     * @var bool
-     */
-    private $aBool;
+                    class Descendant extends Base
+                    {
+                        /**
+                         * @var bool
+                         */
+                        private $aBool;
 
-    public function __construct()
-    {
-        parent::__construct();
-        $this->aBool = true;
-    }
-}',
+                        public function __construct()
+                        {
+                            parent::__construct();
+                            $this->aBool = true;
+                        }
+                    }',
             ],
             'extendsClassWithPrivateAndException' => [
                 '<?php
-abstract class A extends \Exception {
-    /** @var string **/
-    private $p;
+                    abstract class A extends \Exception {
+                        /** @var string **/
+                        private $p;
 
-    /** @param string $p **/
-    final public function __construct($p) {
-        $this->p = $p;
-    }
-}
+                        /** @param string $p **/
+                        final public function __construct($p) {
+                            $this->p = $p;
+                        }
+                    }
 
-final class B extends A {}',
+                    final class B extends A {}',
             ],
             'setInAbstractMethod' => [
                 '<?php
@@ -510,6 +510,74 @@ final class B extends A {}',
                 'error_levels' => [
                     'PropertyNotSetInConstructor' => Config::REPORT_INFO,
                 ],
+            ],
+            'setInFinalMethod' => [
+                '<?php
+                    class C
+                    {
+                        /**
+                         * @var string
+                         */
+                        private $a;
+
+                        /**
+                         * @var string
+                         */
+                        private $b;
+
+                        /**
+                         * @param string[] $opts
+                         * @psalm-param array{a:string,b:string} $opts
+                         */
+                        public function __construct(array $opts)
+                        {
+                            $this->setOptions($opts);
+                        }
+
+                        /**
+                         * @param string[] $opts
+                         * @psalm-param array{a:string,b:string} $opts
+                         */
+                        final public function setOptions(array $opts): void
+                        {
+                            $this->a = $opts["a"] ?? "defaultA";
+                            $this->b = $opts["b"] ?? "defaultB";
+                        }
+                    }',
+            ],
+            'setInFinalClass' => [
+                '<?php
+                    final class C
+                    {
+                        /**
+                         * @var string
+                         */
+                        private $a;
+
+                        /**
+                         * @var string
+                         */
+                        private $b;
+
+                        /**
+                         * @param string[] $opts
+                         * @psalm-param array{a:string,b:string} $opts
+                         */
+                        public function __construct(array $opts)
+                        {
+                            $this->setOptions($opts);
+                        }
+
+                        /**
+                         * @param string[] $opts
+                         * @psalm-param array{a:string,b:string} $opts
+                         */
+                        public function setOptions(array $opts): void
+                        {
+                            $this->a = $opts["a"] ?? "defaultA";
+                            $this->b = $opts["b"] ?? "defaultB";
+                        }
+                    }',
             ],
         ];
     }

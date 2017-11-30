@@ -106,6 +106,11 @@ class ClassLikeStorage
     public $abstract = false;
 
     /**
+     * @var bool
+     */
+    public $final = false;
+
+    /**
      * @var array<string, string>
      */
     public $used_traits = [];

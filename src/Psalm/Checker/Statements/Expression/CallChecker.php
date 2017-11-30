@@ -1150,7 +1150,7 @@ class CallChecker
             $class_checker = $source->getSource();
 
             if ($class_checker instanceof ClassLikeChecker &&
-                $method_storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                ($method_storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE || $method_storage->final)
             ) {
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];

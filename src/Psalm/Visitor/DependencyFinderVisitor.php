@@ -237,6 +237,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if ($node instanceof PhpParser\Node\Stmt\Class_) {
                 $storage->abstract = (bool)$node->isAbstract();
+                $storage->final = (bool)$node->isFinal();
 
                 $this->project_checker->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
 
@@ -587,6 +588,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             /** @var bool */
             $storage->abstract = $stmt->isAbstract();
+
+            $storage->final = $class_storage->final || $stmt->isFinal();
 
             if ($stmt->isPrivate()) {
                 $storage->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
