@@ -10,9 +10,10 @@ use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IfScope;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
+use Psalm\Scope\IfScope;
+use Psalm\Scope\LoopScope;
 use Psalm\Type;
 
 class IfChecker
@@ -41,7 +42,6 @@ class IfChecker
      * @param  StatementsChecker       $statements_checker
      * @param  PhpParser\Node\Stmt\If_ $stmt
      * @param  Context                 $context
-     * @param  Context|null            $loop_context
      *
      * @return null|false
      */
@@ -49,8 +49,7 @@ class IfChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\If_ $stmt,
         Context $context,
-        Context $loop_context = null,
-        Context $loop_parent_context = null
+        LoopScope $loop_scope = null
     ) {
         // get the first expression in the if, which should be evaluated on its own
         // this allows us to update the context of $matches in

@@ -27,7 +27,7 @@ class LoopChecker
      *
      * @return false|null
      */
-    public static function analyzeLoop(
+    public static function analyze(
         StatementsChecker $statements_checker,
         array $stmts,
         array $pre_conditions,
@@ -65,6 +65,11 @@ class LoopChecker
             $asserted_vars = Context::getNewOrUpdatedVarIds($loop_parent_context, $loop_context);
         }
 
+        $final_actions = ScopeChecker::getFinalControlActions($stmts);
+        $has_ending_statement = $final_actions === [ScopeChecker::ACTION_END];
+        $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
+        $has_continue_statement = $final_actions === [ScopeChecker::ACTION_CONTINUE];
+
         if ($assignment_map) {
             $first_var_id = array_keys($assignment_map)[0];
 
@@ -77,7 +82,7 @@ class LoopChecker
 
         $loop_context->parent_context = $loop_parent_context;
 
-        if ($assignment_depth === 0) {
+        if ($assignment_depth === 0 || $has_break_statement) {
             foreach ($pre_conditions as $pre_condition) {
                 if (self::applyPreConditionToLoopContext(
                     $statements_checker,
@@ -126,6 +131,8 @@ class LoopChecker
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
+
+            var_dump($inner_context->vars_in_scope, $loop_context->vars_in_scope, $loop_parent_context->vars_in_scope);
 
             for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
@@ -231,10 +238,10 @@ class LoopChecker
             }
 
             if ((string) $inner_context->vars_in_scope[$var_id] !== (string) $type) {
-                $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                /*$loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $loop_parent_context->vars_in_scope[$var_id],
                     $inner_context->vars_in_scope[$var_id]
-                );
+                );*/
 
                 $loop_parent_context->removeVarFromConflictingClauses($var_id);
             }
