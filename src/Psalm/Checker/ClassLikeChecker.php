@@ -333,7 +333,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                 $implementer_method_storage,
                                 $interface_method_storage,
                                 $code_location,
-                                $this->source->getSuppressedIssues()
+                                $implementer_method_storage->suppressed_issues
                             );
                         }
                     }
