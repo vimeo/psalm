@@ -89,4 +89,6 @@ class IfScope
      * @var array<string, Type\Union>
      */
     public $possible_param_types = null;
+
+    public $final_actions = [];
 }

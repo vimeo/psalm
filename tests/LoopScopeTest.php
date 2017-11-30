@@ -489,6 +489,9 @@ class LoopScopeTest extends TestCase
                       if ($tag === "a") {
                         $tag = null;
                         break;
+                      } elseif ($tag === "b") {
+                        $tag = null;
+                        break;
                       } else {
                         $tag = null;
                         break;
