@@ -26,6 +26,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
+use Psalm\Scope\LoopScope;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -70,7 +71,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
      * @param  Context                                          $context
-     * @param  Context|null                                     $loop_context
      * @param  Context|null                                     $global_context
      *
      * @return null|false
@@ -78,8 +78,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public function analyze(
         array $stmts,
         Context $context,
-        Context $loop_context = null,
-        Context $loop_parent_context = null,
+        LoopScope $loop_scope = null,
         Context $global_context = null
     ) {
         $has_returned = false;
@@ -148,9 +147,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                IfChecker::analyze($this, $stmt, $context, $loop_context, $loop_parent_context);
+                IfChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                TryChecker::analyze($this, $stmt, $context, $loop_context);
+                TryChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 ForChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
@@ -182,11 +181,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $has_returned = true;
                 $this->analyzeThrow($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                SwitchChecker::analyze($this, $stmt, $context, $loop_context, $loop_parent_context);
+                SwitchChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                if ($loop_context === null) {
+                if ($loop_scope === null) {
                     if (IssueBuffer::accepts(
                         new ContinueOutsideLoop(
                             'Continue call outside loop context',

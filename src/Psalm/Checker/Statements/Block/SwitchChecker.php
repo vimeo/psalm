@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
+use Psalm\Scope\LoopScope;
 use Psalm\Type;
 
 class SwitchChecker
@@ -27,8 +28,7 @@ class SwitchChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context,
-        Context $loop_context = null,
-        Context $loop_parent_context = null
+        LoopScope $loop_scope = null
     ) {
         if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;

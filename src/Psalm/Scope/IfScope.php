@@ -29,21 +29,6 @@ class IfScope
     public $possibly_redefined_vars = [];
 
     /**
-     * @var array<string, Type\Union>|null
-     */
-    public $redefined_loop_vars = null;
-
-    /**
-     * @var array<string, Type\Union>
-     */
-    public $possibly_redefined_loop_vars = [];
-
-    /**
-     * @var array<string, Type\Union>|null
-     */
-    public $possibly_redefined_loop_parent_vars = null;
-
-    /**
      * @var array<string, bool>
      */
     public $updated_vars = [];
