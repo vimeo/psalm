@@ -21,7 +21,8 @@ class WhileChecker
     ) {
         $while_context = clone $context;
 
-        $statements_checker->analyzeLoop(
+        LoopChecker::analyze(
+            $statements_checker,
             $stmt->stmts,
             $stmt->cond ? [$stmt->cond] : [],
             [],
