@@ -98,7 +98,7 @@ class ParseTree
 
                 case ',':
                     if (!$current_leaf->parent) {
-                        throw new TypeParseTreeException('Cannot parse comma in with no parent node');
+                        throw new TypeParseTreeException('Cannot parse comma without a parent node');
                     }
 
                     $current_parent = $current_leaf->parent;
