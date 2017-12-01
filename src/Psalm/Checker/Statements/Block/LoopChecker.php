@@ -84,15 +84,13 @@ class LoopChecker
 
         if ($assignment_depth === 0 || $has_break_statement) {
             foreach ($pre_conditions as $pre_condition) {
-                if (self::applyPreConditionToLoopContext(
+                self::applyPreConditionToLoopContext(
                     $statements_checker,
                     $pre_condition,
                     $pre_condition_clauses,
                     $inner_context,
                     $loop_scope->loop_parent_context
-                ) === false) {
-                    return false;
-                }
+                );
             }
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
@@ -112,24 +110,25 @@ class LoopChecker
             IssueBuffer::startRecording();
 
             foreach ($pre_conditions as $pre_condition) {
-                if (self::applyPreConditionToLoopContext(
-                    $statements_checker,
-                    $pre_condition,
-                    $pre_condition_clauses,
-                    $inner_context,
-                    $loop_scope->loop_parent_context
-                ) === false) {
-                    return false;
-                }
+                $asserted_vars = array_merge(
+                    self::applyPreConditionToLoopContext(
+                        $statements_checker,
+                        $pre_condition,
+                        $pre_condition_clauses,
+                        $inner_context,
+                        $loop_scope->loop_parent_context
+                    ),
+                    $asserted_vars
+                );
             }
 
-            var_dump($loop_scope->possibly_redefined_loop_parent_vars);
+            $asserted_vars = array_unique($asserted_vars);
+
+            var_dump($asserted_vars);
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
 
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
-
-            var_dump($loop_scope->possibly_redefined_loop_parent_vars);
 
             foreach ($post_conditions as $post_condition) {
                 if (ExpressionChecker::analyze($statements_checker, $post_condition, $inner_context) === false) {
@@ -162,7 +161,7 @@ class LoopChecker
 
                             // widen the foreach context type with the initial context type
                             $inner_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                $loop_scope->loop_context->vars_in_scope[$var_id],
+                                $inner_context->vars_in_scope[$var_id],
                                 $loop_scope->loop_parent_context->vars_in_scope[$var_id]
                             );
 
@@ -175,7 +174,7 @@ class LoopChecker
                 }
 
                 foreach ($asserted_vars as $var_id) {
-                    if (!isset($loop_scope->loop_context->vars_in_scope[$var_id])) {
+                    if (!isset($inner_context->vars_in_scope[$var_id])) {
                         $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                     }
                 }
@@ -194,6 +193,8 @@ class LoopChecker
 
                 IssueBuffer::startRecording();
 
+                var_dump($inner_context->vars_in_scope);
+
                 foreach ($pre_conditions as $pre_condition) {
                     if (self::applyPreConditionToLoopContext(
                         $statements_checker,
@@ -205,6 +206,8 @@ class LoopChecker
                         return false;
                     }
                 }
+
+                var_dump($inner_context->vars_in_scope, $inner_context->clauses);
 
                 $statements_checker->analyze($stmts, $inner_context, $loop_scope);
 
@@ -343,7 +346,7 @@ class LoopChecker
      * @param  Context             $loop_context
      * @param  Context             $outer_context
      *
-     * @return false|null
+     * @return string[]
      */
     private static function applyPreConditionToLoopContext(
         StatementsChecker $statements_checker,
@@ -391,12 +394,10 @@ class LoopChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($pre_condition_vars_in_scope_reconciled === false) {
-                return false;
-            }
-
             $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
         }
+
+        return $asserted_vars;
     }
 
     /**
