@@ -180,7 +180,8 @@ class ForeachChecker
                         $iterator_type->value,
                         'Iterator'
                     ) ||
-                        (InterfaceChecker::interfaceExists($project_checker, $iterator_type->value)
+                        (
+                            InterfaceChecker::interfaceExists($project_checker, $iterator_type->value)
                             && InterfaceChecker::interfaceExtends(
                                 $project_checker,
                                 $iterator_type->value,
@@ -212,7 +213,8 @@ class ForeachChecker
                         $iterator_type->value,
                         'Traversable'
                     ) ||
-                        (InterfaceChecker::interfaceExists($project_checker, $iterator_type->value)
+                        (
+                            InterfaceChecker::interfaceExists($project_checker, $iterator_type->value)
                             && InterfaceChecker::interfaceExtends(
                                 $project_checker,
                                 $iterator_type->value,

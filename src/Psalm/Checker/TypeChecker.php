@@ -1038,8 +1038,10 @@ class TypeChecker
             strtolower($container_type_part->value) === 'iterable' &&
             (
                 $input_type_part instanceof TArray ||
-                ($input_type_part instanceof TNamedObject &&
-                    (strtolower($input_type_part->value) === 'traversable' ||
+                (
+                    $input_type_part instanceof TNamedObject &&
+                    (
+                        strtolower($input_type_part->value) === 'traversable' ||
                         ClassChecker::classExtendsOrImplements(
                             $project_checker,
                             $input_type_part->value,
@@ -1077,9 +1079,11 @@ class TypeChecker
         }
 
         if ($container_type_part instanceof TCallable &&
-            ($input_type_part instanceof TString ||
+            (
+                $input_type_part instanceof TString ||
                 $input_type_part instanceof TArray ||
-                ($input_type_part instanceof TNamedObject &&
+                (
+                    $input_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $input_type_part->value) &&
                     MethodChecker::methodExists($project_checker, $input_type_part->value . '::__invoke')
                 )
@@ -1090,9 +1094,11 @@ class TypeChecker
         }
 
         if ($input_type_part instanceof TCallable &&
-            ($container_type_part instanceof TString ||
+            (
+                $container_type_part instanceof TString ||
                 $container_type_part instanceof TArray ||
-                ($container_type_part instanceof TNamedObject &&
+                (
+                    $container_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $container_type_part->value) &&
                     MethodChecker::methodExists($project_checker, $container_type_part->value . '::__invoke')
                 )
@@ -1122,7 +1128,8 @@ class TypeChecker
         } elseif ($container_type_part instanceof TNamedObject &&
             $input_type_part instanceof TNamedObject &&
             ClassChecker::classOrInterfaceExists($project_checker, $input_type_part->value) &&
-            ((
+            (
+                (
                 ClassChecker::classExists($project_checker, $container_type_part->value) &&
                     ClassChecker::classExtendsOrImplements(
                         $project_checker,
@@ -1130,7 +1137,8 @@ class TypeChecker
                         $input_type_part->value
                     )
                 ) ||
-                (InterfaceChecker::interfaceExists($project_checker, $container_type_part->value) &&
+                (
+                    InterfaceChecker::interfaceExists($project_checker, $container_type_part->value) &&
                     InterfaceChecker::interfaceExtends(
                         $project_checker,
                         $container_type_part->value,
@@ -1580,7 +1588,8 @@ class TypeChecker
                 $string_input_part = (string)$type_part;
 
                 if ($type_part !== $container_type_part &&
-                    !($container_type_part instanceof TInt
+                    !(
+                        $container_type_part instanceof TInt
                         || $container_type_part instanceof TFloat
                         || $container_type_part instanceof TCallable
                         || ($container_type_part instanceof TString && $type_part instanceof TCallable)

@@ -919,7 +919,8 @@ class AssertionFinder
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall &&
             $conditional->right->name instanceof PhpParser\Node\Name &&
             strtolower($conditional->right->name->parts[0]) === 'get_class' &&
-            ($conditional->left instanceof PhpParser\Node\Scalar\String_
+            (
+                $conditional->left instanceof PhpParser\Node\Scalar\String_
                 || ($conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $conditional->left->class instanceof PhpParser\Node\Name
                     && is_string($conditional->left->name)
@@ -932,7 +933,8 @@ class AssertionFinder
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall &&
             $conditional->left->name instanceof PhpParser\Node\Name &&
             strtolower($conditional->left->name->parts[0]) === 'get_class' &&
-            ($conditional->right instanceof PhpParser\Node\Scalar\String_
+            (
+                $conditional->right instanceof PhpParser\Node\Scalar\String_
                 || ($conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $conditional->right->class instanceof PhpParser\Node\Name
                     && is_string($conditional->right->name)

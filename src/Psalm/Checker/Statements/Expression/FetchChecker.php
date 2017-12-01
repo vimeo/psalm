@@ -192,7 +192,8 @@ class FetchChecker
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
             if ($lhs_type_part instanceof TObject ||
-                ($lhs_type_part instanceof TNamedObject &&
+                (
+                    $lhs_type_part instanceof TNamedObject &&
                     in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
                 )
             ) {
