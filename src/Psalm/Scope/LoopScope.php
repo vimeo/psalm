@@ -19,7 +19,7 @@ class LoopScope
     /**
      * @var array<string, Type\Union>|null
      */
-    public $redefined_loop_vars = null;
+    public $redefined_loop_vars = [];
 
     /**
      * @var array<string, Type\Union>
@@ -29,5 +29,19 @@ class LoopScope
     /**
      * @var array<string, Type\Union>|null
      */
-    public $possibly_redefined_loop_parent_vars = [];
+    public $possibly_redefined_loop_parent_vars = null;
+
+    /**
+     * @var array<string, bool>
+     */
+    public $vars_possibly_in_scope = [];
+
+    /** @var string[] */
+    public $final_actions = [];
+
+    public function __construct(Context $loop_context, Context $parent_context)
+    {
+        $this->loop_context = $loop_context;
+        $this->loop_parent_context = $parent_context;
+    }
 }

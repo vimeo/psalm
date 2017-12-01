@@ -183,7 +183,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                // do nothing
+                $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+                $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 if ($loop_scope === null) {
                     if (IssueBuffer::accepts(
@@ -197,6 +198,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
 
+                $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
                 $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->analyzeStatic($stmt, $context);
@@ -376,6 +378,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             }
 
+            if ($loop_scope
+                && $loop_scope->final_actions
+                && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions)
+            ) {
+                $has_returned = true;
+            }
+
             if ($plugins) {
                 $file_manipulations = [];
                 $code_location = new CodeLocation($this->source, $stmt);
@@ -402,6 +411,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 /** @psalm-suppress MixedTypeCoercion */
                 $this->removeSuppressedIssues($new_issues);
             }
+        }
+
+        if ($loop_scope
+            && !$has_returned
+            && !$loop_scope->final_actions
+        ) {
+            $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
         }
 
         return null;
@@ -605,7 +621,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        LoopChecker::analyze($this, $stmt->stmts, [], [], $do_context, $context);
+        LoopChecker::analyze($this, $stmt->stmts, [], [], new LoopScope($do_context, $context));
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

@@ -221,15 +221,15 @@ class Context
     }
 
     /**
-     * @param  Context $original_context
+     * @param  array<string, Type\Union> $vars_in_scope
      *
      * @return array<string,Type\Union>
      */
-    public function getRedefinedVars(Context $original_context)
+    public function getRedefinedVars(array $vars_in_scope)
     {
         $redefined_vars = [];
 
-        foreach ($original_context->vars_in_scope as $var => $context_type) {
+        foreach ($vars_in_scope as $var => $context_type) {
             if (!isset($this->vars_in_scope[$var])) {
                 continue;
             }

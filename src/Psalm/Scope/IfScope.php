@@ -44,16 +44,6 @@ class IfScope
     public $negatable_if_types = null;
 
     /**
-     * @var Context|null
-     */
-    public $loop_context;
-
-    /**
-     * @var Context|null
-     */
-    public $loop_parent_context;
-
-    /**
      * @var bool
      */
     public $has_elseifs;

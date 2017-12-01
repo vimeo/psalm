@@ -4,6 +4,7 @@ namespace Psalm\Checker\Statements\Block;
 use PhpParser;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Context;
+use Psalm\Scope\LoopScope;
 
 class WhileChecker
 {
@@ -26,8 +27,7 @@ class WhileChecker
             $stmt->stmts,
             $stmt->cond ? [$stmt->cond] : [],
             [],
-            $while_context,
-            $context
+            new LoopScope($while_context, $context)
         );
 
         $context->vars_possibly_in_scope = array_merge(

@@ -459,7 +459,7 @@ class LoopScopeTest extends TestCase
 
                     if ($a) {}',
             ],
-            'bleedVarIntoOuterContext' => [
+            'bleedVarIntoOuterContextWithEmptyLoop' => [
                 '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
@@ -501,7 +501,7 @@ class LoopScopeTest extends TestCase
                     '$tag' => 'null',
                 ],
             ],
-            'bleedVarIntoOuterContextWithBreak' => [
+            'bleedVarIntoOuterContextWithBreakInElse' => [
                 '<?php
                     $tag = null;
                     foreach (["a", "b", "c"] as $tag) {
@@ -512,7 +512,35 @@ class LoopScopeTest extends TestCase
                       }
                     }',
                 'assignments' => [
-                    '$tag' => 'null|string',
+                    '$tag' => 'string|null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithBreakInIf' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        break;
+                      } else {
+                        $tag = null;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'string|null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithBreakInElseAndIntSet' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = 5;
+                      } else {
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'string|null|int',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefineAndBreak' => [
