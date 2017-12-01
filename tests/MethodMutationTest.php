@@ -96,7 +96,7 @@ class MethodMutationTest extends TestCase
 
         $this->assertSame('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);
         $this->assertSame('string', (string)$method_context->vars_in_scope['$this->user_viewdata->name']);
-        /** @psalm-suppress */
+        /** @psalm-suppress InvalidScalarArgument */
         $this->assertTrue($method_context->vars_possibly_in_scope['$this->title']);
     }
 
