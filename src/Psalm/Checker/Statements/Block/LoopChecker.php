@@ -76,13 +76,13 @@ class LoopChecker
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
         }
 
-        $inner_context = clone $loop_scope->loop_context;
-
-        $inner_context->parent_context = $loop_scope->loop_context;
-
         $loop_scope->loop_context->parent_context = $loop_scope->loop_parent_context;
 
         if ($assignment_depth === 0 || $has_break_statement) {
+            $inner_context = clone $loop_scope->loop_context;
+
+            $inner_context->parent_context = $loop_scope->loop_context;
+
             foreach ($pre_conditions as $pre_condition) {
                 self::applyPreConditionToLoopContext(
                     $statements_checker,
@@ -115,16 +115,17 @@ class LoopChecker
                         $statements_checker,
                         $pre_condition,
                         $pre_condition_clauses,
-                        $inner_context,
+                        $loop_scope->loop_context,
                         $loop_scope->loop_parent_context
                     ),
                     $asserted_vars
                 );
             }
 
-            $asserted_vars = array_unique($asserted_vars);
+            $inner_context = clone $loop_scope->loop_context;
+            $inner_context->parent_context = $loop_scope->loop_context;
 
-            var_dump($asserted_vars);
+            $asserted_vars = array_unique($asserted_vars);
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
 
@@ -144,7 +145,12 @@ class LoopChecker
 
                 $has_changes = false;
 
-                foreach ($inner_context->vars_in_scope as $var_id => $type) {
+                $all_vars_possibly_in_scope = array_merge(
+                    $inner_context->vars_in_scope,
+                    $pre_loop_context->vars_in_scope
+                );
+
+                foreach ($all_vars_possibly_in_scope as $var_id => $type) {
                     if (in_array($var_id, $asserted_vars, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if ((string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]) {
