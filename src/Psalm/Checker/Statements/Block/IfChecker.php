@@ -453,10 +453,12 @@ class IfChecker
                 $if_scope->possible_param_types = $if_context->possible_param_types;
             }
         } else {
-            $if_scope->reasonable_clauses = [];
+            if (!$has_break_statement) {
+                $if_scope->reasonable_clauses = [];
+            }
         }
 
-        if ($has_leaving_statements && !$stmt->else && !$stmt->elseifs) {
+        if ($has_leaving_statements && !$has_break_statement && !$stmt->else && !$stmt->elseifs) {
             if ($if_scope->negated_types) {
                 $changed_var_ids = [];
 
@@ -575,8 +577,25 @@ class IfChecker
                         }
                     }
                 } elseif ($has_break_statement) {
-                    $loop_scope->possibly_redefined_loop_parent_vars =
-                        $if_context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
+                    $if_redefined_vars = $if_context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
+
+                    // these may have been defined in an if block above this one
+                    if ($loop_scope->possibly_redefined_loop_parent_vars === null) {
+                        $loop_scope->possibly_redefined_loop_parent_vars = $if_redefined_vars;
+                    } else {
+                        foreach ($if_redefined_vars as $var => $type) {
+                            if ($type->isMixed()) {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
+                            } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                                    $type,
+                                    $loop_scope->possibly_redefined_loop_parent_vars[$var]
+                                );
+                            } else {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
+                            }
+                        }
+                    }
                 } else {
                     $if_scope->new_vars_possibly_in_scope = $vars;
                 }
@@ -945,7 +964,7 @@ class IfChecker
                             foreach ($elseif_redefined_vars as $var => $type) {
                                 if ($type->isMixed()) {
                                     $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
-                                } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                                } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
                                     $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
                                         $type,
                                         $loop_scope->possibly_redefined_loop_parent_vars[$var]
@@ -1205,10 +1224,10 @@ class IfChecker
                             foreach ($else_redefined_vars as $var => $type) {
                                 if ($type->isMixed()) {
                                     $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
-                                } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                                } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
                                     $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
                                         $type,
-                                        $loop_scope->possibly_redefined_loop_vars[$var]
+                                        $loop_scope->possibly_redefined_loop_parent_vars[$var]
                                     );
                                 } else {
                                     $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;

@@ -583,6 +583,9 @@ class LoopScopeTest extends TestCase
                       if ($tag === "a") {
                         $a = true;
                         break;
+                      } else {
+                        $a = true;
+                        break;
                       }
                     }',
                 'assignments' => [
@@ -622,16 +625,33 @@ class LoopScopeTest extends TestCase
                     '$a' => 'bool',
                 ],
             ],
+            'falseToBoolInNestedForeach' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["d", "e", "f"] as $l) {
+                        foreach (["a", "b", "c"] as $tag) {
+                            if (!$a) {
+                                if (rand(0, 10)) {
+                                    $a = true;
+                                    break;
+                                } else {
+                                    $a = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
             'falseToBoolInContinueAndBreak' => [
                 '<?php
                     $a = false;
 
                     for ($i = 0; $i < 4; $i++) {
                       $j = rand(0, 10);
-
-                      if ($j === 1) {
-                        exit();
-                      }
 
                       if ($j === 2) {
                         $a = true;
@@ -763,6 +783,35 @@ class LoopScopeTest extends TestCase
                         $a->barBar();
                     }',
                 'error_message' => 'PossiblyNullReference',
+            ],
+            'redundantConditionInForeachIf' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                        if (!$a) {
+                            $a = true;
+                            break;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'redundantConditionInForeachWithIfElse' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                        if (!$a) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                                break;
+                            } else {
+                                $a = true;
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
