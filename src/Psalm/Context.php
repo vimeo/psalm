@@ -236,10 +236,10 @@ class Context
 
             $this_var = $this->vars_in_scope[$var];
 
-            if (!$this_var->failed_reconciliation &&
-                !$this_var->isEmpty() &&
-                !$context_type->isEmpty() &&
-                (string)$this_var !== (string)$context_type
+            if (!$this_var->failed_reconciliation
+                && !$this_var->isEmpty()
+                && !$context_type->isEmpty()
+                && (string)$this_var !== (string)$context_type
             ) {
                 $redefined_vars[$var] = $this_var;
             }

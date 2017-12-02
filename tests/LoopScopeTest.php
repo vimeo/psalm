@@ -558,6 +558,23 @@ class LoopScopeTest extends TestCase
                     '$tag' => 'null',
                 ],
             ],
+            'nullToNullableWithNullCheck' => [
+                '<?php
+                    $a = null;
+
+                    foreach ([1, 2, 3] as $i) {
+                      if ($a === null) {
+                        /** @var mixed */
+                        $a = "hello";
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'mixed',
+                ],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
             'falseToBoolInBreak' => [
                 '<?php
                     $a = false;

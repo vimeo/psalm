@@ -142,7 +142,6 @@ class LoopChecker
             $asserted_vars = array_unique($asserted_vars);
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
-
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
             foreach ($post_conditions as $post_condition) {
@@ -289,7 +288,7 @@ class LoopChecker
 
                 if ($inner_context->vars_in_scope[$var_id]->isMixed()) {
                     $loop_scope->loop_parent_context->vars_in_scope[$var_id] =
-                        $loop_scope->loop_context->vars_in_scope[$var_id];
+                        $inner_context->vars_in_scope[$var_id];
                     $loop_scope->loop_parent_context->removeVarFromConflictingClauses($var_id);
                     continue;
                 }
