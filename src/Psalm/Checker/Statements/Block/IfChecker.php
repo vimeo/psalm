@@ -577,6 +577,8 @@ class IfChecker
                 } elseif ($has_break_statement) {
                     $loop_scope->possibly_redefined_loop_parent_vars =
                         $if_context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
+                } else {
+                    $if_scope->new_vars_possibly_in_scope = $vars;
                 }
 
                 $loop_scope->vars_possibly_in_scope = array_merge(
@@ -953,6 +955,11 @@ class IfChecker
                                 }
                             }
                         }
+                    } else {
+                        $if_scope->new_vars_possibly_in_scope = array_merge(
+                            $vars,
+                            $if_scope->new_vars_possibly_in_scope
+                        );
                     }
 
                     $loop_scope->vars_possibly_in_scope = array_merge(
@@ -1208,6 +1215,11 @@ class IfChecker
                                 }
                             }
                         }
+                    } else {
+                        $if_scope->new_vars_possibly_in_scope = array_merge(
+                            $vars,
+                            $if_scope->new_vars_possibly_in_scope
+                        );
                     }
 
                     $loop_scope->vars_possibly_in_scope = array_merge(

@@ -630,6 +630,18 @@ class LoopScopeTest extends TestCase
                     '$a' => 'bool',
                 ],
             ],
+            'variableDefinedInForeachAndIf' => [
+                '<?php
+                    foreach ([1,2,3,4] as $i) {
+                        if ($i === 1) {
+                            $a = true;
+                        } else {
+                            $a = false;
+                        }
+
+                        echo $a;
+                    }',
+            ],
         ];
     }
 
@@ -682,6 +694,18 @@ class LoopScopeTest extends TestCase
 
                     echo $a;',
                 'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:9 - Possibly undefined variable $a, ' .
+                    'first seen on line 4',
+            ],
+            'possibleUndefinedVariableInForeachAndIf' => [
+                '<?php
+                    foreach ([1,2,3,4] as $i) {
+                        if ($i === 1) {
+                            $a = true;
+                        }
+
+                        echo $a;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:7 - Possibly undefined variable $a, ' .
                     'first seen on line 4',
             ],
             'implicitFourthLoopWithBadReturnType' => [
