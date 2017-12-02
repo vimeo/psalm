@@ -587,6 +587,18 @@ class LoopScopeTest extends TestCase
                     '$a' => 'bool',
                 ],
             ],
+            'falseToBoolExplicitContinue' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      $a = true;
+                      continue;
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
             'falseToBoolInBreak' => [
                 '<?php
                     $a = false;
