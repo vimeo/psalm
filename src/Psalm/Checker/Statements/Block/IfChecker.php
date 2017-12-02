@@ -316,7 +316,7 @@ class IfChecker
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $if_scope->forced_new_vars);
             }
 
-            if ($loop_scope && !in_array(ScopeChecker::ACTION_NONE, $if_scope->final_actions)) {
+            if ($loop_scope && !in_array(ScopeChecker::ACTION_NONE, $if_scope->final_actions, true)) {
                 $loop_scope->redefined_loop_vars = null;
             }
         }
@@ -782,8 +782,6 @@ class IfChecker
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
         if (count($elseif->stmts)) {
-
-
             // update the parent context as necessary
             $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context->vars_in_scope);
 
@@ -956,7 +954,6 @@ class IfChecker
                             }
                         }
                     }
-
 
                     $loop_scope->vars_possibly_in_scope = array_merge(
                         $vars,

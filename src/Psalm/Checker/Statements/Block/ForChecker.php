@@ -30,7 +30,13 @@ class ForChecker
         $for_context = clone $context;
         $for_context->inside_loop = true;
 
-        LoopChecker::analyze($statements_checker, $stmt->stmts, $stmt->cond, $stmt->loop, new LoopScope($for_context, $context));
+        LoopChecker::analyze(
+            $statements_checker,
+            $stmt->stmts,
+            $stmt->cond,
+            $stmt->loop,
+            new LoopScope($for_context, $context)
+        );
 
         $context->vars_possibly_in_scope = array_merge(
             $for_context->vars_possibly_in_scope,

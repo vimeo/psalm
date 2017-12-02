@@ -62,7 +62,10 @@ class LoopChecker
                 );
             }
         } else {
-            $asserted_vars = Context::getNewOrUpdatedVarIds($loop_scope->loop_parent_context, $loop_scope->loop_context);
+            $asserted_vars = Context::getNewOrUpdatedVarIds(
+                $loop_scope->loop_parent_context,
+                $loop_scope->loop_context
+            );
         }
 
         $final_actions = ScopeChecker::getFinalControlActions($stmts);
@@ -98,7 +101,12 @@ class LoopChecker
             self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
 
             foreach ($post_conditions as $post_condition) {
-                if (ExpressionChecker::analyze($statements_checker, $post_condition, $loop_scope->loop_context) === false) {
+                if (ExpressionChecker::analyze(
+                    $statements_checker,
+                    $post_condition,
+                    $loop_scope->loop_context
+                ) === false
+                ) {
                     return false;
                 }
             }
@@ -254,7 +262,7 @@ class LoopChecker
             }
         }
 
-        $does_sometimes_break = in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions);
+        $does_sometimes_break = in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true);
         $does_always_break = $loop_scope->final_actions === [ScopeChecker::ACTION_BREAK];
 
         if ($does_sometimes_break) {
@@ -280,7 +288,8 @@ class LoopChecker
                 }
 
                 if ($inner_context->vars_in_scope[$var_id]->isMixed()) {
-                    $loop_scope->loop_parent_context->vars_in_scope[$var_id] = $loop_scope->loop_context->vars_in_scope[$var_id];
+                    $loop_scope->loop_parent_context->vars_in_scope[$var_id] =
+                        $loop_scope->loop_context->vars_in_scope[$var_id];
                     $loop_scope->loop_parent_context->removeVarFromConflictingClauses($var_id);
                     continue;
                 }
@@ -336,6 +345,7 @@ class LoopChecker
     /**
      * @param  LoopScope $loop_scope
      * @param  Context   $pre_outer_context
+     *
      * @return void
      */
     private static function updateLoopScopeContexts(
@@ -344,7 +354,7 @@ class LoopChecker
     ) {
         $updated_loop_vars = [];
 
-        if (!in_array(ScopeChecker::ACTION_CONTINUE, $loop_scope->final_actions)) {
+        if (!in_array(ScopeChecker::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
             $loop_scope->loop_context->vars_in_scope = $pre_outer_context->vars_in_scope;
         } else {
             if ($loop_scope->redefined_loop_vars !== null) {

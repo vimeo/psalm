@@ -28,6 +28,10 @@ class TryChecker
     ) {
         $statements_checker->analyze($stmt->stmts, $context, $loop_scope);
 
+        $try_leaves_loop = $loop_scope
+            && $loop_scope->final_actions
+            && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true);
+
         // clone context for catches after running the try block, as
         // we optimistically assume it only failed at the very end
         $original_context = clone $context;
@@ -117,6 +121,13 @@ class TryChecker
 
         if ($stmt->finally) {
             $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
+        }
+
+        if ($loop_scope
+            && !$try_leaves_loop
+            && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true)
+        ) {
+            $loop_scope->final_actions[] = ScopeChecker::ACTION_NONE;
         }
 
         return null;

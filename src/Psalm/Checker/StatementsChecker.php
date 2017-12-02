@@ -384,9 +384,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             if ($loop_scope
                 && $loop_scope->final_actions
-                && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions)
+                && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true)
             ) {
-                $has_returned = true;
+                //$has_returned = true;
             }
 
             if ($plugins) {
