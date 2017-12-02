@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Scope;
 
+use Psalm\Clause;
+use Psalm\Type;
+
 class IfScope
 {
     /**
@@ -65,5 +68,8 @@ class IfScope
      */
     public $possible_param_types = null;
 
+    /**
+     * @var string[]
+     */
     public $final_actions = [];
 }

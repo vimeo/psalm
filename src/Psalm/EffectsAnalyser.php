@@ -48,6 +48,7 @@ class EffectsAnalyser
                             $ignore_nullable_issues = true;
                         }
                     } else {
+                        var_dump($stmt->getLine());
                         $return_types[] = new Atomic\TMixed();
                     }
                 }

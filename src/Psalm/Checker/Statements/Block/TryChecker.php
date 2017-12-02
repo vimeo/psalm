@@ -7,6 +7,7 @@ use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -16,7 +17,6 @@ class TryChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Stmt\TryCatch    $stmt
      * @param   Context                         $context
-     * @param   Context|null                    $loop_context
      *
      * @return  false|null
      */
@@ -24,10 +24,9 @@ class TryChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\TryCatch $stmt,
         Context $context,
-        Context $loop_context = null,
-        Context $outer_context = null
+        LoopScope $loop_scope = null
     ) {
-        $statements_checker->analyze($stmt->stmts, $context, $loop_context, $outer_context);
+        $statements_checker->analyze($stmt->stmts, $context, $loop_scope);
 
         // clone context for catches after running the try block, as
         // we optimistically assume it only failed at the very end
@@ -89,7 +88,7 @@ class TryChecker
             // this registers the variable to avoid unfair deadcode issues
             $catch_context->hasVariable($catch_var_id);
 
-            $statements_checker->analyze($catch->stmts, $catch_context, $loop_context, $outer_context);
+            $statements_checker->analyze($catch->stmts, $catch_context, $loop_scope);
 
             $context->referenced_var_ids = array_merge(
                 $catch_context->referenced_var_ids,
@@ -117,7 +116,7 @@ class TryChecker
         }
 
         if ($stmt->finally) {
-            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_context, $outer_context);
+            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
         }
 
         return null;

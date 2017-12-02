@@ -404,7 +404,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        $statements_checker->analyze($function_stmts, $context, null, null, $global_context);
+        $statements_checker->analyze($function_stmts, $context, null, $global_context);
 
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;

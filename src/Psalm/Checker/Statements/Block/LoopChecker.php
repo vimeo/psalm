@@ -102,9 +102,12 @@ class LoopChecker
                     return false;
                 }
             }
+
+            $loop_scope->loop_parent_context->vars_possibly_in_scope = array_merge(
+                $inner_context->vars_possibly_in_scope,
+                $loop_scope->loop_parent_context->vars_possibly_in_scope
+            );
         } else {
-            // record all the vars that existed before we did the first pass through the loop
-            $pre_loop_context = clone $loop_scope->loop_context;
             $pre_outer_context = clone $loop_scope->loop_parent_context;
 
             IssueBuffer::startRecording();
@@ -121,6 +124,9 @@ class LoopChecker
                     $asserted_vars
                 );
             }
+
+            // record all the vars that existed before we did the first pass through the loop
+            $pre_loop_context = clone $loop_scope->loop_context;
 
             $inner_context = clone $loop_scope->loop_context;
             $inner_context->parent_context = $loop_scope->loop_context;
@@ -145,30 +151,41 @@ class LoopChecker
 
                 $has_changes = false;
 
-                $all_vars_possibly_in_scope = array_merge(
-                    $inner_context->vars_in_scope,
-                    $pre_loop_context->vars_in_scope
-                );
+                // reset the $inner_context to what it was before we started the analysis,
+                // but union the types with what's in the loop scope
 
-                foreach ($all_vars_possibly_in_scope as $var_id => $type) {
+                foreach ($inner_context->vars_in_scope as $var_id => $type) {
                     if (in_array($var_id, $asserted_vars, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
-                        if ((string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]) {
+                        if (!isset($pre_loop_context->vars_in_scope[$var_id])
+                            || (string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]
+                        ) {
                             $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                             $has_changes = true;
                         }
                     } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
-                        $pre_outer = (string)$pre_outer_context->vars_in_scope[$var_id];
+                        $str_type = (string)$type;
 
-                        if ((string)$type !== $pre_outer ||
-                            (string)$loop_scope->loop_parent_context->vars_in_scope[$var_id] !== $pre_outer
-                        ) {
+                        if ($str_type !== (string)$pre_outer_context->vars_in_scope[$var_id]) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
                             $inner_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $inner_context->vars_in_scope[$var_id],
-                                $loop_scope->loop_parent_context->vars_in_scope[$var_id]
+                                $pre_outer_context->vars_in_scope[$var_id]
+                            );
+
+                            // if there's a change, invalidate related clauses
+                            $pre_loop_context->removeVarFromConflictingClauses($var_id);
+                        }
+
+                        if ($str_type !== (string)$loop_scope->loop_context->vars_in_scope[$var_id]) {
+                            $has_changes = true;
+
+                            // widen the foreach context type with the initial context type
+                            $inner_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                $inner_context->vars_in_scope[$var_id],
+                                $loop_scope->loop_context->vars_in_scope[$var_id]
                             );
 
                             // if there's a change, invalidate related clauses
@@ -185,6 +202,11 @@ class LoopChecker
                     }
                 }
 
+                $loop_scope->loop_parent_context->vars_possibly_in_scope = array_merge(
+                    $inner_context->vars_possibly_in_scope,
+                    $loop_scope->loop_parent_context->vars_possibly_in_scope
+                );
+
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes) {
                     break;
@@ -199,21 +221,15 @@ class LoopChecker
 
                 IssueBuffer::startRecording();
 
-                var_dump($inner_context->vars_in_scope);
-
                 foreach ($pre_conditions as $pre_condition) {
-                    if (self::applyPreConditionToLoopContext(
+                    self::applyPreConditionToLoopContext(
                         $statements_checker,
                         $pre_condition,
                         $pre_condition_clauses,
                         $inner_context,
                         $loop_scope->loop_parent_context
-                    ) === false) {
-                        return false;
-                    }
+                    );
                 }
-
-                var_dump($inner_context->vars_in_scope, $inner_context->clauses);
 
                 $statements_checker->analyze($stmts, $inner_context, $loop_scope);
 
@@ -317,6 +333,11 @@ class LoopChecker
         }
     }
 
+    /**
+     * @param  LoopScope $loop_scope
+     * @param  Context   $pre_outer_context
+     * @return void
+     */
     private static function updateLoopScopeContexts(
         LoopScope $loop_scope,
         Context $pre_outer_context
@@ -344,6 +365,12 @@ class LoopChecker
                 }
             }
         }
+
+        // merge vars possibly in scope at the end of each loop
+        $loop_scope->loop_context->vars_possibly_in_scope = array_merge(
+            $loop_scope->loop_context->vars_possibly_in_scope,
+            $loop_scope->vars_possibly_in_scope
+        );
     }
 
     /**
@@ -365,15 +392,17 @@ class LoopChecker
         $loop_context->referenced_var_ids = [];
 
         $loop_context->inside_conditional = true;
+
         if (ExpressionChecker::analyze($statements_checker, $pre_condition, $loop_context) === false) {
-            return false;
+            return [];
         }
+
         $loop_context->inside_conditional = false;
 
         $new_referenced_var_ids = $loop_context->referenced_var_ids;
         $loop_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
 
-        $asserted_vars = array_keys(AlgebraChecker::getTruthsFromFormula($pre_condition_clauses));
+        $asserted_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
         $loop_context->clauses = AlgebraChecker::simplifyCNF(
             array_merge($outer_context->clauses, $pre_condition_clauses)

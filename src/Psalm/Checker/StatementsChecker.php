@@ -113,11 +113,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 break;
             }
 
-            ///*
+            /*
             if (isset($context->vars_in_scope['$tag']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
                 var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$tag']);
             }
-            //*/
+            */
 
             $new_issues = null;
 
@@ -183,7 +183,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+                if ($loop_scope) {
+                    $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+                }
+
                 $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 if ($loop_scope === null) {
@@ -196,9 +199,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     )) {
                         return false;
                     }
+                } else {
+                    $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
                 }
 
-                $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
                 $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Static_) {
                 $this->analyzeStatic($stmt, $context);
@@ -411,13 +415,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 /** @psalm-suppress MixedTypeCoercion */
                 $this->removeSuppressedIssues($new_issues);
             }
-        }
-
-        if ($loop_scope
-            && !$has_returned
-            && !$loop_scope->final_actions
-        ) {
-            $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
         }
 
         return null;

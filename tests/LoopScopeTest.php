@@ -558,6 +558,78 @@ class LoopScopeTest extends TestCase
                     '$tag' => 'null',
                 ],
             ],
+            'falseToBoolInBreak' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $a = true;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInContinue' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $a = true;
+                        continue;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInBreakAndContinue' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $a = true;
+                        break;
+                      }
+
+                      if ($tag === "b") {
+                        $a = true;
+                        continue;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInContinueAndBreak' => [
+                '<?php
+                    $a = false;
+
+                    for ($i = 0; $i < 4; $i++) {
+                      $j = rand(0, 10);
+
+                      if ($j === 1) {
+                        exit();
+                      }
+
+                      if ($j === 2) {
+                        $a = true;
+                        continue;
+                      }
+
+                      if ($j === 3) {
+                        $a = true;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
         ];
     }
 
@@ -618,7 +690,7 @@ class LoopScopeTest extends TestCase
                       $x = 0;
                       $y = 1;
                       $z = 2;
-                      for ($i = 0; $i < 3; $i++) {
+                      foreach ([0, 1, 2] as $i) {
                         $x = $y;
                         $y = $z;
                         $z = "hello";
