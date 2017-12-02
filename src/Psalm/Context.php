@@ -371,6 +371,7 @@ class Context
                 $type_changed = false;
 
                 // if the clause contains any possibilities that would be altered
+                // by the new type
                 foreach ($clause->possibilities[$remove_var_id] as $type) {
                     // empty and !empty are not definitive for arrays and scalar types
                     if (($type === '!falsy' || $type === 'falsy') &&
@@ -455,7 +456,10 @@ class Context
         if ($this->clauses) {
             $this->removeVarFromConflictingClauses(
                 $remove_var_id,
-                $existing_type->isMixed() ? null : $new_type,
+                $existing_type->isMixed()
+                    || ($new_type && $existing_type->from_docblock !== $new_type->from_docblock)
+                    ? null
+                    : $new_type,
                 $statements_checker
             );
         }

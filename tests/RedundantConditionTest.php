@@ -58,6 +58,17 @@ class RedundantConditionTest extends TestCase
                         return $x;
                     }',
             ],
+            'noRedundantConditionAfterAssignment' => [
+                '<?php
+                    /** @param int $i */
+                    function foo($i) : void {
+                        if ($i !== null) {
+                            $i = (int) $i;
+
+                            if ($i) {}
+                        }
+                    }',
+            ],
         ];
     }
 
