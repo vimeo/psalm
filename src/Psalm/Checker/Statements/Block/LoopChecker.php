@@ -97,7 +97,6 @@ class LoopChecker
             }
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
-
             self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
 
             foreach ($post_conditions as $post_condition) {

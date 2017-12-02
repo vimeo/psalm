@@ -93,6 +93,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         $project_checker = $this->getFileChecker()->project_checker;
 
+        $original_context = null;
+
+        if ($loop_scope) {
+            $original_context = clone $context;
+        }
+
         $plugins = Config::getInstance()->getPlugins();
 
         foreach ($stmts as $stmt) {
@@ -183,8 +189,27 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                if ($loop_scope) {
+                if ($loop_scope && $original_context) {
                     $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+
+                    $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
+
+                    if ($loop_scope->possibly_redefined_loop_parent_vars === null) {
+                        $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
+                    } else {
+                        foreach ($redefined_vars as $var => $type) {
+                            if ($type->isMixed()) {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
+                            } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                                    $type,
+                                    $loop_scope->possibly_redefined_loop_parent_vars[$var]
+                                );
+                            } else {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
+                            }
+                        }
+                    }
                 }
 
                 $has_returned = true;
@@ -199,8 +224,42 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     )) {
                         return false;
                     }
-                } else {
+                } elseif ($original_context) {
                     $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
+
+                    $redefined_vars = $context->getRedefinedVars($original_context->vars_in_scope);
+
+                    if ($loop_scope->redefined_loop_vars === null) {
+                        $loop_scope->redefined_loop_vars = $redefined_vars;
+                    } else {
+                        foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {
+                            if (!isset($redefined_vars[$redefined_var])) {
+                                unset($loop_scope->redefined_loop_vars[$redefined_var]);
+                            } else {
+                                $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
+                                    $redefined_vars[$redefined_var],
+                                    $type
+                                );
+                            }
+                        }
+                    }
+
+                    if ($loop_scope->possibly_redefined_loop_vars === null) {
+                        $loop_scope->possibly_redefined_loop_vars = $redefined_vars;
+                    } else {
+                        foreach ($redefined_vars as $var => $type) {
+                            if ($type->isMixed()) {
+                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                            } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                                $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
+                                    $type,
+                                    $loop_scope->possibly_redefined_loop_vars[$var]
+                                );
+                            } else {
+                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                            }
+                        }
+                    }
                 }
 
                 $has_returned = true;
