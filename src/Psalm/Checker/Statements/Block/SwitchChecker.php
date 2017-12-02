@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
+use Psalm\Scope\LoopScope;
 use Psalm\Type;
 
 class SwitchChecker
@@ -19,7 +20,6 @@ class SwitchChecker
      * @param   StatementsChecker               $statements_checker
      * @param   PhpParser\Node\Stmt\Switch_     $stmt
      * @param   Context                         $context
-     * @param   Context|null                    $loop_context
      *
      * @return  false|null
      */
@@ -27,7 +27,7 @@ class SwitchChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context,
-        Context $loop_context = null
+        LoopScope $loop_scope = null
     ) {
         if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
@@ -141,7 +141,7 @@ class SwitchChecker
                 $leftover_statements = [];
             }
 
-            $statements_checker->analyze($case_stmts, $case_context, $loop_context);
+            $statements_checker->analyze($case_stmts, $case_context, $loop_scope);
 
             $context->referenced_var_ids = array_merge(
                 $context->referenced_var_ids,
@@ -156,10 +156,10 @@ class SwitchChecker
 
                 // if we're leaving this block, add vars to outer for loop scope
                 if ($case_exit_type === 'continue') {
-                    if ($loop_context) {
-                        $loop_context->vars_possibly_in_scope = array_merge(
+                    if ($loop_scope) {
+                        $loop_scope->vars_possibly_in_scope = array_merge(
                             $vars,
-                            $loop_context->vars_possibly_in_scope
+                            $loop_scope->vars_possibly_in_scope
                         );
                     } else {
                         if (IssueBuffer::accepts(
@@ -172,7 +172,7 @@ class SwitchChecker
                         }
                     }
                 } else {
-                    $case_redefined_vars = $case_context->getRedefinedVars($original_context);
+                    $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
                     Type::redefineGenericUnionTypes($case_redefined_vars, $context);
 

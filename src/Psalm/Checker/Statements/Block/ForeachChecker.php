@@ -19,6 +19,7 @@ use Psalm\Issue\NullIterator;
 use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
+use Psalm\Scope\LoopScope;
 use Psalm\Type;
 
 class ForeachChecker
@@ -297,7 +298,9 @@ class ForeachChecker
             }
         }
 
-        LoopChecker::analyze($statements_checker, $stmt->stmts, [], [], $foreach_context, $context);
+        $loop_scope = new LoopScope($foreach_context, $context);
+
+        LoopChecker::analyze($statements_checker, $stmt->stmts, [], [], $loop_scope);
 
         $context->vars_possibly_in_scope = array_merge(
             $foreach_context->vars_possibly_in_scope,

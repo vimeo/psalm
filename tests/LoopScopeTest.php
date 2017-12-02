@@ -459,6 +459,250 @@ class LoopScopeTest extends TestCase
 
                     if ($a) {}',
             ],
+            'bleedVarIntoOuterContextWithEmptyLoop' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                    }',
+                'assignments' => [
+                    '$tag' => 'null|string',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithRedefinedAsNull' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                      } else {
+                        $tag = null;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithRedefinedAsNullAndBreak' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                        break;
+                      } elseif ($tag === "b") {
+                        $tag = null;
+                        break;
+                      } else {
+                        $tag = null;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithBreakInElse' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                      } else {
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'string|null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithBreakInIf' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        break;
+                      } else {
+                        $tag = null;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'string|null',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithBreakInElseAndIntSet' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = 5;
+                      } else {
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'string|null|int',
+                ],
+            ],
+            'bleedVarIntoOuterContextWithRedefineAndBreak' => [
+                '<?php
+                    $tag = null;
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $tag = null;
+                      } else {
+                        $tag = null;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$tag' => 'null',
+                ],
+            ],
+            'nullToNullableWithNullCheck' => [
+                '<?php
+                    $a = null;
+
+                    foreach ([1, 2, 3] as $i) {
+                      if ($a === null) {
+                        /** @var mixed */
+                        $a = "hello";
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'mixed',
+                ],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
+            'falseToBoolExplicitBreak' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      $a = true;
+                      break;
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolExplicitContinue' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      $a = true;
+                      continue;
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInBreak' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $a = true;
+                        break;
+                      } else {
+                        $a = true;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInContinue' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $a = true;
+                        continue;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInBreakAndContinue' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                      if ($tag === "a") {
+                        $a = true;
+                        break;
+                      }
+
+                      if ($tag === "b") {
+                        $a = true;
+                        continue;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInNestedForeach' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["d", "e", "f"] as $l) {
+                        foreach (["a", "b", "c"] as $tag) {
+                            if (!$a) {
+                                if (rand(0, 10)) {
+                                    $a = true;
+                                    break;
+                                } else {
+                                    $a = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'falseToBoolInContinueAndBreak' => [
+                '<?php
+                    $a = false;
+
+                    for ($i = 0; $i < 4; $i++) {
+                      $j = rand(0, 10);
+
+                      if ($j === 2) {
+                        $a = true;
+                        continue;
+                      }
+
+                      if ($j === 3) {
+                        $a = true;
+                        break;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'variableDefinedInForeachAndIf' => [
+                '<?php
+                    foreach ([1,2,3,4] as $i) {
+                        if ($i === 1) {
+                            $a = true;
+                        } else {
+                            $a = false;
+                        }
+
+                        echo $a;
+                    }',
+            ],
         ];
     }
 
@@ -513,13 +757,25 @@ class LoopScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:9 - Possibly undefined variable $a, ' .
                     'first seen on line 4',
             ],
+            'possibleUndefinedVariableInForeachAndIf' => [
+                '<?php
+                    foreach ([1,2,3,4] as $i) {
+                        if ($i === 1) {
+                            $a = true;
+                        }
+
+                        echo $a;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src/somefile.php:7 - Possibly undefined variable $a, ' .
+                    'first seen on line 4',
+            ],
             'implicitFourthLoopWithBadReturnType' => [
                 '<?php
                     function test(): int {
                       $x = 0;
                       $y = 1;
                       $z = 2;
-                      for ($i = 0; $i < 3; $i++) {
+                      foreach ([0, 1, 2] as $i) {
                         $x = $y;
                         $y = $z;
                         $z = "hello";
@@ -551,6 +807,35 @@ class LoopScopeTest extends TestCase
                         $a->barBar();
                     }',
                 'error_message' => 'PossiblyNullReference',
+            ],
+            'redundantConditionInForeachIf' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                        if (!$a) {
+                            $a = true;
+                            break;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'redundantConditionInForeachWithIfElse' => [
+                '<?php
+                    $a = false;
+
+                    foreach (["a", "b", "c"] as $tag) {
+                        if (!$a) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                                break;
+                            } else {
+                                $a = true;
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

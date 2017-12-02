@@ -1174,7 +1174,7 @@ class CallChecker
                 }
 
                 foreach ($local_vars_possibly_in_scope as $var => $type) {
-                    $context->vars_possibly_in_scope[$var] = $type;
+                    $context->vars_possibly_in_scope[$var] = true;
                 }
             }
         }

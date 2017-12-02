@@ -1,5 +1,8 @@
 <?php
-namespace Psalm;
+namespace Psalm\Scope;
+
+use Psalm\Clause;
+use Psalm\Type;
 
 class IfScope
 {
@@ -29,16 +32,6 @@ class IfScope
     public $possibly_redefined_vars = [];
 
     /**
-     * @var array<string, Type\Union>|null
-     */
-    public $redefined_loop_vars = null;
-
-    /**
-     * @var array<string, Type\Union>
-     */
-    public $possibly_redefined_loop_vars = [];
-
-    /**
      * @var array<string, bool>
      */
     public $updated_vars = [];
@@ -52,11 +45,6 @@ class IfScope
      * @var array<string, string>|null
      */
     public $negatable_if_types = null;
-
-    /**
-     * @var Context|null
-     */
-    public $loop_context;
 
     /**
      * @var bool
@@ -79,4 +67,9 @@ class IfScope
      * @var array<string, Type\Union>
      */
     public $possible_param_types = null;
+
+    /**
+     * @var string[]
+     */
+    public $final_actions = [];
 }

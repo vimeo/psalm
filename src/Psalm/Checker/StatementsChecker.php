@@ -26,6 +26,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
+use Psalm\Scope\LoopScope;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
@@ -70,7 +71,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
      * @param  Context                                          $context
-     * @param  Context|null                                     $loop_context
      * @param  Context|null                                     $global_context
      *
      * @return null|false
@@ -78,7 +78,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public function analyze(
         array $stmts,
         Context $context,
-        Context $loop_context = null,
+        LoopScope $loop_scope = null,
         Context $global_context = null
     ) {
         $has_returned = false;
@@ -92,6 +92,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         $project_checker = $this->getFileChecker()->project_checker;
+
+        $original_context = null;
+
+        if ($loop_scope) {
+            $original_context = clone $context;
+        }
 
         $plugins = Config::getInstance()->getPlugins();
 
@@ -114,8 +120,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             /*
-            if (isset($context->vars_in_scope['$failed_reconciliation']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$failed_reconciliation']);
+            if (isset($context->vars_in_scope['$tag']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
+                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$tag']);
             }
             */
 
@@ -147,9 +153,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                IfChecker::analyze($this, $stmt, $context, $loop_context);
+                IfChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                TryChecker::analyze($this, $stmt, $context, $loop_context);
+                TryChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 ForChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
@@ -181,11 +187,34 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $has_returned = true;
                 $this->analyzeThrow($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                SwitchChecker::analyze($this, $stmt, $context, $loop_context);
+                SwitchChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
-                // do nothing
+                if ($loop_scope && $original_context) {
+                    $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+
+                    $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
+
+                    if ($loop_scope->possibly_redefined_loop_parent_vars === null) {
+                        $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
+                    } else {
+                        foreach ($redefined_vars as $var => $type) {
+                            if ($type->isMixed()) {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
+                            } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                                    $type,
+                                    $loop_scope->possibly_redefined_loop_parent_vars[$var]
+                                );
+                            } else {
+                                $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
+                            }
+                        }
+                    }
+                }
+
+                $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
-                if ($loop_context === null) {
+                if ($loop_scope === null) {
                     if (IssueBuffer::accepts(
                         new ContinueOutsideLoop(
                             'Continue call outside loop context',
@@ -194,6 +223,42 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $this->source->getSuppressedIssues()
                     )) {
                         return false;
+                    }
+                } elseif ($original_context) {
+                    $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;
+
+                    $redefined_vars = $context->getRedefinedVars($original_context->vars_in_scope);
+
+                    if ($loop_scope->redefined_loop_vars === null) {
+                        $loop_scope->redefined_loop_vars = $redefined_vars;
+                    } else {
+                        foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {
+                            if (!isset($redefined_vars[$redefined_var])) {
+                                unset($loop_scope->redefined_loop_vars[$redefined_var]);
+                            } else {
+                                $loop_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
+                                    $redefined_vars[$redefined_var],
+                                    $type
+                                );
+                            }
+                        }
+                    }
+
+                    if ($loop_scope->possibly_redefined_loop_vars === null) {
+                        $loop_scope->possibly_redefined_loop_vars = $redefined_vars;
+                    } else {
+                        foreach ($redefined_vars as $var => $type) {
+                            if ($type->isMixed()) {
+                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                            } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                                $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
+                                    $type,
+                                    $loop_scope->possibly_redefined_loop_vars[$var]
+                                );
+                            } else {
+                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                            }
+                        }
                     }
                 }
 
@@ -374,6 +439,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 )) {
                     return false;
                 }
+            }
+
+            if ($loop_scope
+                && $loop_scope->final_actions
+                && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true)
+            ) {
+                //$has_returned = true;
             }
 
             if ($plugins) {
@@ -605,7 +677,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        LoopChecker::analyze($this, $stmt->stmts, [], [], $do_context, $context);
+        LoopChecker::analyze($this, $stmt->stmts, [], [], new LoopScope($do_context, $context));
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {

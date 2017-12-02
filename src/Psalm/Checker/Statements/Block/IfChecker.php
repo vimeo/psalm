@@ -10,9 +10,10 @@ use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IfScope;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
+use Psalm\Scope\IfScope;
+use Psalm\Scope\LoopScope;
 use Psalm\Type;
 
 class IfChecker
@@ -41,7 +42,6 @@ class IfChecker
      * @param  StatementsChecker       $statements_checker
      * @param  PhpParser\Node\Stmt\If_ $stmt
      * @param  Context                 $context
-     * @param  Context|null            $loop_context
      *
      * @return null|false
      */
@@ -49,7 +49,7 @@ class IfChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\If_ $stmt,
         Context $context,
-        Context $loop_context = null
+        LoopScope $loop_scope = null
     ) {
         // get the first expression in the if, which should be evaluated on its own
         // this allows us to update the context of $matches in
@@ -90,8 +90,6 @@ class IfChecker
         $context->inside_conditional = false;
 
         $if_scope = new IfScope();
-
-        $if_scope->loop_context = $loop_context;
         $if_scope->has_elseifs = count($stmt->elseifs) > 0;
 
         $if_context = clone $context;
@@ -142,8 +140,6 @@ class IfChecker
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
 
         $if_context->inside_conditional = false;
-
-        $reconcilable_if_types = null;
 
         $if_clauses = AlgebraChecker::getFormula(
             $stmt->cond,
@@ -232,7 +228,7 @@ class IfChecker
 
         // we calculate the vars redefined in a hypothetical else statement to determine
         // which vars of the if we can safely change
-        $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context);
+        $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context->vars_in_scope);
 
         // check the if
         self::analyzeIfBlock(
@@ -242,7 +238,8 @@ class IfChecker
             $if_context,
             $old_if_context,
             $context,
-            $pre_assignment_else_redefined_vars
+            $pre_assignment_else_redefined_vars,
+            $loop_scope
         );
 
         // check the elseifs
@@ -254,7 +251,8 @@ class IfChecker
                 $elseif,
                 $if_scope,
                 $elseif_context,
-                $context
+                $context,
+                $loop_scope
             );
         }
 
@@ -267,7 +265,19 @@ class IfChecker
                 $stmt->else,
                 $if_scope,
                 $else_context,
-                $context
+                $context,
+                $loop_scope
+            );
+        } else {
+            $if_scope->final_actions[] = ScopeChecker::ACTION_NONE;
+        }
+
+        if ($loop_scope) {
+            $loop_scope->final_actions = array_unique(
+                array_merge(
+                    $loop_scope->final_actions,
+                    $if_scope->final_actions
+                )
             );
         }
 
@@ -296,21 +306,6 @@ class IfChecker
                 }
             }
 
-            if ($if_scope->redefined_loop_vars && $loop_context) {
-                foreach ($if_scope->redefined_loop_vars as $var => $type) {
-                    if (!isset($loop_context->vars_in_scope[$var])) {
-                        $loop_context->vars_in_scope[$var] = $type;
-                    } else {
-                        $loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
-                            $loop_context->vars_in_scope[$var],
-                            $type
-                        );
-                    }
-
-                    $updated_loop_vars[$var] = true;
-                }
-            }
-
             if ($if_scope->possible_param_types) {
                 foreach ($if_scope->possible_param_types as $var => $type) {
                     $context->possible_param_types[$var] = $type;
@@ -319,6 +314,10 @@ class IfChecker
         } else {
             if ($if_scope->forced_new_vars) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $if_scope->forced_new_vars);
+            }
+
+            if ($loop_scope && !in_array(ScopeChecker::ACTION_NONE, $if_scope->final_actions, true)) {
+                $loop_scope->redefined_loop_vars = null;
             }
         }
 
@@ -329,17 +328,6 @@ class IfChecker
                     !isset($if_scope->updated_vars[$var])
                 ) {
                     $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $type);
-                }
-            }
-        }
-
-        if ($if_scope->possibly_redefined_loop_vars && $loop_context) {
-            foreach ($if_scope->possibly_redefined_loop_vars as $var => $type) {
-                if ($loop_context->hasVariable($var) && !isset($updated_loop_vars[$var])) {
-                    $loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
-                        $loop_context->vars_in_scope[$var],
-                        $type
-                    );
                 }
             }
         }
@@ -365,7 +353,8 @@ class IfChecker
         Context $if_context,
         Context $old_if_context,
         Context $outer_context,
-        array $pre_assignment_else_redefined_vars
+        array $pre_assignment_else_redefined_vars,
+        LoopScope $loop_scope = null
     ) {
         $final_actions = ScopeChecker::getFinalControlActions($stmt->stmts);
 
@@ -374,12 +363,22 @@ class IfChecker
         $has_leaving_statements = $has_ending_statements
             || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
 
+        $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
+        $has_continue_statement = $final_actions === [ScopeChecker::ACTION_CONTINUE];
+
+        $if_scope->final_actions = $final_actions;
+
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $assigned_var_ids = $if_context->assigned_var_ids;
         $if_context->assigned_var_ids = [];
 
-        if ($statements_checker->analyze($stmt->stmts, $if_context, $if_scope->loop_context) === false) {
+        if ($statements_checker->analyze(
+            $stmt->stmts,
+            $if_context,
+            $loop_scope
+        ) === false
+        ) {
             return false;
         }
 
@@ -433,7 +432,7 @@ class IfChecker
                 }
             }
 
-            $if_scope->redefined_vars = $if_context->getRedefinedVars($outer_context);
+            $if_scope->redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
 
             $changed_var_ids = array_keys($new_assigned_var_ids);
@@ -454,10 +453,12 @@ class IfChecker
                 $if_scope->possible_param_types = $if_context->possible_param_types;
             }
         } else {
-            $if_scope->reasonable_clauses = [];
+            if (!$has_break_statement) {
+                $if_scope->reasonable_clauses = [];
+            }
         }
 
-        if ($has_leaving_statements && !$stmt->else && !$stmt->elseifs) {
+        if ($has_leaving_statements && !$has_break_statement && !$stmt->else && !$stmt->elseifs) {
             if ($if_scope->negated_types) {
                 $changed_var_ids = [];
 
@@ -538,20 +539,16 @@ class IfChecker
         if (!$has_ending_statements) {
             $vars = array_diff_key($if_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
 
-            if ($has_leaving_statements && $if_scope->loop_context) {
-                $if_scope->redefined_loop_vars = $if_context->getRedefinedVars($if_scope->loop_context);
-                $if_scope->possibly_redefined_loop_vars = $if_scope->redefined_loop_vars;
-            }
-
-            // if we're leaving this block, add vars to outer for loop scope
-            if ($has_leaving_statements) {
-                if ($if_scope->loop_context) {
-                    $if_scope->loop_context->vars_possibly_in_scope = array_merge(
-                        $if_scope->loop_context->vars_possibly_in_scope,
-                        $vars
-                    );
+            if ($loop_scope) {
+                if (!$has_continue_statement && !$has_break_statement) {
+                    $if_scope->new_vars_possibly_in_scope = $vars;
                 }
-            } else {
+
+                $loop_scope->vars_possibly_in_scope = array_merge(
+                    $vars,
+                    $loop_scope->vars_possibly_in_scope
+                );
+            } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = $vars;
             }
         }
@@ -571,7 +568,8 @@ class IfChecker
         PhpParser\Node\Stmt\ElseIf_ $elseif,
         IfScope $if_scope,
         Context $elseif_context,
-        Context $outer_context
+        Context $outer_context,
+        LoopScope $loop_scope = null
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -703,7 +701,12 @@ class IfChecker
 
         $old_elseif_context = clone $elseif_context;
 
-        if ($statements_checker->analyze($elseif->stmts, $elseif_context, $if_scope->loop_context) === false) {
+        if ($statements_checker->analyze(
+                $elseif->stmts,
+                $elseif_context,
+                $loop_scope
+            ) === false
+        ) {
             return false;
         }
 
@@ -732,15 +735,20 @@ class IfChecker
             }
         }
 
-        if (count($elseif->stmts)) {
-            $final_actions = ScopeChecker::getFinalControlActions($elseif->stmts);
-            // has a return/throw at end
-            $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
-            $has_leaving_statements = $has_ending_statements
-                || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
+        $final_actions = ScopeChecker::getFinalControlActions($elseif->stmts);
+        // has a return/throw at end
+        $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
+        $has_leaving_statements = $has_ending_statements
+            || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
 
+        $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
+        $has_continue_statement = $final_actions === [ScopeChecker::ACTION_CONTINUE];
+
+        $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
+
+        if (count($elseif->stmts)) {
             // update the parent context as necessary
-            $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context);
+            $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context->vars_in_scope);
 
             if (!$has_leaving_statements) {
                 if ($if_scope->new_vars === null) {
@@ -860,40 +868,17 @@ class IfChecker
             if (!$has_ending_statements) {
                 $vars = array_diff_key($elseif_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
 
-                // if we're leaving this block, add vars to outer for loop scope
-                if ($has_leaving_statements && $if_scope->loop_context) {
-                    if ($if_scope->redefined_loop_vars === null) {
-                        $if_scope->redefined_loop_vars = $elseif_redefined_vars;
-                        $if_scope->possibly_redefined_loop_vars = $if_scope->redefined_loop_vars;
-                    } else {
-                        foreach ($if_scope->redefined_loop_vars as $redefined_var => $type) {
-                            if (!isset($elseif_redefined_vars[$redefined_var])) {
-                                unset($if_scope->redefined_loop_vars[$redefined_var]);
-                            } else {
-                                $if_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
-                                    $elseif_redefined_vars[$redefined_var],
-                                    $type
-                                );
-                            }
-                        }
-
-                        foreach ($elseif_redefined_vars as $var => $type) {
-                            if ($type->isMixed()) {
-                                $if_scope->possibly_redefined_loop_vars[$var] = $type;
-                            } elseif (isset($if_scope->possibly_redefined_loop_vars[$var])) {
-                                $if_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
-                                    $type,
-                                    $if_scope->possibly_redefined_loop_vars[$var]
-                                );
-                            } else {
-                                $if_scope->possibly_redefined_loop_vars[$var] = $type;
-                            }
-                        }
+                if ($has_leaving_statements && $loop_scope) {
+                    if (!$has_continue_statement && !$has_break_statement) {
+                        $if_scope->new_vars_possibly_in_scope = array_merge(
+                            $vars,
+                            $if_scope->new_vars_possibly_in_scope
+                        );
                     }
 
-                    $if_scope->loop_context->vars_possibly_in_scope = array_merge(
+                    $loop_scope->vars_possibly_in_scope = array_merge(
                         $vars,
-                        $if_scope->loop_context->vars_possibly_in_scope
+                        $loop_scope->vars_possibly_in_scope
                     );
                 } elseif (!$has_leaving_statements) {
                     $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
@@ -928,7 +913,8 @@ class IfChecker
         PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
-        Context $outer_context
+        Context $outer_context,
+        LoopScope $loop_scope = null
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -963,7 +949,12 @@ class IfChecker
 
         $old_else_context = clone $else_context;
 
-        if ($statements_checker->analyze($else->stmts, $else_context, $if_scope->loop_context) === false) {
+        if ($statements_checker->analyze(
+                $else->stmts,
+                $else_context,
+                $loop_scope
+            ) === false
+        ) {
             return false;
         }
 
@@ -1001,14 +992,19 @@ class IfChecker
             );
         }
 
-        if (count($else->stmts)) {
-            $final_actions = ScopeChecker::getFinalControlActions($else->stmts);
-            // has a return/throw at end
-            $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
-            $has_leaving_statements = $has_ending_statements
-                || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
+        $final_actions = ScopeChecker::getFinalControlActions($else->stmts);
+        // has a return/throw at end
+        $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
+        $has_leaving_statements = $has_ending_statements
+            || (count($final_actions) && !in_array(ScopeChecker::ACTION_NONE, $final_actions, true));
 
-            $else_redefined_vars = $else_context->getRedefinedVars($original_context);
+        $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
+        $has_continue_statement = $final_actions === [ScopeChecker::ACTION_CONTINUE];
+
+        $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
+
+        if (count($else->stmts)) {
+            $else_redefined_vars = $else_context->getRedefinedVars($original_context->vars_in_scope);
 
             // if it doesn't end in a return
             if (!$has_leaving_statements) {
@@ -1078,39 +1074,17 @@ class IfChecker
             if (!$has_ending_statements) {
                 $vars = array_diff_key($else_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
 
-                if ($has_leaving_statements && $if_scope->loop_context) {
-                    if ($if_scope->redefined_loop_vars === null) {
-                        $if_scope->redefined_loop_vars = $else_redefined_vars;
-                        $if_scope->possibly_redefined_loop_vars = $if_scope->redefined_loop_vars;
-                    } else {
-                        foreach ($if_scope->redefined_loop_vars as $redefined_var => $type) {
-                            if (!isset($else_redefined_vars[$redefined_var])) {
-                                unset($if_scope->redefined_loop_vars[$redefined_var]);
-                            } else {
-                                $if_scope->redefined_loop_vars[$redefined_var] = Type::combineUnionTypes(
-                                    $else_redefined_vars[$redefined_var],
-                                    $type
-                                );
-                            }
-                        }
-
-                        foreach ($else_redefined_vars as $var => $type) {
-                            if ($type->isMixed()) {
-                                $if_scope->possibly_redefined_loop_vars[$var] = $type;
-                            } elseif (isset($if_scope->possibly_redefined_loop_vars[$var])) {
-                                $if_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
-                                    $type,
-                                    $if_scope->possibly_redefined_loop_vars[$var]
-                                );
-                            } else {
-                                $if_scope->possibly_redefined_loop_vars[$var] = $type;
-                            }
-                        }
+                if ($has_leaving_statements && $loop_scope) {
+                    if (!$has_continue_statement && !$has_break_statement) {
+                        $if_scope->new_vars_possibly_in_scope = array_merge(
+                            $vars,
+                            $if_scope->new_vars_possibly_in_scope
+                        );
                     }
 
-                    $if_scope->loop_context->vars_possibly_in_scope = array_merge(
+                    $loop_scope->vars_possibly_in_scope = array_merge(
                         $vars,
-                        $if_scope->loop_context->vars_possibly_in_scope
+                        $loop_scope->vars_possibly_in_scope
                     );
                 } elseif (!$has_leaving_statements) {
                     $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
