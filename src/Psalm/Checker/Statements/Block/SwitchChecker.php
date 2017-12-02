@@ -194,9 +194,14 @@ class SwitchChecker
                     if ($redefined_vars === null) {
                         $redefined_vars = $case_redefined_vars;
                     } else {
-                        foreach ($redefined_vars as $redefined_var => $type) {
-                            if (!isset($case_redefined_vars[$redefined_var])) {
-                                unset($redefined_vars[$redefined_var]);
+                        foreach ($redefined_vars as $var_id => $type) {
+                            if (!isset($case_redefined_vars[$var_id])) {
+                                unset($redefined_vars[$var_id]);
+                            } else {
+                                $redefined_vars[$var_id] = Type::combineUnionTypes(
+                                    $type,
+                                    $case_redefined_vars[$var_id]
+                                );
                             }
                         }
                     }
