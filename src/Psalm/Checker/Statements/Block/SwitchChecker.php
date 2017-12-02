@@ -120,10 +120,9 @@ class SwitchChecker
                     }
 
                     $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
-                    $case_context->vars_possibly_in_scope = array_merge(
-                        $reconcilable_if_types,
-                        $case_context->vars_possibly_in_scope
-                    );
+                    foreach ($reconcilable_if_types as $var_id => $type) {
+                        $case_context->vars_possibly_in_scope[$var_id] = true;
+                    }
                 }
             }
 

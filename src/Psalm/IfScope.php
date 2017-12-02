@@ -9,7 +9,7 @@ class IfScope
     public $new_vars = null;
 
     /**
-     * @var array<string, boolean|string>
+     * @var array<string, bool>
      */
     public $new_vars_possibly_in_scope = [];
 

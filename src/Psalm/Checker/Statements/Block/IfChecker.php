@@ -192,10 +192,9 @@ class IfChecker
                 );
 
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
-            $if_context->vars_possibly_in_scope = array_merge(
-                $reconcilable_if_types,
-                $if_context->vars_possibly_in_scope
-            );
+            foreach ($reconcilable_if_types as $var_id => $type) {
+                $if_context->vars_possibly_in_scope[$var_id] = true;
+            }
 
             if ($changed_var_ids) {
                 $if_context->removeReconciledClauses($changed_var_ids);

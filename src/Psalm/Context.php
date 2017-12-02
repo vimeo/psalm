@@ -14,7 +14,7 @@ class Context
     public $vars_in_scope = [];
 
     /**
-     * @var array<string, bool|string>
+     * @var array<string, bool>
      */
     public $vars_possibly_in_scope = [];
 
