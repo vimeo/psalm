@@ -124,6 +124,26 @@ class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['PossiblyUndefinedVariable'],
             ],
+            'noRedundantConditionAfterFromDocblockRemoval' => [
+                '<?php
+                    class A {
+                      public function foo() : void{}
+                      public function bar() : void{}
+                    }
+
+                    /** @return A */
+                    function makeA() {
+                      return new A;
+                    }
+
+                    $a = makeA();
+
+                    if ($a === null) {
+                      exit;
+                    }
+
+                    if ($a->foo() || $a->bar()) {}',
+            ],
         ];
     }
 
