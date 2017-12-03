@@ -812,10 +812,6 @@ class ExpressionChecker
                 $statements_checker
             );
 
-            $simplified_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
-
-            $left_type_assertions = AlgebraChecker::getTruthsFromFormula($simplified_clauses);
-
             $pre_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = [];
 
@@ -831,6 +827,10 @@ class ExpressionChecker
             $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
 
             $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
+
+            $simplified_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+
+            $left_type_assertions = AlgebraChecker::getTruthsFromFormula($simplified_clauses);
 
             $changed_var_ids = [];
 
