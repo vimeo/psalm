@@ -2014,6 +2014,8 @@ class CallChecker
                                         );
                                     }
                                 }
+
+                                $offset_value_type->setFromDocblock();
                             }
 
                             if ($generic_params === null) {

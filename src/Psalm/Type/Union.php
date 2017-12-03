@@ -360,7 +360,8 @@ class Union
                 $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
 
                 if ($input_type) {
-                    $generic_params[$key] = $input_type;
+                    $generic_params[$key] = clone $input_type;
+                    $generic_params[$key]->setFromDocblock();
                 }
             } else {
                 $atomic_type->replaceTemplateTypesWithStandins(
