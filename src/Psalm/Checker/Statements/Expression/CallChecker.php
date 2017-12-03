@@ -1121,6 +1121,8 @@ class CallChecker
             }
 
             $class_type->from_docblock = false;
+
+            $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
         }
     }
 
