@@ -102,13 +102,13 @@ class SwitchChecker
 
                 // if the if has an || in the conditional, we cannot easily reason about it
                 if ($reconcilable_if_types) {
-                    $changed_vars = [];
+                    $changed_var_ids = [];
 
                     $case_vars_in_scope_reconciled =
                         TypeChecker::reconcileKeyedTypes(
                             $reconcilable_if_types,
                             $case_context->vars_in_scope,
-                            $changed_vars,
+                            $changed_var_ids,
                             [],
                             $statements_checker,
                             new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
@@ -122,6 +122,10 @@ class SwitchChecker
                     $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
                     foreach ($reconcilable_if_types as $var_id => $type) {
                         $case_context->vars_possibly_in_scope[$var_id] = true;
+                    }
+
+                    if ($changed_var_ids) {
+                        $case_context->removeReconciledClauses($changed_var_ids);
                     }
                 }
             }

@@ -69,6 +69,32 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
             ],
+            'noRedundantConditionAfterDocblockTypeNullCheck' => [
+                '<?php
+                    class A {
+                        /** @var ?int */
+                        public $foo;
+                    }
+                    class B {}
+
+                    /**
+                     * @param  A|B $i
+                     */
+                    function foo($i) : void {
+                        if (empty($i)) {
+                            return;
+                        }
+
+                        switch (get_class($i)) {
+                            case "A":
+                                if ($i->foo) {}
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 
