@@ -3,6 +3,7 @@ namespace Psalm\Checker;
 
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
+use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -191,8 +192,8 @@ class TypeChecker
 
             if ($key && $code_location) {
                 if (IssueBuffer::accepts(
-                    new RedundantCondition(
-                        'Found a redundant condition when evaluating ' . $key,
+                    new PossiblyUndefinedVariable(
+                        'Found a possibly undefined variable when evaluating ' . $key,
                         $code_location
                     ),
                     $suppressed_issues

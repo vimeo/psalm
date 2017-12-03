@@ -114,6 +114,16 @@ class RedundantConditionTest extends TestCase
 
                     if ($maybe_a === null) {}',
             ],
+            'noRedundantConditionAfterPossiblyNullCheck' => [
+                '<?php
+                    if (rand(0, 1)) {
+                        $a = "hello";
+                    }
+
+                    if ($a) {}',
+                'assertions' => [],
+                'error_levels' => ['PossiblyUndefinedVariable'],
+            ],
         ];
     }
 
