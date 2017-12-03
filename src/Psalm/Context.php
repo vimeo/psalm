@@ -213,6 +213,11 @@ class Context
                     // also never allow ourselves to remove all types from a union
                     if ((string)$old_type !== (string)$new_type && ($new_type || count($context_type->types) > 1)) {
                         $context_type->substitute($old_type, $new_type);
+
+                        if ($new_type && $new_type->from_docblock) {
+                            $context_type->setFromDocblock();
+                        }
+
                         $updated_vars[$var] = true;
                     }
                 }
