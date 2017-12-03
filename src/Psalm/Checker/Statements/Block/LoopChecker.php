@@ -22,7 +22,6 @@ class LoopChecker
      * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
      * @param  PhpParser\Node\Expr[]                            $pre_conditions
      * @param  PhpParser\Node\Expr[]                            $post_conditions
-     * @param  array<int, string>                               $asserted_vars
      * @param  Context                                          $loop_scope->loop_context
      * @param  Context                                          $loop_scope->loop_parent_context
      *
@@ -46,7 +45,7 @@ class LoopChecker
 
         $assignment_depth = 0;
 
-        $asserted_vars = [];
+        $asserted_var_ids = [];
 
         $pre_condition_clauses = [];
 
@@ -62,7 +61,7 @@ class LoopChecker
                 );
             }
         } else {
-            $asserted_vars = Context::getNewOrUpdatedVarIds(
+            $asserted_var_ids = Context::getNewOrUpdatedVarIds(
                 $loop_scope->loop_parent_context,
                 $loop_scope->loop_context
             );
@@ -120,7 +119,7 @@ class LoopChecker
             IssueBuffer::startRecording();
 
             foreach ($pre_conditions as $pre_condition) {
-                $asserted_vars = array_merge(
+                $asserted_var_ids = array_merge(
                     self::applyPreConditionToLoopContext(
                         $statements_checker,
                         $pre_condition,
@@ -128,7 +127,7 @@ class LoopChecker
                         $loop_scope->loop_context,
                         $loop_scope->loop_parent_context
                     ),
-                    $asserted_vars
+                    $asserted_var_ids
                 );
             }
 
@@ -138,7 +137,7 @@ class LoopChecker
             $inner_context = clone $loop_scope->loop_context;
             $inner_context->parent_context = $loop_scope->loop_context;
 
-            $asserted_vars = array_unique($asserted_vars);
+            $asserted_var_ids = array_unique($asserted_var_ids);
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
@@ -161,7 +160,7 @@ class LoopChecker
                 // but union the types with what's in the loop scope
 
                 foreach ($inner_context->vars_in_scope as $var_id => $type) {
-                    if (in_array($var_id, $asserted_vars, true)) {
+                    if (in_array($var_id, $asserted_var_ids, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if (!isset($pre_loop_context->vars_in_scope[$var_id])
                             || (string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]
@@ -202,7 +201,7 @@ class LoopChecker
                     }
                 }
 
-                foreach ($asserted_vars as $var_id) {
+                foreach ($asserted_var_ids as $var_id) {
                     if (!isset($inner_context->vars_in_scope[$var_id])) {
                         $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                     }
@@ -410,7 +409,7 @@ class LoopChecker
         $new_referenced_var_ids = $loop_context->referenced_var_ids;
         $loop_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
 
-        $asserted_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
+        $asserted_var_ids = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
         $loop_context->clauses = AlgebraChecker::simplifyCNF(
             array_merge($outer_context->clauses, $pre_condition_clauses)
@@ -440,7 +439,16 @@ class LoopChecker
             $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
         }
 
-        return $asserted_vars;
+        foreach ($asserted_var_ids as $var_id) {
+            $loop_context->clauses = Context::filterClauses(
+                $var_id,
+                $loop_context->clauses,
+                null,
+                $statements_checker
+            );
+        }
+
+        return $asserted_var_ids;
     }
 
     /**
