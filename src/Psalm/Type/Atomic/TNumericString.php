@@ -10,4 +10,9 @@ class TNumericString extends TString
     {
         return 'numeric-string';
     }
+
+    public function getId()
+    {
+        return $this->getKey();
+    }
 }

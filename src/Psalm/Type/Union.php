@@ -79,6 +79,19 @@ class Union
     }
 
     /**
+     * @return string
+     */
+    public function getId()
+    {
+        $s = '';
+        foreach ($this->types as $type) {
+            $s .= $type->getId() . '|';
+        }
+
+        return substr($s, 0, -1);
+    }
+
+    /**
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
@@ -399,6 +412,7 @@ class Union
 
         if ($is_mixed) {
             $this->types = $new_types;
+
             return;
         }
 

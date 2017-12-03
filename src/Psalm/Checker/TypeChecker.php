@@ -84,7 +84,7 @@ class TypeChecker
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = (string)$result_type;
+            $before_adjustment = $result_type ? $result_type->getId() : '';
 
             $failed_reconciliation = false;
             $from_docblock = $result_type && $result_type->from_docblock;
@@ -105,11 +105,6 @@ class TypeChecker
                         $failed_reconciliation
                     );
 
-                    // special case if result is just a simple array
-                    if ((string) $result_type_candidate === 'array') {
-                        $result_type_candidate = Type::getArray();
-                    }
-
                     if ($result_type_candidate === false) {
                         $failed_reconciliation = true;
                         $result_type_candidate = Type::getMixed();
@@ -127,7 +122,7 @@ class TypeChecker
                 continue;
             }
 
-            if ((string)$result_type !== $before_adjustment
+            if ($result_type->getId() !== $before_adjustment
                 || $result_type->from_docblock !== $from_docblock
             ) {
                 $changed_var_ids[] = $key;
@@ -160,7 +155,7 @@ class TypeChecker
      * @param   array               $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
      *
-     * @return  Type\Union|false
+     * @return  Type\Union
      */
     public static function reconcileTypes(
         $new_var_type,
@@ -190,7 +185,23 @@ class TypeChecker
                 return Type::parseString($new_var_type);
             }
 
-            return $new_var_type === '!falsy' ? Type::getMixed() : false;
+            if ($new_var_type === '!falsy') {
+                return Type::getMixed();
+            }
+
+            if ($key && $code_location) {
+                if (IssueBuffer::accepts(
+                    new RedundantCondition(
+                        'Found a redundant condition when evaluating ' . $key,
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+            }
+
+            return Type::getMixed();
         }
 
         if ($new_var_type === 'mixed' && $existing_var_type->isMixed()) {
@@ -331,7 +342,7 @@ class TypeChecker
                 if ($existing_var_type->hasType('array')) {
                     $did_remove_type = true;
 
-                    if ((string)$existing_var_type->types['array'] === 'array<empty, empty>') {
+                    if ($existing_var_type->types['array']->getId() === 'array<empty, empty>') {
                         $existing_var_type->removeType('array');
                     }
                 }
@@ -1322,7 +1333,7 @@ class TypeChecker
             $existing_var_types = $existing_types[$key];
             $new_var_types = $new_types[$key];
 
-            if ((string) $new_var_types === (string) $existing_var_types) {
+            if ($new_var_types->getId() === $existing_var_types->getId()) {
                 $result_types[$key] = $new_var_types;
             } else {
                 $result_types[$key] = Type::combineUnionTypes($new_var_types, $existing_var_types);
@@ -1584,8 +1595,8 @@ class TypeChecker
             }
 
             foreach ($union->types as $container_type_part) {
-                $string_container_part = (string)$container_type_part;
-                $string_input_part = (string)$type_part;
+                $string_container_part = $container_type_part->getId();
+                $string_input_part = $type_part->getId();
 
                 if ($type_part !== $container_type_part &&
                     !(

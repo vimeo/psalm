@@ -718,6 +718,17 @@ class LoopScopeTest extends TestCase
                       if ($a->bar) {}
                     }',
             ],
+            'noRedundantConditionAfterIsNumeric' => [
+                '<?php
+                    $ids = [];
+                    foreach (explode(",", "hello,5,20") as $i) {
+                      if (!is_numeric($i)) {
+                        continue;
+                      }
+
+                      $ids[] = $i;
+                    }',
+            ],
         ];
     }
 

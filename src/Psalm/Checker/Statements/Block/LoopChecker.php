@@ -163,15 +163,15 @@ class LoopChecker
                     if (in_array($var_id, $asserted_var_ids, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if (!isset($pre_loop_context->vars_in_scope[$var_id])
-                            || (string)$type !== (string)$pre_loop_context->vars_in_scope[$var_id]
+                            || $type->getId() !== $pre_loop_context->vars_in_scope[$var_id]->getId()
                         ) {
                             $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
                             $has_changes = true;
                         }
                     } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
-                        $str_type = (string)$type;
+                        $str_type = $type->getId();
 
-                        if ($str_type !== (string)$pre_outer_context->vars_in_scope[$var_id]) {
+                        if ($str_type !== $pre_outer_context->vars_in_scope[$var_id]->getId()) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
@@ -184,7 +184,7 @@ class LoopChecker
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
 
-                        if ($str_type !== (string)$loop_scope->loop_context->vars_in_scope[$var_id]) {
+                        if ($str_type !== $loop_scope->loop_context->vars_in_scope[$var_id]->getId()) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
@@ -291,7 +291,7 @@ class LoopChecker
                     continue;
                 }
 
-                if ((string) $inner_context->vars_in_scope[$var_id] !== (string) $type) {
+                if ($inner_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
                     $loop_scope->loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $loop_scope->loop_parent_context->vars_in_scope[$var_id],
                         $inner_context->vars_in_scope[$var_id]

@@ -103,7 +103,7 @@ class TryChecker
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
                     if ($catch->var !== $catch_var &&
                         $context->hasVariable($catch_var) &&
-                        (string) $context->vars_in_scope[$catch_var] !== (string) $type
+                        $context->vars_in_scope[$catch_var]->getId() !== $type->getId()
                     ) {
                         $context->vars_in_scope[$catch_var] = Type::combineUnionTypes(
                             $context->vars_in_scope[$catch_var],

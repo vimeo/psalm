@@ -211,7 +211,9 @@ class Context
 
                     // if the type changed within the block of statements, process the replacement
                     // also never allow ourselves to remove all types from a union
-                    if ((string)$old_type !== (string)$new_type && ($new_type || count($context_type->types) > 1)) {
+                    if ((!$new_type || $old_type->getId() !== $new_type->getId())
+                        && ($new_type || count($context_type->types) > 1)
+                    ) {
                         $context_type->substitute($old_type, $new_type);
 
                         if ($new_type && $new_type->from_docblock) {
@@ -244,7 +246,7 @@ class Context
             if (!$this_var->failed_reconciliation
                 && !$this_var->isEmpty()
                 && !$context_type->isEmpty()
-                && (string)$this_var !== (string)$context_type
+                && $this_var->getId() !== $context_type->getId()
             ) {
                 $redefined_vars[$var] = $this_var;
             }
@@ -267,7 +269,7 @@ class Context
 
         $expr_type = $expr->inferredType;
 
-        if (($expr_type->isMixed() || (string)$expr_type === (string)$inferred_type)
+        if (($expr_type->isMixed() || $expr_type->getId() === $inferred_type->getId())
             && $expr instanceof PhpParser\Node\Expr\Variable
             && is_string($expr->name)
             && !isset($this->assigned_var_ids['$' . $expr->name])
@@ -298,7 +300,7 @@ class Context
 
         foreach ($new_context->vars_in_scope as $var_id => $context_type) {
             if (!isset($original_context->vars_in_scope[$var_id]) ||
-                (string)$original_context->vars_in_scope[$var_id] !== (string)$context_type
+                $original_context->vars_in_scope[$var_id]->getId() !== $context_type->getId()
             ) {
                 $redefined_var_ids[] = $var_id;
             }
@@ -358,7 +360,7 @@ class Context
         Union $new_type = null,
         StatementsChecker $statements_checker = null
     ) {
-        $new_type_string = (string)$new_type;
+        $new_type_string = $new_type ? $new_type->getId() : '';
 
         $clauses_to_keep = [];
 
@@ -402,7 +404,7 @@ class Context
                         $failed_reconciliation
                     );
 
-                    if ((string)$result_type !== $new_type_string) {
+                    if ($result_type->getId() !== $new_type_string) {
                         $type_changed = true;
                         break;
                     }

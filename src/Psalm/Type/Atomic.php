@@ -289,6 +289,14 @@ abstract class Atomic
     }
 
     /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->__toString();
+    }
+
+    /**
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format

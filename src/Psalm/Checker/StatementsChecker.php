@@ -689,7 +689,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     $context->vars_in_scope[$var] = $do_context->vars_in_scope[$var];
                 }
 
-                if ((string)$do_context->vars_in_scope[$var] !== (string)$type) {
+                if ($do_context->vars_in_scope[$var]->getId() !== $type->getId()) {
                     $context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
                 }
             }
