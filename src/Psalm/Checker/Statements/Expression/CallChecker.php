@@ -334,13 +334,12 @@ class CallChecker
 
                     try {
                         if ($function_storage && $function_storage->return_type) {
-                            if ($generic_params) {
-                                $return_type = FunctionChecker::replaceTemplateTypes(
-                                    $function_storage->return_type,
+                            $return_type = clone $function_storage->return_type;
+
+                            if ($generic_params && $function_storage->template_types) {
+                                $return_type->replaceTemplateTypesWithArgTypes(
                                     $generic_params
                                 );
-                            } else {
-                                $return_type = clone $function_storage->return_type;
                             }
 
                             $return_type_location = $function_storage->return_type_location;
@@ -979,13 +978,12 @@ class CallChecker
                     $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
 
                     if ($return_type_candidate) {
+                        $return_type_candidate = clone $return_type_candidate;
+
                         if ($class_template_params) {
-                            $return_type_candidate = FunctionChecker::replaceTemplateTypes(
-                                $return_type_candidate,
+                            $return_type_candidate->replaceTemplateTypesWithArgTypes(
                                 $class_template_params
                             );
-                        } else {
-                            $return_type_candidate = clone $return_type_candidate;
                         }
 
                         $return_type_candidate = ExpressionChecker::fleshOutType(
@@ -1437,13 +1435,12 @@ class CallChecker
                 $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
 
                 if ($return_type_candidate) {
+                    $return_type_candidate = clone $return_type_candidate;
+
                     if ($found_generic_params) {
-                        $return_type_candidate = FunctionChecker::replaceTemplateTypes(
-                            $return_type_candidate,
+                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
                             $found_generic_params
                         );
-                    } else {
-                        $return_type_candidate = clone $return_type_candidate;
                     }
 
                     $return_type_candidate = ExpressionChecker::fleshOutType(
@@ -1956,7 +1953,7 @@ class CallChecker
 
                             $by_ref_type = clone $by_ref_type;
 
-                            $by_ref_type->replaceTemplateTypes($template_types, $generic_params);
+                            $by_ref_type->replaceTemplateTypesWithStandins($template_types, $generic_params);
                         }
                     }
 
@@ -2029,7 +2026,7 @@ class CallChecker
                                 $generic_params = [];
                             }
 
-                            $param_type->replaceTemplateTypes(
+                            $param_type->replaceTemplateTypesWithStandins(
                                 $template_types,
                                 $generic_params,
                                 $arg->value->inferredType

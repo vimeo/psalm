@@ -315,7 +315,20 @@ abstract class Atomic
      *
      * @return void
      */
-    public function replaceTemplateTypes(array $template_types, array &$generic_params, Type\Atomic $input_type = null)
+    public function replaceTemplateTypesWithStandins(
+        array $template_types,
+        array &$generic_params,
+        Type\Atomic $input_type = null
+    ) {
+        // do nothing
+    }
+
+    /**
+     * @param  array<string, string|Type\Union>     $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types)
     {
         // do nothing
     }

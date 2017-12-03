@@ -94,8 +94,11 @@ trait GenericTrait
      *
      * @return void
      */
-    public function replaceTemplateTypes(array $template_types, array &$generic_params, Atomic $input_type = null)
-    {
+    public function replaceTemplateTypesWithStandins(
+        array $template_types,
+        array &$generic_params,
+        Atomic $input_type = null
+    ) {
         foreach ($this->type_params as $offset => $type_param) {
             $input_type_param = null;
 
@@ -113,11 +116,23 @@ trait GenericTrait
                 }
             }
 
-            $type_param->replaceTemplateTypes(
+            $type_param->replaceTemplateTypesWithStandins(
                 $template_types,
                 $generic_params,
                 $input_type_param
             );
+        }
+    }
+
+    /**
+     * @param  array<string, string|Type\Union>     $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    {
+        foreach ($this->type_params as $offset => $type_param) {
+            $type_param->replaceTemplateTypesWithArgTypes($template_types);
         }
     }
 }

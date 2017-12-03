@@ -234,30 +234,6 @@ class FunctionChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  Type\Union               $return_type
-     * @param  array<string, string>    $template_types
-     *
-     * @return Type\Union
-     */
-    public static function replaceTemplateTypes(Type\Union $return_type, array $template_types)
-    {
-        $ignore_nullable_issues = $return_type->ignore_nullable_issues;
-        $type_tokens = Type::tokenize((string)$return_type);
-
-        foreach ($type_tokens as &$type_token) {
-            if (isset($template_types[$type_token])) {
-                $type_token = $template_types[$type_token];
-            }
-        }
-
-        $result_type = Type::parseString(implode('', $type_tokens));
-
-        $result_type->ignore_nullable_issues = $ignore_nullable_issues;
-
-        return $result_type;
-    }
-
-    /**
      * @param  string $function_id
      *
      * @return array|null

@@ -396,7 +396,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 if ($storage->template_types) {
                     $generic_types = [];
-                    $property_type->replaceTemplateTypes($storage->template_types, $generic_types);
+                    $property_type->replaceTemplateTypesWithStandins($storage->template_types, $generic_types);
                 }
             } else {
                 $property_type = Type::getMixed();
