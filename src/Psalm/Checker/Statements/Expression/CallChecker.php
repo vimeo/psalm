@@ -1027,12 +1027,12 @@ class CallChecker
             }
 
             if ($invalid_method_call_types) {
-                $class_type = $invalid_method_call_types[0];
+                $invalid_class_type = $invalid_method_call_types[0];
 
                 if ($has_valid_method_call_type) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidMethodCall(
-                            'Cannot call method on possible ' . $class_type . ' variable ' . $var_id,
+                            'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $var_id,
                             $code_location
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1042,7 +1042,7 @@ class CallChecker
                 } else {
                     if (IssueBuffer::accepts(
                         new InvalidMethodCall(
-                            'Cannot call method on ' . $class_type . ' variable ' . $var_id,
+                            'Cannot call method on ' . $invalid_class_type . ' variable ' . $var_id,
                             $code_location
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1094,6 +1094,33 @@ class CallChecker
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
             $context->removeAllObjectVars();
+        }
+
+        // if we called a method on this nullable variable, remove the nullable status here
+        // because any further calls must have worked
+        if ($var_id
+            && $class_type
+            && $has_valid_method_call_type
+            && !$invalid_method_call_types
+            && $existent_method_ids
+            && !$non_existent_method_ids
+            && ($class_type->from_docblock || $class_type->isNullable())
+        ) {
+            $keys_to_remove = [];
+
+            foreach ($class_type->types as $key => $type) {
+                if (!$type instanceof TNamedObject) {
+                    $keys_to_remove[] = $key;
+                } else {
+                    $type->from_docblock = false;
+                }
+            }
+
+            foreach ($keys_to_remove as $key) {
+                unset($class_type->types[$key]);
+            }
+
+            $class_type->from_docblock = false;
         }
     }
 

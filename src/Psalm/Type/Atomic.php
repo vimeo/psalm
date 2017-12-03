@@ -45,7 +45,7 @@ abstract class Atomic
      *
      * @var bool
      */
-    protected $from_docblock = false;
+    public $from_docblock = false;
 
     /**
      * @param  string $value
