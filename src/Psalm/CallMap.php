@@ -9126,7 +9126,7 @@ return [
 'stream_set_timeout' => ['bool', 'stream'=>'', 'seconds'=>'int', 'microseconds='=>'int'],
 'stream_set_write_buffer' => ['int', 'fp'=>'', 'buffer'=>'int'],
 'stream_socket_accept' => ['resource', 'serverstream'=>'', 'timeout='=>'float', '&w_peername='=>'string'],
-'stream_socket_client' => ['resource', 'remoteaddress'=>'string', '&w_errcode='=>'int', '&w_errstring='=>'string', 'timeout='=>'float', 'flags='=>'int', 'context='=>''],
+'stream_socket_client' => ['resource|false', 'remoteaddress'=>'string', '&w_errcode='=>'int', '&w_errstring='=>'string', 'timeout='=>'float', 'flags='=>'int', 'context='=>''],
 'stream_socket_enable_crypto' => ['int', 'stream'=>'resource', 'enable'=>'bool', 'cryptokind='=>'int', 'sessionstream='=>''],
 'stream_socket_get_name' => ['string', 'stream'=>'resource', 'want_peer'=>'bool'],
 'stream_socket_pair' => ['resource[]', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int'],

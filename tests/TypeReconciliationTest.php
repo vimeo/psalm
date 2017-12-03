@@ -566,7 +566,7 @@ class TypeReconciliationTest extends TestCase
                     if ($a !== null) { }
                     $b = $a;',
                 'assertions' => [
-                    '$b' => 'int|null',
+                    '$b' => 'null|int',
                 ],
             ],
             'ternaryByRefVar' => [
@@ -707,6 +707,19 @@ class TypeReconciliationTest extends TestCase
 
                       return $a;
                     }',
+            ],
+            'nullableIntReplacement' => [
+                '<?php
+                    $a = rand(0, 1) ? 5 : null;
+
+                    $b = (bool)rand(0, 1);
+
+                    if ($b || $a !== null) {
+                        $a = 3;
+                    }',
+                'assertions' => [
+                    '$a' => 'int|null',
+                ],
             ],
         ];
     }

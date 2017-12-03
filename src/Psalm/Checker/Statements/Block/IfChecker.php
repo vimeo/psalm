@@ -527,6 +527,18 @@ class IfChecker
                 $vars_to_update = array_unique(array_merge($extra_vars_to_update, $vars_to_update));
             }
 
+            //update $if_context vars to include the pre-assignment else vars
+            if (!$stmt->else && !$has_leaving_statements) {
+                foreach ($pre_assignment_else_redefined_vars as $var_id => $type) {
+                    if (isset($if_context->vars_in_scope[$var_id])) {
+                        $if_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $if_context->vars_in_scope[$var_id],
+                            $type
+                        );
+                    }
+                }
+            }
+
             $outer_context->update(
                 $old_if_context,
                 $if_context,
