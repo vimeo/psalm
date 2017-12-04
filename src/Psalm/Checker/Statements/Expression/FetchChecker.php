@@ -27,6 +27,7 @@ use Psalm\Issue\MixedPropertyFetch;
 use Psalm\Issue\MixedStringOffsetAssignment;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullArrayAccess;
+use Psalm\Issue\NullArrayOffset;
 use Psalm\Issue\NullPropertyFetch;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
@@ -35,6 +36,7 @@ use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyInvalidPropertyFetch;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAssignment;
+use Psalm\Issue\PossiblyNullArrayOffset;
 use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedConstant;
@@ -783,6 +785,33 @@ class FetchChecker
 
         $array_access_type = null;
 
+        if ($offset_type->isNull()) {
+            if (IssueBuffer::accepts(
+                new NullArrayOffset(
+                    'Cannot access value on variable ' . $array_var_id . ' using null offset',
+                    new CodeLocation($statements_checker->getSource(), $stmt)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+
+            return Type::getMixed();
+        }
+
+        if ($offset_type->isNullable() && !$offset_type->ignore_nullable_issues) {
+            if (IssueBuffer::accepts(
+                new PossiblyNullArrayOffset(
+                    'Cannot access value on variable ' . $array_var_id
+                        . ' using possibly null offset ' . $offset_type,
+                    new CodeLocation($statements_checker->getSource(), $stmt->var)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
         foreach ($array_type->types as &$type) {
             if ($type instanceof TNull) {
                 if ($in_assignment) {
@@ -852,7 +881,7 @@ class FetchChecker
                             $project_checker,
                             $offset_type,
                             $type->type_params[0],
-                            $offset_type->ignore_nullable_issues
+                            true
                         )) {
                             $invalid_offset_types[] = (string)$type->type_params[0];
                         } else {
@@ -971,7 +1000,7 @@ class FetchChecker
                         $project_checker,
                         $offset_type,
                         Type::getString(),
-                        $offset_type->ignore_nullable_issues
+                        true
                     )) {
                         if ($replacement_type) {
                             $generic_params = Type::combineUnionTypes(
@@ -1029,7 +1058,8 @@ class FetchChecker
                 if (!TypeChecker::isContainedBy(
                     $project_checker,
                     $offset_type,
-                    Type::getInt()
+                    Type::getInt(),
+                    true
                 )) {
                     $invalid_offset_types[] = 'int';
                 } else {
