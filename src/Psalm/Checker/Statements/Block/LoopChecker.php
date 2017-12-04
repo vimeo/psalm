@@ -164,8 +164,9 @@ class LoopChecker
                         // set the vars to whatever the while/foreach loop expects them to be
                         if (!isset($pre_loop_context->vars_in_scope[$var_id])
                             || $type->getId() !== $pre_loop_context->vars_in_scope[$var_id]->getId()
+                            || $type->from_docblock !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
                         ) {
-                            $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                            $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
                             $has_changes = true;
                         }
                     } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
@@ -203,7 +204,7 @@ class LoopChecker
 
                 foreach ($asserted_var_ids as $var_id) {
                     if (!isset($inner_context->vars_in_scope[$var_id])) {
-                        $inner_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                        $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
                     }
                 }
 
