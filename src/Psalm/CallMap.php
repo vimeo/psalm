@@ -1517,6 +1517,7 @@ return [
 'DOMNode::normalize' => [''],
 'DOMNode::removeChild' => ['DOMNode', 'oldnode'=>'DOMNode'],
 'DOMNode::replaceChild' => ['DOMNode', 'newnode'=>'DOMNode', 'oldnode'=>'DOMNode'],
+'DOMNodeList::item' => ['?DOMNode', 'index'=>'int'],
 'DOMProcessingInstruction::__construct' => ['void', 'name'=>'string', 'value'=>'string'],
 'DomProcessingInstruction::data' => ['string'],
 'DomProcessingInstruction::target' => ['string'],
