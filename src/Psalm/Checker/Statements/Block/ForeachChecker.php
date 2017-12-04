@@ -21,6 +21,7 @@ use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\VarDocblockComment;
 
 class ForeachChecker
 {
@@ -270,6 +271,9 @@ class ForeachChecker
         $doc_comment_text = (string)$stmt->getDocComment();
 
         if ($doc_comment_text) {
+            /** @var VarDocblockComment|null $var_comment */
+            $var_comment = null;
+
             try {
                 $var_comment = CommentChecker::getTypeFromComment(
                     $doc_comment_text,
