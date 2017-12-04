@@ -337,6 +337,11 @@ class LoopChecker
                 }
             }
         }
+
+        $loop_scope->loop_context->referenced_var_ids = array_merge(
+            $inner_context->referenced_var_ids,
+            $loop_scope->loop_context->referenced_var_ids
+        );
     }
 
     /**
