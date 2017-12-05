@@ -190,18 +190,6 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if ($key && $code_location) {
-                if (IssueBuffer::accepts(
-                    new PossiblyUndefinedVariable(
-                        'Found a possibly undefined variable when evaluating ' . $key,
-                        $code_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    // fall through
-                }
-            }
-
             return Type::getMixed();
         }
 
