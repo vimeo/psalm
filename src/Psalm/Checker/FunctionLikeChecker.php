@@ -821,7 +821,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name);
         }
 
-        return $this->getFilePath() . ':' . $this->function->getLine() . '::-closure';
+        return $this->getFilePath() . ':' . $this->function->getLine() . ':-:closure';
     }
 
     /**

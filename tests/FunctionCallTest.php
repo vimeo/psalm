@@ -229,6 +229,17 @@ class FunctionCallTest extends TestCase
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
+            'uasort' => [
+                '<?php
+                    uasort(
+                      $manifest,
+                      function ($a, $b) {
+                        return strcmp($a["parent"],$b["parent"]);
+                      }
+                    );',
+                'assertions' => [],
+                'error_levels' => ['MixedArrayAccess', 'MixedArgument', 'UntypedParam', 'MissingClosureReturnType'],
+            ],
             'byRefAfterCallable' => [
                 '<?php
                     /**

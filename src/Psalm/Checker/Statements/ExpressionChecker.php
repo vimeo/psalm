@@ -1820,19 +1820,17 @@ class ExpressionChecker
 
                 if (strtolower($return_type->value) === 'static' || !$method_id) {
                     $return_type->value = $calling_class;
+                } elseif (strpos($method_id, ':-:closure') !== false) {
+                    $return_type->value = $calling_class;
                 } else {
                     list(, $method_name) = explode('::', $method_id);
 
-                    if ($method_name === '-closure') {
-                        $return_type->value = $calling_class;
-                    } else {
-                        $appearing_method_id = MethodChecker::getAppearingMethodId(
-                            $project_checker,
-                            $calling_class . '::' . $method_name
-                        );
+                    $appearing_method_id = MethodChecker::getAppearingMethodId(
+                        $project_checker,
+                        $calling_class . '::' . $method_name
+                    );
 
-                        $return_type->value = explode('::', (string)$appearing_method_id)[0];
-                    }
+                    $return_type->value = explode('::', (string)$appearing_method_id)[0];
                 }
             }
         }
