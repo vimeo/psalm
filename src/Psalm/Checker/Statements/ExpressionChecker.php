@@ -214,9 +214,7 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Empty_) {
-            if (self::analyzeEmpty($statements_checker, $stmt, $context) === false) {
-                return false;
-            }
+            self::analyzeEmpty($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Closure) {
             $closure_checker = new ClosureChecker($stmt, $statements_checker->getSource());
 
@@ -2176,14 +2174,14 @@ class ExpressionChecker
      * @param   PhpParser\Node\Expr\Empty_  $stmt
      * @param   Context                     $context
      *
-     * @return  false|null
+     * @return  void
      */
     protected static function analyzeEmpty(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\Empty_ $stmt,
         Context $context
     ) {
-        return self::analyze($statements_checker, $stmt->expr, $context);
+        self::analyzeIssetVar($statements_checker, $stmt->expr, $context);
     }
 
     /**

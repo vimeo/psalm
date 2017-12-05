@@ -170,11 +170,11 @@ class TypeChecker
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($existing_var_type === null) {
-            if ($new_var_type === '^isset') {
+            if ($new_var_type === '^isset' || $new_var_type === '^!empty') {
                 return Type::getMixed();
             }
 
-            if ($new_var_type === 'isset') {
+            if ($new_var_type === 'isset' || $new_var_type === '!empty') {
                 return Type::getMixed();
             }
 
@@ -324,7 +324,9 @@ class TypeChecker
                 return Type::getMixed();
             }
 
-            if ($new_var_type === '!falsy' && !$existing_var_type->isMixed()) {
+            if (($new_var_type === '!falsy' || $new_var_type === '!empty')
+                && !$existing_var_type->isMixed()
+            ) {
                 $did_remove_type = $existing_var_type->hasString()
                     || $existing_var_type->hasNumericType()
                     || $existing_var_type->isEmpty()
@@ -442,11 +444,30 @@ class TypeChecker
             return $existing_var_type;
         }
 
+        if ($new_var_type === '^!empty') {
+            $existing_var_type->removeType('null');
+            $existing_var_type->removeType('false');
+
+            if ($existing_var_type->hasType('array')
+                && $existing_var_type->types['array']->getId() === 'array<empty, empty>'
+            ) {
+                $existing_var_type->removeType('array');
+            }
+
+            if ($existing_var_type->types) {
+                return $existing_var_type;
+            }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
+        }
+
         if ($new_var_type[0] === '^') {
             $new_var_type = substr($new_var_type, 1);
         }
 
-        if ($new_var_type === 'falsy') {
+        if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
             if ($existing_var_type->hasType('bool')) {
                 $existing_var_type->removeType('bool');
                 $existing_var_type->types['false'] = new TFalse;

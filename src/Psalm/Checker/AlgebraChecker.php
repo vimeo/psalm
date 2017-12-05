@@ -87,7 +87,7 @@ class AlgebraChecker
             $clauses = [];
 
             foreach ($assertions as $var => $type) {
-                if ($type === 'isset') {
+                if ($type === 'isset' || $type === '!empty') {
                     $key_parts = preg_split(
                         '/(\]|\[)/',
                         $var,
@@ -97,7 +97,11 @@ class AlgebraChecker
 
                     $base = array_shift($key_parts);
 
-                    $clauses[] = new Clause([$base => ['^isset']]);
+                    if ($type === 'isset') {
+                        $clauses[] = new Clause([$base => ['^isset']]);
+                    } else {
+                        $clauses[] = new Clause([$base => ['^!empty']]);
+                    }
 
                     if (count($key_parts)) {
                         $clauses[] = new Clause([$base => ['!false']]);
@@ -106,7 +110,12 @@ class AlgebraChecker
 
                     foreach ($key_parts as $i => $key_part_dim) {
                         $base .= '[' . $key_part_dim . ']';
-                        $clauses[] = new Clause([$base => ['^isset']]);
+
+                        if ($type === 'isset') {
+                            $clauses[] = new Clause([$base => ['^isset']]);
+                        } else {
+                            $clauses[] = new Clause([$base => ['^!empty']]);
+                        }
 
                         if ($i < count($key_parts) - 1) {
                             $clauses[] = new Clause([$base => ['!false']]);

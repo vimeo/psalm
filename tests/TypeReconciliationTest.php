@@ -446,21 +446,6 @@ class TypeReconciliationTest extends TestCase
                         foo($a[$b]);
                     }',
             ],
-            'removeEmptyArray' => [
-                '<?php
-                    $arr_or_string = [];
-
-                    if (rand(0, 1)) {
-                      $arr_or_string = "hello";
-                    }
-
-                    /** @return void **/
-                    function foo(string $s) {}
-
-                    if (!empty($arr_or_string)) {
-                        foo($arr_or_string);
-                    }',
-            ],
             'instanceOfSubtypes' => [
                 '<?php
                     abstract class A {}
@@ -480,59 +465,6 @@ class TypeReconciliationTest extends TestCase
                     $a = rand(0, 1) ? makeA() : makeC();
 
                     if ($a instanceof B || $a instanceof D) { }',
-            ],
-            'emptyArrayReconciliationThenIf' => [
-                '<?php
-                    /**
-                     * @param string|string[] $a
-                     */
-                    function foo($a) : string {
-                        if (is_string($a)) {
-                            return $a;
-                        } elseif (empty($a)) {
-                            return "goodbye";
-                        }
-
-                        if (isset($a[0])) {
-                            return $a[0];
-                        };
-
-                        return "not found";
-                    }',
-            ],
-            'emptyStringReconciliationThenIf' => [
-                '<?php
-                    /**
-                     * @param Exception|string|string[] $a
-                     */
-                    function foo($a) : string {
-                        if (is_array($a)) {
-                            return "hello";
-                        } elseif (empty($a)) {
-                            return "goodbye";
-                        }
-
-                        if (is_string($a)) {
-                            return $a;
-                        };
-
-                        return "an exception";
-                    }',
-            ],
-            'emptyExceptionReconciliationAfterIf' => [
-                '<?php
-                    /**
-                     * @param Exception|null $a
-                     */
-                    function foo($a) : string {
-                        if ($a && $a->getMessage() === "hello") {
-                            return "hello";
-                        } elseif (empty($a)) {
-                            return "goodbye";
-                        }
-
-                        return $a->getMessage();
-                    }',
             ],
             'typeReconciliationAfterIfAndReturn' => [
                 '<?php
@@ -683,12 +615,6 @@ class TypeReconciliationTest extends TestCase
                     function f($param): void {}
                     f(5.0);
                     f(5);',
-            ],
-            'noFalsyLeak' => [
-                '<?php
-                    function foo(string $s) : void {
-                      if (empty($s) || $s === "hello") {}
-                    }',
             ],
             'nullReplacement' => [
                 '<?php
