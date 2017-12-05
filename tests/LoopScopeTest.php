@@ -111,6 +111,12 @@ class LoopScopeTest extends TestCase
                     '$worked' => 'bool',
                 ],
             ],
+            'doWhileUndefinedVar' => [
+                '<?php
+                    do {
+                        $result = rand(0,1);
+                    } while (!$result);',
+            ],
             'doWhileVarAndBreak' => [
                 '<?php
                     /** @return void */

@@ -677,7 +677,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        LoopChecker::analyze($this, $stmt->stmts, [], [], new LoopScope($do_context, $context));
+        LoopChecker::analyze($this, $stmt->stmts, [], [], new LoopScope($do_context, $context), $inner_loop_context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -698,6 +698,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         foreach ($do_context->vars_in_scope as $var_id => $type) {
             if (!isset($context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = $type;
+            }
+        }
+
+        // because it's a do {} while, inner loop vars belong to the main context
+        if ($inner_loop_context) {
+            foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = $type;
+                }
             }
         }
 

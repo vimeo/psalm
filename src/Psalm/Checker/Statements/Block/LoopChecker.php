@@ -32,7 +32,8 @@ class LoopChecker
         array $stmts,
         array $pre_conditions,
         array $post_conditions,
-        LoopScope $loop_scope
+        LoopScope $loop_scope,
+        Context &$inner_context = null
     ) {
         $traverser = new PhpParser\NodeTraverser;
 
