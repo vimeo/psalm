@@ -611,14 +611,19 @@ class ExpressionChecker
                         );
                     }
                 } elseif ($context->check_variables) {
-                    IssueBuffer::add(
+                    if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
                             new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
 
-                    return false;
+                    $stmt->inferredType = Type::getMixed();
+
+                    return null;
                 }
             }
 
@@ -1884,14 +1889,17 @@ class ExpressionChecker
 
                 if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
                     if ($context->check_variables) {
-                        IssueBuffer::add(
+                        if (IssueBuffer::accepts(
                             new UndefinedVariable(
                                 'Cannot find referenced variable ' . $use_var_id,
                                 new CodeLocation($statements_checker->getSource(), $use)
-                            )
-                        );
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
 
-                        return false;
+                        return null;
                     }
                 }
 
@@ -1909,18 +1917,21 @@ class ExpressionChecker
                         return false;
                     }
 
-                    return null;
+                    continue;
                 }
 
                 if ($context->check_variables) {
-                    IssueBuffer::add(
+                    if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
                             new CodeLocation($statements_checker->getSource(), $use)
-                        )
-                    );
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
 
-                    return false;
+                    continue;
                 }
             }
         }

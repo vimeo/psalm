@@ -144,6 +144,18 @@ class RedundantConditionTest extends TestCase
 
                     if ($a->foo() || $a->bar()) {}',
             ],
+            'noEmptyUndefinedArrayVar' => [
+                '<?php
+                    if (rand(0,1)) {
+                      /** @psalm-suppress UndefinedVariable */
+                      $a = $b[0];
+                    } else {
+                      $a = null;
+                    }
+                    if ($a) {}',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
         ];
     }
 
