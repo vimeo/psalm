@@ -627,18 +627,17 @@ class ExpressionChecker
                         $stmt->inferredType = Type::getMixed();
 
                         return null;
-                    } else {
-                        IssueBuffer::add(
+                    }
+                    IssueBuffer::add(
                             new UndefinedVariable(
                                 'Cannot find referenced variable ' . $var_name,
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             )
                         );
 
-                        $stmt->inferredType = Type::getMixed();
+                    $stmt->inferredType = Type::getMixed();
 
-                        return false;
-                    }
+                    return false;
                 }
             }
 

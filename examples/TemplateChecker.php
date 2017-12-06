@@ -1,39 +1,28 @@
 <?php
-namespace Psalm\Example\Template;
 
+namespace Psalm\Examples\Template;
+
+use PhpParser;
 use Psalm;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\FileChecker;
 use Psalm\Checker\MethodChecker;
+use Psalm\Checker\StatementsChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use PhpParser;
 
 class TemplateChecker extends Psalm\Checker\FileChecker
 {
-    const THIS_CLASS = 'Psalm\\Example\\Template\\Base';
+    const VIEW_CLASS = 'Your\\View\\Class';
 
-    /**
-     * @param   bool            $check_classes
-     * @param   bool            $check_class_statements
-     * @param   Context|null    $file_context
-     * @param   bool            $cache
-     * @param   bool            $update_docblocks
-     * @return  false|null
-     */
-    public function check(
-        $check_classes = true,
-        $check_class_statements = true,
-        Context $file_context = null,
-        $cache = true,
-        $update_docblocks = false
-    ) {
+    public function scan()
+    {
         $stmts = $this->getStatements();
 
         if (empty($stmts)) {
-            return null;
+            return;
         }
 
         $first_stmt = $stmts[0];
@@ -41,12 +30,13 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $this_params = null;
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
+
             $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {
-                $variables_from = trim((string)$comment_block['specials']['variablesfrom'][0]);
+                $variables_from = trim($comment_block['specials']['variablesfrom'][0]);
 
-                $first_line_regex = '/([A-Za-z\\\0-9]+::[a-z_A-Z]+)?/';
+                $first_line_regex = '/([A-Za-z\\\0-9]+::[a-z_A-Z]+)(\s+weak)?/';
 
                 $matches = [];
 
@@ -54,66 +44,109 @@ class TemplateChecker extends Psalm\Checker\FileChecker
                     throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                $this_params = $this->checkMethod((string)$matches[1]);
+                /** @psalm-suppress MixedArgument */
+                list($fq_class_name, $method_name) = explode('::', $matches[1]);
 
-                if ($this_params === false) {
-                    return false;
+                $this->project_checker->queueClassLikeForScanning($fq_class_name, $this->file_path, true);
+            }
+        }
+
+        $this->project_checker->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
+
+        parent::scan();
+    }
+
+    public function analyze(Context $context = null, $update_docblocks = false)
+    {
+        $this->project_checker->enableCache();
+
+        $stmts = $this->getStatements();
+
+        if (empty($stmts)) {
+            return;
+        }
+
+        $first_stmt = $stmts[0];
+
+        $this_params = null;
+
+        if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
+
+            $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
+
+            if (isset($comment_block['specials']['variablesfrom'])) {
+                $variables_from = trim($comment_block['specials']['variablesfrom'][0]);
+
+                $first_line_regex = '/([A-Za-z\\\0-9]+::[a-z_A-Z]+)(\s+weak)?/';
+
+                $matches = [];
+
+                if (!preg_match($first_line_regex, $variables_from, $matches)) {
+                    throw new \InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                $this_params->vars_in_scope['$this'] = new Type\Union([new Type\Atomic(self::THIS_CLASS)]);
+                /** @psalm-suppress MixedArgument */
+                $this_params = $this->checkMethod($matches[1], $first_stmt);
+
+                if ($this_params === false) {
+                    return;
+                }
+
+                $this_params->vars_in_scope['$this'] = new Type\Union([
+                    new Type\Atomic\TNamedObject(self::VIEW_CLASS)
+                ]);
             }
         }
 
         if (!$this_params) {
-            $this_params = new Context($this->file_name);
+            $this_params = new Context();
             $this_params->check_variables = false;
-            $this_params->self = self::THIS_CLASS;
+            $this_params->self = self::VIEW_CLASS;
+            $this_params->vars_in_scope['$this'] = new Type\Union([
+                new Type\Atomic\TNamedObject(self::VIEW_CLASS)
+            ]);
         }
 
         $this->checkWithViewClass($this_params);
-        return null;
+
+        $this->project_checker->disableCache();
     }
 
     /**
-     * @param   string $method_id
-     * @return  false|Context
+     * @param  string         $method_id
+     * @param  PhpParser\Node $stmt
+     * @return Context|false
      */
-    private function checkMethod($method_id)
+    private function checkMethod($method_id, PhpParser\Node $stmt)
     {
         $class = explode('::', $method_id)[0];
 
-        if (ClassLikeChecker::checkFullyQualifiedClassLikeName($class, $this->file_name, 1, []) === false) {
+        if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+            $this->project_checker,
+            $class,
+            new CodeLocation($this, $stmt),
+            [],
+            true
+        ) === false
+        ) {
             return false;
         }
 
-        $this_context = new Context($this->file_name);
+        $this_context = new Context();
         $this_context->self = $class;
-        $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($class)]);
+        $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic\TNamedObject($class)]);
 
         $constructor_id = $class . '::__construct';
 
-        // this is necessary to enable deep checks
-        ClassChecker::setThisClass($class);
+        $this->project_checker->getMethodMutations($constructor_id, $this_context);
 
-        // check the constructor
-        $constructor_method_checker = ClassChecker::getMethodChecker($constructor_id);
-
-        if ($constructor_method_checker->check($this_context) === false) {
-            ClassChecker::setThisClass(null);
-            return false;
-        }
-
-        $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic($class)]);
+        $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic\TNamedObject($class)]);
 
         // check the actual method
-        $method_checker = ClassChecker::getMethodChecker($method_id);
-        if ($method_checker->check($this_context) === false) {
-            ClassChecker::setThisClass(null);
-            return false;
-        }
+        $this->project_checker->getMethodMutations($method_id, $this_context);
 
-        $view_context = new Context($this->file_name);
-        $view_context->self = self::THIS_CLASS;
+        $view_context = new Context();
+        $view_context->self = self::VIEW_CLASS;
 
         // add all $this-> vars to scope
         foreach ($this_context->vars_possibly_in_scope as $var => $type) {
@@ -124,36 +157,43 @@ class TemplateChecker extends Psalm\Checker\FileChecker
             $view_context->vars_in_scope[str_replace('$this->', '$', $var)] = $type;
         }
 
-        ClassChecker::setThisClass(null);
-
         return $view_context;
     }
 
     /**
-     * @param   Context $context
-     * @return  void
+     * @param  Context $context
+     * @return void
      */
     protected function checkWithViewClass(Context $context)
     {
-        $class_name = self::THIS_CLASS;
-
-        $class_like_checker = FileChecker::getClassLikeCheckerFromClass($class_name);
-
-        if (!$class_like_checker) {
-            return;
-        }
-
-        // check that class first
-        $class_like_checker->check(true);
-
         $stmts = $this->getStatements();
 
-        $class_method = new PhpParser\Node\Stmt\ClassMethod($class_name, ['stmts' => $stmts]);
+        $pseudo_method_stmts = [];
 
-        $class = new PhpParser\Node\Stmt\Class_($class_name);
+        foreach ($stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                $this->visitUse($stmt);
+            } else {
+                $pseudo_method_stmts[] = $stmt;
+            }
+        }
 
-        $class_checker = new ClassChecker($class, $this, $class_name);
+        $pseudo_method_name = preg_replace('/[^a-zA-Z0-9_]+/', '_', $this->file_name);
 
-        (new MethodChecker($class_method, $class_checker))->check($context);
+        $class_method = new PhpParser\Node\Stmt\ClassMethod($pseudo_method_name, ['stmts' => []]);
+
+        $class = new PhpParser\Node\Stmt\Class_(self::VIEW_CLASS);
+
+        $class_checker = new ClassChecker($class, $this, self::VIEW_CLASS);
+
+        $view_method_checker = new MethodChecker($class_method, $class_checker);
+
+        if (!$context->check_variables) {
+            $view_method_checker->addSuppressedIssue('UndefinedVariable');
+        }
+
+        $statements_checker = new StatementsChecker($view_method_checker);
+
+        $statements_checker->analyze($pseudo_method_stmts, $context);
     }
 }
