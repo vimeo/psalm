@@ -109,7 +109,21 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
-            // do nothing
+            switch (strtolower($stmt->getName())) {
+                case '__line__':
+                    $stmt->inferredType = Type::getInt();
+                    break;
+
+                case '__file__':
+                case '__dir__':
+                case '__function__':
+                case '__class__':
+                case '__trait__':
+                case '__method__':
+                case '__namespace__':
+                    $stmt->inferredType = Type::getString();
+                    break;
+            }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
             $stmt->inferredType = Type::getInt();
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {

@@ -16,7 +16,7 @@ class ConstantTest extends TestCase
                 '<?php
                     useTest();
                     const TEST = 2;
-            
+
                     function useTest() : int {
                         return TEST;
                     }',
@@ -24,7 +24,7 @@ class ConstantTest extends TestCase
             'constantInClosure' => [
                 '<?php
                     const TEST = 2;
-                    
+
                     $useTest = function() : int {
                         return TEST;
                     };
@@ -38,10 +38,19 @@ class ConstantTest extends TestCase
                     function defineConstant() {
                         define("CONSTANT", 1);
                     }
-            
+
                     defineConstant();
-            
+
                     echo CONSTANT;',
+            ],
+            'magicConstant' => [
+                '<?php
+                    $a = __LINE__;
+                    $b = __file__;',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'string',
+                ],
             ],
         ];
     }
@@ -60,7 +69,7 @@ class ConstantTest extends TestCase
                     function defineConstant() {
                         define("CONSTANT", 1);
                     }
-            
+
                     echo CONSTANT;',
                 'error_message' => 'UndefinedConstant',
             ],
