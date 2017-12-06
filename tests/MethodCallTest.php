@@ -186,7 +186,7 @@ class MethodCallTest extends TestCase
             'undefinedVariableStaticCall' => [
                 '<?php
                     $foo::bar();',
-                'error_message' => 'UndefinedVariable',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
             'staticCallOnString' => [
                 '<?php

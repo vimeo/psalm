@@ -122,8 +122,8 @@ echo $a;';
             [
                 'severity' => 'error',
                 'line_number' => 15,
-                'type' => 'PossiblyUndefinedVariable',
-                'message' => 'Possibly undefined variable $a, first seen on line 10',
+                'type' => 'PossiblyUndefinedGlobalVariable',
+                'message' => 'Possibly undefined global variable $a, first seen on line 10',
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'echo $a',
@@ -165,7 +165,7 @@ echo $a;';
             ],
         ];
         $emacs = 'somefile.php:7:6:error - Const CHANGE_ME is not defined
-somefile.php:15:6:error - Possibly undefined variable $a, first seen on line 10
+somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
 somefile.php:3:10:error - Cannot find referenced variable $as_you
 somefile.php:2:43:error - Could not verify return type \'string|null\' for psalmCanVerify
 ';

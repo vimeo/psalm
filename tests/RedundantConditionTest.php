@@ -122,7 +122,7 @@ class RedundantConditionTest extends TestCase
 
                     if ($a) {}',
                 'assertions' => [],
-                'error_levels' => ['PossiblyUndefinedVariable'],
+                'error_levels' => ['PossiblyUndefinedGlobalVariable'],
             ],
             'noRedundantConditionAfterFromDocblockRemoval' => [
                 '<?php
@@ -147,7 +147,7 @@ class RedundantConditionTest extends TestCase
             'noEmptyUndefinedArrayVar' => [
                 '<?php
                     if (rand(0,1)) {
-                      /** @psalm-suppress UndefinedVariable */
+                      /** @psalm-suppress UndefinedGlobalVariable */
                       $a = $b[0];
                     } else {
                       $a = null;

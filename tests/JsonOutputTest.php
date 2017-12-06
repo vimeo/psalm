@@ -107,8 +107,8 @@ echo $a;';
                 [
                     'severity' => 'error',
                     'line_number' => 15,
-                    'type' => 'PossiblyUndefinedVariable',
-                    'message' => 'Possibly undefined variable $a, first seen on line 10',
+                    'type' => 'PossiblyUndefinedGlobalVariable',
+                    'message' => 'Possibly undefined global variable $a, first seen on line 10',
                     'file_name' => 'somefile.php',
                     'file_path' => 'somefile.php',
                     'snippet' => 'echo $a',

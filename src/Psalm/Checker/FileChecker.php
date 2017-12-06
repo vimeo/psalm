@@ -148,6 +148,8 @@ class FileChecker extends SourceChecker implements StatementsSource
             ]);
         }
 
+        $this->context->is_global = true;
+
         $config = Config::getInstance();
 
         $stmts = $this->getStatements();

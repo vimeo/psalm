@@ -153,6 +153,11 @@ class Context
     public $assigned_var_ids = [];
 
     /**
+     * @var bool
+     */
+    public $is_global = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)
