@@ -1032,7 +1032,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            if (!$return_type && !$project_checker->update_docblocks) {
+            if (!$project_checker->update_docblocks) {
                 return null;
             }
         }

@@ -15,18 +15,6 @@ class ToStringTest extends TestCase
             'validToString' => [
                 '<?php
                     class A {
-                        function __toString() : string {
-                            return "hello";
-                        }
-                    }
-                    echo (new A);',
-            ],
-            'validInferredToStringType' => [
-                '<?php
-                    class A {
-                        /**
-                         * @psalm-suppress MissingReturnType
-                         */
                         function __toString() {
                             return "hello";
                         }
@@ -82,9 +70,6 @@ class ToStringTest extends TestCase
             'invalidInferredToStringReturnType' => [
                 '<?php
                     class A {
-                        /**
-                         * @psalm-suppress MissingReturnType
-                         */
                         function __toString() { }
                     }',
                 'error_message' => 'InvalidToString',

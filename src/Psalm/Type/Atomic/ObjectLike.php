@@ -21,9 +21,6 @@ class ObjectLike extends \Psalm\Type\Atomic
         $this->properties = $properties;
     }
 
-    /**
-     * @return string
-     */
     public function __toString()
     {
         return 'array{' .

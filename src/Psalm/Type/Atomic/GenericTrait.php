@@ -11,9 +11,6 @@ trait GenericTrait
      */
     public $type_params;
 
-    /**
-     * @return string
-     */
     public function __toString()
     {
         $s = '';

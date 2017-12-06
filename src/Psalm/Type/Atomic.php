@@ -280,9 +280,6 @@ abstract class Atomic
             && !($other instanceof ObjectLike && $this instanceof ObjectLike);
     }
 
-    /**
-     * @return string
-     */
     public function __toString()
     {
         return '';

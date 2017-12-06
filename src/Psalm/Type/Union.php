@@ -65,9 +65,6 @@ class Union
         }
     }
 
-    /**
-     * @return string
-     */
     public function __toString()
     {
         $s = '';
