@@ -296,7 +296,7 @@ class Php70Test extends TestCase
                             return 5;
                         }
                     };',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

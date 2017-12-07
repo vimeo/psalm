@@ -825,9 +825,31 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     }
 
     /**
+     * @param string|null $context_self
+     *
+     * @return string
+     */
+    public function getCorrectlyCasedMethodId($context_self = null)
+    {
+        if ($this->function instanceof ClassMethod) {
+            $function_name = (string)$this->function->name;
+
+            return ($context_self ?: $this->source->getFQCLN()) . '::' . $function_name;
+        }
+
+        if ($this->function instanceof Function_) {
+            $namespace = $this->source->getNamespace();
+
+            return ($namespace ? $namespace . '\\' : '') . $this->function->name;
+        }
+
+        return $this->getFilePath() . ':' . $this->function->getLine() . ':-:closure';
+    }
+
+    /**
      * @return FunctionLikeStorage
      */
-    public function getFunctionLikeStorage()
+    public function getFunctionLikeStorage(StatementsChecker $statements_checker)
     {
         $function_id = $this->getMethodId();
 
@@ -843,13 +865,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return MethodChecker::getStorage($project_checker, $declaring_method_id);
         }
 
-        if (!$this->statements_checker) {
-            throw new \UnexpectedValueException(
-                '$this->statements_checker should be defined when getting storage for ' . $function_id
-            );
-        }
-
-        return FunctionChecker::getStorage($this->statements_checker, $function_id);
+        return FunctionChecker::getStorage($statements_checker, $function_id);
     }
 
     /**
@@ -943,13 +959,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $method_id = (string)$this->getMethodId();
 
-        $cased_method_id = null;
-
-        if ($this instanceof MethodChecker) {
-            $cased_method_id = MethodChecker::getCasedMethodId($this->file_checker->project_checker, $method_id);
-        } elseif ($this->function instanceof Function_) {
-            $cased_method_id = $this->function->name;
-        }
+        $cased_method_id = $this->getCorrectlyCasedMethodId();
 
         if (!$return_type_location) {
             $return_type_location = new CodeLocation($this, $this->function, null, true);

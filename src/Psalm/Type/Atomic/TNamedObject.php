@@ -56,6 +56,7 @@ class TNamedObject extends Atomic
         if ($this->value === $this_class) {
             $class_parts = explode('\\', $this_class);
 
+            /** @var string */
             return array_pop($class_parts);
         }
 

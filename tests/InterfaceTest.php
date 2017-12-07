@@ -462,7 +462,7 @@ class InterfaceTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'UnimplementedInterfaceMethod',
             ],
-            'moreSpecificReturnType' => [
+            'lessSpecificReturnStatement' => [
                 '<?php
                     interface A {}
                     interface B extends A {}
@@ -470,7 +470,7 @@ class InterfaceTest extends TestCase
                     function foo(A $a) : B {
                         return $a;
                     }',
-                'error_message' => 'MoreSpecificReturnType',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'interfaceReturnType' => [
                 '<?php
@@ -507,7 +507,7 @@ class InterfaceTest extends TestCase
                     }
 
                     foo(new C);',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

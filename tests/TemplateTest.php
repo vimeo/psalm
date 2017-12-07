@@ -387,7 +387,7 @@ class TemplateTest extends TestCase
                     '$a' => 'array<int, string>',
                 ],
             ],
-            'genericArrayReverse' => [
+            'genericArrayFlip' => [
                 '<?php
                     /**
                      * @template TKey
@@ -396,11 +396,11 @@ class TemplateTest extends TestCase
                      * @param array<TKey, TValue> $arr
                      * @return array<TValue, TKey>
                      */
-                    function my_array_reverse($arr) {
-                        return array_reverse($arr);
+                    function my_array_flip($arr) {
+                        return array_flip($arr);
                     }
 
-                    $b = my_array_reverse(["hello" => 5, "goodbye" => 6]);',
+                    $b = my_array_flip(["hello" => 5, "goodbye" => 6]);',
                 'assertions' => [
                     '$b' => 'array<int, string>',
                 ],
@@ -411,7 +411,7 @@ class TemplateTest extends TestCase
                      * @template TValue
                      *
                      * @param array<mixed, TValue> $arr
-                     * @return TValue
+                     * @return TValue|null
                      */
                     function my_array_pop(array &$arr) {
                         return array_pop($arr);

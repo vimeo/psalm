@@ -164,9 +164,9 @@ echo $a;';
                     function fooFoo(int $a) : string {
                         return $a + 1;
                     }',
-                'message' => "The declared return type 'string' for fooFoo is incorrect, got 'int'",
-                'line' => 2,
-                'error' => 'string',
+                'message' => "The type 'int' does not match the declared return type 'string' for fooFoo",
+                'line' => 3,
+                'error' => 'return $a + 1;',
             ],
             'undefinedVar' => [
                 '<?php
@@ -203,19 +203,9 @@ echo $a;';
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => 'The declared return type \'int\' for fooFoo is incorrect, got \'string\'',
-                'line' => 3,
-                'error' => '@return int',
-            ],
-            'wrongSingleLineReturnType' => [
-                '<?php
-                    /** @return int */
-                    function fooFoo() {
-                        return "hello";
-                    }',
-                'message' => 'The declared return type \'int\' for fooFoo is incorrect, got \'string\'',
-                'line' => 2,
-                'error' => '@return int',
+                'message' => "The type 'string' does not match the declared return type 'int' for fooFoo",
+                'line' => 6,
+                'error' => 'return "hello";',
             ],
         ];
     }

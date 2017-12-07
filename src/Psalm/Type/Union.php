@@ -286,6 +286,14 @@ class Union
     /**
      * @return bool
      */
+    public function isGenerator()
+    {
+        return count($this->types) === 1 && isset($this->types['Generator']);
+    }
+
+    /**
+     * @return bool
+     */
     public function isEmpty()
     {
         return isset($this->types['empty']);

@@ -117,12 +117,14 @@
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidScalarArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticInvocation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MisplacedRequiredParam" type="IssueHandlerType" minOccurs="0" />

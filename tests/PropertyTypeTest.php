@@ -11,7 +11,7 @@ class PropertyTypeTest extends TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidReturnType
+     * @expectedExceptionMessage InvalidReturnStatement
      *
      * @return                   void
      */

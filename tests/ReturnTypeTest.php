@@ -438,14 +438,14 @@ class ReturnTypeTest extends TestCase
                     function fooFoo() : string {
                         return 5;
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'wrongReturnType2' => [
                 '<?php
                     function fooFoo() : string {
                         return rand(0, 5) ? "hello" : null;
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'wrongReturnTypeInNamespace1' => [
                 '<?php
@@ -454,7 +454,7 @@ class ReturnTypeTest extends TestCase
                     function fooFoo() : string {
                         return 5;
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'wrongReturnTypeInNamespace2' => [
                 '<?php
@@ -463,7 +463,7 @@ class ReturnTypeTest extends TestCase
                     function fooFoo() : string {
                         return rand(0, 5) ? "hello" : null;
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'missingReturnType' => [
                 '<?php
@@ -482,7 +482,7 @@ class ReturnTypeTest extends TestCase
             'invalidReturnTypeClass' => [
                 '<?php
                     function fooFoo() : A {
-                        return array_pop([]);
+                        return new A;
                     }',
                 'error_message' => 'UndefinedClass',
                 'error_levels' => ['MixedInferredReturnType'],
@@ -510,7 +510,7 @@ class ReturnTypeTest extends TestCase
                         if (rand() % 2 > 0) return [null];
                         return [2];
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'resourceReturnType' => [
                 '<?php

@@ -180,7 +180,7 @@ class MethodCallTest extends TestCase
                             return self::mock("NullableClass");
                         }
                     }',
-                'error_message' => 'MoreSpecificReturnType',
+                'error_message' => 'LessSpecificReturnStatement',
                 'error_levels' => ['MixedInferredReturnType'],
             ],
             'undefinedVariableStaticCall' => [

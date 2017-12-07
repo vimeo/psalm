@@ -21,6 +21,8 @@ use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
+use Psalm\Issue\InvalidReturnStatement;
+use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
@@ -56,6 +58,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @var array<string, FunctionChecker>
      */
     private $function_checkers = [];
+
+    /**
+     * @var Type\Union|null
+     */
+    public $local_return_type;
 
     /**
      * @param StatementsSource $source
@@ -888,8 +895,73 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $stmt->inferredType = Type::getVoid();
         }
 
-        if ($this->source instanceof FunctionLikeChecker) {
+        if ($this->source instanceof FunctionLikeChecker
+            && !($this->source->getSource() instanceof TraitChecker)
+        ) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
+
+            if ($stmt->expr && !$stmt->inferredType->isMixed()) {
+                $storage = $this->source->getFunctionLikeStorage($this);
+                $cased_method_id = $this->source->getCorrectlyCasedMethodId();
+
+                if ($storage->return_type
+                    && !$storage->return_type->isMixed()
+                    && !$project_checker->update_docblocks
+                ) {
+                    $inferred_type = ExpressionChecker::fleshOutType(
+                        $project_checker,
+                        $stmt->inferredType,
+                        $this->source->getFQCLN(),
+                        ''
+                    );
+
+                    if (!$this->local_return_type) {
+                        $this->local_return_type = ExpressionChecker::fleshOutType(
+                            $project_checker,
+                            $storage->return_type,
+                            $this->source->getFQCLN(),
+                            ''
+                        );
+                    }
+
+                    if (!$this->local_return_type->isGenerator()
+                        && !TypeChecker::isContainedBy(
+                        $this->source->getFileChecker()->project_checker,
+                        $inferred_type,
+                        $this->local_return_type,
+                        false,
+                        false,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed
+                    )) {
+                        // is the declared return type more specific than the inferred one?
+                        if ($type_coerced) {
+                            if (IssueBuffer::accepts(
+                                new LessSpecificReturnStatement(
+                                    'The type \'' . $stmt->inferredType . '\' is more general than the declared '
+                                        . 'return type \'' . $this->local_return_type . '\' for ' . $cased_method_id,
+                                    new CodeLocation($this->source, $stmt)
+                                ),
+                                $this->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new InvalidReturnStatement(
+                                    'The type \'' . $stmt->inferredType . '\' does not match the declared return '
+                                        . 'type \'' . $this->local_return_type . '\' for ' . $cased_method_id,
+                                    new CodeLocation($this->source, $stmt)
+                                ),
+                               $this->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         return null;

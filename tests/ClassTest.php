@@ -228,7 +228,7 @@ class ClassTest extends TestCase
                     class A extends B { }',
                 'error_message' => 'UndefinedClass',
             ],
-            'moreSpecificReturnType' => [
+            'lessSpecificReturnStatement' => [
                 '<?php
                     class A {}
                     class B extends A {}
@@ -236,7 +236,7 @@ class ClassTest extends TestCase
                     function foo(A $a) : B {
                         return $a;
                     }',
-                'error_message' => 'MoreSpecificReturnType',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }
