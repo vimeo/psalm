@@ -764,6 +764,26 @@ class LoopScopeTest extends TestCase
                     'MixedAssignment', 'MixedArrayAccess',
                 ],
             ],
+            'whileTrue' => [
+                '<?php
+                    while (true) {
+                        $a = "hello";
+                        break;
+                    }
+                    while (1) {
+                        $b = 5;
+                        break;
+                    }
+                    for(;;) {
+                        $c = true;
+                        break;
+                    }',
+                'assignments' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                    '$c' => 'bool',
+                ],
+            ],
         ];
     }
 
@@ -897,6 +917,24 @@ class LoopScopeTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'whileTrueNoBreak' => [
+                '<?php
+                    while (true) {
+                        $a = "hello";
+                    }
+
+                    echo $a;',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'forInfiniteNoBreak' => [
+                '<?php
+                    for (;;) {
+                        $a = "hello";
+                    }
+
+                    echo $a;',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
         ];
     }
