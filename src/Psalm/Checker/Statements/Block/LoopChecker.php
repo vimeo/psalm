@@ -275,6 +275,21 @@ class LoopChecker
             }
         }
 
+        foreach ($loop_scope->loop_parent_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed()) {
+                continue;
+            }
+
+            if ($loop_scope->loop_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+                $loop_scope->loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $loop_scope->loop_parent_context->vars_in_scope[$var_id],
+                    $loop_scope->loop_context->vars_in_scope[$var_id]
+                );
+
+                $loop_scope->loop_parent_context->removeVarFromConflictingClauses($var_id);
+            }
+        }
+
         if (!$does_always_break) {
             foreach ($loop_scope->loop_parent_context->vars_in_scope as $var_id => $type) {
                 if ($type->isMixed()) {

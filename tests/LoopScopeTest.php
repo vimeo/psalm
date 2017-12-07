@@ -697,6 +697,21 @@ class LoopScopeTest extends TestCase
                     '$a' => 'bool',
                 ],
             ],
+            'falseToBoolAfterContinueAndBreak' => [
+                '<?php
+                    $a = false;
+                    foreach ([1, 2, 3] as $i) {
+                      if ($i > 0) {
+                        $a = true;
+                        continue;
+                      }
+
+                      break;
+                    }',
+                'assignments' => [
+                    '$a' => 'bool',
+                ],
+            ],
             'variableDefinedInForeachAndIf' => [
                 '<?php
                     foreach ([1,2,3,4] as $i) {
