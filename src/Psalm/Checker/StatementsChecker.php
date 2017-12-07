@@ -929,7 +929,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         $this->source->getFileChecker()->project_checker,
                         $inferred_type,
                         $this->local_return_type,
-                        false,
+                        $stmt->inferredType->ignore_nullable_issues,
                         false,
                         $has_scalar_match,
                         $type_coerced,
