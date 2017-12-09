@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
 
 abstract class Atomic
@@ -71,8 +72,10 @@ abstract class Atomic
                 return new TString();
 
             case 'bool':
-            case 'true':
                 return new TBool();
+
+            case 'true':
+                return new TTrue();
 
             case 'false':
                 return new TFalse();

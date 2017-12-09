@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -25,6 +26,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 
 class TypeChecker
 {
@@ -329,6 +331,12 @@ class TypeChecker
                     $existing_var_type->removeType('false');
                 }
 
+                if ($existing_var_type->hasType('bool')) {
+                    $did_remove_type = true;
+                    $existing_var_type->removeType('bool');
+                    $existing_var_type->types['true'] = new TTrue;
+                }
+
                 if ($existing_var_type->hasType('array')) {
                     $did_remove_type = true;
 
@@ -455,18 +463,65 @@ class TypeChecker
         }
 
         if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
+            if ($existing_var_type->isMixed()) {
+                return $existing_var_type;
+            }
+
+            $did_remove_type = $did_remove_type = $existing_var_type->hasString()
+                || $existing_var_type->hasNumericType();
+
             if ($existing_var_type->hasType('bool')) {
+                $did_remove_type = true;
                 $existing_var_type->removeType('bool');
                 $existing_var_type->types['false'] = new TFalse;
             }
 
-            $existing_var_type->removeObjects();
-
-            if (empty($existing_var_type->types)) {
-                return Type::getNull();
+            if ($existing_var_type->hasType('true')) {
+                $did_remove_type = true;
+                $existing_var_type->removeType('true');
             }
 
-            return $existing_var_type;
+            if ($existing_var_type->hasType('array')
+                && $existing_var_type->types['array']->getId() !== 'array<empty, empty>'
+            ) {
+                $did_remove_type = true;
+                $existing_var_type->types['array'] = new TArray(
+                    [
+                        new Type\Union([new TEmpty]),
+                        new Type\Union([new TEmpty]),
+                    ]
+                );
+            }
+
+            foreach ($existing_var_type->types as $type_key => $type) {
+                if ($type instanceof TNamedObject) {
+                    $did_remove_type = true;
+
+                    unset($existing_var_type->types[$type_key]);
+                }
+            }
+
+            if ((!$did_remove_type || empty($existing_var_type->types)) && !$existing_var_type->from_docblock) {
+                if ($key && $code_location) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            if ($existing_var_type->types) {
+                return $existing_var_type;
+            }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
         }
 
         if ($new_var_type === 'object' && !$existing_var_type->isMixed()) {
@@ -983,7 +1038,17 @@ class TypeChecker
             return false;
         }
 
-        if ($input_type_part instanceof TFalse && $container_type_part instanceof TBool) {
+        if ($input_type_part instanceof TFalse
+            && $container_type_part instanceof TBool
+            && !($container_type_part instanceof TTrue)
+        ) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TTrue
+            && $container_type_part instanceof TBool
+            && !($container_type_part instanceof TFalse)
+        ) {
             return true;
         }
 

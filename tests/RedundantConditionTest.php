@@ -165,6 +165,24 @@ class RedundantConditionTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'ifFalse' => [
+                '<?php
+                    $y = false:
+                    if ($y) {}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'ifNotTrue' => [
+                '<?php
+                    $y = true:
+                    if (!$y) {}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'ifTrue' => [
+                '<?php
+                    $y = true:
+                    if ($y) {}',
+                'error_message' => 'RedundantCondition',
+            ],
             'unnecessaryInstanceof' => [
                 '<?php
                     class One {

@@ -431,7 +431,7 @@ class FetchChecker
                 break;
 
             case 'true':
-                $stmt->inferredType = Type::getBool();
+                $stmt->inferredType = Type::getTrue();
                 break;
 
             default:

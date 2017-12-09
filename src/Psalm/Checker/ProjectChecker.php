@@ -683,7 +683,7 @@ class ProjectChecker
 
     /**
      * @param  FileStorage $storage
-     * @param  array<string, true> $dependent_file_paths
+     * @param  array<string, bool> $dependent_file_paths
      *
      * @return void
      */

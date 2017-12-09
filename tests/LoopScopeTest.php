@@ -781,7 +781,7 @@ class LoopScopeTest extends TestCase
                 'assignments' => [
                     '$a' => 'string',
                     '$b' => 'int',
-                    '$c' => 'bool',
+                    '$c' => 'true',
                 ],
             ],
         ];

@@ -783,6 +783,7 @@ class CallChecker
 
                         case 'Psalm\\Type\\Atomic\\TInt':
                         case 'Psalm\\Type\\Atomic\\TBool':
+                        case 'Psalm\\Type\\Atomic\\TTrue':
                         case 'Psalm\\Type\\Atomic\\TArray':
                         case 'Psalm\\Type\\Atomic\\TString':
                         case 'Psalm\\Type\\Atomic\\TNumericString':
@@ -1112,7 +1113,6 @@ class CallChecker
             && $has_valid_method_call_type
             && !$invalid_method_call_types
             && $existent_method_ids
-            && !$non_existent_method_ids
             && ($class_type->from_docblock || $class_type->isNullable())
         ) {
             $keys_to_remove = [];

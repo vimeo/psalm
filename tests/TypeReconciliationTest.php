@@ -201,7 +201,7 @@ class TypeReconciliationTest extends TestCase
             'notEmptyWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
             'notEmptyWithMixed' => ['null', 'null', 'mixed'],
 
-            'emptyWithMyObject' => ['null', 'falsy', 'MyObject'],
+            'emptyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
             'emptyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
             'emptyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
             'emptyWithMixed' => ['mixed', 'falsy', 'mixed'],

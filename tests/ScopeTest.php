@@ -110,7 +110,7 @@ class ScopeTest extends TestCase
             ],
             'passByRefInIfWithBoolean' => [
                 '<?php
-                    $a = true;
+                    $a = (bool)rand(0, 1);
                     if ($a && preg_match("/bad/", "badger", $matches)) {
                         echo (string)$matches[0];
                     }',
