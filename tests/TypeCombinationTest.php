@@ -58,6 +58,58 @@ class TypeCombinationTest extends TestCase
                     'string',
                 ],
             ],
+            'falseTrueToBool' => [
+                'bool',
+                [
+                    'false',
+                    'true',
+                ],
+            ],
+            'trueFalseToBool' => [
+                'bool',
+                [
+                    'true',
+                    'false',
+                ],
+            ],
+            'trueBoolToBool' => [
+                'bool',
+                [
+                    'true',
+                    'bool',
+                ],
+            ],
+            'boolTrueToBool' => [
+                'bool',
+                [
+                    'bool',
+                    'true',
+                ],
+            ],
+            'intOrTrueOrFalseToBool' => [
+                'int|bool',
+                [
+                    'int',
+                    'false',
+                    'true',
+                ],
+            ],
+            'intOrBoolOrTrueToBool' => [
+                'int|bool',
+                [
+                    'int',
+                    'bool',
+                    'true',
+                ],
+            ],
+            'intOrTrueOrBoolToBool' => [
+                'int|bool',
+                [
+                    'int',
+                    'true',
+                    'bool',
+                ],
+            ],
             'arrayOfIntOrString' => [
                 'array<mixed, int|string>',
                 [

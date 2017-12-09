@@ -156,6 +156,12 @@ class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
+            'noComplaintWithIsNumericThenIsEmpty' => [
+                '<?php
+                    function takesString(string $s) : void {
+                      if (!is_numeric($s) || empty($s)) {}
+                    }',
+            ],
         ];
     }
 

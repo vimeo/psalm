@@ -401,7 +401,15 @@ class TypeChecker
 
             $negated_type = substr($new_var_type, 1);
 
-            $existing_var_type->removeType($negated_type);
+            if ($negated_type === 'false' && isset($existing_var_type->types['bool'])) {
+                $existing_var_type->removeType('bool');
+                $existing_var_type->types['true'] = new TTrue;
+            } elseif ($negated_type === 'true' && isset($existing_var_type->types['bool'])) {
+                $existing_var_type->removeType('bool');
+                $existing_var_type->types['false'] = new TFalse;
+            } else {
+                $existing_var_type->removeType($negated_type);
+            }
 
             if (empty($existing_var_type->types)) {
                 if (!$existing_var_type->from_docblock

@@ -138,7 +138,7 @@ abstract class Atomic
             return true;
         }
 
-        if ($this instanceof TFalse && $parent->hasType('bool')) {
+        if (($this instanceof TFalse || $this instanceof TTrue) && $parent->hasType('bool')) {
             // this is fine
             return true;
         }

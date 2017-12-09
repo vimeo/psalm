@@ -208,7 +208,7 @@ class Union
      */
     public function hasBool()
     {
-        return isset($this->types['bool']) || isset($this->types['false']);
+        return isset($this->types['bool']) || isset($this->types['false']) || isset($this->types['true']);
     }
 
     /**
@@ -240,9 +240,10 @@ class Union
      */
     public function hasNumericType()
     {
-        return isset($this->types['int']) ||
-            isset($this->types['float']) ||
-            isset($this->types['string']);
+        return isset($this->types['int'])
+            || isset($this->types['float'])
+            || isset($this->types['string'])
+            || isset($this->types['numeric-string']);
     }
 
     /**
@@ -255,6 +256,7 @@ class Union
             isset($this->types['string']) ||
             isset($this->types['bool']) ||
             isset($this->types['false']) ||
+            isset($this->types['true']) ||
             isset($this->types['numeric']) ||
             isset($this->types['numeric-string']);
     }

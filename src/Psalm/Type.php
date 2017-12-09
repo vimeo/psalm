@@ -563,6 +563,12 @@ abstract class Type
             }
         }
 
+        if (isset($combination->value_types['true']) && isset($combination->value_types['false'])) {
+            unset($combination->value_types['true'], $combination->value_types['false']);
+
+            $combination->value_types['bool'] = new TBool();
+        }
+
         $new_types = [];
 
         if (count($combination->objectlike_entries) &&
@@ -642,11 +648,11 @@ abstract class Type
             return null;
         }
 
-        if ($type instanceof TBool && isset($combination->value_types['false'])) {
+        if (get_class($type) === 'Psalm\\Type\\Atomic\\TBool' && isset($combination->value_types['false'])) {
             unset($combination->value_types['false']);
         }
 
-        if ($type instanceof TBool && isset($combination->value_types['true'])) {
+        if (get_class($type) === 'Psalm\\Type\\Atomic\\TBool' && isset($combination->value_types['true'])) {
             unset($combination->value_types['true']);
         }
 
