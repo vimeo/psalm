@@ -278,6 +278,41 @@ class TypeChecker
                 return Type::getMixed();
             }
 
+            if ($new_var_type === '!bool' && !$existing_var_type->isMixed()) {
+                $non_bool_types = [];
+                $did_remove_type = false;
+
+                foreach ($existing_var_type->types as $type) {
+                    if (!$type instanceof TBool) {
+                        $non_bool_types[] = $type;
+                    } else {
+                        $did_remove_type = true;
+                    }
+                }
+
+                if ((!$did_remove_type || !$non_bool_types) && !$existing_var_type->from_docblock) {
+                    if ($key && $code_location) {
+                        if (IssueBuffer::accepts(
+                            new RedundantCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
+                if ($non_bool_types) {
+                    return new Type\Union($non_bool_types);
+                }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
+            }
+
             if ($new_var_type === '!numeric' && !$existing_var_type->isMixed()) {
                 $non_numeric_types = [];
                 $did_remove_type = $existing_var_type->hasString();
@@ -641,6 +676,41 @@ class TypeChecker
 
             if ($scalar_types) {
                 return new Type\Union($scalar_types);
+            }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
+        }
+
+        if ($new_var_type === 'bool' && !$existing_var_type->isMixed()) {
+            $bool_types = [];
+            $did_remove_type = false;
+
+            foreach ($existing_var_type->types as $type) {
+                if ($type instanceof TBool) {
+                    $bool_types[] = $type;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$did_remove_type || !$bool_types) && !$existing_var_type->from_docblock) {
+                if ($key && $code_location) {
+                    if (IssueBuffer::accepts(
+                        new RedundantCondition(
+                            'Found a redundant condition when evaluating ' . $key,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            if ($bool_types) {
+                return new Type\Union($bool_types);
             }
 
             $failed_reconciliation = true;
