@@ -26,17 +26,71 @@ class TryChecker
         Context $context,
         LoopScope $loop_scope = null
     ) {
-        $statements_checker->analyze($stmt->stmts, $context, $loop_scope);
+        $catch_actions = [];
+        $all_catches_leave = true;
+
+        /** @var int $i */
+        foreach ($stmt->catches as $i => $catch) {
+            $catch_actions[$i] = ScopeChecker::getFinalControlActions($catch->stmts);
+            $all_catches_leave = $all_catches_leave && !in_array(ScopeChecker::ACTION_NONE, $catch_actions[$i], true);
+        }
+
+        if ($all_catches_leave) {
+            $try_context = $context;
+        } else {
+            $try_context = clone $context;
+        }
+
+        $assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = [];
+
+        if ($statements_checker->analyze($stmt->stmts, $context, $loop_scope) === false) {
+            return false;
+        }
+
+        /** @var array<string, bool> */
+        $new_assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = $assigned_var_ids;
+
+        if ($try_context !== $context) {
+            foreach ($try_context->vars_in_scope as $var_id => $type) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $try_context->vars_in_scope[$var_id] = clone $type;
+                } else {
+                    $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $type
+                    );
+                }
+            }
+        }
+
+        // also run the analysis in the main context, optimistically
+        if ($statements_checker->analyze($stmt->stmts, $context, $loop_scope) === false) {
+            return false;
+        }
 
         $try_leaves_loop = $loop_scope
             && $loop_scope->final_actions
             && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true);
 
-        // clone context for catches after running the try block, as
-        // we optimistically assume it only failed at the very end
-        $original_context = clone $context;
+        if (!$all_catches_leave) {
+            foreach ($assigned_var_ids as $assigned_var_id => $_) {
+                $context->removeVarFromConflictingClauses($assigned_var_id);
+            }
+        } else {
+            foreach ($assigned_var_ids as $assigned_var_id => $_) {
+                $try_context->removeVarFromConflictingClauses($assigned_var_id);
+            }
+        }
 
-        foreach ($stmt->catches as $catch) {
+        // at this point we have two contexts – $context, in which it is assumed that everything was fine,
+        // and $try_context - which allows all variables to have the union of the values before and after
+        // the try was applied
+        $original_context = clone $try_context;
+
+        /** @var int $i */
+        foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
 
             $fq_catch_classes = [];
@@ -47,7 +101,7 @@ class TryChecker
                     $statements_checker->getAliases()
                 );
 
-                if ($context->check_classes) {
+                if ($original_context->check_classes) {
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $statements_checker->getFileChecker()->project_checker,
                         $fq_catch_class,
@@ -92,14 +146,24 @@ class TryChecker
             // this registers the variable to avoid unfair deadcode issues
             $catch_context->hasVariable($catch_var_id);
 
+            $suppressed_issues = $statements_checker->getSuppressedIssues();
+
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_checker->addSuppressedIssues(['RedundantCondition']);
+            }
+
             $statements_checker->analyze($catch->stmts, $catch_context, $loop_scope);
+
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+            }
 
             $context->referenced_var_ids = array_merge(
                 $catch_context->referenced_var_ids,
                 $context->referenced_var_ids
             );
 
-            if (ScopeChecker::getFinalControlActions($catch->stmts) !== [ScopeChecker::ACTION_END]) {
+            if ($catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
                 foreach ($catch_context->vars_in_scope as $catch_var => $type) {
                     if ($catch->var !== $catch_var &&
                         $context->hasVariable($catch_var) &&
@@ -119,15 +183,15 @@ class TryChecker
             }
         }
 
-        if ($stmt->finally) {
-            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
-        }
-
         if ($loop_scope
             && !$try_leaves_loop
             && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true)
         ) {
             $loop_scope->final_actions[] = ScopeChecker::ACTION_NONE;
+        }
+
+        if ($stmt->finally) {
+            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
         }
 
         return null;

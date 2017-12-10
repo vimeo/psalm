@@ -162,6 +162,27 @@ class RedundantConditionTest extends TestCase
                       if (!is_numeric($s) || empty($s)) {}
                     }',
             ],
+            'noRedundantConditionOnTryCatchVars' => [
+                '<?php
+                    function trycatch() : void {
+                        $value = null;
+                        try {
+                            if (rand() % 2 > 0) {
+                                throw new RuntimeException("Failed");
+                            }
+                            $value = new stdClass();
+                            if (rand() % 2 > 0) {
+                                throw new RuntimeException("Failed");
+                            }
+                        } catch (Exception $e) {
+                            if ($value) {
+                                var_export($value);
+                            }
+                        }
+
+                        if ($value) {}
+                    }',
+            ],
         ];
     }
 
