@@ -64,6 +64,8 @@ class TryChecker
                     );
                 }
             }
+
+            $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
         }
 
         // also run the analysis in the main context, optimistically
