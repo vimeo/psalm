@@ -145,6 +145,18 @@ class EmptyTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment'],
             ],
+            'dontBleedEmptyAfterExtract' => [
+                '<?php
+                    function foo(array $args) : void {
+                      extract($args);
+                      if ((empty($arr) && empty($a)) || $c === 0) {
+                      } else {
+                        foreach ($arr as $b) {}
+                      }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment'],
+            ],
         ];
     }
 }
