@@ -53,12 +53,13 @@ class TryChecker
         $context->assigned_var_ids = $assigned_var_ids;
 
         if ($try_context !== $context) {
-            foreach ($try_context->vars_in_scope as $var_id => $type) {
-                if (!isset($context->vars_in_scope[$var_id])) {
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (!isset($try_context->vars_in_scope[$var_id])) {
                     $try_context->vars_in_scope[$var_id] = clone $type;
+                    $try_context->vars_in_scope[$var_id]->from_docblock = true;
                 } else {
                     $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
+                        $try_context->vars_in_scope[$var_id],
                         $type
                     );
                 }
@@ -164,13 +165,13 @@ class TryChecker
             );
 
             if ($catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
-                foreach ($catch_context->vars_in_scope as $catch_var => $type) {
-                    if ($catch->var !== $catch_var &&
-                        $context->hasVariable($catch_var) &&
-                        $context->vars_in_scope[$catch_var]->getId() !== $type->getId()
+                foreach ($catch_context->vars_in_scope as $var_id => $type) {
+                    if ($catch->var !== $var_id &&
+                        $context->hasVariable($var_id) &&
+                        $context->vars_in_scope[$var_id]->getId() !== $type->getId()
                     ) {
-                        $context->vars_in_scope[$catch_var] = Type::combineUnionTypes(
-                            $context->vars_in_scope[$catch_var],
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $context->vars_in_scope[$var_id],
                             $type
                         );
                     }
