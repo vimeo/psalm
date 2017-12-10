@@ -231,7 +231,7 @@ class IfChecker
         $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context->vars_in_scope);
 
         // check the if
-        self::analyzeIfBlock(
+        if (self::analyzeIfBlock(
             $statements_checker,
             $stmt,
             $if_scope,
@@ -240,34 +240,40 @@ class IfChecker
             $context,
             $pre_assignment_else_redefined_vars,
             $loop_scope
-        );
+        ) === false) {
+            return false;
+        }
 
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {
             $elseif_context = clone $original_context;
 
-            self::analyzeElseIfBlock(
+            if (self::analyzeElseIfBlock(
                 $statements_checker,
                 $elseif,
                 $if_scope,
                 $elseif_context,
                 $context,
                 $loop_scope
-            );
+            ) === false) {
+                return false;
+            }
         }
 
         // check the else
         if ($stmt->else) {
             $else_context = clone $original_context;
 
-            self::analyzeElseBlock(
+            if (self::analyzeElseBlock(
                 $statements_checker,
                 $stmt->else,
                 $if_scope,
                 $else_context,
                 $context,
                 $loop_scope
-            );
+            ) === false) {
+                return false;
+            }
         } else {
             $if_scope->final_actions[] = ScopeChecker::ACTION_NONE;
         }
