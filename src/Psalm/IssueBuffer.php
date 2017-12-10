@@ -202,6 +202,26 @@ class IssueBuffer
         $project_checker = ProjectChecker::getInstance();
 
         if (self::$issues_data) {
+            usort(
+                self::$issues_data,
+                /** @return int */
+                function (array $d1, array $d2) {
+                    if ($d1['file_path'] === $d2['file_path']) {
+                        if ($d1['line_number'] === $d2['line_number']) {
+                            if ($d1['column'] === $d2['column']) {
+                                return 0;
+                            }
+
+                            return $d1['column'] > $d2['column'] ? 1 : -1;
+                        }
+
+                        return $d1['line_number'] > $d2['line_number'] ? 1 : -1;
+                    }
+
+                    return $d1['file_path'] > $d2['file_path'] ? 1 : -1;
+                }
+            );
+
             foreach (self::$issues_data as $issue_data) {
                 if ($issue_data['severity'] === Config::REPORT_ERROR) {
                     $has_error = true;
