@@ -283,7 +283,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             Type::getString(),
                             'echo',
                             (int)$i,
-                            new CodeLocation($this->getSource(), $expr)
+                            new CodeLocation($this->getSource(), $expr),
+                            $expr,
+                            $context
                         ) === false) {
                             return false;
                         }
