@@ -68,11 +68,6 @@ class TryChecker
             $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
         }
 
-        // also run the analysis in the main context, optimistically
-        if ($statements_checker->analyze($stmt->stmts, $context, $loop_scope) === false) {
-            return false;
-        }
-
         $try_leaves_loop = $loop_scope
             && $loop_scope->final_actions
             && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true);

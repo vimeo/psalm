@@ -512,6 +512,16 @@ class TypeAlgebraTest extends TestCase
                     if (rand(0, 10) > 5) {
                     } elseif (($a = new A) && $a->foo) {}',
             ],
+            'noParadoxForGetopt' => [
+                '<?php
+                    $options = getopt("t:");
+
+                    try {
+                        if (!isset($options["t"])) {
+                            throw new Exception("bad");
+                        }
+                    } catch (Exception $e) {}',
+            ],
         ];
     }
 
