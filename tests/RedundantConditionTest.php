@@ -183,6 +183,11 @@ class RedundantConditionTest extends TestCase
                         if ($value) {}
                     }',
             ],
+            'noRedundantConditionInFalseCheck' => [
+                '<?php
+                    $ch = curl_init();
+                    if (!$ch) {}',
+            ],
         ];
     }
 

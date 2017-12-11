@@ -537,7 +537,10 @@ class TypeChecker
             }
 
             foreach ($existing_var_type->types as $type_key => $type) {
-                if ($type instanceof TNamedObject) {
+                if ($type instanceof TNamedObject
+                    || $type instanceof TResource
+                    || $type instanceof TCallable
+                ) {
                     $did_remove_type = true;
 
                     unset($existing_var_type->types[$type_key]);
