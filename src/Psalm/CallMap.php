@@ -8269,7 +8269,7 @@ return [
 'sodium_crypto_sign_secretkey' => ['string', 'keypair'=>'string'],
 'sodium_crypto_sign_publickey_from_secretkey' => ['string', 'secretkey'=>'string'],
 'sodium_crypto_sign_seed_keypair' => ['string', 'seed'=>'string'],
-'sodium_crypto_sign_verify_detached' => ['string', 'signature'=>'string', 'message'=>'string', 'publickey'=>'string'],
+'sodium_crypto_sign_verify_detached' => ['bool', 'signature'=>'string', 'message'=>'string', 'publickey'=>'string'],
 'sodium_crypto_stream' => ['string', 'length'=>'int', 'nonce'=>'string', 'key'=>'string'],
 'sodium_crypto_stream_xor' => ['string', 'message'=>'string', 'nonce'=>'string', 'key'=>'string'],
 'sodium_base642bin' => ['string', 'base64'=>'string', 'variant'=>'int', 'ignore'=>'string'],
