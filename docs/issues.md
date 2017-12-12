@@ -146,34 +146,44 @@ echo A::FOO;
 
 ### InaccessibleMethod
 
-Emitted when
+Emitted when attempting to access a protected/private method from outside its available scope
 
 ```php
-
+class A {
+    protected function foo() : void {}
+}
+echo (new A)->foo();
 ```
 
 ### InaccessibleProperty
 
-Emitted when
+Emitted when attempting to access a protected/private property from outside its available scope
 
 ```php
-
+class A {
+    /** @return string */
+    protected $foo;
+}
+echo (new A)->foo;
 ```
 
 ### InvalidArgument
 
-Emitted when
+Emitted when a supplied function/method argument is incompatible with the method signature or docblock one.
 
 ```php
-
+class A {}
+function foo(A $a) : void {}
+foo("hello");
 ```
 
 ### InvalidArrayAccess
 
-Emitted when
+Emitted when attempting to access an array offset on a value that does not permit it
 
 ```php
-
+$arr = 5;
+echo $arr[0];
 ```
 
 ### InvalidArrayAssignment
