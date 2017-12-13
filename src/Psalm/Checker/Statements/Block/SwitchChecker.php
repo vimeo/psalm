@@ -102,7 +102,7 @@ class SwitchChecker
                                 [
                                     new PhpParser\Node\Arg(
                                         new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
-                                    )
+                                    ),
                                 ]
                             );
                         } elseif ($type instanceof Type\Atomic\GetTypeT) {
@@ -111,7 +111,7 @@ class SwitchChecker
                                 [
                                     new PhpParser\Node\Arg(
                                         new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
-                                    )
+                                    ),
                                 ]
                             );
                         } else {
