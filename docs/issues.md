@@ -188,58 +188,66 @@ echo $arr[0];
 
 ### InvalidArrayAssignment
 
-Emitted when
+Emitted when attempting to assign a value on a non-array
 
 ```php
-
+$arr = 5;
+$arr[0] = 3;
 ```
 
 ### InvalidArrayOffset
 
-Emitted when
+Emitted when when attempting to access an array using a value that's not a valid offet for that array
 
 ```php
-
+$a = [5, 20, 18];
+echo $a["hello"];
 ```
 
 ### InvalidCast
 
-Emitted when
+Emitted when attempting to cast a value that's not castable
 
 ```php
-
+class A {}
+$a = new A();
+$b = (string)$a;
 ```
 
 ### InvalidClass
 
-Emitted when
+Emitted when referencing a class with the wrong casing
 
 ```php
-
+class Foo {}
+(new foo());
 ```
 
 ### InvalidClone
 
-Emitted when
+Emitted when trying to clone a value that's not cloneable
 
 ```php
-
+$a = "hello";
+$b = clone $a;
 ```
 
 ### InvalidDocblock
 
-Emitted when
+Emitted when there's an error in a docblock type
 
 ```php
-
+/** @var array() */
+$a = [];
 ```
 
 ### InvalidFunctionCall
 
-Emitted when
+Emitted when calling a function on a non-callable variable
 
 ```php
-
+$a = 5;
+$b = $a();
 ```
 
 ### InvalidGlobal
@@ -252,18 +260,20 @@ Emitted when
 
 ### InvalidIterator
 
-Emitted when
+Emitted when trying to iterate over a value that's not iterable
 
 ```php
-
+$a = 5;
+foreach ($a as $b) {}
 ```
 
 ### InvalidMethodCall
 
-Emitted when
+Emitted when attempting to call a method on a non-object
 
 ```php
-
+$a = 5;
+$a->foo();
 ```
 
 ### InvalidOperand
