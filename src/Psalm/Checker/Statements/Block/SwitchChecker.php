@@ -85,7 +85,47 @@ class SwitchChecker
                     return false;
                 }
 
-                $fake_equality = new PhpParser\Node\Expr\BinaryOp\Equal($stmt->cond, $case->cond);
+                $switch_condition = $stmt->cond;
+
+                if ($switch_condition instanceof PhpParser\Node\Expr\Variable
+                    && is_string($switch_condition->name)
+                    && isset($context->vars_in_scope['$' . $switch_condition->name])
+                ) {
+                    $switch_var_type = $context->vars_in_scope['$' . $switch_condition->name];
+
+                    $type_statements = [];
+
+                    foreach ($switch_var_type->types as $type) {
+                        if ($type instanceof Type\Atomic\GetClassT) {
+                            $type_statements[] = new PhpParser\Node\Expr\FuncCall(
+                                new PhpParser\Node\Name(['get_class']),
+                                [
+                                    new PhpParser\Node\Arg(
+                                        new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                    )
+                                ]
+                            );
+                        } elseif ($type instanceof Type\Atomic\GetTypeT) {
+                            $type_statements[] = new PhpParser\Node\Expr\FuncCall(
+                                new PhpParser\Node\Name(['gettype']),
+                                [
+                                    new PhpParser\Node\Arg(
+                                        new PhpParser\Node\Expr\Variable(substr($type->typeof, 1))
+                                    )
+                                ]
+                            );
+                        } else {
+                            $type_statements = null;
+                            break;
+                        }
+                    }
+
+                    if ($type_statements && count($type_statements) === 1) {
+                        $switch_condition = $type_statements[0];
+                    }
+                }
+
+                $fake_equality = new PhpParser\Node\Expr\BinaryOp\Equal($switch_condition, $case->cond);
 
                 $case_clauses = AlgebraChecker::getFormula(
                     $fake_equality,
