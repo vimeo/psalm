@@ -18,4 +18,4 @@ script:
   - vendor/bin/phpcs
 
 after_success:
-  - travis_retry php vendor/bin/coveralls -v
+  - travis_retry php vendor/bin/php-coveralls -v
