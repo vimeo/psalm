@@ -501,8 +501,11 @@ class TypeChecker
             return Type::getMixed();
         }
 
+        $is_strict_equality = false;
+
         if ($new_var_type[0] === '^') {
             $new_var_type = substr($new_var_type, 1);
+            $is_strict_equality = true;
         }
 
         if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
@@ -582,7 +585,10 @@ class TypeChecker
                 }
             }
 
-            if ((!$object_types || !$did_remove_type) && !$existing_var_type->from_docblock) {
+            if ((!$object_types || !$did_remove_type)
+                && !$existing_var_type->from_docblock
+                && !$is_strict_equality
+            ) {
                 if ($key && $code_location) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
@@ -628,7 +634,10 @@ class TypeChecker
                 }
             }
 
-            if ((!$did_remove_type || !$numeric_types) && !$existing_var_type->from_docblock) {
+            if ((!$did_remove_type || !$numeric_types)
+                && !$existing_var_type->from_docblock
+                && !$is_strict_equality
+            ) {
                 if ($key && $code_location) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
@@ -663,7 +672,10 @@ class TypeChecker
                 }
             }
 
-            if ((!$did_remove_type || !$scalar_types) && !$existing_var_type->from_docblock) {
+            if ((!$did_remove_type || !$scalar_types)
+                && !$existing_var_type->from_docblock
+                && !$is_strict_equality
+            ) {
                 if ($key && $code_location) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
@@ -698,7 +710,10 @@ class TypeChecker
                 }
             }
 
-            if ((!$did_remove_type || !$bool_types) && !$existing_var_type->from_docblock) {
+            if ((!$did_remove_type || !$bool_types)
+                && !$existing_var_type->from_docblock
+                && !$is_strict_equality
+            ) {
                 if ($key && $code_location) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
