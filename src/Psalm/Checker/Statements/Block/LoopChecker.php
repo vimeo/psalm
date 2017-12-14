@@ -40,7 +40,7 @@ class LoopChecker
         $assignment_mapper = new \Psalm\Visitor\AssignmentMapVisitor($loop_scope->loop_context->self);
         $traverser->addVisitor($assignment_mapper);
 
-        $traverser->traverse($stmts);
+        $traverser->traverse(array_merge($stmts, $post_conditions));
 
         $assignment_map = $assignment_mapper->getAssignmentMap();
 
