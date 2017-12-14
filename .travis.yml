@@ -16,3 +16,6 @@ script:
   - vendor/bin/phpunit
   - bin/psalm
   - vendor/bin/phpcs
+
+after_success:
+  - travis_retry php vendor/bin/coveralls -v
