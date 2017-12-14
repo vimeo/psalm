@@ -625,6 +625,47 @@ class AssertionFinder
             return [];
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater) {
+            $typed_value_position = self::hasTypedValueComparison($conditional);
+
+            if ($typed_value_position) {
+                $var_type = null;
+                $other_type = null;
+
+                if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    /** @var PhpParser\Node\Expr $conditional->right */
+                    $var_name = ExpressionChecker::getArrayVarId(
+                        $conditional->left,
+                        $this_class_name,
+                        $source
+                    );
+
+                    $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
+                    /** @var PhpParser\Node\Expr $conditional->left */
+                    $var_name = ExpressionChecker::getArrayVarId(
+                        $conditional->right,
+                        $this_class_name,
+                        $source
+                    );
+
+                    $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                } else {
+                    throw new \UnexpectedValueException('$typed_value_position value');
+                }
+
+                if ($var_name) {
+                    $if_types[$var_name] = '^isset';
+                }
+
+                return $if_types;
+            }
+
+            return [];
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\FuncCall) {
             return self::processFunctionCall($conditional, $this_class_name, $source, false);
         }
@@ -971,7 +1012,7 @@ class AssertionFinder
      */
     protected static function hasTypedValueComparison(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
             return false;
         }
 

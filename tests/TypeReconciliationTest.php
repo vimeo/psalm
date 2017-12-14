@@ -658,6 +658,13 @@ class TypeReconciliationTest extends TestCase
                     '$a' => 'int|null',
                 ],
             ],
+            'eraseNullAfterGreaterThanCheck' => [
+                '<?php
+                    $a = mt_rand(0, 1) ? mt_rand(0, 10) : null;
+                    if ($a > 0) {
+                      echo $a + 3;
+                    }',
+            ],
         ];
     }
 
