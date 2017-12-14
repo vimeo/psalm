@@ -182,20 +182,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->classlike_storages[] = $storage;
 
             if ($doc_comment) {
+                $docblock_info = null;
                 try {
                     $docblock_info = CommentChecker::extractClassLikeDocblockInfo(
                         (string)$doc_comment,
                         $doc_comment->getLine()
                     );
                 } catch (DocblockParseException $e) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::accepts(
                         new InvalidDocblock(
                             $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
                             new CodeLocation($this->file_checker, $node, null, true)
                         )
-                    )) {
-                        $docblock_info = null;
-                    }
+                    );
                 }
 
                 if ($docblock_info) {
