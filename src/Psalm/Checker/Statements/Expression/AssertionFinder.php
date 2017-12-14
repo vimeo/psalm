@@ -643,6 +643,31 @@ class AssertionFinder
                     $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
                     $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
+                    $var_name = null;
+                } else {
+                    throw new \UnexpectedValueException('$typed_value_position value');
+                }
+
+                if ($var_name) {
+                    $if_types[$var_name] = '^isset';
+                }
+
+                return $if_types;
+            }
+
+            return [];
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller) {
+            $typed_value_position = self::hasTypedValueComparison($conditional);
+
+            if ($typed_value_position) {
+                $var_type = null;
+                $other_type = null;
+
+                if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    $var_name = null;
+                } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionChecker::getArrayVarId(
                         $conditional->right,

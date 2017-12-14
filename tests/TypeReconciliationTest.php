@@ -658,10 +658,15 @@ class TypeReconciliationTest extends TestCase
                     '$a' => 'int|null',
                 ],
             ],
-            'eraseNullAfterGreaterThanCheck' => [
+            'eraseNullAfterInequalityCheck' => [
                 '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(0, 10) : null;
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
+
                     if ($a > 0) {
+                      echo $a + 3;
+                    }
+
+                    if (0 < $a) {
                       echo $a + 3;
                     }',
             ],
@@ -723,6 +728,24 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'dontEraseNullAfterLessThanCheck' => [
+                '<?php
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
+
+                    if ($a < 0) {
+                      echo $a + 3;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'dontEraseNullAfterGreaterThanCheck' => [
+                '<?php
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
+
+                    if (0 > $a) {
+                      echo $a + 3;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
             ],
         ];
     }
