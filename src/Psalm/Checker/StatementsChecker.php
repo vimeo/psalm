@@ -908,6 +908,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $stmt->inferredType = Type::parseString($var_comment->type);
             } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
+
+                if ($stmt->inferredType->isVoid()) {
+                    $stmt->inferredType = Type::getNull();
+                }
             } else {
                 $stmt->inferredType = Type::getMixed();
             }

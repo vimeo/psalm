@@ -538,6 +538,15 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'ReservedWord',
             ],
+            'disallowReturningExplicitVoid' => [
+                '<?php
+                    function returnsVoid() : void {}
+
+                    function alsoReturnsVoid() : void {
+                      return returnsVoid();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

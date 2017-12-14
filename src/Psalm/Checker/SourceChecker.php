@@ -172,7 +172,7 @@ abstract class SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('$source cannot be null');
         }
 
-        return $this->source->addSuppressedIssues($new_issues);
+        $this->source->addSuppressedIssues($new_issues);
     }
 
     /**
@@ -186,7 +186,7 @@ abstract class SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('$source cannot be null');
         }
 
-        return $this->source->removeSuppressedIssues($new_issues);
+        $this->source->removeSuppressedIssues($new_issues);
     }
 
     /**
