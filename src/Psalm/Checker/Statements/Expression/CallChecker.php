@@ -2315,7 +2315,7 @@ class CallChecker
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
-                                return false;
+                                // keep soldiering on
                             }
                         } else {
                             if (IssueBuffer::accepts(
@@ -2326,12 +2326,12 @@ class CallChecker
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
-                                return false;
+                                // keep soldiering on
                             }
                         }
                     }
 
-                    if (!$type_match_found) {
+                    if (!$coerced_type && !$type_match_found) {
                         $types_can_be_identical = TypeChecker::canBeIdenticalTo(
                             $project_checker,
                             $input_type,
@@ -2503,7 +2503,7 @@ class CallChecker
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
-                    return false;
+                    // keep soldiering on
                 }
             } else {
                 if (IssueBuffer::accepts(
@@ -2514,7 +2514,7 @@ class CallChecker
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
-                    return false;
+                    // keep soldiering on
                 }
             }
         }
