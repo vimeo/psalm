@@ -927,6 +927,24 @@ class TypeTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'trueFalseTest' => [
+                '<?php
+                    class A {
+                        /** @return true */
+                        public function returnsTrue() { return true; }
+
+                        /** @return false */
+                        public function returnsFalse() { return false; }
+
+                        /** @return bool */
+                        public function returnsBool() {
+                            if (rand() % 2 > 0) {
+                                return true;
+                            }
+                            return false;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1268,6 +1286,20 @@ class TypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedMethod',
+            ],
+            'notTrueTest' => [
+                '<?php
+                    /** @return true */
+                    function returnsTrue() { return rand() % 2 > 0; }
+                    ',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'notFalseTest' => [
+                '<?php
+                    /** @return false */
+                    function returnsFalse() { return rand() % 2 > 0; }
+                    ',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
