@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Checker\FileChecker;
 
-class TestCase extends PHPUnit_Framework_TestCase
+class TestCase extends BaseTestCase
 {
     /** @var \PhpParser\Parser */
     protected static $parser;
