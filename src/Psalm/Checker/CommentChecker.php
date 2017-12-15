@@ -318,8 +318,10 @@ class CommentChecker
      * @param ClassLikeDocblockComment $info
      * @param array<string,array<mixed,string>> $specials
      * @param string $property_tag ('property', 'property-read', or 'property-write')
-     * @return void
+     *
      * @throws DocblockParseException
+     *
+     * @return void
      */
     protected static function addMagicPropertyToInfo(ClassLikeDocblockComment $info, array $specials, $property_tag)
     {
