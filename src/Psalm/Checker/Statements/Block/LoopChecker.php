@@ -224,8 +224,6 @@ class LoopChecker
                     unset($inner_context->vars_in_scope[$var_id]);
                 }
 
-                $inner_context->clauses = $pre_loop_context->clauses;
-
                 IssueBuffer::startRecording();
 
                 foreach ($pre_conditions as $pre_condition) {
@@ -237,6 +235,8 @@ class LoopChecker
                         $loop_scope->loop_parent_context
                     );
                 }
+
+                $inner_context->clauses = $pre_loop_context->clauses;
 
                 $statements_checker->analyze($stmts, $inner_context, $loop_scope);
 

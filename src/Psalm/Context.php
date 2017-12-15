@@ -372,6 +372,14 @@ class Context
         foreach ($clauses as $clause) {
             \Psalm\Checker\AlgebraChecker::calculateNegation($clause);
 
+            $quoted_remove_var_id = preg_quote($remove_var_id);
+
+            foreach ($clause->possibilities as $var_id => $_) {
+                if (preg_match('/^' . $quoted_remove_var_id . '[\[\-]/', $var_id)) {
+                    break 2;
+                }
+            }
+
             if (!isset($clause->possibilities[$remove_var_id]) ||
                 $clause->possibilities[$remove_var_id] === [$new_type_string]
             ) {
