@@ -174,9 +174,15 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'onlyFalse' => [
-                'bool',
+                'false',
                 [
                     'false',
+                ],
+            ],
+            'onlyTrue' => [
+                'true',
+                [
+                    'true',
                 ],
             ],
             'falseFalseDestruction' => [
