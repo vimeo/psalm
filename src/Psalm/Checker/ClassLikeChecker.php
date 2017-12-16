@@ -293,9 +293,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                                 ? MethodChecker::getStorage($project_checker, $implementer_declaring_method_id)
                                 : null;
 
-                            $cased_interface_method_id = $interface_storage->name . '::' .
-                                $interface_method_storage->cased_name;
-
                             if (!$implementer_method_storage) {
                                 if (IssueBuffer::accepts(
                                     new UnimplementedInterfaceMethod(
@@ -766,8 +763,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     $project_checker,
                     $return_type ? clone $return_type : null,
                     $class_context->self,
-                    $return_type_location,
-                    $secondary_return_type_location
+                    $return_type_location
                 );
             }
         }
@@ -1130,14 +1126,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public function isStatic()
     {
         return false;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasCustomGet()
-    {
-        return $this->has_custom_get;
     }
 
     /**
@@ -1677,16 +1665,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             return explode('::$', $appearing_property_id)[0];
         }
-    }
-
-    /**
-     * @param   string $method_name
-     *
-     * @return  string
-     */
-    protected function getMappedMethodName($method_name)
-    {
-        return $method_name;
     }
 
     /**

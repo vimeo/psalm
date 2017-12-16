@@ -67,8 +67,6 @@ class IfChecker
         $pre_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
-
         if ($first_if_cond_expr &&
             ExpressionChecker::analyze($statements_checker, $first_if_cond_expr, $context) === false
         ) {
@@ -296,8 +294,6 @@ class IfChecker
             $context->assigned_var_ids,
             $if_context->assigned_var_ids
         );
-
-        $updated_loop_vars = [];
 
         // vars can only be defined/redefined if there was an else (defined in every block)
         if ($stmt->else) {

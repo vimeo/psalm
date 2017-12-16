@@ -368,8 +368,6 @@ class ScopeChecker
                 if ($stmt->catches) {
                     $all_same = count($try_statement_actions) === 1;
 
-                    $all_catch_actions = [];
-
                     foreach ($stmt->catches as $catch) {
                         $catch_actions = self::getFinalControlActions($catch->stmts);
 

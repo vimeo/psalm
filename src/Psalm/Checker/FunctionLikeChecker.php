@@ -927,7 +927,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @param   Type\Union|null     $return_type
      * @param   string              $fq_class_name
      * @param   CodeLocation|null   $return_type_location
-     * @param   CodeLocation|null   $secondary_return_type_location
      *
      * @return  false|null
      */
@@ -935,8 +934,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         ProjectChecker $project_checker,
         Type\Union $return_type = null,
         $fq_class_name = null,
-        CodeLocation $return_type_location = null,
-        CodeLocation $secondary_return_type_location = null
+        CodeLocation $return_type_location = null
     ) {
         if (!$this->function->getStmts() &&
             (

@@ -1238,21 +1238,6 @@ class FetchChecker
     ) {
         $var_type = null;
         $used_key_type = null;
-        $string_key_value = null;
-        $int_key_value = null;
-
-        $nesting = 0;
-        $var_id = ExpressionChecker::getVarId(
-            $stmt->var,
-            $statements_checker->getFQCLN(),
-            $statements_checker,
-            $nesting
-        );
-
-        // checks whether or not the thing we're looking at implements ArrayAccess
-        $is_object = $var_id
-            && $context->hasVariable($var_id)
-            && $context->vars_in_scope[$var_id]->hasObjectType();
 
         $array_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
@@ -1288,8 +1273,6 @@ class FetchChecker
         ) === false) {
             return false;
         }
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */

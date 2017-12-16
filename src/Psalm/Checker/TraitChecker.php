@@ -38,20 +38,6 @@ class TraitChecker extends ClassLikeChecker
     }
 
     /**
-     * @param  string $method_name
-     *
-     * @return string
-     */
-    protected function getMappedMethodName($method_name)
-    {
-        if (isset($this->method_map[$method_name])) {
-            return $this->method_map[$method_name];
-        }
-
-        return $method_name;
-    }
-
-    /**
      * @param  string       $fq_trait_name
      * @param  FileChecker  $file_checker
      *

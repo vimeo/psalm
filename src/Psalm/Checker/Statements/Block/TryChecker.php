@@ -48,8 +48,6 @@ class TryChecker
             return false;
         }
 
-        /** @var array<string, bool> */
-        $new_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = $assigned_var_ids;
 
         if ($try_context !== $context) {

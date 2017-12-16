@@ -69,9 +69,7 @@ class LoopChecker
         }
 
         $final_actions = ScopeChecker::getFinalControlActions($stmts);
-        $has_ending_statement = $final_actions === [ScopeChecker::ACTION_END];
         $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
-        $has_continue_statement = $final_actions === [ScopeChecker::ACTION_CONTINUE];
 
         if ($assignment_map) {
             $first_var_id = array_keys($assignment_map)[0];

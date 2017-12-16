@@ -582,7 +582,7 @@ abstract class Type
                 if ($combination->objectlike_entries) {
                     $object_like_generic_type = null;
 
-                    foreach ($combination->objectlike_entries as $property_key => $property_type) {
+                    foreach ($combination->objectlike_entries as $property_type) {
                         if ($object_like_generic_type) {
                             $object_like_generic_type = Type::combineUnionTypes(
                                 $property_type,

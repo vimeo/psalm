@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\CodeLocation;
@@ -110,62 +109,6 @@ abstract class Atomic
             default:
                 return new TNamedObject($value);
         }
-    }
-
-    /**
-     * @param   Union        $parent
-     *
-     * @return  bool
-     */
-    public function isIn(ProjectChecker $project_checker, Union $parent)
-    {
-        if ($parent->isMixed()) {
-            return true;
-        }
-
-        if ($parent->hasType('object') &&
-            $this instanceof TNamedObject &&
-            ClassLikeChecker::classOrInterfaceExists($project_checker, $this->value)
-        ) {
-            return true;
-        }
-
-        if ($parent->hasType('numeric') && $this->isNumericType()) {
-            return true;
-        }
-
-        if ($parent->hasType('array') && $this instanceof ObjectLike) {
-            return true;
-        }
-
-        if (($this instanceof TFalse || $this instanceof TTrue) && $parent->hasType('bool')) {
-            // this is fine
-            return true;
-        }
-
-        if ($parent->hasType($this->getKey())) {
-            return true;
-        }
-
-        // last check to see if class is subclass
-        if ($this instanceof TNamedObject && ClassChecker::classExists($project_checker, $this->value)) {
-            $this_is_subclass = false;
-
-            foreach ($parent->types as $parent_type) {
-                if ($parent_type instanceof TNamedObject &&
-                    ClassChecker::classExtendsOrImplements($project_checker, $this->value, $parent_type->value)
-                ) {
-                    $this_is_subclass = true;
-                    break;
-                }
-            }
-
-            if ($this_is_subclass) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
