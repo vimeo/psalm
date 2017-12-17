@@ -33,8 +33,8 @@ class ListTest extends TestCase
                     $bar = ["a", 2];
                     list($a, $b) = $bar;',
                 'assertions' => [
-                    '$a' => 'int|string',
-                    '$b' => 'int|string',
+                    '$a' => 'string',
+                    '$b' => 'int',
                 ],
             ],
             'thisVar' => [
