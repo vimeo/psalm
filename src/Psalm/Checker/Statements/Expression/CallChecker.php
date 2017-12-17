@@ -1664,7 +1664,7 @@ class CallChecker
                 $array_type = $array_arg->inferredType->types['array'];
 
                 if ($array_type instanceof ObjectLike) {
-                    $array_type = new TArray([Type::getString(), $array_type->getGenericTypeParam()]);
+                    $array_type = $array_type->getGenericArrayType();
                 }
 
                 $by_ref_type = new Type\Union([clone $array_type]);
@@ -1777,7 +1777,7 @@ class CallChecker
                             $array_type = $arg->value->inferredType->types['array'];
 
                             if ($array_type instanceof ObjectLike) {
-                                $array_type = new TArray([Type::getString(), $array_type->getGenericTypeParam()]);
+                                $array_type = $array_type->getGenericArrayType();
                             }
 
                             if (in_array($method_id, ['shuffle', 'sort', 'rsort', 'usort'], true)) {
@@ -2215,7 +2215,7 @@ class CallChecker
                 : null;
 
             if ($array_arg_type instanceof ObjectLike) {
-                $array_arg_type = new TArray([Type::getString(), $array_arg_type->getGenericTypeParam()]);
+                $array_arg_type = $array_arg_type->getGenericArrayType();
             }
 
             $array_arg_types[] = $array_arg_type;

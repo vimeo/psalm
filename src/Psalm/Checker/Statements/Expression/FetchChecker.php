@@ -778,13 +778,12 @@ class FetchChecker
         $has_valid_offset = false;
         $invalid_offset_types = [];
 
-        $string_key_value = null;
-        $int_key_value = null;
+        $key_value = null;
 
-        if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-            $string_key_value = $stmt->dim->value;
-        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
-            $int_key_value = (string)$stmt->dim->value;
+        if ($stmt->dim instanceof PhpParser\Node\Scalar\String_
+            || $stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+        ) {
+            $key_value = $stmt->dim->value;
         }
 
         $array_access_type = null;
@@ -867,11 +866,11 @@ class FetchChecker
                 if ($in_assignment
                     && $type instanceof TArray
                     && $type->type_params[0]->isEmpty()
-                    && $string_key_value
+                    && $key_value !== null
                 ) {
                     // ok, type becomes an ObjectLike
 
-                    $type = new ObjectLike([$string_key_value => new Type\Union([new TEmpty])]);
+                    $type = new ObjectLike([$key_value => new Type\Union([new TEmpty])]);
                 }
 
                 if ($type instanceof TArray) {
@@ -925,64 +924,38 @@ class FetchChecker
                         }
                     }
                 } elseif ($type instanceof ObjectLike) {
-                    if ($string_key_value || $int_key_value !== null) {
-                        if ($string_key_value
-                            && (isset($type->properties[$string_key_value]) || $replacement_type)
-                        ) {
+                    if ($key_value !== null) {
+                        if (isset($type->properties[$key_value]) || $replacement_type) {
                             $has_valid_offset = true;
 
                             if ($replacement_type) {
-                                if (isset($type->properties[$string_key_value])) {
-                                    $type->properties[$string_key_value] = Type::combineUnionTypes(
-                                        $type->properties[$string_key_value],
+                                if (isset($type->properties[$key_value])) {
+                                    $type->properties[$key_value] = Type::combineUnionTypes(
+                                        $type->properties[$key_value],
                                         $replacement_type
                                     );
                                 } else {
-                                    $type->properties[$string_key_value] = $replacement_type;
+                                    $type->properties[$key_value] = $replacement_type;
                                 }
                             }
 
                             if (!$array_access_type) {
-                                $array_access_type = clone $type->properties[$string_key_value];
+                                $array_access_type = clone $type->properties[$key_value];
                             } else {
                                 $array_access_type = Type::combineUnionTypes(
                                     $array_access_type,
-                                    $type->properties[$string_key_value]
+                                    $type->properties[$key_value]
                                 );
                             }
-                        } elseif ($int_key_value !== null
-                             && (isset($type->properties[$int_key_value]) || $replacement_type)
-                        ) {
-                            $has_valid_offset = true;
-
-                            if ($replacement_type) {
-                                if (isset($type->properties[$int_key_value])) {
-                                    $type->properties[$int_key_value] = Type::combineUnionTypes(
-                                        $type->properties[$int_key_value],
-                                        $replacement_type
-                                    );
-                                } else {
-                                    $type->properties[$int_key_value] = $replacement_type;
-                                }
-                            }
+                        } elseif ($in_assignment) {
+                            $type->properties[$key_value] = new Type\Union([new TEmpty]);
 
                             if (!$array_access_type) {
-                                $array_access_type = clone $type->properties[$int_key_value];
+                                $array_access_type = clone $type->properties[$key_value];
                             } else {
                                 $array_access_type = Type::combineUnionTypes(
                                     $array_access_type,
-                                    $type->properties[$int_key_value]
-                                );
-                            }
-                        } elseif ($string_key_value && $in_assignment) {
-                            $type->properties[$string_key_value] = new Type\Union([new TEmpty]);
-
-                            if (!$array_access_type) {
-                                $array_access_type = clone $type->properties[$string_key_value];
-                            } else {
-                                $array_access_type = Type::combineUnionTypes(
-                                    $array_access_type,
-                                    $type->properties[$string_key_value]
+                                    $type->properties[$key_value]
                                 );
                             }
                         } else {
@@ -1003,17 +976,17 @@ class FetchChecker
                     } elseif (TypeChecker::isContainedBy(
                         $project_checker,
                         $offset_type,
-                        Type::getString(),
+                        $type->getGenericKeyType(),
                         true
                     )) {
                         if ($replacement_type) {
                             $generic_params = Type::combineUnionTypes(
-                                $type->getGenericTypeParam(),
+                                $type->getGenericValueType(),
                                 $replacement_type
                             );
 
                             $type = new TArray([
-                                Type::getString(),
+                                $type->getGenericKeyType(),
                                 $generic_params,
                             ]);
 
@@ -1027,18 +1000,18 @@ class FetchChecker
                             }
                         } else {
                             if (!$array_access_type) {
-                                $array_access_type = $type->getGenericTypeParam();
+                                $array_access_type = $type->getGenericValueType();
                             } else {
                                 $array_access_type = Type::combineUnionTypes(
                                     $array_access_type,
-                                    $type->getGenericTypeParam()
+                                    $type->getGenericValueType()
                                 );
                             }
                         }
 
                         $has_valid_offset = true;
                     } else {
-                        $invalid_offset_types[] = 'string';
+                        $invalid_offset_types[] = (string)$type->getGenericKeyType();
 
                         $array_access_type = Type::getMixed();
                     }

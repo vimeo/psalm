@@ -1092,17 +1092,11 @@ class TypeChecker
                 && ($container_type_part instanceof TArray || $container_type_part instanceof ObjectLike)
             ) {
                 if ($container_type_part instanceof ObjectLike) {
-                    $container_type_part = new TArray([
-                        Type::getString(),
-                        $container_type_part->getGenericTypeParam(),
-                    ]);
+                    $container_type_part = $container_type_part->getGenericArrayType();
                 }
 
                 if ($input_type_part instanceof ObjectLike) {
-                    $input_type_part = new TArray([
-                        Type::getString(),
-                        $input_type_part->getGenericTypeParam(),
-                    ]);
+                    $input_type_part = $input_type_part->getGenericArrayType();
                 }
 
                 foreach ($input_type_part->type_params as $i => $input_param) {

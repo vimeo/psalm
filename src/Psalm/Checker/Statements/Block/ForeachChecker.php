@@ -98,7 +98,13 @@ class ForeachChecker
                     continue;
                 }
 
-                if ($iterator_type instanceof Type\Atomic\TArray) {
+                if ($iterator_type instanceof Type\Atomic\TArray
+                    || $iterator_type instanceof Type\Atomic\ObjectLike
+                ) {
+                    if ($iterator_type instanceof Type\Atomic\ObjectLike) {
+                        $iterator_type = $iterator_type->getGenericArrayType();
+                    }
+
                     if (!$value_type) {
                         $value_type = $iterator_type->type_params[1];
                     } else {

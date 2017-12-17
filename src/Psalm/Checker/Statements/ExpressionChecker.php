@@ -368,7 +368,7 @@ class ExpressionChecker
                     } elseif ($type instanceof TArray) {
                         $permissible_atomic_types[] = $type;
                     } elseif ($type instanceof ObjectLike) {
-                        $permissible_atomic_types[] = new TArray([Type::getString(), $type->getGenericTypeParam()]);
+                        $permissible_atomic_types[] = $type->getGenericArrayType();
                     } else {
                         $all_permissible = false;
                         break;
@@ -760,7 +760,7 @@ class ExpressionChecker
 
         $can_create_objectlike = true;
 
-        foreach ($stmt->items as $item) {
+        foreach ($stmt->items as $int_offset => $item) {
             if ($item->key) {
                 if (self::analyze($statements_checker, $item->key, $context) === false) {
                     return false;
@@ -787,8 +787,11 @@ class ExpressionChecker
             }
 
             if (isset($item->value->inferredType)) {
-                if ($item->key instanceof PhpParser\Node\Scalar\String_) {
-                    $property_types[$item->key->value] = $item->value->inferredType;
+                if ($item->key instanceof PhpParser\Node\Scalar\String_
+                    || $item->key instanceof PhpParser\Node\Scalar\LNumber
+                    || !$item->key
+                ) {
+                    $property_types[$item->key ? $item->key->value : $int_offset] = $item->value->inferredType;
                 } else {
                     $can_create_objectlike = false;
                 }
@@ -801,8 +804,11 @@ class ExpressionChecker
             } else {
                 $item_value_type = Type::getMixed();
 
-                if ($item->key instanceof PhpParser\Node\Scalar\String_) {
-                    $property_types[$item->key->value] = Type::getMixed();
+                if ($item->key instanceof PhpParser\Node\Scalar\String_
+                    || $item->key instanceof PhpParser\Node\Scalar\LNumber
+                    || !$item->key
+                ) {
+                    $property_types[$item->key ? $item->key->value : $int_offset] = $item_value_type;
                 } else {
                     $can_create_objectlike = false;
                 }
@@ -810,11 +816,10 @@ class ExpressionChecker
         }
 
         // if this array looks like an object-like array, let's return that instead
-        if ($item_value_type &&
-            $item_key_type &&
-            $item_key_type->hasString() &&
-            !$item_key_type->hasInt() &&
-            $can_create_objectlike
+        if ($item_value_type
+            && $item_key_type
+            && ($item_key_type->hasString() || $item_key_type->hasInt())
+            && $can_create_objectlike
         ) {
             $stmt->inferredType = new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
 
