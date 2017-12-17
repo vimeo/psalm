@@ -22,20 +22,34 @@ class ForChecker
         PhpParser\Node\Stmt\For_ $stmt,
         Context $context
     ) {
+        $pre_assigned_var_ids = $context->assigned_var_ids;
+        $context->assigned_var_ids = [];
+
         foreach ($stmt->init as $init) {
             if (ExpressionChecker::analyze($statements_checker, $init, $context) === false) {
                 return false;
             }
         }
 
+        $assigned_var_ids = $context->assigned_var_ids;
+
+        $context->assigned_var_ids = array_merge(
+            $pre_assigned_var_ids,
+            $assigned_var_ids
+        );
+
         $while_true = !$stmt->cond && !$stmt->init && !$stmt->loop;
 
         $pre_context = $while_true ? clone $context : null;
 
         $for_context = clone $context;
-        $for_context->inside_loop = true;
 
         $loop_scope = new LoopScope($for_context, $context);
+
+        $loop_scope->protected_var_ids = array_merge(
+            $assigned_var_ids,
+            $context->protected_var_ids
+        );
 
         LoopChecker::analyze(
             $statements_checker,

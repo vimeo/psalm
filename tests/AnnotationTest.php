@@ -101,7 +101,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['MixedArrayOffset'],
+                'error_level' => ['LoopInvalidation', 'MixedArrayOffset'],
             ],
             'goodDocblock' => [
                 '<?php

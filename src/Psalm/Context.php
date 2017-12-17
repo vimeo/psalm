@@ -19,11 +19,6 @@ class Context
     public $vars_possibly_in_scope = [];
 
     /**
-     * @var bool
-     */
-    public $inside_loop = false;
-
-    /**
      * Whether or not we're inside the conditional of an if/where etc.
      *
      * This changes whether or not the context is cloned
@@ -156,6 +151,11 @@ class Context
      * @var bool
      */
     public $is_global = false;
+
+    /**
+     * @var array<string, bool>
+     */
+    public $protected_var_ids = [];
 
     /**
      * @param string|null $self

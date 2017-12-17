@@ -784,6 +784,27 @@ class LoopScopeTest extends TestCase
                     '$c' => 'true',
                 ],
             ],
+            'foreachLoopWithOKManipulation' => [
+                '<?php
+                    $list = [1, 2, 3];
+                    foreach ($list as $i) {
+                      $i = 5;
+                    }',
+            ],
+            'forLoopwithOKChange' => [
+                '<?php
+                    $j = 5;
+                    for ($i = $j; $i < 4; $i++) {
+                      $j = 9;
+                    }',
+            ],
+            'foreachLoopDuplicateList' => [
+                '<?php
+                    $list = [1, 2, 3];
+                    foreach ($list as $i) {
+                      foreach ($list as $j) {}
+                    }',
+            ],
         ];
     }
 
@@ -935,6 +956,21 @@ class LoopScopeTest extends TestCase
 
                     echo $a;',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'foreachLoopInvalidation' => [
+                '<?php
+                    $list = [1, 2, 3];
+                    foreach ($list as $i) {
+                      $list = [4, 5, 6];
+                    }',
+                'error_message' => 'LoopInvalidation',
+            ],
+            'forLoopInvalidation' => [
+                '<?php
+                    for ($i = 0; $i < 4; $i++) {
+                      foreach ([1, 2, 3] as $i) {}
+                    }',
+                'error_message' => 'LoopInvalidation',
             ],
         ];
     }

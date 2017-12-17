@@ -21,6 +21,7 @@ use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidScope;
+use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
@@ -211,6 +212,18 @@ class AssignmentChecker
             $statements_checker->getSuppressedIssues()
         )) {
             return false;
+        }
+
+        if (isset($context->protected_var_ids[$var_id])) {
+            if (IssueBuffer::accepts(
+                new LoopInvalidation(
+                    'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
+                    new CodeLocation($statements_checker->getSource(), $assign_var)
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
         }
 
         if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
@@ -474,6 +487,7 @@ class AssignmentChecker
      * @param   PhpParser\Node\Expr|null        $assignment_value
      * @param   Type\Union                      $assignment_value_type
      * @param   Context                         $context
+     * @param   bool                            $direct_assignment whether the variable is assigned explictly
      *
      * @return  false|null
      */
@@ -483,7 +497,8 @@ class AssignmentChecker
         $prop_name,
         $assignment_value,
         Type\Union $assignment_value_type,
-        Context $context
+        Context $context,
+        $direct_assignment = true
     ) {
         $class_property_types = [];
 
@@ -538,6 +553,18 @@ class AssignmentChecker
 
             if ($var_id) {
                 $context->assigned_var_ids[$var_id] = true;
+
+                if ($direct_assignment && isset($context->protected_var_ids[$var_id])) {
+                    if (IssueBuffer::accepts(
+                        new LoopInvalidation(
+                            'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
+                            new CodeLocation($statements_checker->getSource(), $stmt->var)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
             }
 
             if ($lhs_type->isMixed()) {
@@ -1347,7 +1374,8 @@ class AssignmentChecker
                 $root_array_expr->name,
                 null,
                 $root_type,
-                $context
+                $context,
+                false
             );
         } elseif ($root_var_id) {
             if ($context->hasVariable($root_var_id)) {

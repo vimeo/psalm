@@ -34,6 +34,7 @@ class WhileChecker
         $while_context = clone $context;
 
         $loop_scope = new LoopScope($while_context, $context);
+        $loop_scope->protected_var_ids = $context->protected_var_ids;
 
         LoopChecker::analyze(
             $statements_checker,

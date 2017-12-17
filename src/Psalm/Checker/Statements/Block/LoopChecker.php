@@ -50,6 +50,8 @@ class LoopChecker
 
         $pre_condition_clauses = [];
 
+        $original_protected_var_ids = $loop_scope->loop_parent_context->protected_var_ids;
+
         if ($pre_conditions) {
             foreach ($pre_conditions as $pre_condition) {
                 $pre_condition_clauses = array_merge(
@@ -93,6 +95,8 @@ class LoopChecker
                     $loop_scope->loop_parent_context
                 );
             }
+
+            $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
             self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
@@ -138,8 +142,12 @@ class LoopChecker
 
             $asserted_var_ids = array_unique($asserted_var_ids);
 
+            $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
+
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
+
+            $inner_context->protected_var_ids = $original_protected_var_ids;
 
             foreach ($post_conditions as $post_condition) {
                 if (ExpressionChecker::analyze($statements_checker, $post_condition, $inner_context) === false) {
@@ -236,9 +244,13 @@ class LoopChecker
 
                 $inner_context->clauses = $pre_loop_context->clauses;
 
+                $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
+
                 $statements_checker->analyze($stmts, $inner_context, $loop_scope);
 
                 self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
+
+                $inner_context->protected_var_ids = $original_protected_var_ids;
 
                 foreach ($post_conditions as $post_condition) {
                     if (ExpressionChecker::analyze($statements_checker, $post_condition, $inner_context) === false) {

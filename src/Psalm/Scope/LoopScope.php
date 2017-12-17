@@ -36,7 +36,14 @@ class LoopScope
      */
     public $vars_possibly_in_scope = [];
 
-    /** @var string[] */
+    /**
+     * @var array<string, bool>
+     */
+    public $protected_var_ids = [];
+
+    /**
+     * @var string[]
+     */
     public $final_actions = [];
 
     public function __construct(Context $loop_context, Context $parent_context)

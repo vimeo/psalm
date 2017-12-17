@@ -42,7 +42,6 @@ class ForeachChecker
         }
 
         $foreach_context = clone $context;
-        $foreach_context->inside_loop = true;
 
         $key_type = null;
         $value_type = null;
@@ -305,6 +304,12 @@ class ForeachChecker
         }
 
         $loop_scope = new LoopScope($foreach_context, $context);
+
+        $protected_var_ids = $context->protected_var_ids;
+        if ($var_id) {
+            $protected_var_ids[$var_id] = true;
+        }
+        $loop_scope->protected_var_ids = $protected_var_ids;
 
         LoopChecker::analyze($statements_checker, $stmt->stmts, [], [], $loop_scope);
 

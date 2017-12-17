@@ -704,7 +704,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     {
         $do_context = clone $context;
 
-        LoopChecker::analyze($this, $stmt->stmts, [], [], new LoopScope($do_context, $context), $inner_loop_context);
+        $loop_scope = new LoopScope($do_context, $context);
+        $loop_scope->protected_var_ids = $context->protected_var_ids;
+
+        LoopChecker::analyze($this, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
