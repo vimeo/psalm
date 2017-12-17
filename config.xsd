@@ -126,6 +126,7 @@
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="LoopInvalidation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MisplacedRequiredParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
