@@ -1237,6 +1237,8 @@ class CallChecker
         $project_checker = $file_checker->project_checker;
         $source = $statements_checker->getSource();
 
+        $stmt->inferredType = null;
+
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
 
