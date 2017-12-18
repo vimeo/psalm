@@ -103,13 +103,21 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericValueType()
     {
-        $value_types = [];
+        $value_type = null;
 
         foreach ($this->properties as $property) {
-            $value_types = array_merge($property->types, $value_types);
+            if ($value_type === null) {
+                $value_type = clone $property;
+            } else {
+                $value_type = Type::combineUnionTypes($property, $value_type);
+            }
         }
 
-        return Type::combineTypes(array_values($value_types));
+        if (!$value_type) {
+            throw new \UnexpectedValueException('$value_type should not be null here');
+        }
+
+        return $value_type;
     }
 
     /**
@@ -118,7 +126,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function getGenericArrayType()
     {
         $key_types = [];
-        $value_types = [];
+        $value_type = null;
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key) || preg_match('/^\d+$/', $key)) {
@@ -127,10 +135,18 @@ class ObjectLike extends \Psalm\Type\Atomic
                 $key_types[] = new Type\Atomic\TString();
             }
 
-            $value_types = array_merge($property->types, $value_types);
+            if ($value_type === null) {
+                $value_type = clone $property;
+            } else {
+                $value_type = Type::combineUnionTypes($property, $value_type);
+            }
         }
 
-        return new TArray([Type::combineTypes($key_types), Type::combineTypes(array_values($value_types))]);
+        if (!$value_type) {
+            throw new \UnexpectedValueException('$value_type should not be null here');
+        }
+
+        return new TArray([Type::combineTypes($key_types), $value_type]);
     }
 
     public function __clone()
