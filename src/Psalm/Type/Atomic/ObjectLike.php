@@ -53,7 +53,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         if ($use_phpdoc_format) {
-            return 'array';
+            return $this->getGenericArrayType()->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
         }
 
         return 'array{' .

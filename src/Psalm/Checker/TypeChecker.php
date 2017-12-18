@@ -1213,6 +1213,7 @@ class TypeChecker
             strtolower($container_type_part->value) === 'iterable' &&
             (
                 $input_type_part instanceof TArray ||
+                $input_type_part instanceof ObjectLike ||
                 (
                     $input_type_part instanceof TNamedObject &&
                     (
@@ -1257,6 +1258,7 @@ class TypeChecker
             (
                 $input_type_part instanceof TString ||
                 $input_type_part instanceof TArray ||
+                $input_type_part instanceof ObjectLike ||
                 (
                     $input_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $input_type_part->value) &&
@@ -1272,6 +1274,7 @@ class TypeChecker
             (
                 $container_type_part instanceof TString ||
                 $container_type_part instanceof TArray ||
+                $container_type_part instanceof ObjectLike ||
                 (
                     $container_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $container_type_part->value) &&
