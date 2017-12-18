@@ -301,7 +301,8 @@ class AssignmentChecker
                             $new_assign_type = clone $assign_value_type->types['array']->type_params[1];
                         } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
                             if ($assign_var_item->key
-                                && $assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                                && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
+                                    || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
                                 && isset($assign_value_type->types['array']->properties[$assign_var_item->key->value])
                             ) {
                                 $new_assign_type =
@@ -1258,24 +1259,26 @@ class AssignmentChecker
                 throw new \InvalidArgumentException('Should never get here');
             }
 
-            if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
-                $string_key_value = $current_dim->value;
+            if ($current_dim instanceof PhpParser\Node\Scalar\String_
+                || $current_dim instanceof PhpParser\Node\Scalar\LNumber
+            ) {
+                $key_value = $current_dim->value;
 
                 $has_matching_objectlike_property = false;
 
                 foreach ($child_stmt->inferredType->types as $type) {
                     if ($type instanceof ObjectLike) {
-                        if (isset($type->properties[$string_key_value])) {
+                        if (isset($type->properties[$key_value])) {
                             $has_matching_objectlike_property = true;
 
-                            $type->properties[$string_key_value] = clone $current_type;
+                            $type->properties[$key_value] = clone $current_type;
                         }
                     }
                 }
 
                 if (!$has_matching_objectlike_property) {
                     $array_assignment_type = new Type\Union([
-                        new ObjectLike([$string_key_value => $current_type]),
+                        new ObjectLike([$key_value => $current_type]),
                     ]);
 
                     $new_child_type = Type::combineUnionTypes(
@@ -1316,24 +1319,30 @@ class AssignmentChecker
             }
         }
 
-        if ($current_dim instanceof PhpParser\Node\Scalar\String_) {
-            $string_key_value = $current_dim->value;
+        $root_is_string = array_keys($root_type->types) === ['string'];
+
+        if (($current_dim instanceof PhpParser\Node\Scalar\String_
+                || $current_dim instanceof PhpParser\Node\Scalar\LNumber)
+            && ($current_dim instanceof PhpParser\Node\Scalar\String_
+                || !$root_is_string)
+        ) {
+            $key_value = $current_dim->value;
 
             $has_matching_objectlike_property = false;
 
             foreach ($root_type->types as $type) {
                 if ($type instanceof ObjectLike) {
-                    if (isset($type->properties[$string_key_value])) {
+                    if (isset($type->properties[$key_value])) {
                         $has_matching_objectlike_property = true;
 
-                        $type->properties[$string_key_value] = clone $current_type;
+                        $type->properties[$key_value] = clone $current_type;
                     }
                 }
             }
 
             if (!$has_matching_objectlike_property) {
                 $array_assignment_type = new Type\Union([
-                    new ObjectLike([$string_key_value => $current_type]),
+                    new ObjectLike([$key_value => $current_type]),
                 ]);
 
                 $new_child_type = Type::combineUnionTypes(
@@ -1343,7 +1352,7 @@ class AssignmentChecker
             } else {
                 $new_child_type = $root_type; // noop
             }
-        } elseif (array_keys($root_type->types) !== ['string']) {
+        } elseif (!$root_is_string) {
             $array_assignment_type = new Type\Union([
                 new TArray([
                     isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),

@@ -103,10 +103,10 @@ class Php71Test extends TestCase
                     // [] style
                     [$id2, $name2] = $data[1];',
                 'assertions' => [
-                    '$id1' => 'string|int',
-                    '$name1' => 'string|int',
-                    '$id2' => 'string|int',
-                    '$name2' => 'string|int',
+                    '$id1' => 'int',
+                    '$name1' => 'string',
+                    '$id2' => 'int',
+                    '$name2' => 'string',
                 ],
             ],
             'arrayDestructuringInForeach' => [

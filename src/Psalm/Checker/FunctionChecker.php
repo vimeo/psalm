@@ -407,7 +407,7 @@ class FunctionChecker extends FunctionLikeChecker
                         if ($first_arg->inferredType->hasArray()) {
                             $array_type = $first_arg->inferredType->types['array'];
                             if ($array_type instanceof Type\Atomic\ObjectLike) {
-                                return $array_type->getGenericTypeParam();
+                                return $array_type->getGenericValueType();
                             }
 
                             if ($array_type instanceof Type\Atomic\TArray) {
@@ -475,13 +475,10 @@ class FunctionChecker extends FunctionLikeChecker
                     if (!$type_part instanceof Type\Atomic\TArray) {
                         if ($type_part instanceof Type\Atomic\ObjectLike) {
                             if ($generic_properties !== null) {
-                                $generic_properties = array_merge($type_part->properties, $generic_properties);
+                                $generic_properties = array_merge($generic_properties, $type_part->properties);
                             }
 
-                            $type_part = new Type\Atomic\TArray([
-                                Type::getString(),
-                                $type_part->getGenericTypeParam(),
-                            ]);
+                            $type_part = $type_part->getGenericArrayType();
                         } else {
                             return Type::getArray();
                         }
@@ -493,10 +490,13 @@ class FunctionChecker extends FunctionLikeChecker
                         continue;
                     }
 
-                    $inner_key_types = array_merge(array_values($type_part->type_params[0]->types), $inner_key_types);
+                    $inner_key_types = array_merge(
+                        $inner_key_types,
+                        array_values($type_part->type_params[0]->types)
+                    );
                     $inner_value_types = array_merge(
-                        array_values($type_part->type_params[1]->types),
-                        $inner_value_types
+                        $inner_value_types,
+                        array_values($type_part->type_params[1]->types)
                     );
                 }
             }
@@ -536,8 +536,8 @@ class FunctionChecker extends FunctionLikeChecker
                 $inner_type = $first_arg_array->type_params[1];
                 $key_type = clone $first_arg_array->type_params[0];
             } else {
-                $inner_type = $first_arg_array->getGenericTypeParam();
-                $key_type = Type::getString();
+                $inner_type = $first_arg_array->getGenericValueType();
+                $key_type = $first_arg_array->getGenericKeyType();
             }
 
             if (!$second_arg) {
@@ -569,7 +569,7 @@ class FunctionChecker extends FunctionLikeChecker
             if ($first_arg_array instanceof Type\Atomic\TArray) {
                 $key_type = clone $first_arg_array->type_params[0];
             } else {
-                $key_type = Type::getString();
+                $key_type = $first_arg_array->getGenericKeyType();
             }
 
             if (!$second_arg

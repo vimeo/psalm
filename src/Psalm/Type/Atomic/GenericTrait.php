@@ -105,9 +105,9 @@ trait GenericTrait
                 $input_type_param = $input_type->type_params[$offset];
             } elseif ($input_type instanceof Atomic\ObjectLike) {
                 if ($offset === 0) {
-                    $input_type_param = new Union([new Atomic\TString()]);
+                    $input_type_param = $input_type->getGenericKeyType();
                 } elseif ($offset === 1) {
-                    $input_type_param = $input_type->getGenericTypeParam();
+                    $input_type_param = $input_type->getGenericValueType();
                 } else {
                     throw new \UnexpectedValueException('Not expecting offset of ' . $offset);
                 }

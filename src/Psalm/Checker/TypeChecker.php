@@ -1101,17 +1101,11 @@ class TypeChecker
                 && ($container_type_part instanceof TArray || $container_type_part instanceof ObjectLike)
             ) {
                 if ($container_type_part instanceof ObjectLike) {
-                    $container_type_part = new TArray([
-                        Type::getString(),
-                        $container_type_part->getGenericTypeParam(),
-                    ]);
+                    $container_type_part = $container_type_part->getGenericArrayType();
                 }
 
                 if ($input_type_part instanceof ObjectLike) {
-                    $input_type_part = new TArray([
-                        Type::getString(),
-                        $input_type_part->getGenericTypeParam(),
-                    ]);
+                    $input_type_part = $input_type_part->getGenericArrayType();
                 }
 
                 foreach ($input_type_part->type_params as $i => $input_param) {
@@ -1228,6 +1222,7 @@ class TypeChecker
             strtolower($container_type_part->value) === 'iterable' &&
             (
                 $input_type_part instanceof TArray ||
+                $input_type_part instanceof ObjectLike ||
                 (
                     $input_type_part instanceof TNamedObject &&
                     (
@@ -1272,6 +1267,7 @@ class TypeChecker
             (
                 $input_type_part instanceof TString ||
                 $input_type_part instanceof TArray ||
+                $input_type_part instanceof ObjectLike ||
                 (
                     $input_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $input_type_part->value) &&
@@ -1287,6 +1283,7 @@ class TypeChecker
             (
                 $container_type_part instanceof TString ||
                 $container_type_part instanceof TArray ||
+                $container_type_part instanceof ObjectLike ||
                 (
                     $container_type_part instanceof TNamedObject &&
                     ClassChecker::classExists($project_checker, $container_type_part->value) &&

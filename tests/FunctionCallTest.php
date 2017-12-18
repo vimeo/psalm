@@ -208,7 +208,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $d = array_merge(["a", "b", "c"], [1, 2, 3]);',
                 'assertions' => [
-                    '$d' => 'array<int, int|string>',
+                    '$d' => 'array{0:string, 1:string, 2:string, 3:int, 4:int, 5:int}',
                 ],
             ],
             'arrayDiff' => [
@@ -288,7 +288,7 @@ class FunctionCallTest extends TestCase
 
                   foo($a3);',
                 'assertions' => [
-                    '$a3' => 'array{bye:int, hi:int}',
+                    '$a3' => 'array{hi:int, bye:int}',
                 ],
             ],
             'goodByRef' => [
@@ -310,12 +310,16 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $vars = ["x" => "a", "y" => "b"];
                     $c = array_rand($vars);
-                    $d = $vars[$c];',
+                    $d = $vars[$c];
+                    $more_vars = ["a", "b"];
+                    $e = array_rand($more_vars);',
 
                 'assertions' => [
                     '$vars' => 'array{x:string, y:string}',
                     '$c' => 'string',
                     '$d' => 'string',
+                    '$more_vars' => 'array{0:string, 1:string}',
+                    '$e' => 'int',
                 ],
             ],
             'arrayRandMultiple' => [

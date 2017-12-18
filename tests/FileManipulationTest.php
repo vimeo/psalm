@@ -117,7 +117,7 @@ class FileManipulationTest extends TestCase
                 '<?php
                     /**
                      * @return       string[]
-                     * @psalm-return array<int, string>
+                     * @psalm-return array{0:string}
                      */
                     function foo() {
                         return ["hello"];
