@@ -548,24 +548,9 @@ class TypeAlgebraTest extends TestCase
                     function takesA(A $a) : void {}
 
                     function foo(?A $a) : void {
+                        $c = rand(0, 1);
                         if (($a instanceof B || $a instanceof C)
-                            && ($a instanceof B || rand(0, 1))
-                        ) {
-                            takesA($a);
-                        }
-                    }',
-            ],
-            'instanceofInCNFOrFlippedOrder' => [
-                '<?php
-                    class A {}
-                    class B extends A {}
-                    class C extends A {}
-
-                    function takesA(A $a) : void {}
-
-                    function foo(?A $a) : void {
-                        if (($a instanceof B || rand(0, 1))
-                            && ($a instanceof B || $a instanceof C)
+                            && ($a instanceof B || $c)
                         ) {
                             takesA($a);
                         }

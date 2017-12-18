@@ -216,18 +216,9 @@ class AlgebraChecker
     ) {
         $negated_formula2 = self::negateFormula($formula2);
 
-        $is_reconcilable = true;
-
-        foreach ($formula2 as $clause) {
-            if (!$clause->reconcilable) {
-                $is_reconcilable = false;
-                break;
-            }
-        }
-
         // remove impossible types
         foreach ($negated_formula2 as $clause_a) {
-            if ($is_reconcilable) {
+            if (count($negated_formula2) === 1) {
                 foreach ($clause_a->possibilities as $key => $values) {
                     if (count($values) > 1
                         && count(array_unique($values)) < count($values)
