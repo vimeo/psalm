@@ -1386,8 +1386,9 @@ class ExpressionChecker
                         || $left_type_part instanceof ObjectLike
                         || $right_type_part instanceof ObjectLike
                     ) {
-                        if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike) ||
-                            (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)) {
+                        if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike)
+                            || (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)
+                        ) {
                             if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
                                 if (IssueBuffer::accepts(
                                     new InvalidOperand(
@@ -1415,7 +1416,13 @@ class ExpressionChecker
                             return;
                         }
 
-                        $result_type_member = Type::combineTypes([$left_type_part, $right_type_part]);
+                        if ($left_type_part instanceof ObjectLike && $right_type_part instanceof ObjectLike) {
+                            $properties = $left_type_part->properties + $right_type_part->properties;
+
+                            $result_type_member = new Type\Union([new ObjectLike($properties)]);
+                        } else {
+                            $result_type_member = Type::combineTypes([$left_type_part, $right_type_part]);
+                        }
 
                         if (!$result_type) {
                             $result_type = $result_type_member;

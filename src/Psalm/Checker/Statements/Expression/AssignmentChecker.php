@@ -1319,8 +1319,10 @@ class AssignmentChecker
             }
         }
 
+        $root_is_string = array_keys($root_type->types) === ['string'];
+
         if ($current_dim instanceof PhpParser\Node\Scalar\String_
-            || $current_dim instanceof PhpParser\Node\Scalar\LNumber
+            || ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string)
         ) {
             $key_value = $current_dim->value;
 
@@ -1348,7 +1350,7 @@ class AssignmentChecker
             } else {
                 $new_child_type = $root_type; // noop
             }
-        } elseif (array_keys($root_type->types) !== ['string']) {
+        } elseif (!$root_is_string) {
             $array_assignment_type = new Type\Union([
                 new TArray([
                     isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
