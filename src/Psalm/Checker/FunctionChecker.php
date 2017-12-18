@@ -569,7 +569,7 @@ class FunctionChecker extends FunctionLikeChecker
             if ($first_arg_array instanceof Type\Atomic\TArray) {
                 $key_type = clone $first_arg_array->type_params[0];
             } else {
-                $key_type = Type::getString();
+                $key_type = $first_arg_array->getGenericKeyType();
             }
 
             if (!$second_arg

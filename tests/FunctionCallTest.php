@@ -310,12 +310,16 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $vars = ["x" => "a", "y" => "b"];
                     $c = array_rand($vars);
-                    $d = $vars[$c];',
+                    $d = $vars[$c];
+                    $more_vars = ["a", "b"];
+                    $e = array_rand($more_vars);',
 
                 'assertions' => [
                     '$vars' => 'array{x:string, y:string}',
                     '$c' => 'string',
                     '$d' => 'string',
+                    '$more_vars' => 'array{0:string, 1:string}',
+                    '$e' => 'int',
                 ],
             ],
             'arrayRandMultiple' => [
