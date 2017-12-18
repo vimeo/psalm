@@ -978,15 +978,21 @@ class FetchChecker
                         $offset_type,
                         $type->getGenericKeyType(),
                         true
-                    )) {
+                    ) || $in_assignment
+                    ) {
                         if ($replacement_type) {
                             $generic_params = Type::combineUnionTypes(
                                 $type->getGenericValueType(),
                                 $replacement_type
                             );
 
-                            $type = new TArray([
+                            $new_key_type = Type::combineUnionTypes(
                                 $type->getGenericKeyType(),
+                                $offset_type
+                            );
+
+                            $type = new TArray([
+                                $new_key_type,
                                 $generic_params,
                             ]);
 
