@@ -552,7 +552,7 @@ class ExpressionChecker
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $stmt->inferredType = Type::getMixed();
                 } else {
-                    $stmt->inferredType = $context->vars_in_scope[$var_name];
+                    $stmt->inferredType = clone $context->vars_in_scope[$var_name];
                 }
             } else {
                 $stmt->inferredType = Type::getMixed();
@@ -669,7 +669,7 @@ class ExpressionChecker
                 }
             }
         } else {
-            $stmt->inferredType = $context->vars_in_scope[$var_name];
+            $stmt->inferredType = clone $context->vars_in_scope[$var_name];
         }
 
         return null;

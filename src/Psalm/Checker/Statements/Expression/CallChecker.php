@@ -1132,6 +1132,8 @@ class CallChecker
             $class_type->from_docblock = false;
 
             $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
+
+            $context->vars_in_scope[$var_id] = $class_type;
         }
     }
 
@@ -2649,6 +2651,8 @@ class CallChecker
                 }
 
                 $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
+
+                $context->vars_in_scope[$var_id] = $input_type;
             }
         }
 
