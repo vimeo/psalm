@@ -799,7 +799,7 @@ class CallChecker
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
-                                return false;
+                                // fall through
                             }
                             break;
                     }
