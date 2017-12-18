@@ -1007,9 +1007,18 @@ class TypeChecker
     ) {
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[] = $input_type_part;
+        $container_type_lower = strtolower($container_type_part->value);
 
         foreach ($intersection_input_types as $intersection_input_type) {
             if ($intersection_input_type->value === $container_type_part->value) {
+                return true;
+            }
+
+            $intersection_input_type_lower = strtolower($intersection_input_type->value);
+
+            if ($intersection_input_type_lower === 'generator'
+                && in_array($container_type_lower, ['iterator', 'traversable', 'iterable'], true)
+            ) {
                 return true;
             }
 
