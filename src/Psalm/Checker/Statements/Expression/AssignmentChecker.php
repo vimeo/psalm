@@ -1321,8 +1321,10 @@ class AssignmentChecker
 
         $root_is_string = array_keys($root_type->types) === ['string'];
 
-        if ($current_dim instanceof PhpParser\Node\Scalar\String_
-            || ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string)
+        if (($current_dim instanceof PhpParser\Node\Scalar\String_
+                || $current_dim instanceof PhpParser\Node\Scalar\LNumber)
+            && ($current_dim instanceof PhpParser\Node\Scalar\String_
+                || !$root_is_string)
         ) {
             $key_value = $current_dim->value;
 
