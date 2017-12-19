@@ -98,6 +98,12 @@
             </errorLevel>
         </NullArgument>
 
+        <PossiblyFalseArgument>
+            <errorLevel type="suppress">
+                <directory name="tests" />
+            </errorLevel>
+        </PossiblyFalseArgument>
+
         <TypeCoercion>
             <errorLevel type="suppress">
                 <directory name="tests" />

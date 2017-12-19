@@ -1571,6 +1571,10 @@ class ProjectChecker
     {
         $dir_path = realpath($path);
 
+        if ($dir_path === false) {
+            throw new Exception\ConfigException('Config not found for path ' . $path);
+        }
+
         if (!is_dir($dir_path)) {
             $dir_path = dirname($dir_path);
         }
