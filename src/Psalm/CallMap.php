@@ -7451,7 +7451,7 @@ return [
 'readlink' => ['string', 'filename'=>'string'],
 'realpath_cache_get' => ['array'],
 'realpath_cache_size' => ['int'],
-'realpath' => ['string', 'path'=>'string'],
+'realpath' => ['string|false', 'path'=>'string'],
 'recode_file' => ['bool', 'request'=>'string', 'input'=>'', 'output'=>''],
 'recode_string' => ['string', 'request'=>'string', 'str'=>'string'],
 'RecursiveArrayIterator::getChildren' => ['RecursiveArrayIterator'],
