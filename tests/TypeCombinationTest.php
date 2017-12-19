@@ -186,7 +186,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'falseFalseDestruction' => [
-                'bool',
+                'false',
                 [
                     'false',
                     'false',

@@ -670,6 +670,17 @@ class TypeReconciliationTest extends TestCase
                       echo $a + 3;
                     }',
             ],
+            'twoWrongsDontMakeARight' => [
+                '<?php
+                    if (rand(0, 1)) {
+                        $a = false;
+                    } else {
+                        $a = false;
+                    }',
+                'assertions' => [
+                    '$a' => 'false',
+                ],
+            ],
         ];
     }
 

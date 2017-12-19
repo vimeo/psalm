@@ -548,8 +548,12 @@ abstract class Type
             && !count($combination->objectlike_entries)
             && !count($combination->type_params)
         ) {
-            if (isset($combination->value_types['false']) || isset($combination->value_types['true'])) {
-                return Type::getBool();
+            if (isset($combination->value_types['false'])) {
+                return Type::getFalse();
+            }
+
+            if (isset($combination->value_types['true'])) {
+                return Type::getTrue();
             }
         } elseif (isset($combination->value_types['void'])) {
             unset($combination->value_types['void']);
