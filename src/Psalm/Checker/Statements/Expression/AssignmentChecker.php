@@ -235,7 +235,7 @@ class AssignmentChecker
                 $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $assign_var));
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
-                || $assign_var instanceof PhpParser\Node\Expr\Array_
+            || $assign_var instanceof PhpParser\Node\Expr\Array_
         ) {
             /** @var int $offset */
             foreach ($assign_var->items as $offset => $assign_var_item) {
@@ -276,6 +276,19 @@ class AssignmentChecker
                     );
 
                     continue;
+                }
+
+                if ($var instanceof PhpParser\Node\Expr\List_
+                    || $var instanceof PhpParser\Node\Expr\Array_
+                ) {
+                    self::analyze(
+                        $statements_checker,
+                        $var,
+                        null,
+                        Type::getMixed(),
+                        $context,
+                        $doc_comment
+                    );
                 }
 
                 $list_var_id = ExpressionChecker::getVarId(

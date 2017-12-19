@@ -54,6 +54,19 @@ class ListTest extends TestCase
                         }
                     }',
             ],
+            'mixedNestedAssignment' => [
+                '<?php
+                    /** @psalm-suppress MissingReturnType */
+                    function getMixed() {}
+
+                    /** @psalm-suppress MixedAssignment */
+                    list($a, list($b, $c)) = getMixed();',
+                'assertions' => [
+                    '$a' => 'mixed',
+                    '$b' => 'mixed',
+                    '$c' => 'mixed',
+                ],
+            ],
         ];
     }
 
