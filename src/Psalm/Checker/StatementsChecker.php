@@ -660,7 +660,86 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return Type::getEmptyArray();
             }
 
-            return Type::getArray();
+            $item_key_type = null;
+            $item_value_type = null;
+
+            $property_types = [];
+
+            $can_create_objectlike = true;
+
+            foreach ($stmt->items as $int_offset => $item) {
+                if ($item->key) {
+                    $single_item_key_type = self::getSimpleType(
+                        $item->key,
+                        $statements_source,
+                        $existing_class_constants
+                    );
+
+                    if ($single_item_key_type) {
+                        if ($item_key_type) {
+                            $item_key_type = Type::combineUnionTypes($single_item_key_type, $item_key_type);
+                        } else {
+                            $item_key_type = $single_item_key_type;
+                        }
+                    }
+                } else {
+                    $item_key_type = Type::getInt();
+                }
+
+                if ($item_value_type && $item_value_type->isMixed() && !$can_create_objectlike) {
+                    continue;
+                }
+
+                $single_item_value_type = self::getSimpleType(
+                    $item->value,
+                    $statements_source,
+                    $existing_class_constants
+                );
+
+                if ($single_item_value_type) {
+                    if ($item->key instanceof PhpParser\Node\Scalar\String_
+                        || $item->key instanceof PhpParser\Node\Scalar\LNumber
+                        || !$item->key
+                    ) {
+                        $property_types[$item->key ? $item->key->value : $int_offset] = $single_item_value_type;
+                    } else {
+                        $can_create_objectlike = false;
+                    }
+
+                    if ($item_value_type) {
+                        $item_value_type = Type::combineUnionTypes($single_item_value_type, $item_value_type);
+                    } else {
+                        $item_value_type = $single_item_value_type;
+                    }
+                } else {
+                    $item_value_type = Type::getMixed();
+
+                    if ($item->key instanceof PhpParser\Node\Scalar\String_
+                        || $item->key instanceof PhpParser\Node\Scalar\LNumber
+                        || !$item->key
+                    ) {
+                        $property_types[$item->key ? $item->key->value : $int_offset] = $item_value_type;
+                    } else {
+                        $can_create_objectlike = false;
+                    }
+                }
+            }
+
+            // if this array looks like an object-like array, let's return that instead
+            if ($item_value_type
+                && $item_key_type
+                && ($item_key_type->hasString() || $item_key_type->hasInt())
+                && $can_create_objectlike
+            ) {
+                return new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
+            }
+
+            return new Type\Union([
+                new Type\Atomic\TArray([
+                    $item_key_type ?: Type::getMixed(),
+                    $item_value_type ?: Type::getMixed(),
+                ]),
+            ]);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
