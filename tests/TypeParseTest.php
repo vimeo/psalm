@@ -8,6 +8,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function setUp()
+    {
+        parent::setUp();
+    }
+
+    /**
+     * @return void
+     */
     public function testIntOrString()
     {
         $this->assertSame('int|string', (string) Type::parseString('int|string'));
@@ -77,6 +85,21 @@ class TypeParseTest extends TestCase
         $this->assertSame(
             'array{a:array<int, string|int>, b:string}',
             (string) Type::parseString('array{a:array<int, string|int>, b:string}')
+        );
+
+        $this->assertSame(
+            'array{0:stdClass|null}',
+            (string)Type::parseString('array{stdClass|null}')
+        );
+
+        $this->assertSame(
+            'array{0:array<mixed, mixed>}',
+            (string)Type::parseString('array{array}')
+        );
+
+        $this->assertSame(
+            'array{0:array<int, string>}',
+            (string)Type::parseString('array{array<int, string>}')
         );
     }
 }

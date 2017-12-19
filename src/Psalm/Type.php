@@ -188,7 +188,7 @@ abstract class Type
             $type = array_shift($parse_tree->children);
 
             foreach ($parse_tree->children as $i => $property_branch) {
-                if (!count($property_branch->children)) {
+                if ($property_branch->value !== ParseTree::OBJECT_PROPERTY) {
                     $property_type = self::getTypeFromTree($property_branch);
                     $property_key = (string)$i;
                 } elseif (count($property_branch->children) === 2) {
