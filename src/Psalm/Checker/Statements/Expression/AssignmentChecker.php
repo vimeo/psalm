@@ -334,15 +334,25 @@ class AssignmentChecker
             ) {
                 return false;
             }
-        } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch && is_string($assign_var->name)) {
-            self::analyzePropertyAssignment(
-                $statements_checker,
-                $assign_var,
-                $assign_var->name,
-                $assign_value,
-                $assign_value_type,
-                $context
-            );
+        } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if (is_string($assign_var->name)) {
+                self::analyzePropertyAssignment(
+                    $statements_checker,
+                    $assign_var,
+                    $assign_var->name,
+                    $assign_value,
+                    $assign_value_type,
+                    $context
+                );
+            } else {
+                if (ExpressionChecker::analyze($statements_checker, $assign_var->name, $context) === false) {
+                    return false;
+                }
+
+                if (ExpressionChecker::analyze($statements_checker, $assign_var->var, $context) === false) {
+                    return false;
+                }
+            }
 
             if ($var_id) {
                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -1376,16 +1386,26 @@ class AssignmentChecker
 
         $root_array_expr->inferredType = $root_type;
 
-        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch && is_string($root_array_expr->name)) {
-            self::analyzePropertyAssignment(
-                $statements_checker,
-                $root_array_expr,
-                $root_array_expr->name,
-                null,
-                $root_type,
-                $context,
-                false
-            );
+        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if (is_string($root_array_expr->name)) {
+                self::analyzePropertyAssignment(
+                    $statements_checker,
+                    $root_array_expr,
+                    $root_array_expr->name,
+                    null,
+                    $root_type,
+                    $context,
+                    false
+                );
+            } else {
+                if (ExpressionChecker::analyze($statements_checker, $root_array_expr->name, $context) === false) {
+                    return false;
+                }
+
+                if (ExpressionChecker::analyze($statements_checker, $root_array_expr->var, $context) === false) {
+                    return false;
+                }
+            }
         } elseif ($root_var_id) {
             if ($context->hasVariable($root_var_id)) {
                 $context->vars_in_scope[$root_var_id] = $root_type;

@@ -997,6 +997,16 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
+            'badAssignmentToUndefinedVars' => [
+                '<?php
+                    $x->$y = 4;',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'echoUndefinedPropertyFetch' => [
+                '<?php
+                    echo $x->$y;',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
         ];
     }
 }
