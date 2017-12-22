@@ -324,6 +324,13 @@ class ClosureTest extends TestCase
                     $take_string(42);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'missingClosureReturnType' => [
+                '<?php
+                    $a = function() {
+                        return "foo";
+                    }',
+                'error_message' => 'MissingClosureReturnType',
+            ],
         ];
     }
 }

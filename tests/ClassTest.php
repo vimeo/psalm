@@ -238,6 +238,11 @@ class ClassTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'circularReference' => [
+                '<?php
+                    class A extends A {}',
+                'error_message' => 'CircularReference',
+            ],
         ];
     }
 }

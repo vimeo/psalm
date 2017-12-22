@@ -4,8 +4,8 @@ namespace Psalm\Checker;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
-use Psalm\Exception\CircularReferenceException;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Issue\CircularReference;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
@@ -547,9 +547,16 @@ class ProjectChecker
         }
 
         if (isset($dependent_classlikes[strtolower($storage->name)])) {
-            throw new CircularReferenceException(
-                'Circular reference discovered when loading ' . $storage->name
-            );
+            if ($storage->location && IssueBuffer::accepts(
+                new CircularReference(
+                    'Circular reference discovered when loading ' . $storage->name,
+                    $storage->location
+                )
+            )) {
+                // fall through
+            }
+
+            return;
         }
 
         $storage_provider = $this->classlike_storage_provider;

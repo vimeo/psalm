@@ -86,6 +86,7 @@
         <xs:choice minOccurs="0" maxOccurs="unbounded">
             <xs:element name="AbstractInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="IssueHandlerType" minOccurs="0" />
