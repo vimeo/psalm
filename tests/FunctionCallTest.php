@@ -481,6 +481,12 @@ class FunctionCallTest extends TestCase
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference',
             ],
+            'badArrayByRef' => [
+                '<?php
+                    function fooFoo(array &$a) : void {}
+                    fooFoo([1, 2, 3]);',
+                'error_message' => 'InvalidPassByReference',
+            ],
             'invalidArgAfterCallable' => [
                 '<?php
                     /**

@@ -1951,6 +1951,7 @@ class CallChecker
                 && $function_param->by_ref
             ) {
                 if ($arg->value instanceof PhpParser\Node\Scalar
+                    || $arg->value instanceof PhpParser\Node\Expr\Array_
                     || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
