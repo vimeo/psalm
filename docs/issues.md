@@ -252,10 +252,10 @@ $b = $a();
 
 ### InvalidGlobal
 
-Emitted when
+Emitted when there's a reference to the global keyword where it's not expected
 
 ```php
-
+global $e;
 ```
 
 ### InvalidIterator
@@ -278,210 +278,263 @@ $a->foo();
 
 ### InvalidOperand
 
-Emitted when
+Emitted when using something as an operand that is unexected
 
 ```php
-
+class A {}
+echo (new A) . ' ';
 ```
 
 ### InvalidParamDefault
 
-Emitted when
+Emitted when a function parameter default clashes with the type Psalm expects the param to be
 
 ```php
-
+function foo(int $i = false) : void {}
 ```
 
 ### InvalidPassByReference
 
-Emitted when
+Emitted when passing a non-variable to a function that expects a by-ref variable
 
 ```php
-
+function foo(array &$arr) : void {}
+foo([0, 1, 2]);
 ```
 
 ### InvalidPropertyAssignment
 
-Emitted when
+Emitted when attempting to assign a property to a non-object
 
 ```php
-
+$a = "foo";
+$a->bar = "bar";
 ```
 
 ### InvalidPropertyFetch
 
-Emitted when
+Emitted when attempting to get a property from a non-object
 
 ```php
-
+$a = "foo";
+echo $a->bar;
 ```
 
 ### InvalidReturnStatement
 
-Emitted when
+Emitted when a function return statement is incorrect
 
 ```php
-
+function foo() : string {
+    return 5; // emitted here
+}
 ```
 
 ### InvalidReturnType
 
-Emitted when
+    Emitted when a function’s return type is incorrect (often emitted with `InvalidReturnStatement`)
 
 ```php
-
+function foo() : string {
+    if (rand(0, 1)) {
+        return "foo";
+    }
+}
 ```
 
 ### InvalidScalarArgument
 
-Emitted when
+Emitted when a scalar value is passed to a method that expected another scalar type
 
 ```php
-
+function foo(int $i) : void {}
+function bar(string $s) : void {
+    if (is_numeric($s)) {
+        foo($s);
+    }
+}
 ```
 
 ### InvalidScope
 
-Emitted when
+Emitted when referring to `$this` outside a class
 
 ```php
-
+echo $this;
 ```
 
 ### InvalidStaticInvocation
 
-Emitted when
+Emitted when trying to call an instance function statically
 
 ```php
+class A {
+    /** @var ?string */
+    public $foo;
 
-```
+    public function bar() : void {
+        echo $this->foo;
+    }
+}
 
-### InvalidStaticVariable
-
-Emitted when
-
-```php
-
+A::bar();
 ```
 
 ### InvalidToString
 
-Emitted when
+Emitted when a `__toString` method does not always return a `string`
 
 ```php
-
+class A {
+    public function __toString() {
+        return true;
+    }
+}
 ```
 
 ### LessSpecificReturnStatement
 
-Emitted when
+Emitted when a return statement is more general than the return type given for the function
 
 ```php
+class A {}
+class B extends A {}
 
+function foo() : B {
+    return new A(); // emitted here
+}
 ```
 
 ### LessSpecificReturnType
 
-Emitted when
+Emitted when a return type covers more possibilities than the function itself
 
 ```php
+function foo() : ?int {
+    return 5;
+}
+```
 
+### LoopInvalidation
+
+Emitted when logic inside a loop invalidates one of the conditionals of the loop
+
+```php
+for ($i = 0; $i < 10; $i++) {
+    $i = 5;
+}
 ```
 
 ### MethodSignatureMismatch
 
-Emitted when
+Emitted when a method parameter differs from a parent method parameter, or if there are fewer parameters than the parent method
 
 ```php
-
+class A {
+    public function foo(int $i) : void {}
+}
+class B extends A {
+    public function foo(string $s) : void {}
+}
 ```
 
 ### MisplacedRequiredParam
 
-Emitted when
+Emitted when a required param is before a param that is not required. Included in Psalm because it is an E_WARNING in PHP
 
 ```php
-
+function foo(int $i = 5, string $j) : void {}
 ```
 
 ### MissingClosureReturnType
 
-Emitted when
+Emitted when a closure lacks a return type
 
 ```php
-
+$a = function() {
+    return "foo";
+};
 ```
 
 ### MissingConstructor
 
-Emitted when
+Emitted when non-null properties without default values are defined in a class without a `__construct` method
 
 ```php
-
+class A {
+    /** @var string */
+    public $foo;
+}
 ```
 
 ### MissingDocblockType
 
-Emitted when
+Emitted when a docblock is present, but the type is missing or badly formatted
 
 ```php
-
+/** @var $a */
+$a = [];
 ```
 
 ### MissingFile
 
-Emitted when
+Emitted when using `include` or `require` on a file that does not exist
 
 ```php
-
+require("nonexistent.php");
 ```
 
 ### MissingPropertyType
 
-Emitted when
+Emitted when a property is defined on a class without a type
 
 ```php
-
+class A {
+    public $foo;
+}
 ```
 
 ### MissingReturnType
 
-Emitted when
+Emitted when a function doesn't have a return type defined
 
 ```php
-
+function foo() {
+    return "foo";
+}
 ```
 
 ### MixedArgument
 
-Emitted when
+Emitted when Psalm cannot determine the type of an argument
 
 ```php
-
+function takesInt(int $i) : void {}
+takesInt($_COOKIE['foo']);
 ```
 
 ### MixedArrayAccess
 
-Emitted when
+Emitted when trying to access an array offset on a value whose type Psalm cannot determine
 
 ```php
-
+echo $_COOKIE['foo'][0];
 ```
 
 ### MixedArrayAssignment
 
-Emitted when
+Emitted when trying to assign a value to an array offset on a value whose type Psalm cannot determine
 
 ```php
-
+$_COOKIE['foo'][0] = "5";
 ```
 
 ### MixedArrayOffset
 
-Emitted when
+Emitted when attempting to access an array offset where Psalm cannot determine the offset type
 
 ```php
-
+echo [1, 2, 3][$_COOKIE['foo']];
 ```
 
 ### MixedAssignment
@@ -489,7 +542,7 @@ Emitted when
 Emitted when
 
 ```php
-
+$a = $_COOKIE['foo'];
 ```
 
 ### MixedInferredReturnType
