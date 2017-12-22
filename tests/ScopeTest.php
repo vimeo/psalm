@@ -269,7 +269,7 @@ class ScopeTest extends TestCase
                             echo $this;
                         }
                     }',
-                'error_message' => 'InvalidStaticVariable',
+                'error_message' => 'InvalidScope',
             ],
             'static' => [
                 '<?php

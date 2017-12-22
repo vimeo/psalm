@@ -26,7 +26,6 @@ use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\InvalidScope;
-use Psalm\Issue\InvalidStaticVariable;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
 use Psalm\Issue\PossiblyNullOperand;
@@ -514,7 +513,7 @@ class ExpressionChecker
         if ($stmt->name === 'this') {
             if ($statements_checker->isStatic()) {
                 if (IssueBuffer::accepts(
-                    new InvalidStaticVariable(
+                    new InvalidScope(
                         'Invalid reference to $this in a static context',
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
