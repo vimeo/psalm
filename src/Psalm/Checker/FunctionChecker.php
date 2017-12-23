@@ -472,32 +472,57 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 foreach ($call_arg->value->inferredType->types as $type_part) {
-                    if (!$type_part instanceof Type\Atomic\TArray) {
-                        if ($type_part instanceof Type\Atomic\ObjectLike) {
-                            if ($generic_properties !== null) {
-                                $generic_properties = array_merge($generic_properties, $type_part->properties);
+                    if ($call_arg->unpack) {
+                        if (!$type_part instanceof Type\Atomic\TArray) {
+                            if ($type_part instanceof Type\Atomic\ObjectLike) {
+                                $type_part_value_type = $type_part->getGenericValueType();
+                            } else {
+                                return Type::getArray();
                             }
-
-                            $type_part = $type_part->getGenericArrayType();
                         } else {
-                            return Type::getArray();
+                            $type_part_value_type = $type_part->type_params[0];
                         }
-                    } elseif (!$type_part->type_params[0]->isEmpty()) {
-                        $generic_properties = null;
+
+                        $unpacked_type_parts = [];
+
+                        foreach ($type_part_value_type->types as $value_type_part) {
+                            $unpacked_type_parts[] = $value_type_part;
+                        }
+                    } else {
+                        $unpacked_type_parts = [$type_part];
                     }
 
-                    if ($type_part->type_params[1]->isEmpty()) {
-                        continue;
-                    }
+                    foreach ($unpacked_type_parts as $unpacked_type_part) {
+                        if (!$unpacked_type_part instanceof Type\Atomic\TArray) {
+                            if ($unpacked_type_part instanceof Type\Atomic\ObjectLike) {
+                                if ($generic_properties !== null) {
+                                    $generic_properties = array_merge(
+                                        $generic_properties,
+                                        $unpacked_type_part->properties
+                                    );
+                                }
 
-                    $inner_key_types = array_merge(
-                        $inner_key_types,
-                        array_values($type_part->type_params[0]->types)
-                    );
-                    $inner_value_types = array_merge(
-                        $inner_value_types,
-                        array_values($type_part->type_params[1]->types)
-                    );
+                                $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
+                            } else {
+                                return Type::getArray();
+                            }
+                        } elseif (!$unpacked_type_part->type_params[0]->isEmpty()) {
+                            $generic_properties = null;
+                        }
+
+                        if ($unpacked_type_part->type_params[1]->isEmpty()) {
+                            continue;
+                        }
+
+                        $inner_key_types = array_merge(
+                            $inner_key_types,
+                            array_values($unpacked_type_part->type_params[0]->types)
+                        );
+                        $inner_value_types = array_merge(
+                            $inner_value_types,
+                            array_values($unpacked_type_part->type_params[1]->types)
+                        );
+                    }
                 }
             }
 

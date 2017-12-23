@@ -79,6 +79,14 @@ class Php56Test extends TestCase
                     $operators = [2, 3];
                     echo add(1, ...$operators);',
             ],
+            'arrayMergeArgumentUnpacking' => [
+                '<?php
+                    $a = [[1, 2]];
+                    $b = array_merge([], ...$a);',
+                'assertions' => [
+                    '$b' => 'array{0:int, 1:int}',
+                ],
+            ],
             'exponentiation' => [
                 '<?php
                     $a = 2;
