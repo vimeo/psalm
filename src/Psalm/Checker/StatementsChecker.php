@@ -419,8 +419,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-                $class_checker = (new ClassChecker($stmt, $this->source, $stmt->name));
-                $class_checker->analyze(null, $global_context);
+                try {
+                    $class_checker = (new ClassChecker($stmt, $this->source, $stmt->name));
+                    $class_checker->analyze(null, $global_context);
+                } catch (\InvalidArgumentException $e) {
+                    // disregard this exception, we'll likely see it elsewhere in the form
+                    // of an issue
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
                     try {
