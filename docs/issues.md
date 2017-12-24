@@ -510,7 +510,7 @@ Emitted when Psalm cannot determine the type of an argument
 
 ```php
 function takesInt(int $i) : void {}
-takesInt($_COOKIE['foo']);
+takesInt($_GET['foo']);
 ```
 
 ### MixedArrayAccess
@@ -518,7 +518,7 @@ takesInt($_COOKIE['foo']);
 Emitted when trying to access an array offset on a value whose type Psalm cannot determine
 
 ```php
-echo $_COOKIE['foo'][0];
+echo $_GET['foo'][0];
 ```
 
 ### MixedArrayAssignment
@@ -526,7 +526,7 @@ echo $_COOKIE['foo'][0];
 Emitted when trying to assign a value to an array offset on a value whose type Psalm cannot determine
 
 ```php
-$_COOKIE['foo'][0] = "5";
+$_GET['foo'][0] = "5";
 ```
 
 ### MixedArrayOffset
@@ -534,7 +534,7 @@ $_COOKIE['foo'][0] = "5";
 Emitted when attempting to access an array offset where Psalm cannot determine the offset type
 
 ```php
-echo [1, 2, 3][$_COOKIE['foo']];
+echo [1, 2, 3][$_GET['foo']];
 ```
 
 ### MixedAssignment
@@ -542,63 +542,79 @@ echo [1, 2, 3][$_COOKIE['foo']];
 Emitted when
 
 ```php
-$a = $_COOKIE['foo'];
+$a = $_GET['foo'];
 ```
 
 ### MixedInferredReturnType
 
-Emitted when
+Emitted when Psalm cannot determine a function's return type
 
 ```php
-
+function foo() : int {
+    return $_GET['foo'];
+}
 ```
 
 ### MixedMethodCall
 
-Emitted when
+Emitted when calling a method on a value that Psalm cannot infer a type for
 
 ```php
-
+/** @param mixed $a */
+function foo($a) : void {
+    $a->foo();
+}
 ```
 
 ### MixedOperand
 
-Emitted when
+Emitted when Psalm cannot infer a type for an operand in any calculated expression
 
 ```php
-
+echo $_GET['foo'] + "hello";
 ```
 
 ### MixedPropertyAssignment
 
-Emitted when
+Emitted when assigning a property to a value that Psalm cannot infer a type for
 
 ```php
-
+/** @param mixed $a */
+function foo($a) : void {
+    $a->foo = "bar";
+}
 ```
 
 ### MixedPropertyFetch
 
-Emitted when
+Emitted when retrieving a property on a value that Psalm cannot infer a type for
 
 ```php
-
+/** @param mixed $a */
+function foo($a) : void {
+    echo $a->foo;
+}
 ```
 
 ### MixedStringOffsetAssignment
 
-Emitted when
+Emitted when assigning a value on a string using a value for which Psalm cannot infer a type
 
 ```php
-
+"hello"[$_GET['foo']] = "h";
 ```
 
 ### MixedTypeCoercion
 
-Emitted when
+Emitted when Psalm cannot be sure that part of an array/iterabble argument's type constraints can be fulfilled
 
 ```php
+function foo(array $a) : void {
+    takesStringArray($a);
+}
 
+/** @param string[] $a */
+function takesStringArray(array $a) : void {}
 ```
 
 ### MoreSpecificImplementedReturnType
