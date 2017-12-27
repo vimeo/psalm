@@ -1120,7 +1120,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
+        $property_is_initialized = false;
+
         if ($comment && $comment->getText() && $config->use_docblock_types) {
+            if (preg_match('/[ \t\*]+@psalm-suppress[ \t]+PropertyNotSetInConstructor/', (string)$comment)) {
+                $property_is_initialized = true;
+            }
+
             try {
                 $property_type_line_number = $comment->getLine();
                 $var_comment = CommentChecker::getTypeFromComment(
@@ -1206,6 +1212,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $storage->declaring_property_ids[$property->name] = $property_id;
             $storage->appearing_property_ids[$property->name] = $property_id;
+
+            if ($property_is_initialized) {
+                $storage->initialized_properties[$property->name] = true;
+            }
 
             if (!$stmt->isPrivate()) {
                 $storage->inheritable_property_ids[$property->name] = $property_id;

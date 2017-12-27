@@ -189,4 +189,9 @@ class ClassLikeStorage
      * @var array<string, array<int, CodeLocation>>|null
      */
     public $referencing_locations;
+
+    /**
+     * @var array<string, bool>
+     */
+    public $initialized_properties = [];
 }

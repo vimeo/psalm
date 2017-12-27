@@ -511,7 +511,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                 $property = $property_class_storage->properties[$property_name];
 
-                if ($property->has_default || $property->is_static || !$property->type) {
+                $property_is_initialized = isset($property_class_storage->initialized_properties[$property_name]);
+
+                if ($property->has_default || $property->is_static || !$property->type || $property_is_initialized) {
                     continue;
                 }
 
