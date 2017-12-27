@@ -713,4 +713,45 @@ class Config
             }
         }
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getComposerClassMap()
+    {
+        $vendor_dir = $this->base_dir . 'vendor'; // this should ideally not be hardcoded
+
+        $autoload_files_classmap =
+            $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_classmap.php';
+
+        if (!file_exists($autoload_files_classmap)) {
+            return [];
+        }
+
+        /**
+         * @psalm-suppress MixedAssignment
+         * @psalm-suppress UnresolvableInclude
+         */
+        $class_map = include_once $autoload_files_classmap;
+
+        if (is_array($class_map)) {
+            $composer_classmap = array_change_key_case($class_map);
+
+            $composer_classmap = array_filter(
+                $composer_classmap,
+                /**
+                 * @param string $file_path
+                 *
+                 * @return bool
+                 */
+                function ($file_path) use ($vendor_dir) {
+                    return strpos($file_path, $vendor_dir) === 0;
+                }
+            );
+        } else {
+            $composer_classmap = [];
+        }
+
+        return $composer_classmap;
+    }
 }

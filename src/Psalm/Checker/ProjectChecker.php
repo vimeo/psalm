@@ -242,6 +242,11 @@ class ProjectChecker
      */
     public $register_global_functions = false;
 
+    /**
+     * @var ?array<string, string>
+     */
+    private $composer_classmap;
+
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
@@ -1408,7 +1413,6 @@ class ProjectChecker
      * @param  string $fq_class_name
      *
      * @return bool
-     * @psalm-suppress MixedMethodCall due to Reflection class weirdness
      */
     public function fileExistsForClassLike($fq_class_name)
     {
@@ -1420,6 +1424,24 @@ class ProjectChecker
 
         if (isset($this->existing_classlikes_lc[$fq_class_name_lc])) {
             throw new \InvalidArgumentException('Why are you asking about a builtin class?');
+        }
+
+        if (!$this->config) {
+            throw new \UnexpectedValueException('Config should be set here');
+        }
+
+        if ($this->composer_classmap === null) {
+            $this->composer_classmap = $this->config->getComposerClassMap();
+        }
+
+        if (isset($this->composer_classmap[$fq_class_name_lc])) {
+            if (file_exists($this->composer_classmap[$fq_class_name_lc])) {
+                $this->existing_classlikes_lc[$fq_class_name_lc] = true;
+                $this->existing_classlikes[$fq_class_name] = true;
+                $this->classlike_files[$fq_class_name_lc] = $this->composer_classmap[$fq_class_name_lc];
+
+                return true;
+            }
         }
 
         $old_level = error_reporting();
@@ -1440,6 +1462,7 @@ class ProjectChecker
 
         error_reporting($old_level);
 
+        /** @psalm-suppress MixedMethodCall due to Reflection class weirdness */
         $file_path = (string)$reflected_class->getFileName();
 
         // if the file was autoloaded but exists in evaled code only, return false
