@@ -1093,7 +1093,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             return false;
         }
 
-        if (isset($stmt->expr->inferredType) && !$stmt->expr->inferredType->isMixed()) {
+        if ($context->check_classes && isset($stmt->expr->inferredType) && !$stmt->expr->inferredType->isMixed()) {
             $throw_type = $stmt->expr->inferredType;
 
             $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
@@ -1101,7 +1101,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if (!TypeChecker::isContainedBy($project_checker, $throw_type, $exception_type)) {
                 if (IssueBuffer::accepts(
                     new InvalidThrow(
-                        'Cannot throw ' . $throw_type,
+                        'Cannot throw ' . $throw_type . ' as it does not extend Exception or implement Throwable',
                         new CodeLocation($this->source, $stmt)
                     ),
                     $this->getSuppressedIssues()
