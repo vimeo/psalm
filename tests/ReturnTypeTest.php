@@ -592,6 +592,22 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'invalidVoidStatementWhenMixedInferred' => [
+                '<?php
+                    /**
+                     * @return mixed
+                     */
+                    function a()
+                    {
+                        return 1;
+                    }
+
+                    function b(): void
+                    {
+                        return a();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

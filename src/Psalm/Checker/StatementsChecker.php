@@ -1014,7 +1014,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         ) {
             $this->source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
 
-            if ($stmt->expr && !$stmt->inferredType->isMixed()) {
+            if ($stmt->expr) {
                 $storage = $this->source->getFunctionLikeStorage($this);
                 $cased_method_id = $this->source->getCorrectlyCasedMethodId();
 
@@ -1036,6 +1036,22 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             $this->source->getFQCLN(),
                             ''
                         );
+                    }
+
+                    if ($stmt->inferredType->isMixed()) {
+                        if ($this->local_return_type->isVoid()) {
+                            if (IssueBuffer::accepts(
+                                new InvalidReturnStatement(
+                                    'No return values are expected for ' . $cased_method_id,
+                                    new CodeLocation($this->source, $stmt)
+                                ),
+                                $this->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        }
+
+                        return null;
                     }
 
                     if (!$this->local_return_type->isGenerator()
