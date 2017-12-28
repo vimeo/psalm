@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 class TryCatchTest extends TestCase
 {
     use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
 
     /**
      * @return array
@@ -11,15 +12,28 @@ class TryCatchTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
-            'PHP7-interfaceHasGetMessage' => [
+            'PHP7-addThrowableInterfaceType' => [
                 '<?php
                     interface CustomThrowable {}
                     class CustomException extends Exception implements CustomThrowable {}
 
+                    /** @psalm-suppress InvalidCatch */
                     try {
                         throw new CustomException("Bad");
                     } catch (CustomThrowable $e) {
                         echo $e->getMessage();
+                    }',
+            ],
+            'PHP7-rethrowInterfaceExceptionWithoutInvalidThrow' => [
+                '<?php
+                    interface CustomThrowable {}
+                    class CustomException extends Exception implements CustomThrowable {}
+
+                    /** @psalm-suppress InvalidCatch */
+                    try {
+                        throw new CustomException("Bad");
+                    } catch (CustomThrowable $e) {
+                        throw $e;
                     }',
             ],
             'tryCatchVar' => [
@@ -33,6 +47,31 @@ class TryCatchTest extends TestCase
                 'assertions' => [
                     '$worked' => 'bool',
                 ],
+            ],
+
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerInvalidCodeParse()
+    {
+        return [
+            'invalidCatchClass' => [
+                '<?php
+                    class A {}
+                    try {
+                        $worked = true;
+                    }
+                    catch (A $e) {}',
+                'error_message' => 'InvalidCatch',
+            ],
+            'invalidThrowClass' => [
+                '<?php
+                    class A {}
+                    throw new A();',
+                'error_message' => 'InvalidThrow',
             ],
         ];
     }

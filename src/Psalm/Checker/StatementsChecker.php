@@ -22,6 +22,7 @@ use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\InvalidReturnStatement;
+use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnevaluatedCode;
@@ -31,6 +32,8 @@ use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 class StatementsChecker extends SourceChecker implements StatementsSource
 {
@@ -210,7 +213,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $this->analyzeReturn($project_checker, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $has_returned = true;
-                $this->analyzeThrow($stmt, $context);
+                $this->analyzeThrow($project_checker, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 SwitchChecker::analyze($this, $stmt, $context, $loop_scope);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -1065,7 +1068,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                                         . 'type \'' . $this->local_return_type . '\' for ' . $cased_method_id,
                                     new CodeLocation($this->source, $stmt)
                                 ),
-                               $this->getSuppressedIssues()
+                                $this->getSuppressedIssues()
                             )) {
                                 return false;
                             }
@@ -1084,9 +1087,29 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      *
      * @return  false|null
      */
-    private function analyzeThrow(PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
+    private function analyzeThrow(ProjectChecker $project_checker, PhpParser\Node\Stmt\Throw_ $stmt, Context $context)
     {
-        return ExpressionChecker::analyze($this, $stmt->expr, $context);
+        if (ExpressionChecker::analyze($this, $stmt->expr, $context) === false) {
+            return false;
+        }
+
+        if (isset($stmt->expr->inferredType) && !$stmt->expr->inferredType->isMixed()) {
+            $throw_type = $stmt->expr->inferredType;
+
+            $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
+
+            if (!TypeChecker::isContainedBy($project_checker, $throw_type, $exception_type)) {
+                if (IssueBuffer::accepts(
+                    new InvalidThrow(
+                        'Cannot throw ' . $throw_type,
+                        new CodeLocation($this->source, $stmt)
+                    ),
+                    $this->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+        }
     }
 
     /**

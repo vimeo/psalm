@@ -2,15 +2,19 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
+use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\InvalidCatch;
+use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 class TryChecker
 {
@@ -107,6 +111,27 @@ class TryChecker
                         new CodeLocation($statements_checker->getSource(), $catch_type, $context->include_location),
                         $statements_checker->getSuppressedIssues()
                     ) === false) {
+                        return false;
+                    }
+                }
+
+                $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
+
+                if ((ClassChecker::classExists($project_checker, $fq_catch_class)
+                        && strtolower($fq_catch_class) !== 'exception'
+                        && !(ClassChecker::classExtends($project_checker, $fq_catch_class, 'Exception')
+                            || ClassChecker::classImplements($project_checker, $fq_catch_class, 'Throwable')))
+                    || (InterfaceChecker::interfaceExists($project_checker, $fq_catch_class)
+                        && strtolower($fq_catch_class) !== 'throwable'
+                        && !InterfaceChecker::interfaceExtends($project_checker, $fq_catch_class, 'Throwable'))
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidCatch(
+                            'Class/interface ' . $fq_catch_class . ' cannot be caught',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
                         return false;
                     }
                 }

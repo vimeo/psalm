@@ -106,6 +106,7 @@
             <xs:element name="InvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCast" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidCatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidParamDefault" type="IssueHandlerType" minOccurs="0" />
@@ -124,6 +125,7 @@
             <xs:element name="InvalidScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticInvocation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidThrow" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
