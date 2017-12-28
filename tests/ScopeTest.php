@@ -34,18 +34,6 @@ class ScopeTest extends TestCase
 
                     echo $badge;',
             ],
-            'tryCatchVar' => [
-                '<?php
-                    try {
-                        $worked = true;
-                    }
-                    catch (\Exception $e) {
-                        $worked = false;
-                    }',
-                'assertions' => [
-                    '$worked' => 'bool',
-                ],
-            ],
             'assignmentInIf' => [
                 '<?php
                     if ($row = (rand(0, 10) ? [5] : null)) {
