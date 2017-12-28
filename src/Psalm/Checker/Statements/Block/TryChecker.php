@@ -3,6 +3,7 @@ namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -85,6 +86,8 @@ class TryChecker
         // the try was applied
         $original_context = clone $try_context;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
@@ -120,8 +123,17 @@ class TryChecker
                      *
                      * @return Type\Atomic
                      */
-                    function ($fq_catch_class) {
-                        return new TNamedObject($fq_catch_class);
+                    function ($fq_catch_class) use ($project_checker) {
+                        $catch_class_type = new TNamedObject($fq_catch_class);
+
+                        if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
+                            && InterfaceChecker::interfaceExists($project_checker, $fq_catch_class)
+                            && !InterfaceChecker::interfaceExtends($project_checker, $fq_catch_class, 'Throwable')
+                        ) {
+                            $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
+                        }
+
+                        return $catch_class_type;
                     },
                     $fq_catch_classes
                 )
