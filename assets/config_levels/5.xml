@@ -39,7 +39,6 @@
         <PossiblyNullPropertyFetch errorLevel="info" />
         <PossiblyNullReference errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
-        <PossiblyUnusedVariable errorLevel="info" />
 
         <!-- level 5 issues - should be avoided at mosts costs... -->
 

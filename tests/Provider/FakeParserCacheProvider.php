@@ -6,14 +6,13 @@ use PhpParser;
 class FakeParserCacheProvider extends \Psalm\Provider\ParserCacheProvider
 {
     /**
-     * @param  string   $file_path
      * @param  string   $file_content_hash
      * @param  string   $file_cache_key
      * @param mixed $file_modified_time
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      */
-    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash, $file_cache_key)
+    public function loadStatementsFromCache($file_modified_time, $file_content_hash, $file_cache_key)
     {
         return null;
     }

@@ -61,6 +61,8 @@ abstract class CodeIssue
 
     /**
      * @return string
+     *
+     * @psalm-suppress PossiblyUnusedMethod for convenience
      */
     public function getFileName()
     {

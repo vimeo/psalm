@@ -168,14 +168,6 @@ class Union
     /**
      * @return bool
      */
-    public function hasObjectLike()
-    {
-        return isset($this->types['array']) && $this->types['array'] instanceof Atomic\ObjectLike;
-    }
-
-    /**
-     * @return bool
-     */
     public function hasObjectType()
     {
         foreach ($this->types as $type) {
@@ -299,18 +291,6 @@ class Union
     public function isEmpty()
     {
         return isset($this->types['empty']);
-    }
-
-    /**
-     * @return void
-     */
-    public function removeObjects()
-    {
-        foreach ($this->types as $key => $type) {
-            if ($type instanceof Atomic\TNamedObject) {
-                unset($this->types[$key]);
-            }
-        }
     }
 
     /**

@@ -35,7 +35,6 @@ class StatementsProvider
         $file_cache_key = $cache_provider->getParserCacheKey($file_path);
 
         $stmts = $cache_provider->loadStatementsFromCache(
-            $file_path,
             $modified_time,
             $file_content_hash,
             $file_cache_key

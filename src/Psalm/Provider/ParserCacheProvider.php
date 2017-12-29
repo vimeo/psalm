@@ -26,7 +26,6 @@ class ParserCacheProvider
     public $use_igbinary = false;
 
     /**
-     * @param  string   $file_path
      * @param  string   $file_content_hash
      * @param  string   $file_cache_key
      * @param mixed $file_modified_time
@@ -35,7 +34,7 @@ class ParserCacheProvider
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash, $file_cache_key)
+    public function loadStatementsFromCache($file_modified_time, $file_content_hash, $file_cache_key)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 

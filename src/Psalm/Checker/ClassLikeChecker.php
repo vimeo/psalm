@@ -1379,33 +1379,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param  string $class_name
-     * @param  mixed  $visibility
-     *
-     * @return array<string, PropertyStorage>
-     */
-    public static function getPropertiesForClass(ProjectChecker $project_checker, $class_name, $visibility)
-    {
-        $storage = $project_checker->classlike_storage_provider->get($class_name);
-
-        $properties = [];
-
-        foreach ($storage->properties as $property_name => $property) {
-            if (!$property->is_static) {
-                if ($visibility === ReflectionProperty::IS_PRIVATE ||
-                    $property->visibility === ClassLikeChecker::VISIBILITY_PUBLIC ||
-                    ($property->visibility === ClassLikeChecker::VISIBILITY_PROTECTED &&
-                        $visibility === ReflectionProperty::IS_PROTECTED)
-                ) {
-                    $properties[$property_name] = $property;
-                }
-            }
-        }
-
-        return $properties;
-    }
-
-    /**
      * Gets the Psalm type from a particular value
      *
      * @param  mixed $value

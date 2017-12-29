@@ -39,6 +39,5 @@
         <PossiblyNullPropertyFetch errorLevel="info" />
         <PossiblyNullReference errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
-        <PossiblyUnusedVariable errorLevel="info" />
     </issueHandlers>
 </psalm>

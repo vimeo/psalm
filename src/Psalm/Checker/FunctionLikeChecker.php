@@ -26,8 +26,9 @@ use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
-use Psalm\Issue\PossiblyUnusedVariable;
+use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\UntypedParam;
+use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -129,6 +130,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $implemented_docblock_param_types = [];
 
+        $project_checker = $this->file_checker->project_checker;
+
+        $classlike_storage_provider = $project_checker->classlike_storage_provider;
+
         if ($this->function instanceof ClassMethod) {
             $real_method_id = (string)$this->getMethodId();
 
@@ -161,10 +166,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             $fq_class_name = (string)$context->self;
-
-            $project_checker = $this->file_checker->project_checker;
-
-            $classlike_storage_provider = $project_checker->classlike_storage_provider;
 
             $class_storage = $classlike_storage_provider->get($fq_class_name);
 
@@ -473,10 +474,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $original_location = $statements_checker->getFirstAppearance($var_name);
 
                     if (!isset($context->referenced_var_ids[$var_name]) && $original_location) {
-                        if (!isset($storage->param_types[substr($var_name, 1)]) ||
-                            !$storage instanceof MethodStorage ||
-                            $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
-                        ) {
+                        if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
                             if (IssueBuffer::accepts(
                                 new UnusedVariable(
                                     'Variable ' . $var_name . ' is never referenced',
@@ -486,10 +484,40 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             )) {
                                 // fall through
                             }
-                        } else {
+                        } elseif (!$storage instanceof MethodStorage
+                            || $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                        ) {
                             if (IssueBuffer::accepts(
-                                new PossiblyUnusedVariable(
-                                    'Variable ' . $var_name . ' is never referenced in this method',
+                                new UnusedParam(
+                                    'Param ' . $var_name . ' is never referenced in this method',
+                                    $original_location
+                                ),
+                                $this->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if (!$class_storage || $storage->abstract) {
+                                continue;
+                            }
+
+                            /** @var ClassMethod $this->function */
+                            $method_name_lc = strtolower((string)$this->function->name);
+                            $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
+
+                            if ($parent_method_id) {
+                                list($parent_fq_class_name) = explode('::', $parent_method_id);
+
+                                $parent_method_class_storage = $classlike_storage_provider->get($parent_fq_class_name);
+
+                                if (!$parent_method_class_storage->abstract) {
+                                    continue;
+                                }
+                            }
+
+                            if (IssueBuffer::accepts(
+                                new PossiblyUnusedParam(
+                                    'Param ' . $var_name . ' is never referenced in this method',
                                     $original_location
                                 ),
                                 $this->getSuppressedIssues()

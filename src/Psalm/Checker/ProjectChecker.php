@@ -920,6 +920,8 @@ class ProjectChecker
              * @param string $file_path
              *
              * @return void
+             *
+             * @psalm-suppress UnusedParam
              */
             function ($i, $file_path) use ($filetype_handlers) {
                 $file_checker = $this->getFile($file_path, $filetype_handlers, true);
@@ -1117,11 +1119,9 @@ class ProjectChecker
     }
 
     /**
-     * @param  \Psalm\Storage\ClassLikeStorage  $classlike_storage
-     *
      * @return void
      */
-    protected static function checkMethodReferences($classlike_storage)
+    protected static function checkMethodReferences(\Psalm\Storage\ClassLikeStorage $classlike_storage)
     {
         foreach ($classlike_storage->methods as $method_name => $method_storage) {
             if (($method_storage->referencing_locations === null
@@ -1137,7 +1137,8 @@ class ProjectChecker
                         new PossiblyUnusedMethod(
                             'Cannot find public calls to method ' . $method_id,
                             $method_storage->location
-                        )
+                        ),
+                        $method_storage->suppressed_issues
                     )) {
                         // fall through
                     }
