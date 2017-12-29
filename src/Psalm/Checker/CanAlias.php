@@ -115,6 +115,9 @@ trait CanAlias
         return $this->aliased_classes_flipped;
     }
 
+    /**
+     * @return Aliases
+     */
     public function getAliases()
     {
         return new Aliases(

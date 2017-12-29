@@ -566,6 +566,19 @@ class ProjectChecker
 
         $storage_provider = $this->classlike_storage_provider;
 
+        foreach ($storage->used_traits as $used_trait_lc => $used_trait) {
+            try {
+                $trait_storage = $storage_provider->get($used_trait_lc);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
+
+            $this->inheritMethodsFromParent($storage, $trait_storage);
+            $this->inheritPropertiesFromParent($storage, $trait_storage);
+        }
+
         $dependent_classlikes[strtolower($storage->name)] = true;
 
         if (isset($storage->parent_classes[0])) {
@@ -655,19 +668,6 @@ class ProjectChecker
                     }
                 }
             }
-        }
-
-        foreach ($storage->used_traits as $used_trait_lc => $used_trait) {
-            try {
-                $trait_storage = $storage_provider->get($used_trait_lc);
-            } catch (\InvalidArgumentException $e) {
-                continue;
-            }
-
-            $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
-
-            $this->inheritMethodsFromParent($storage, $trait_storage);
-            $this->inheritPropertiesFromParent($storage, $trait_storage);
         }
 
         if ($storage->location) {

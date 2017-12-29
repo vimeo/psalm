@@ -162,6 +162,27 @@ class UnusedCodeTest extends TestCase
                     $m->foo("value");
                     $m->modifyFoo("value2");',
             ],
+            'usedTraitMethod' => [
+                '<?php
+                    class A {
+                        public function foo() : void {
+                            echo "parent method";
+                        }
+                    }
+
+                    trait T {
+                        public function foo() : void {
+                            echo "trait method";
+                        }
+                    }
+
+                    class B extends A {
+                        use T;
+                    }
+
+                    (new A)->foo();
+                    (new B)->foo();',
+            ],
         ];
     }
 
