@@ -179,8 +179,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if ($overridden_method_ids && $this->function->name !== '__construct') {
-                $have_emitted = false;
-
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = MethodChecker::getStorage($project_checker, $overridden_method_id);
 
@@ -564,7 +562,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     ) {
         $implementer_method_id = $implementer_classlike_storage->name . '::'
             . strtolower($guide_method_storage->cased_name);
-        $guide_method_id = $guide_classlike_storage->name . '::' . strtolower($guide_method_storage->cased_name);
         $implementer_declaring_method_id = MethodChecker::getDeclaringMethodId(
             $project_checker,
             $implementer_method_id

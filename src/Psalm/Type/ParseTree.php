@@ -149,7 +149,6 @@ class ParseTree
 
                     array_pop($current_parent->children);
                     $current_parent->children[] = $new_parent_leaf;
-                    $has_object_key = true;
 
                     break;
 

@@ -388,18 +388,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * Used when checking single files with multiple classlike declarations
-     *
-     * @param  string $fq_class_name
-     *
-     * @return bool
-     */
-    public function containsUnEvaluatedClassLike($fq_class_name)
-    {
-        return false;
-    }
-
-    /**
      * @return array<int, \PhpParser\Node\Stmt>
      */
     public function getStatements()

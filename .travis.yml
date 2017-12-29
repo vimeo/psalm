@@ -14,7 +14,7 @@ install:
 
 script:
   - vendor/bin/phpunit
-  - bin/psalm
+  - ./psalm
   - vendor/bin/phpcs
 
 after_success:

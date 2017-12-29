@@ -754,4 +754,33 @@ class Config
 
         return $composer_classmap;
     }
+
+    /**
+     * @param string $dir
+     *
+     * @return void
+     */
+    public static function removeCacheDirectory($dir)
+    {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+
+            if ($objects === false) {
+                throw new \UnexpectedValueException('Not expecting false here');
+            }
+
+            foreach ($objects as $object) {
+                if ($object != '.' && $object != '..') {
+                    if (filetype($dir . '/' . $object) == 'dir') {
+                        self::removeCacheDirectory($dir . '/' . $object);
+                    } else {
+                        unlink($dir . '/' . $object);
+                    }
+                }
+            }
+
+            reset($objects);
+            rmdir($dir);
+        }
+    }
 }

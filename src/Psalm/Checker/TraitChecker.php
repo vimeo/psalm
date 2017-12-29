@@ -7,11 +7,6 @@ use Psalm\TraitSource;
 class TraitChecker extends ClassLikeChecker
 {
     /**
-     * @var array<string, string>
-     */
-    private $method_map = [];
-
-    /**
      * @param  PhpParser\Node\Stmt\Trait_ $class
      * @param  TraitSource                $trait_source
      * @param  string                     $fq_class_name
@@ -25,16 +20,6 @@ class TraitChecker extends ClassLikeChecker
         $this->storage = $this->file_checker->project_checker->classlike_storage_provider->get($fq_class_name);
 
         self::$trait_checkers[strtolower($fq_class_name)] = $this;
-    }
-
-    /**
-     * @param   array<string, string> $method_map
-     *
-     * @return  void
-     */
-    public function setMethodMap(array $method_map)
-    {
-        $this->method_map = $method_map;
     }
 
     /**

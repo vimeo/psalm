@@ -28,12 +28,20 @@
         <PossiblyUnusedVariable>
             <errorLevel type="suppress">
                 <file name="src/Psalm/Plugin.php" />
+                <directory name="examples" />
             </errorLevel>
         </PossiblyUnusedVariable>
+
+        <UnusedVariable>
+            <errorLevel type="suppress">
+                <directory name="examples" />
+            </errorLevel>
+        </UnusedVariable>
 
         <UnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
+                <directory name="examples" />
             </errorLevel>
         </UnusedMethod>
 
@@ -46,6 +54,7 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
+                <directory name="examples" />
             </errorLevel>
         </PossiblyUnusedMethod>
 

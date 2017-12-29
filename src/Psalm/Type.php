@@ -16,6 +16,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
@@ -424,6 +425,14 @@ abstract class Type
         $type = new TTrue;
 
         return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public static function getResource()
+    {
+        return new Union([new TResource]);
     }
 
     /**

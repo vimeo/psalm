@@ -16,7 +16,7 @@
         "openlss/lib-array2xml": "^0.0.10||^0.5.1",
         "muglug/package-versions": "^1.2.1"
     },
-    "bin": ["bin/psalm"],
+    "bin": ["psalm"],
     "autoload": {
         "psr-4": {
             "Psalm\\": "src/Psalm"

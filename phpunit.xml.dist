@@ -38,6 +38,7 @@
         <exclude>
             <directory suffix=".php">./src/Psalm/Stubs/</directory>
             <file>./src/Psalm/CallMap.php</file>
+            <file>./src/psalm.php</file>
             <file>./src/Psalm/PropertyMap.php</file>
             <directory suffix=".php">./src/Psalm/Issue/</directory>
         </exclude>

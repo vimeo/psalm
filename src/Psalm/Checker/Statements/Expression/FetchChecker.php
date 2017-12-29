@@ -438,6 +438,10 @@ class FetchChecker
                 $stmt->inferredType = Type::getTrue();
                 break;
 
+            case 'stdin':
+                $stmt->inferredType = Type::getResource();
+                break;
+
             default:
                 $const_type = $statements_checker->getConstType(
                     $statements_checker,
@@ -508,15 +512,6 @@ class FetchChecker
                     $stmt->class,
                     $statements_checker->getAliases()
                 );
-
-                // edge case when evaluating single files
-                if ($stmt->name === 'class' &&
-                    $statements_checker->getFileChecker()->containsUnEvaluatedClassLike($fq_class_name)
-                ) {
-                    $stmt->inferredType = Type::getString();
-
-                    return null;
-                }
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $statements_checker->getFileChecker()->project_checker,

@@ -115,8 +115,6 @@ class TryChecker
                     }
                 }
 
-                $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
-
                 if ((ClassChecker::classExists($project_checker, $fq_catch_class)
                         && strtolower($fq_catch_class) !== 'exception'
                         && !(ClassChecker::classExtends($project_checker, $fq_catch_class, 'Exception')
