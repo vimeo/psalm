@@ -15,6 +15,7 @@ use Psalm\IssueBuffer;
 use Psalm\Scope\IfScope;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 
 class IfChecker
 {
@@ -175,7 +176,7 @@ class IfChecker
             $changed_var_ids = [];
 
             $if_vars_in_scope_reconciled =
-                TypeChecker::reconcileKeyedTypes(
+                Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
                     $if_context->vars_in_scope,
                     $changed_var_ids,
@@ -211,7 +212,7 @@ class IfChecker
         $changed_var_ids = [];
 
         if ($if_scope->negated_types) {
-            $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+            $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
                 $changed_var_ids,
@@ -467,7 +468,7 @@ class IfChecker
             if ($if_scope->negated_types) {
                 $changed_var_ids = [];
 
-                $outer_context_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                $outer_context_vars_reconciled = Reconciler::reconcileKeyedTypes(
                     $if_scope->negated_types,
                     $outer_context->vars_in_scope,
                     $changed_var_ids,
@@ -597,7 +598,7 @@ class IfChecker
         if ($if_scope->negated_types) {
             $changed_var_ids = [];
 
-            $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+            $elseif_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
                 $changed_var_ids,
@@ -699,7 +700,7 @@ class IfChecker
         if ($reconcilable_elseif_types) {
             $changed_var_ids = [];
 
-            $elseif_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+            $elseif_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
                 $changed_var_ids,
@@ -851,7 +852,7 @@ class IfChecker
                 if ($has_leaving_statements) {
                     $changed_var_ids = [];
 
-                    $leaving_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+                    $leaving_vars_reconciled = Reconciler::reconcileKeyedTypes(
                         $negated_elseif_types,
                         $pre_conditional_context->vars_in_scope,
                         $changed_var_ids,
@@ -949,7 +950,7 @@ class IfChecker
         if ($else_types) {
             $changed_var_ids = [];
 
-            $else_vars_reconciled = TypeChecker::reconcileKeyedTypes(
+            $else_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $else_types,
                 $else_context->vars_in_scope,
                 $changed_var_ids,

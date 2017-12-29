@@ -8,6 +8,7 @@ use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\Context;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 
 class TypeReconciliationTest extends TestCase
 {
@@ -43,7 +44,7 @@ class TypeReconciliationTest extends TestCase
      */
     public function testReconcilation($expected, $type, $string)
     {
-        $reconciled = TypeChecker::reconcileTypes(
+        $reconciled = Reconciler::reconcileTypes(
             $type,
             Type::parseString($string),
             null,

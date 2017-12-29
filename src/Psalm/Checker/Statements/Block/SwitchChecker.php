@@ -6,13 +6,13 @@ use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 
 class SwitchChecker
 {
@@ -145,7 +145,7 @@ class SwitchChecker
                     $changed_var_ids = [];
 
                     $case_vars_in_scope_reconciled =
-                        TypeChecker::reconcileKeyedTypes(
+                        Reconciler::reconcileKeyedTypes(
                             $reconcilable_if_types,
                             $case_context->vars_in_scope,
                             $changed_var_ids,

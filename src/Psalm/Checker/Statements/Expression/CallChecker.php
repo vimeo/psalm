@@ -57,6 +57,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Reconciler;
 
 class CallChecker
 {
@@ -398,7 +399,7 @@ class CallChecker
 
                 // while in an and, we allow scope to boil over to support
                 // statements of the form if ($x && $x->foo())
-                $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
+                $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                     $assert_type_assertions,
                     $context->vars_in_scope,
                     $changed_vars,

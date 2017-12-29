@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Reconciler;
 
 class ExpressionChecker
 {
@@ -884,7 +885,7 @@ class ExpressionChecker
 
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
+            $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                 $left_type_assertions,
                 $context->vars_in_scope,
                 $changed_var_ids,
@@ -976,7 +977,7 @@ class ExpressionChecker
 
             // while in an or, we allow scope to boil over to support
             // statements of the form if ($x === null || $x->foo())
-            $op_vars_in_scope = TypeChecker::reconcileKeyedTypes(
+            $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                 $negated_type_assertions,
                 $context->vars_in_scope,
                 $changed_var_ids,
@@ -1013,7 +1014,7 @@ class ExpressionChecker
                 $var_id = self::getVarId($stmt->left->var, $context->self);
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
-                    $left_inferred_reconciled = TypeChecker::reconcileTypes(
+                    $left_inferred_reconciled = Reconciler::reconcileTypes(
                         '!falsy',
                         $context->vars_in_scope[$var_id],
                         '',
@@ -1070,7 +1071,7 @@ class ExpressionChecker
 
             $changed_var_ids = [];
 
-            $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+            $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_if_types,
                 $t_if_context->vars_in_scope,
                 $changed_var_ids,
@@ -1106,7 +1107,7 @@ class ExpressionChecker
             $t_else_context = clone $context;
 
             if ($negated_if_types) {
-                $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                     $negated_if_types,
                     $t_else_context->vars_in_scope,
                     $changed_var_ids,
@@ -1135,7 +1136,7 @@ class ExpressionChecker
             $lhs_type = null;
 
             if (isset($stmt->left->inferredType)) {
-                $if_return_type_reconciled = TypeChecker::reconcileTypes(
+                $if_return_type_reconciled = Reconciler::reconcileTypes(
                     '!null',
                     $stmt->left->inferredType,
                     '',
@@ -2112,7 +2113,7 @@ class ExpressionChecker
 
         $changed_var_ids = [];
 
-        $t_if_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+        $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
             $reconcilable_if_types,
             $t_if_context->vars_in_scope,
             $changed_var_ids,
@@ -2147,7 +2148,7 @@ class ExpressionChecker
         }
 
         if ($negated_if_types) {
-            $t_else_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+            $t_else_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                 $negated_if_types,
                 $t_else_context->vars_in_scope,
                 $changed_var_ids,
@@ -2186,7 +2187,7 @@ class ExpressionChecker
                 $lhs_type = $stmt->if->inferredType;
             }
         } elseif (isset($stmt->cond->inferredType)) {
-            $if_return_type_reconciled = TypeChecker::reconcileTypes(
+            $if_return_type_reconciled = Reconciler::reconcileTypes(
                 '!falsy',
                 $stmt->cond->inferredType,
                 '',

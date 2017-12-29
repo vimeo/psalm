@@ -4,6 +4,7 @@ namespace Psalm;
 use PhpParser;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 class Context
@@ -401,7 +402,7 @@ class Context
                         break;
                     }
 
-                    $result_type = \Psalm\Checker\TypeChecker::reconcileTypes(
+                    $result_type = Reconciler::reconcileTypes(
                         $type,
                         clone $new_type,
                         null,

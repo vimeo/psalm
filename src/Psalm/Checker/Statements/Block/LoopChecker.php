@@ -6,13 +6,13 @@ use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 
 class LoopChecker
 {
@@ -339,7 +339,7 @@ class LoopChecker
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
 
-                $vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+                $vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                     $negated_pre_condition_types,
                     $inner_context->vars_in_scope,
                     $changed_var_ids,
@@ -454,7 +454,7 @@ class LoopChecker
         } else {
             $changed_var_ids = [];
 
-            $pre_condition_vars_in_scope_reconciled = TypeChecker::reconcileKeyedTypes(
+            $pre_condition_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_while_types,
                 $loop_context->vars_in_scope,
                 $changed_var_ids,
