@@ -195,6 +195,23 @@ class UnusedCodeTest extends TestCase
 
                     (new A)->foo();',
             ],
+            'dummyByRefVar' => [
+                '<?php
+                    function foo(string &$a = null, string $b = null) : void {
+                        if ($a) {
+                            echo $a;
+                        }
+                        if ($b) {
+                            echo $b;
+                        }
+                    }
+
+                    function bar() : void {
+                        foo($dummy_byref_var, "hello");
+                    }
+
+                    bar();',
+            ],
         ];
     }
 

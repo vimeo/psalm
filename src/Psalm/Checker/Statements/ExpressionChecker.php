@@ -707,6 +707,7 @@ class ExpressionChecker
 
                 if (!$statements_checker->hasVariable($var_id)) {
                     $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt));
+                    $context->hasVariable($var_id);
                 }
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
