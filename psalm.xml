@@ -39,19 +39,6 @@
             </errorLevel>
         </PossiblyUnusedParam>
 
-        <UnusedVariable>
-            <errorLevel type="suppress">
-                <directory name="examples" />
-            </errorLevel>
-        </UnusedVariable>
-
-        <UnusedMethod>
-            <errorLevel type="suppress">
-                <directory name="tests" />
-                <directory name="examples" />
-            </errorLevel>
-        </UnusedMethod>
-
         <UnusedClass>
             <errorLevel type="suppress">
                 <directory name="tests" />
@@ -61,9 +48,7 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
-                <directory name="examples" />
                 <file name="src/Psalm/Type/Atomic/GenericTrait.php" />
-                <file name="src/Psalm/TraitSource.php" />
                 <file name="src/Psalm/FileManipulation/FileManipulationBuffer.php" />
             </errorLevel>
         </PossiblyUnusedMethod>

@@ -280,6 +280,8 @@ class Pool
      * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
      *
      * @return  bool
+     *
+     * @psalm-suppress PossiblyUnusedMethod because we may in the future
      */
     public function didHaveError()
     {
