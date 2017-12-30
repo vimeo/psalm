@@ -7,6 +7,7 @@ use Psalm\Exception;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\PossiblyUnusedMethod;
+use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\IssueBuffer;
@@ -1117,7 +1118,7 @@ class ProjectChecker
                         // fall through
                     }
                 } else {
-                    self::checkMethodReferences($classlike_storage);
+                    $this->checkMethodReferences($classlike_storage);
                 }
             }
         }
@@ -1126,26 +1127,52 @@ class ProjectChecker
     /**
      * @return void
      */
-    protected static function checkMethodReferences(\Psalm\Storage\ClassLikeStorage $classlike_storage)
+    protected function checkMethodReferences(\Psalm\Storage\ClassLikeStorage $classlike_storage)
     {
         foreach ($classlike_storage->methods as $method_name => $method_storage) {
             if (($method_storage->referencing_locations === null
                     || count($method_storage->referencing_locations) === 0)
-                && !$classlike_storage->overridden_method_ids[$method_name]
                 && (substr($method_name, 0, 2) !== '__' || $method_name === '__construct')
                 && $method_storage->location
             ) {
                 $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 
                 if ($method_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyUnusedMethod(
-                            'Cannot find public calls to method ' . $method_id,
-                            $method_storage->location
-                        ),
-                        $method_storage->suppressed_issues
-                    )) {
-                        // fall through
+                    $method_name_lc = strtolower($method_name);
+
+                    $has_parent_references = false;
+
+                    foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
+                        $parent_method_storage = MethodChecker::getStorage($this, $parent_method_id);
+
+                        if (!$parent_method_storage->abstract || $parent_method_storage->referencing_locations) {
+                            $has_parent_references = true;
+                            break;
+                        }
+                    }
+
+                    foreach ($classlike_storage->class_implements as $fq_interface_name) {
+                        $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
+                        if (isset($interface_storage->methods[$method_name])) {
+                            $interface_method_storage = $interface_storage->methods[$method_name];
+
+                            if ($interface_method_storage->referencing_locations) {
+                                $has_parent_references = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$has_parent_references) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyUnusedMethod(
+                                'Cannot find public calls to method ' . $method_id,
+                                $method_storage->location
+                            ),
+                            $method_storage->suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
                     if (IssueBuffer::accepts(
@@ -1155,6 +1182,35 @@ class ProjectChecker
                         )
                     )) {
                         // fall through
+                    }
+                }
+            } else {
+                foreach ($method_storage->unused_params as $offset => $code_location) {
+                    $has_parent_references = false;
+
+                    $method_name_lc = strtolower($method_name);
+
+                    foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
+                        $parent_method_storage = MethodChecker::getStorage($this, $parent_method_id);
+
+                        if (!$parent_method_storage->abstract
+                            && isset($parent_method_storage->used_params[$offset])
+                        ) {
+                            $has_parent_references = true;
+                            break;
+                        }
+                    }
+
+                    if (!$has_parent_references && !isset($method_storage->used_params[$offset])) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyUnusedParam(
+                                'Param #' . $offset . ' is never referenced in this method',
+                                $code_location
+                            ),
+                            $method_storage->suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

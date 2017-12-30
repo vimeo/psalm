@@ -26,7 +26,6 @@ use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
-use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedVariable;
@@ -512,25 +511,45 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             $method_name_lc = strtolower((string)$this->function->name);
                             $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
 
+                            $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
+
+                            if ($position === false) {
+                                throw new \UnexpectedValueException('$position should not be false here');
+                            }
+
                             if ($parent_method_id) {
-                                list($parent_fq_class_name) = explode('::', $parent_method_id);
+                                $parent_method_storage = MethodChecker::getStorage($project_checker, $parent_method_id);
 
-                                $parent_method_class_storage = $classlike_storage_provider->get($parent_fq_class_name);
-
-                                if (!$parent_method_class_storage->abstract) {
+                                // if the parent method has a param at that position and isn't abstract
+                                if (!$parent_method_storage->abstract
+                                    && isset($parent_method_storage->params[$position])
+                                ) {
                                     continue;
                                 }
                             }
 
-                            if (IssueBuffer::accepts(
-                                new PossiblyUnusedParam(
-                                    'Param ' . $var_name . ' is never referenced in this method',
-                                    $original_location
-                                ),
-                                $this->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
+                            $storage->unused_params[$position] = $original_location;
+                        }
+                    }
+                }
+            }
+
+            if ($storage instanceof MethodStorage && $class_storage) {
+                foreach ($storage->params as $i => $_) {
+                    if (!isset($storage->unused_params[$i])) {
+                        $storage->used_params[$i] = true;
+
+                        /** @var ClassMethod $this->function */
+                        $method_name_lc = strtolower((string)$this->function->name);
+
+                        if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                            continue;
+                        }
+
+                        foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
+                            $parent_method_storage = MethodChecker::getStorage($project_checker, $parent_method_id);
+
+                            $parent_method_storage->used_params[$i] = true;
                         }
                     }
                 }

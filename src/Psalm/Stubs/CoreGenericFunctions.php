@@ -129,3 +129,13 @@ function reset(array &$arr) {}
  * @return TValue|false
  */
 function end(array &$arr) {}
+
+/**
+ * @template T
+ *
+ * @param mixed           $needle
+ * @param array<T, mixed> $haystack
+ * @param bool            $strict
+ * @return T|false
+ */
+function array_search($needle, array $haystack, bool $strict = false) {}
