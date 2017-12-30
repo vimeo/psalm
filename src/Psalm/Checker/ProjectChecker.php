@@ -876,6 +876,11 @@ class ProjectChecker
 
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
+        // avoid checking classes that we know will just end in failure
+        if ($fq_classlike_name_lc === 'null' || substr($fq_classlike_name_lc, -5) === '\null') {
+            return;
+        }
+
         if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
             if (!isset($this->classes_to_scan[$fq_classlike_name_lc]) || $store_failure) {
                 $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
