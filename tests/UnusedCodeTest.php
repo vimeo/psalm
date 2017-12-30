@@ -270,6 +270,14 @@ class UnusedCodeTest extends TestCase
                     new A();',
                 'error_message' => 'UnusedMethod',
             ],
+            'unevaluatedCode' => [
+                '<?php
+                    function foo() : void {
+                        return;
+                        $a = "foo";
+                    }',
+                'error_message' => 'UnevaluatedCode',
+            ],
         ];
     }
 }

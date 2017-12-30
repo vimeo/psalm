@@ -240,6 +240,11 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
+            'misplacedRequiredParam' => [
+                '<?php
+                    function foo($bar = null, $bat) : void {}',
+                'error_message' => 'MisplacedRequiredParam',
+            ],
         ];
     }
 }

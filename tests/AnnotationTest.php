@@ -284,6 +284,13 @@ class AnnotationTest extends TestCase
                         }
                     }',
             ],
+            'returnDocblock' => [
+                '<?php
+                    function foo(int $i) : int {
+                        /** @var int */
+                        return $i;
+                    }',
+            ],
         ];
     }
 
