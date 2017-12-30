@@ -42,6 +42,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 {
     const RETURN_TYPE_REGEX = '/\\:\s+(\\??[A-Za-z0-9_\\\\\[\]]+)/';
     const PARAM_TYPE_REGEX = '/^(\\??[A-Za-z0-9_\\\\\[\]]+)\s/';
+    const PARAM_TYPE_VAR = '/(\$[^ ]*)/';
 
     /**
      * @var Closure|Function_|ClassMethod
@@ -287,7 +288,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
 
-            if (!$function_param->location) {
+            if (!$function_param->type_location || !$function_param->location) {
                 continue;
             }
 
@@ -309,7 +310,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         new InvalidDocblock(
                             'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
                                 '\', should be \'' . $signature_type . '\'',
-                            $function_param->location
+                            $function_param->type_location
                         ),
                         $storage->suppressed_issues
                     )) {
@@ -334,7 +335,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         new InvalidParamDefault(
                             'Default value for argument ' . ($offset + 1) . ' of method ' . $cased_method_id .
                                 ' does not match the given type ' . $param_type,
-                            $function_param->location
+                            $function_param->type_location
                         )
                     )) {
                         // fall through
@@ -346,19 +347,25 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $substituted_type = clone $param_type;
                 $generic_types = [];
                 $substituted_type->replaceTemplateTypesWithStandins($template_types, $generic_types, null);
-                $substituted_type->check($this->source, $function_param->location, $this->suppressed_issues, [], false);
+                $substituted_type->check(
+                    $this->source,
+                    $function_param->type_location,
+                    $this->suppressed_issues,
+                    [],
+                    false
+                );
             } else {
-                $param_type->check($this->source, $function_param->location, $this->suppressed_issues, [], false);
+                $param_type->check($this->source, $function_param->type_location, $this->suppressed_issues, [], false);
             }
 
             if ($this->getFileChecker()->project_checker->collect_references) {
-                if ($function_param->location !== $function_param->signature_location &&
-                    $function_param->signature_location &&
+                if ($function_param->type_location !== $function_param->signature_type_location &&
+                    $function_param->signature_type_location &&
                     $function_param->signature_type
                 ) {
                     $function_param->signature_type->check(
                         $this->source,
-                        $function_param->signature_location,
+                        $function_param->signature_type_location,
                         $this->suppressed_issues,
                         [],
                         false
@@ -1280,6 +1287,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param_name,
             (bool)$param->isPassedByReference(),
             $param_type,
+            null,
             null,
             $is_optional,
             $is_nullable,

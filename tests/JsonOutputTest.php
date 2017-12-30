@@ -29,6 +29,7 @@ class JsonOutputTest extends TestCase
         $config->throw_exception = false;
         $config->stop_on_first_error = false;
         $this->project_checker->setConfig($config);
+        $this->project_checker->collect_references = true;
     }
 
     /**
@@ -87,6 +88,7 @@ echo $a;';
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
         $file_checker->visitAndAnalyzeMethods();
+        $this->project_checker->checkClassReferences();
         $issue_data = IssueBuffer::getIssuesData();
         $this->assertSame(
             [
@@ -131,6 +133,20 @@ echo $a;';
                     'snippet_from' => 58,
                     'snippet_to' => 84,
                     'column' => 10,
+                ],
+                [
+                    'severity' => 'error',
+                    'line_number' => 2,
+                    'type' => 'UnusedParam',
+                    'message' => 'Param $your_code is never referenced in this method',
+                    'file_name' => 'somefile.php',
+                    'file_path' => 'somefile.php',
+                    'snippet' => 'function psalmCanVerify(int $your_code) : ?string {',
+                    'from' => 34,
+                    'to' => 44,
+                    'snippet_from' => 6,
+                    'snippet_to' => 57,
+                    'column' => 29,
                 ],
                 [
                     'severity' => 'error',

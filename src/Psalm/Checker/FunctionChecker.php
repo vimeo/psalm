@@ -301,6 +301,7 @@ class FunctionChecker extends FunctionLikeChecker
                     $by_reference,
                     $param_type,
                     null,
+                    null,
                     $optional,
                     false,
                     $variadic

@@ -968,7 +968,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $param->name,
             $param->byRef,
             $param_type,
-            new CodeLocation($this->file_checker, $param, null, false, FunctionLikeChecker::PARAM_TYPE_REGEX),
+            new CodeLocation($this->file_checker, $param, null, false, FunctionLikeChecker::PARAM_TYPE_VAR),
+            $param_typehint
+                ? new CodeLocation($this->file_checker, $param, null, false, FunctionLikeChecker::PARAM_TYPE_REGEX)
+                : null,
             $is_optional,
             $is_nullable,
             $param->variadic
@@ -1067,7 +1070,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 $storage_param->type = $new_param_type;
-                $storage_param->location = $code_location;
+                $storage_param->type_location = $code_location;
                 continue;
             }
 
@@ -1092,7 +1095,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $storage_param->type = new Type\Union(array_values($improved_atomic_types));
             $storage_param->type->setFromDocblock();
-            $storage_param->location = $code_location;
+            $storage_param->type_location = $code_location;
         }
     }
 

@@ -41,7 +41,12 @@ class FunctionLikeParameter
     /**
      * @var CodeLocation|null
      */
-    public $signature_location;
+    public $type_location;
+
+    /**
+     * @var CodeLocation|null
+     */
+    public $signature_type_location;
 
     /**
      * @var bool
@@ -62,6 +67,7 @@ class FunctionLikeParameter
         $by_ref,
         Type\Union $type = null,
         CodeLocation $location = null,
+        CodeLocation $type_location = null,
         $is_optional = true,
         $is_nullable = false,
         $is_variadic = false
@@ -74,6 +80,7 @@ class FunctionLikeParameter
         $this->is_nullable = $is_nullable;
         $this->is_variadic = $is_variadic;
         $this->location = $location;
-        $this->signature_location = $location;
+        $this->type_location = $type_location;
+        $this->signature_type_location = $type_location;
     }
 }
