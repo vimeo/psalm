@@ -183,6 +183,18 @@ class UnusedCodeTest extends TestCase
                     (new A)->foo();
                     (new B)->foo();',
             ],
+            'usedInterfaceMethod' => [
+                '<?php
+                    interface I {
+                        public function foo() : void;
+                    }
+
+                    class A implements I {
+                        public function foo() : void {}
+                    }
+
+                    (new A)->foo();',
+            ],
         ];
     }
 

@@ -346,6 +346,17 @@ class MethodChecker extends FunctionLikeChecker
                 }
                 $declaring_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
 
+                foreach ($class_storage->class_implements as $fq_interface_name) {
+                    $interface_storage = $project_checker->classlike_storage_provider->get($fq_interface_name);
+                    if (isset($interface_storage->methods[$method_name])) {
+                        $interface_method_storage = $interface_storage->methods[$method_name];
+                        if (!isset($interface_method_storage->referencing_locations)) {
+                            $interface_method_storage->referencing_locations = [];
+                        }
+                        $interface_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
+                    }
+                }
+
                 if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
                     $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
 
