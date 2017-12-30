@@ -14,7 +14,7 @@ install:
 
 script:
   - vendor/bin/phpunit
-  - ./psalm
+  - ./psalm --find-dead-code
   - vendor/bin/phpcs
 
 after_success:

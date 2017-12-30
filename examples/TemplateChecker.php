@@ -27,8 +27,6 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
         $first_stmt = $stmts[0];
 
-        $this_params = null;
-
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
 
             $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
