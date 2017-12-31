@@ -539,7 +539,7 @@ echo [1, 2, 3][$_GET['foo']];
 
 ### MixedAssignment
 
-Emitted when
+Emitted when assigning a variable to a value for which Psalm cannot infer a type
 
 ```php
 $a = $_GET['foo'];
@@ -576,7 +576,7 @@ echo $_GET['foo'] + "hello";
 
 ### MixedPropertyAssignment
 
-Emitted when assigning a property to a value that Psalm cannot infer a type for
+Emitted when assigning a property to a value for which Psalm cannot infer a type
 
 ```php
 /** @param mixed $a */
@@ -587,7 +587,7 @@ function foo($a) : void {
 
 ### MixedPropertyFetch
 
-Emitted when retrieving a property on a value that Psalm cannot infer a type for
+Emitted when retrieving a property on a value for which Psalm cannot infer a type
 
 ```php
 /** @param mixed $a */
@@ -619,26 +619,49 @@ function takesStringArray(array $a) : void {}
 
 ### MoreSpecificImplementedReturnType
 
-Emitted when
+Emitted when a class implements an interface method but its return type is less specific than the interface method return type
 
 ```php
-
+class A {}
+class B extends A {}
+interface I {
+    /** @return B[] */
+    public function foo();
+}
+class D implements I {
+    /** @return A[] */
+    public function foo() {
+        return [new A, new A];
+    }
+}
 ```
 
 ### MoreSpecificReturnType
 
-Emitted when
+Emitted when the declared return type for a method is more specific than the inferred one (emitted in the same methods that `LessSpecificReturnStatement` is)
 
 ```php
-
+class A {}
+class B extends A {}
+function foo() : B {
+    /** @psalm-suppress LessSpecificReturnStatement */
+    return new A();
+}
 ```
 
 ### NoInterfaceProperties
 
-Emitted when
+Emitted when trying to fetch a property on an interface as interfaces, by definition, do not have definitions for properties.
 
 ```php
-
+interface I {}
+class A implements I {
+    /** @var ?string */
+    public $foo;
+}
+function bar(I $i) : void {
+    if ($i->foo) {}
+}
 ```
 
 ### NonStaticSelfCall
@@ -651,90 +674,105 @@ Emitted when
 
 ### NullArgument
 
-Emitted when
+Emitted when calling a function with a null value argument when the function does not expect it
 
 ```php
-
+function foo(string $s) : void {}
+foo(null);
 ```
 
 ### NullArrayAccess
 
-Emitted when
+Emitted when trying to access an array value on `null`
 
 ```php
-
+$arr = null;
+echo $arr[0];
 ```
 
 ### NullArrayOffset
 
-Emitted when
+Emitted when trying to access an array offset with `null`
 
 ```php
-
+$arr = ['' => 5, 'foo' => 1];
+echo $arr[null];
 ```
 
 ### NullFunctionCall
 
-Emitted when
+Emitted when trying to use `null` as a `callable`
 
 ```php
-
+$arr = null;
+echo $arr();
 ```
 
 ### NullIterator
 
-Emitted when
+Emitted when iterating over `null`
 
 ```php
-
+foreach (null as $a) {}
 ```
 
 ### NullOperand
 
-Emitted when
+Emitted when using `null` as part of an operation (e.g. `+`, `.`, `^` etc.`)
 
 ```php
-
+echo null . 'hello';
 ```
 
 ### NullPropertyAssignment
 
-Emitted when
+Emitted when trying to set a property on `null`
 
 ```php
-
+$a = null;
+$a->foo = "bar";
 ```
 
 ### NullPropertyFetch
 
-Emitted when
+Emitted when trying to fetch a property on a `null` value
 
 ```php
-
+$a = null;
+echo $a->foo;
 ```
 
 ### NullReference
 
-Emitted when
+Emitted when attempting to call a method on `null`
 
 ```php
-
+$a = null;
+$a->foo();
 ```
 
 ### OverriddenMethodAccess
 
-Emitted when
+Emitted when a method is less accessible than its parent
 
 ```php
-
+class A {
+    public function foo() : void {}
+}
+class B extends A {
+    protected function foo() : void {}
+}
 ```
 
 ### ParadoxicalCondition
 
-Emitted when
+Emitted when a paradox is encountered in your programs logic that could not be caught by `RedundantCondition`
 
 ```php
-
+function foo(?string $a) : ?string {
+    if ($a) return $a;
+    if ($a) echo "cannot happen";
+}
 ```
 
 ### ParentNotFound
@@ -955,10 +993,14 @@ Emitted when
 
 ### RedundantCondition
 
-Emitted when
+Emitted when conditional is redundant given previous assertions
 
 ```php
-
+class A {}
+function foo(?A $a) : ?A {
+    if ($a) return $a;
+    if ($a) echo "cannot happen";
+}
 ```
 
 ### ReferenceConstraintViolation
