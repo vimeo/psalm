@@ -777,26 +777,42 @@ function foo(?string $a) : ?string {
 
 ### ParentNotFound
 
-Emitted when
+Emitted when using `parent::` in a class without a parent class.
 
 ```php
-
+class A {
+  public function foo() : void {
+    parent::foo();
+  }
+}
 ```
 
 ### PossiblyFalseArgument
 
-Emitted when
+Emitted when a function argument is possibly `false`, but the function doesn’t expect `false`. This is distinct from a function argument is possibly `bool`, which results in `PossiblyInvalidArgument`.
 
 ```php
-
+function foo(string $s) : void {
+    $a_pos = strpos($s, "a");
+    echo substr($s, $a_pos);
+}
 ```
 
 ### PossiblyFalseReference
 
-Emitted when
+Emitted when making a method call on a value than might be `false`
 
 ```php
+class A {
+    public function bar() : void {}
+}
 
+/** @return A|false */
+function foo() {
+    return rand(0, 1) ? new A : false;
+}
+
+foo()->bar();
 ```
 
 ### PossiblyInvalidArgument
@@ -804,175 +820,266 @@ Emitted when
 Emitted when
 
 ```php
-
+/** @return string|int */
+function foo() {
+    return rand(0, 1) ? 5 : "i";
+}
+function bar(int $i) : void {}
+bar(foo());
 ```
 
 ### PossiblyInvalidArrayAccess
 
-Emitted when
+Emitted when attempting to access an array offset on a value that may not be an array
 
 ```php
-
+$arr = rand(0, 1) ? 5 : [4, 3, 2, 1];
+echo $arr[0];
 ```
 
 ### PossiblyInvalidArrayAssignment
 
-Emitted when
+Emitted when attempting to assign an array offset on a value that may not be an array
 
 ```php
-
+$arr = rand(0, 1) ? 5 : [4, 3, 2, 1];
+$arr[0] = "hello";
 ```
 
 ### PossiblyInvalidArrayOffset
 
-Emitted when
+Emitted when it’s possible that the array offset is not applicable to the value you’re trying to access.
 
 ```php
-
+$arr = rand(0, 5) > 2 ? ["a" => 5] : "hello";
+echo $arr[0];
 ```
 
 ### PossiblyInvalidMethodCall
 
-Emitted when
+Emitted when trying to call a method on a value that may not be an object
 
 ```php
+class A {
+    public function bar() : void {}
+}
 
+/** @return A|int */
+function foo() {
+    return rand(0, 1) ? new A : 5;
+}
+
+foo()->bar();
 ```
 
 ### PossiblyInvalidPropertyAssignment
 
-Emitted when
+Emitted when trying to assign a property on a value that may not be an object or may be an object that doesn’t have the desired property.
 
 ```php
+class A {
+    /** @var ?string */
+    public $bar;
+}
 
+/** @return A|int */
+function foo() {
+    return rand(0, 1) ? new A : 5;
+}
+
+$a = foo();
+$a->bar = "5";
 ```
 
 ### PossiblyInvalidPropertyFetch
 
-Emitted when
+Emitted when trying to fetch a property on a value that may not be an object or may be an object that doesn’t have the desired property.
 
 ```php
+class A {
+    /** @var ?string */
+    public $bar;
+}
 
+/** @return A|int */
+function foo() {
+    return rand(0, 1) ? new A : 5;
+}
+
+$a = foo();
+echo $a->bar;
 ```
 
 ### PossiblyNullArgument
 
-Emitted when
+Emitted when calling a function with a value that’s possibly null when the function does not expect it
 
 ```php
-
+function foo(string $s) : void {}
+foo(rand(0, 1) ? "hello" : null);
 ```
 
 ### PossiblyNullArrayAccess
 
-Emitted when
+Emitted when trying to access an array offset on a possibly null value
 
 ```php
-
+public function foo(?array $a) : void {
+    echo $a[0];
+}
 ```
 
 ### PossiblyNullArrayAssignment
 
-Emitted when
+Emitted when trying to set a value on a possibly null array
 
 ```php
-
+public function foo(?array $a) : void {
+    $a[0] = "5";
+}
 ```
 
 ### PossiblyNullArrayOffset
 
-Emitted when
+Emitted when trying to access a value on an array using a possibly null offset
 
 ```php
-
+public function foo(?int $a) : void {
+    echo [1, 2, 3, 4][$a];
+}
 ```
 
 ### PossiblyNullFunctionCall
 
-Emitted when
+Emitted when trying to call a function on a value that may be null
 
 ```php
-
+public function foo(?callable $a) : void {
+    $a();
+}
 ```
 
 ### PossiblyNullIterator
 
-Emitted when
+Emitted when trying to iterate over a value that may be null
 
 ```php
-
+public function foo(?array $arr) : void {
+    foreach ($arr as $a) {}
+}
 ```
 
 ### PossiblyNullOperand
 
-Emitted when
+Emitted when using a possibly `null` value as part of an operation (e.g. `+`, `.`, `^` etc.`)
 
 ```php
-
+public function foo(?int $a) : void {
+    echo $a + 5;
+}
 ```
 
 ### PossiblyNullPropertyAssignment
 
-Emitted when
+Emitted when trying to assign a property to a possibly null object
 
 ```php
-
+class A {
+    /** @var ?string */
+    public $foo;
+}
+function foo(?A $a) : void {
+    $a->foo = "bar";
+}
 ```
 
 ### PossiblyNullPropertyFetch
 
-Emitted when
+Emitted when trying to fetch a property on a possibly null object
 
 ```php
-
+class A {
+    /** @var ?string */
+    public $foo;
+}
+function foo(?A $a) : void {
+    echo $a->foo;
+}
 ```
 
 ### PossiblyNullReference
 
-Emitted when
+Emitted when trying to call a method on a possibly null value
 
 ```php
-
+class A {
+    public function bar() : void {}
+}
+function foo(?A $a) : void {
+    $a->bar();
+}
 ```
 
 ### PossiblyUndefinedGlobalVariable
 
-Emitted when
+Emitted when trying to access a variable in the global scope that may not be defined
 
 ```php
-
+if (rand(0, 1)) {
+  $a = 5;
+}
+echo $a;
 ```
 
 ### PossiblyUndefinedMethod
 
-Emitted when
+Emitted when trying to access a method that may not be defined on the object
 
 ```php
+class A {
+    public function bar() : void {}
+}
+class B {}
 
+$a = rand(0, 1) ? new A : new B;
+$a->bar();
 ```
 
 ### PossiblyUndefinedVariable
 
-Emitted when
+Emitted when trying to access a variable in function scope that may not be defined
 
 ```php
-
+function foo() : void {
+    if (rand(0, 1)) {
+        $a = 5;
+    }
+    echo $a;
+}
 ```
 
 ### PossiblyUnusedMethod
 
-Emitted when
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any calls to a given class method
 
 ```php
-
+class A {
+    public function foo() : void {}
+    public function bar() : void {}
+}
+(new A)->foo();
 ```
 
 ### PossiblyUnusedVariable
 
-Emitted when
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any references to a variable, once instantiated
 
 ```php
-
+function foo() : void {
+    $a = 5;
+    $b = 4;
+    echo $b;
+}
 ```
 
 ### PropertyNotSetInConstructor
