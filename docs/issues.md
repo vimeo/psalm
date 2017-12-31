@@ -1084,18 +1084,33 @@ function foo() : void {
 
 ### PropertyNotSetInConstructor
 
-Emitted when
+Emitted when a non-null property without a default value is declared but not set in the class’s constructor
 
 ```php
+class A {
+    /** @var string */
+    public $foo;
 
+    public function __construct() {}
+}
 ```
 
 ### RawObjectIteration
 
-Emitted when
+Emitted when iterating over an object’s properties. This issue exists because it may be undesired behaviour (e.g. you may have meant to iterate over an array)
 
 ```php
+class A {
+    /** @var string */
+    public $foo;
 
+    /** @var string */
+    public $bar;
+}
+
+function takesA(A $a) {
+    foreach ($a as $property) {}
+}
 ```
 
 ### RedundantCondition
@@ -1112,98 +1127,111 @@ function foo(?A $a) : ?A {
 
 ### ReferenceConstraintViolation
 
-Emitted when
+Emitted when changing the type of a pass-by-reference variable
 
 ```php
-
+function foo(string &$a) {
+    $a = 5;
+}
 ```
 
 ### ReservedWord
 
-Emitted when
+Emitted when using a reserved word as a class name
 
 ```php
-
+function foo(resource $res) : void {}
 ```
 
 ### TooFewArguments
 
-Emitted when
+Emitted when calling a function with fewer arguments than the function has parameters
 
 ```php
-
+function foo(string $a) : void {}
+foo();
 ```
 
 ### TooManyArguments
 
-Emitted when
+Emitted when calling a function with more arguments than the function has parameters
 
 ```php
-
+function foo(string $a) : void {}
+foo("hello", 4);
 ```
 
 ### TypeCoercion
 
-Emitted when
+Emitted when calling a function with an argument which has a less specific type than the function expects
 
 ```php
+class A {}
+class B extends A {}
 
+function takesA(A $a) : void {
+    takesB($a);
+}
+function takesB(B $b) : void {}
 ```
 
 ### TypeDoesNotContainNull
 
-Emitted when
+Emitted when checking a non-nullable type for `null`
 
 ```php
-
+$a = "hello";
+if ($a === null) {}
 ```
 
 ### TypeDoesNotContainType
 
-Emitted when
+Emitted checking whether one value has a type or value that is impossible given its currently-known type
 
 ```php
-
+$a = "hello";
+if ($a === 5) {}
 ```
 
 ### UndefinedClass
 
-Emitted when
+Emitted when referencing a class that doesn’t exist
 
 ```php
-
+$a = new A();
 ```
 
 ### UndefinedConstant
 
-Emitted when
+Emitted when referencing a constant that doesn’t exist
 
 ```php
-
+echo FOO_BAR;
 ```
 
 ### UndefinedFunction
 
-Emitted when
+Emitted when referencing a function that doesn't exist
 
 ```php
-
+foo();
 ```
 
 ### UndefinedGlobalVariable
 
-Emitted when
+Emitted when referencing a variable that doesn't exist
 
 ```php
-
+echo $a;
 ```
 
 ### UndefinedMethod
 
-Emitted when
+Emitted when calling a method that doesn’t exist
 
 ```php
-
+class A {}
+A::foo();
 ```
 
 ### UndefinedPropertyAssignment
