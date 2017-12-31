@@ -26,7 +26,6 @@ class AssertionFinder
      * @param  StatementsSource         $source
      *
      * @return array<string, string>
-     * @psalm-suppress MoreSpecificReturnType
      */
     public static function getAssertions(
         PhpParser\Node\Expr $conditional,

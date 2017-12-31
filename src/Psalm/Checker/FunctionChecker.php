@@ -792,7 +792,6 @@ class FunctionChecker extends FunctionLikeChecker
      * @return array<string, array<int|string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MoreSpecificReturnType
      */
     protected static function getCallMap()
     {
