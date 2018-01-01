@@ -36,6 +36,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidArgument;
+use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyInvalidMethodCall;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\Issue\PossiblyNullFunctionCall;
@@ -168,6 +169,9 @@ class CallChecker
                     }
                 }
 
+                $invalid_function_call_types = [];
+                $has_valid_function_call_type = false;
+
                 foreach ($stmt->name->inferredType->types as $var_type_part) {
                     if ($var_type_part instanceof Type\Atomic\Fn) {
                         $function_params = $var_type_part->params;
@@ -182,11 +186,14 @@ class CallChecker
                         }
 
                         $function_exists = true;
+                        $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TMixed) {
+                        $has_valid_function_call_type = true;
                         // @todo maybe emit issue here
                     } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure') ||
                         $var_type_part instanceof TCallable
                     ) {
+                        $has_valid_function_call_type = true;
                         // this is fine
                     } elseif ($var_type_part instanceof TNull) {
                         // handled above
@@ -206,9 +213,27 @@ class CallChecker
                             $statements_checker
                         );
 
+                        $invalid_function_call_types[] = (string)$var_type_part;
+                    }
+                }
+
+                if ($invalid_function_call_types) {
+                    $var_type_part = reset($invalid_function_call_types);
+
+                    if ($has_valid_function_call_type) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyInvalidFunctionCall(
+                                'Cannot treat type ' . $var_type_part . ' as callable',
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    } else {
                         if (IssueBuffer::accepts(
                             new InvalidFunctionCall(
-                                'Cannot treat ' . $var_id . ' of type ' . $var_type_part . ' as function',
+                                'Cannot treat type ' . $var_type_part . ' as callable',
                                 new CodeLocation($statements_checker->getSource(), $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()

@@ -172,6 +172,7 @@
             <xs:element name="PossiblyInvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyInvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
