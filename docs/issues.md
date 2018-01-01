@@ -954,7 +954,7 @@ foo(rand(0, 1) ? "hello" : null);
 Emitted when trying to access an array offset on a possibly null value
 
 ```php
-public function foo(?array $a) : void {
+function foo(?array $a) : void {
     echo $a[0];
 }
 ```
@@ -964,7 +964,7 @@ public function foo(?array $a) : void {
 Emitted when trying to set a value on a possibly null array
 
 ```php
-public function foo(?array $a) : void {
+function foo(?array $a) : void {
     $a[0] = "5";
 }
 ```
@@ -974,7 +974,7 @@ public function foo(?array $a) : void {
 Emitted when trying to access a value on an array using a possibly null offset
 
 ```php
-public function foo(?int $a) : void {
+function foo(?int $a) : void {
     echo [1, 2, 3, 4][$a];
 }
 ```
@@ -984,7 +984,7 @@ public function foo(?int $a) : void {
 Emitted when trying to call a function on a value that may be null
 
 ```php
-public function foo(?callable $a) : void {
+function foo(?callable $a) : void {
     $a();
 }
 ```
@@ -994,7 +994,7 @@ public function foo(?callable $a) : void {
 Emitted when trying to iterate over a value that may be null
 
 ```php
-public function foo(?array $arr) : void {
+function foo(?array $arr) : void {
     foreach ($arr as $a) {}
 }
 ```
@@ -1004,7 +1004,7 @@ public function foo(?array $arr) : void {
 Emitted when using a possibly `null` value as part of an operation (e.g. `+`, `.`, `^` etc.`)
 
 ```php
-public function foo(?int $a) : void {
+function foo(?int $a) : void {
     echo $a + 5;
 }
 ```
