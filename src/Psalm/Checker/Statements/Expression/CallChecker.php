@@ -207,12 +207,6 @@ class CallChecker
                             $var_type_part->value . '::__invoke'
                         )
                     ) {
-                        $var_id = ExpressionChecker::getVarId(
-                            $stmt->name,
-                            $statements_checker->getFQCLN(),
-                            $statements_checker
-                        );
-
                         $invalid_function_call_types[] = (string)$var_type_part;
                     }
                 }
