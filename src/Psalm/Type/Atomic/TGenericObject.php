@@ -11,6 +11,9 @@ class TGenericObject extends TNamedObject implements Generic
      */
     public function __construct($value, array $type_params)
     {
+        if ($value[0] === '\\') {
+            $value = substr($value, 1);
+        }
         $this->value = $value;
         $this->type_params = $type_params;
     }
