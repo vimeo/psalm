@@ -18,6 +18,15 @@ function foo() : void {}
 $a = foo();
 ```
 
+### CircularReference
+
+Emitted when a class references itself as one of its parents
+
+```php
+class A extends B {}
+class B extends A {}
+```
+
 ### ContinueOutsideLoop
 
 Emitted when encountering a `continue` statement outside a loop context.
@@ -214,6 +223,18 @@ $a = new A();
 $b = (string)$a;
 ```
 
+### InvalidCatch
+
+Emitted when trying to catch a class/interface that doesn't extend `Exception` or implement `Throwable`
+
+```php
+class A {}
+try {
+    $worked = true;
+}
+catch (A $e) {}
+```
+
 ### InvalidClass
 
 Emitted when referencing a class with the wrong casing
@@ -378,6 +399,15 @@ class A {
 }
 
 A::bar();
+```
+
+### InvalidThrow
+
+Emitted when trying to throw a class that doesn't extend `Exception` or implement `Throwable`
+
+```php
+class A {}
+throw new A();
 ```
 
 ### InvalidToString
@@ -1070,15 +1100,15 @@ class A {
 (new A)->foo();
 ```
 
-### PossiblyUnusedVariable
+### PossiblyUnusedParam
 
-Emitted when `--find-dead-code` is turned on and Psalm cannot find any references to a variable, once instantiated
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a particular parameter in a public/protected method
 
 ```php
-function foo() : void {
-    $a = 5;
-    $b = 4;
-    echo $b;
+class A {
+    public function foo(int $a, int $b) : int {
+        return $a + 4;
+    }
 }
 ```
 
@@ -1236,129 +1266,171 @@ A::foo();
 
 ### UndefinedPropertyAssignment
 
-Emitted when
+Emitted when assigning a property on an object that doesn’t have that property defined
 
 ```php
-
+class A {}
+$a = new A();
+$a->foo = "bar";
 ```
 
 ### UndefinedPropertyFetch
 
-Emitted when
+Emitted when getting a property on an object that doesn’t have that property defined
 
 ```php
-
+class A {}
+$a = new A();
+echo $a->foo;
 ```
 
 ### UndefinedThisPropertyAssignment
 
-Emitted when
+Emitted when assigning a property on an object in one of that object’s methods when no such property exists
 
 ```php
-
+class A {
+    function foo() {
+        $this->foo = "bar";
+    }
+}
 ```
 
 ### UndefinedThisPropertyFetch
 
-Emitted when
+Emitted when getting a property for an object in one of that object’s methods when no such property exists
 
 ```php
-
+class A {
+    function foo() {
+        echo $this->foo;
+    }
+}
 ```
 
 ### UndefinedTrait
 
-Emitted when
+Emitted when referencing a trait that doesn’t exist
 
 ```php
-
+class A {
+    use T;
+}
 ```
 
 ### UndefinedVariable
 
-Emitted when
+Emitted when referencing a variable that doesn't exist in a given function’s scope
 
 ```php
-
+function foo() {
+    echo $a;
+}
 ```
 
 ### UnevaluatedCode
 
-Emitted when
+Emitted when `--find-dead-code` is turned on and Psalm encounters code that will not be evaluated
 
 ```php
-
+function foo() : void {
+    return;
+    $a = "foo";
+}
 ```
 
 ### UnimplementedAbstractMethod
 
-Emitted when
+Emitted when a class extends another, but does not implement all of its abstract methods
 
 ```php
-
+abstract class A {
+    abstract public function foo();
+}
+class B extends A {}
 ```
 
 ### UnimplementedInterfaceMethod
 
-Emitted when
+Emitted when a class `implements` an interface but does not implement all of its methods
 
 ```php
-
+interface I {
+    public function foo();
+}
+class A implements I {}
 ```
 
 ### UnrecognizedExpression
 
-Emitted when
-
-```php
-
-```
+Emitted when Psalm encounters an expression that it doesn't know how to handle. This should never happen.
 
 ### UnrecognizedStatement
 
-Emitted when
-
-```php
-
-```
+Emitted when Psalm encounters a code construct that it doesn't know how to handle. This should never happen.
 
 ### UnresolvableInclude
 
-Emitted when
+Emitted when Psalm cannot figure out what specific file is being included/required by PHP.
 
 ```php
-
+function requireFile(string $s) : void {
+    require_once($s);
+}
 ```
 
 ### UntypedParam
 
-Emitted when
+Emitted when a function paramter has no type information associated with it
 
 ```php
-
+function foo($a) : void {}
 ```
 
 ### UnusedClass
 
-Emitted when
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a given class
 
 ```php
-
+class A {}
+class B {}
+$a = new A();
 ```
 
 ### UnusedMethod
 
-Emitted when
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a given private method or function
 
 ```php
+class A {
+    public function __construct() {
+        $this->foo();
+    }
+    private function foo() : void {}
+    private function bar() : void {}
+}
+new A();
+```
 
+### UnusedParam
+
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a particular parameter in a private method or function
+
+```php
+function foo(int $a, int $b) : int {
+    return $a + 4;
+}
 ```
 
 ### UnusedVariable
 
-Emitted when
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any references to a variable, once instantiated
 
 ```php
-
+function foo() : void {
+    $a = 5;
+    $b = 4;
+    echo $b;
+}
 ```
 
