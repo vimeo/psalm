@@ -1701,6 +1701,7 @@ class ProjectChecker
         $this->cache_provider->use_igbinary = $config->use_igbinary;
 
         $config->visitStubFiles($this);
+        $config->visitComposerAutoloadFiles($this);
         $config->initializePlugins($this);
 
         return $config;
@@ -1718,6 +1719,7 @@ class ProjectChecker
         $this->cache_provider->use_igbinary = $config->use_igbinary;
 
         $config->visitStubFiles($this);
+        $config->visitComposerAutoloadFiles($this);
         $config->initializePlugins($this);
     }
 
@@ -1738,6 +1740,7 @@ class ProjectChecker
         $this->config = Config::loadFromXMLFile($path_to_config, $base_dir);
 
         $this->config->visitStubFiles($this);
+        $this->config->visitComposerAutoloadFiles($this);
         $this->config->initializePlugins($this);
     }
 

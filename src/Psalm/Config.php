@@ -715,6 +715,49 @@ class Config
     }
 
     /**
+     * @return void
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedArrayAccess
+     */
+    public function visitComposerAutoloadFiles(ProjectChecker $project_checker)
+    {
+        $project_checker->register_global_functions = true;
+
+        $composer_json_path = $this->base_dir . 'composer.json'; // this should ideally not be hardcoded
+
+        if (!file_exists($composer_json_path)) {
+            $project_checker->register_global_functions = false;
+
+            return;
+        }
+
+        /** @psalm-suppress PossiblyFalseArgument */
+        if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+            throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+        }
+
+        if (isset($composer_json['autoload']['files'])) {
+            /** @var string[] */
+            $files = $composer_json['autoload']['files'];
+
+            foreach ($files as $file) {
+                $file_path = realpath($this->base_dir . $file);
+
+                if (!$file_path) {
+                    continue;
+                }
+
+                $file_checker = new FileChecker($file_path, $project_checker);
+                $project_checker->file_storage_provider->create($file_path);
+                $file_checker->scan();
+            }
+        }
+
+        $project_checker->register_global_functions = false;
+    }
+
+    /**
      * @return array<string, string>
      */
     public function getComposerClassMap()

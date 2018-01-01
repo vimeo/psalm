@@ -219,7 +219,13 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if ($docblock_info->return_type) {
                     if (!$storage->return_type) {
-                        $storage->return_type = Type::parseString($docblock_info->return_type);
+                        $namespace = $reflection_function->getNamespaceName();
+                        $aliases = new \Psalm\Aliases($namespace);
+                        $fq_return_type = FunctionLikeChecker::fixUpLocalType(
+                            $docblock_info->return_type,
+                            $aliases
+                        );
+                        $storage->return_type = Type::parseString($fq_return_type);
                         $storage->return_type->setFromDocblock();
 
                         if ($docblock_info->ignore_nullable_return) {
