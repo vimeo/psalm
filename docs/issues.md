@@ -121,7 +121,7 @@ class A {
 class B extends A {
     /** @return string */
     public function foo()  {
-        return true;
+        return "hello";
     }
 }
 ```
