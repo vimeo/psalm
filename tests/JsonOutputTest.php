@@ -17,7 +17,7 @@ class JsonOutputTest extends TestCase
         FileChecker::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_checker = new ProjectChecker(
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
             false,

@@ -68,4 +68,18 @@ abstract class Plugin
         array &$file_replacements = []
     ) {
     }
+
+    /**
+     * @param  string             $fq_class_name
+     * @param  FileManipulation[] $file_replacements
+     *
+     * @return void
+     */
+    public function afterClassLikeExistsCheck(
+        StatementsSource $statements_source,
+        $fq_class_name,
+        CodeLocation $code_location,
+        array &$file_replacements = []
+    ) {
+    }
 }

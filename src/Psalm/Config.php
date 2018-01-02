@@ -435,7 +435,7 @@ class Config
     }
 
     /**
-     * @param  array<\SimpleXMLElement> $extensions
+     * @param  array<SimpleXMLElement> $extensions
      *
      * @throws ConfigException if a Config file could not be found
      *

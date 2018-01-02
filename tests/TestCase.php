@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\ProjectChecker;
 
 class TestCase extends BaseTestCase
 {
@@ -15,7 +16,7 @@ class TestCase extends BaseTestCase
     /** @var string */
     protected static $src_dir_path;
 
-    /** @var \Psalm\Checker\ProjectChecker */
+    /** @var ProjectChecker */
     protected $project_checker;
 
     /** @var Provider\FakeFileProvider */
@@ -41,7 +42,7 @@ class TestCase extends BaseTestCase
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_checker = new ProjectChecker(
             $this->file_provider,
             new Provider\FakeParserCacheProvider()
         );

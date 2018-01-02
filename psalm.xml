@@ -49,7 +49,6 @@
             <errorLevel type="suppress">
                 <directory name="tests" />
                 <file name="src/Psalm/Type/Atomic/GenericTrait.php" />
-                <file name="src/Psalm/FileManipulation/FileManipulationBuffer.php" />
             </errorLevel>
         </PossiblyUnusedMethod>
 
