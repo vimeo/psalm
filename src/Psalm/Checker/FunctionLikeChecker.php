@@ -1015,14 +1015,49 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         /** @var PhpParser\Node\Stmt[] */
         $function_stmts = $this->function->getStmts();
 
-        $inferred_return_types = EffectsAnalyser::getReturnTypes(
+        $inferred_return_type_parts = EffectsAnalyser::getReturnTypes(
             $function_stmts,
             $inferred_yield_types,
             $ignore_nullable_issues,
             true
         );
 
-        $inferred_return_type = $inferred_return_types ? Type::combineTypes($inferred_return_types) : Type::getVoid();
+        if ($return_type
+            && $return_type->from_docblock
+            && ScopeChecker::getFinalControlActions($function_stmts) !== [ScopeChecker::ACTION_END]
+            && !$inferred_yield_types
+            && count($inferred_return_type_parts)
+        ) {
+            // only add null if we have a return statement elsewhere and it wasn't void
+            foreach ($inferred_return_type_parts as $inferred_return_type_part) {
+                if (!$inferred_return_type_part instanceof Type\Atomic\TVoid) {
+                    $inferred_return_type_parts[] = new Type\Atomic\TNull();
+                    break;
+                }
+            }
+        }
+
+        if ($return_type
+            && !$return_type->from_docblock
+            && !$return_type->isVoid()
+            && !$inferred_yield_types
+            && ScopeChecker::getFinalControlActions($function_stmts) !== [ScopeChecker::ACTION_END]
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    'Not all code paths of ' . $cased_method_id . ' end in a return statement',
+                    $return_type_location
+                )
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
+        $inferred_return_type = $inferred_return_type_parts
+            ? Type::combineTypes($inferred_return_type_parts)
+            : Type::getVoid();
         $inferred_yield_type = $inferred_yield_types ? Type::combineTypes($inferred_yield_types) : null;
 
         if ($inferred_yield_type) {
@@ -1108,7 +1143,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $method_id
         );
 
-        if (!$inferred_return_types && !$inferred_yield_types) {
+        if (!$inferred_return_type_parts && !$inferred_yield_types) {
             if ($declared_return_type->isVoid()) {
                 return null;
             }
