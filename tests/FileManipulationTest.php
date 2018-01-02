@@ -24,7 +24,12 @@ class FileManipulationTest extends TestCase
             new Provider\FakeParserCacheProvider()
         );
 
-        $this->project_checker->setConfig(new TestConfig());
+        if (!self::$config) {
+            self::$config = new TestConfig();
+            self::$config->addPluginPath('examples/ClassUnqualifier.php');
+        }
+
+        $this->project_checker->setConfig(self::$config);
 
         $this->project_checker->update_docblocks = true;
     }
@@ -121,6 +126,26 @@ class FileManipulationTest extends TestCase
                      */
                     function foo() {
                         return ["hello"];
+                    }',
+            ],
+            'useUnqualifierPlugin' => [
+                '<?php
+                    namespace A\B\C {
+                        class D {}
+                    }
+                    namespace Foo\Bar {
+                        use A\B\C\D;
+
+                        new \A\B\C\D();
+                    }',
+                '<?php
+                    namespace A\B\C {
+                        class D {}
+                    }
+                    namespace Foo\Bar {
+                        use A\B\C\D;
+
+                        new D();
                     }',
             ],
         ];
