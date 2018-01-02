@@ -822,7 +822,7 @@ class Config
          * @var Plugin
          * @psalm-suppress UnresolvableInclude
          */
-        $loaded_plugin = require($path);
+        $loaded_plugin = require_once($path);
 
         if (!$loaded_plugin) {
             throw new \InvalidArgumentException(
@@ -833,7 +833,7 @@ class Config
 
         if (!($loaded_plugin instanceof Plugin)) {
             throw new \InvalidArgumentException(
-                'Plugins must extend \Psalm\Plugin - ' . $plugin_file_name . ' does not'
+                'Plugins must extend \Psalm\Plugin - ' . $path . ' does not'
             );
         }
 
