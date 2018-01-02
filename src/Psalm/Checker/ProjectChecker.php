@@ -1017,7 +1017,7 @@ class ProjectChecker
 
         $other_manipulations = FileManipulationBuffer::getForFile($file_path);
 
-        $file_manipulations = array_merge($new_return_type_manipulations, $other_manipulations);
+        $file_manipulations = $new_return_type_manipulations + $other_manipulations;
 
         krsort($file_manipulations);
 
