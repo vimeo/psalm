@@ -387,27 +387,7 @@ class Config
 
                 $path = $config->base_dir . $plugin_file_name;
 
-                if (!file_exists($path)) {
-                    throw new \InvalidArgumentException('Cannot find file ' . $path);
-                }
-
-                /** @psalm-suppress UnresolvableInclude */
-                $loaded_plugin = require($path);
-
-                if (!$loaded_plugin) {
-                    throw new \InvalidArgumentException(
-                        'Plugins must return an instance of that plugin at the end of the file - ' .
-                            $plugin_file_name . ' does not'
-                    );
-                }
-
-                if (!($loaded_plugin instanceof Plugin)) {
-                    throw new \InvalidArgumentException(
-                        'Plugins must extend \Psalm\Plugin - ' . $plugin_file_name . ' does not'
-                    );
-                }
-
-                $config->plugins[] = $loaded_plugin;
+                $config->addPluginPath($path);
             }
         }
 
@@ -825,5 +805,38 @@ class Config
             reset($objects);
             rmdir($dir);
         }
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return void
+     */
+    public function addPluginPath($path)
+    {
+        if (!file_exists($path)) {
+            throw new \InvalidArgumentException('Cannot find file ' . $path);
+        }
+
+        /**
+         * @var Plugin
+         * @psalm-suppress UnresolvableInclude
+         */
+        $loaded_plugin = require($path);
+
+        if (!$loaded_plugin) {
+            throw new \InvalidArgumentException(
+                'Plugins must return an instance of that plugin at the end of the file - ' .
+                    $plugin_file_name . ' does not'
+            );
+        }
+
+        if (!($loaded_plugin instanceof Plugin)) {
+            throw new \InvalidArgumentException(
+                'Plugins must extend \Psalm\Plugin - ' . $plugin_file_name . ' does not'
+            );
+        }
+
+        $this->plugins[] = $loaded_plugin;
     }
 }

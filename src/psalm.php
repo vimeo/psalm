@@ -326,6 +326,16 @@ if ($input_paths) {
     }
 }
 
+$plugins = [];
+
+if (isset($options['plugin'])) {
+    $plugins = $options['plugin'];
+
+    if (!is_array($plugins)) {
+        $plugins = [$plugins];
+    }
+}
+
 $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
 if ($path_to_config === false) {
@@ -391,6 +401,11 @@ $config = $project_checker->getConfig();
 
 if (!$config) {
     $project_checker->getConfigForPath($current_dir, $current_dir);
+}
+
+/** @var string $plugin_path */
+foreach ($plugins as $plugin_path) {
+    Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
 }
 
 /** @psalm-suppress MixedArgument */
