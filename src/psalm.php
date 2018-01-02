@@ -16,7 +16,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:', 'clear-cache', 'no-cache', 'version', 'plugin:',
+        'report:', 'clear-cache', 'no-cache', 'version', 'plugin:', 'replace-code',
     ]
 );
 
@@ -106,6 +106,12 @@ Options:
 
     --no-cache
         Runs Psalm without using cache
+
+    --plugin=PATH
+        Executes a plugin, an alternative to using the Psalm config
+
+    --replace-code
+        Processes any plugin code replacements and updates the code accordingly
 
 HELP;
 
@@ -406,6 +412,10 @@ if (!$config) {
 /** @var string $plugin_path */
 foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
+}
+
+if (isset($options['replace-code'])) {
+    $project_checker->replaceCodeAfterCompletion();
 }
 
 /** @psalm-suppress MixedArgument */

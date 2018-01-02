@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\PossiblyUnusedMethod;
@@ -247,6 +248,11 @@ class ProjectChecker
      * @var ?array<string, string>
      */
     private $composer_classmap;
+
+    /**
+     * @var bool
+     */
+    private $replace_code = false;
 
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
@@ -992,7 +998,7 @@ class ProjectChecker
             }
         }
 
-        if ($this->update_docblocks) {
+        if ($this->update_docblocks || $this->replace_code) {
             foreach ($this->files_to_report as $file_path) {
                 $this->updateFile($file_path, true);
             }
@@ -1007,13 +1013,19 @@ class ProjectChecker
      */
     public function updateFile($file_path, $output_changes = false)
     {
-        $file_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+        $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+
+        $other_manipulations = FileManipulationBuffer::getForFile($file_path);
+
+        $file_manipulations = array_merge($new_return_type_manipulations, $other_manipulations);
+
+        krsort($file_manipulations);
 
         $docblock_update_count = count($file_manipulations);
 
         $existing_contents = $this->getFileContents($file_path);
 
-        foreach (array_reverse($file_manipulations) as $manipulation) {
+        foreach ($file_manipulations as $manipulation) {
             $existing_contents
                 = substr($existing_contents, 0, $manipulation->start)
                     . $manipulation->insertion_text
@@ -1127,7 +1139,7 @@ class ProjectChecker
     /**
      * @return void
      */
-    protected function checkMethodReferences(\Psalm\Storage\ClassLikeStorage $classlike_storage)
+    protected function checkMethodReferences(ClassLikeStorage $classlike_storage)
     {
         foreach ($classlike_storage->methods as $method_name => $method_storage) {
             if (($method_storage->referencing_locations === null
@@ -2049,5 +2061,13 @@ class ProjectChecker
                 $this->existing_interfaces_lc[$predefined_interface_lc] = true;
             }
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function replaceCodeAfterCompletion()
+    {
+        $this->replace_code = true;
     }
 }

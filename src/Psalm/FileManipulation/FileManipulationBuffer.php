@@ -26,16 +26,16 @@ class FileManipulationBuffer
      */
     public static function getForFile($file_path)
     {
-        return isset(self::$file_manipulations[$file_path])
-            ? self::$file_manipulations[$file_path]
-            : [];
-    }
+        if (!isset(self::$file_manipulations[$file_path])) {
+            return [];
+        }
 
-    /**
-     * @return array<string, FileManipulation[]>
-     */
-    public static function getAll()
-    {
-        return self::$file_manipulations;
+        $file_manipulations = [];
+
+        foreach (self::$file_manipulations[$file_path] as $file_manipulation) {
+            $file_manipulations[$file_manipulation->start] = $file_manipulation;
+        }
+
+        return $file_manipulations;
     }
 }

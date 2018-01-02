@@ -7,6 +7,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InaccessibleProperty;
@@ -170,7 +171,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     new DuplicateClass(
                         'Class ' . $fq_class_name . ' has already been defined at ' .
                             $storage_file_path . ':' . $this->storage->location->getLineNumber(),
-                        new \Psalm\CodeLocation($this, $class, null, true)
+                        new CodeLocation($this, $class, null, true)
                     )
                 )) {
                     // fall through
@@ -1018,6 +1019,27 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $code_location->file_path,
             strtolower($fq_class_name)
         );
+
+        if (!$inferred) {
+            $plugins = Config::getInstance()->getPlugins();
+
+            if ($plugins) {
+                $file_manipulations = [];
+
+                foreach ($plugins as $plugin) {
+                    $plugin->afterClassLikeExistsCheck(
+                        $statements_source,
+                        $fq_class_name,
+                        $code_location,
+                        $file_manipulations
+                    );
+                }
+
+                if ($file_manipulations) {
+                    FileManipulationBuffer::add($code_location->file_path, $file_manipulations);
+                }
+            }
+        }
 
         return true;
     }

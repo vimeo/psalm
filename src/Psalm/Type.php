@@ -219,14 +219,18 @@ abstract class Type
 
     /**
      * @param  string $return_type
+     * @param  bool   $ignore_space
      *
      * @return array<int,string>
      */
-    public static function tokenize($return_type)
+    public static function tokenize($return_type, $ignore_space = true)
     {
         $return_type_tokens = [''];
         $was_char = false;
-        $return_type = str_replace(' ', '', $return_type);
+
+        if ($ignore_space) {
+            $return_type = str_replace(' ', '', $return_type);
+        }
 
         foreach (str_split($return_type) as $char) {
             if ($was_char) {
@@ -240,6 +244,9 @@ abstract class Type
                 $char === ',' ||
                 $char === '{' ||
                 $char === '}' ||
+                $char === '[' ||
+                $char === ']' ||
+                $char === ' ' ||
                 $char === ':'
             ) {
                 if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
