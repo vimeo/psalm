@@ -86,7 +86,7 @@ class TypeChecker
                     $type_match_found = true;
                 }
 
-                if ($atomic_to_string_cast !== true) {
+                if ($atomic_to_string_cast !== true && $type_match_found) {
                     $all_to_string_cast = false;
                 }
             }
