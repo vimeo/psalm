@@ -81,7 +81,8 @@ abstract class CodeIssue
      * @param  string          $severity
      *
      * @return array{severity: string, line_number: int, type: string, message: string, file_name: string,
-     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}
+     *  file_path: string, snippet: string, selected_text: string, from: int, to: int, snippet_from: int,
+     *  snippet_to: int, column: int}
      */
     public function toArray($severity = Config::REPORT_ERROR)
     {
@@ -100,6 +101,7 @@ abstract class CodeIssue
             'file_name' => $location->file_name,
             'file_path' => $location->file_path,
             'snippet' => $location->getSnippet(),
+            'selected_text' => $location->getSelectedText(),
             'from' => $selection_bounds[0],
             'to' => $selection_bounds[1],
             'snippet_from' => $snippet_bounds[0],

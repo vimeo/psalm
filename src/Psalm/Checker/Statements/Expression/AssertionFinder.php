@@ -334,10 +334,11 @@ class AssertionFinder
                 $file_checker = $source->getFileChecker();
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $file_checker->project_checker,
+                    $source,
                     $var_type,
                     new CodeLocation($file_checker, $whichclass_expr),
-                    $source->getSuppressedIssues()
+                    $source->getSuppressedIssues(),
+                    false
                 ) === false
                 ) {
                     // fall through
@@ -605,10 +606,11 @@ class AssertionFinder
                 $file_checker = $source->getFileChecker();
 
                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $file_checker->project_checker,
+                    $source,
                     $var_type,
                     new CodeLocation($file_checker, $whichclass_expr),
-                    $source->getSuppressedIssues()
+                    $source->getSuppressedIssues(),
+                    false
                 ) === false
                 ) {
                     // fall through

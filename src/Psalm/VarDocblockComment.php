@@ -4,9 +4,14 @@ namespace Psalm;
 class VarDocblockComment
 {
     /**
-     * @var string
+     * @var Type\Union
      */
     public $type;
+
+    /**
+     * @var string
+     */
+    public $original_type;
 
     /**
      * @var string|null

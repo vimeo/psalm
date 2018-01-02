@@ -404,10 +404,11 @@ class ExpressionChecker
                     );
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $statements_checker->getFileChecker()->project_checker,
+                        $statements_checker,
                         $fq_class_name,
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_checker->getSuppressedIssues(),
+                        false
                     ) === false) {
                         return false;
                     }
@@ -2014,7 +2015,7 @@ class ExpressionChecker
             if ($var_comment && $var_comment->var_id) {
                 $comment_type = ExpressionChecker::fleshOutType(
                     $statements_checker->getFileChecker()->project_checker,
-                    Type::parseString($var_comment->type),
+                    $var_comment->type,
                     $context->self
                 );
 
@@ -2034,7 +2035,7 @@ class ExpressionChecker
             }
 
             if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = Type::parseString($var_comment->type);
+                $stmt->inferredType = $var_comment->type;
             } elseif (isset($stmt->value->inferredType)) {
                 $stmt->inferredType = $stmt->value->inferredType;
             } else {

@@ -120,7 +120,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $class = explode('::', $method_id)[0];
 
         if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-            $this->project_checker,
+            $this,
             $class,
             new CodeLocation($this, $stmt),
             [],

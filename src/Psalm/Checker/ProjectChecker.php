@@ -346,7 +346,7 @@ class ProjectChecker
         }
 
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($base_dir, $base_dir);
+            throw new \InvalidArgumentException('Config should not be null here');
         }
 
         $diff_files = null;
@@ -1219,15 +1219,13 @@ class ProjectChecker
 
     /**
      * @param  string  $dir_name
-     * @param  string  $base_dir
      *
      * @return void
      */
-    public function checkDir($dir_name, $base_dir)
+    public function checkDir($dir_name)
     {
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($dir_name, $base_dir);
-            $this->config->hide_external_errors = $this->config->isInProjectDirs($dir_name . DIRECTORY_SEPARATOR);
+            throw new \UnexpectedValueException('Config should be set here');
         }
 
         FileReferenceProvider::loadReferenceCache();
@@ -1371,18 +1369,17 @@ class ProjectChecker
 
     /**
      * @param  string  $file_path
-     * @param  string  $base_dir
      *
      * @return void
      */
-    public function checkFile($file_path, $base_dir)
+    public function checkFile($file_path)
     {
         if ($this->debug_output) {
             echo 'Checking ' . $file_path . PHP_EOL;
         }
 
         if (!$this->config) {
-            $this->config = $this->getConfigForPath($file_path, $base_dir);
+            throw new \UnexpectedValueException('Config should be set here');
         }
 
         $start_checks = (int)microtime(true);
@@ -1705,6 +1702,14 @@ class ProjectChecker
         $config->initializePlugins($this);
 
         return $config;
+    }
+
+    /**
+     * @return ?Config
+     */
+    public function getConfig()
+    {
+        return $this->config;
     }
 
     /**

@@ -16,7 +16,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'file:', 'self-check', 'update-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:', 'clear-cache', 'no-cache', 'version',
+        'report:', 'clear-cache', 'no-cache', 'version', 'plugin:',
     ]
 );
 
@@ -387,19 +387,25 @@ if (isset($options['clear-cache'])) {
     exit;
 }
 
+$config = $project_checker->getConfig();
+
+if (!$config) {
+    $project_checker->getConfigForPath($current_dir, $current_dir);
+}
+
 /** @psalm-suppress MixedArgument */
 \Psalm\IssueBuffer::setStartTime(microtime(true));
 
 if (array_key_exists('self-check', $options)) {
-    $project_checker->checkDir(__DIR__, dirname(__DIR__));
+    $project_checker->checkDir(__DIR__);
 } elseif ($paths_to_check === null) {
     $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check, $current_dir);
+            $project_checker->checkDir($path_to_check);
         } else {
-            $project_checker->checkFile($path_to_check, $current_dir);
+            $project_checker->checkFile($path_to_check);
         }
     }
 }

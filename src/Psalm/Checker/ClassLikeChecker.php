@@ -206,10 +206,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $parent_reference_location = new CodeLocation($this, $this->class->extends);
 
                 if (self::checkFullyQualifiedClassLikeName(
-                    $this->getFileChecker()->project_checker,
+                    $this,
                     $this->parent_fq_class_name,
                     $parent_reference_location,
-                    $this->getSuppressedIssues()
+                    $this->getSuppressedIssues(),
+                    false
                 ) === false) {
                     return false;
                 }
@@ -224,10 +225,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 $interface_location = new CodeLocation($this, $interface_name);
 
                 if (self::checkFullyQualifiedClassLikeName(
-                    $this->getFileChecker()->project_checker,
+                    $this,
                     $fq_interface_name,
                     $interface_location,
-                    $this->getSuppressedIssues()
+                    $this->getSuppressedIssues(),
+                    false
                 ) === false) {
                     return false;
                 }
@@ -947,15 +949,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string           $fq_class_name
-     * @param  ProjectChecker   $project_checker
-     * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
      *
      * @return bool|null
      */
     public static function checkFullyQualifiedClassLikeName(
-        ProjectChecker $project_checker,
+        StatementsSource $statements_source,
         $fq_class_name,
         CodeLocation $code_location,
         array $suppressed_issues,
@@ -964,6 +964,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (empty($fq_class_name)) {
             throw new \InvalidArgumentException('$class cannot be empty');
         }
+
+        $project_checker = $statements_source->getFileChecker()->project_checker;
 
         $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name);
 

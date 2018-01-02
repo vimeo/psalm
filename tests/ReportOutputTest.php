@@ -113,6 +113,7 @@ echo $a;';
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'echo CHANGE_ME;',
+                'selected_text' => 'CHANGE_ME',
                 'from' => 126,
                 'to' => 135,
                 'snippet_from' => 121,
@@ -127,6 +128,7 @@ echo $a;';
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => 'echo $a',
+                'selected_text' => '$a',
                 'from' => 202,
                 'to' => 204,
                 'snippet_from' => 197,
@@ -141,6 +143,7 @@ echo $a;';
                 'file_name' => 'somefile.php',
                 'file_path' => 'somefile.php',
                 'snippet' => '  return $as_you . "type";',
+                'selected_text' => '$as_you',
                 'from' => 67,
                 'to' => 74,
                 'snippet_from' => 58,
@@ -157,6 +160,7 @@ echo $a;';
                 'snippet' => 'function psalmCanVerify(int $your_code) : ?string {
   return $as_you . "type";
 }',
+                'selected_text' => '?string',
                 'from' => 48,
                 'to' => 55,
                 'snippet_from' => 6,

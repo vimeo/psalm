@@ -155,7 +155,7 @@ abstract class Atomic
         if ($this instanceof TNamedObject &&
             !isset($phantom_classes[strtolower($this->value)]) &&
             ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                $source->getFileChecker()->project_checker,
+                $source,
                 $this->value,
                 $code_location,
                 $suppressed_issues,

@@ -111,7 +111,7 @@ class AssignmentChecker
             if ($var_comment) {
                 $comment_type = ExpressionChecker::fleshOutType(
                     $statements_checker->getFileChecker()->project_checker,
-                    Type::parseString($var_comment->type),
+                    $var_comment->type,
                     $context->self
                 );
 

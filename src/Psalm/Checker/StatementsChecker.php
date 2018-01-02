@@ -451,7 +451,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     if ($var_comment && $var_comment->var_id) {
                         $comment_type = ExpressionChecker::fleshOutType(
                             $project_checker,
-                            Type::parseString($var_comment->type),
+                            $var_comment->type,
                             $context->self
                         );
 
@@ -981,7 +981,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if ($var_comment && $var_comment->var_id) {
                 $comment_type = ExpressionChecker::fleshOutType(
                     $project_checker,
-                    Type::parseString($var_comment->type),
+                    $var_comment->type,
                     $context->self
                 );
 
@@ -995,7 +995,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = Type::parseString($var_comment->type);
+                $stmt->inferredType = $var_comment->type;
             } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
 

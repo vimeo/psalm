@@ -46,7 +46,7 @@ class StringChecker extends \Psalm\Plugin
 
                 $project_checker = $statements_checker->getFileChecker()->project_checker;
                 if (Checker\ClassChecker::checkFullyQualifiedClassLikeName(
-                    $project_checker,
+                    $statements_checker,
                     $fq_class_name,
                     $code_location,
                     $suppressed_issues

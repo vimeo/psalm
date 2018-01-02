@@ -39,6 +39,7 @@ class CommentChecker
         $var_id = null;
 
         $var_type_string = null;
+        $original_type = null;
 
         $comments = self::parseDocComment($comment, $var_line_number);
 
@@ -75,6 +76,8 @@ class CommentChecker
                         $template_types
                     );
 
+                    $original_type = $line_parts[0];
+
                     $var_line_number = $line_number;
 
                     // support PHPStorm-style docblocks like
@@ -88,7 +91,7 @@ class CommentChecker
             }
         }
 
-        if (!$var_type_string) {
+        if (!$var_type_string || !$original_type) {
             return null;
         }
 
@@ -114,6 +117,7 @@ class CommentChecker
 
         $var_comment = new VarDocblockComment();
         $var_comment->type = $defined_type;
+        $var_comment->original_type = $original_type;
         $var_comment->var_id = $var_id;
         $var_comment->line_number = $var_line_number;
         $var_comment->deprecated = isset($comments['specials']['deprecated']);

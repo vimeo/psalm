@@ -495,10 +495,11 @@ class CallChecker
                     }
 
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $project_checker,
+                        $statements_checker,
                         $fq_class_name,
                         new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_checker->getSuppressedIssues(),
+                        false
                     ) === false) {
                         return false;
                     }
@@ -852,7 +853,7 @@ class CallChecker
                     $does_class_exist = true;
                 } else {
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $project_checker,
+                        $statements_checker,
                         $fq_class_name,
                         $code_location,
                         $statements_checker->getSuppressedIssues()
@@ -1362,7 +1363,7 @@ class CallChecker
 
                 if (!$does_class_exist) {
                     $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $project_checker,
+                        $statements_checker,
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
                         $statements_checker->getSuppressedIssues(),
@@ -2072,7 +2073,7 @@ class CallChecker
                                     // register class if the class exists
                                     if ($offset_value_type_part instanceof TNamedObject) {
                                         ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                            $project_checker,
+                                            $statements_checker,
                                             $offset_value_type_part->value,
                                             new CodeLocation($statements_checker->getSource(), $arg->value),
                                             $statements_checker->getSuppressedIssues()
@@ -2619,7 +2620,7 @@ class CallChecker
 
                             if (!in_array(strtolower($callable_fq_class_name), ['self', 'static', 'parent'], true)) {
                                 if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                        $project_checker,
+                                        $statements_checker,
                                         $callable_fq_class_name,
                                         $code_location,
                                         $statements_checker->getSuppressedIssues()

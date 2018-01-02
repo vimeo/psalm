@@ -145,7 +145,7 @@ class ForeachChecker
                         $iterator_type->value !== $statements_checker->getClassName()
                     ) {
                         if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                            $project_checker,
+                            $statements_checker,
                             $iterator_type->value,
                             new CodeLocation($statements_checker->getSource(), $stmt->expr),
                             $statements_checker->getSuppressedIssues()
@@ -301,7 +301,7 @@ class ForeachChecker
             if ($var_comment && $var_comment->var_id) {
                 $comment_type = ExpressionChecker::fleshOutType(
                     $project_checker,
-                    Type::parseString($var_comment->type),
+                    $var_comment->type,
                     $context->self
                 );
 
