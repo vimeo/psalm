@@ -211,6 +211,20 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array{0:string, 1:string, 2:string, 3:int, 4:int, 5:int}',
                 ],
             ],
+            'arrayReverse' => [
+                '<?php
+                    $d = array_reverse(["a", "b", 1]);',
+                'assertions' => [
+                    '$d' => 'array<int, int|string>',
+                ],
+            ],
+            'arrayReversePreserveKey' => [
+                '<?php
+                    $d = array_reverse(["a", "b", 1], true);',
+                'assertions' => [
+                    '$d' => 'array<int, int|string>',
+                ],
+            ],
             'arrayDiff' => [
                 '<?php
                     $d = array_diff(["a" => 5, "b" => 12], [5]);',
