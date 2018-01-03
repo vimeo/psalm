@@ -108,9 +108,10 @@ function array_pop(array &$arr) {}
  * @template TValue
  *
  * @param array<TKey, TValue> $arr
+ * @param bool            $preserve_keys
  * @return array<TKey, TValue>
  */
-function array_reverse(array $arr) {}
+function array_reverse(array $arr, bool $preserve_keys = false) {}
 
 /**
  * @template TKey
