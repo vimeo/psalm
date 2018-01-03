@@ -1,6 +1,7 @@
 vendor/
 .DS_Store
 phpunit.xml
+composer.lock
 .php_cs.cache
 .php_cs
 /build/logs/
