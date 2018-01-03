@@ -429,7 +429,8 @@ class IfChecker
             // if we have a check like if (!isset($a)) { $a = true; } we want to make sure $a is always set
             foreach ($if_scope->new_vars as $var_id => $_) {
                 if (isset($if_scope->negated_types[$var_id])
-                    && ($if_scope->negated_types[$var_id] === 'isset'
+                    && (
+                        $if_scope->negated_types[$var_id] === 'isset'
                         || $if_scope->negated_types[$var_id] === '^isset'
                         || $if_scope->negated_types[$var_id] === '!empty'
                     )
