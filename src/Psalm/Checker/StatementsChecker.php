@@ -1056,15 +1056,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                     if (!$this->local_return_type->isGenerator()
                         && !TypeChecker::isContainedBy(
-                        $this->source->getFileChecker()->project_checker,
-                        $inferred_type,
-                        $this->local_return_type,
-                        $stmt->inferredType->ignore_nullable_issues,
-                        false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed
-                    )) {
+                            $this->source->getFileChecker()->project_checker,
+                            $inferred_type,
+                            $this->local_return_type,
+                            $stmt->inferredType->ignore_nullable_issues,
+                            false,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed
+                        )
+                    ) {
                         // is the declared return type more specific than the inferred one?
                         if ($type_coerced) {
                             if (IssueBuffer::accepts(

@@ -721,10 +721,10 @@ class IfChecker
         $old_elseif_context = clone $elseif_context;
 
         if ($statements_checker->analyze(
-                $elseif->stmts,
-                $elseif_context,
-                $loop_scope
-            ) === false
+            $elseif->stmts,
+            $elseif_context,
+            $loop_scope
+        ) === false
         ) {
             return false;
         }
@@ -969,10 +969,10 @@ class IfChecker
         $old_else_context = clone $else_context;
 
         if ($statements_checker->analyze(
-                $else->stmts,
-                $else_context,
-                $loop_scope
-            ) === false
+            $else->stmts,
+            $else_context,
+            $loop_scope
+        ) === false
         ) {
             return false;
         }

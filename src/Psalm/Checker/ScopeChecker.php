@@ -56,7 +56,7 @@ class ScopeChecker
     public static function getFinalControlActions(array $stmts)
     {
         if (empty($stmts)) {
-            return [SELF::ACTION_NONE];
+            return [self::ACTION_NONE];
         }
 
         $control_actions = [];
