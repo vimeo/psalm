@@ -298,7 +298,7 @@ class FunctionChecker extends FunctionLikeChecker
                     ? Type::parseString($arg_type)
                     : Type::getMixed();
 
-                if ($param_type->hasScalarType()) {
+                if ($param_type->hasScalarType() || $param_type->hasObject()) {
                     $param_type->from_docblock = true;
                 }
 

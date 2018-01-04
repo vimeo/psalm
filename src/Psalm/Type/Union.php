@@ -182,6 +182,20 @@ class Union
     /**
      * @return bool
      */
+    public function hasObject()
+    {
+        foreach ($this->types as $type) {
+            if ($type instanceof Type\Atomic\TObject) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
     public function isNullable()
     {
         return isset($this->types['null']);

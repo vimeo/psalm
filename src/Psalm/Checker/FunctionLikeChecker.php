@@ -787,10 +787,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $implemeneter_param_type = $implementer_method_storage->params[$i]->type;
 
-            if (!$guide_classlike_storage->user_defined &&
-                $guide_param->type &&
-                !$guide_param->type->isMixed() &&
-                (!$implemeneter_param_type || $implemeneter_param_type->getId() !== $guide_param->type->getId())
+            if (!$guide_classlike_storage->user_defined
+                && $guide_param->type
+                && !$guide_param->type->isMixed()
+                && !$guide_param->type->from_docblock
+                && (!$implemeneter_param_type
+                    || ($implemeneter_param_type->getId() !== $guide_param->type->getId()
+                        && $implemeneter_param_type->getId() !== $or_null_guide_type->getId()
+                    )
+                )
             ) {
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
@@ -809,8 +814,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        if ($implementer_method_storage->cased_name !== '__construct' &&
-            $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
+        if ($guide_classlike_storage->user_defined
+            && $implementer_method_storage->cased_name !== '__construct'
+            && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {
             if (IssueBuffer::accepts(
                 new MethodSignatureMismatch(
@@ -1061,7 +1067,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
-                    'Not all code paths of ' . $cased_method_id . ' end in a return statement',
+                    'Not all code paths of ' . $cased_method_id . ' end in a return statement, return type '
+                        . $return_type . ' expected',
                     $return_type_location
                 )
             )) {

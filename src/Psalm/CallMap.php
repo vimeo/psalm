@@ -7637,7 +7637,7 @@ return [
 'ReflectionClass::newInstanceArgs' => ['object', 'args='=>'array'],
 'ReflectionClass::newInstance' => ['object', 'args='=>'', '...='=>''],
 'ReflectionClass::newInstanceWithoutConstructor' => ['object'],
-'ReflectionClass::setStaticPropertyValue' => ['', 'name'=>'string', 'value'=>''],
+'ReflectionClass::setStaticPropertyValue' => ['void', 'name'=>'string', 'value'=>''],
 'ReflectionClass::__toString' => ['string'],
 'Reflection::export' => ['string', 'r'=>'reflector', 'return='=>'bool'],
 'ReflectionExtension::__clone' => ['ReflectionExtension'],
