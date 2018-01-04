@@ -492,6 +492,10 @@ class ProjectChecker
                     if (isset($this->existing_classlikes_lc[$fq_classlike_name_lc])
                         && $this->existing_classlikes_lc[$fq_classlike_name_lc]
                     ) {
+                        if ($this->debug_output) {
+                            echo 'Using reflection to get metadata for ' . $fq_classlike_name . PHP_EOL;
+                        }
+
                         $reflected_class = new \ReflectionClass($fq_classlike_name);
                         ClassLikeChecker::registerReflectedClass($reflected_class->name, $reflected_class, $this);
                         $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = true;
@@ -1507,6 +1511,10 @@ class ProjectChecker
 
         if (isset($this->composer_classmap[$fq_class_name_lc])) {
             if (file_exists($this->composer_classmap[$fq_class_name_lc])) {
+                if ($this->debug_output) {
+                    echo 'Using generated composer classmap to locate file for ' . $fq_class_name . PHP_EOL;
+                }
+
                 $this->existing_classlikes_lc[$fq_class_name_lc] = true;
                 $this->existing_classlikes[$fq_class_name] = true;
                 $this->classlike_files[$fq_class_name_lc] = $this->composer_classmap[$fq_class_name_lc];
@@ -1522,6 +1530,10 @@ class ProjectChecker
         }
 
         try {
+            if ($this->debug_output) {
+                echo 'Using reflection to locate file for ' . $fq_class_name . PHP_EOL;
+            }
+
             $reflected_class = new \ReflectionClass($fq_class_name);
         } catch (\ReflectionException $e) {
             error_reporting($old_level);
