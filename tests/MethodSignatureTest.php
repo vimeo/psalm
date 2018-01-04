@@ -245,6 +245,20 @@ class MethodSignatureTest extends TestCase
                     function foo($bar = null, $bat) : void {}',
                 'error_message' => 'MisplacedRequiredParam',
             ],
+            'clasginByRef' => [
+                '<?php
+                    class A {
+                      public function foo(string $a) : void {
+                        echo $a;
+                      }
+                    }
+                    class B extends A {
+                      public function foo(string &$a) : void {
+                        echo $a;
+                      }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }
