@@ -986,6 +986,13 @@ class CallChecker
                     $return_type_candidate = Type::getString();
                 } elseif (FunctionChecker::inCallMap($cased_method_id)) {
                     $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
+
+                    $return_type_candidate = ExpressionChecker::fleshOutType(
+                        $project_checker,
+                        $return_type_candidate,
+                        $fq_class_name,
+                        $method_id
+                    );
                 } else {
                     if (MethodChecker::checkMethodVisibility(
                         $method_id,
