@@ -134,6 +134,8 @@
             <xs:element name="LoopInvalidation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MethodSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MisplacedRequiredParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MismatchingDocblockParamType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MismatchingDocblockReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />

@@ -200,7 +200,7 @@ class AnnotationTest extends TestCase
                 '<?php
                     /**
                      * @param int $bar
-                     * @psalm-suppress InvalidDocblock
+                     * @psalm-suppress MismatchingDocblockParamType
                      */
                     function fooFoo(array $bar) : void {
                     }',
@@ -211,7 +211,7 @@ class AnnotationTest extends TestCase
 
                     /**
                      * @param B $bar
-                     * @psalm-suppress InvalidDocblock
+                     * @psalm-suppress MismatchingDocblockParamType
                      */
                     function fooFoo(A $bar) : void {
                     }',
@@ -429,7 +429,7 @@ class AnnotationTest extends TestCase
                     function fooFoo() : int {
                         return 5;
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'MismatchingDocblockReturnType',
             ],
             'propertyDocblockInvalidAssignment' => [
                 '<?php

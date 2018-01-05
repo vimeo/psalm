@@ -15,12 +15,13 @@ use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\FalsableInferredReturnType;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
 use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
@@ -305,7 +306,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 )
                 ) {
                     if (IssueBuffer::accepts(
-                        new InvalidDocblock(
+                        new MismatchingDocblockParamType(
                             'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
                                 '\', should be \'' . $signature_type . '\'',
                             $function_param->type_location
@@ -412,7 +413,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             )
             ) {
                 if (IssueBuffer::accepts(
-                    new InvalidDocblock(
+                    new MismatchingDocblockReturnType(
                         'Docblock has incorrect return type \'' . $storage->return_type .
                             '\', should be \'' . $storage->signature_return_type . '\'',
                         $storage->return_type_location
