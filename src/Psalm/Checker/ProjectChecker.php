@@ -254,6 +254,11 @@ class ProjectChecker
      */
     private $replace_code = false;
 
+    /**
+     * @var bool
+     */
+    private $fix_code = false;
+
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
@@ -1002,7 +1007,15 @@ class ProjectChecker
             }
         }
 
-        if ($this->update_docblocks || $this->replace_code) {
+        if ($this->replace_code) {
+            foreach ($this->files_to_report as $file_path) {
+                $this->updateFile($file_path, true);
+            }
+        } elseif ($this->update_docblocks) {
+            foreach ($this->files_to_report as $file_path) {
+                $this->updateFile($file_path, true);
+            }
+        } elseif ($this->fix_code) {
             foreach ($this->files_to_report as $file_path) {
                 $this->updateFile($file_path, true);
             }
@@ -2081,5 +2094,13 @@ class ProjectChecker
     public function replaceCodeAfterCompletion()
     {
         $this->replace_code = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function fixCodeAfterCompletion()
+    {
+        $this->fix_code = true;
     }
 }

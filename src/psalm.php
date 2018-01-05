@@ -14,9 +14,10 @@ $options = getopt(
     'f:mhvc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
-        'file:', 'self-check', 'update-docblocks', 'output-format:',
+        'file:', 'self-check', 'add-docblocks', 'output-format:',
         'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
         'report:', 'clear-cache', 'no-cache', 'version', 'plugin:', 'replace-code',
+        'fix-code',
     ]
 );
 
@@ -81,8 +82,8 @@ Options:
     --self-check
         Psalm checks itself
 
-    --update-docblocks
-        Adds correct return types to the given file(s)
+    --add-docblocks
+        Adds correct docblock return types to the given file(s)
 
     --output-format=console
         Changes the output format. Possible values: console, json, xml
@@ -112,6 +113,9 @@ Options:
 
     --replace-code
         Processes any plugin code replacements and updates the code accordingly
+
+    --fix-issues=IssueType1,IssueType2
+        If any issues that can be fixed automatically, Psalm will update the codebase
 
 HELP;
 
@@ -416,6 +420,16 @@ foreach ($plugins as $plugin_path) {
 
 if (isset($options['replace-code'])) {
     $project_checker->replaceCodeAfterCompletion();
+}
+
+if (isset($options['fix-issues'])) {
+    if (!is_string($options['fix-issues']) || !$options['fix-issues']) {
+        die('Expecting a comma-separated string of issues' . PHP_EOL);
+    }
+
+    $issues = explode(',', $options['fix-issues']);
+
+    $project_checker->fixIssuesAfterCompletion($issues);
 }
 
 /** @psalm-suppress MixedArgument */
