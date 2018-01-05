@@ -24,6 +24,7 @@ use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
+use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\NullableInferredReturnType;
@@ -785,6 +786,33 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 return null;
+            }
+
+            if ($guide_classlike_storage->user_defined
+                && $implementer_param->type
+                && $guide_param->type
+                && $implementer_param->type->getId() !== $guide_param->type->getId()
+            ) {
+                if (!TypeChecker::isContainedBy(
+                    $project_checker,
+                    $guide_param->type,
+                    $implementer_param->type,
+                    false,
+                    false
+                )) {
+                    if (IssueBuffer::accepts(
+                        new MoreSpecificImplementedParamType(
+                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                $implementer_param->type . '\', expecting \'' .
+                                $guide_param->type . '\' as defined by ' .
+                                $cased_guide_method_id,
+                            $implementer_method_storage->params[$i]->location
+                                ?: $code_location
+                        )
+                    )) {
+                        return false;
+                    }
+                }
             }
 
             if ($guide_classlike_storage->user_defined && $implementer_param->by_ref !== $guide_param->by_ref) {

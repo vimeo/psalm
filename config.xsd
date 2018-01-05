@@ -154,6 +154,7 @@
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />

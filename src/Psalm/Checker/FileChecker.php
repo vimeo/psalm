@@ -446,21 +446,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param string $file_name
-     * @param string $file_path
-     *
-     * @return void
-     */
-    public function setFileName($file_name, $file_path)
-    {
-        $this->actual_file_name = $this->file_name;
-        $this->actual_file_path = $this->file_path;
-
-        $this->file_name = $file_name;
-        $this->file_path = $file_path;
-    }
-
-    /**
      * @return string
      */
     public function getCheckedFileName()

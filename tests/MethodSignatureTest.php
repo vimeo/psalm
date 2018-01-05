@@ -140,6 +140,21 @@ class MethodSignatureTest extends TestCase
 
                     echo (new B)->foo();',
             ],
+            'allowSubclassesForNonInheritedMethodParams' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                      public function bar() : void {}
+                    }
+                    class C extends A {
+                      public function bar() : void {}
+                    }
+
+                    /** @param B|C $a */
+                    function foo(A $a) : void {
+                      $a->bar();
+                    }',
+            ],
         ];
     }
 
@@ -258,6 +273,28 @@ class MethodSignatureTest extends TestCase
                       }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'disallowSubclassesForNonInheritedMethodParams' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                      public function bar() : void {}
+                    }
+                    class C extends A {
+                      public function bar() : void {}
+                    }
+
+                    class D {
+                      public function foo(A $a) : void {}
+                    }
+
+                    class E extends D {
+                      /** @param B|C $a */
+                      public function foo(A $a) : void {
+                        $a->bar();
+                      }
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
             ],
         ];
     }

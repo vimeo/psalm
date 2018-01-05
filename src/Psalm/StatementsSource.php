@@ -61,12 +61,6 @@ interface StatementsSource
     public function getCheckedFilePath();
 
     /**
-     * @param string|null $file_name
-     * @param string|null $file_path
-     */
-    public function setFileName($file_name, $file_path);
-
-    /**
      * @return bool
      */
     public function isStatic();
