@@ -386,10 +386,22 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($storage->return_type && $storage->signature_return_type && $storage->return_type_location) {
-            if (!TypeChecker::isContainedBy(
+            $fleshed_out_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,
                 $storage->return_type,
-                $storage->signature_return_type
+                $class_storage ? $class_storage->name : null
+            );
+
+            $fleshed_out_signature_type = ExpressionChecker::fleshOutType(
+                $project_checker,
+                $storage->signature_return_type,
+                $class_storage ? $class_storage->name : null
+            );
+
+            if (!TypeChecker::isContainedBy(
+                $project_checker,
+                $fleshed_out_return_type,
+                $fleshed_out_signature_type
             )
             ) {
                 if (IssueBuffer::accepts(
