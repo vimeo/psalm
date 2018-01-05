@@ -793,7 +793,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && !$guide_param->type->from_docblock
                 && (!$implemeneter_param_type
                     || ($implemeneter_param_type->getId() !== $guide_param->type->getId()
-                        && $implemeneter_param_type->getId() !== $or_null_guide_type->getId()
+                        && (!$or_null_guide_type
+                            || $implemeneter_param_type->getId() !== $or_null_guide_type->getId()
+                        )
                     )
                 )
             ) {
