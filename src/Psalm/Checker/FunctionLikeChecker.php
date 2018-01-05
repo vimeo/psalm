@@ -769,8 +769,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if ($guide_classlike_storage->user_defined
-                && (string)$implementer_param->signature_type !== (string)$guide_param->signature_type
-                && (string)$implementer_param->signature_type !== (string)$or_null_guide_type
+                && $implementer_param->signature_type
+                && (
+                    !$guide_param->signature_type
+                    || (
+                        $implementer_param->signature_type->getId() !== $guide_param->signature_type->getId()
+                        && (!$or_null_guide_type
+                            || $implementer_param->signature_type->getId() !== $or_null_guide_type->getId())
+                    )
+                )
             ) {
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
