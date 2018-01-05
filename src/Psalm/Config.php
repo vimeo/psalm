@@ -39,6 +39,7 @@ class Config
         'MixedOperand',
         'MixedPropertyFetch',
         'MixedPropertyAssignment',
+        'MixedReturnStatement',
         'MixedStringOffsetAssignment',
         'MixedTypeCoercion',
     ];

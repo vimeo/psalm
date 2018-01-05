@@ -19,12 +19,15 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\Issue\FalsableReturnStatement;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MissingFile;
+use Psalm\Issue\MixedReturnStatement;
+use Psalm\Issue\NullableReturnStatement;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
 use Psalm\Issue\UnresolvableInclude;
@@ -1038,6 +1041,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         );
                     }
 
+                    if ($this->local_return_type->isGenerator()) {
+                        return null;
+                    }
+
                     if ($stmt->inferredType->isMixed()) {
                         if ($this->local_return_type->isVoid()) {
                             if (IssueBuffer::accepts(
@@ -1051,20 +1058,77 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             }
                         }
 
+                        if (IssueBuffer::accepts(
+                            new MixedReturnStatement(
+                                'Could not infer a return type',
+                                new CodeLocation($this->source, $stmt)
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
                         return null;
                     }
 
-                    if (!$this->local_return_type->isGenerator()
-                        && !TypeChecker::isContainedBy(
-                            $this->source->getFileChecker()->project_checker,
-                            $inferred_type,
-                            $this->local_return_type,
-                            $stmt->inferredType->ignore_nullable_issues,
-                            false,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed
-                        )
+                    if ($this->local_return_type->isVoid()) {
+                        if (IssueBuffer::accepts(
+                            new InvalidReturnStatement(
+                                'No return values are expected for ' . $cased_method_id,
+                                new CodeLocation($this->source, $stmt)
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+
+                    if (!$stmt->inferredType->ignore_nullable_issues
+                        && $inferred_type->isNullable()
+                        && !$this->local_return_type->isNullable()
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new NullableReturnStatement(
+                                'The declared return type \'' . $this->local_return_type . '\' for '
+                                    . $cased_method_id . ' is not nullable, but \'' . $inferred_type
+                                    . '\' contains null',
+                                new CodeLocation($this->source, $stmt)
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    if ($inferred_type->isFalsable()
+                        && !$this->local_return_type->isFalsable()
+                        && !$this->local_return_type->hasBool()
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new FalsableReturnStatement(
+                                'The declared return type \'' . $this->local_return_type . '\' for '
+                                    . $cased_method_id . ' does not allow false, but \'' . $inferred_type
+                                    . '\' contains false',
+                                new CodeLocation($this->source, $stmt)
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    if (!TypeChecker::isContainedBy(
+                        $this->source->getFileChecker()->project_checker,
+                        $inferred_type,
+                        $this->local_return_type,
+                        true,
+                        true,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed
+                    )
                     ) {
                         // is the declared return type more specific than the inferred one?
                         if ($type_coerced) {

@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\FalsableInferredReturnType;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidParamDefault;
@@ -25,6 +26,7 @@ use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
+use Psalm\Issue\NullableInferredReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedParam;
@@ -1241,12 +1243,61 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
+            if (!$ignore_nullable_issues
+                && $inferred_return_type->isNullable()
+                && !$declared_return_type->isNullable()
+                && !$declared_return_type->isVoid()
+            ) {
+                if ($project_checker->update_docblocks) {
+                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
+                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
+                    }
+
+                    return null;
+                }
+
+                if (IssueBuffer::accepts(
+                    new NullableInferredReturnType(
+                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
+                        $return_type_location
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
+            if ($inferred_return_type->isFalsable()
+                && !$declared_return_type->isFalsable()
+                && !$declared_return_type->hasBool()
+            ) {
+                if ($project_checker->update_docblocks) {
+                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
+                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
+                    }
+
+                    return null;
+                }
+
+                if (IssueBuffer::accepts(
+                    new FalsableInferredReturnType(
+                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
+                        $return_type_location
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
             if (!TypeChecker::isContainedBy(
                 $this->source->getFileChecker()->project_checker,
                 $inferred_return_type,
                 $declared_return_type,
-                $ignore_nullable_issues,
-                false,
+                true,
+                true,
                 $has_scalar_match,
                 $type_coerced,
                 $type_coerced_from_mixed

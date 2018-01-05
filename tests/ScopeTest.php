@@ -266,7 +266,7 @@ class ScopeTest extends TestCase
 
                         return $foo;
                     }',
-                'error_message' => 'MixedInferredReturnType',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }

@@ -72,6 +72,7 @@ class TemplateTest extends TestCase
 
                     '$dfoo' => 'Foo<mixed>',
                 ],
+                'error_levels' => ['MixedReturnStatement'],
             ],
             'classTemplateWithInstanceofCheck' => [
                 '<?php
@@ -112,6 +113,7 @@ class TemplateTest extends TestCase
                     '$bfoo' => 'Foo<B>',
                     '$bfoo_bar' => 'B',
                 ],
+                'error_levels' => ['MixedReturnStatement'],
             ],
             'classTemplateExternalClasses' => [
                 '<?php
@@ -151,6 +153,7 @@ class TemplateTest extends TestCase
                     '$ffoo' => 'Foo<LogicException>',
                     '$ffoo_bar' => 'LogicException',
                 ],
+                'error_levels' => ['MixedReturnStatement'],
             ],
             'classTemplateContainer' => [
                 '<?php
@@ -188,7 +191,7 @@ class TemplateTest extends TestCase
                     '$afoo' => 'Foo<A>',
                     '$afoo_bar' => 'A',
                 ],
-                'error_levels' => ['MixedOperand'],
+                'error_levels' => ['MixedOperand', 'MixedReturnStatement'],
             ],
             'phanTuple' => [
                 '<?php

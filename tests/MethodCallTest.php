@@ -184,14 +184,14 @@ class MethodCallTest extends TestCase
                         }
 
                         /**
-                         * @return NullableClass
+                         * @return ?NullableClass
                          */
                         public function returns_nullable_class() {
                             return self::mock("NullableClass");
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType'],
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement'],
             ],
             'undefinedVariableStaticCall' => [
                 '<?php

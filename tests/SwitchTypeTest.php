@@ -259,7 +259,7 @@ class SwitchTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'NullableInferredReturnType',
             ],
             'switchReturnTypeWithFallthroughAndConditionalBreak' => [
                 '<?php
@@ -276,7 +276,7 @@ class SwitchTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'NullableInferredReturnType',
             ],
             'switchReturnTypeWithNoDefault' => [
                 '<?php
@@ -290,7 +290,7 @@ class SwitchTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'NullableInferredReturnType',
             ],
             'getClassArgWrongClass' => [
                 '<?php
