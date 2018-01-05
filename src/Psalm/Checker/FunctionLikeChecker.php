@@ -385,7 +385,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
         }
 
-        if ($storage->return_type && $storage->signature_return_type && $storage->return_type_location) {
+        if ($storage->return_type
+            && $storage->signature_return_type
+            && $storage->return_type_location
+            && !$this->function instanceof Closure
+        ) {
             $fleshed_out_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,
                 $storage->return_type,
@@ -803,9 +807,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && $guide_param->type
                 && !$guide_param->type->isMixed()
                 && !$guide_param->type->from_docblock
-                && (!$implemeneter_param_type
-                    || ($implemeneter_param_type->getId() !== $guide_param->type->getId()
-                        && (!$or_null_guide_type
+                && (
+                    !$implemeneter_param_type
+                    || (
+                        $implemeneter_param_type->getId() !== $guide_param->type->getId()
+                        && (
+                            !$or_null_guide_type
                             || $implemeneter_param_type->getId() !== $or_null_guide_type->getId()
                         )
                     )
