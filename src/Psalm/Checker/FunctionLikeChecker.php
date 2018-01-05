@@ -688,8 +688,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                             . $implementer_signature_return_type . '\' is different to return type \''
                             . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location
-                    ),
-                    $suppressed_issues
+                    )
                 )) {
                     return false;
                 }
@@ -815,7 +814,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                                 $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 ?: $code_location
-                        )
+                        ),
+                        $suppressed_issues
                     )) {
                         return false;
                     }
