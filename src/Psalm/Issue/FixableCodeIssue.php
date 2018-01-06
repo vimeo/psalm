@@ -2,7 +2,6 @@
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
-use Psalm\FileManipulation\FileManipulation;
 
 abstract class FixableCodeIssue extends CodeIssue
 {
