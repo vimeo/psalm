@@ -51,7 +51,6 @@ class IssueBuffer
     {
         $config = Config::getInstance();
 
-
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
