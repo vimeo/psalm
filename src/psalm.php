@@ -367,7 +367,7 @@ $find_references_to = isset($options['find-references-to']) && is_string($option
     ? $options['find-references-to']
     : null;
 
-$update_docblocks = isset($options['update-docblocks']);
+$add_docblocks = isset($options['add-docblocks']);
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
@@ -383,7 +383,6 @@ $project_checker = new ProjectChecker(
     $output_format,
     $threads,
     $debug,
-    $update_docblocks,
     $find_dead_code || $find_references_to !== null,
     $find_references_to,
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
@@ -429,7 +428,12 @@ if (isset($options['fix-issues'])) {
 
     $issues = explode(',', $options['fix-issues']);
 
-    $project_checker->fixIssuesAfterCompletion($issues);
+    $keyed_issues = [];
+    foreach ($issues as $issue) {
+        $keyed_issues[$issue] = true;
+    }
+
+    $project_checker->fixIssuesAfterCompletion($keyed_issues);
 }
 
 /** @psalm-suppress MixedArgument */

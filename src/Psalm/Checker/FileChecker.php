@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -426,6 +427,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         FunctionChecker::clearCache();
         StatementsChecker::clearCache();
         IssueBuffer::clearCache();
+        FileManipulationBuffer::clearCache();
         FunctionLikeChecker::clearCache();
     }
 
