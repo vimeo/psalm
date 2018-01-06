@@ -9184,7 +9184,7 @@ return [
 'strptime' => ['array|false', 'datestr'=>'string', 'format'=>'string'],
 'strrchr' => ['string', 'haystack'=>'string', 'needle'=>'string'],
 'str_repeat' => ['string', 'input'=>'string', 'mult'=>'int'],
-'str_replace' => ['string|array', 'search'=>'string|array', 'replace'=>'string|array', 'subject'=>'string|array', '&w_replace_count='=>'int'],
+'str_replace' => ['string|array', 'search'=>'', 'replace'=>'', 'subject'=>'', '&w_replace_count='=>'int'],
 'strrev' => ['string', 'str'=>'string'],
 'strripos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
 'str_rot13' => ['string', 'str'=>'string'],
