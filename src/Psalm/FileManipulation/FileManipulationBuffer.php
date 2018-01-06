@@ -38,4 +38,12 @@ class FileManipulationBuffer
 
         return $file_manipulations;
     }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$file_manipulations = [];
+    }
 }

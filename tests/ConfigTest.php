@@ -61,7 +61,10 @@ class ConfigTest extends TestCase
              * @return bool
              */
             function ($issue_name) {
-                return !empty($issue_name) && $issue_name !== 'CodeError' && $issue_name !== 'CodeIssue';
+                return !empty($issue_name)
+                    && $issue_name !== 'CodeError'
+                    && $issue_name !== 'CodeIssue'
+                    && $issue_name !== 'FixableCodeIssue';
             }
         );
     }

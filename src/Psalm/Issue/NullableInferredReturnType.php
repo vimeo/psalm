@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class NullableInferredReturnType extends CodeError
+class NullableInferredReturnType extends FixableCodeIssue
 {
 }

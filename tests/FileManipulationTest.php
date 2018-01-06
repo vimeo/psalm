@@ -31,7 +31,7 @@ class FileManipulationTest extends TestCase
 
         $this->project_checker->setConfig(self::$config);
 
-        $this->project_checker->update_docblocks = true;
+        $this->project_checker->add_docblocks = true;
     }
 
     /**
@@ -65,6 +65,8 @@ class FileManipulationTest extends TestCase
         );
 
         $file_checker = new FileChecker($file_path, $this->project_checker);
+        $this->project_checker->addDocblocksAfterCompletion();
+        $this->project_checker->fixIssuesAfterCompletion(['InvalidReturnType' => true]);
         $file_checker->visitAndAnalyzeMethods($context);
         $this->project_checker->updateFile($file_path);
         $this->assertSame($output_code, $this->project_checker->getFileContents($file_path));

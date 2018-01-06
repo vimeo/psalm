@@ -87,7 +87,7 @@ class ProjectChecker
     /**
      * @var bool
      */
-    public $update_docblocks = false;
+    public $add_docblocks = false;
 
     /**
      * @var bool
@@ -255,9 +255,9 @@ class ProjectChecker
     private $replace_code = false;
 
     /**
-     * @var bool
+     * @var array<string, bool>
      */
-    private $fix_code = false;
+    private $issues_to_fix = [];
 
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
@@ -272,7 +272,6 @@ class ProjectChecker
      * @param string        $output_format
      * @param int           $threads
      * @param bool          $debug_output
-     * @param bool          $update_docblocks
      * @param bool          $collect_references
      * @param string        $find_references_to
      * @param string        $reports
@@ -285,7 +284,6 @@ class ProjectChecker
         $output_format = self::TYPE_CONSOLE,
         $threads = 1,
         $debug_output = false,
-        $update_docblocks = false,
         $collect_references = false,
         $find_references_to = null,
         $reports = null
@@ -296,7 +294,6 @@ class ProjectChecker
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
         $this->threads = $threads;
-        $this->update_docblocks = $update_docblocks;
         $this->collect_references = $collect_references;
         $this->find_references_to = $find_references_to;
 
@@ -335,7 +332,7 @@ class ProjectChecker
     }
 
     /**
-     * @return self
+     * @return ProjectChecker
      */
     public static function getInstance()
     {
@@ -951,7 +948,7 @@ class ProjectChecker
                     echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
                 }
 
-                $file_checker->analyze(null, $this->update_docblocks);
+                $file_checker->analyze(null);
             };
 
         $pool_size = $this->threads;
@@ -1007,15 +1004,7 @@ class ProjectChecker
             }
         }
 
-        if ($this->replace_code) {
-            foreach ($this->files_to_report as $file_path) {
-                $this->updateFile($file_path, true);
-            }
-        } elseif ($this->update_docblocks) {
-            foreach ($this->files_to_report as $file_path) {
-                $this->updateFile($file_path, true);
-            }
-        } elseif ($this->fix_code) {
+        if ($this->replace_code || $this->add_docblocks || $this->issues_to_fix) {
             foreach ($this->files_to_report as $file_path) {
                 $this->updateFile($file_path, true);
             }
@@ -1030,7 +1019,11 @@ class ProjectChecker
      */
     public function updateFile($file_path, $output_changes = false)
     {
-        $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+        if ($this->add_docblocks) {
+            $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
+        } else {
+            $new_return_type_manipulations = [];
+        }
 
         $other_manipulations = FileManipulationBuffer::getForFile($file_path);
 
@@ -2091,16 +2084,34 @@ class ProjectChecker
     /**
      * @return void
      */
+    public function addDocblocksAfterCompletion()
+    {
+        $this->add_docblocks = true;
+    }
+
+    /**
+     * @return void
+     */
     public function replaceCodeAfterCompletion()
     {
         $this->replace_code = true;
     }
 
     /**
+     * @param array<string, bool> $issues
+     *
      * @return void
      */
-    public function fixCodeAfterCompletion()
+    public function fixIssuesAfterCompletion(array $issues)
     {
-        $this->fix_code = true;
+        $this->issues_to_fix = $issues;
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getIssuesToFix()
+    {
+        return $this->issues_to_fix;
     }
 }

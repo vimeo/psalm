@@ -309,7 +309,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         new MismatchingDocblockParamType(
                             'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
                                 '\', should be \'' . $signature_type . '\'',
-                            $function_param->type_location
+                            $function_param->type_location,
+                            (string)$signature_type
                         ),
                         $storage->suppressed_issues
                     )) {
@@ -416,7 +417,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new MismatchingDocblockReturnType(
                         'Docblock has incorrect return type \'' . $storage->return_type .
                             '\', should be \'' . $storage->signature_return_type . '\'',
-                        $storage->return_type_location
+                        $storage->return_type_location,
+                        (string) $storage->signature_return_type
                     ),
                     $storage->suppressed_issues
                 )) {
@@ -1162,7 +1164,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             )
         );
 
-        if (!$return_type && !$project_checker->update_docblocks && !$is_to_string) {
+        if (!$return_type && !$project_checker->add_docblocks && !$is_to_string) {
             if ($this->function instanceof Closure) {
                 if (IssueBuffer::accepts(
                     new MissingClosureReturnType(
@@ -1204,13 +1206,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            if (!$project_checker->update_docblocks) {
-                return null;
-            }
+            return null;
         }
 
         if (!$return_type) {
             if (!$inferred_return_type->isMixed()) {
+                // $project_checker->add_docblocks is always true here
                 $this->addDocblockReturnType($project_checker, $inferred_return_type);
             }
 
@@ -1284,19 +1285,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && !$declared_return_type->isNullable()
                 && !$declared_return_type->isVoid()
             ) {
-                if ($project_checker->update_docblocks) {
-                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
-                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
-                    }
-
-                    return null;
-                }
-
                 if (IssueBuffer::accepts(
                     new NullableInferredReturnType(
                         'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
-                        $return_type_location
+                        $return_type_location,
+                        (string) $inferred_return_type
                     ),
                     $this->suppressed_issues
                 )) {
@@ -1308,19 +1302,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && !$declared_return_type->isFalsable()
                 && !$declared_return_type->hasBool()
             ) {
-                if ($project_checker->update_docblocks) {
-                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
-                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
-                    }
-
-                    return null;
-                }
-
                 if (IssueBuffer::accepts(
                     new FalsableInferredReturnType(
                         'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
-                        $return_type_location
+                        $return_type_location,
+                        (string) $inferred_return_type
                     ),
                     $this->suppressed_issues
                 )) {
@@ -1338,14 +1325,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $type_coerced,
                 $type_coerced_from_mixed
             )) {
-                if ($project_checker->update_docblocks) {
-                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
-                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
-                    }
-
-                    return null;
-                }
-
                 // is the declared return type more specific than the inferred one?
                 if ($type_coerced) {
                     if (IssueBuffer::accepts(
@@ -1363,7 +1342,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         new InvalidReturnType(
                             'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                                 ' is incorrect, got \'' . $inferred_return_type . '\'',
-                            $return_type_location
+                            $return_type_location,
+                            (string) $inferred_return_type
                         ),
                         $this->suppressed_issues
                     )) {
@@ -1371,14 +1351,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
                 }
             } elseif (!$inferred_return_type->isNullable() && $declared_return_type->isNullable()) {
-                if ($project_checker->update_docblocks) {
-                    if (!in_array('InvalidReturnType', $this->suppressed_issues, true)) {
-                        $this->addDocblockReturnType($project_checker, $inferred_return_type);
-                    }
-
-                    return null;
-                }
-
                 if (IssueBuffer::accepts(
                     new LessSpecificReturnType(
                         'The inferred return type \'' . $inferred_return_type . '\' for ' . $cased_method_id .

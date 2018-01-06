@@ -3,6 +3,8 @@ namespace Psalm;
 
 use LSS\Array2XML;
 use Psalm\Checker\ProjectChecker;
+use Psalm\FileManipulation\FileManipulation;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\CodeIssue;
 
 class IssueBuffer
@@ -49,6 +51,7 @@ class IssueBuffer
     {
         $config = Config::getInstance();
 
+
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
@@ -83,6 +86,22 @@ class IssueBuffer
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
+
+        $issues_to_fix = \Psalm\Checker\ProjectChecker::getInstance()->getIssuesToFix();
+
+        if (isset($issues_to_fix[$issue_type])
+            && $e instanceof \Psalm\Issue\FixableCodeIssue
+            && $replacement_text = $e->getReplacementText()
+        ) {
+            $code_location = $e->getLocation();
+            $bounds = $code_location->getSelectionBounds();
+            FileManipulationBuffer::add(
+                $e->getFilePath(),
+                [new FileManipulation($bounds[0], $bounds[1], $replacement_text)]
+            );
+
+            return false;
+        }
 
         $error_message = $issue_type . ' - ' . $e->getShortLocation() . ' - ' . $e->getMessage();
 
