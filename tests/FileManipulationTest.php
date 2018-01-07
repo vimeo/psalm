@@ -206,7 +206,7 @@ class FileManipulationTest extends TestCase
                         return rand(0, 1) ? "hello" : null;
                     }',
                 '<?php
-                    function foo() : ?string //cool
+                    function foo() : ?string// cool
                     {
                         return rand(0, 1) ? "hello" : null;
                     }',
@@ -278,6 +278,44 @@ class FileManipulationTest extends TestCase
                      * @return string
                      */
                     function foo() : string {
+                        return "hello";
+                    }',
+                '7.0',
+                ['InvalidReturnType'],
+            ],
+            'fixInvalidIntReturnTypeJustInTypehint70' => [
+                '<?php
+                    function foo() : int {
+                        return "hello";
+                    }',
+                '<?php
+                    function foo() : string {
+                        return "hello";
+                    }',
+                '7.0',
+                ['InvalidReturnType'],
+            ],
+            'fixInvalidIntReturnTypeJustInTypehintWithComment70' => [
+                '<?php
+                    function foo() /** cool : beans */ : int /** cool : beans */ {
+                        return "hello";
+                    }',
+                '<?php
+                    function foo() /** cool : beans */ : string /** cool : beans */ {
+                        return "hello";
+                    }',
+                '7.0',
+                ['InvalidReturnType'],
+            ],
+            'fixInvalidIntReturnTypeJustInTypehintWithSingleLineComment70' => [
+                '<?php
+                    function foo() // hello
+                    : int {
+                        return "hello";
+                    }',
+                '<?php
+                    function foo() // hello
+                    : string {
                         return "hello";
                     }',
                 '7.0',
