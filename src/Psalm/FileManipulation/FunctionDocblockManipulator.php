@@ -133,24 +133,62 @@ class FunctionDocblockManipulator
         /** @var array<int, string> */
         $chars = str_split($function_code_after_bracket);
 
-        foreach ($chars as $i => $char) {
+        $in_single_line_comment = $in_multi_line_comment = false;
+
+        for ($i = 0; $i < count($chars); $i++) {
+            $char = $chars[$i];
+
             switch ($char) {
                 case PHP_EOL:
+                    $in_single_line_comment = false;
                     continue;
 
                 case ':':
+                    if ($in_multi_line_comment || $in_single_line_comment) {
+                        continue;
+                    }
+
                     continue;
 
                 case '/':
-                    // @todo handle comments in this area
-                    throw new \UnexpectedValueException('Not expecting comments where return types should live');
+                    if ($in_multi_line_comment || $in_single_line_comment) {
+                        continue;
+                    }
+
+                    if ($chars[$i + 1] === '*') {
+                        $in_multi_line_comment = true;
+                        $i++;
+                    }
+
+                case '*':
+                    if ($in_single_line_comment) {
+                        continue;
+                    }
+
+                    if ($chars[$i + 1] === '/') {
+                        $in_multi_line_comment = false;
+                        $i++;
+                    }
 
                 case '{':
+                    if ($in_multi_line_comment || $in_single_line_comment) {
+                        continue;
+                    }
+
                     break 2;
 
+
                 case '?':
+                    if ($in_multi_line_comment || $in_single_line_comment) {
+                        continue;
+                    }
+
                     $this->return_typehint_start = $i + $end_bracket_position + 1;
                     break;
+            }
+
+            if ($in_multi_line_comment || $in_single_line_comment) {
+                continue;
             }
 
             if (preg_match('/\w/', $char)) {
