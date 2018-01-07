@@ -2116,6 +2116,7 @@ class ProjectChecker
      * @param int $php_major_version
      * @param int $php_minor_version
      * @param bool $dry_run
+     * @param bool $safe_types
      *
      * @return void
      */
