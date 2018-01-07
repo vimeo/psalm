@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class PossiblyNullArgument extends CodeError
+class PossiblyNullArgument extends CodeIssue
 {
 }

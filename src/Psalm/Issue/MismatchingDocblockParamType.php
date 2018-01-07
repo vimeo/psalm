@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MismatchingDocblockParamType extends FixableCodeIssue
+class MismatchingDocblockParamType extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class AssignmentToVoid extends CodeError
+class AssignmentToVoid extends CodeIssue
 {
 }

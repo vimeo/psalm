@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedInferredReturnType extends CodeError
+class MixedInferredReturnType extends CodeIssue
 {
 }

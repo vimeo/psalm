@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnrecognizedExpression extends CodeError
+class UnrecognizedExpression extends CodeIssue
 {
 }

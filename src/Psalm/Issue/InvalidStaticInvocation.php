@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidStaticInvocation extends CodeError
+class InvalidStaticInvocation extends CodeIssue
 {
 }

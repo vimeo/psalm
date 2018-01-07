@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidGlobal extends CodeError
+class InvalidGlobal extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class NoInterfaceProperties extends CodeError
+class NoInterfaceProperties extends CodeIssue
 {
 }

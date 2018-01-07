@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedArrayAssignment extends CodeError
+class MixedArrayAssignment extends CodeIssue
 {
 }

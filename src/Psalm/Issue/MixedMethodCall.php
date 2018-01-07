@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedMethodCall extends CodeError
+class MixedMethodCall extends CodeIssue
 {
 }

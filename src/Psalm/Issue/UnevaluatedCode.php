@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnevaluatedCode extends CodeError
+class UnevaluatedCode extends CodeIssue
 {
 }

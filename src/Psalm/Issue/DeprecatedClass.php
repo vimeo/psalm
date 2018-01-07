@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class DeprecatedClass extends CodeError
+class DeprecatedClass extends CodeIssue
 {
 }

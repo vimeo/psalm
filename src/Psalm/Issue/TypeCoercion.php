@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class TypeCoercion extends CodeError
+class TypeCoercion extends CodeIssue
 {
 }

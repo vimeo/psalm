@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class DuplicateClass extends CodeError
+class DuplicateClass extends CodeIssue
 {
 }

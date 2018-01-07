@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class NullArrayOffset extends CodeError
+class NullArrayOffset extends CodeIssue
 {
 }

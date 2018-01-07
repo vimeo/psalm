@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MethodSignatureMismatch extends CodeError
+class MethodSignatureMismatch extends CodeIssue
 {
 }

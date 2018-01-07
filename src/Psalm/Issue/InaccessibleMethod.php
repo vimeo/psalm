@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InaccessibleMethod extends CodeError
+class InaccessibleMethod extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MissingConstructor extends CodeError
+class MissingConstructor extends CodeIssue
 {
 }

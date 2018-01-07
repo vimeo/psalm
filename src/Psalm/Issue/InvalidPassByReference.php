@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidPassByReference extends CodeError
+class InvalidPassByReference extends CodeIssue
 {
 }

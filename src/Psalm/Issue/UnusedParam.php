@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnusedParam extends CodeError
+class UnusedParam extends CodeIssue
 {
 }

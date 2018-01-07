@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidReturnType extends FixableCodeIssue
+class InvalidReturnType extends CodeIssue
 {
 }

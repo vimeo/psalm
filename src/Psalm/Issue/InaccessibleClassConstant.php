@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InaccessibleClassConstant extends CodeError
+class InaccessibleClassConstant extends CodeIssue
 {
 }

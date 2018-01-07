@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnusedMethod extends CodeError
+class UnusedMethod extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnresolvableInclude extends CodeError
+class UnresolvableInclude extends CodeIssue
 {
 }

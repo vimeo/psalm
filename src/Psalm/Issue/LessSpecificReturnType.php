@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class LessSpecificReturnType extends CodeError
+class LessSpecificReturnType extends CodeIssue
 {
 }

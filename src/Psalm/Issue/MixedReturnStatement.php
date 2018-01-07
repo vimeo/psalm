@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedReturnStatement extends CodeError
+class MixedReturnStatement extends CodeIssue
 {
 }

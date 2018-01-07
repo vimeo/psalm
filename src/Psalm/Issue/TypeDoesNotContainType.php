@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class TypeDoesNotContainType extends CodeError
+class TypeDoesNotContainType extends CodeIssue
 {
 }

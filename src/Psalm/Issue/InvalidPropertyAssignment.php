@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidPropertyAssignment extends CodeError
+class InvalidPropertyAssignment extends CodeIssue
 {
 }

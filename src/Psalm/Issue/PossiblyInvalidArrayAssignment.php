@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class PossiblyInvalidArrayAssignment extends CodeError
+class PossiblyInvalidArrayAssignment extends CodeIssue
 {
 }
