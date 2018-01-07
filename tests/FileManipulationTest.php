@@ -39,6 +39,7 @@ class FileManipulationTest extends TestCase
      * @param string $output_code
      * @param string $php_version
      * @param string[] $issues_to_fix
+     * @param bool $safe_types
      *
      * @return void
      */
