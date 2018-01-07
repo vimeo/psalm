@@ -15,7 +15,7 @@ $options = getopt(
     'f:mhr:',
     [
         'help', 'debug', 'config:', 'file:', 'root:',
-        'plugin:', 'replace-code', 'issues:', 'target-php-version:', 'dry-run',
+        'plugin:', 'replace-code', 'issues:', 'target-php-version:', 'dry-run', 'safe-types',
     ]
 );
 
@@ -170,7 +170,8 @@ foreach ($plugins as $plugin_path) {
 $project_checker->alterCodeAfterCompletion(
     (int) $php_major_version,
     (int) $php_minor_version,
-    array_key_exists('dry-run', $options)
+    array_key_exists('dry-run', $options),
+    array_key_exists('safe-types', $options)
 );
 $project_checker->setIssuesToFix($keyed_issues);
 

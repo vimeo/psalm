@@ -42,7 +42,7 @@ class FileManipulationTest extends TestCase
      *
      * @return void
      */
-    public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix)
+    public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types)
     {
         $test_name = $this->getName();
         if (strpos($test_name, 'PHP7-') !== false) {
@@ -75,7 +75,12 @@ class FileManipulationTest extends TestCase
         $file_checker = new FileChecker($file_path, $this->project_checker);
 
         $this->project_checker->setIssuesToFix($keyed_issues_to_fix);
-        $this->project_checker->alterCodeAfterCompletion((int) $php_major_version, (int) $php_minor_version);
+        $this->project_checker->alterCodeAfterCompletion(
+            (int) $php_major_version,
+            (int) $php_minor_version,
+            false,
+            $safe_types
+        );
 
         $file_checker->visitAndAnalyzeMethods($context);
         $this->project_checker->updateFile($file_path, false);
@@ -98,6 +103,7 @@ class FileManipulationTest extends TestCase
                     function foo() { }',
                 '5.6',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingVoidReturnType70' => [
                 '<?php
@@ -109,6 +115,7 @@ class FileManipulationTest extends TestCase
                     function foo() { }',
                 '7.0',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingVoidReturnType71' => [
                 '<?php
@@ -117,6 +124,7 @@ class FileManipulationTest extends TestCase
                     function foo() : void { }',
                 '7.1',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringReturnType56' => [
                 '<?php
@@ -132,6 +140,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '5.6',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringReturnType70' => [
                 '<?php
@@ -144,6 +153,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingClosureStringReturnType56' => [
                 '<?php
@@ -159,6 +169,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '5.6',
                 ['MissingClosureReturnType'],
+                true,
             ],
             'addMissingNullableStringReturnType56' => [
                 '<?php
@@ -174,6 +185,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '5.6',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringReturnType70' => [
                 '<?php
@@ -189,6 +201,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringReturnType71' => [
                 '<?php
@@ -201,6 +214,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.1',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringReturnTypeWithComment71' => [
                 '<?php
@@ -213,6 +227,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.1',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringReturnTypeWithSingleLineComment71' => [
                 '<?php
@@ -227,6 +242,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.1',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringArrayReturnType56' => [
                 '<?php
@@ -244,6 +260,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '5.6',
                 ['MissingReturnType'],
+                true,
             ],
             'addMissingStringArrayReturnType70' => [
                 '<?php
@@ -261,6 +278,124 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['MissingReturnType'],
+                true,
+            ],
+            'addMissingStringArrayReturnTypeFromCall71' => [
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    function bar() {
+                        return foo();
+                    }',
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    /**
+                     * @return string[]
+                     *
+                     * @psalm-return array<mixed, string>
+                     */
+                    function bar() : array {
+                        return foo();
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
+            'addMissingDocblockStringArrayReturnTypeFromCall71' => [
+                '<?php
+                    /** @return string[] */
+                    function foo() {
+                        return ["hello"];
+                    }
+
+                    function bar() {
+                        return foo();
+                    }',
+                '<?php
+                    /** @return string[] */
+                    function foo() {
+                        return ["hello"];
+                    }
+
+                    /**
+                     * @return string[]
+                     *
+                     * @psalm-return array<mixed, string>
+                     */
+                    function bar() {
+                        return foo();
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
+            'addMissingNullableStringReturnType71' => [
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    function bar() {
+                        foreach (foo() as $f) {
+                            return $f;
+                        }
+                        return null;
+                    }',
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    /**
+                     * @return null|string
+                     */
+                    function bar() {
+                        foreach (foo() as $f) {
+                            return $f;
+                        }
+                        return null;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
+            'addMissingUnsafeNullableStringReturnType71' => [
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    function bar() {
+                        foreach (foo() as $f) {
+                            return $f;
+                        }
+                        return null;
+                    }',
+                '<?php
+                    /** @return string[] */
+                    function foo() : array {
+                        return ["hello"];
+                    }
+
+                    function bar() : ?string {
+                        foreach (foo() as $f) {
+                            return $f;
+                        }
+                        return null;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
             ],
             'fixInvalidIntReturnType56' => [
                 '<?php
@@ -279,6 +414,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '5.6',
                 ['InvalidReturnType'],
+                true,
             ],
             'fixInvalidIntReturnType70' => [
                 '<?php
@@ -297,6 +433,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['InvalidReturnType'],
+                true,
             ],
             'fixInvalidIntReturnTypeJustInTypehint70' => [
                 '<?php
@@ -309,6 +446,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['InvalidReturnType'],
+                true,
             ],
             'fixInvalidIntReturnTypeJustInTypehintWithComment70' => [
                 '<?php
@@ -321,6 +459,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['InvalidReturnType'],
+                true,
             ],
             'fixInvalidIntReturnTypeJustInTypehintWithSingleLineComment70' => [
                 '<?php
@@ -335,6 +474,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['InvalidReturnType'],
+                true,
             ],
             'fixMismatchingDocblockReturnType70' => [
                 '<?php
@@ -353,6 +493,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['MismatchingDocblockReturnType'],
+                true,
             ],
             'fixMismatchingDocblockParamType70' => [
                 '<?php
@@ -371,6 +512,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['MismatchingDocblockParamType'],
+                true,
             ],
             'fixNamespacedMismatchingDocblockParamsType70' => [
                 '<?php
@@ -403,6 +545,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['MismatchingDocblockParamType'],
+                true,
             ],
             'useUnqualifierPlugin' => [
                 '<?php
@@ -425,6 +568,7 @@ class FileManipulationTest extends TestCase
                     }',
                 PHP_VERSION,
                 [],
+                true,
             ],
         ];
     }

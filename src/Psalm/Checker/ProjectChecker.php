@@ -269,6 +269,11 @@ class ProjectChecker
      */
     public $dry_run = false;
 
+    /**
+     * @var bool
+     */
+    public $only_replace_php_types_with_non_docblock_types = false;
+
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
@@ -2114,12 +2119,17 @@ class ProjectChecker
      *
      * @return void
      */
-    public function alterCodeAfterCompletion($php_major_version, $php_minor_version, $dry_run = false)
-    {
+    public function alterCodeAfterCompletion(
+        $php_major_version,
+        $php_minor_version,
+        $dry_run = false,
+        $safe_types = false
+    ) {
         $this->alter_code = true;
         $this->php_major_version = $php_major_version;
         $this->php_minor_version = $php_minor_version;
         $this->dry_run = $dry_run;
+        $this->only_replace_php_types_with_non_docblock_types = $safe_types;
     }
 
     /**

@@ -543,7 +543,13 @@ abstract class Type
         }
 
         if (count($types) === 1) {
-            return new Union([$types[0]]);
+            $union_type = new Union([$types[0]]);
+
+            if ($types[0]->from_docblock) {
+                $union_type->from_docblock = true;
+            }
+
+            return $union_type;
         }
 
         if (!$types) {
@@ -552,10 +558,18 @@ abstract class Type
 
         $combination = new TypeCombination();
 
+        $from_docblock = false;
+
         foreach ($types as $type) {
+            $from_docblock = $from_docblock || $type->from_docblock;
+
             $result = self::scrapeTypeProperties($type, $combination);
 
             if ($result) {
+                if ($from_docblock) {
+                    $result->from_docblock = true;
+                }
+
                 return $result;
             }
         }
@@ -565,11 +579,23 @@ abstract class Type
             && !count($combination->type_params)
         ) {
             if (isset($combination->value_types['false'])) {
-                return Type::getFalse();
+                $union_type = Type::getFalse();
+
+                if ($from_docblock) {
+                    $union_type->from_docblock = true;
+                }
+
+                return $union_type;
             }
 
             if (isset($combination->value_types['true'])) {
-                return Type::getTrue();
+                $union_type = Type::getTrue();
+
+                if ($from_docblock) {
+                    $union_type->from_docblock = true;
+                }
+
+                return $union_type;
             }
         } elseif (isset($combination->value_types['void'])) {
             unset($combination->value_types['void']);
@@ -658,7 +684,13 @@ abstract class Type
 
         $new_types = array_values($new_types);
 
-        return new Union($new_types);
+        $union_type = new Union($new_types);
+
+        if ($from_docblock) {
+            $union_type->from_docblock = true;
+        }
+
+        return $union_type;
     }
 
     /**
