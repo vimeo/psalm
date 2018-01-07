@@ -145,6 +145,21 @@ class FileManipulationTest extends TestCase
                 '7.0',
                 ['MissingReturnType'],
             ],
+            'addMissingClosureStringReturnType56' => [
+                '<?php
+                    $a = function() {
+                        return "hello";
+                    }',
+                '<?php
+                    $a = /**
+                     * @return string
+                     */
+                    function() {
+                        return "hello";
+                    }',
+                '5.6',
+                ['MissingClosureReturnType'],
+            ],
             'addMissingNullableStringReturnType56' => [
                 '<?php
                     function foo() {
