@@ -38,7 +38,7 @@ class TArray extends \Psalm\Type\Atomic implements Generic
      * @return string
      */
     public function toPhpString(
-        $namesapce,
+        $namespace,
         array $aliased_classes,
         $this_class,
         $php_major_version,

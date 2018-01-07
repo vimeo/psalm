@@ -68,6 +68,10 @@ class TNamedObject extends Atomic
             return array_pop($class_parts);
         }
 
+        if (!$namespace && stripos($this->value, '\\') === false) {
+            return $this->value;
+        }
+
         if (isset($aliased_classes[strtolower($this->value)])) {
             return $aliased_classes[strtolower($this->value)];
         }
