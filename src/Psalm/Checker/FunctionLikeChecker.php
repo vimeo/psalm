@@ -423,7 +423,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['MismatchingDocblockReturnType'])
                 ) {
-                    $this->addOrUpdateReturnType($project_checker, $storage->signature_return_type, true);
+                    $this->addOrUpdateReturnType($project_checker, $storage->signature_return_type);
 
                     return null;
                 }
@@ -1331,7 +1331,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && !$declared_return_type->isVoid()
             ) {
                 if ($project_checker->alter_code
-                    && isset($project_checker->getIssuesToFix()['UnexpectedNullableReturnType'])
+                    && isset($project_checker->getIssuesToFix()['InvalidNullableReturnType'])
                 ) {
                     $this->addOrUpdateReturnType(
                         $project_checker,

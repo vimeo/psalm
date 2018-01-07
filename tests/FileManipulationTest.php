@@ -449,7 +449,7 @@ class FileManipulationTest extends TestCase
                 ['InvalidReturnType'],
                 true,
             ],
-            'fixInvalidIntReturnTypeThatIsNotPhpCompatible70' => [
+            'fixInvalidStringReturnTypeThatIsNotPhpCompatible70' => [
                 '<?php
                     function foo() : string {
                         return rand(0, 1) ? "hello" : false;
@@ -463,6 +463,22 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.0',
                 ['InvalidFalsableReturnType'],
+                true,
+            ],
+            'fixInvalidIntReturnTypeThatIsNotPhpCompatible70' => [
+                '<?php
+                    function foo() : string {
+                        return rand(0, 1) ? "hello" : null;
+                    }',
+                '<?php
+                    /**
+                     * @return string|null
+                     */
+                    function foo()  {
+                        return rand(0, 1) ? "hello" : null;
+                    }',
+                '7.0',
+                ['InvalidNullableReturnType'],
                 true,
             ],
             'fixInvalidIntReturnTypeJustInTypehintWithComment70' => [

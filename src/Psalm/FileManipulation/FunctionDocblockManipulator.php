@@ -350,7 +350,6 @@ class FunctionDocblockManipulator
                 }
             } elseif ($manipulator->return_typehint_colon_start
                 && $manipulator->new_phpdoc_return_type
-                && !$manipulator->return_type_is_php_compatible
                 && $manipulator->return_typehint_start
                 && $manipulator->return_typehint_end
             ) {
