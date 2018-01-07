@@ -135,7 +135,7 @@ class FunctionDocblockManipulator
 
         $in_single_line_comment = $in_multi_line_comment = false;
 
-        for ($i = 0; $i < count($chars); $i++) {
+        for ($i = 0; $i < count($chars); ++$i) {
             $char = $chars[$i];
 
             switch ($char) {
@@ -157,8 +157,9 @@ class FunctionDocblockManipulator
 
                     if ($chars[$i + 1] === '*') {
                         $in_multi_line_comment = true;
-                        $i++;
+                        ++$i;
                     }
+                    continue;
 
                 case '*':
                     if ($in_single_line_comment) {
@@ -167,8 +168,9 @@ class FunctionDocblockManipulator
 
                     if ($chars[$i + 1] === '/') {
                         $in_multi_line_comment = false;
-                        $i++;
+                        ++$i;
                     }
+                    continue;
 
                 case '{':
                     if ($in_multi_line_comment || $in_single_line_comment) {
@@ -176,7 +178,6 @@ class FunctionDocblockManipulator
                     }
 
                     break 2;
-
 
                 case '?':
                     if ($in_multi_line_comment || $in_single_line_comment) {
