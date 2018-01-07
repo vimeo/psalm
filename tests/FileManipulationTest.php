@@ -199,6 +199,20 @@ class FileManipulationTest extends TestCase
                 '7.1',
                 ['MissingReturnType'],
             ],
+            'addMissingStringReturnTypeWithSingleLineComment71' => [
+                '<?php
+                    function foo()// cool
+                    {
+                        return rand(0, 1) ? "hello" : null;
+                    }',
+                '<?php
+                    function foo() : ?string //cool
+                    {
+                        return rand(0, 1) ? "hello" : null;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+            ],
             'addMissingStringArrayReturnType56' => [
                 '<?php
                     function foo() {
