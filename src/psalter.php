@@ -72,8 +72,9 @@ HELP;
     exit;
 }
 
-if (!isset($options['issues'])) {
-    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo' . PHP_EOL);
+if (!isset($options['issues']) && (!isset($options['plugin']) || $options['plugin'] === false)) {
+    die('Please specify the issues you want to fix with --issues=IssueOne,IssueTwo '
+        . 'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php' . PHP_EOL);
 }
 
 if (isset($options['root'])) {
@@ -124,15 +125,20 @@ if (!$config) {
     $project_checker->getConfigForPath($current_dir, $current_dir);
 }
 
-if (!is_string($options['issues']) || !$options['issues']) {
-    die('Expecting a comma-separated list of issues' . PHP_EOL);
-}
+if (array_key_exists('issues', $options)) {
+    if (!is_string($options['issues']) || !$options['issues']) {
+        die('Expecting a comma-separated list of issues' . PHP_EOL);
+    }
 
-$issues = explode(',', $options['issues']);
+    $issues = explode(',', $options['issues']);
 
-$keyed_issues = [];
-foreach ($issues as $issue) {
-    $keyed_issues[$issue] = true;
+    $keyed_issues = [];
+
+    foreach ($issues as $issue) {
+        $keyed_issues[$issue] = true;
+    }
+} else {
+    $keyed_issues = [];
 }
 
 $php_major_version = PHP_MAJOR_VERSION;
@@ -146,7 +152,26 @@ if (isset($options['php-version'])) {
     list($php_major_version, $php_minor_version) = explode('.', $options['php-version']);
 }
 
-$project_checker->alterCodeAfterCompletion((int) $php_major_version, (int) $php_minor_version);
+$plugins = [];
+
+if (isset($options['plugin'])) {
+    $plugins = $options['plugin'];
+
+    if (!is_array($plugins)) {
+        $plugins = [$plugins];
+    }
+}
+
+/** @var string $plugin_path */
+foreach ($plugins as $plugin_path) {
+    Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
+}
+
+$project_checker->alterCodeAfterCompletion(
+    (int) $php_major_version,
+    (int) $php_minor_version,
+    array_key_exists('dry-run', $options)
+);
 $project_checker->setIssuesToFix($keyed_issues);
 
 /** @psalm-suppress MixedArgument */

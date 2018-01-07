@@ -113,8 +113,6 @@ class FunctionDocblockManipulator
 
         $file_contents = $project_checker->getFileContents($file_path);
 
-
-
         $last_arg_position = $stmt->params
             ? (int) $stmt->params[count($stmt->params) - 1]->getAttribute('endFilePos')
             : null;
@@ -213,7 +211,6 @@ class FunctionDocblockManipulator
      */
     public function setParamType($param_name, $php_type, $new_type, $phpdoc_type, $is_php_compatible)
     {
-
         $new_type = str_replace(['<mixed, mixed>', '<empty, empty>'], '', $new_type);
 
         if ($php_type) {

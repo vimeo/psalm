@@ -250,11 +250,6 @@ class ProjectChecker
     private $composer_classmap;
 
     /**
-     * @var bool
-     */
-    private $replace_code = false;
-
-    /**
      * @var array<string, bool>
      */
     private $issues_to_fix = [];
@@ -268,6 +263,11 @@ class ProjectChecker
      * @var int
      */
     public $php_minor_version = PHP_MINOR_VERSION;
+
+    /**
+     * @var bool
+     */
+    public $dry_run = false;
 
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
@@ -296,7 +296,7 @@ class ProjectChecker
         $debug_output = false,
         $collect_references = false,
         $find_references_to = null,
-        $reports = null
+        string $reports = null
     ) {
         $this->file_provider = $file_provider;
         $this->cache_provider = $cache_provider;
@@ -1014,20 +1014,21 @@ class ProjectChecker
             }
         }
 
-        if ($this->replace_code || $this->alter_code || $this->issues_to_fix) {
+        if ($this->alter_code) {
             foreach ($this->files_to_report as $file_path) {
-                $this->updateFile($file_path, true);
+                $this->updateFile($file_path, $this->dry_run, true);
             }
         }
     }
 
     /**
      * @param  string $file_path
+     * @param  bool $dry_run
      * @param  bool   $output_changes to console
      *
      * @return void
      */
-    public function updateFile($file_path, $output_changes = false)
+    public function updateFile($file_path, $dry_run, $output_changes = false)
     {
         if ($this->alter_code) {
             $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
@@ -1053,8 +1054,16 @@ class ProjectChecker
         }
 
         if ($docblock_update_count) {
+            if ($dry_run) {
+                echo $file_path . ':' . PHP_EOL;
+                $differ = new \PhpCsFixer\Differ\UnifiedDiffer();
+                echo (string) $differ->diff($this->getFileContents($file_path), $existing_contents);
+
+                return;
+            }
+
             if ($output_changes) {
-                echo 'Adding/updating ' . $docblock_update_count . ' docblocks in ' . $file_path . PHP_EOL;
+                echo 'Altering ' . $file_path . PHP_EOL;
             }
 
             $this->file_provider->setContents($file_path, $existing_contents);
@@ -2094,14 +2103,16 @@ class ProjectChecker
     /**
      * @param int $php_major_version
      * @param int $php_minor_version
+     * @param bool $dry_run
      *
      * @return void
      */
-    public function alterCodeAfterCompletion($php_major_version, $php_minor_version)
+    public function alterCodeAfterCompletion($php_major_version, $php_minor_version, $dry_run = false)
     {
         $this->alter_code = true;
         $this->php_major_version = $php_major_version;
         $this->php_minor_version = $php_minor_version;
+        $this->dry_run = $dry_run;
     }
 
     /**
