@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class PossiblyNullIterator extends CodeError
+class PossiblyNullIterator extends CodeIssue
 {
 }

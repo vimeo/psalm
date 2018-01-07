@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class LoopInvalidation extends CodeError
+class LoopInvalidation extends CodeIssue
 {
 }

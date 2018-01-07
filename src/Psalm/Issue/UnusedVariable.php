@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnusedVariable extends CodeError
+class UnusedVariable extends CodeIssue
 {
 }

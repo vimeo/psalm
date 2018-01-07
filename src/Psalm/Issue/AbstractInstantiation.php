@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class AbstractInstantiation extends CodeError
+class AbstractInstantiation extends CodeIssue
 {
 }

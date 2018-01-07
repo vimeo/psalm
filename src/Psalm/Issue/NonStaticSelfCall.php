@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class NonStaticSelfCall extends CodeError
+class NonStaticSelfCall extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UntypedParam extends CodeError
+class UntypedParam extends CodeIssue
 {
 }

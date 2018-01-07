@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidCast extends CodeError
+class InvalidCast extends CodeIssue
 {
 }

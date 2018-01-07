@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class ReferenceConstraintViolation extends CodeError
+class ReferenceConstraintViolation extends CodeIssue
 {
 }

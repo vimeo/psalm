@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidOperand extends CodeError
+class InvalidOperand extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UnimplementedInterfaceMethod extends CodeError
+class UnimplementedInterfaceMethod extends CodeIssue
 {
 }

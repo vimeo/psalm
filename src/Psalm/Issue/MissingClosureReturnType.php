@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MissingClosureReturnType extends CodeError
+class MissingClosureReturnType extends CodeIssue
 {
 }

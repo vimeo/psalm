@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidClone extends CodeError
+class InvalidClone extends CodeIssue
 {
 }

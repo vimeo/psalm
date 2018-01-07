@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class RedundantCondition extends CodeError
+class RedundantCondition extends CodeIssue
 {
 }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidCatch extends CodeError
+class InvalidCatch extends CodeIssue
 {
 }

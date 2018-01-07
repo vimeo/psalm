@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MixedArrayOffset extends CodeError
+class MixedArrayOffset extends CodeIssue
 {
 }

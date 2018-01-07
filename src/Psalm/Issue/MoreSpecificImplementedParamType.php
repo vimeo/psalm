@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MoreSpecificImplementedParamType extends CodeError
+class MoreSpecificImplementedParamType extends CodeIssue
 {
 }

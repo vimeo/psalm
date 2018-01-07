@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class OverriddenMethodAccess extends CodeError
+class OverriddenMethodAccess extends CodeIssue
 {
 }

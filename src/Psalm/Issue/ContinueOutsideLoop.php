@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class ContinueOutsideLoop extends CodeError
+class ContinueOutsideLoop extends CodeIssue
 {
 }
