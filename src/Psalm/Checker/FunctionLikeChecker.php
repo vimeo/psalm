@@ -13,8 +13,9 @@ use Psalm\Context;
 use Psalm\EffectsAnalyser;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\FunctionLikeParameter;
-use Psalm\Issue\FalsableFunctionReturnType;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
+use Psalm\Issue\InvalidFalsableReturnType;
+use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\InvalidToString;
@@ -28,7 +29,6 @@ use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
-use Psalm\Issue\NullableFunctionReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedParam;
@@ -1331,7 +1331,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && !$declared_return_type->isVoid()
             ) {
                 if ($project_checker->alter_code
-                    && isset($project_checker->getIssuesToFix()['NullableFunctionReturnType'])
+                    && isset($project_checker->getIssuesToFix()['UnexpectedNullableReturnType'])
                 ) {
                     $this->addOrUpdateReturnType(
                         $project_checker,
@@ -1344,7 +1344,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 if (IssueBuffer::accepts(
-                    new NullableFunctionReturnType(
+                    new InvalidNullableReturnType(
                         'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
                         $return_type_location
@@ -1360,7 +1360,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && !$declared_return_type->hasBool()
             ) {
                 if ($project_checker->alter_code
-                    && isset($project_checker->getIssuesToFix()['FalsableFunctionReturnType'])
+                    && isset($project_checker->getIssuesToFix()['InvalidFalsableReturnType'])
                 ) {
                     $this->addOrUpdateReturnType(
                         $project_checker,
@@ -1373,7 +1373,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
 
                 if (IssueBuffer::accepts(
-                    new FalsableFunctionReturnType(
+                    new InvalidFalsableReturnType(
                         'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
                             ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
                         $return_type_location

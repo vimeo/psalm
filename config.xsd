@@ -96,7 +96,6 @@
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="EmptyArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="FalsableFunctionReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedReturnTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
@@ -113,10 +112,12 @@
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidParamDefault" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidFalsableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidGlobal" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidNullableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
@@ -161,7 +162,6 @@
             <xs:element name="NoInterfaceProperties" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullableReturnStatement" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="NullableFunctionReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullArrayOffset" type="IssueHandlerType" minOccurs="0" />
