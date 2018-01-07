@@ -33,6 +33,9 @@ class FunctionDocblockManipulator
     private $return_typehint_area_start;
 
     /** @var ?int */
+    private $return_typehint_colon_start;
+
+    /** @var ?int */
     private $return_typehint_start;
 
     /** @var ?int */
@@ -148,6 +151,8 @@ class FunctionDocblockManipulator
                         continue;
                     }
 
+                    $this->return_typehint_colon_start = $i + $end_bracket_position + 1;
+
                     continue;
 
                 case '/':
@@ -164,6 +169,7 @@ class FunctionDocblockManipulator
                         $in_single_line_comment = true;
                         ++$i;
                     }
+
                     continue;
 
                 case '*':
@@ -175,6 +181,7 @@ class FunctionDocblockManipulator
                         $in_multi_line_comment = false;
                         ++$i;
                     }
+
                     continue;
 
                 case '{':
@@ -341,6 +348,17 @@ class FunctionDocblockManipulator
                         ' : ' . $manipulator->new_php_return_type
                     );
                 }
+            } elseif ($manipulator->return_typehint_colon_start
+                && $manipulator->new_phpdoc_return_type
+                && !$manipulator->return_type_is_php_compatible
+                && $manipulator->return_typehint_start
+                && $manipulator->return_typehint_end
+            ) {
+                $file_manipulations[$manipulator->return_typehint_start] = new FileManipulation(
+                    $manipulator->return_typehint_colon_start,
+                    $manipulator->return_typehint_end,
+                    ''
+                );
             }
 
             if (!$manipulator->new_php_return_type

@@ -99,6 +99,20 @@ $a = [];
 $b = $a[0];
 ```
 
+### FalsableReturnStatement
+
+Emitted if a return statement contains a false value, but the function return type does not allow false
+
+```php
+function foo() : string {
+    if (rand(0, 1)) {
+        return "foo";
+    }
+
+    return false; // emitted here
+}
+```
+
 ### ForbiddenCode
 
 Emitted when Psalm encounters a var_dump, exec or similar expression that may make your code more vulnerable
@@ -262,6 +276,20 @@ Emitted when there's an error in a docblock type
 $a = [];
 ```
 
+### InvalidFalsableReturnType
+
+Emitted when a function can return a nullable value, but its given return type says otherwise
+
+```php
+function foo() : string {
+    if (rand(0, 1)) {
+        return "foo";
+    }
+
+    return false;
+}
+```
+
 ### InvalidFunctionCall
 
 Emitted when calling a function on a non-callable variable
@@ -295,6 +323,20 @@ Emitted when attempting to call a method on a non-object
 ```php
 $a = 5;
 $a->foo();
+```
+
+### InvalidNullableReturnType
+
+Emitted when a function can return a nullable value, but its given return type says otherwise
+
+```php
+function foo() : string {
+    if (rand(0, 1)) {
+        return "foo";
+    }
+
+    return null;
+}
 ```
 
 ### InvalidOperand
@@ -353,13 +395,15 @@ function foo() : string {
 
 ### InvalidReturnType
 
-    Emitted when a function’s return type is incorrect (often emitted with `InvalidReturnStatement`)
+    Emitted when a function’s signature return type is incorrect (often emitted with `InvalidReturnStatement`)
 
 ```php
-function foo() : string {
+function foo() : int {
     if (rand(0, 1)) {
-        return "foo";
+        return "hello";
     }
+
+    return 5;
 }
 ```
 
@@ -466,6 +510,69 @@ class A {
 class B extends A {
     public function foo(string $s) : void {}
 }
+```
+
+### MismatchingDocblockParamType
+
+Emitted when an `@param` entry in a function’s docblock doesn’t match the param typehint,
+
+```php
+class A {}
+class B {}
+/**
+ * @param B $b // emitted here
+ */
+function foo(A $b) : void {}
+```
+
+This, however, is fine:
+
+```php
+class A {}
+class B extends A {}
+/**
+ * @param B
+ */
+function foo(A $b) : void {}
+```
+
+### MismatchingDocblockReturnType
+
+Emitted when an `@return` entry in a function’s docblock doesn’t match the function return typehint
+
+```php
+class A {}
+class B {}
+/**
+ * @return B // emitted here
+ */
+function foo() : A {
+    return new A();
+}
+```
+
+This, however, is fine:
+
+```php
+class A {}
+class B extends A {}
+/**
+ * @return B // emitted here
+ */
+function foo() : A {
+    return new B();
+}
+```
+
+### MismatchingDocblockParamType
+
+Emitted when an `@param` entry in a function’s docblock doesn’t match the param typehint
+
+```php
+/**
+ * @param int $b 
+ */
+function foo(string $b) : void {}
 ```
 
 ### MisplacedRequiredParam
@@ -626,6 +733,16 @@ function foo($a) : void {
 }
 ```
 
+### MixedReturnStatement
+
+Emitted when Psalm cannot determine the type of a given return statement
+
+```php
+function foo() : int {
+    return $_GET['foo']; // emitted here
+}
+```
+
 ### MixedStringOffsetAssignment
 
 Emitted when assigning a value on a string using a value for which Psalm cannot infer a type
@@ -700,6 +817,20 @@ Emitted when
 
 ```php
 
+```
+
+### NullableReturnStatement
+
+Emitted if a return statement contains a null value, but the function return type is not nullable
+
+```php
+function foo() : string {
+    if (rand(0, 1)) {
+        return "foo";
+    }
+
+    return null; // emitted here
+}
 ```
 
 ### NullArgument

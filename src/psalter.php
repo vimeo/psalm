@@ -62,6 +62,10 @@ Options:
     --dry-run
         Shows a diff of all the changes, without making them
 
+    --safe-types
+        Only update PHP types when the new type information comes from other PHP types,
+        as opposed to type information that just comes from docblocks
+
     --php-version=PHP_MAJOR_VERSION.PHP_MINOR_VERSION
 
     --issues=IssueType1,IssueType2

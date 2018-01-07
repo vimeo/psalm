@@ -449,6 +449,22 @@ class FileManipulationTest extends TestCase
                 ['InvalidReturnType'],
                 true,
             ],
+            'fixInvalidIntReturnTypeThatIsNotPhpCompatible70' => [
+                '<?php
+                    function foo() : string {
+                        return rand(0, 1) ? "hello" : false;
+                    }',
+                '<?php
+                    /**
+                     * @return string|false
+                     */
+                    function foo()  {
+                        return rand(0, 1) ? "hello" : false;
+                    }',
+                '7.0',
+                ['InvalidFalsableReturnType'],
+                true,
+            ],
             'fixInvalidIntReturnTypeJustInTypehintWithComment70' => [
                 '<?php
                     function foo() /** cool : beans */ : int /** cool : beans */ {
