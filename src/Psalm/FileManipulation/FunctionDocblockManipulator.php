@@ -50,6 +50,27 @@ class FunctionDocblockManipulator
     /** @var ?string */
     private $new_psalm_return_type;
 
+    /** @var array<string, int> */
+    private $param_typehint_area_starts = [];
+
+    /** @var array<string, int> */
+    private $param_typehint_starts = [];
+
+    /** @var array<string, int> */
+    private $param_typehint_ends = [];
+
+    /** @var array<string, string> */
+    private $new_php_param_types = [];
+
+    /** @var array<string, bool> */
+    private $param_type_is_php_compatible = [];
+
+    /** @var array<string, string> */
+    private $new_phpdoc_param_types = [];
+
+    /** @var array<string, string> */
+    private $new_psalm_param_types = [];
+
     /** @var string */
     private $indentation;
 
@@ -91,6 +112,8 @@ class FunctionDocblockManipulator
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
         $file_contents = $project_checker->getFileContents($file_path);
+
+
 
         $last_arg_position = $stmt->params
             ? (int) $stmt->params[count($stmt->params) - 1]->getAttribute('endFilePos')
@@ -158,7 +181,7 @@ class FunctionDocblockManipulator
     }
 
     /**
-     * Sets the new docblock return type
+     * Sets the new return type
      *
      * @param   ?string     $php_type
      * @param   string      $new_type
@@ -178,6 +201,30 @@ class FunctionDocblockManipulator
     }
 
     /**
+     * Sets a new param type
+     *
+     * @param   string      $param_name
+     * @param   ?string     $php_type
+     * @param   string      $new_type
+     * @param   string      $phpdoc_type
+     * @param   bool        $is_php_compatible
+     *
+     * @return  void
+     */
+    public function setParamType($param_name, $php_type, $new_type, $phpdoc_type, $is_php_compatible)
+    {
+
+        $new_type = str_replace(['<mixed, mixed>', '<empty, empty>'], '', $new_type);
+
+        if ($php_type) {
+            $this->new_php_param_types[$param_name] = $php_type;
+        }
+        $this->new_phpdoc_param_types[$param_name] = $phpdoc_type;
+        $this->new_psalm_param_types[$param_name] = $new_type;
+        $this->param_type_is_php_compatible[$param_name] = $is_php_compatible;
+    }
+
+    /**
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
      *
@@ -191,6 +238,27 @@ class FunctionDocblockManipulator
             $parsed_docblock = CommentChecker::parseDocComment((string)$docblock);
         } else {
             $parsed_docblock = ['description' => ''];
+        }
+
+        foreach ($this->new_phpdoc_param_types as $param_name => $phpdoc_type) {
+            $found_in_params = false;
+            $new_param_block = $phpdoc_type . ' ' . '$' . $param_name;
+
+            if (isset($parsed_docblock['specials']['param'])) {
+                foreach ($parsed_docblock['specials']['param'] as &$param_block) {
+                    $doc_parts = CommentChecker::splitDocLine($param_block);
+
+                    if ($doc_parts[1] === '$' . $param_name) {
+                        $param_block = $new_param_block;
+                        $found_in_params = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$found_in_params) {
+                $parsed_docblock['specials']['params'][] = $new_param_block;
+            }
         }
 
         if ($this->new_phpdoc_return_type) {

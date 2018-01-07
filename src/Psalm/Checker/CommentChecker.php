@@ -380,7 +380,7 @@ class CommentChecker
      *
      * @return array<string>
      */
-    protected static function splitDocLine($return_block)
+    public static function splitDocLine($return_block)
     {
         $brackets = '';
 
