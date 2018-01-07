@@ -181,12 +181,12 @@ class CodeLocation
                     break;
 
                 case self::FUNCTION_RETURN_TYPE:
-                    $regex = '/\\:\s+(\\??[A-Za-z0-9_\\\\\[\]]+)/';
+                    $regex = '/\\:\s+(\\??\s*[A-Za-z0-9_\\\\\[\]]+)/';
                     $match_offset = 1;
                     break;
 
                 case self::FUNCTION_PARAM_TYPE:
-                    $regex = '/^(\\??[A-Za-z0-9_\\\\\[\]]+)\s/';
+                    $regex = '/^(\\??\s*[A-Za-z0-9_\\\\\[\]]+)\s/';
                     $match_offset = 1;
                     break;
 
