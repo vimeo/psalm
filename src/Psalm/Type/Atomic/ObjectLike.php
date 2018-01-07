@@ -72,7 +72,10 @@ class ObjectLike extends \Psalm\Type\Atomic
                          *
                          * @return string
                          */
-                        function ($name, Union $type) use (
+                        function (
+                            $name,
+                            Union $type
+                        ) use (
                             $namespace,
                             $aliased_classes,
                             $this_class,
