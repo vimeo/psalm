@@ -159,6 +159,11 @@ class FunctionDocblockManipulator
                         $in_multi_line_comment = true;
                         ++$i;
                     }
+
+                    if ($chars[$i + 1] === '/') {
+                        $in_single_line_comment = true;
+                        ++$i;
+                    }
                     continue;
 
                 case '*':
