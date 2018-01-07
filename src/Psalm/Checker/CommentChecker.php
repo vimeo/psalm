@@ -552,19 +552,15 @@ class CommentChecker
         }
 
         if ($parsed_doc_comment['specials']) {
-            $special_type_lengths = array_map('strlen', array_keys($parsed_doc_comment['specials']));
-            /** @var int */
-            $special_type_width = max($special_type_lengths) + 1;
-
             $last_type = null;
 
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
-                if ($last_type !== null && ($last_type !== 'return' || $type !== 'psalm-return')) {
+                if ($last_type !== null && ($last_type !== 'return' || $last_type !== 'psalm-return')) {
                     $doc_comment_text .= $left_padding . ' *' . PHP_EOL;
                 }
 
                 foreach ($lines as $line) {
-                    $doc_comment_text .= $left_padding . ' * @' . str_pad($type, $special_type_width) . $line . PHP_EOL;
+                    $doc_comment_text .= $left_padding . ' * @' . $type . ' ' . $line . PHP_EOL;
                 }
 
                 $last_type = $type;

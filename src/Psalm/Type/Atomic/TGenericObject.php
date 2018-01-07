@@ -17,4 +17,12 @@ class TGenericObject extends TNamedObject implements Generic
         $this->value = $value;
         $this->type_params = $type_params;
     }
+
+    /**
+     * @return bool
+     */
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }

@@ -3,8 +3,6 @@ namespace Psalm;
 
 use LSS\Array2XML;
 use Psalm\Checker\ProjectChecker;
-use Psalm\FileManipulation\FileManipulation;
-use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\CodeIssue;
 
 class IssueBuffer
@@ -81,24 +79,13 @@ class IssueBuffer
     public static function add(CodeIssue $e)
     {
         $config = Config::getInstance();
-        $project_checker = ProjectChecker::getInstance();
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
-        $issues_to_fix = \Psalm\Checker\ProjectChecker::getInstance()->getIssuesToFix();
+        $project_checker = ProjectChecker::getInstance();
 
-        if (isset($issues_to_fix[$issue_type])
-            && $e instanceof \Psalm\Issue\FixableCodeIssue
-            && $replacement_text = $e->getReplacementText()
-        ) {
-            $code_location = $e->getLocation();
-            $bounds = $code_location->getSelectionBounds();
-            FileManipulationBuffer::add(
-                $e->getFilePath(),
-                [new FileManipulation($bounds[0], $bounds[1], $replacement_text)]
-            );
-
+        if ($project_checker->alter_code) {
             return false;
         }
 

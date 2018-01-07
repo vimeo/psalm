@@ -1023,7 +1023,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 if ($storage->return_type
                     && !$storage->return_type->isMixed()
-                    && !$project_checker->add_docblocks
                 ) {
                     $inferred_type = ExpressionChecker::fleshOutType(
                         $project_checker,

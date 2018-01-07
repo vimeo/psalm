@@ -252,6 +252,21 @@ abstract class Atomic
     }
 
     /**
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  int           $php_major_version
+     * @param  int           $php_minor_version
+     *
+     * @return ?string
+     */
+    abstract public function toPhpString(array $aliased_classes, $this_class, $php_major_version, $php_minor_version);
+
+    /**
+     * @return bool
+     */
+    abstract public function canBeFullyExpressedInPhp();
+
+    /**
      * @return void
      */
     public function setFromDocblock()
