@@ -257,6 +257,42 @@ class FileManipulationTest extends TestCase
                 '7.0',
                 ['InvalidReturnType'],
             ],
+            'fixMismatchingDocblockReturnType70' => [
+                '<?php
+                    /**
+                     * @return int
+                     */
+                    function foo() : string {
+                        return "hello";
+                    }',
+                '<?php
+                    /**
+                     * @return string
+                     */
+                    function foo() : string {
+                        return "hello";
+                    }',
+                '7.0',
+                ['MismatchingDocblockReturnType'],
+            ],
+            'fixMismatchingDocblockParamType70' => [
+                '<?php
+                    /**
+                     * @param int $s
+                     */
+                    function foo(string $s) : string {
+                        return "hello";
+                    }',
+                '<?php
+                    /**
+                     * @param string $s
+                     */
+                    function foo(string $s) : string {
+                        return "hello";
+                    }',
+                '7.0',
+                ['MismatchingDocblockParamType'],
+            ],
             'useUnqualifierPlugin' => [
                 '<?php
                     namespace A\B\C {

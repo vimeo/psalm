@@ -305,6 +305,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $signature_type
                 )
                 ) {
+                    if ($project_checker->alter_code
+                        && isset($project_checker->getIssuesToFix()['MismatchingDocblockParamType'])
+                    ) {
+                        $this->addOrUpdateParamType($project_checker, $function_param->name, $signature_type, true);
+
+                        return null;
+                    }
+
                     if (IssueBuffer::accepts(
                         new MismatchingDocblockParamType(
                             'Parameter $' . $function_param->name . ' has wrong type \'' . $param_type .
@@ -1421,6 +1429,47 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         return null;
+    }
+
+    /**
+     * @param string $param_name
+     * @param bool $docblock_only
+     *
+     * @return void
+     */
+    private function addOrUpdateParamType(
+        ProjectChecker $project_checker,
+        $param_name,
+        Type\Union $inferred_return_type,
+        $docblock_only = false
+    ) {
+        $manipulator = FunctionDocblockManipulator::getForFunction(
+            $project_checker,
+            $this->source->getFilePath(),
+            $this->getMethodId(),
+            $this->function
+        );
+        $manipulator->setParamType(
+            $param_name,
+            !$docblock_only && $project_checker->php_major_version >= 7
+                ? $inferred_return_type->toPhpString(
+                    $this->source->getAliasedClassesFlipped(),
+                    $this->source->getFQCLN(),
+                    $project_checker->php_major_version,
+                    $project_checker->php_minor_version
+                ) : null,
+            $inferred_return_type->toNamespacedString(
+                $this->source->getAliasedClassesFlipped(),
+                $this->source->getFQCLN(),
+                false
+            ),
+            $inferred_return_type->toNamespacedString(
+                $this->source->getAliasedClassesFlipped(),
+                $this->source->getFQCLN(),
+                true
+            ),
+            $inferred_return_type->canBeFullyExpressedInPhp()
+        );
     }
 
     /**
