@@ -89,13 +89,14 @@ class Union
     }
 
     /**
+     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         return implode(
             '|',
@@ -103,8 +104,8 @@ class Union
                 /**
                  * @return string
                  */
-                function (Atomic $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {
-                    return $type->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
+                function (Atomic $type) use ($namespace, $aliased_classes, $this_class, $use_phpdoc_format) {
+                    return $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
                 },
                 $this->types
             )
@@ -112,6 +113,7 @@ class Union
     }
 
     /**
+     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
@@ -119,8 +121,13 @@ class Union
      *
      * @return ?string
      */
-    public function toPhpString(array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
-    {
+    public function toPhpString(
+        $namespace,
+        array $aliased_classes,
+        $this_class,
+        $php_major_version,
+        $php_minor_version
+    ) {
         $nullable = false;
 
         if (count($this->types) > 2
@@ -145,6 +152,7 @@ class Union
         $atomic_type = array_values($types)[0];
 
         $atomic_type_string = $atomic_type->toPhpString(
+            $namespace,
             $aliased_classes,
             $this_class,
             $php_major_version,

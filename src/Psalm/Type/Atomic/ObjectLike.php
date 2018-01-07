@@ -44,16 +44,22 @@ class ObjectLike extends \Psalm\Type\Atomic
     }
 
     /**
+     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         if ($use_phpdoc_format) {
-            return $this->getGenericArrayType()->toNamespacedString($aliased_classes, $this_class, $use_phpdoc_format);
+            return $this->getGenericArrayType()->toNamespacedString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $use_phpdoc_format
+            );
         }
 
         return 'array{' .
@@ -66,8 +72,14 @@ class ObjectLike extends \Psalm\Type\Atomic
                          *
                          * @return string
                          */
-                        function ($name, Union $type) use ($aliased_classes, $this_class, $use_phpdoc_format) {
+                        function ($name, Union $type) use (
+                            $namespace,
+                            $aliased_classes,
+                            $this_class,
+                            $use_phpdoc_format
+                        ) {
                             return $name . ':' . $type->toNamespacedString(
+                                $namespace,
                                 $aliased_classes,
                                 $this_class,
                                 $use_phpdoc_format
@@ -81,6 +93,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     }
 
     /**
+     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
@@ -88,7 +101,7 @@ class ObjectLike extends \Psalm\Type\Atomic
      *
      * @return string
      */
-    public function toPhpString(array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
+    public function toPhpString($namespace, array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
     {
         return $this->getKey();
     }
