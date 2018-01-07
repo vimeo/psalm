@@ -1056,7 +1056,14 @@ class ProjectChecker
         if ($docblock_update_count) {
             if ($dry_run) {
                 echo $file_path . ':' . PHP_EOL;
-                $differ = new \PhpCsFixer\Differ\UnifiedDiffer();
+
+                $differ = new \PhpCsFixer\Diff\v2_0\Differ(
+                    new \PhpCsFixer\Diff\GeckoPackages\DiffOutputBuilder\UnifiedDiffOutputBuilder([
+                        'fromFile' => 'Original',
+                        'toFile' => 'New',
+                    ])
+                );
+
                 echo (string) $differ->diff($this->getFileContents($file_path), $existing_contents);
 
                 return;
