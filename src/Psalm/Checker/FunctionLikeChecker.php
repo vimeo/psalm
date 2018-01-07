@@ -1203,7 +1203,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         return null;
                     }
 
-                    $this->addOrUpdateReturnType($project_checker, $inferred_return_type);
+                    $this->addOrUpdateReturnType(
+                        $project_checker,
+                        $inferred_return_type,
+                        $project_checker->only_replace_php_types_with_non_docblock_types
+                            && $inferred_return_type->from_docblock
+                    );
 
                     return null;
                 }
@@ -1228,7 +1233,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     return null;
                 }
 
-                $this->addOrUpdateReturnType($project_checker, $inferred_return_type);
+                $this->addOrUpdateReturnType(
+                    $project_checker,
+                    $inferred_return_type,
+                    $project_checker->only_replace_php_types_with_non_docblock_types
+                        && $inferred_return_type->from_docblock
+                );
 
                 return null;
             }
@@ -1323,7 +1333,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['NullableFunctionReturnType'])
                 ) {
-                    $this->addOrUpdateReturnType($project_checker, $inferred_return_type);
+                    $this->addOrUpdateReturnType(
+                        $project_checker,
+                        $inferred_return_type,
+                        $project_checker->only_replace_php_types_with_non_docblock_types
+                            && $inferred_return_type->from_docblock
+                    );
 
                     return null;
                 }
@@ -1347,7 +1362,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['FalsableFunctionReturnType'])
                 ) {
-                    $this->addOrUpdateReturnType($project_checker, $inferred_return_type);
+                    $this->addOrUpdateReturnType(
+                        $project_checker,
+                        $inferred_return_type,
+                        $project_checker->only_replace_php_types_with_non_docblock_types
+                            && $inferred_return_type->from_docblock
+                    );
 
                     return null;
                 }
@@ -1390,7 +1410,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     if ($project_checker->alter_code
                         && isset($project_checker->getIssuesToFix()['InvalidReturnType'])
                     ) {
-                        $this->addOrUpdateReturnType($project_checker, $inferred_return_type);
+                        $this->addOrUpdateReturnType(
+                            $project_checker,
+                            $inferred_return_type,
+                            $project_checker->only_replace_php_types_with_non_docblock_types
+                                && $inferred_return_type->from_docblock
+                        );
 
                         return null;
                     }
@@ -1410,7 +1435,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['LessSpecificReturnType'])
                 ) {
-                    $this->addOrUpdateReturnType($project_checker, $inferred_return_type);
+                    $this->addOrUpdateReturnType(
+                        $project_checker,
+                        $inferred_return_type,
+                        $project_checker->only_replace_php_types_with_non_docblock_types
+                            && $inferred_return_type->from_docblock
+                    );
 
                     return null;
                 }

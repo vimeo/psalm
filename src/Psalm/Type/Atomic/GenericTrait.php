@@ -80,6 +80,8 @@ trait GenericTrait
      */
     public function setFromDocblock()
     {
+        $this->from_docblock = true;
+
         foreach ($this->type_params as $type_param) {
             $type_param->setFromDocblock();
         }

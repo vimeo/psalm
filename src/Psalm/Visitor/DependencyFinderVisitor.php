@@ -874,6 +874,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     try {
                         $storage->return_type = Type::parseString($fixed_type_string);
                         $storage->return_type->setFromDocblock();
+
+                        if ($storage->signature_return_type) {
+                            foreach ($storage->return_type->types as $key => $type) {
+                                if (isset($storage->signature_return_type->types[$key])) {
+                                    $type->from_docblock = false;
+                                }
+                            }
+                        }
+
                         $storage->return_type->queueClassLikesForScanning($this->project_checker, $this->file_path);
                     } catch (TypeParseTreeException $e) {
                         if (IssueBuffer::accepts(

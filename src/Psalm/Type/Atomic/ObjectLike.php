@@ -200,6 +200,8 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function setFromDocblock()
     {
+        $this->from_docblock = true;
+
         foreach ($this->properties as $property_type) {
             $property_type->setFromDocblock();
         }
