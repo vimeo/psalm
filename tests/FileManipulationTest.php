@@ -78,7 +78,7 @@ class FileManipulationTest extends TestCase
         $this->project_checker->alterCodeAfterCompletion((int) $php_major_version, (int) $php_minor_version);
 
         $file_checker->visitAndAnalyzeMethods($context);
-        $this->project_checker->updateFile($file_path);
+        $this->project_checker->updateFile($file_path, false);
         $this->assertSame($output_code, $this->project_checker->getFileContents($file_path));
     }
 
