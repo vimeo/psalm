@@ -87,7 +87,7 @@ class ProjectChecker
     /**
      * @var bool
      */
-    public $add_docblocks = false;
+    public $alter_code = false;
 
     /**
      * @var bool
@@ -258,6 +258,16 @@ class ProjectChecker
      * @var array<string, bool>
      */
     private $issues_to_fix = [];
+
+    /**
+     * @var int
+     */
+    public $php_major_version = PHP_MAJOR_VERSION;
+
+    /**
+     * @var int
+     */
+    public $php_minor_version = PHP_MINOR_VERSION;
 
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
@@ -1004,7 +1014,7 @@ class ProjectChecker
             }
         }
 
-        if ($this->replace_code || $this->add_docblocks || $this->issues_to_fix) {
+        if ($this->replace_code || $this->alter_code || $this->issues_to_fix) {
             foreach ($this->files_to_report as $file_path) {
                 $this->updateFile($file_path, true);
             }
@@ -1019,7 +1029,7 @@ class ProjectChecker
      */
     public function updateFile($file_path, $output_changes = false)
     {
-        if ($this->add_docblocks) {
+        if ($this->alter_code) {
             $new_return_type_manipulations = FunctionDocblockManipulator::getManipulationsForFile($file_path);
         } else {
             $new_return_type_manipulations = [];
@@ -2082,19 +2092,16 @@ class ProjectChecker
     }
 
     /**
+     * @param int $php_major_version
+     * @param int $php_minor_version
+     *
      * @return void
      */
-    public function addDocblocksAfterCompletion()
+    public function alterCodeAfterCompletion($php_major_version, $php_minor_version)
     {
-        $this->add_docblocks = true;
-    }
-
-    /**
-     * @return void
-     */
-    public function replaceCodeAfterCompletion()
-    {
-        $this->replace_code = true;
+        $this->alter_code = true;
+        $this->php_major_version = $php_major_version;
+        $this->php_minor_version = $php_minor_version;
     }
 
     /**
@@ -2102,13 +2109,15 @@ class ProjectChecker
      *
      * @return void
      */
-    public function fixIssuesAfterCompletion(array $issues)
+    public function setIssuesToFix(array $issues)
     {
         $this->issues_to_fix = $issues;
     }
 
     /**
      * @return array<string, bool>
+     *
+     * @psalm-suppress PossiblyUnusedMethod - need to fix #422
      */
     public function getIssuesToFix()
     {

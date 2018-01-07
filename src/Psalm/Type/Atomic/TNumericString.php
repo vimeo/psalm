@@ -15,4 +15,12 @@ class TNumericString extends TString
     {
         return $this->getKey();
     }
+
+    /**
+     * @return bool
+     */
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }

@@ -15,4 +15,9 @@ class TTrue extends TBool
     {
         return 'true';
     }
+
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }

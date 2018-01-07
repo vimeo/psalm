@@ -1,4 +1,5 @@
 <?php
+require_once('command_functions.php');
 
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
@@ -14,10 +15,9 @@ $options = getopt(
     'f:mhvc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
-        'file:', 'self-check', 'add-docblocks', 'output-format:',
-        'find-dead-code', 'init', 'find-references-to:', 'root:', 'threads:',
-        'report:', 'clear-cache', 'no-cache', 'version', 'plugin:', 'replace-code',
-        'fix-code',
+        'self-check', 'output-format:', 'report:', 'find-dead-code', 'init',
+        'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
+        'version', 'plugin:',
     ]
 );
 
@@ -82,9 +82,6 @@ Options:
     --self-check
         Psalm checks itself
 
-    --add-docblocks
-        Adds correct docblock return types to the given file(s)
-
     --output-format=console
         Changes the output format. Possible values: console, json, xml
 
@@ -111,12 +108,6 @@ Options:
     --plugin=PATH
         Executes a plugin, an alternative to using the Psalm config
 
-    --replace-code
-        Processes any plugin code replacements and updates the code accordingly
-
-    --fix-issues=IssueType1,IssueType2
-        If any issues that can be fixed automatically, Psalm will update the codebase
-
 HELP;
 
     exit;
@@ -142,49 +133,7 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-$autoload_roots = [$current_dir];
-
-$psalm_dir = dirname(__DIR__);
-
-if (realpath($psalm_dir) !== realpath($current_dir)) {
-    $autoload_roots[] = $psalm_dir;
-}
-
-$autoload_files = [];
-
-foreach ($autoload_roots as $autoload_root) {
-    $has_autoloader = false;
-
-    $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
-
-    if (file_exists($nested_autoload_file)) {
-        $autoload_files[] = realpath($nested_autoload_file);
-        $has_autoloader = true;
-    }
-
-    $vendor_autoload_file = $autoload_root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
-
-    if (file_exists($vendor_autoload_file)) {
-        $autoload_files[] = realpath($vendor_autoload_file);
-        $has_autoloader = true;
-    }
-
-    if (!$has_autoloader) {
-        $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
-
-        if (!isset($options['r'])) {
-            $error_message .=
-                PHP_EOL . 'Add a --root=[your/project/directory] flag to specify a particular project to run Psalm on.';
-        }
-
-        die($error_message . PHP_EOL);
-    }
-}
-
-foreach ($autoload_files as $file) {
-    /** @psalm-suppress UnresolvableInclude */
-    require_once $file;
-}
+requireAutoloaders($current_dir);
 
 if (array_key_exists('v', $options)) {
     /** @var string */
@@ -263,78 +212,11 @@ if (isset($options['i'])) {
     exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
 }
 
-// get vars from options
-$debug = array_key_exists('debug', $options);
-
-if (isset($options['f'])) {
-    $input_paths = is_array($options['f']) ? $options['f'] : [$options['f']];
-} else {
-    $input_paths = $argv ? $argv : null;
-}
-
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
     : ProjectChecker::TYPE_CONSOLE;
 
-$paths_to_check = null;
-
-if ($input_paths) {
-    $filtered_input_paths = [];
-
-    for ($i = 0; $i < count($input_paths); ++$i) {
-        /** @var string */
-        $input_path = $input_paths[$i];
-
-        if (realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalm')) {
-            continue;
-        }
-
-        if ($input_path[0] === '-' && strlen($input_path) === 2) {
-            if ($input_path[1] === 'c' || $input_path[1] === 'f') {
-                ++$i;
-            }
-            continue;
-        }
-
-        if ($input_path[0] === '-' && $input_path[2] === '=') {
-            continue;
-        }
-
-        if (substr($input_path, 0, 2) === '--' && strlen($input_path) > 2) {
-            continue;
-        }
-
-        $filtered_input_paths[] = $input_path;
-    }
-
-    stream_set_blocking(STDIN, false);
-
-    if ($filtered_input_paths === ['-'] && $stdin = fgets(STDIN)) {
-        $filtered_input_paths = preg_split('/\s+/', trim($stdin));
-    }
-
-    foreach ($filtered_input_paths as $i => $path_to_check) {
-        if ($path_to_check[0] === '-') {
-            die('Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
-        }
-
-        if (!file_exists($path_to_check)) {
-            die('Cannot locate ' . $path_to_check . PHP_EOL);
-        }
-
-        $path_to_check = realpath($path_to_check);
-
-        if (!$path_to_check) {
-            die('Error getting realpath for file' . PHP_EOL);
-        }
-
-        $paths_to_check[] = $path_to_check;
-    }
-
-    if (!$paths_to_check) {
-        $paths_to_check = null;
-    }
-}
+$paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
 $plugins = [];
 
@@ -353,11 +235,9 @@ if ($path_to_config === false) {
     die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
 }
 
-$use_color = !array_key_exists('m', $options);
-
 $show_info = isset($options['show-info'])
-            ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
-            : true;
+    ? $options['show-info'] !== 'false' && $options['show-info'] !== '0'
+    : true;
 
 $is_diff = isset($options['diff']);
 
@@ -366,8 +246,6 @@ $find_dead_code = isset($options['find-dead-code']);
 $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
     ? $options['find-references-to']
     : null;
-
-$add_docblocks = isset($options['add-docblocks']);
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
@@ -378,11 +256,11 @@ $cache_provider = isset($options['no-cache'])
 $project_checker = new ProjectChecker(
     new Psalm\Provider\FileProvider(),
     $cache_provider,
-    $use_color,
+    !array_key_exists('m', $options),
     $show_info,
     $output_format,
     $threads,
-    $debug,
+    array_key_exists('debug', $options),
     $find_dead_code || $find_references_to !== null,
     $find_references_to,
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
@@ -415,25 +293,6 @@ if (!$config) {
 /** @var string $plugin_path */
 foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
-}
-
-if (isset($options['replace-code'])) {
-    $project_checker->replaceCodeAfterCompletion();
-}
-
-if (isset($options['fix-issues'])) {
-    if (!is_string($options['fix-issues']) || !$options['fix-issues']) {
-        die('Expecting a comma-separated string of issues' . PHP_EOL);
-    }
-
-    $issues = explode(',', $options['fix-issues']);
-
-    $keyed_issues = [];
-    foreach ($issues as $issue) {
-        $keyed_issues[$issue] = true;
-    }
-
-    $project_checker->fixIssuesAfterCompletion($keyed_issues);
 }
 
 /** @psalm-suppress MixedArgument */

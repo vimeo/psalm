@@ -17,4 +17,12 @@ abstract class T extends TString
     {
         $this->typeof = $typeof;
     }
+
+    /**
+     * @return bool
+     */
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }
