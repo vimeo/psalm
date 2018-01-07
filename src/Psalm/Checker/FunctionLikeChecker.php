@@ -310,7 +310,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     ) {
                         $this->addOrUpdateParamType($project_checker, $function_param->name, $signature_type, true);
 
-                        return null;
+                        continue;
                     }
 
                     if (IssueBuffer::accepts(

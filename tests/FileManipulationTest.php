@@ -293,30 +293,34 @@ class FileManipulationTest extends TestCase
                 '7.0',
                 ['MismatchingDocblockParamType'],
             ],
-            'fixNamespacedMismatchingDocblockParamType70' => [
+            'fixNamespacedMismatchingDocblockParamsType70' => [
                 '<?php
                     namespace Foo\Bar {
                         class A {
                             /**
                              * @param \B $b
+                             * @param \C $c
                              */
-                            function foo(B $b) : string {
+                            function foo(B $b, C $c) : string {
                                 return "hello";
                             }
                         }
                         class B {}
+                        class C {}
                     }',
                 '<?php
                     namespace Foo\Bar {
                         class A {
                             /**
                              * @param B $b
+                             * @param C $c
                              */
-                            function foo(B $b) : string {
+                            function foo(B $b, C $c) : string {
                                 return "hello";
                             }
                         }
                         class B {}
+                        class C {}
                     }',
                 '7.0',
                 ['MismatchingDocblockParamType'],
