@@ -1453,17 +1453,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $param_name,
             !$docblock_only && $project_checker->php_major_version >= 7
                 ? $inferred_return_type->toPhpString(
+                    $this->source->getNamespace(),
                     $this->source->getAliasedClassesFlipped(),
                     $this->source->getFQCLN(),
                     $project_checker->php_major_version,
                     $project_checker->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
+                $this->source->getNamespace(),
                 $this->source->getAliasedClassesFlipped(),
                 $this->source->getFQCLN(),
                 false
             ),
             $inferred_return_type->toNamespacedString(
+                $this->source->getNamespace(),
                 $this->source->getAliasedClassesFlipped(),
                 $this->source->getFQCLN(),
                 true
@@ -1491,17 +1494,20 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $manipulator->setReturnType(
             !$docblock_only && $project_checker->php_major_version >= 7
                 ? $inferred_return_type->toPhpString(
+                    $this->source->getNamespace(),
                     $this->source->getAliasedClassesFlipped(),
                     $this->source->getFQCLN(),
                     $project_checker->php_major_version,
                     $project_checker->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
+                $this->source->getNamespace(),
                 $this->source->getAliasedClassesFlipped(),
                 $this->source->getFQCLN(),
                 false
             ),
             $inferred_return_type->toNamespacedString(
+                $this->source->getNamespace(),
                 $this->source->getAliasedClassesFlipped(),
                 $this->source->getFQCLN(),
                 true

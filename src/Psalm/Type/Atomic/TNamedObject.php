@@ -45,16 +45,24 @@ class TNamedObject extends Atomic
     }
 
     /**
+     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  bool          $use_phpdoc_format
      *
      * @return string
      */
-    public function toNamespacedString(array $aliased_classes, $this_class, $use_phpdoc_format)
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         if ($this->value === $this_class) {
             $class_parts = explode('\\', $this_class);
+
+            /** @var string */
+            return array_pop($class_parts);
+        }
+
+        if ($namespace && preg_match('/^' . preg_quote($namespace) . '/i', $this->value)) {
+            $class_parts = explode('\\', $this->value);
 
             /** @var string */
             return array_pop($class_parts);
@@ -68,6 +76,7 @@ class TNamedObject extends Atomic
     }
 
     /**
+     * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class
      * @param  int           $php_major_version
@@ -75,9 +84,14 @@ class TNamedObject extends Atomic
      *
      * @return string
      */
-    public function toPhpString(array $aliased_classes, $this_class, $php_major_version, $php_minor_version)
-    {
-        return $this->toNamespacedString($aliased_classes, $this_class, false);
+    public function toPhpString(
+        $namespace,
+        array $aliased_classes,
+        $this_class,
+        $php_major_version,
+        $php_minor_version
+    ) {
+        return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
     public function canBeFullyExpressedInPhp()
