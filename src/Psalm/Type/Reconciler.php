@@ -850,7 +850,7 @@ class Reconciler
         }
 
         if ($existing_var_type->hasType($new_var_type)) {
-            $atomic_type = $existing_var_type->types[$new_var_type];
+            $atomic_type = clone $existing_var_type->types[$new_var_type];
             $atomic_type->from_docblock = false;
 
             return new Type\Union([$atomic_type]);

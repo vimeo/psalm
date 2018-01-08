@@ -301,7 +301,7 @@ class ProjectChecker
         $debug_output = false,
         $collect_references = false,
         $find_references_to = null,
-        string $reports = null
+        $reports = null
     ) {
         $this->file_provider = $file_provider;
         $this->cache_provider = $cache_provider;
