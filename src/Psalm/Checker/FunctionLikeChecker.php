@@ -1282,14 +1282,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
-            if (IssueBuffer::accepts(
-                new InvalidReturnType(
-                    'No return statements were found for method ' . $cased_method_id .
-                        ' but return type \'' . $declared_return_type . '\' was expected',
-                    $return_type_location
-                )
-            )) {
-                return false;
+            if (!$declared_return_type->from_docblock || !$declared_return_type->isNullable()) {
+                if (IssueBuffer::accepts(
+                    new InvalidReturnType(
+                        'No return statements were found for method ' . $cased_method_id .
+                            ' but return type \'' . $declared_return_type . '\' was expected',
+                        $return_type_location
+                    )
+                )) {
+                    return false;
+                }
             }
 
             return null;

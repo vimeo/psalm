@@ -876,9 +876,16 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $storage->return_type->setFromDocblock();
 
                         if ($storage->signature_return_type) {
+                            $all_types_match = true;
                             foreach ($storage->return_type->types as $key => $type) {
                                 if (isset($storage->signature_return_type->types[$key])) {
                                     $type->from_docblock = false;
+                                } else {
+                                    $all_types_match = false;
+                                }
+
+                                if ($all_types_match) {
+                                    $storage->return_type->from_docblock = false;
                                 }
                             }
                         }
