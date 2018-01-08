@@ -190,6 +190,10 @@ class Union
             unset($types['null']);
         }
 
+        if (!$types) {
+            return null;
+        }
+
         $atomic_type = array_values($types)[0];
 
         return $atomic_type->canBeFullyExpressedInPhp();
