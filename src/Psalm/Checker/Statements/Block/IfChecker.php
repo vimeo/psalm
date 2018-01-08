@@ -140,10 +140,36 @@ class IfChecker
 
         $if_context->inside_conditional = false;
 
+        $mixed_var_ids = [];
+
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed()) {
+                $mixed_var_ids[] = $var_id;
+            }
+        }
+
         $if_clauses = AlgebraChecker::getFormula(
             $stmt->cond,
             $context->self,
             $statements_checker
+        );
+
+        $if_clauses = array_filter(
+            $if_clauses,
+            /** @return bool */
+            function (Clause $c) use ($mixed_var_ids) {
+                $keys = array_keys($c->possibilities);
+
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-|$)/', $key)) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
         );
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
@@ -654,10 +680,36 @@ class IfChecker
 
         $elseif_context->inside_conditional = false;
 
+        $mixed_var_ids = [];
+
+        foreach ($elseif_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed()) {
+                $mixed_var_ids[] = $var_id;
+            }
+        }
+
         $elseif_clauses = AlgebraChecker::getFormula(
             $elseif->cond,
             $statements_checker->getFQCLN(),
             $statements_checker
+        );
+
+        $elseif_clauses = array_filter(
+            $elseif_clauses,
+            /** @return bool */
+            function (Clause $c) use ($mixed_var_ids) {
+                $keys = array_keys($c->possibilities);
+
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-|$)/', $key)) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
         );
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B

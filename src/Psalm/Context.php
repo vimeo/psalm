@@ -36,6 +36,15 @@ class Context
     public $inside_constructor = false;
 
     /**
+     * Whether or not we're inside an isset call
+     *
+     * Inside isssets Psalm is more lenient about certain things
+     *
+     * @var bool
+     */
+    public $inside_isset = false;
+
+    /**
      * @var ?CodeLocation
      */
     public $include_location = null;
