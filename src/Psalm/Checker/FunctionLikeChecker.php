@@ -1276,7 +1276,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
-            if ($project_checker->alter_code && isset(getIssuesToFix()['InvalidReturnType'])) {
+            if ($project_checker->alter_code && isset($project_checker->getIssuesToFix()['InvalidReturnType'])) {
                 $this->addOrUpdateReturnType($project_checker, Type::getVoid());
 
                 return null;
