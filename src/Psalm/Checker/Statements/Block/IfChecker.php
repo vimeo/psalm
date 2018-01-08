@@ -162,7 +162,7 @@ class IfChecker
 
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-|$)/', $key)) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-)/', $key)) {
                             return false;
                         }
                     }
@@ -702,7 +702,7 @@ class IfChecker
 
                 foreach ($keys as $key) {
                     foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-|$)/', $key)) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-)/', $key)) {
                             return false;
                         }
                     }

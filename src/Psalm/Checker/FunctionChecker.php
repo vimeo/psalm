@@ -28,15 +28,10 @@ class FunctionChecker extends FunctionLikeChecker
     public static $stubbed_functions = [];
 
     /**
-     * @param mixed                         $function
      * @param StatementsSource              $source
      */
-    public function __construct($function, StatementsSource $source)
+    public function __construct(PhpParser\Node\Stmt\Function_ $function, StatementsSource $source)
     {
-        if (!$function instanceof PhpParser\Node\Stmt\Function_) {
-            throw new \InvalidArgumentException('Bad');
-        }
-
         parent::__construct($function, $source);
     }
 
@@ -370,7 +365,7 @@ class FunctionChecker extends FunctionLikeChecker
                 return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
             }
 
-            return new Type\Union([new Type\Atomic\TArray([new Type\Atomic\TMixed, new Type\Atomic\TString])]);
+            return new Type\Union([new Type\Atomic\TArray([Type::getMixed(), Type::getString()])]);
         }
 
         if ($call_args) {
