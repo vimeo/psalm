@@ -149,7 +149,7 @@ class Union
             $nullable = true;
         }
 
-        if ($types) {
+        if (!$types) {
             return null;
         }
 
