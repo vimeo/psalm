@@ -365,6 +365,14 @@ class FunctionChecker extends FunctionLikeChecker
             throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
         }
 
+        if ($call_map_key === 'getenv') {
+            if (count($call_args)) {
+                return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
+            }
+
+            return new Type\Union([new Type\Atomic\TArray([new Type\Atomic\TMixed, new Type\Atomic\TString])]);
+        }
+
         if ($call_args) {
             if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'], true)) {
                 if (isset($call_args[2]->value->inferredType)) {

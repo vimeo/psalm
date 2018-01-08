@@ -396,6 +396,15 @@ class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
+            'getenv' => [
+                '<?php
+                    $a = getenv();
+                    $b = getenv("some_key");',
+                'assertions' => [
+                    '$a' => 'array<mixed, string>',
+                    '$b' => 'string|false',
+                ],
+            ],
         ];
     }
 

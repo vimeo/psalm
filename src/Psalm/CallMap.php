@@ -2484,7 +2484,7 @@ return [
 'get_defined_constants' => ['array', 'categorize='=>'bool'],
 'get_defined_functions' => ['string[][]', 'exclude_disabled='=>'bool'],
 'get_defined_vars' => ['array'],
-'getenv' => ['string|string[]', 'varname='=>'string', 'local_only='=>'bool'],
+'getenv' => ['string|string[]|false', 'varname='=>'string', 'local_only='=>'bool'],
 'get_extension_funcs' => ['array', 'extension_name'=>'string'],
 'get_headers' => ['array', 'url'=>'string', 'format='=>'int'],
 'gethostbyaddr' => ['string', 'ip_address'=>'string'],
