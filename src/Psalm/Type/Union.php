@@ -149,6 +149,10 @@ class Union
             $nullable = true;
         }
 
+        if ($types) {
+            return null;
+        }
+
         $atomic_type = array_values($types)[0];
 
         $atomic_type_string = $atomic_type->toPhpString(
