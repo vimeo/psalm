@@ -1,50 +1,36 @@
-<phpunit
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/4.5/phpunit.xsd"
-    backupGlobals="true"
-    backupStaticAttributes="false"
-    bootstrap="tests/bootstrap.php"
-    colors="false"
-    convertErrorsToExceptions="true"
-    convertNoticesToExceptions="true"
-    convertWarningsToExceptions="true"
-    forceCoversAnnotation="false"
-    mapTestClassNameToCoveredClassName="false"
-    printerClass="PHPUnit_TextUI_ResultPrinter"
-    processIsolation="false"
-    stopOnError="false"
-    stopOnFailure="false"
-    stopOnIncomplete="false"
-    stopOnSkipped="false"
-    stopOnRisky="false"
-    testSuiteLoaderClass="PHPUnit_Runner_StandardTestSuiteLoader"
-    timeoutForSmallTests="1"
-    timeoutForMediumTests="10"
-    timeoutForLargeTests="60"
-    verbose="false">
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/5.7/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         backupGlobals="false"
+         beStrictAboutCoversAnnotation="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         beStrictAboutTodoAnnotatedTests="true"
+         verbose="true">
+    <testsuite name="default">
+        <directory>tests</directory>
+    </testsuite>
 
-    <testsuites>
-        <testsuite name="Psalm suite">
-            <directory>tests</directory>
-        </testsuite>
-    </testsuites>
-    <logging>
-        <log type="coverage-html" target="./build/logs/phpunit-html/"/>
-        <log type="coverage-clover" target="./build/logs/clover.xml"/>
-    </logging>
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
-        <directory suffix=".php">./src/</directory>
-        <exclude>
-            <directory suffix=".php">./src/Psalm/Stubs/</directory>
-            <file>./src/Psalm/CallMap.php</file>
-            <file>./src/psalm.php</file>
-            <file>./src/psalter.php</file>
-            <file>./src/Psalm/Provider/Cache/NoParserCacheProvider.php</file>
-            <file>./src/Psalm/Provider/ParserCacheProvider.php</file>
-            <file>./src/Psalm/PropertyMap.php</file>
-            <directory suffix=".php">./src/Psalm/Issue/</directory>
-        </exclude>
+            <directory suffix=".php">src</directory>
+            <exclude>
+                <directory suffix=".php">src/Psalm/Issue/</directory>
+                <directory suffix=".php">src/Psalm/Stubs/</directory>
+                <file>src/psalm.php</file>
+                <file>src/psalter.php</file>
+                <file>src/Psalm/CallMap.php</file>
+                <file>src/Psalm/PropertyMap.php</file>
+                <file>src/Psalm/Provider/Cache/NoParserCacheProvider.php</file>
+                <file>src/Psalm/Provider/ParserCacheProvider.php</file>
+            </exclude>
         </whitelist>
     </filter>
+
+    <logging>
+        <log type="coverage-clover" target="build/logs/clover.xml"/>
+        <log type="coverage-html" target="build/logs/phpunit-html/"/>
+    </logging>
 </phpunit>
+
