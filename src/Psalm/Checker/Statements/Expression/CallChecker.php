@@ -1280,9 +1280,11 @@ class CallChecker
                 if ($stmt->class->parts[0] === 'parent') {
                     $child_fq_class_name = $context->self;
 
-                    $class_storage = $project_checker->classlike_storage_provider->get($child_fq_class_name);
+                    $class_storage = $child_fq_class_name
+                        ? $project_checker->classlike_storage_provider->get($child_fq_class_name)
+                        : null;
 
-                    if (!$class_storage->parent_classes) {
+                    if (!$class_storage || !$class_storage->parent_classes) {
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot call method on parent as this class does not extend another',
@@ -1299,6 +1301,8 @@ class CallChecker
                     $fq_class_name = $class_storage->parent_classes[0];
 
                     $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+                    $fq_class_name = $class_storage->name;
 
                     if (is_string($stmt->name) && $class_storage->user_defined) {
                         $method_id = $fq_class_name . '::' . strtolower($stmt->name);
