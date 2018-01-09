@@ -18,7 +18,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'self-check', 'output-format:', 'report:', 'find-dead-code', 'init',
         'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
-        'version', 'plugin:', 'profile:',
+        'version', 'plugin:',
     ]
 );
 
@@ -298,10 +298,6 @@ foreach ($plugins as $plugin_path) {
 
 $start_time = (float) microtime(true);
 
-if (isset($options['profile']) && function_exists('tideways_xhprof_enable')) {
-    tideways_xhprof_enable();
-}
-
 if (array_key_exists('self-check', $options)) {
     $project_checker->checkDir(__DIR__);
 } elseif ($paths_to_check === null) {
@@ -314,12 +310,6 @@ if (array_key_exists('self-check', $options)) {
             $project_checker->checkFile($path_to_check);
         }
     }
-}
-
-if (isset($options['profile']) && function_exists('tideways_xhprof_disable')) {
-    /** @psalm-suppress MixedAssignment */
-    $data = tideways_xhprof_disable();
-    file_put_contents('/tmp/psalm.xhprof', serialize($data));
 }
 
 IssueBuffer::finish($project_checker, !$is_diff, $start_time);

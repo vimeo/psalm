@@ -15,7 +15,7 @@ ini_set('memory_limit', '2048M');
 $options = getopt(
     'f:mhr:',
     [
-        'help', 'debug', 'config:', 'file:', 'root:', 'profile:',
+        'help', 'debug', 'config:', 'file:', 'root:',
         'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
     ]
 );
@@ -192,12 +192,6 @@ if ($paths_to_check === null) {
             $project_checker->checkFile($path_to_check);
         }
     }
-}
-
-if (isset($options['profile']) && function_exists('tideways_xhprof_disable')) {
-    /** @psalm-suppress MixedAssignment */
-    $data = tideways_xhprof_disable();
-    file_put_contents('/tmp/psalm.xhprof', serialize($data));
 }
 
 IssueBuffer::finish($project_checker, false, $start_time);

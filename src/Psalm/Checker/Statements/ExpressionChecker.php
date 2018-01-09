@@ -721,7 +721,7 @@ class ExpressionChecker
                     $statements_checker
                 );
 
-                if ((string)$existing_type !== 'array<empty, empty>') {
+                if ($existing_type->getId() !== 'array<empty, empty>') {
                     $context->vars_in_scope[$var_id] = $by_ref_type;
                     $stmt->inferredType = $context->vars_in_scope[$var_id];
 

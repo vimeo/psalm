@@ -841,7 +841,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         }
 
         if ($docblock_info->return_type) {
-            if (!$storage->return_type || (string)$docblock_info->return_type !== (string)$storage->return_type) {
+            if (!$storage->return_type || $docblock_info->return_type !== $storage->return_type->getId()) {
                 $storage->has_template_return_type =
                     $template_types !== null &&
                     count(
