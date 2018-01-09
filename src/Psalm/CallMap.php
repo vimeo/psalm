@@ -8738,7 +8738,7 @@ return [
 'SplFixedArray::offsetUnset' => ['void', 'index'=>''],
 'SplFixedArray::rewind' => ['void'],
 'SplFixedArray::setSize' => ['bool', 'size'=>'int'],
-'SplFixedArray::toArray' => ['object'],
+'SplFixedArray::toArray' => ['array'],
 'SplFixedArray::valid' => ['bool'],
 'SplFixedArray::__wakeup' => ['void'],
 'SplHeap::compare' => ['int', 'value1'=>'', 'value2'=>''],
