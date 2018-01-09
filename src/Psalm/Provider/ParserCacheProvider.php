@@ -140,7 +140,7 @@ class ParserCacheProvider
     }
 
     /**
-     * @param int $start_time
+     * @param float $start_time
      *
      * @return void
      */
@@ -154,7 +154,7 @@ class ParserCacheProvider
 
         $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
 
-        touch($run_cache_location, $start_time);
+        touch($run_cache_location, (int)$start_time);
 
         FileReferenceProvider::removeDeletedFilesFromReferences();
 

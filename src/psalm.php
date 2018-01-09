@@ -3,6 +3,7 @@ require_once('command_functions.php');
 
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
+use Psalm\IssueBuffer;
 
 // show all errors
 error_reporting(-1);
@@ -17,7 +18,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'self-check', 'output-format:', 'report:', 'find-dead-code', 'init',
         'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
-        'version', 'plugin:',
+        'version', 'plugin:', 'profile:',
     ]
 );
 
@@ -295,8 +296,11 @@ foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
 }
 
-/** @psalm-suppress MixedArgument */
-\Psalm\IssueBuffer::setStartTime(microtime(true));
+$start_time = (float) microtime(true);
+
+if (isset($options['profile']) && function_exists('tideways_xhprof_enable')) {
+    tideways_xhprof_enable();
+}
 
 if (array_key_exists('self-check', $options)) {
     $project_checker->checkDir(__DIR__);
@@ -311,3 +315,11 @@ if (array_key_exists('self-check', $options)) {
         }
     }
 }
+
+if (isset($options['profile']) && function_exists('tideways_xhprof_disable')) {
+    /** @psalm-suppress MixedAssignment */
+    $data = tideways_xhprof_disable();
+    file_put_contents('/tmp/psalm.xhprof', serialize($data));
+}
+
+IssueBuffer::finish($project_checker, !$is_diff, $start_time);

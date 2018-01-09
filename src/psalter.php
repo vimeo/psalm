@@ -3,6 +3,7 @@ require_once('command_functions.php');
 
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
+use Psalm\IssueBuffer;
 
 // show all errors
 error_reporting(-1);
@@ -14,7 +15,7 @@ ini_set('memory_limit', '2048M');
 $options = getopt(
     'f:mhr:',
     [
-        'help', 'debug', 'config:', 'file:', 'root:',
+        'help', 'debug', 'config:', 'file:', 'root:', 'profile:',
         'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
     ]
 );
@@ -179,8 +180,7 @@ $project_checker->alterCodeAfterCompletion(
 );
 $project_checker->setIssuesToFix($keyed_issues);
 
-/** @psalm-suppress MixedArgument */
-\Psalm\IssueBuffer::setStartTime(microtime(true));
+$start_time = (float) microtime(true);
 
 if ($paths_to_check === null) {
     $project_checker->check($current_dir);
@@ -193,3 +193,11 @@ if ($paths_to_check === null) {
         }
     }
 }
+
+if (isset($options['profile']) && function_exists('tideways_xhprof_disable')) {
+    /** @psalm-suppress MixedAssignment */
+    $data = tideways_xhprof_disable();
+    file_put_contents('/tmp/psalm.xhprof', serialize($data));
+}
+
+IssueBuffer::finish($project_checker, false, $start_time);
