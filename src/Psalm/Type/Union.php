@@ -191,7 +191,7 @@ class Union
         }
 
         if (!$types) {
-            return null;
+            return false;
         }
 
         $atomic_type = array_values($types)[0];
