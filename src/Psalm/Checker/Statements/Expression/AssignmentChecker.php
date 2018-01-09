@@ -404,6 +404,10 @@ class AssignmentChecker
             )) {
                 return false;
             }
+
+            $context->vars_in_scope[$var_id] = Type::getMixed();
+
+            return Type::getMixed();
         }
 
         return $assign_value_type;
