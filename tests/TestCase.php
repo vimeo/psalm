@@ -27,6 +27,7 @@ class TestCase extends BaseTestCase
      */
     public static function setUpBeforeClass()
     {
+        ini_set('memory_limit', '-1');
         parent::setUpBeforeClass();
         self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
