@@ -10,6 +10,12 @@ cache:
   directories:
     - ./vendor
 
+before_install:
+    # determine INI file
+    - export INI=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+    # disable default memory limit
+    - echo memory_limit = 2G >> $INI
+
 install:
   - composer --prefer-source install
 
