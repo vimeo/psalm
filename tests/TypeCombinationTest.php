@@ -251,6 +251,6 @@ class TypeCombinationTest extends TestCase
      */
     private static function getAtomic($string)
     {
-        return array_values(Type::parseString($string)->types)[0];
+        return array_values(Type::parseString($string)->getTypes())[0];
     }
 }

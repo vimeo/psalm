@@ -451,8 +451,8 @@ abstract class Type
     public static function redefineGenericUnionTypes(array $redefined_vars, Context $context)
     {
         foreach ($redefined_vars as $var_name => $redefined_union_type) {
-            foreach ($redefined_union_type->types as $redefined_atomic_type) {
-                foreach ($context->vars_in_scope[$var_name]->types as $context_type) {
+            foreach ($redefined_union_type->getTypes() as $redefined_atomic_type) {
+                foreach ($context->vars_in_scope[$var_name]->getTypes() as $context_type) {
                     if ($context_type instanceof Type\Atomic\TArray &&
                         $redefined_atomic_type instanceof Type\Atomic\TArray
                     ) {
@@ -501,7 +501,12 @@ abstract class Type
             return $type_1;
         }
 
-        $combined_type = self::combineTypes(array_merge(array_values($type_1->types), array_values($type_2->types)));
+        $combined_type = self::combineTypes(
+            array_merge(
+                array_values($type_1->getTypes()),
+                array_values($type_2->getTypes())
+            )
+        );
 
         if (!$type_1->initialized || !$type_2->initialized) {
             $combined_type->initialized = false;

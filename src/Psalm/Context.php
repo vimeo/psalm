@@ -227,7 +227,7 @@ class Context
                     // if the type changed within the block of statements, process the replacement
                     // also never allow ourselves to remove all types from a union
                     if ((!$new_type || $old_type->getId() !== $new_type->getId())
-                        && ($new_type || count($context_type->types) > 1)
+                        && ($new_type || count($context_type->getTypes()) > 1)
                     ) {
                         $context_type->substitute($old_type, $new_type);
 

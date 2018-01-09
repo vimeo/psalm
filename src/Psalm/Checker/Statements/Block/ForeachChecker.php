@@ -86,7 +86,7 @@ class ForeachChecker
                 }
             }
 
-            foreach ($iterator_type->types as $iterator_type) {
+            foreach ($iterator_type->getTypes() as $iterator_type) {
                 // if it's an empty array, we cannot iterate over it
                 if ($iterator_type instanceof Type\Atomic\TArray
                     && $iterator_type->type_params[1]->isEmpty()

@@ -482,7 +482,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{a:int, 0:int}',
                     '$b' => 'array<string|int, int>',
-                    '$c' => 'array<int|string, int>',
+                    '$c' => 'array<string|int, int>',
                     '$d' => 'array<int|string, int>',
                     '$e' => 'array<int|string, int>',
                 ],
@@ -526,7 +526,7 @@ class ArrayAssignmentTest extends TestCase
                     $e[0][$string] = 5;',
                 'assertions' => [
                     '$b' => 'array{0:array<string|int, int>}',
-                    '$c' => 'array{0:array<int|string, int>}',
+                    '$c' => 'array{0:array<string|int, int>}',
                     '$d' => 'array{0:array<int|string, int>}',
                     '$e' => 'array{0:array<int|string, int>}',
                 ],
@@ -570,7 +570,7 @@ class ArrayAssignmentTest extends TestCase
                     $e["root"][$string] = 5;',
                 'assertions' => [
                     '$b' => 'array{root:array<string|int, int>}',
-                    '$c' => 'array{root:array<int|string, int>}',
+                    '$c' => 'array{root:array<string|int, int>}',
                     '$d' => 'array{root:array<int|string, int>}',
                     '$e' => 'array{root:array<int|string, int>}',
                 ],

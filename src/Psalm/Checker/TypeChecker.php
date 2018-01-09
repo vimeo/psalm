@@ -57,7 +57,7 @@ class TypeChecker
 
         $type_match_found = false;
 
-        foreach ($input_type->types as $input_type_part) {
+        foreach ($input_type->getTypes() as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
             }
@@ -71,7 +71,7 @@ class TypeChecker
             $all_to_string_cast = true;
             $atomic_to_string_cast = false;
 
-            foreach ($container_type->types as $container_type_part) {
+            foreach ($container_type->getTypes() as $container_type_part) {
                 $is_atomic_contained_by = self::isAtomicContainedBy(
                     $project_checker,
                     $input_type_part,
@@ -132,12 +132,12 @@ class TypeChecker
             return true;
         }
 
-        foreach ($type1->types as $type1_part) {
+        foreach ($type1->getTypes() as $type1_part) {
             if ($type1_part instanceof TNull) {
                 continue;
             }
 
-            foreach ($type2->types as $type2_part) {
+            foreach ($type2->getTypes() as $type2_part) {
                 if ($type2_part instanceof TNull) {
                     continue;
                 }
@@ -623,7 +623,7 @@ class TypeChecker
         }
 
         $simple_declared_types = array_filter(
-            array_keys($declared_type->types),
+            array_keys($declared_type->getTypes()),
             /**
              * @param  string $type_value
              *
@@ -635,7 +635,7 @@ class TypeChecker
         );
 
         $simple_inferred_types = array_filter(
-            array_keys($inferred_type->types),
+            array_keys($inferred_type->getTypes()),
             /**
              * @param  string $type_value
              *
@@ -719,12 +719,12 @@ class TypeChecker
             }
         }
 
-        foreach ($declared_type->types as $key => $declared_atomic_type) {
-            if (!isset($inferred_type->types[$key])) {
+        foreach ($declared_type->getTypes() as $key => $declared_atomic_type) {
+            if (!isset($inferred_type->getTypes()[$key])) {
                 continue;
             }
 
-            $inferred_atomic_type = $inferred_type->types[$key];
+            $inferred_atomic_type = $inferred_type->getTypes()[$key];
 
             if (!$declared_atomic_type instanceof Type\Atomic\TArray &&
                 !$declared_atomic_type instanceof Type\Atomic\TGenericObject
@@ -750,12 +750,12 @@ class TypeChecker
             }
         }
 
-        foreach ($declared_type->types as $key => $declared_atomic_type) {
-            if (!isset($inferred_type->types[$key])) {
+        foreach ($declared_type->getTypes() as $key => $declared_atomic_type) {
+            if (!isset($inferred_type->getTypes()[$key])) {
                 continue;
             }
 
-            $inferred_atomic_type = $inferred_type->types[$key];
+            $inferred_atomic_type = $inferred_type->getTypes()[$key];
 
             if (!($declared_atomic_type instanceof Type\Atomic\ObjectLike)) {
                 continue;
@@ -792,7 +792,7 @@ class TypeChecker
      */
     public static function simplifyUnionType(ProjectChecker $project_checker, Type\Union $union)
     {
-        $union_type_count = count($union->types);
+        $union_type_count = count($union->getTypes());
 
         if ($union_type_count === 1 || ($union_type_count === 2 && $union->isNullable())) {
             return $union;
@@ -805,7 +805,7 @@ class TypeChecker
 
         $inverse_contains = [];
 
-        foreach ($union->types as $type_part) {
+        foreach ($union->getTypes() as $type_part) {
             $is_contained_by_other = false;
 
             // don't try to simplify intersection types
@@ -813,7 +813,7 @@ class TypeChecker
                 return $union;
             }
 
-            foreach ($union->types as $container_type_part) {
+            foreach ($union->getTypes() as $container_type_part) {
                 $string_container_part = $container_type_part->getId();
                 $string_input_part = $type_part->getId();
 

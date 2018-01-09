@@ -415,7 +415,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                     if (isset($first_arg->inferredType)) {
                         if ($first_arg->inferredType->hasArray()) {
-                            $array_type = $first_arg->inferredType->types['array'];
+                            $array_type = $first_arg->inferredType->getTypes()['array'];
                             if ($array_type instanceof Type\Atomic\ObjectLike) {
                                 return $array_type->getGenericValueType();
                             }
@@ -481,7 +481,7 @@ class FunctionChecker extends FunctionLikeChecker
                     return Type::getArray();
                 }
 
-                foreach ($call_arg->value->inferredType->types as $type_part) {
+                foreach ($call_arg->value->inferredType->getTypes() as $type_part) {
                     if ($call_arg->unpack) {
                         if (!$type_part instanceof Type\Atomic\TArray) {
                             if ($type_part instanceof Type\Atomic\ObjectLike) {
@@ -495,7 +495,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                         $unpacked_type_parts = [];
 
-                        foreach ($type_part_value_type->types as $value_type_part) {
+                        foreach ($type_part_value_type->getTypes() as $value_type_part) {
                             $unpacked_type_parts[] = $value_type_part;
                         }
                     } else {
@@ -526,11 +526,11 @@ class FunctionChecker extends FunctionLikeChecker
 
                         $inner_key_types = array_merge(
                             $inner_key_types,
-                            array_values($unpacked_type_part->type_params[0]->types)
+                            array_values($unpacked_type_part->type_params[0]->getTypes())
                         );
                         $inner_value_types = array_merge(
                             $inner_value_types,
-                            array_values($unpacked_type_part->type_params[1]->types)
+                            array_values($unpacked_type_part->type_params[1]->getTypes())
                         );
                     }
                 }
@@ -557,10 +557,11 @@ class FunctionChecker extends FunctionLikeChecker
         if ($call_map_key === 'array_filter') {
             $first_arg_array = $first_arg
                 && isset($first_arg->inferredType)
-                && isset($first_arg->inferredType->types['array'])
-                && ($first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray ||
-                    $first_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike)
-            ? $first_arg->inferredType->types['array']
+                && $first_arg->inferredType->hasType('array')
+                && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
+                && ($array_atomic_type instanceof Type\Atomic\TArray ||
+                    $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            ? $array_atomic_type
             : null;
 
             if (!$first_arg_array) {
@@ -591,10 +592,11 @@ class FunctionChecker extends FunctionLikeChecker
         if ($call_map_key === 'array_rand') {
             $first_arg_array = $first_arg
                 && isset($first_arg->inferredType)
-                && isset($first_arg->inferredType->types['array'])
-                && ($first_arg->inferredType->types['array'] instanceof Type\Atomic\TArray ||
-                    $first_arg->inferredType->types['array'] instanceof Type\Atomic\ObjectLike)
-            ? $first_arg->inferredType->types['array']
+                && $first_arg->inferredType->hasType('array')
+                && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
+                && ($array_atomic_type instanceof Type\Atomic\TArray ||
+                    $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            ? $array_atomic_type
             : null;
 
             if (!$first_arg_array) {
@@ -652,19 +654,21 @@ class FunctionChecker extends FunctionLikeChecker
 
         $array_arg_type = $array_arg
                 && isset($array_arg->inferredType)
-                && isset($array_arg->inferredType->types['array'])
-                && $array_arg->inferredType->types['array'] instanceof Type\Atomic\TArray
-            ? $array_arg->inferredType->types['array']
+                && isset($array_arg->inferredType->getTypes()['array'])
+                && ($array_atomic_type = $array_arg->inferredType->getTypes()['array'])
+                && $array_atomic_type instanceof Type\Atomic\TArray
+            ? $array_atomic_type
             : null;
 
         if (isset($call_args[$function_index])) {
             $function_call_arg = $call_args[$function_index];
 
-            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure &&
-                isset($function_call_arg->value->inferredType) &&
-                $function_call_arg->value->inferredType->types['Closure'] instanceof Type\Atomic\Fn
+            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
+                && isset($function_call_arg->value->inferredType)
+                && ($closure_atomic_type = $function_call_arg->value->inferredType->getTypes()['Closure'])
+                && $closure_atomic_type instanceof Type\Atomic\Fn
             ) {
-                $closure_return_type = $function_call_arg->value->inferredType->types['Closure']->return_type;
+                $closure_return_type = $closure_atomic_type->return_type;
 
                 if ($closure_return_type->isVoid()) {
                     IssueBuffer::accepts(

@@ -877,8 +877,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                         if ($storage->signature_return_type) {
                             $all_types_match = true;
-                            foreach ($storage->return_type->types as $key => $type) {
-                                if (isset($storage->signature_return_type->types[$key])) {
+                            foreach ($storage->return_type->getTypes() as $key => $type) {
+                                if (isset($storage->signature_return_type->getTypes()[$key])) {
                                     $type->from_docblock = false;
                                 } else {
                                     $all_types_match = false;
@@ -1097,7 +1097,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if (!$storage_param->type || $storage_param->type->isMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                    $new_param_type->types['null'] = new Type\Atomic\TNull();
+                    $new_param_type->addType(new Type\Atomic\TNull());
                 }
 
                 $storage_param->type = $new_param_type;
@@ -1110,7 +1110,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
-                $new_param_type->types['null'] = new Type\Atomic\TNull();
+                $new_param_type->addType(new Type\Atomic\TNull());
             }
 
             $storage_param->type = $new_param_type;

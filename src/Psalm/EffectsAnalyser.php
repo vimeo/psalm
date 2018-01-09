@@ -42,7 +42,7 @@ class EffectsAnalyser
                     if (!$stmt->expr) {
                         $return_types[] = new Atomic\TVoid();
                     } elseif (isset($stmt->inferredType)) {
-                        $return_types = array_merge(array_values($stmt->inferredType->types), $return_types);
+                        $return_types = array_merge(array_values($stmt->inferredType->getTypes()), $return_types);
 
                         if ($stmt->inferredType->ignore_nullable_issues) {
                             $ignore_nullable_issues = true;
@@ -196,7 +196,7 @@ class EffectsAnalyser
             return [new Atomic\TMixed()];
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             if (isset($stmt->inferredType)) {
-                return array_values($stmt->inferredType->types);
+                return array_values($stmt->inferredType->getTypes());
             }
 
             return [new Atomic\TMixed()];

@@ -56,8 +56,8 @@ class TypeReconciliationTest extends TestCase
             (string) $reconciled
         );
 
-        if ($reconciled && is_array($reconciled->types)) {
-            foreach ($reconciled->types as $type) {
+        if ($reconciled && is_array($reconciled->getTypes())) {
+            foreach ($reconciled->getTypes() as $type) {
                 $this->assertInstanceOf('Psalm\Type\Atomic', $type);
             }
         }

@@ -11,7 +11,7 @@ class Union
     /**
      * @var array<string, Atomic>
      */
-    public $types = [];
+    private $types = [];
 
     /**
      * Whether the type originated in a docblock
@@ -46,6 +46,9 @@ class Union
      */
     public $ignore_nullable_issues = false;
 
+    /** @var ?string */
+    private $id;
+
     /**
      * Constructs an Union instance
      *
@@ -56,6 +59,23 @@ class Union
         foreach ($types as $type) {
             $this->types[$type->getKey()] = $type;
         }
+    }
+
+    /**
+     * @return array<string, Atomic>
+     */
+    public function getTypes()
+    {
+        return $this->types;
+    }
+
+    /**
+     * @return void
+     */
+    public function addType(Atomic $type)
+    {
+        $this->types[$type->getKey()] = $type;
+        $this->id = null;
     }
 
     public function __clone()
@@ -80,12 +100,20 @@ class Union
      */
     public function getId()
     {
+        if ($this->id) {
+            return $this->id;
+        }
+
         $s = '';
         foreach ($this->types as $type) {
             $s .= $type->getId() . '|';
         }
 
-        return substr($s, 0, -1);
+        $id = substr($s, 0, -1);
+
+        $this->id = $id;
+
+        return $id;
     }
 
     /**
@@ -219,6 +247,7 @@ class Union
     public function removeType($type_string)
     {
         unset($this->types[$type_string]);
+        $this->id = null;
     }
 
     /**
@@ -427,6 +456,8 @@ class Union
         } elseif (count($this->types) === 0) {
             $this->types['mixed'] = new Atomic\TMixed();
         }
+
+        $this->id = null;
     }
 
     /**
@@ -464,6 +495,8 @@ class Union
         foreach ($keys_to_unset as $key) {
             unset($this->types[$key]);
         }
+
+        $this->id = null;
     }
 
     /**
@@ -499,6 +532,8 @@ class Union
                 $atomic_type->replaceTemplateTypesWithArgTypes($template_types);
             }
         }
+
+        $this->id = null;
 
         if ($is_mixed) {
             $this->types = $new_types;

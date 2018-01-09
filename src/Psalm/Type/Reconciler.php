@@ -83,7 +83,7 @@ class Reconciler
                 ? clone $existing_types[$key]
                 : self::getValueForKey($project_checker, $key, $existing_types);
 
-            if ($result_type && empty($result_type->types)) {
+            if ($result_type && empty($result_type->getTypes())) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
@@ -213,7 +213,7 @@ class Reconciler
                 $non_object_types = [];
                 $did_remove_type = false;
 
-                foreach ($existing_var_type->types as $type) {
+                foreach ($existing_var_type->getTypes() as $type) {
                     if (!$type->isObjectType()) {
                         $non_object_types[] = $type;
                     } else {
@@ -248,7 +248,7 @@ class Reconciler
                 $non_scalar_types = [];
                 $did_remove_type = false;
 
-                foreach ($existing_var_type->types as $type) {
+                foreach ($existing_var_type->getTypes() as $type) {
                     if (!($type instanceof Scalar)) {
                         $non_scalar_types[] = $type;
                     } else {
@@ -283,7 +283,7 @@ class Reconciler
                 $non_bool_types = [];
                 $did_remove_type = false;
 
-                foreach ($existing_var_type->types as $type) {
+                foreach ($existing_var_type->getTypes() as $type) {
                     if (!$type instanceof TBool) {
                         $non_bool_types[] = $type;
                     } else {
@@ -318,7 +318,7 @@ class Reconciler
                 $non_numeric_types = [];
                 $did_remove_type = $existing_var_type->hasString();
 
-                foreach ($existing_var_type->types as $type) {
+                foreach ($existing_var_type->getTypes() as $type) {
                     if (!$type->isNumericType()) {
                         $non_numeric_types[] = $type;
                     } else {
@@ -370,18 +370,20 @@ class Reconciler
                 if ($existing_var_type->hasType('bool')) {
                     $did_remove_type = true;
                     $existing_var_type->removeType('bool');
-                    $existing_var_type->types['true'] = new TTrue;
+                    $existing_var_type->addType(new TTrue);
                 }
 
                 if ($existing_var_type->hasType('array')) {
                     $did_remove_type = true;
 
-                    if ($existing_var_type->types['array']->getId() === 'array<empty, empty>') {
+                    if ($existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>') {
                         $existing_var_type->removeType('array');
                     }
                 }
 
-                if ((!$did_remove_type || empty($existing_var_type->types)) && !$existing_var_type->from_docblock) {
+                if ((!$did_remove_type || empty($existing_var_type->getTypes()))
+                    && !$existing_var_type->from_docblock
+                ) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
@@ -395,7 +397,7 @@ class Reconciler
                     }
                 }
 
-                if ($existing_var_type->types) {
+                if ($existing_var_type->getTypes()) {
                     return $existing_var_type;
                 }
 
@@ -412,7 +414,9 @@ class Reconciler
                     $existing_var_type->removeType('null');
                 }
 
-                if ((!$did_remove_type || empty($existing_var_type->types)) && !$existing_var_type->from_docblock) {
+                if ((!$did_remove_type || empty($existing_var_type->getTypes()))
+                    && !$existing_var_type->from_docblock
+                ) {
                     if ($key && $code_location) {
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
@@ -426,7 +430,7 @@ class Reconciler
                     }
                 }
 
-                if ($existing_var_type->types) {
+                if ($existing_var_type->getTypes()) {
                     return $existing_var_type;
                 }
 
@@ -437,17 +441,17 @@ class Reconciler
 
             $negated_type = substr($new_var_type, 1);
 
-            if ($negated_type === 'false' && isset($existing_var_type->types['bool'])) {
+            if ($negated_type === 'false' && isset($existing_var_type->getTypes()['bool'])) {
                 $existing_var_type->removeType('bool');
-                $existing_var_type->types['true'] = new TTrue;
-            } elseif ($negated_type === 'true' && isset($existing_var_type->types['bool'])) {
+                $existing_var_type->addType(new TTrue);
+            } elseif ($negated_type === 'true' && isset($existing_var_type->getTypes()['bool'])) {
                 $existing_var_type->removeType('bool');
-                $existing_var_type->types['false'] = new TFalse;
+                $existing_var_type->addType(new TFalse);
             } else {
                 $existing_var_type->removeType($negated_type);
             }
 
-            if (empty($existing_var_type->types)) {
+            if (empty($existing_var_type->getTypes())) {
                 if (!$existing_var_type->from_docblock
                     && ($key !== '$this' || !($statements_checker->getSource()->getSource() instanceof TraitChecker))
                 ) {
@@ -472,7 +476,7 @@ class Reconciler
         if ($new_var_type === '^isset' || $new_var_type === 'isset') {
             $existing_var_type->removeType('null');
 
-            if (empty($existing_var_type->types)) {
+            if (empty($existing_var_type->getTypes())) {
                 $failed_reconciliation = true;
 
                 // @todo - I think there's a better way to handle this, but for the moment
@@ -488,12 +492,12 @@ class Reconciler
             $existing_var_type->removeType('false');
 
             if ($existing_var_type->hasType('array')
-                && $existing_var_type->types['array']->getId() === 'array<empty, empty>'
+                && $existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>'
             ) {
                 $existing_var_type->removeType('array');
             }
 
-            if ($existing_var_type->types) {
+            if ($existing_var_type->getTypes()) {
                 return $existing_var_type;
             }
 
@@ -520,7 +524,7 @@ class Reconciler
             if ($existing_var_type->hasType('bool')) {
                 $did_remove_type = true;
                 $existing_var_type->removeType('bool');
-                $existing_var_type->types['false'] = new TFalse;
+                $existing_var_type->addType(new TFalse);
             }
 
             if ($existing_var_type->hasType('true')) {
@@ -529,29 +533,29 @@ class Reconciler
             }
 
             if ($existing_var_type->hasType('array')
-                && $existing_var_type->types['array']->getId() !== 'array<empty, empty>'
+                && $existing_var_type->getTypes()['array']->getId() !== 'array<empty, empty>'
             ) {
                 $did_remove_type = true;
-                $existing_var_type->types['array'] = new TArray(
+                $existing_var_type->addType(new TArray(
                     [
                         new Type\Union([new TEmpty]),
                         new Type\Union([new TEmpty]),
                     ]
-                );
+                ));
             }
 
-            foreach ($existing_var_type->types as $type_key => $type) {
+            foreach ($existing_var_type->getTypes() as $type_key => $type) {
                 if ($type instanceof TNamedObject
                     || $type instanceof TResource
                     || $type instanceof TCallable
                 ) {
                     $did_remove_type = true;
 
-                    unset($existing_var_type->types[$type_key]);
+                    $existing_var_type->removeType($type_key);
                 }
             }
 
-            if ((!$did_remove_type || empty($existing_var_type->types)) && !$existing_var_type->from_docblock) {
+            if ((!$did_remove_type || empty($existing_var_type->getTypes())) && !$existing_var_type->from_docblock) {
                 if ($key && $code_location) {
                     if (IssueBuffer::accepts(
                         new RedundantCondition(
@@ -565,7 +569,7 @@ class Reconciler
                 }
             }
 
-            if ($existing_var_type->types) {
+            if ($existing_var_type->getTypes()) {
                 return $existing_var_type;
             }
 
@@ -578,7 +582,7 @@ class Reconciler
             $object_types = [];
             $did_remove_type = false;
 
-            foreach ($existing_var_type->types as $type) {
+            foreach ($existing_var_type->getTypes() as $type) {
                 if ($type->isObjectType()) {
                     $object_types[] = $type;
                 } else {
@@ -619,10 +623,10 @@ class Reconciler
             if ($existing_var_type->hasString()) {
                 $did_remove_type = true;
                 $existing_var_type->removeType('string');
-                $existing_var_type->types['numeric-string'] = new TNumericString;
+                $existing_var_type->addType(new TNumericString);
             }
 
-            foreach ($existing_var_type->types as $type) {
+            foreach ($existing_var_type->getTypes() as $type) {
                 if ($type instanceof TNumeric || $type instanceof TNumericString) {
                     // this is a workaround for a possible issue running
                     // is_numeric($a) && is_string($a)
@@ -665,7 +669,7 @@ class Reconciler
             $scalar_types = [];
             $did_remove_type = false;
 
-            foreach ($existing_var_type->types as $type) {
+            foreach ($existing_var_type->getTypes() as $type) {
                 if ($type instanceof Scalar) {
                     $scalar_types[] = $type;
                 } else {
@@ -703,7 +707,7 @@ class Reconciler
             $bool_types = [];
             $did_remove_type = false;
 
-            foreach ($existing_var_type->types as $type) {
+            foreach ($existing_var_type->getTypes() as $type) {
                 if ($type instanceof TBool) {
                     $bool_types[] = $type;
                 } else {
@@ -746,7 +750,7 @@ class Reconciler
         $has_interface = false;
 
         if ($new_type->hasObjectType()) {
-            foreach ($new_type->types as $new_type_part) {
+            foreach ($new_type->getTypes() as $new_type_part) {
                 if ($new_type_part instanceof TNamedObject &&
                     InterfaceChecker::interfaceExists($project_checker, $new_type_part->value)
                 ) {
@@ -761,7 +765,7 @@ class Reconciler
 
             $acceptable_atomic_types = [];
 
-            foreach ($existing_var_type->types as $existing_var_type_part) {
+            foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
                 if (TypeChecker::isAtomicContainedBy(
                     $project_checker,
                     $existing_var_type_part,
@@ -793,10 +797,10 @@ class Reconciler
         ) {
             $has_match = true;
 
-            foreach ($new_type->types as $new_type_part) {
+            foreach ($new_type->getTypes() as $new_type_part) {
                 $has_local_match = false;
 
-                foreach ($existing_var_type->types as $existing_var_type_part) {
+                foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
                     if (TypeChecker::isAtomicContainedBy(
                         $project_checker,
                         $new_type_part,
@@ -850,7 +854,7 @@ class Reconciler
         }
 
         if ($existing_var_type->hasType($new_var_type)) {
-            $atomic_type = clone $existing_var_type->types[$new_var_type];
+            $atomic_type = clone $existing_var_type->getTypes()[$new_var_type];
             $atomic_type->from_docblock = false;
 
             return new Type\Union([$atomic_type]);
@@ -894,7 +898,7 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
+                    foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
@@ -932,7 +936,7 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
 
-                    foreach ($existing_keys[$base_key]->types as $existing_key_type_part) {
+                    foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
                         } elseif ($existing_key_type_part instanceof TMixed ||

@@ -262,16 +262,17 @@ class AssignmentChecker
                     continue;
                 }
 
-                if (isset($assign_value_type->types['array']) &&
-                    $assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike &&
-                    !$assign_var_item->key &&
-                    isset($assign_value_type->types['array']->properties[$offset]) // if object-like has int offsets
+                if (isset($assign_value_type->getTypes()['array'])
+                    && ($array_atomic_type = $assign_value_type->getTypes()['array'])
+                    && $array_atomic_type instanceof Type\Atomic\ObjectLike
+                    && !$assign_var_item->key
+                    && isset($array_atomic_type->properties[$offset]) // if object-like has int offsets
                 ) {
                     self::analyze(
                         $statements_checker,
                         $var,
                         null,
-                        $assign_value_type->types['array']->properties[(string)$offset],
+                        $array_atomic_type->properties[(string)$offset],
                         $context,
                         $doc_comment
                     );
@@ -310,17 +311,19 @@ class AssignmentChecker
 
                     $new_assign_type = null;
 
-                    if (isset($assign_value_type->types['array'])) {
-                        if ($assign_value_type->types['array'] instanceof Type\Atomic\TArray) {
-                            $new_assign_type = clone $assign_value_type->types['array']->type_params[1];
-                        } elseif ($assign_value_type->types['array'] instanceof Type\Atomic\ObjectLike) {
+                    if (isset($assign_value_type->getTypes()['array'])) {
+                        $array_atomic_type = $assign_value_type->getTypes()['array'];
+
+                        if ($array_atomic_type instanceof Type\Atomic\TArray) {
+                            $new_assign_type = clone $array_atomic_type->type_params[1];
+                        } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                             if ($assign_var_item->key
                                 && ($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
                                     || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
-                                && isset($assign_value_type->types['array']->properties[$assign_var_item->key->value])
+                                && isset($array_atomic_type->properties[$assign_var_item->key->value])
                             ) {
                                 $new_assign_type =
-                                    clone $assign_value_type->types['array']->properties[$assign_var_item->key->value];
+                                    clone $array_atomic_type->properties[$assign_var_item->key->value];
                             }
                         }
                     }
@@ -642,7 +645,7 @@ class AssignmentChecker
 
             $has_valid_assignment_type = false;
 
-            foreach ($lhs_type->types as $lhs_type_part) {
+            foreach ($lhs_type->getTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNull) {
                     continue;
                 }
@@ -882,7 +885,7 @@ class AssignmentChecker
             }
         }
 
-        if ($var_id && count($class_property_types) === 1 && isset($class_property_types[0]->types['stdClass'])) {
+        if ($var_id && count($class_property_types) === 1 && isset($class_property_types[0]->getTypes()['stdClass'])) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
 
             return null;
@@ -1316,7 +1319,7 @@ class AssignmentChecker
 
                 $has_matching_objectlike_property = false;
 
-                foreach ($child_stmt->inferredType->types as $type) {
+                foreach ($child_stmt->inferredType->getTypes() as $type) {
                     if ($type instanceof ObjectLike) {
                         if (isset($type->properties[$key_value])) {
                             $has_matching_objectlike_property = true;
@@ -1352,7 +1355,7 @@ class AssignmentChecker
                 );
             }
 
-            unset($new_child_type->types['null']);
+            $new_child_type->removeType('null');
 
             if (!$child_stmt->inferredType->hasObjectType()) {
                 $child_stmt->inferredType = $new_child_type;
@@ -1369,7 +1372,7 @@ class AssignmentChecker
             }
         }
 
-        $root_is_string = array_keys($root_type->types) === ['string'];
+        $root_is_string = array_keys($root_type->getTypes()) === ['string'];
 
         if (($current_dim instanceof PhpParser\Node\Scalar\String_
                 || $current_dim instanceof PhpParser\Node\Scalar\LNumber)
@@ -1380,7 +1383,7 @@ class AssignmentChecker
 
             $has_matching_objectlike_property = false;
 
-            foreach ($root_type->types as $type) {
+            foreach ($root_type->getTypes() as $type) {
                 if ($type instanceof ObjectLike) {
                     if (isset($type->properties[$key_value])) {
                         $has_matching_objectlike_property = true;
@@ -1418,7 +1421,7 @@ class AssignmentChecker
             $new_child_type = $root_type;
         }
 
-        unset($new_child_type->types['null']);
+        $new_child_type->removeType('null');
 
         if (!$root_type->hasObjectType()) {
             $root_type = $new_child_type;

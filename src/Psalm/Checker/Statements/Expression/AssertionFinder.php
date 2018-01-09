@@ -1042,11 +1042,15 @@ class AssertionFinder
             return false;
         }
 
-        if (isset($conditional->right->inferredType) && count($conditional->right->inferredType->types) === 1) {
+        if (isset($conditional->right->inferredType)
+            && count($conditional->right->inferredType->getTypes()) === 1
+        ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if (isset($conditional->left->inferredType) && count($conditional->left->inferredType->types) === 1) {
+        if (isset($conditional->left->inferredType)
+            && count($conditional->left->inferredType->getTypes()) === 1
+        ) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
