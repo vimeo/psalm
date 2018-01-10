@@ -886,6 +886,8 @@ class TypeTest extends TestCase
                     }
 
                     print $a;',
+                'assertions' => [],
+                'error_levels' => ['EmptyArrayAccess'],
             ],
             'issetWithMultipleAssignments' => [
                 '<?php
@@ -899,6 +901,8 @@ class TypeTest extends TestCase
 
                     echo $a;
                     echo $b;',
+                'assertions' => [],
+                'error_levels' => ['MixedArrayAccess'],
             ],
             'isIntOnUnaryPlus' => [
                 '<?php

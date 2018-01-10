@@ -57,7 +57,7 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'removeEmptyArray' => [
                 '<?php
@@ -143,7 +143,7 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'dontBleedEmptyAfterExtract' => [
                 '<?php

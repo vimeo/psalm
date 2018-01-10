@@ -134,7 +134,7 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-requireAutoloaders($current_dir);
+requireAutoloaders($current_dir, isset($options['r']));
 
 if (array_key_exists('v', $options)) {
     /** @var string */

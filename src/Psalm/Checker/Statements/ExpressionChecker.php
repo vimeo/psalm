@@ -613,7 +613,7 @@ class ExpressionChecker
                             new CodeLocation($statements_checker, $stmt)
                         );
                     }
-                } elseif ($context->check_variables) {
+                } elseif (!$context->inside_isset) {
                     if ($context->is_global) {
                         if (IssueBuffer::accepts(
                             new UndefinedGlobalVariable(
@@ -629,6 +629,7 @@ class ExpressionChecker
 
                         return null;
                     }
+
                     IssueBuffer::add(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
@@ -644,7 +645,7 @@ class ExpressionChecker
 
             $first_appearance = $statements_checker->getFirstAppearance($var_name);
 
-            if ($first_appearance) {
+            if ($first_appearance && !$context->inside_isset) {
                 if ($context->is_global) {
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedGlobalVariable(
@@ -2323,26 +2324,20 @@ class ExpressionChecker
      * @param  PhpParser\Node\Expr $stmt
      * @param  Context             $context
      *
-     * @return void
+     * @return false|null
      */
     protected static function analyzeIssetVar(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Context $context
     ) {
-        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            self::analyzeIssetVar($statements_checker, $stmt->var, $context);
+        $context->inside_isset = true;
 
-            if (isset($stmt->dim)) {
-                self::analyze($statements_checker, $stmt->dim, $context);
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
-            self::analyzeIssetVar($statements_checker, $stmt->var, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Expr\Variable) {
-            if (is_string($stmt->name)) {
-                $context->hasVariable('$' . $stmt->name);
-            }
+        if (self::analyze($statements_checker, $stmt, $context) === false) {
+            return false;
         }
+
+        $context->inside_isset = false;
     }
 
     /**

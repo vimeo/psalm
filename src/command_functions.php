@@ -2,10 +2,11 @@
 
 /**
  * @param  string $current_dir
+ * @param  bool   $has_explicit_root
  *
  * @return void
  */
-function requireAutoloaders($current_dir)
+function requireAutoloaders($current_dir, $has_explicit_root)
 {
     $autoload_roots = [$current_dir];
 
@@ -37,7 +38,7 @@ function requireAutoloaders($current_dir)
         if (!$has_autoloader) {
             $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
 
-            if (!isset($options['r'])) {
+            if (!$has_explicit_root) {
                 $error_message .= PHP_EOL . 'Add a --root=[your/project/directory] flag '
                     . 'to specify a particular project to run Psalm on.';
             }

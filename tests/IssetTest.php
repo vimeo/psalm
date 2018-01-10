@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 class IssetTest extends TestCase
 {
     use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
 
     /**
      * @return array
@@ -59,7 +60,7 @@ class IssetTest extends TestCase
                         takesString($bar["foo"]);
                     }',
                 'assertions' => [],
-                'error_levels' => [],
+                'error_levels' => ['PossiblyInvalidArrayAccess'],
                 'scope_vars' => [
                     '$foo' => \Psalm\Type::getArray(),
                 ],
@@ -85,7 +86,7 @@ class IssetTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'testUnset' => [
                 '<?php
@@ -114,6 +115,21 @@ class IssetTest extends TestCase
                     foreach ($arr as $item) {
                         if (!isset($item["hide"]) || !$item["hide"]) {}
                     }',
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerInvalidCodeParse()
+    {
+        return [
+            'complainAboutBadCallInIsset' => [
+                '<?php
+                    class A {}
+                    $a = isset(A::foo()[0]);',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }
