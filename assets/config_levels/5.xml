@@ -32,11 +32,11 @@
         <TypeCoercion errorLevel="info" />
         <RedundantCondition errorLevel="info" />
 
-        <PossiblyFalseArgument errorLevel="info">
-        <PossiblyFalsePropertyAssignmentValue errorLevel="info">
-        <PossiblyFalseReference errorLevel="info">
-        <PossiblyInvalidArgument errorLevel="info">
-        <PossiblyInvalidArrayAccess errorLevel="info">
+        <PossiblyFalseArgument errorLevel="info" />
+        <PossiblyFalsePropertyAssignmentValue errorLevel="info" />
+        <PossiblyFalseReference errorLevel="info" />
+        <PossiblyInvalidArgument errorLevel="info" />
+        <PossiblyInvalidArrayAccess errorLevel="info" />
         <PossiblyInvalidArrayAssignment errorLevel="info" />
         <PossiblyInvalidMethodCall errorLevel="info" />
         <PossiblyInvalidPropertyAssignment errorLevel="info" />
@@ -50,7 +50,7 @@
         <PossiblyNullIterator errorLevel="info" />
         <PossiblyNullOperand errorLevel="info" />
         <PossiblyNullPropertyAssignment errorLevel="info" />
-        <PossiblyNullPropertyAssignmentValue errorLevel="info">
+        <PossiblyNullPropertyAssignmentValue errorLevel="info" />
         <PossiblyNullPropertyFetch errorLevel="info" />
         <PossiblyNullReference errorLevel="info" />
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
