@@ -16,6 +16,7 @@ use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\PropertyNotSetInConstructor;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
@@ -191,6 +192,32 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         Context $global_context = null
     ) {
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
+
+        if (preg_match(
+            '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',
+            $fq_class_name
+        )
+        ) {
+            $class_name_parts = explode('\\', $fq_class_name);
+            $class_name = array_pop($class_name_parts);
+
+            if (IssueBuffer::accepts(
+                new ReservedWord(
+                    $class_name . ' is a reserved word',
+                    new CodeLocation(
+                        $this,
+                        $this->class,
+                        null,
+                        true
+                    )
+                ),
+                $this->source->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+
+            return null;
+        }
 
         $storage = $this->storage;
 
@@ -972,6 +999,27 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         if (in_array($fq_class_name, ['callable', 'iterable'], true)) {
             return true;
+        }
+
+        if (preg_match(
+            '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',
+            $fq_class_name
+        )
+        ) {
+            $class_name_parts = explode('\\', $fq_class_name);
+            $class_name = array_pop($class_name_parts);
+
+            if (IssueBuffer::accepts(
+                new ReservedWord(
+                    $class_name . ' is a reserved word',
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+
+            return null;
         }
 
         $class_exists = ClassChecker::classExists($project_checker, $fq_class_name);

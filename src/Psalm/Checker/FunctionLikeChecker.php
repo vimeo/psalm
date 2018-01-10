@@ -30,6 +30,7 @@ use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
+use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\Issue\UnusedVariable;
@@ -370,7 +371,25 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     false
                 );
             } else {
-                $param_type->check($this->source, $function_param->type_location, $this->suppressed_issues, [], false);
+                if ($param_type->isVoid()) {
+                    if (IssueBuffer::accepts(
+                        new ReservedWord(
+                            'Parameter cannot be void',
+                            $function_param->type_location
+                        ),
+                        $this->suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                }
+
+                $param_type->check(
+                    $this->source,
+                    $function_param->type_location,
+                    $this->suppressed_issues,
+                    [],
+                    false
+                );
             }
 
             if ($this->getFileChecker()->project_checker->collect_references) {
@@ -405,55 +424,69 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             );
         }
 
-        if ($storage->return_type
-            && $storage->signature_return_type
-            && $storage->return_type_location
-            && !$this->function instanceof Closure
-        ) {
-            $fleshed_out_return_type = ExpressionChecker::fleshOutType(
-                $project_checker,
-                $storage->return_type,
-                $class_storage ? $class_storage->name : null
-            );
+        if ($storage->return_type && $storage->return_type_location && !$storage->has_template_return_type) {
+            if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {
+                $fleshed_out_return_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    $storage->return_type,
+                    $context->self
+                );
 
-            $fleshed_out_signature_type = ExpressionChecker::fleshOutType(
-                $project_checker,
-                $storage->signature_return_type,
-                $class_storage ? $class_storage->name : null
-            );
-
-            if (!TypeChecker::isContainedBy(
-                $project_checker,
-                $fleshed_out_return_type,
-                $fleshed_out_signature_type
-            )
-            ) {
-                if ($project_checker->alter_code
-                    && isset($project_checker->getIssuesToFix()['MismatchingDocblockReturnType'])
-                ) {
-                    $this->addOrUpdateReturnType($project_checker, $storage->signature_return_type);
-
-                    return null;
-                }
-
-                if (IssueBuffer::accepts(
-                    new MismatchingDocblockReturnType(
-                        'Docblock has incorrect return type \'' . $storage->return_type .
-                            '\', should be \'' . $storage->signature_return_type . '\'',
-                        $storage->return_type_location
-                    ),
-                    $storage->suppressed_issues
-                )) {
-                    return false;
-                }
-
-                $storage->signature_return_type->check(
+                $fleshed_out_return_type->check(
                     $this,
                     $storage->return_type_location,
                     $storage->suppressed_issues,
                     [],
                     false
                 );
+            } elseif (!$this->function instanceof Closure) {
+                $fleshed_out_return_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    $storage->return_type,
+                    $context->self,
+                    $cased_method_id
+                );
+
+                $fleshed_out_signature_type = ExpressionChecker::fleshOutType(
+                    $project_checker,
+                    $storage->signature_return_type,
+                    $context->self,
+                    $cased_method_id
+                );
+
+                if (!TypeChecker::isContainedBy(
+                    $project_checker,
+                    $fleshed_out_return_type,
+                    $fleshed_out_signature_type
+                )
+                ) {
+                    if ($project_checker->alter_code
+                        && isset($project_checker->getIssuesToFix()['MismatchingDocblockReturnType'])
+                    ) {
+                        $this->addOrUpdateReturnType($project_checker, $storage->signature_return_type);
+
+                        return null;
+                    }
+
+                    if (IssueBuffer::accepts(
+                        new MismatchingDocblockReturnType(
+                            'Docblock has incorrect return type \'' . $storage->return_type .
+                                '\', should be \'' . $storage->signature_return_type . '\'',
+                            $storage->return_type_location
+                        ),
+                        $storage->suppressed_issues
+                    )) {
+                        return false;
+                    }
+
+                    $storage->signature_return_type->check(
+                        $this,
+                        $storage->return_type_location,
+                        $storage->suppressed_issues,
+                        [],
+                        false
+                    );
+                }
             }
         }
 
@@ -1311,16 +1344,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             return null;
-        }
-
-        if (!$declared_return_type->isMixed()) {
-            $declared_return_type->check(
-                $this,
-                $return_type_location,
-                $this->getSuppressedIssues(),
-                [],
-                false
-            );
         }
 
         if (!$declared_return_type->isMixed()) {

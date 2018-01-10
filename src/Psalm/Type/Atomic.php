@@ -49,15 +49,13 @@ abstract class Atomic
 
     /**
      * @param  string $value
+     * @param  bool   $php_compatible
      *
      * @return Atomic
      */
-    public static function create($value)
+    public static function create($value, $php_compatible = false)
     {
         switch ($value) {
-            case 'numeric':
-                return new TNumeric();
-
             case 'int':
                 return new TInt();
 
@@ -73,35 +71,38 @@ abstract class Atomic
             case 'bool':
                 return new TBool();
 
-            case 'true':
-                return new TTrue();
+            case 'object':
+                return new TObject();
 
-            case 'false':
-                return new TFalse();
-
-            case 'empty':
-                return new TEmpty();
-
-            case 'scalar':
-                return new TScalar();
-
-            case 'null':
-                return new TNull();
+            case 'callable':
+                return new TCallable();
 
             case 'array':
                 return new TArray([new Union([new TMixed]), new Union([new TMixed])]);
 
-            case 'object':
-                return new TObject();
+            case 'resource':
+                return $php_compatible ? new TNamedObject($value) : new TResource();
+
+            case 'numeric':
+                return $php_compatible ? new TNamedObject($value) : new TNumeric();
+
+            case 'true':
+                return $php_compatible ? new TNamedObject($value) : new TTrue();
+
+            case 'false':
+                return $php_compatible ? new TNamedObject($value) : new TFalse();
+
+            case 'empty':
+                return $php_compatible ? new TNamedObject($value) : new TEmpty();
+
+            case 'scalar':
+                return $php_compatible ? new TNamedObject($value) : new TScalar();
+
+            case 'null':
+                return $php_compatible ? new TNamedObject($value) : new TNull();
 
             case 'mixed':
-                return new TMixed();
-
-            case 'resource':
-                return new TResource();
-
-            case 'callable':
-                return new TCallable();
+                return $php_compatible ? new TNamedObject($value) : new TMixed();
 
             case 'numeric-string':
                 return new TNumericString();

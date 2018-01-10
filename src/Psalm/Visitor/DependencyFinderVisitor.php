@@ -738,7 +738,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $return_type_string = $return_type_fq_classlike_name . $suffix;
             }
 
-            $storage->return_type = Type::parseString($return_type_string);
+            $storage->return_type = Type::parseString($return_type_string, true);
             $storage->return_type_location = new CodeLocation(
                 $this->file_checker,
                 $stmt,
@@ -964,7 +964,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $param_type_string .= '|null';
                 }
 
-                $param_type = Type::parseString($param_type_string);
+                $param_type = Type::parseString($param_type_string, true);
 
                 if ($param->variadic) {
                     $param_type = new Type\Union([

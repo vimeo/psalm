@@ -30,10 +30,11 @@ abstract class Type
      * Parses a string type representation
      *
      * @param  string $type_string
+     * @param  bool   $php_compatible
      *
      * @return Union
      */
-    public static function parseString($type_string)
+    public static function parseString($type_string, $php_compatible = false)
     {
         // remove all unacceptable characters
         $type_string = preg_replace('/[^A-Za-z0-9_\\\\|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
@@ -51,14 +52,14 @@ abstract class Type
         $type_tokens = self::tokenize($type_string);
 
         if (count($type_tokens) === 1) {
-            $type_tokens[0] = self::fixScalarTerms($type_tokens[0]);
+            $type_tokens[0] = self::fixScalarTerms($type_tokens[0], $php_compatible);
 
-            return new Union([Atomic::create($type_tokens[0])]);
+            return new Union([Atomic::create($type_tokens[0], $php_compatible)]);
         }
 
         try {
             $parse_tree = ParseTree::createFromTokens($type_tokens);
-            $parsed_type = self::getTypeFromTree($parse_tree);
+            $parsed_type = self::getTypeFromTree($parse_tree, $php_compatible);
         } catch (TypeParseTreeException $e) {
             throw $e;
         } catch (\Exception $e) {
@@ -74,50 +75,55 @@ abstract class Type
 
     /**
      * @param  string $type_string
+     * @param  bool   $php_compatible
      *
      * @return string
      */
-    public static function fixScalarTerms($type_string)
+    public static function fixScalarTerms($type_string, $php_compatible = false)
     {
-        if (in_array(
-            strtolower($type_string),
-            [
-                'numeric',
-                'int',
-                'void',
-                'float',
-                'string',
-                'bool',
-                'true',
-                'false',
-                'null',
-                'array',
-                'object',
-                'mixed',
-                'resource',
-                'callable',
-                'iterable',
-            ],
-            true
-        )) {
-            return strtolower($type_string);
-        } elseif ($type_string === 'boolean') {
-            return 'bool';
-        } elseif ($type_string === 'integer') {
-            return 'int';
-        } elseif ($type_string === 'double' || $type_string === 'real') {
-            return 'float';
+        $type_string_lc = strtolower($type_string);
+
+        switch ($type_string_lc) {
+            case 'int':
+            case 'void':
+            case 'float':
+            case 'string':
+            case 'bool':
+            case 'callable':
+            case 'iterable':
+            case 'array':
+            case 'object':
+            case 'numeric':
+            case 'true':
+            case 'false':
+            case 'null':
+            case 'mixed':
+            case 'resource':
+                return $type_string_lc;
+        }
+
+        switch ($type_string) {
+            case 'boolean':
+                return $php_compatible ? $type_string : 'bool';
+
+            case 'integer':
+                return $php_compatible ? $type_string : 'int';
+
+            case 'double':
+            case 'real':
+                return $php_compatible ? $type_string : 'float';
         }
 
         return $type_string;
     }
 
     /**
-     * @param   ParseTree $parse_tree
+     * @param  ParseTree $parse_tree
+     * @param  bool      $php_compatible
      *
      * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
      */
-    private static function getTypeFromTree(ParseTree $parse_tree)
+    private static function getTypeFromTree(ParseTree $parse_tree, $php_compatible)
     {
         if (!$parse_tree->value) {
             throw new \InvalidArgumentException('Parse tree must have a value');
@@ -131,7 +137,7 @@ abstract class Type
                  * @return Union
                  */
                 function (ParseTree $child_tree) {
-                    $tree_type = self::getTypeFromTree($child_tree);
+                    $tree_type = self::getTypeFromTree($child_tree, false);
 
                     return $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
                 },
@@ -142,7 +148,7 @@ abstract class Type
                 throw new \InvalidArgumentException('Generic type must have a value');
             }
 
-            $generic_type_value = self::fixScalarTerms($generic_type->value);
+            $generic_type_value = self::fixScalarTerms($generic_type->value, false);
 
             if (($generic_type_value === 'array' || $generic_type_value === 'Generator') &&
                 count($generic_params) === 1
@@ -167,7 +173,7 @@ abstract class Type
                  * @return Atomic
                  */
                 function (ParseTree $child_tree) {
-                    $atomic_type = self::getTypeFromTree($child_tree);
+                    $atomic_type = self::getTypeFromTree($child_tree, false);
 
                     if (!$atomic_type instanceof Atomic) {
                         throw new \UnexpectedValueException(
@@ -190,10 +196,10 @@ abstract class Type
 
             foreach ($parse_tree->children as $i => $property_branch) {
                 if ($property_branch->value !== ParseTree::OBJECT_PROPERTY) {
-                    $property_type = self::getTypeFromTree($property_branch);
+                    $property_type = self::getTypeFromTree($property_branch, false);
                     $property_key = (string)$i;
                 } elseif (count($property_branch->children) === 2) {
-                    $property_type = self::getTypeFromTree($property_branch->children[1]);
+                    $property_type = self::getTypeFromTree($property_branch->children[1], false);
                     $property_key = (string)($property_branch->children[0]->value);
                 } else {
                     throw new \InvalidArgumentException('Unexpected number of property parts');
@@ -212,9 +218,9 @@ abstract class Type
             return new ObjectLike($properties);
         }
 
-        $atomic_type = self::fixScalarTerms($parse_tree->value);
+        $atomic_type = self::fixScalarTerms($parse_tree->value, $php_compatible);
 
-        return Atomic::create($atomic_type);
+        return Atomic::create($atomic_type, $php_compatible);
     }
 
     /**

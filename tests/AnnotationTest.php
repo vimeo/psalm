@@ -722,6 +722,13 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass',
             ],
+            'preventBadBoolean' => [
+                '<?php
+                    function foo() : boolean {
+                        return true;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
         ];
     }
 }

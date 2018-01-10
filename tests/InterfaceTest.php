@@ -307,7 +307,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     interface I {
                         /**
-                         * @return Boolean
+                         * @return int
                          */
                         public function check();
                     }

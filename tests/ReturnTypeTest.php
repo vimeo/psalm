@@ -579,6 +579,16 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'ReservedWord',
             ],
+            'voidParamType' => [
+                '<?php
+                    function f(void $p): void {}',
+                'error_message' => 'ReservedWord',
+            ],
+            'voidClass' => [
+                '<?php
+                    class void {}',
+                'error_message' => 'ReservedWord',
+            ],
             'disallowReturningExplicitVoid' => [
                 '<?php
                     function returnsVoid() : void {}
