@@ -580,6 +580,34 @@ class FileManipulationTest extends TestCase
                 ['MismatchingDocblockParamType'],
                 true,
             ],
+            'preserveFormat' => [
+                '<?php
+                    /**
+                     * @other is
+                     *    a friend of mine
+                     *       + Members
+                     *          - `google`
+                     * @return int
+                     */
+                    function foo() : int {
+                      return "hello";
+                    }',
+                '<?php
+                    /**
+                     * @other is
+                     *    a friend of mine
+                     *       + Members
+                     *          - `google`
+                     *
+                     * @return string
+                     */
+                    function foo() : string {
+                      return "hello";
+                    }',
+                '7.0',
+                ['InvalidReturnType'],
+                true,
+            ],
             'useUnqualifierPlugin' => [
                 '<?php
                     namespace A\B\C {
