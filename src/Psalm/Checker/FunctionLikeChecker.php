@@ -1168,8 +1168,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             true
         );
 
-        if ($return_type
-            && $return_type->from_docblock
+        if ((!$return_type || $return_type->from_docblock)
             && ScopeChecker::getFinalControlActions($function_stmts) !== [ScopeChecker::ACTION_END]
             && !$inferred_yield_types
             && count($inferred_return_type_parts)
@@ -1177,7 +1176,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             // only add null if we have a return statement elsewhere and it wasn't void
             foreach ($inferred_return_type_parts as $inferred_return_type_part) {
                 if (!$inferred_return_type_part instanceof Type\Atomic\TVoid) {
-                    $inferred_return_type_parts[] = new Type\Atomic\TNull();
+                    $atomic_null = new Type\Atomic\TNull();
+                    $atomic_null->from_docblock = true;
+                    $inferred_return_type_parts[] = $atomic_null;
                     break;
                 }
             }

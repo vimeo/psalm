@@ -369,6 +369,22 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
+            'addMissingNullableStringReturnTypeWithMaybeReturn71' => [
+                '<?php
+                    function foo() {
+                      if (rand(0, 1)) return new stdClass;
+                    }',
+                '<?php
+                    /**
+                     * @return stdClass|null
+                     */
+                    function foo() {
+                      if (rand(0, 1)) return new stdClass;
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
             'addMissingUnsafeNullableStringReturnType71' => [
                 '<?php
                     /** @return string[] */
