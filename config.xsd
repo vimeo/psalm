@@ -121,6 +121,7 @@
             <xs:element name="InvalidOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -175,6 +176,7 @@
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyFalsePropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
@@ -183,6 +185,7 @@
             <xs:element name="PossiblyInvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyInvalidPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullArrayAccess" type="IssueHandlerType" minOccurs="0" />
@@ -192,6 +195,7 @@
             <xs:element name="PossiblyNullIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyNullPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedMethod" type="IssueHandlerType" minOccurs="0" />

@@ -21,16 +21,22 @@ use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidPropertyAssignment;
+use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
+use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
+use Psalm\Issue\PossiblyFalsePropertyAssignmentValue;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
+use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullPropertyAssignment;
+use Psalm\Issue\PossiblyNullPropertyAssignmentValue;
 use Psalm\Issue\ReferenceConstraintViolation;
+use Psalm\Issue\TypeCoercion;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
@@ -908,27 +914,61 @@ class AssignmentChecker
                 continue;
             }
 
-            if (!TypeChecker::isContainedBy(
+            if (!$assignment_value_type->ignore_nullable_issues
+                && $assignment_value_type->isNullable()
+                && !$class_property_type->isNullable()
+            ) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullPropertyAssignmentValue(
+                        $var_id . ' with non-nullable declared type \'' . $class_property_type .
+                            '\' cannot be assigned nullable type \'' . $assignment_value_type . '\'',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt,
+                            $context->include_location
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
+            if ($assignment_value_type->isFalsable() && !$class_property_type->hasBool()) {
+                if (IssueBuffer::accepts(
+                    new PossiblyFalsePropertyAssignmentValue(
+                        $var_id . ' with non-falsable declared type \'' . $class_property_type .
+                            '\' cannot be assigned possibly false type \'' . $assignment_value_type . '\'',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt,
+                            $context->include_location
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+
+            $type_match_found = TypeChecker::isContainedBy(
                 $project_checker,
                 $assignment_value_type,
                 $class_property_type,
-                $assignment_value_type->ignore_nullable_issues,
-                false,
+                true,
+                true,
                 $has_scalar_match,
                 $type_coerced,
                 $type_coerced_from_mixed,
                 $to_string_cast
-            )) {
-                $invalid_assignment_value_types[] = [
-                    (string)$class_property_type,
-                    (string)$assignment_value_type,
-                ];
-            } else {
-                if ($to_string_cast) {
+            );
+
+            if ($type_coerced) {
+                if ($type_coerced_from_mixed) {
                     if (IssueBuffer::accepts(
-                        new ImplicitToStringCast(
+                        new MixedTypeCoercion(
                             $var_id . ' expects \'' . $class_property_type . '\', '
-                            . $assignment_value_type . ' provided with a __toString method',
+                                . ' parent type `' . $assignment_value_type . '` provided',
                             new CodeLocation(
                                 $statements_checker->getSource(),
                                 $assignment_value ?: $stmt,
@@ -937,23 +977,58 @@ class AssignmentChecker
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        // fall through
+                        // keep soldiering on
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new TypeCoercion(
+                            $var_id . ' expects \'' . $class_property_type . '\', '
+                                . ' parent type \'' . $assignment_value_type . '\' provided',
+                            new CodeLocation(
+                                $statements_checker->getSource(),
+                                $assignment_value ?: $stmt,
+                                $context->include_location
+                            )
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // keep soldiering on
                     }
                 }
+            }
 
+            if ($to_string_cast) {
+                if (IssueBuffer::accepts(
+                    new ImplicitToStringCast(
+                        $var_id . ' expects \'' . $class_property_type . '\', '
+                            . '\'' . $assignment_value_type . '\' provided with a __toString method',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt,
+                            $context->include_location
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if (!$type_match_found && !$type_coerced) {
+                $invalid_assignment_value_types[] = (string) $class_property_type;
+            } else {
                 $has_valid_assignment_value_type = true;
             }
         }
 
         if ($invalid_assignment_value_types) {
-            list($class_property_type, $invalid_assignment_value_type)
-                = $invalid_assignment_value_types[0];
+            $invalid_class_property_type = $invalid_assignment_value_types[0];
 
             if (!$has_valid_assignment_value_type) {
                 if (IssueBuffer::accepts(
-                    new InvalidPropertyAssignment(
-                        $var_id . ' with declared type \'' . $class_property_type .
-                            '\' cannot be assigned type \'' . $invalid_assignment_value_type . '\'',
+                    new InvalidPropertyAssignmentValue(
+                        $var_id . ' with declared type \'' . $invalid_class_property_type .
+                            '\' cannot be assigned type \'' . $assignment_value_type . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
@@ -966,10 +1041,10 @@ class AssignmentChecker
                 }
             } else {
                 if (IssueBuffer::accepts(
-                    new PossiblyInvalidPropertyAssignment(
-                        $var_id . ' with declared type \'' . $class_property_type .
+                    new PossiblyInvalidPropertyAssignmentValue(
+                        $var_id . ' with declared type \'' . $invalid_class_property_type .
                             '\' cannot be assigned possibly different type \'' .
-                            $invalid_assignment_value_type . '\'',
+                            $assignment_value_type . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,

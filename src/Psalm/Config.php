@@ -657,7 +657,7 @@ class Config
 
     /**
      * @return void
-     * @psalm-suppress InvalidPropertyAssignment
+     * @psalm-suppress MixedTypeCoercion
      */
     public function collectPredefinedConstants()
     {

@@ -67,11 +67,11 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
      * @param  string $file_contents
      *
      * @return void
-     * @psalm-suppress InvalidPropertyAssignment because microtime is needed for cache busting
+     * @psalm-suppress InvalidPropertyAssignmentValue because microtime is needed for cache busting
      */
     public function registerFile($file_path, $file_contents)
     {
         $this->fake_files[$file_path] = $file_contents;
-        $this->fake_file_times[$file_path] = (float)microtime(true);
+        $this->fake_file_times[$file_path] = (float) microtime(true);
     }
 }

@@ -367,7 +367,7 @@ class Context
      * @param  Union|null             $new_type
      * @param  StatementsChecker|null $statements_checker
      *
-     * @return Clause[]
+     * @return array<int, Clause>
      */
     public static function filterClauses(
         $remove_var_id,

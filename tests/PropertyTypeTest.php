@@ -639,7 +639,7 @@ class PropertyTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'error_levels' => [
-                    'InvalidPropertyAssignment',
+                    'MixedTypeCoercion',
                     'MissingReturnType',
                 ],
             ],
@@ -749,7 +749,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = 5;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'badAssignmentAsWell' => [
                 '<?php
@@ -854,7 +854,7 @@ class PropertyTypeTest extends TestCase
 
                     $c = new C;
                     $c->bb = [new A, new B];',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'possiblyBadArrayProperty' => [
                 '<?php
@@ -874,7 +874,7 @@ class PropertyTypeTest extends TestCase
 
                     $c = rand(0, 5) > 3 ? new C : new D;
                     $c->bb = [new A, new B];',
-                'error_message' => 'PossiblyInvalidPropertyAssignment',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
             ],
             'notSetInEmptyConstructor' => [
                 '<?php

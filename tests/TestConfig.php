@@ -6,7 +6,7 @@ use Psalm\Config;
 class TestConfig extends Config
 {
     /**
-     * @psalm-suppress InvalidPropertyAssignment because cache_directory isn't strictly nullable
+     * @psalm-suppress PossiblyNullPropertyAssignmentValue because cache_directory isn't strictly nullable
      */
     public function __construct()
     {

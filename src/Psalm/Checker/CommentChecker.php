@@ -320,7 +320,7 @@ class CommentChecker
 
     /**
      * @param ClassLikeDocblockComment $info
-     * @param array<string,array<mixed,string>> $specials
+     * @param array<string, array<int, string>> $specials
      * @param string $property_tag ('property', 'property-read', or 'property-write')
      *
      * @throws DocblockParseException
@@ -433,7 +433,7 @@ class CommentChecker
      * @param  bool    $preserve_format
      *
      * @return array Array of the main comment and specials
-     * @psalm-return array{description:string, specials:array<string, array<mixed, string>>}
+     * @psalm-return array{description:string, specials:array<string, array<int, string>>}
      */
     public static function parseDocComment($docblock, $line_number = null, $preserve_format = false)
     {

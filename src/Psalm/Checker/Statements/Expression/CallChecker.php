@@ -2351,12 +2351,12 @@ class CallChecker
                         false,
                         false,
                         $scalar_type_match_found,
-                        $coerced_type,
-                        $coerced_type_from_mixed
+                        $type_coerced,
+                        $type_coerced_from_mixed
                     );
 
-                    if ($coerced_type) {
-                        if ($coerced_type_from_mixed) {
+                    if ($type_coerced) {
+                        if ($type_coerced_from_mixed) {
                             if (IssueBuffer::accepts(
                                 new MixedTypeCoercion(
                                     'First parameter of closure passed to function ' . $method_id . ' expects ' .
@@ -2381,7 +2381,7 @@ class CallChecker
                         }
                     }
 
-                    if (!$coerced_type && !$type_match_found) {
+                    if (!$type_coerced && !$type_match_found) {
                         $types_can_be_identical = TypeChecker::canBeIdenticalTo(
                             $project_checker,
                             $input_type,
@@ -2540,13 +2540,13 @@ class CallChecker
             true,
             true,
             $scalar_type_match_found,
-            $coerced_type,
-            $coerced_type_from_mixed,
+            $type_coerced,
+            $type_coerced_from_mixed,
             $to_string_cast
         );
 
-        if ($coerced_type) {
-            if ($coerced_type_from_mixed) {
+        if ($type_coerced) {
+            if ($type_coerced_from_mixed) {
                 if (IssueBuffer::accepts(
                     new MixedTypeCoercion(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
@@ -2584,7 +2584,7 @@ class CallChecker
             }
         }
 
-        if (!$type_match_found && !$coerced_type) {
+        if (!$type_match_found && !$type_coerced) {
             $types_can_be_identical = TypeChecker::canBeIdenticalTo(
                 $project_checker,
                 $param_type,
