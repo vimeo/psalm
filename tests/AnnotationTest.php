@@ -709,6 +709,19 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'alwaysCheckReturnType' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return A
+                     * @psalm-suppress MismatchingDocblockReturnType
+                     */
+                    function foo() : B {
+                      return new A;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
         ];
     }
 }

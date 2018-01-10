@@ -324,6 +324,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         return false;
                     }
 
+                    $signature_type->check(
+                        $this,
+                        $function_param->type_location,
+                        $storage->suppressed_issues,
+                        [],
+                        false
+                    );
+
                     continue;
                 }
             }
@@ -438,6 +446,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 )) {
                     return false;
                 }
+
+                $storage->signature_return_type->check(
+                    $this,
+                    $storage->return_type_location,
+                    $storage->suppressed_issues,
+                    [],
+                    false
+                );
             }
         }
 
