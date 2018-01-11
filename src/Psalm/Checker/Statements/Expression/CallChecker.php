@@ -258,7 +258,7 @@ class CallChecker
                 $method_id = FunctionChecker::getFQFunctionNameFromString($method_id, $statements_checker);
             }
 
-            if (!$in_call_map && !$is_stubbed) {
+            if (!$in_call_map) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
                         $statements_checker,
@@ -270,7 +270,7 @@ class CallChecker
                     }
                 }
 
-                $function_exists = FunctionChecker::functionExists(
+                $function_exists = $is_stubbed || FunctionChecker::functionExists(
                     $statements_checker,
                     strtolower($method_id)
                 );
