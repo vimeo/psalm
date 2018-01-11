@@ -140,7 +140,9 @@ class IssueBuffer
     {
         $issue_string = '';
 
-        if ($issue_data['severity'] === Config::REPORT_ERROR) {
+        $is_error = $issue_data['severity'] === Config::REPORT_ERROR;
+
+        if ($is_error) {
             $issue_string .= ($use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
         } else {
             $issue_string .= 'INFO';
@@ -158,7 +160,7 @@ class IssueBuffer
             $selection_length = $issue_data['to'] - $issue_data['from'];
 
             $issue_string .= substr($snippet, 0, $selection_start) .
-                "\e[97;41m" . substr($snippet, $selection_start, $selection_length) .
+                ($is_error ? "\e[97;41m" : "\e[;47m") . substr($snippet, $selection_start, $selection_length) .
                 "\e[0m" . substr($snippet, $selection_length + $selection_start) . PHP_EOL;
         }
 
