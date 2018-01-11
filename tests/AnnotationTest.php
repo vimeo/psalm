@@ -450,7 +450,7 @@ class AnnotationTest extends TestCase
 
                     $a = new A();
                     $a->foo = 5;',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'propertyWriteDocblockInvalidAssignment' => [
                 '<?php
@@ -471,7 +471,7 @@ class AnnotationTest extends TestCase
 
                     $a = new A();
                     $a->foo = 5;',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'propertySealedDocblockUndefinedPropertyAssignment' => [
                 '<?php
@@ -515,7 +515,7 @@ class AnnotationTest extends TestCase
 
                     $a = new A();
                     $a->foo = 5;',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'propertyReadInvalidFetch' => [
                 '<?php
@@ -664,7 +664,7 @@ class AnnotationTest extends TestCase
                             $this->foo["boof"] = "hello";
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'incorrectDocblockOrder' => [
                 '<?php

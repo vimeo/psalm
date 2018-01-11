@@ -819,7 +819,7 @@ class ArrayAssignmentTest extends TestCase
                             $this->strs = [new stdClass()]; // no issue emitted
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'incrementalArrayPropertyAssignment' => [
                 '<?php
@@ -832,7 +832,7 @@ class ArrayAssignmentTest extends TestCase
                             $this->strs[] = new stdClass(); // no issue emitted
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignment',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

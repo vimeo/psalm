@@ -221,7 +221,7 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'error_message' => 'Argument 1 of B::fooFoo has wrong type \'bool\', expecting \'int\' as defined ' .
-                    'by A::foo',
+                    'by A::fooFoo',
             ],
             'nonNullableSubclassParam' => [
                 '<?php
@@ -236,7 +236,7 @@ class MethodSignatureTest extends TestCase
                             return $s;
                         }
                     }',
-                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'string|null\'',
+                'error_message' => 'Argument 1 of B::foo has wrong type \'string\', expecting \'string|null\' as',
             ],
             'mismatchingCovariantReturn' => [
                 '<?php
