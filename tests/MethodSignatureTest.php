@@ -102,22 +102,22 @@ class MethodSignatureTest extends TestCase
             'privateArgs' => [
                 '<?php
                     class A {
-                        private function foo() : void {}
+                        private function foo(): void {}
                     }
                     class B extends A {
-                        private function foo(int $arg) : void {}
+                        private function foo(int $arg): void {}
                     }',
             ],
             'nullableSubclassParam' => [
                 '<?php
                     class A {
-                        public function foo(string $s) : ?string {
+                        public function foo(string $s): ?string {
                             return rand(0, 1) ? $s : null;
                         }
                     }
 
                     class B extends A {
-                        public function foo(?string $s) : string {
+                        public function foo(?string $s): string {
                             return $s ?: "hello";
                         }
                     }
@@ -127,13 +127,13 @@ class MethodSignatureTest extends TestCase
             'nullableSubclassParamWithDefault' => [
                 '<?php
                     class A {
-                        public function foo(string $s) : string {
+                        public function foo(string $s): string {
                             return $s;
                         }
                     }
 
                     class B extends A {
-                        public function foo(string $s = null) : string {
+                        public function foo(string $s = null): string {
                             return $s ?: "hello";
                         }
                     }
@@ -144,14 +144,14 @@ class MethodSignatureTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {
-                      public function bar() : void {}
+                      public function bar(): void {}
                     }
                     class C extends A {
-                      public function bar() : void {}
+                      public function bar(): void {}
                     }
 
                     /** @param B|C $a */
-                    function foo(A $a) : void {
+                    function foo(A $a): void {
                       $a->bar();
                     }',
             ],
@@ -180,13 +180,13 @@ class MethodSignatureTest extends TestCase
             'moreArguments' => [
                 '<?php
                     class A {
-                        public function fooFoo(int $a, bool $b) : void {
+                        public function fooFoo(int $a, bool $b): void {
 
                         }
                     }
 
                     class B extends A {
-                        public function fooFoo(int $a, bool $b, array $c) : void {
+                        public function fooFoo(int $a, bool $b, array $c): void {
 
                         }
                     }',
@@ -195,13 +195,13 @@ class MethodSignatureTest extends TestCase
             'fewerArguments' => [
                 '<?php
                     class A {
-                        public function fooFoo(int $a, bool $b) : void {
+                        public function fooFoo(int $a, bool $b): void {
 
                         }
                     }
 
                     class B extends A {
-                        public function fooFoo(int $a) : void {
+                        public function fooFoo(int $a): void {
 
                         }
                     }',
@@ -210,13 +210,13 @@ class MethodSignatureTest extends TestCase
             'differentArguments' => [
                 '<?php
                     class A {
-                        public function fooFoo(int $a, bool $b) : void {
+                        public function fooFoo(int $a, bool $b): void {
 
                         }
                     }
 
                     class B extends A {
-                        public function fooFoo(bool $b, int $a) : void {
+                        public function fooFoo(bool $b, int $a): void {
 
                         }
                     }',
@@ -226,13 +226,13 @@ class MethodSignatureTest extends TestCase
             'nonNullableSubclassParam' => [
                 '<?php
                     class A {
-                        public function foo(?string $s) : string {
+                        public function foo(?string $s): string {
                             return $s ?: "hello";
                         }
                     }
 
                     class B extends A {
-                        public function foo(string $s) : string {
+                        public function foo(string $s): string {
                             return $s;
                         }
                     }',
@@ -270,18 +270,18 @@ class MethodSignatureTest extends TestCase
             ],
             'misplacedRequiredParam' => [
                 '<?php
-                    function foo($bar = null, $bat) : void {}',
+                    function foo($bar = null, $bat): void {}',
                 'error_message' => 'MisplacedRequiredParam',
             ],
             'clasginByRef' => [
                 '<?php
                     class A {
-                      public function foo(string $a) : void {
+                      public function foo(string $a): void {
                         echo $a;
                       }
                     }
                     class B extends A {
-                      public function foo(string &$a) : void {
+                      public function foo(string &$a): void {
                         echo $a;
                       }
                     }',
@@ -291,19 +291,19 @@ class MethodSignatureTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {
-                      public function bar() : void {}
+                      public function bar(): void {}
                     }
                     class C extends A {
-                      public function bar() : void {}
+                      public function bar(): void {}
                     }
 
                     class D {
-                      public function foo(A $a) : void {}
+                      public function foo(A $a): void {}
                     }
 
                     class E extends D {
                       /** @param B|C $a */
-                      public function foo(A $a) : void {
+                      public function foo(A $a): void {
                         $a->bar();
                       }
                     }',

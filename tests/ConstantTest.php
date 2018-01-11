@@ -17,7 +17,7 @@ class ConstantTest extends TestCase
                     useTest();
                     const TEST = 2;
 
-                    function useTest() : int {
+                    function useTest(): int {
                         return TEST;
                     }',
             ],
@@ -25,7 +25,7 @@ class ConstantTest extends TestCase
                 '<?php
                     const TEST = 2;
 
-                    $useTest = function() : int {
+                    $useTest = function(): int {
                         return TEST;
                     };
                     $useTest();',

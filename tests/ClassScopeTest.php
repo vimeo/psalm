@@ -15,11 +15,11 @@ class ClassScopeTest extends TestCase
             'accessiblePrivateMethodFromSubclass' => [
                 '<?php
                     class A {
-                        private function fooFoo() : void {
+                        private function fooFoo(): void {
 
                         }
 
-                        private function barBar() : void {
+                        private function barBar(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -27,12 +27,12 @@ class ClassScopeTest extends TestCase
             'accessibleProtectedMethodFromSubclass' => [
                 '<?php
                     class A {
-                        protected function fooFoo() : void {
+                        protected function fooFoo(): void {
                         }
                     }
 
                     class B extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -40,14 +40,14 @@ class ClassScopeTest extends TestCase
             'accessibleProtectedMethodFromOtherSubclass' => [
                 '<?php
                     class A {
-                        protected function fooFoo() : void {
+                        protected function fooFoo(): void {
                         }
                     }
 
                     class B extends A { }
 
                     class C extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             (new B)->fooFoo();
                         }
                     }',
@@ -60,7 +60,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     class B extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo $this->fooFoo;
                         }
                     }',
@@ -77,7 +77,7 @@ class ClassScopeTest extends TestCase
                     class C extends B { }
 
                     class D extends C {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo $this->fooFoo;
                         }
                     }',
@@ -93,7 +93,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     class C extends A {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                             $b = new B();
                             $b->fooFoo = "hello";
                         }
@@ -105,13 +105,13 @@ class ClassScopeTest extends TestCase
                         /** @var string */
                         protected static $fooFoo = "";
 
-                        public function barBar() : void {
+                        public function barBar(): void {
                             echo self::$fooFoo;
                         }
                     }
 
                     class B extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo A::$fooFoo;
                         }
                     }',
@@ -119,17 +119,17 @@ class ClassScopeTest extends TestCase
             'definedPrivateMethod' => [
                 '<?php
                     class A {
-                        public function foo() : void {
+                        public function foo(): void {
                             if ($this instanceof B) {
                                 $this->boop();
                             }
                         }
 
-                        private function boop() : void {}
+                        private function boop(): void {}
                     }
 
                     class B extends A {
-                        private function boop() : void {}
+                        private function boop(): void {}
                     }',
             ],
         ];
@@ -144,7 +144,7 @@ class ClassScopeTest extends TestCase
             'inaccessiblePrivateMethod' => [
                 '<?php
                     class A {
-                        private function fooFoo() : void {
+                        private function fooFoo(): void {
 
                         }
                     }
@@ -155,7 +155,7 @@ class ClassScopeTest extends TestCase
             'inaccessibleProtectMethod' => [
                 '<?php
                     class A {
-                        protected function fooFoo() : void {
+                        protected function fooFoo(): void {
 
                         }
                     }
@@ -166,13 +166,13 @@ class ClassScopeTest extends TestCase
             'inaccessiblePrivateMethodFromSubclass' => [
                 '<?php
                     class A {
-                        private function fooFoo() : void {
+                        private function fooFoo(): void {
 
                         }
                     }
 
                     class B extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -181,7 +181,7 @@ class ClassScopeTest extends TestCase
             'inaccessibleProtectredMethodFromOtherSubclass' => [
                 '<?php
                     trait T {
-                        protected function fooFoo() : void {
+                        protected function fooFoo(): void {
                         }
                     }
 
@@ -192,7 +192,7 @@ class ClassScopeTest extends TestCase
                     class C {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             (new B)->fooFoo();
                         }
                     }',
@@ -226,7 +226,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     class B extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo $this->fooFoo;
                         }
                     }',
@@ -260,7 +260,7 @@ class ClassScopeTest extends TestCase
                     }
 
                     class B extends A {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo A::$fooFoo;
                         }
                     }',

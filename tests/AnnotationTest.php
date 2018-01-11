@@ -41,7 +41,7 @@ class AnnotationTest extends TestCase
                         /**
                          * @deprecated
                          */
-                        public static function barBar() : void {
+                        public static function barBar(): void {
                         }
                     }',
             ],
@@ -50,28 +50,28 @@ class AnnotationTest extends TestCase
                     /**
                      * @return string
                      */
-                    function fooFoo() : string {
+                    function fooFoo(): string {
                         return "boop";
                     }
 
                     /**
                      * @return array<int, string>
                      */
-                    function foo2() : array {
+                    function foo2(): array {
                         return ["hello"];
                     }
 
                     /**
                      * @return array<int, string>
                      */
-                    function foo3() : array {
+                    function foo3(): array {
                         return ["hello"];
                     }',
             ],
             'reassertWithIs' => [
                 '<?php
                     /** @param array $a */
-                    function foo($a) : void {
+                    function foo($a): void {
                         if (is_array($a)) {
                             // do something
                         }
@@ -80,7 +80,7 @@ class AnnotationTest extends TestCase
             'checkArrayWithIs' => [
                 '<?php
                     /** @param mixed $b */
-                    function foo($b) : void {
+                    function foo($b): void {
                         /** @var array */
                         $a = (array)$b;
                         if (is_array($a)) {
@@ -91,7 +91,7 @@ class AnnotationTest extends TestCase
             'checkArrayWithIsInsideLoop' => [
                 '<?php
                     /** @param array<mixed, array<mixed, mixed>> $data */
-                    function foo($data) : void {
+                    function foo($data): void {
                         foreach ($data as $key => $val) {
                             if (!\is_array($data)) {
                                 $data = [$key => null];
@@ -110,7 +110,7 @@ class AnnotationTest extends TestCase
                          * @param A $a
                          * @param bool $b
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b): void {
                         }
                     }',
             ],
@@ -123,7 +123,7 @@ class AnnotationTest extends TestCase
                          * @param \Foo\A $a
                          * @param bool $b
                          */
-                        public function g(A $a, $b) : void {
+                        public function g(A $a, $b): void {
                         }
                     }',
             ],
@@ -134,7 +134,7 @@ class AnnotationTest extends TestCase
                      */
                     class A {
                         /** @param string $name */
-                        public function __get($name) : ?string {
+                        public function __get($name): ?string {
                             if ($name === "foo") {
                                 return "hello";
                             }
@@ -144,7 +144,7 @@ class AnnotationTest extends TestCase
                          * @param string $name
                          * @param mixed $value
                          */
-                        public function __set($name, $value) : void {
+                        public function __set($name, $value): void {
                         }
                     }
 
@@ -159,14 +159,14 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         public function __get(string $name): ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
                          /** @param mixed $value */
-                         public function __set(string $name, $value) : void {
+                         public function __set(string $name, $value): void {
                          }
                     }
 
@@ -178,7 +178,7 @@ class AnnotationTest extends TestCase
                     class A {
                         /** @var int */
                         public $bar = 5;
-                        public function foo() : void {}
+                        public function foo(): void {}
                     }
 
                     /**
@@ -186,10 +186,10 @@ class AnnotationTest extends TestCase
                      * @psalm-ignore-nullable-return
                      */
                     function makeA() {
-                        return rand(0, 1) ? new A() : null;
+                        return rand(0, 1) ? new A(): null;
                     }
 
-                    function takeA(A $a) : void { }
+                    function takeA(A $a): void { }
 
                     $a = makeA();
                     $a->foo();
@@ -202,7 +202,7 @@ class AnnotationTest extends TestCase
                      * @param int $bar
                      * @psalm-suppress MismatchingDocblockParamType
                      */
-                    function fooFoo(array $bar) : void {
+                    function fooFoo(array $bar): void {
                     }',
             ],
             'differentDocblockParamClassSuppress' => [
@@ -213,7 +213,7 @@ class AnnotationTest extends TestCase
                      * @param B $bar
                      * @psalm-suppress MismatchingDocblockParamType
                      */
-                    function fooFoo(A $bar) : void {
+                    function fooFoo(A $bar): void {
                     }',
             ],
             'varDocblock' => [
@@ -227,31 +227,31 @@ class AnnotationTest extends TestCase
                 '<?php
                     class A {
                         /** @param mixed $a */
-                        public function foo($a) : void {}
+                        public function foo($a): void {}
                     }
 
                     class B extends A {
-                        public function foo($a) : void {}
+                        public function foo($a): void {}
                     }',
             ],
             'intDocblockParamTypeDefinedInParent' => [
                 '<?php
                     class A {
                         /** @param int $a */
-                        public function foo($a) : void {}
+                        public function foo($a): void {}
                     }
 
                     class B extends A {
-                        public function foo($a) : void {}
+                        public function foo($a): void {}
                     }',
             ],
             'varSelf' => [
                 '<?php
                     class A
                     {
-                        public function foo() : void {}
+                        public function foo(): void {}
 
-                        public function getMeAgain() : void {
+                        public function getMeAgain(): void {
                             /** @var self */
                             $me = $this;
                             $me->foo();
@@ -265,20 +265,20 @@ class AnnotationTest extends TestCase
                         /** @psalm-var array<int, string> */
                         public $foo = [];
 
-                        public function updateFoo() : void {
+                        public function updateFoo(): void {
                             $this->foo[5] = "hello";
                         }
                     }',
             ],
             'psalmParam' => [
                 '<?php
-                    function takesInt(int $a) : void {}
+                    function takesInt(int $a): void {}
 
                     /**
                      * @psalm-param  array<int, string> $a
                      * @param string[] $a
                      */
-                    function foo(array $a) : void {
+                    function foo(array $a): void {
                         foreach ($a as $key => $value) {
                             takesInt($key);
                         }
@@ -286,7 +286,7 @@ class AnnotationTest extends TestCase
             ],
             'returnDocblock' => [
                 '<?php
-                    function foo(int $i) : int {
+                    function foo(int $i): int {
                         /** @var int */
                         return $i;
                     }',
@@ -346,7 +346,7 @@ class AnnotationTest extends TestCase
                         /**
                          * @deprecated
                          */
-                        public static function barBar() : void {
+                        public static function barBar(): void {
                         }
                     }
 
@@ -359,7 +359,7 @@ class AnnotationTest extends TestCase
                      * @deprecated
                      */
                     class Foo {
-                        public static function barBar() : void {
+                        public static function barBar(): void {
                         }
                     }
 
@@ -406,7 +406,7 @@ class AnnotationTest extends TestCase
                     /**
                      * @param string $bar
                      */
-                    function fooBar() : void {
+                    function fooBar(): void {
                     }
 
                     fooBar("hello");',
@@ -417,7 +417,7 @@ class AnnotationTest extends TestCase
                     /**
                      * @param string
                      */
-                    function fooBar() : void {
+                    function fooBar(): void {
                     }',
                 'error_message' => 'InvalidDocblock - src/somefile.php:5 - Badly-formatted @param',
             ],
@@ -426,7 +426,7 @@ class AnnotationTest extends TestCase
                     /**
                      * @return string
                      */
-                    function fooFoo() : int {
+                    function fooFoo(): int {
                         return 5;
                     }',
                 'error_message' => 'MismatchingDocblockReturnType',
@@ -437,14 +437,14 @@ class AnnotationTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         public function __get(string $name): ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
                          /** @param mixed $value */
-                         public function __set(string $name, $value) : void {
+                         public function __set(string $name, $value): void {
                          }
                     }
 
@@ -458,14 +458,14 @@ class AnnotationTest extends TestCase
                      * @property-write string $foo
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         public function __get(string $name): ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
                          /** @param mixed $value */
-                         public function __set(string $name, $value) : void {
+                         public function __set(string $name, $value): void {
                          }
                     }
 
@@ -480,14 +480,14 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         public function __get(string $name): ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
                          /** @param mixed $value */
-                         public function __set(string $name, $value) : void {
+                         public function __set(string $name, $value): void {
                          }
                     }
 
@@ -502,14 +502,14 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         public function __get(string $name): ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
                          /** @param mixed $value */
-                         public function __set(string $name, $value) : void {
+                         public function __set(string $name, $value): void {
                          }
                     }
 
@@ -542,14 +542,14 @@ class AnnotationTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name) : ?string {
+                         public function __get(string $name): ?string {
                               if ($name === "foo") {
                                    return "hello";
                               }
                          }
 
                          /** @param mixed $value */
-                         public function __set(string $name, $value) : void {
+                         public function __set(string $name, $value): void {
                          }
                     }
 
@@ -559,7 +559,7 @@ class AnnotationTest extends TestCase
             ],
             'noStringParamType' => [
                 '<?php
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         echo substr($a, 4, 2);
                     }',
                 'error_message' => 'UntypedParam - src/somefile.php:2 - Parameter $a has no provided type,'
@@ -568,7 +568,7 @@ class AnnotationTest extends TestCase
             ],
             'noParamTypeButConcat' => [
                 '<?php
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         echo $a . "foo";
                     }',
                 'error_message' => 'UntypedParam - src/somefile.php:2 - Parameter $a has no provided type,'
@@ -577,7 +577,7 @@ class AnnotationTest extends TestCase
             ],
             'noParamTypeButAddition' => [
                 '<?php
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         echo $a + 5;
                     }',
                 'error_message' => 'UntypedParam - src/somefile.php:2 - Parameter $a has no provided type,'
@@ -586,7 +586,7 @@ class AnnotationTest extends TestCase
             ],
             'noParamTypeButDivision' => [
                 '<?php
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         echo $a / 5;
                     }',
                 'error_message' => 'UntypedParam - src/somefile.php:2 - Parameter $a has no provided type,'
@@ -595,7 +595,7 @@ class AnnotationTest extends TestCase
             ],
             'noParamTypeButTemplatedString' => [
                 '<?php
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         echo "$a";
                     }',
                 'error_message' => 'UntypedParam - src/somefile.php:2 - Parameter $a has no provided type,'
@@ -604,7 +604,7 @@ class AnnotationTest extends TestCase
             ],
             'noStringIntParamType' => [
                 '<?php
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         if (is_string($a)) {
                             echo substr($a, 4, 2);
                         } else {
@@ -618,20 +618,20 @@ class AnnotationTest extends TestCase
             'intParamTypeDefinedInParent' => [
                 '<?php
                     class A {
-                        public function foo(int $a) : void {}
+                        public function foo(int $a): void {}
                     }
 
                     class B extends A {
-                        public function foo($a) : void {}
+                        public function foo($a): void {}
                     }',
                 'error_message' => 'UntypedParam',
                 'error_levels' => ['MethodSignatureMismatch'],
             ],
             'alreadyHasCheck' => [
                 '<?php
-                    function takesString(string $s) : void {}
+                    function takesString(string $s): void {}
 
-                    function shouldTakeString($s) : void {
+                    function shouldTakeString($s): void {
                       if (is_string($s)) takesString($s);
                     }',
                 'error_message' => 'UntypedParam - src/somefile.php:4 - Parameter $s has no provided type,'
@@ -640,12 +640,12 @@ class AnnotationTest extends TestCase
             ],
             'isSetBeforeInferrence' => [
                 'input' => '<?php
-                    function takesString(string $s) : void {}
+                    function takesString(string $s): void {}
 
                     /** @return mixed */
                     function returnsMixed() {}
 
-                    function shouldTakeString($s) : void {
+                    function shouldTakeString($s): void {
                       $s = returnsMixed();
                       takesString($s);
                     }',
@@ -660,7 +660,7 @@ class AnnotationTest extends TestCase
                         /** @psalm-var array<int, string> */
                         public $foo = [];
 
-                        public function updateFoo() : void {
+                        public function updateFoo(): void {
                             $this->foo["boof"] = "hello";
                         }
                     }',
@@ -692,7 +692,7 @@ class AnnotationTest extends TestCase
             'badlyWrittenVar' => [
                 '<?php
                     /** @param mixed $x */
-                    function myvalue($x) : void {
+                    function myvalue($x): void {
                         /** @var $myVar MyNS\OtherClass */
                         $myVar = $x->conn()->method();
                         $myVar->otherMethod();
@@ -703,7 +703,7 @@ class AnnotationTest extends TestCase
                 '<?php
                     class A {
                         /** @return ?int */
-                        public function foo() : ?int {
+                        public function foo(): ?int {
                             if (rand(0, 1)) return 5;
                         }
                     }',
@@ -717,14 +717,14 @@ class AnnotationTest extends TestCase
                      * @return A
                      * @psalm-suppress MismatchingDocblockReturnType
                      */
-                    function foo() : B {
+                    function foo(): B {
                       return new A;
                     }',
                 'error_message' => 'UndefinedClass',
             ],
             'preventBadBoolean' => [
                 '<?php
-                    function foo() : boolean {
+                    function foo(): boolean {
                         return true;
                     }',
                 'error_message' => 'UndefinedClass',

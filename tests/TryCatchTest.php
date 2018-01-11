@@ -50,10 +50,10 @@ class TryCatchTest extends TestCase
             ],
             'alwaysReturnsBecauseCatchDoesNothing' => [
                 '<?php
-                    function throws() : void {
+                    function throws(): void {
                         throw new Exception("bad");
                     }
-                    function foo() : string {
+                    function foo(): string {
                         try {
                             throws();
                         } catch (Exception $e) {

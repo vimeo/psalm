@@ -22,7 +22,7 @@ class TypeTest extends TestCase
                     class B {
                         /** @return void */
                         public function barBar(A $a = null) {
-                            $b = $a ? $a->fooFoo() : null;
+                            $b = $a ? $a->fooFoo(): null;
                         }
                     }',
             ],
@@ -98,7 +98,7 @@ class TypeTest extends TestCase
                         /** @return void */
                         public function barBar(A $a = null) {
                             $this->a = $a;
-                            $b = $this->a ? $this->a->fooFoo() : null;
+                            $b = $this->a ? $this->a->fooFoo(): null;
                         }
                     }',
             ],
@@ -869,7 +869,7 @@ class TypeTest extends TestCase
                     /**
                      * @param array|string $a
                      */
-                    function fooFoo($a) : void {
+                    function fooFoo($a): void {
                         $b = "aadad";
 
                         if ($a === $b) {
@@ -1281,13 +1281,13 @@ class TypeTest extends TestCase
             'possiblyUndefinedMethod' => [
                 '<?php
                     class A {
-                        public function foo() : void {}
+                        public function foo(): void {}
                     }
                     class B {
-                        public function other() : void {}
+                        public function other(): void {}
                     }
 
-                    function a(bool $cond) : void {
+                    function a(bool $cond): void {
                         if ($cond) {
                             $a = new A();
                         } else {

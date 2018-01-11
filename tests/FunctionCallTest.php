@@ -18,7 +18,7 @@ class FunctionCallTest extends TestCase
             'somefile.php',
             '<?php
                 $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
-                $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i) : bool { return true; });'
+                $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i): bool { return true; });'
         );
 
         $file_checker = new FileChecker('somefile.php', $this->project_checker);
@@ -39,24 +39,24 @@ class FunctionCallTest extends TestCase
             $this->addFile(
                 'somefile.php',
                 '<?php
-                    $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key) : bool {
+                    $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key): bool {
                         return true;
                     }, ARRAY_FILTER_USE_BOTH);
-                    $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val) : bool {
+                    $g = array_filter(["a" => 5, "b" => 12, "c" => null], function(string $val): bool {
                         return true;
                     }, ARRAY_FILTER_USE_KEY);
 
                     $bar = "bar";
 
                     $foo = [
-                        $bar => function () : string {
+                        $bar => function (): string {
                             return "baz";
                         },
                     ];
 
                     $foo = array_filter(
                         $foo,
-                        function (string $key) : bool {
+                        function (string $key): bool {
                             return $key === "bar";
                         },
                         ARRAY_FILTER_USE_KEY
@@ -85,14 +85,14 @@ class FunctionCallTest extends TestCase
                     $bar = "bar";
 
                     $foo = [
-                        $bar => function () : string {
+                        $bar => function (): string {
                             return "baz";
                         },
                     ];
 
                     $foo = array_filter(
                         $foo,
-                        function (string $key) : bool {
+                        function (string $key): bool {
                             return $key === "bar";
                         },
                         ARRAY_FILTER_USE_KEY
@@ -117,7 +117,7 @@ class FunctionCallTest extends TestCase
                     class A {}
 
                     /** @param array<A> $a */
-                    function fooFoo(array $a = []) : void {
+                    function fooFoo(array $a = []): void {
 
                     }',
             ],
@@ -140,7 +140,7 @@ class FunctionCallTest extends TestCase
             ],
             'byRef' => [
                 '<?php
-                    function fooFoo(string &$v) : void {}
+                    function fooFoo(string &$v): void {}
                     fooFoo($a);',
             ],
             'namespaced' => [
@@ -273,7 +273,7 @@ class FunctionCallTest extends TestCase
             ],
             'extractVarCheck' => [
                 '<?php
-                    function takesString(string $str) : void {}
+                    function takesString(string $str): void {}
 
                     $foo = null;
                     $a = ["$foo" => "bar"];
@@ -315,7 +315,7 @@ class FunctionCallTest extends TestCase
                     $a = new A();
                     $b = "goodbye";
 
-                    function fooFoo(string &$v) : void {}
+                    function fooFoo(string &$v): void {}
 
                     fooFoo($a->foo);
                     fooFoo($b);',
@@ -354,11 +354,11 @@ class FunctionCallTest extends TestCase
             ],
             'arrayKeysNoEmpty' => [
                 '<?php
-                    function expect_string(string $x) : void {
+                    function expect_string(string $x): void {
                         echo $x;
                     }
 
-                    function test() : void {
+                    function test(): void {
                         foreach (array_keys([]) as $key) {
                             expect_string($key);
                         }
@@ -368,7 +368,7 @@ class FunctionCallTest extends TestCase
             ],
             'compact' => [
                 '<?php
-                    function test() : array {
+                    function test(): array {
                         return compact(["val"]);
                     }',
             ],
@@ -377,7 +377,7 @@ class FunctionCallTest extends TestCase
                     /**
                      * @param array<string, string> $b
                      */
-                    function a($b) : string
+                    function a($b): string
                     {
                       return $b["a"];
                     }
@@ -389,7 +389,7 @@ class FunctionCallTest extends TestCase
                     /**
                      * @param array{a: string} $b
                      */
-                    function a($b) : string
+                    function a($b): string
                     {
                       return $b["a"];
                     }
@@ -416,13 +416,13 @@ class FunctionCallTest extends TestCase
         return [
             'invalidScalarArgument' => [
                 '<?php
-                    function fooFoo(int $a) : void {}
+                    function fooFoo(int $a): void {}
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument',
             ],
             'mixedArgument' => [
                 '<?php
-                    function fooFoo(int $a) : void {}
+                    function fooFoo(int $a): void {}
                     /** @var mixed */
                     $a = "hello";
                     fooFoo($a);',
@@ -431,19 +431,19 @@ class FunctionCallTest extends TestCase
             ],
             'nullArgument' => [
                 '<?php
-                    function fooFoo(int $a) : void {}
+                    function fooFoo(int $a): void {}
                     fooFoo(null);',
                 'error_message' => 'NullArgument',
             ],
             'tooFewArguments' => [
                 '<?php
-                    function fooFoo(int $a) : void {}
+                    function fooFoo(int $a): void {}
                     fooFoo();',
                 'error_message' => 'TooFewArguments',
             ],
             'tooManyArguments' => [
                 '<?php
-                    function fooFoo(int $a) : void {}
+                    function fooFoo(int $a): void {}
                     fooFoo(5, "dfd");',
                 'error_message' => 'TooManyArguments',
             ],
@@ -458,7 +458,7 @@ class FunctionCallTest extends TestCase
                     class A {}
                     class B extends A{}
 
-                    function fooFoo(B $b) : void {}
+                    function fooFoo(B $b): void {}
                     fooFoo(new A());',
                 'error_message' => 'TypeCoercion',
             ],
@@ -500,13 +500,13 @@ class FunctionCallTest extends TestCase
             ],
             'badByRef' => [
                 '<?php
-                    function fooFoo(string &$v) : void {}
+                    function fooFoo(string &$v): void {}
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference',
             ],
             'badArrayByRef' => [
                 '<?php
-                    function fooFoo(array &$a) : void {}
+                    function fooFoo(array &$a): void {}
                     fooFoo([1, 2, 3]);',
                 'error_message' => 'InvalidPassByReference',
             ],
@@ -541,7 +541,7 @@ class FunctionCallTest extends TestCase
                     /**
                      * @param array<string, int> $b
                      */
-                    function a($b) : int
+                    function a($b): int
                     {
                       return $b["a"];
                     }
@@ -554,7 +554,7 @@ class FunctionCallTest extends TestCase
                     /**
                      * @param array{a: int} $b
                      */
-                    function a($b) : int
+                    function a($b): int
                     {
                       return $b["a"];
                     }

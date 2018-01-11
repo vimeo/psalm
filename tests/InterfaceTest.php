@@ -123,11 +123,11 @@ class InterfaceTest extends TestCase
             'correctInterfaceMethodSignature' => [
                 '<?php
                     interface A {
-                        public function fooFoo(int $a) : void;
+                        public function fooFoo(int $a): void;
                     }
 
                     class B implements A {
-                        public function fooFoo(int $a) : void {
+                        public function fooFoo(int $a): void {
 
                         }
                     }',
@@ -135,11 +135,11 @@ class InterfaceTest extends TestCase
             'interfaceMethodImplementedInParent' => [
                 '<?php
                     interface MyInterface {
-                        public function fooFoo(int $a) : void;
+                        public function fooFoo(int $a): void;
                     }
 
                     class B {
-                        public function fooFoo(int $a) : void {
+                        public function fooFoo(int $a): void {
 
                         }
                     }
@@ -149,11 +149,11 @@ class InterfaceTest extends TestCase
             'interfaceMethodSignatureInTrait' => [
                 '<?php
                     interface A {
-                        public function fooFoo(int $a, int $b) : void;
+                        public function fooFoo(int $a, int $b): void;
                     }
 
                     trait T {
-                        public function fooFoo(int $a, int $b) : void {
+                        public function fooFoo(int $a, int $b): void {
                         }
                     }
 
@@ -178,7 +178,7 @@ class InterfaceTest extends TestCase
                     interface B {
                         function foo();
                     }
-                    function bar(A $a) : void {
+                    function bar(A $a): void {
                         if ($a instanceof B) {
                             $a->foo();
                         }
@@ -199,7 +199,7 @@ class InterfaceTest extends TestCase
                     }
 
                     abstract class A implements I {
-                        public function bar() : void {
+                        public function bar(): void {
                             $this->foo();
                         }
                     }',
@@ -260,7 +260,7 @@ class InterfaceTest extends TestCase
                     interface A {}
                     interface B extends A {}
 
-                    function foo(B $a) : A {
+                    function foo(B $a): A {
                         return $a;
                     }',
             ],
@@ -271,9 +271,9 @@ class InterfaceTest extends TestCase
 
                     class C implements A, B {}
 
-                    function takesB(B $b) : void {}
+                    function takesB(B $b): void {}
 
-                    function foo(A $i) : A {
+                    function foo(A $i): A {
                         if ($i instanceof B) {
                             takesB($i);
                             return $i;
@@ -290,7 +290,7 @@ class InterfaceTest extends TestCase
 
                     class C implements A, B {}
 
-                    function foo(A $i) : B {
+                    function foo(A $i): B {
                         if ($i instanceof B) {
                             return $i;
                         }
@@ -341,7 +341,7 @@ class InterfaceTest extends TestCase
                 '<?php
                     interface A { }
 
-                    function fooFoo(A $a) : void {
+                    function fooFoo(A $a): void {
                         if ($a->bar) {
 
                         }
@@ -360,11 +360,11 @@ class InterfaceTest extends TestCase
             'mismatchingInterfaceMethodSignature' => [
                 '<?php
                     interface A {
-                        public function fooFoo(int $a) : void;
+                        public function fooFoo(int $a): void;
                     }
 
                     class B implements A {
-                        public function fooFoo(string $a) : void {
+                        public function fooFoo(string $a): void {
 
                         }
                     }',
@@ -373,11 +373,11 @@ class InterfaceTest extends TestCase
             'mismatchingInterfaceMethodSignatureInTrait' => [
                 '<?php
                     interface A {
-                        public function fooFoo(int $a, int $b) : void;
+                        public function fooFoo(int $a, int $b): void;
                     }
 
                     trait T {
-                        public function fooFoo(int $a) : void {
+                        public function fooFoo(int $a): void {
                         }
                     }
 
@@ -389,18 +389,18 @@ class InterfaceTest extends TestCase
             'mismatchingInterfaceMethodSignatureInImplementer' => [
                 '<?php
                     interface A {
-                        public function fooFoo(int $a, int $b) : void;
+                        public function fooFoo(int $a, int $b): void;
                     }
 
                     trait T {
-                        public function fooFoo(int $a, int $b) : void {
+                        public function fooFoo(int $a, int $b): void {
                         }
                     }
 
                     class B implements A {
                         use T;
 
-                        public function fooFoo(int $a) : void {
+                        public function fooFoo(int $a): void {
                         }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
@@ -408,13 +408,13 @@ class InterfaceTest extends TestCase
             'mismatchingReturnTypes' => [
                 '<?php
                     interface I1 {
-                      public function foo() : string;
+                      public function foo(): string;
                     }
                     interface I2 {
-                      public function foo() : int;
+                      public function foo(): int;
                     }
                     class A implements I1, I2 {
-                      public function foo() : string {
+                      public function foo(): string {
                         return "hello";
                       }
                     }',
@@ -445,7 +445,7 @@ class InterfaceTest extends TestCase
                     }
 
                     abstract class A implements I {
-                        public function bar() : void {
+                        public function bar(): void {
                             $this->foo2();
                         }
                     }',
@@ -467,7 +467,7 @@ class InterfaceTest extends TestCase
                     interface A {}
                     interface B extends A {}
 
-                    function foo(A $a) : B {
+                    function foo(A $a): B {
                         return $a;
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
@@ -498,7 +498,7 @@ class InterfaceTest extends TestCase
 
                     class C implements A, B {}
 
-                    function foo(A $i) : B {
+                    function foo(A $i): B {
                         if ($i instanceof B) {
                             return $i;
                         }

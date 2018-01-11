@@ -69,7 +69,7 @@ class ForeachTest extends TestCase
 
                     class B extends A {}
 
-                    function bar(A $a) : void {}
+                    function bar(A $a): void {}
 
                     $arr = [];
 

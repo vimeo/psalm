@@ -32,7 +32,7 @@ class SwitchTypeTest extends TestCase
                         }
                     }
 
-                    $a = rand(0, 10) ? new A() : new B();
+                    $a = rand(0, 10) ? new A(): new B();
 
                     switch (get_class($a)) {
                         case "A":
@@ -64,7 +64,7 @@ class SwitchTypeTest extends TestCase
                         }
                     }
 
-                    $a = rand(0, 10) ? new A() : new B();
+                    $a = rand(0, 10) ? new A(): new B();
 
                     switch (get_class($a)) {
                         case A::class:
@@ -112,10 +112,10 @@ class SwitchTypeTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }
 
-                    function takesA(A $a) : void {
+                    function takesA(A $a): void {
                       $class = get_class($a);
                       switch ($class) {
                         case B::class:
@@ -126,11 +126,11 @@ class SwitchTypeTest extends TestCase
             ],
             'getTypeArg' => [
                 '<?php
-                    function testInt(int $var) : void {
+                    function testInt(int $var): void {
 
                     }
 
-                    function testString(string $var) : void {
+                    function testString(string $var): void {
 
                     }
 
@@ -308,7 +308,7 @@ class SwitchTypeTest extends TestCase
                         }
                     }
 
-                    $a = rand(0, 10) ? new A() : new B();
+                    $a = rand(0, 10) ? new A(): new B();
 
                     switch (get_class($a)) {
                         case "A":
@@ -322,7 +322,7 @@ class SwitchTypeTest extends TestCase
                     class A {}
                     class B {}
 
-                    $a = rand(0, 10) ? new A() : new B();
+                    $a = rand(0, 10) ? new A(): new B();
 
                     switch (get_class($a)) {
                         case "C":
@@ -342,11 +342,11 @@ class SwitchTypeTest extends TestCase
             ],
             'getTypeArgWrongArgs' => [
                 '<?php
-                    function testInt(int $var) : void {
+                    function testInt(int $var): void {
 
                     }
 
-                    function testString(string $var) : void {
+                    function testString(string $var): void {
 
                     }
 
@@ -363,7 +363,7 @@ class SwitchTypeTest extends TestCase
             ],
             'switchBadMethodCallInCase' => [
                 '<?php
-                    function f(string $p) : void { }
+                    function f(string $p): void { }
 
                     switch (true) {
                         case $q = (bool) rand(0,1):

@@ -55,7 +55,7 @@ class ClosureTest extends TestCase
             ],
             'varReturnType' => [
                 '<?php
-                    $add_one = function(int $a) : int {
+                    $add_one = function(int $a): int {
                         return $a + 1;
                     };
 
@@ -70,26 +70,26 @@ class ClosureTest extends TestCase
                      * @return callable
                      */
                     function foo() {
-                        return function(string $a) : string {
+                        return function(string $a): string {
                             return $a . "blah";
                         };
                     }',
             ],
             'callable' => [
                 '<?php
-                    function foo(callable $c) : void {
+                    function foo(callable $c): void {
                         echo (string)$c();
                     }',
             ],
             'callableClass' => [
                 '<?php
                     class C {
-                        public function __invoke() : string {
+                        public function __invoke(): string {
                             return "You ran?";
                         }
                     }
 
-                    function foo(callable $c) : void {
+                    function foo(callable $c): void {
                         echo (string)$c();
                     }
 
@@ -100,18 +100,18 @@ class ClosureTest extends TestCase
             ],
             'correctParamType' => [
                 '<?php
-                    $take_string = function(string $s) : string { return $s; };
+                    $take_string = function(string $s): string { return $s; };
                     $take_string("string");',
             ],
             'callableMethod' => [
                 '<?php
                     class A {
-                        public static function bar(string $a) : string {
+                        public static function bar(string $a): string {
                             return $a . "b";
                         }
                     }
 
-                    function foo(callable $c) : void {}
+                    function foo(callable $c): void {}
 
                     foo("A::bar");
                     foo(["A", "bar"]);
@@ -122,12 +122,12 @@ class ClosureTest extends TestCase
             'arrayMapCallableMethod' => [
                 '<?php
                     class A {
-                        public static function bar(string $a) : string {
+                        public static function bar(string $a): string {
                             return $a . "b";
                         }
                     }
 
-                    function baz(string $a) : string {
+                    function baz(string $a): string {
                         return $a . "b";
                     }
 
@@ -150,26 +150,26 @@ class ClosureTest extends TestCase
             'arrayCallableMethod' => [
                 '<?php
                     class A {
-                        public static function bar(string $a) : string {
+                        public static function bar(string $a): string {
                             return $a . "b";
                         }
                     }
 
-                    function foo(callable $c) : void {}
+                    function foo(callable $c): void {}
 
                     foo(["A", "bar"]);',
             ],
             'callableFunction' => [
                 '<?php
-                    function foo(callable $c) : void {}
+                    function foo(callable $c): void {}
 
                     foo("trim");',
             ],
             'inlineCallableFunction' => [
                 '<?php
                     class A {
-                        function bar() : void {
-                            function foobar(int $a, int $b) : int {
+                        function bar(): void {
+                            function foobar(int $a, int $b): int {
                                 return $a > $b ? 1 : 0;
                             }
 
@@ -220,7 +220,7 @@ class ClosureTest extends TestCase
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
-                        function(int $a) : int {
+                        function(int $a): int {
                             return $a + 1;
                         },
                         $bar
@@ -232,7 +232,7 @@ class ClosureTest extends TestCase
                     $bar = ["foo", "bar"];
 
                     $bam = array_map(
-                        function(string $a) : string {
+                        function(string $a): string {
                         },
                         $bar
                     );',
@@ -241,7 +241,7 @@ class ClosureTest extends TestCase
             'undefinedCallableClass' => [
                 '<?php
                     class A {
-                        public function getFoo() : Foo
+                        public function getFoo(): Foo
                         {
                             return new Foo([]);
                         }
@@ -262,12 +262,12 @@ class ClosureTest extends TestCase
             'undefinedCallableMethod' => [
                 '<?php
                     class A {
-                        public static function bar(string $a) : string {
+                        public static function bar(string $a): string {
                             return $a . "b";
                         }
                     }
 
-                    function foo(callable $c) : void {}
+                    function foo(callable $c): void {}
 
                     foo("A::barr");',
                 'error_message' => 'UndefinedMethod',
@@ -275,19 +275,19 @@ class ClosureTest extends TestCase
             'undefinedCallableMethodClass' => [
                 '<?php
                     class A {
-                        public static function bar(string $a) : string {
+                        public static function bar(string $a): string {
                             return $a . "b";
                         }
                     }
 
-                    function foo(callable $c) : void {}
+                    function foo(callable $c): void {}
 
                     foo("B::bar");',
                 'error_message' => 'UndefinedClass',
             ],
             'undefinedCallableFunction' => [
                 '<?php
-                    function foo(callable $c) : void {}
+                    function foo(callable $c): void {}
 
                     foo("trime");',
                 'error_message' => 'UndefinedFunction',
@@ -302,7 +302,7 @@ class ClosureTest extends TestCase
 
                     $foo =
                         /** @param mixed $bar */
-                        function ($bar) use (&$foo) : string
+                        function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {
                                 return $foo($bar);
@@ -320,7 +320,7 @@ class ClosureTest extends TestCase
             ],
             'wrongParamType' => [
                 '<?php
-                    $take_string = function(string $s) : string { return $s; };
+                    $take_string = function(string $s): string { return $s; };
                     $take_string(42);',
                 'error_message' => 'InvalidScalarArgument',
             ],

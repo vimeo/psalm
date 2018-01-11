@@ -58,7 +58,7 @@ class MethodMutationTest extends TestCase
                 $this->user_viewdata = new UserViewData();
             }
 
-            public function setUser() : void
+            public function setUser(): void
             {
                 $user_id = (int)$_GET["id"];
 
@@ -77,7 +77,7 @@ class MethodMutationTest extends TestCase
         }
 
         class FooController extends Controller {
-            public function barBar() : Response {
+            public function barBar(): Response {
                 $this->setUser();
 
                 if (rand(0, 1)) {
@@ -145,7 +145,7 @@ class MethodMutationTest extends TestCase
         class Foo { }
 
         trait T {
-            private function setFoo() : void {
+            private function setFoo(): void {
                 $this->foo = new Foo();
             }
         }

@@ -345,7 +345,7 @@ class FunctionDocblockManipulator
                     $file_manipulations[$manipulator->return_typehint_area_start] = new FileManipulation(
                         $manipulator->return_typehint_area_start,
                         $manipulator->return_typehint_area_start,
-                        ' : ' . $manipulator->new_php_return_type
+                        ': ' . $manipulator->new_php_return_type
                     );
                 }
             } elseif ($manipulator->return_typehint_colon_start

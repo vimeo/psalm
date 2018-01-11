@@ -15,9 +15,9 @@ class ArrayAccessTest extends TestCase
             'instanceOfStringOffset' => [
                 '<?php
                     class A {
-                        public function fooFoo() : void { }
+                        public function fooFoo(): void { }
                     }
-                    function bar (array $a) : void {
+                    function bar (array $a): void {
                         if ($a["a"] instanceof A) {
                             $a["a"]->fooFoo();
                         }
@@ -26,9 +26,9 @@ class ArrayAccessTest extends TestCase
             'instanceOfIntOffset' => [
                 '<?php
                     class A {
-                        public function fooFoo() : void { }
+                        public function fooFoo(): void { }
                     }
-                    function bar (array $a) : void {
+                    function bar (array $a): void {
                         if ($a[0] instanceof A) {
                             $a[0]->fooFoo();
                         }
@@ -39,7 +39,7 @@ class ArrayAccessTest extends TestCase
                     /**
                      * @param  array<string>  $a
                      */
-                    function bar (array $a) : string {
+                    function bar (array $a): string {
                         if ($a["bat"]) {
                             return $a["bat"];
                         }
@@ -61,7 +61,7 @@ class ArrayAccessTest extends TestCase
                     /**
                      * @param  array<string>  $a
                      */
-                    function bar (array $a) : string {
+                    function bar (array $a): string {
                         if ($a[0]) {
                             return $a[0];
                         }
@@ -88,14 +88,14 @@ class ArrayAccessTest extends TestCase
             ],
             'objectLikeWithoutKeys' => [
                 '<?php
-                    function takesInt(int $i) : void {}
-                    function takesString(string $s) : void {}
-                    function takesBool(bool $b) : void {}
+                    function takesInt(int $i): void {}
+                    function takesString(string $s): void {}
+                    function takesBool(bool $b): void {}
 
                     /**
                      * @param array{int, string, bool} $b
                      */
-                    function a(array $b) : void {
+                    function a(array $b): void {
                         takesInt($b[0]);
                         takesString($b[1]);
                         takesBool($b[2]);

@@ -15,14 +15,14 @@ class TraitTest extends TestCase
             'accessiblePrivateMethodFromTrait' => [
                 '<?php
                     trait T {
-                        private function fooFoo() : void {
+                        private function fooFoo(): void {
                         }
                     }
 
                     class B {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -30,14 +30,14 @@ class TraitTest extends TestCase
             'accessibleProtectedMethodFromTrait' => [
                 '<?php
                     trait T {
-                        protected function fooFoo() : void {
+                        protected function fooFoo(): void {
                         }
                     }
 
                     class B {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -45,14 +45,14 @@ class TraitTest extends TestCase
             'accessiblePublicMethodFromTrait' => [
                 '<?php
                     trait T {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                         }
                     }
 
                     class B {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -67,7 +67,7 @@ class TraitTest extends TestCase
                     class B {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo $this->fooFoo;
                             $this->fooFoo = "hello";
                         }
@@ -83,7 +83,7 @@ class TraitTest extends TestCase
                     class B {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo $this->fooFoo;
                             $this->fooFoo = "hello";
                         }
@@ -99,7 +99,7 @@ class TraitTest extends TestCase
                     class B {
                         use T;
 
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             echo $this->fooFoo;
                             $this->fooFoo = "hello";
                         }
@@ -108,7 +108,7 @@ class TraitTest extends TestCase
             'accessibleProtectedMethodFromInheritedTrait' => [
                 '<?php
                     trait T {
-                        protected function fooFoo() : void {
+                        protected function fooFoo(): void {
                         }
                     }
 
@@ -117,7 +117,7 @@ class TraitTest extends TestCase
                     }
 
                     class C extends B {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -125,7 +125,7 @@ class TraitTest extends TestCase
             'accessiblePublicMethodFromInheritedTrait' => [
                 '<?php
                     trait T {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                         }
                     }
 
@@ -134,7 +134,7 @@ class TraitTest extends TestCase
                     }
 
                     class C extends B {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -142,7 +142,7 @@ class TraitTest extends TestCase
             'staticClassMethodFromWithinTrait' => [
                 '<?php
                     trait T {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                             self::barBar();
                         }
                     }
@@ -150,7 +150,7 @@ class TraitTest extends TestCase
                     class B {
                         use T;
 
-                        public static function barBar() : void {
+                        public static function barBar(): void {
 
                         }
                     }',
@@ -158,14 +158,14 @@ class TraitTest extends TestCase
             'redefinedTraitMethodWithoutAlias' => [
                 '<?php
                     trait T {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                         }
                     }
 
                     class B {
                         use T;
 
-                        public function fooFoo(string $a) : void {
+                        public function fooFoo(string $a): void {
                         }
                     }
 
@@ -174,7 +174,7 @@ class TraitTest extends TestCase
             'redefinedTraitMethodWithAlias' => [
                 '<?php
                     trait T {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                         }
                     }
 
@@ -183,7 +183,7 @@ class TraitTest extends TestCase
                             fooFoo as barBar;
                         }
 
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                             $this->barBar();
                         }
                     }',
@@ -265,7 +265,7 @@ class TraitTest extends TestCase
             'instanceOfTraitUser' => [
                 '<?php
                     trait T {
-                      public function f() : void {
+                      public function f(): void {
                         if ($this instanceof A) { }
                       }
                     }
@@ -281,7 +281,7 @@ class TraitTest extends TestCase
             'getClassTraitUser' => [
                 '<?php
                     trait T {
-                      public function f() : void {
+                      public function f(): void {
                         if (get_class($this) === "B") { }
                       }
                     }
@@ -297,21 +297,21 @@ class TraitTest extends TestCase
             'useTraitInClassWithAbstractMethod' => [
                 '<?php
                     trait T {
-                      abstract public function foo() : void;
+                      abstract public function foo(): void;
                     }
 
                     class A {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }',
             ],
             'useTraitInSubclassWithAbstractMethod' => [
                 '<?php
                     trait T {
-                      abstract public function foo() : void;
+                      abstract public function foo(): void;
                     }
 
                     abstract class A {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }
 
                     class B extends A {
@@ -321,11 +321,11 @@ class TraitTest extends TestCase
             'useTraitInSubclassWithAbstractMethodInParent' => [
                 '<?php
                     trait T {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }
 
                     abstract class A {
-                      abstract public function foo() : void {}
+                      abstract public function foo(): void {}
                     }
 
                     class B extends A {
@@ -335,11 +335,11 @@ class TraitTest extends TestCase
             'differentMethodReturnTypes' => [
                 '<?php
                     trait T {
-                        public static function getSelf() : self {
+                        public static function getSelf(): self {
                             return new self();
                         }
 
-                        public static function callGetSelf() : self {
+                        public static function callGetSelf(): self {
                             return self::getSelf();
                         }
                     }
@@ -355,12 +355,12 @@ class TraitTest extends TestCase
             'parentRefInTraitShouldNotFail' => [
                 '<?php
                     trait T {
-                      public function foo() : void {
+                      public function foo(): void {
                         parent::foo();
                       }
                     }
                     class A {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }
                     class B extends A {
                       use T;
@@ -378,7 +378,7 @@ class TraitTest extends TestCase
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 '<?php
                     trait T {
-                        private function fooFoo() : void {
+                        private function fooFoo(): void {
                         }
                     }
 
@@ -387,7 +387,7 @@ class TraitTest extends TestCase
                     }
 
                     class C extends B {
-                        public function doFoo() : void {
+                        public function doFoo(): void {
                             $this->fooFoo();
                         }
                     }',
@@ -408,7 +408,7 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function assignToFoo() : void {
+                        public function assignToFoo(): void {
                             $this->foo = 5;
                         }
                     }',
@@ -423,7 +423,7 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function __construct() : void {
+                        public function __construct(): void {
                             $this->foo = 5;
                         }
                     }',
@@ -438,11 +438,11 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function __construct() : void {
+                        public function __construct(): void {
                             $this->foo = 5;
                         }
 
-                        public function makeNull() : void {
+                        public function makeNull(): void {
                             $this->foo = null;
                         }
                     }',
@@ -457,7 +457,7 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function __construct() : void {
+                        public function __construct(): void {
                             $this->foo = 5;
                         }
                     }',
@@ -467,7 +467,7 @@ class TraitTest extends TestCase
             'redefinedTraitMethodInSubclass' => [
                 '<?php
                     trait T {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                         }
                     }
 
@@ -476,7 +476,7 @@ class TraitTest extends TestCase
                     }
 
                     class C extends B {
-                        public function fooFoo(string $a) : void {
+                        public function fooFoo(string $a): void {
                         }
                     }',
                 'error_message' => 'MethodSignatureMismatch',

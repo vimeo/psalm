@@ -67,13 +67,13 @@ class IncludeTest extends TestCase
                         require("file1.php");
 
                         class B {
-                            public function foo() : void {
+                            public function foo(): void {
                                 (new A)->fooFoo();
                             }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
-                            public function fooFoo() : void {
+                            public function fooFoo(): void {
 
                             }
                         }',
@@ -86,7 +86,7 @@ class IncludeTest extends TestCase
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
-                            public function fooFoo() : void {
+                            public function fooFoo(): void {
 
                             }
                         }',
@@ -99,7 +99,7 @@ class IncludeTest extends TestCase
                         require("file2.php");
 
                         class C extends B {
-                            public function doFoo() : void {
+                            public function doFoo(): void {
                                 $this->fooFoo();
                             }
                         }',
@@ -119,7 +119,7 @@ class IncludeTest extends TestCase
                         require("file1.php");
 
                         class B {
-                            public function foo() : void {
+                            public function foo(): void {
                                 (new Foo\A);
                             }
                         }',
@@ -131,7 +131,7 @@ class IncludeTest extends TestCase
             'requireFunction' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
-                        function fooFoo() : void {
+                        function fooFoo(): void {
 
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
@@ -171,7 +171,7 @@ class IncludeTest extends TestCase
                         use Foo\A;
 
                         class B {
-                            public function foo() : void {
+                            public function foo(): void {
                                 (new A);
                             }
                         }',
@@ -187,7 +187,7 @@ class IncludeTest extends TestCase
                         require_once("file3.php");
 
                         class B extends A {
-                            public function doFoo() : void {
+                            public function doFoo(): void {
                                 $this->fooFoo();
                             }
                         }
@@ -199,7 +199,7 @@ class IncludeTest extends TestCase
                         require_once("file3.php");
 
                         class A{
-                            public function fooFoo() : void { }
+                            public function fooFoo(): void { }
                         }
 
                         new C();',
@@ -222,20 +222,20 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         require_once("file2.php");
                         class B extends A {
-                            public function doFoo() : void {
+                            public function doFoo(): void {
                                 $this->fooFoo();
                             }
                         }
                         class C {
-                            public function barBar() : void { }
+                            public function barBar(): void { }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
                         require_once("file1.php");
                         class A{
-                            public function fooFoo() : void { }
+                            public function fooFoo(): void { }
                         }
                         class D extends C {
-                            public function doBar() : void {
+                            public function doBar(): void {
                                 $this->barBar();
                             }
                         }',
@@ -278,13 +278,13 @@ class IncludeTest extends TestCase
                         require("file1.php");
 
                         class B {
-                            public function foo() : void {
+                            public function foo(): void {
                                 (new A)->fooFo();
                             }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A{
-                            public function fooFoo() : void {
+                            public function fooFoo(): void {
 
                             }
                         }',

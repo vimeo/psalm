@@ -46,7 +46,7 @@ class ListTest extends TestCase
                         /** @var string */
                         public $b = "";
 
-                        public function fooFoo() : string
+                        public function fooFoo(): string
                         {
                             list($this->a, $this->b) = ["a", "b"];
 
@@ -85,7 +85,7 @@ class ListTest extends TestCase
                         /** @var string */
                         public $b = "";
 
-                        public function fooFoo() : string
+                        public function fooFoo(): string
                         {
                             list($this->a, $this->b) = ["a", "b"];
 

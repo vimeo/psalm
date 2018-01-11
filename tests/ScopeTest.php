@@ -122,12 +122,12 @@ class ScopeTest extends TestCase
                         /** @var A|null */
                         public $foo;
 
-                        public function __toString() : string {
+                        public function __toString(): string {
                             return "boop";
                         }
                     }
 
-                    $a = rand(0, 10) === 5 ? new A() : null;
+                    $a = rand(0, 10) === 5 ? new A(): null;
 
                     if (false) {
 
@@ -140,7 +140,7 @@ class ScopeTest extends TestCase
                 '<?php
                     $foo = "foo";
 
-                    function a() : string {
+                    function a(): string {
                         global $foo;
 
                         return $foo;
@@ -174,7 +174,7 @@ class ScopeTest extends TestCase
             'refineOredType' => [
                 '<?php
                     class A {
-                        public function doThing() : void
+                        public function doThing(): void
                         {
                             if ($this instanceof B || $this instanceof C) {
                                 if ($this instanceof B) {
@@ -261,7 +261,7 @@ class ScopeTest extends TestCase
             ],
             'static' => [
                 '<?php
-                    function a() : string {
+                    function a(): string {
                         static $foo = "foo";
 
                         return $foo;

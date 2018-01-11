@@ -21,7 +21,7 @@ class ReturnTypeTest extends TestCase
                          * @return One|null
                          */
                         public function barBar() {
-                            $baz = rand(0,100) > 50 ? new One() : null;
+                            $baz = rand(0,100) > 50 ? new One(): null;
 
                             // should have no effect
                             if ($baz === null) {
@@ -367,7 +367,7 @@ class ReturnTypeTest extends TestCase
             'resourceParamType' => [
                 '<?php
                     /** @param resource $res */
-                    function doSomething($res) : void {
+                    function doSomething($res): void {
                     }',
             ],
             'returnArrayOfNullable' => [
@@ -408,7 +408,7 @@ class ReturnTypeTest extends TestCase
                         /**
                          * @return static
                          */
-                        public function getMe() : self
+                        public function getMe(): self
                         {
                             return $this;
                         }
@@ -419,7 +419,7 @@ class ReturnTypeTest extends TestCase
                         /**
                          * @return static
                          */
-                        public function getMeAgain() : self {
+                        public function getMeAgain(): self {
                             return $this->getMe();
                         }
                     }',
@@ -427,31 +427,31 @@ class ReturnTypeTest extends TestCase
             'returnTrueFromBool' => [
                 '<?php
                     /** @return bool */
-                    function foo() : bool {
+                    function foo(): bool {
                         return true;
                     }',
             ],
             'iteratorReturnTypeFromGenerator' => [
                 '<?php
-                    function foo1() : Generator {
+                    function foo1(): Generator {
                         foreach ([1, 2, 3] as $i) {
                             yield $i;
                         }
                     }
 
-                    function foo2() : Iterator {
+                    function foo2(): Iterator {
                         foreach ([1, 2, 3] as $i) {
                             yield $i;
                         }
                     }
 
-                    function foo3() : Traversable {
+                    function foo3(): Traversable {
                         foreach ([1, 2, 3] as $i) {
                             yield $i;
                         }
                     }
 
-                    function foo4() : iterable {
+                    function foo4(): iterable {
                         foreach ([1, 2, 3] as $i) {
                             yield $i;
                         }
@@ -475,14 +475,14 @@ class ReturnTypeTest extends TestCase
         return [
             'wrongReturnType1' => [
                 '<?php
-                    function fooFoo() : string {
+                    function fooFoo(): string {
                         return 5;
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
             'wrongReturnType2' => [
                 '<?php
-                    function fooFoo() : string {
+                    function fooFoo(): string {
                         return rand(0, 5) ? "hello" : null;
                     }',
                 'error_message' => 'NullableReturnStatement',
@@ -491,7 +491,7 @@ class ReturnTypeTest extends TestCase
                 '<?php
                     namespace bar;
 
-                    function fooFoo() : string {
+                    function fooFoo(): string {
                         return 5;
                     }',
                 'error_message' => 'InvalidReturnStatement',
@@ -500,7 +500,7 @@ class ReturnTypeTest extends TestCase
                 '<?php
                     namespace bar;
 
-                    function fooFoo() : string {
+                    function fooFoo(): string {
                         return rand(0, 5) ? "hello" : null;
                     }',
                 'error_message' => 'NullableReturnStatement',
@@ -514,7 +514,7 @@ class ReturnTypeTest extends TestCase
             ],
             'mixedInferredReturnType' => [
                 '<?php
-                    function fooFoo(array $arr) : string {
+                    function fooFoo(array $arr): string {
                         /** @psalm-suppress MixedReturnStatement */
                         return array_pop($arr);
                     }',
@@ -522,14 +522,14 @@ class ReturnTypeTest extends TestCase
             ],
             'mixedInferredReturnStatement' => [
                 '<?php
-                    function fooFoo(array $arr) : string {
+                    function fooFoo(array $arr): string {
                         return array_pop($arr);
                     }',
                 'error_message' => 'MixedReturnStatement',
             ],
             'invalidReturnTypeClass' => [
                 '<?php
-                    function fooFoo() : A {
+                    function fooFoo(): A {
                         return new A;
                     }',
                 'error_message' => 'UndefinedClass',
@@ -541,7 +541,7 @@ class ReturnTypeTest extends TestCase
                      * @psalm-suppress UndefinedClass
                      * @psalm-suppress MixedInferredReturnType
                      */
-                    function fooFoo() : A {
+                    function fooFoo(): A {
                         return array_pop([]);
                     }
 
@@ -562,7 +562,7 @@ class ReturnTypeTest extends TestCase
             ],
             'resourceReturnType' => [
                 '<?php
-                    function getOutput() : resource {
+                    function getOutput(): resource {
                         $res = fopen("php://output", "w");
 
                         if ($res === false) {
@@ -575,7 +575,7 @@ class ReturnTypeTest extends TestCase
             ],
             'resourceParamType' => [
                 '<?php
-                    function doSomething(resource $res) : void {
+                    function doSomething(resource $res): void {
                     }',
                 'error_message' => 'ReservedWord',
             ],
@@ -591,9 +591,9 @@ class ReturnTypeTest extends TestCase
             ],
             'disallowReturningExplicitVoid' => [
                 '<?php
-                    function returnsVoid() : void {}
+                    function returnsVoid(): void {}
 
-                    function alsoReturnsVoid() : void {
+                    function alsoReturnsVoid(): void {
                       return returnsVoid();
                     }',
                 'error_message' => 'InvalidReturnStatement',
@@ -601,7 +601,7 @@ class ReturnTypeTest extends TestCase
             'complainAboutObjectLikeWhenArrayIsFound' => [
                 '<?php
                     /** @return array{a:string,b:string,c:string} */
-                    function foo() : array {
+                    function foo(): array {
                       $arr = [];
                       foreach (["a", "b"] as $key) {
                         $arr[$key] = "foo";
@@ -644,7 +644,7 @@ class ReturnTypeTest extends TestCase
             ],
             'returnTypehintRequiresExplicitReturn' => [
                 '<?php
-                    function foo() : ?string {
+                    function foo(): ?string {
                       if (rand(0, 1)) return "hello";
                     }',
                 'error_message' => 'InvalidReturnType',

@@ -180,7 +180,7 @@ class TemplateTest extends TestCase
                             return $this->obj;
                         }
 
-                        public function __toString() : string {
+                        public function __toString(): string {
                             return "hello " . $this->obj;
                         }
                     }
@@ -208,7 +208,7 @@ class TemplateTest extends TestCase
                          * @return int
                          * The arity of this tuple
                          */
-                        public function arity() : int
+                        public function arity(): int
                         {
                             return (int)static::ARITY;
                         }
@@ -217,7 +217,7 @@ class TemplateTest extends TestCase
                          * @return array
                          * An array of all elements in this tuple.
                          */
-                        abstract public function toArray() : array;
+                        abstract public function toArray(): array;
                     }
 
                     /**
@@ -246,7 +246,7 @@ class TemplateTest extends TestCase
                          * @return int
                          * The arity of this tuple
                          */
-                        public function arity() : int
+                        public function arity(): int
                         {
                             return (int)static::ARITY;
                         }
@@ -255,7 +255,7 @@ class TemplateTest extends TestCase
                          * @return array
                          * An array of all elements in this tuple.
                          */
-                        public function toArray() : array
+                        public function toArray(): array
                         {
                             return [
                                 $this->_0,
@@ -298,7 +298,7 @@ class TemplateTest extends TestCase
                          * @return array
                          * An array of all elements in this tuple.
                          */
-                        public function toArray() : array
+                        public function toArray(): array
                         {
                             return [
                                 $this->_0,
@@ -331,7 +331,7 @@ class TemplateTest extends TestCase
                         return $x;
                     }
 
-                    function bar(string $a) : void { }
+                    function bar(string $a): void { }
 
                     bar(foo("string"));',
             ],
@@ -350,7 +350,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    function bar(string $a): void { }
 
                     bar(A::foo("string"));',
             ],
@@ -369,7 +369,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    function bar(string $a): void { }
 
                     bar((new A())->foo("string"));',
             ],
@@ -451,7 +451,7 @@ class TemplateTest extends TestCase
                         return $x;
                     }
 
-                    function bar(string $a) : void { }
+                    function bar(string $a): void { }
 
                     bar(foo(4));',
                 'error_message' => 'InvalidScalarArgument',
@@ -471,7 +471,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    function bar(string $a): void { }
 
                     bar(A::foo(4));',
                 'error_message' => 'InvalidScalarArgument',
@@ -491,7 +491,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    function bar(string $a) : void { }
+                    function bar(string $a): void { }
 
                     bar((new A())->foo(4));',
                 'error_message' => 'InvalidScalarArgument',

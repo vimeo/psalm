@@ -589,13 +589,13 @@ class ArrayAssignmentTest extends TestCase
             'mixedArrayCoercion' => [
                 '<?php
                     /** @param int[] $arg */
-                    function expect_int_array($arg) : void { }
+                    function expect_int_array($arg): void { }
                     /** @return array */
                     function generic_array() { return []; }
 
                     expect_int_array(generic_array());
 
-                    function expect_int(int $arg) : void {}
+                    function expect_int(int $arg): void {}
                     /** @return mixed */
                     function return_mixed() { return 2; }
                     expect_int(return_mixed());',
@@ -604,7 +604,7 @@ class ArrayAssignmentTest extends TestCase
             ],
             'suppressMixedObjectOffset' => [
                 '<?php
-                    function getThings() : array {
+                    function getThings(): array {
                       return [];
                     }
 
@@ -659,15 +659,15 @@ class ArrayAssignmentTest extends TestCase
                          * @param  string|int $offset
                          * @param  mixed $value
                          */
-                        public function offsetSet($offset, $value) : void {}
+                        public function offsetSet($offset, $value): void {}
 
                         /** @param string|int $offset */
-                        public function offsetExists($offset) : bool {
+                        public function offsetExists($offset): bool {
                             return true;
                         }
 
                         /** @param string|int $offset */
-                        public function offsetUnset($offset) : void {}
+                        public function offsetUnset($offset): void {}
 
                         /**
                          * @param  string $offset
@@ -798,9 +798,9 @@ class ArrayAssignmentTest extends TestCase
             'mixedArrayArgument' => [
                 '<?php
                     /** @param array<mixed, int|string> $foo */
-                    function fooFoo(array $foo) : void { }
+                    function fooFoo(array $foo): void { }
 
-                    function barBar(array $bar) : void {
+                    function barBar(array $bar): void {
                         fooFoo($bar);
                     }
 

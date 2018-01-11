@@ -139,11 +139,11 @@ class LoopScopeTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A() : new B();
+                            $this->parent = rand(0, 1) ? new A(): new B();
                         }
                     }
 
-                    function makeA() : A {
+                    function makeA(): A {
                         return new A();
                     }
 
@@ -164,11 +164,11 @@ class LoopScopeTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A() : new B();
+                            $this->parent = rand(0, 1) ? new A(): new B();
                         }
                     }
 
-                    function makeA() : A {
+                    function makeA(): A {
                         return new A();
                     }
 
@@ -191,11 +191,11 @@ class LoopScopeTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A() : null;
+                            $this->parent = rand(0, 1) ? new A(): null;
                         }
                     }
 
-                    function makeA() : A {
+                    function makeA(): A {
                         return new A();
                     }
 
@@ -215,11 +215,11 @@ class LoopScopeTest extends TestCase
                         public $parent;
 
                         public function __construct() {
-                            $this->parent = rand(0, 1) ? new A() : null;
+                            $this->parent = rand(0, 1) ? new A(): null;
                         }
                     }
 
-                    function makeA() : A {
+                    function makeA(): A {
                         return new A();
                     }
 
@@ -731,7 +731,7 @@ class LoopScopeTest extends TestCase
                       public $bar;
                     }
 
-                    function foo() : ?A {
+                    function foo(): ?A {
                       return rand(0, 1) ? new A : null;
                     }
 
@@ -752,7 +752,7 @@ class LoopScopeTest extends TestCase
             ],
             'mixedArrayAccessNoPossiblyUndefinedVar' => [
                 '<?php
-                    function foo(array $arr) : void {
+                    function foo(array $arr): void {
                       $r = [];
                       foreach ($arr as $key => $value) {
                         if ($value["foo"]) {}

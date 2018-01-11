@@ -38,7 +38,7 @@ class Php71Test extends TestCase
             ],
             'nullableArgument' => [
                 '<?php
-                    function test(?string $name) : ?string
+                    function test(?string $name): ?string
                     {
                         return $name;
                     }
@@ -55,7 +55,7 @@ class Php71Test extends TestCase
 
                     class B extends A
                     {
-                        function fooFoo() : int {
+                        function fooFoo(): int {
                             return A::IS_PROTECTED;
                         }
                     }',
@@ -66,7 +66,7 @@ class Php71Test extends TestCase
                     {
                         private const IS_PRIVATE = 1;
 
-                        function fooFoo() : int {
+                        function fooFoo(): int {
                             return A::IS_PRIVATE;
                         }
                     }',
@@ -81,7 +81,7 @@ class Php71Test extends TestCase
 
                     class B extends A
                     {
-                        function fooFoo() : int {
+                        function fooFoo(): int {
                             echo A::IS_PUBLIC;
                             return A::IS_ALSO_PUBLIC;
                         }
@@ -186,7 +186,7 @@ class Php71Test extends TestCase
                     /**
                      * @param  iterable<int, int> $iter
                      */
-                    function iterator(iterable $iter) : void
+                    function iterator(iterable $iter): void
                     {
                         foreach ($iter as $val) {
                             //
@@ -199,15 +199,15 @@ class Php71Test extends TestCase
             'traversableObject' => [
                 '<?php
                     class IteratorObj implements Iterator {
-                        function rewind() : void {}
+                        function rewind(): void {}
                         /** @return mixed */
                         function current() { return null; }
-                        function key() : int { return 0; }
-                        function next() : void {}
-                        function valid() : bool { return false; }
+                        function key(): int { return 0; }
+                        function next(): void {}
+                        function valid(): bool { return false; }
                     }
 
-                    function foo(\Traversable $t) : void {
+                    function foo(\Traversable $t): void {
                     }
 
                     foo(new IteratorObj);',
@@ -240,7 +240,7 @@ class Php71Test extends TestCase
 
                     class B extends A
                     {
-                        function fooFoo() : int {
+                        function fooFoo(): int {
                             return A::IS_PRIVATE;
                         }
                     }',
@@ -261,7 +261,7 @@ class Php71Test extends TestCase
                     /**
                      * @param  iterable<string> $iter
                      */
-                    function iterator(iterable $iter) : void
+                    function iterator(iterable $iter): void
                     {
                         foreach ($iter as $val) {
                             //

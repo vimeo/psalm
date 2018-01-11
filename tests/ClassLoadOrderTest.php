@@ -17,12 +17,12 @@ class ClassLoadOrderTest extends TestCase
                     class A extends B {}
 
                     class B {
-                        public function fooFoo() : void {
+                        public function fooFoo(): void {
                             $a = new A();
                             $a->barBar();
                         }
 
-                        protected function barBar() : void {
+                        protected function barBar(): void {
                             echo "hello";
                         }
                     }',
@@ -49,17 +49,17 @@ class ClassLoadOrderTest extends TestCase
             'moreCyclicalReferences' => [
                 '<?php
                     class B extends C {
-                        public function d() : A {
+                        public function d(): A {
                             return new A;
                         }
                     }
                     class C {
                         /** @var string */
                         public $p = A::class;
-                        public static function e() : void {}
+                        public static function e(): void {}
                     }
                     class A extends B {
-                        private function f() : void {
+                        private function f(): void {
                             self::e();
                         }
                     }',
@@ -67,17 +67,17 @@ class ClassLoadOrderTest extends TestCase
             'referenceToSubclassInMethod' => [
                 '<?php
                     class A {
-                        public function b(B $b) : void {
+                        public function b(B $b): void {
 
                         }
 
-                        public function c() : void {
+                        public function c(): void {
 
                         }
                     }
 
                     class B extends A {
-                        public function d() : void {
+                        public function d(): void {
                             $this->c();
                         }
                     }',
@@ -85,7 +85,7 @@ class ClassLoadOrderTest extends TestCase
             'referenceToClassInMethod' => [
                 '<?php
                     class A {
-                        public function b(A $b) : void {
+                        public function b(A $b): void {
                             $b->b(new A());
                         }
                     }',

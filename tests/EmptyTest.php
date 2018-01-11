@@ -79,7 +79,7 @@ class EmptyTest extends TestCase
                     /**
                      * @param string|string[] $a
                      */
-                    function foo($a) : string {
+                    function foo($a): string {
                         if (is_string($a)) {
                             return $a;
                         } elseif (empty($a)) {
@@ -98,7 +98,7 @@ class EmptyTest extends TestCase
                     /**
                      * @param Exception|string|string[] $a
                      */
-                    function foo($a) : string {
+                    function foo($a): string {
                         if (is_array($a)) {
                             return "hello";
                         } elseif (empty($a)) {
@@ -117,7 +117,7 @@ class EmptyTest extends TestCase
                     /**
                      * @param Exception|null $a
                      */
-                    function foo($a) : string {
+                    function foo($a): string {
                         if ($a && $a->getMessage() === "hello") {
                             return "hello";
                         } elseif (empty($a)) {
@@ -129,13 +129,13 @@ class EmptyTest extends TestCase
             ],
             'noFalsyLeak' => [
                 '<?php
-                    function foo(string $s) : void {
+                    function foo(string $s): void {
                       if (empty($s) || $s === "hello") {}
                     }',
             ],
             'noRedundantConditionOnMixed' => [
                 '<?php
-                    function testarray(array $data) : void {
+                    function testarray(array $data): void {
                         foreach ($data as $item) {
                             if (!empty($item["a"]) && !empty($item["b"]) && !empty($item["b"]["c"])) {
                                 echo "Found\n";
@@ -147,7 +147,7 @@ class EmptyTest extends TestCase
             ],
             'dontBleedEmptyAfterExtract' => [
                 '<?php
-                    function foo(array $args) : void {
+                    function foo(array $args): void {
                       extract($args);
                       if ((empty($arr) && empty($a)) || $c === 0) {
                       } else {

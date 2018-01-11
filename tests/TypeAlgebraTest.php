@@ -14,9 +14,9 @@ class TypeAlgebraTest extends TestCase
         return [
             'twoVarLogic' => [
                 '<?php
-                    function takesString(string $s) : void {}
+                    function takesString(string $s): void {}
 
-                    function foo(?string $a, ?string $b) : void {
+                    function foo(?string $a, ?string $b): void {
                         if ($a !== null || $b !== null) {
                             if ($a !== null) {
                                 $c = $a;
@@ -30,9 +30,9 @@ class TypeAlgebraTest extends TestCase
             ],
             'threeVarLogic' => [
                 '<?php
-                    function takesString(string $s) : void {}
+                    function takesString(string $s): void {}
 
-                    function foo(?string $a, ?string $b, ?string $c) : void {
+                    function foo(?string $a, ?string $b, ?string $c): void {
                         if ($a !== null || $b !== null || $c !== null) {
                             if ($a !== null) {
                                 $d = $a;
@@ -48,7 +48,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'twoVarLogicNotNested' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) return "bad";
                         if (!$a) return $b;
                         return $a;
@@ -56,7 +56,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'twoVarLogicNotNestedWithAllPathsReturning' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) {
                             return "bad";
                         } else {
@@ -70,7 +70,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'twoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if (!$a && !$b) {
                             $a = 5;
                             return "bad";
@@ -86,7 +86,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'invertedTwoVarLogicNotNested' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if ($a || $b) {
                             // do nothing
                         } else {
@@ -99,7 +99,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'invertedTwoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if ($a || $b) {
                             // do nothing
                         } else {
@@ -113,7 +113,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'twoVarLogicNotNestedWithElseifAndNoNegations' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if ($a) {
                             // do nothing
                         } elseif ($b) {
@@ -128,7 +128,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'threeVarLogicNotNestedWithNoRedefinitions' => [
                 '<?php
-                    function foo(?string $a, ?string $b, ?string $c) : string {
+                    function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
                             // do nothing
                         } elseif ($b) {
@@ -146,7 +146,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'threeVarLogicNotNestedAndOrWithNoRedefinitions' => [
                 '<?php
-                    function foo(?string $a, ?string $b, ?string $c) : string {
+                    function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
                             // do nothing
                         } elseif ($b || $c) {
@@ -162,7 +162,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if ($a) {
                             // do nothing here
                         } elseif ($b) {
@@ -177,7 +177,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'nestedReassignment' => [
                 '<?php
-                    function foo(?string $a) : void {
+                    function foo(?string $a): void {
                         if ($a === null) {
                             $a = "blah-blah";
                         } else {
@@ -194,7 +194,7 @@ class TypeAlgebraTest extends TestCase
                     class A {}
                     class B extends A {}
 
-                    function foo(?A $a, ?A $b) : A {
+                    function foo(?A $a, ?A $b): A {
                         if ($a) {
                             $a = new B;
                         } elseif ($b) {
@@ -209,7 +209,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'differentValueChecks' => [
                 '<?php
-                    function foo(string $a) : void {
+                    function foo(string $a): void {
                         if ($a === "foo") {
                             // do something
                         } elseif ($a === "bar") {
@@ -219,7 +219,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'repeatedSet' => [
                 '<?php
-                    function foo() : void {
+                    function foo(): void {
                         if ($a = rand(0, 1) ? "" : null) {
                             return;
                         }
@@ -235,7 +235,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'repeatedSetInsideWhile' => [
                 '<?php
-                    function foo() : void {
+                    function foo(): void {
                         if ($a = rand(0, 1) ? "" : null) {
                             return;
                         } else {
@@ -251,7 +251,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'byRefAssignment' => [
                 '<?php
-                    function foo() : void {
+                    function foo(): void {
                         preg_match("/hello/", "hello molly", $matches);
 
                         if (!$matches) {
@@ -267,7 +267,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'orConditionalAfterAndConditional' => [
                 '<?php
-                    function foo(string $a, string $b) : void {
+                    function foo(string $a, string $b): void {
                         if ($a && $b) {
                             echo "a";
                         } elseif ($a || $b) {
@@ -278,7 +278,7 @@ class TypeAlgebraTest extends TestCase
             'issetOnOneStringAfterAnother' => [
                 '<?php
                     /** @param string[] $arr */
-                    function foo(array $arr) : void {
+                    function foo(array $arr): void {
                         $a = "a";
 
                         if (!isset($arr[$a])) {
@@ -296,7 +296,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'noParadoxInLoop' => [
                 '<?php
-                    function paradox2() : void {
+                    function paradox2(): void {
                         $condition = rand() % 2 > 0;
 
                         if (!$condition) {
@@ -309,7 +309,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'noParadoxInListAssignment' => [
                 '<?php
-                    function foo(string $a) : void {
+                    function foo(string $a): void {
                         if (!$a) {
                             list($a) = explode(":", "a:b");
 
@@ -319,11 +319,11 @@ class TypeAlgebraTest extends TestCase
             ],
             'noParadoxAfterAssignment' => [
                 '<?php
-                    function get_bool() : bool {
+                    function get_bool(): bool {
                         return rand() % 2 > 0;
                     }
 
-                    function leftover() : bool {
+                    function leftover(): bool {
                         $res = get_bool();
                         if ($res === false) {
                             return true;
@@ -365,7 +365,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'noParadoxInCatch' => [
                 '<?php
-                    function maybe_returns_array() : ?array {
+                    function maybe_returns_array(): ?array {
                         if (rand() % 2 > 0) {
                             return ["key" => "value"];
                         }
@@ -375,7 +375,7 @@ class TypeAlgebraTest extends TestCase
                         return null;
                     }
 
-                    function try_catch_check() : array {
+                    function try_catch_check(): array {
                         $arr = null;
                         try {
                             $arr = maybe_returns_array();
@@ -434,10 +434,10 @@ class TypeAlgebraTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }
 
-                    function takesA(A $a) : void {
+                    function takesA(A $a): void {
                       if (get_class($a) === "B") {
                         $a->foo();
                       }
@@ -447,10 +447,10 @@ class TypeAlgebraTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {
-                      public function foo() : void {}
+                      public function foo(): void {}
                     }
 
-                    function takesA(A $a) : void {
+                    function takesA(A $a): void {
                       if (get_class($a) !== "B") {
                         // do nothing
                       } else {
@@ -460,7 +460,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'nestedCheckWithSingleVarPerLevel' => [
                 '<?php
-                    function foo(?stdClass $a, ?stdClass $b) : void {
+                    function foo(?stdClass $a, ?stdClass $b): void {
                         if ($a) {
                             if ($b) {}
                         }
@@ -468,7 +468,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'nestedCheckWithTwoVarsPerLevel' => [
                 '<?php
-                    function foo(?stdClass $a, ?stdClass $b, ?stdClass $c, ?stdClass $d) : void {
+                    function foo(?stdClass $a, ?stdClass $b, ?stdClass $c, ?stdClass $d): void {
                         if ($a && $b) {
                             if ($c && $d) {}
                         }
@@ -476,7 +476,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'nestedCheckWithReturn' => [
                 '<?php
-                    function foo(?stdClass $a, ?stdClass $b) : void {
+                    function foo(?stdClass $a, ?stdClass $b): void {
                         if ($a === null) {
                             return;
                         }
@@ -529,9 +529,9 @@ class TypeAlgebraTest extends TestCase
                     class B extends A {}
                     class C extends A {}
 
-                    function takesA(A $a) : void {}
+                    function takesA(A $a): void {}
 
-                    function foo(?A $a) : void {
+                    function foo(?A $a): void {
                         if ($a instanceof B
                             || ($a instanceof C && rand(0, 1))
                         ) {
@@ -545,9 +545,9 @@ class TypeAlgebraTest extends TestCase
                     class B extends A {}
                     class C extends A {}
 
-                    function takesA(A $a) : void {}
+                    function takesA(A $a): void {}
 
-                    function foo(?A $a) : void {
+                    function foo(?A $a): void {
                         $c = rand(0, 1);
                         if (($a instanceof B || $a instanceof C)
                             && ($a instanceof B || $c)
@@ -561,9 +561,9 @@ class TypeAlgebraTest extends TestCase
                     class A {}
                     class B {}
 
-                    function takesA(A $a) : void {}
+                    function takesA(A $a): void {}
 
-                    function foo(?A $a, ?B $b) : void {
+                    function foo(?A $a, ?B $b): void {
                         if ($a === null || $b === null || rand(0, 1)) {
                             // do nothing
                         } else {
@@ -582,9 +582,9 @@ class TypeAlgebraTest extends TestCase
         return [
             'threeVarLogicWithChange' => [
                 '<?php
-                    function takesString(string $s) : void {}
+                    function takesString(string $s): void {}
 
-                    function foo(?string $a, ?string $b, ?string $c) : void {
+                    function foo(?string $a, ?string $b, ?string $c): void {
                         if ($a !== null || $b !== null || $c !== null) {
                             $c = null;
 
@@ -603,9 +603,9 @@ class TypeAlgebraTest extends TestCase
             ],
             'threeVarLogicWithException' => [
                 '<?php
-                    function takesString(string $s) : void {}
+                    function takesString(string $s): void {}
 
-                    function foo(?string $a, ?string $b, ?string $c) : void {
+                    function foo(?string $a, ?string $b, ?string $c): void {
                         if ($a !== null || $b !== null || $c !== null) {
                             if ($c !== null) {
                                 throw new \Exception("bad");
@@ -626,7 +626,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'invertedTwoVarLogicNotNestedWithVarChange' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if ($a !== null || $b !== null) {
                             $b = null;
                         } else {
@@ -640,7 +640,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if (rand(0, 1)) {
                             // do nothing
                         } elseif ($a || $b) {
@@ -656,7 +656,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'threeVarLogicWithElseifAndAnd' => [
                 '<?php
-                    function foo(?string $a, ?string $b, ?string $c) : string {
+                    function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
                             // do nothing
                         } elseif ($b && $c) {
@@ -673,7 +673,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : string {
+                    function foo(?string $a, ?string $b): string {
                         if ($a) {
                             $a = "";
                         } elseif ($b) {
@@ -703,7 +703,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'repeatedConditionals' => [
                 '<?php
-                    function foo(?string $a) : void {
+                    function foo(?string $a): void {
                         if ($a) {
                             // do something
                         } elseif ($a) {
@@ -714,7 +714,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'repeatedAndConditional' => [
                 '<?php
-                    function foo(string $a, string $b) : void {
+                    function foo(string $a, string $b): void {
                         if ($a && $b) {
                             echo "a";
                         } elseif ($a && $b) {
@@ -725,7 +725,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'andConditionalAfterOrConditional' => [
                 '<?php
-                    function foo(string $a, string $b) : void {
+                    function foo(string $a, string $b): void {
                         if ($a || $b) {
                             echo "a";
                         } elseif ($a && $b) {
@@ -736,7 +736,7 @@ class TypeAlgebraTest extends TestCase
             ],
             'repeatedVarFromOrConditional' => [
                 '<?php
-                    function foo(string $a, string $b) : void {
+                    function foo(string $a, string $b): void {
                         if ($a || $b) {
                             echo "a";
                         } elseif ($a) {

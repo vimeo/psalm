@@ -33,7 +33,7 @@ class MethodCallTest extends TestCase
             'nonStaticInvocation' => [
                 '<?php
                     class Foo {
-                        public static function barBar() : void {}
+                        public static function barBar(): void {}
                     }
 
                     (new Foo())->barBar();',
@@ -41,7 +41,7 @@ class MethodCallTest extends TestCase
             'staticInvocation' => [
                 '<?php
                     class A {
-                        public static function fooFoo() : void {}
+                        public static function fooFoo(): void {}
                     }
 
                     class B extends A {
@@ -53,7 +53,7 @@ class MethodCallTest extends TestCase
             'staticCallOnVar' => [
                 '<?php
                     class A {
-                        public static function bar() : int {
+                        public static function bar(): int {
                             return 5;
                         }
                     }
@@ -63,7 +63,7 @@ class MethodCallTest extends TestCase
             'uppercasedSelf' => [
                 '<?php
                     class X33{
-                        public static function main() : void {
+                        public static function main(): void {
                             echo SELF::class . "\n";  // Class or interface SELF does not exist
                         }
                     }
@@ -94,7 +94,7 @@ class MethodCallTest extends TestCase
             'staticInvocation' => [
                 '<?php
                     class Foo {
-                        public function barBar() : void {}
+                        public function barBar(): void {}
                     }
 
                     Foo::barBar();',
@@ -118,7 +118,7 @@ class MethodCallTest extends TestCase
             'mixedMethodCall' => [
                 '<?php
                     class Foo {
-                        public static function barBar() : void {}
+                        public static function barBar(): void {}
                     }
 
                     /** @var mixed */
@@ -154,9 +154,9 @@ class MethodCallTest extends TestCase
             'selfNonStaticInvocation' => [
                 '<?php
                     class A {
-                        public function fooFoo() : void {}
+                        public function fooFoo(): void {}
 
-                        public function barBar() : void {
+                        public function barBar(): void {
                             self::fooFoo();
                         }
                     }',
@@ -165,7 +165,7 @@ class MethodCallTest extends TestCase
             'noParent' => [
                 '<?php
                     class Foo {
-                        public function barBar() : void {
+                        public function barBar(): void {
                             parent::barBar();
                         }
                     }',
@@ -204,7 +204,7 @@ class MethodCallTest extends TestCase
             'staticCallOnString' => [
                 '<?php
                     class A {
-                        public static function bar() : int {
+                        public static function bar(): int {
                             return 5;
                         }
                     }

@@ -15,11 +15,11 @@ class ClassTest extends TestCase
             'overrideProtectedAccessLevelToPublic' => [
                 '<?php
                     class A {
-                        protected function fooFoo() : void {}
+                        protected function fooFoo(): void {}
                     }
 
                     class B extends A {
-                        public function fooFoo() : void {}
+                        public function fooFoo(): void {}
                     }',
             ],
             'reflectedParents' => [
@@ -127,7 +127,7 @@ class ClassTest extends TestCase
                 '<?php
                     class A {}
                     needsA(new A);
-                    function needsA(a $x) : void {}',
+                    function needsA(a $x): void {}',
                 'error_message' => 'InvalidClass',
             ],
             'invalidThisFetch' => [
@@ -154,33 +154,33 @@ class ClassTest extends TestCase
             'overridePublicAccessLevelToPublic' => [
                 '<?php
                     class A {
-                        public function fooFoo() : void {}
+                        public function fooFoo(): void {}
                     }
 
                     class B extends A {
-                        private function fooFoo() : void {}
+                        private function fooFoo(): void {}
                     }',
                 'error_message' => 'OverriddenMethodAccess',
             ],
             'overridePublicAccessLevelToProtected' => [
                 '<?php
                     class A {
-                        public function fooFoo() : void {}
+                        public function fooFoo(): void {}
                     }
 
                     class B extends A {
-                        protected function fooFoo() : void {}
+                        protected function fooFoo(): void {}
                     }',
                 'error_message' => 'OverriddenMethodAccess',
             ],
             'overrideProtectedAccessLevelToPrivate' => [
                 '<?php
                     class A {
-                        protected function fooFoo() : void {}
+                        protected function fooFoo(): void {}
                     }
 
                     class B extends A {
-                        private function fooFoo() : void {}
+                        private function fooFoo(): void {}
                     }',
                 'error_message' => 'OverriddenMethodAccess',
             ],
@@ -233,7 +233,7 @@ class ClassTest extends TestCase
                     class A {}
                     class B extends A {}
 
-                    function foo(A $a) : B {
+                    function foo(A $a): B {
                         return $a;
                     }',
                 'error_message' => 'LessSpecificReturnStatement',

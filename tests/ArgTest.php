@@ -64,7 +64,7 @@ class ArgTest extends TestCase
                     ];
 
                     $a = array_map(
-                        function (string $uuid) : string {
+                        function (string $uuid): string {
                             return $uuid;
                         },
                         $foo[rand(0, 1)]

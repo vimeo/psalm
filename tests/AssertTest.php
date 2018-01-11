@@ -16,27 +16,27 @@ class AssertTest extends TestCase
                 '<?php
                     class A {}
                     class B extends A {
-                        public function foo() : void {}
+                        public function foo(): void {}
                     }
 
-                    function assertInstanceOfB(A $var) : void {
+                    function assertInstanceOfB(A $var): void {
                         if (!$var instanceof B) {
                             throw new \Exception();
                         }
                     }
 
-                    function assertInstanceOfClass(A $var, string $class) : void {
+                    function assertInstanceOfClass(A $var, string $class): void {
                         if (!$var instanceof $class) {
                             throw new \Exception();
                         }
                     }
 
-                    function takesA(A $a) : void {
+                    function takesA(A $a): void {
                         assertInstanceOfB($a);
                         $a->foo();
                     }
 
-                    function takesA(A $a) : void {
+                    function takesA(A $a): void {
                         assertInstanceOfB($a);
                         $a->foo();
                     }',

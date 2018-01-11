@@ -246,7 +246,7 @@ class TypeReconciliationTest extends TestCase
             'intIsMixed' => [
                 '<?php
                     /** @param mixed $a */
-                    function foo($a) : void {
+                    function foo($a): void {
                         $b = 5;
 
                         if ($b === $a) { }
@@ -474,7 +474,7 @@ class TypeReconciliationTest extends TestCase
                       return new D();
                     }
 
-                    $a = rand(0, 1) ? makeA() : makeC();
+                    $a = rand(0, 1) ? makeA(): makeC();
 
                     if ($a instanceof B || $a instanceof D) { }',
             ],
@@ -515,24 +515,24 @@ class TypeReconciliationTest extends TestCase
             ],
             'ternaryByRefVar' => [
                 '<?php
-                    function foo() : void {
+                    function foo(): void {
                         $b = null;
-                        $c = rand(0, 1) ? bar($b) : null;
+                        $c = rand(0, 1) ? bar($b): null;
                         if (is_int($b)) { }
                     }
-                    function bar(?int &$a) : void {
+                    function bar(?int &$a): void {
                         $a = 5;
                     }',
             ],
             'ternaryByRefVarInConditional' => [
                 '<?php
-                    function foo() : void {
+                    function foo(): void {
                         $b = null;
                         if (rand(0, 1) || bar($b)) {
                             if (is_int($b)) { }
                         }
                     }
-                    function bar(?int &$a) : void {
+                    function bar(?int &$a): void {
                         $a = 5;
                     }',
             ],
@@ -543,7 +543,7 @@ class TypeReconciliationTest extends TestCase
 
                     class A
                     {
-                        public function foo() : void {
+                        public function foo(): void {
                             if ($this instanceof I1 || $this instanceof I2) {}
                         }
                     }',
@@ -551,14 +551,14 @@ class TypeReconciliationTest extends TestCase
             'intersection' => [
                 '<?php
                     interface I {
-                        public function bat() : void;
+                        public function bat(): void;
                     }
 
-                    function takesI(I $i) : void {}
-                    function takesA(A $a) : void {}
+                    function takesI(I $i): void {}
+                    function takesA(A $a): void {}
 
                     class A {
-                        public function foo() : void {
+                        public function foo(): void {
                             if ($this instanceof I) {
                                 $this->bar();
                                 $this->bat();
@@ -568,11 +568,11 @@ class TypeReconciliationTest extends TestCase
                             }
                         }
 
-                        protected function bar() : void {}
+                        protected function bar(): void {}
                     }
 
                     class B extends A implements I {
-                        public function bat() : void {}
+                        public function bat(): void {}
                     }',
             ],
             'isTruthy' => [
@@ -589,7 +589,7 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     class A
                     {
-                        public function callMeMaybe(string $method) : void
+                        public function callMeMaybe(string $method): void
                         {
                             $handleMethod = [$this, $method];
 
@@ -598,7 +598,7 @@ class TypeReconciliationTest extends TestCase
                             }
                         }
 
-                        public function foo() : void {}
+                        public function foo(): void {}
                     }
                     $a = new A();
                     $a->callMeMaybe("foo");',
@@ -661,7 +661,7 @@ class TypeReconciliationTest extends TestCase
             ],
             'eraseNullAfterInequalityCheck' => [
                 '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
 
                     if ($a > 0) {
                       echo $a + 3;
@@ -704,7 +704,7 @@ class TypeReconciliationTest extends TestCase
                     class A { }
                     class B { }
                     class C { }
-                    $a = rand(0, 10) > 5 ? new A() : new B();
+                    $a = rand(0, 10) > 5 ? new A(): new B();
                     if ($a instanceof A) {
                     } elseif ($a instanceof C) {
                     }',
@@ -743,7 +743,7 @@ class TypeReconciliationTest extends TestCase
             ],
             'dontEraseNullAfterLessThanCheck' => [
                 '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
 
                     if ($a < 0) {
                       echo $a + 3;
@@ -752,7 +752,7 @@ class TypeReconciliationTest extends TestCase
             ],
             'dontEraseNullAfterGreaterThanCheck' => [
                 '<?php
-                    $a = mt_rand(0, 1) ? mt_rand(-10, 10) : null;
+                    $a = mt_rand(0, 1) ? mt_rand(-10, 10): null;
 
                     if (0 > $a) {
                       echo $a + 3;

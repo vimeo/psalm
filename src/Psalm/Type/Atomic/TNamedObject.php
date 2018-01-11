@@ -54,18 +54,17 @@ class TNamedObject extends Atomic
      */
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
-        if ($this->value === $this_class) {
-            $class_parts = explode('\\', $this_class);
+        $class_parts = explode('\\', $this->value);
 
-            /** @var string */
-            return array_pop($class_parts);
+        /** @var string */
+        $class_name = array_pop($class_parts);
+
+        if ($this->value === $this_class) {
+            return $class_name;
         }
 
-        if ($namespace && preg_match('/^' . preg_quote($namespace) . '/i', $this->value)) {
-            $class_parts = explode('\\', $this->value);
-
-            /** @var string */
-            return array_pop($class_parts);
+        if ($namespace && preg_match('/^' . preg_quote($namespace) . '\\\\' . $class_name . '$/i', $this->value)) {
+            return $class_name;
         }
 
         if (!$namespace && stripos($this->value, '\\') === false) {

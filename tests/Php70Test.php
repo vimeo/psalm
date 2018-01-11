@@ -14,7 +14,7 @@ class Php70Test extends TestCase
         return [
             'functionTypeHints' => [
                 '<?php
-                    function indexof(string $haystack, string $needle) : int
+                    function indexof(string $haystack, string $needle): int
                     {
                         $pos = strpos($haystack, $needle);
 
@@ -33,7 +33,7 @@ class Php70Test extends TestCase
             'methodTypeHints' => [
                 '<?php
                     class Foo {
-                        public static function indexof(string $haystack, string $needle) : int
+                        public static function indexof(string $haystack, string $needle): int
                         {
                             $pos = strpos($haystack, $needle);
 
@@ -125,12 +125,12 @@ class Php70Test extends TestCase
             'anonymousClassFunctionReturnType' => [
                 '<?php
                     $class = new class {
-                        public function f() : int {
+                        public function f(): int {
                             return 42;
                         }
                     };
 
-                    function g(int $i) : int {
+                    function g(int $i): int {
                         return $i;
                     }
 
@@ -154,7 +154,7 @@ class Php70Test extends TestCase
                             $this->i = new class implements I {};
                         }
 
-                        public function foo2() : void {} // commenting this line out fixes
+                        public function foo2(): void {} // commenting this line out fixes
                     }',
             ],
             'returnAnonymousClass' => [
@@ -179,7 +179,7 @@ class Php70Test extends TestCase
                      * @return Generator<int,int>
                      * @psalm-generator-return string
                      */
-                    function fooFoo(int $i) : Generator {
+                    function fooFoo(int $i): Generator {
                         if ($i === 1) {
                             return "bash";
                         }
@@ -193,7 +193,7 @@ class Php70Test extends TestCase
                      * @return Generator<int,int>
                      * @psalm-generator-return int
                      */
-                    function count_to_ten() : Generator {
+                    function count_to_ten(): Generator {
                         yield 1;
                         yield 2;
                         yield from [3, 4];
@@ -205,7 +205,7 @@ class Php70Test extends TestCase
                     /**
                      * @return Generator<int,int>
                      */
-                    function seven_eight() : Generator {
+                    function seven_eight(): Generator {
                         yield 7;
                         yield from eight();
                     }
@@ -213,7 +213,7 @@ class Php70Test extends TestCase
                     /**
                      * @return Generator<int,int>
                      */
-                    function eight() : Generator {
+                    function eight(): Generator {
                         yield 8;
                     }
 
@@ -221,7 +221,7 @@ class Php70Test extends TestCase
                      * @return Generator<int,int>
                      * @psalm-generator-return int
                      */
-                    function nine_ten() : Generator {
+                    function nine_ten(): Generator {
                         yield 9;
                         return 10;
                     }
@@ -239,11 +239,11 @@ class Php70Test extends TestCase
             ],
             'generatorWithNestedYield' => [
                 '<?php
-                    function other_generator() : Generator {
+                    function other_generator(): Generator {
                       yield "traffic";
                       return 1;
                     }
-                    function foo() : Generator {
+                    function foo(): Generator {
                       /** @var int */
                       $value = yield from other_generator();
                       var_export($value);
@@ -292,7 +292,7 @@ class Php70Test extends TestCase
             'anonymousClassWithInvalidFunctionReturnType' => [
                 '<?php
                     $foo = new class {
-                        public function a() : string {
+                        public function a(): string {
                             return 5;
                         }
                     };',

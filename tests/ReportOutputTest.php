@@ -80,7 +80,7 @@ class ReportOutputTest extends TestCase
     public function testJsonOutputForGetPsalmDotOrg()
     {
         $file_contents = '<?php
-function psalmCanVerify(int $your_code) : ?string {
+function psalmCanVerify(int $your_code): ?string {
   return $as_you . "type";
 }
 
@@ -104,72 +104,72 @@ echo $a;';
         $file_checker->visitAndAnalyzeMethods();
         $issue_data = [
             [
-                'severity' => 'error',
-                'line_number' => 7,
-                'type' => 'UndefinedConstant',
-                'message' => 'Const CHANGE_ME is not defined',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => 'echo CHANGE_ME;',
-                'selected_text' => 'CHANGE_ME',
-                'from' => 126,
-                'to' => 135,
-                'snippet_from' => 121,
-                'snippet_to' => 136,
-                'column' => 6,
-            ],
-            [
-                'severity' => 'error',
-                'line_number' => 15,
-                'type' => 'PossiblyUndefinedGlobalVariable',
-                'message' => 'Possibly undefined global variable $a, first seen on line 10',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => 'echo $a',
-                'selected_text' => '$a',
-                'from' => 202,
-                'to' => 204,
-                'snippet_from' => 197,
-                'snippet_to' => 204,
-                'column' => 6,
-            ],
-            [
-                'severity' => 'error',
-                'line_number' => 3,
-                'type' => 'UndefinedVariable',
-                'message' => 'Cannot find referenced variable $as_you',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => '  return $as_you . "type";',
-                'selected_text' => '$as_you',
-                'from' => 67,
-                'to' => 74,
-                'snippet_from' => 58,
-                'snippet_to' => 84,
-                'column' => 10,
-            ],
-            [
-                'severity' => 'error',
-                'line_number' => 2,
-                'type' => 'MixedInferredReturnType',
-                'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => 'function psalmCanVerify(int $your_code) : ?string {
+                    'severity' => 'error',
+                    'line_number' => 7,
+                    'type' => 'UndefinedConstant',
+                    'message' => 'Const CHANGE_ME is not defined',
+                    'file_name' => 'somefile.php',
+                    'file_path' => 'somefile.php',
+                    'snippet' => 'echo CHANGE_ME;',
+                    'selected_text' => 'CHANGE_ME',
+                    'from' => 125,
+                    'to' => 134,
+                    'snippet_from' => 120,
+                    'snippet_to' => 135,
+                    'column' => 6,
+                ],
+                [
+                    'severity' => 'error',
+                    'line_number' => 15,
+                    'type' => 'PossiblyUndefinedGlobalVariable',
+                    'message' => 'Possibly undefined global variable $a, first seen on line 10',
+                    'file_name' => 'somefile.php',
+                    'file_path' => 'somefile.php',
+                    'snippet' => 'echo $a',
+                    'selected_text' => '$a',
+                    'from' => 201,
+                    'to' => 203,
+                    'snippet_from' => 196,
+                    'snippet_to' => 203,
+                    'column' => 6,
+                ],
+                [
+                    'severity' => 'error',
+                    'line_number' => 3,
+                    'type' => 'UndefinedVariable',
+                    'message' => 'Cannot find referenced variable $as_you',
+                    'file_name' => 'somefile.php',
+                    'file_path' => 'somefile.php',
+                    'snippet' => '  return $as_you . "type";',
+                    'selected_text' => '$as_you',
+                    'from' => 66,
+                    'to' => 73,
+                    'snippet_from' => 57,
+                    'snippet_to' => 83,
+                    'column' => 10,
+                ],
+                [
+                    'severity' => 'error',
+                    'line_number' => 2,
+                    'type' => 'MixedInferredReturnType',
+                    'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
+                    'file_name' => 'somefile.php',
+                    'file_path' => 'somefile.php',
+                    'snippet' => 'function psalmCanVerify(int $your_code): ?string {
   return $as_you . "type";
 }',
-                'selected_text' => '?string',
-                'from' => 48,
-                'to' => 55,
-                'snippet_from' => 6,
-                'snippet_to' => 86,
-                'column' => 43,
-            ],
+                    'selected_text' => '?string',
+                    'from' => 47,
+                    'to' => 54,
+                    'snippet_from' => 6,
+                    'snippet_to' => 85,
+                    'column' => 42,
+                ],
         ];
         $emacs = 'somefile.php:7:6:error - Const CHANGE_ME is not defined
 somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
 somefile.php:3:10:error - Cannot find referenced variable $as_you
-somefile.php:2:43:error - Could not verify return type \'string|null\' for psalmCanVerify
+somefile.php:2:42:error - Could not verify return type \'string|null\' for psalmCanVerify
 ';
         $this->assertSame(
             $issue_data,

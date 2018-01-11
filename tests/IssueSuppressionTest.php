@@ -28,7 +28,7 @@ class IssueSuppressionTest extends TestCase
             'undefinedClassOneLine' => [
                 '<?php
                     class A {
-                        public function b() : void {
+                        public function b(): void {
                             /**
                              * @psalm-suppress UndefinedClass
                              */

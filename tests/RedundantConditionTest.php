@@ -14,7 +14,7 @@ class RedundantConditionTest extends TestCase
         return [
             'ignoreIssueAndAssign' => [
                 '<?php
-                    public function foo() : stdClass {
+                    public function foo(): stdClass {
                         return new stdClass;
                     }
 
@@ -38,7 +38,7 @@ class RedundantConditionTest extends TestCase
                      * @param int $min ref
                      * @param int $other
                      */
-                    function testmin(&$min, int $other) : void {
+                    function testmin(&$min, int $other): void {
                         if (is_null($min)) {
                             $min = 3;
                         } elseif (!is_int($min)) {
@@ -50,7 +50,7 @@ class RedundantConditionTest extends TestCase
             ],
             'assignmentInIf' => [
                 '<?php
-                    function test(int $x = null) : int {
+                    function test(int $x = null): int {
                         if (!$x && !($x = rand(0, 10))) {
                             echo "Failed to get non-empty x\n";
                             return -1;
@@ -61,7 +61,7 @@ class RedundantConditionTest extends TestCase
             'noRedundantConditionAfterAssignment' => [
                 '<?php
                     /** @param int $i */
-                    function foo($i) : void {
+                    function foo($i): void {
                         if ($i !== null) {
                             $i = (int) $i;
 
@@ -80,7 +80,7 @@ class RedundantConditionTest extends TestCase
                     /**
                      * @param  A|B $i
                      */
-                    function foo($i) : void {
+                    function foo($i): void {
                         if (empty($i)) {
                             return;
                         }
@@ -127,8 +127,8 @@ class RedundantConditionTest extends TestCase
             'noRedundantConditionAfterFromDocblockRemoval' => [
                 '<?php
                     class A {
-                      public function foo() : void{}
-                      public function bar() : void{}
+                      public function foo(): void{}
+                      public function bar(): void{}
                     }
 
                     /** @return A */
@@ -158,13 +158,13 @@ class RedundantConditionTest extends TestCase
             ],
             'noComplaintWithIsNumericThenIsEmpty' => [
                 '<?php
-                    function takesString(string $s) : void {
+                    function takesString(string $s): void {
                       if (!is_numeric($s) || empty($s)) {}
                     }',
             ],
             'noRedundantConditionOnTryCatchVars' => [
                 '<?php
-                    function trycatch() : void {
+                    function trycatch(): void {
                         $value = null;
                         try {
                             if (rand() % 2 > 0) {
@@ -203,18 +203,18 @@ class RedundantConditionTest extends TestCase
             ],
             'noRedundantConditionComparingBool' => [
                 '<?php
-                    function getBool() : bool {
+                    function getBool(): bool {
                       return (bool)rand(0, 1);
                     }
 
-                    function takesBool(bool $b) : void {
+                    function takesBool(bool $b): void {
                       if ($b === getBool()) {}
                     }',
             ],
             'evaluateElseifProperly' => [
                 '<?php
                     /** @param string $str */
-                    function foo($str) : int {
+                    function foo($str): int {
                       if (is_null($str)) {
                         return 1;
                       } else if (strlen($str) < 1) {
@@ -225,7 +225,7 @@ class RedundantConditionTest extends TestCase
             ],
             'evaluateArrayCheck' => [
                 '<?php
-                    function array_check() : void {
+                    function array_check(): void {
                         $data = ["f" => false];
                         while (rand(0, 1) > 0 && !$data["f"]) {
                             $data = ["f" => true];
@@ -235,7 +235,7 @@ class RedundantConditionTest extends TestCase
             'mixedArrayAssignment' => [
                 '<?php
                     /** @param mixed $arr */
-                    function foo($arr) : void {
+                    function foo($arr): void {
                      if ($arr["a"] === false) {
                         $arr["a"] = (bool) rand(0, 1);
                         if ($arr["a"] === false) {}
@@ -247,7 +247,7 @@ class RedundantConditionTest extends TestCase
             'hardPhpTypeAssertionsOnDocblockType' => [
                 '<?php
                     /** @param string|null $bar */
-                    function foo($bar) : void {
+                    function foo($bar): void {
                         if (!is_null($bar) && !is_string($bar)) {
                             throw new \Exception("bad");
                         }
@@ -384,7 +384,7 @@ class RedundantConditionTest extends TestCase
             ],
             'SKIPPED-twoVarLogicNotNestedWithElseifNegatedInIf' => [
                 '<?php
-                    function foo(?string $a, ?string $b) : ?string {
+                    function foo(?string $a, ?string $b): ?string {
                         if ($a) {
                             $a = null;
                         } elseif ($b) {
@@ -407,7 +407,7 @@ class RedundantConditionTest extends TestCase
                       return rand(0, 1) ? new A : null;
                     }
 
-                    function takesA(A $a) : void {}
+                    function takesA(A $a): void {}
 
                     $a = getA();
                     if ($a instanceof A) {}

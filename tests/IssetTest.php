@@ -78,7 +78,7 @@ class IssetTest extends TestCase
             ],
             'noRedundantConditionOnMixed' => [
                 '<?php
-                    function testarray(array $data) : void {
+                    function testarray(array $data): void {
                         foreach ($data as $item) {
                             if (isset($item["a"]) && isset($item["b"]) && isset($item["b"]["c"])) {
                                 echo "Found\n";
@@ -94,7 +94,7 @@ class IssetTest extends TestCase
                     foreach ($foo as $bar) {}
                     unset($foo, $bar);
 
-                    function foo() : void {
+                    function foo(): void {
                         $foo = ["a", "b", "c"];
                         foreach ($foo as $bar) {}
                         unset($foo, $bar);
