@@ -47,11 +47,6 @@ class IfScope
     public $negatable_if_types = null;
 
     /**
-     * @var bool
-     */
-    public $has_elseifs;
-
-    /**
      * @var array<int, Clause>
      */
     public $negated_clauses;

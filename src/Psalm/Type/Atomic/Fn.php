@@ -7,11 +7,6 @@ use Psalm\Type\Union;
 class Fn extends TNamedObject
 {
     /**
-     * @var string
-     */
-    public $value = 'Closure';
-
-    /**
      * @var array<int, FunctionLikeParameter>
      */
     public $params = [];
@@ -30,6 +25,7 @@ class Fn extends TNamedObject
      */
     public function __construct($value, array $params, Union $return_type)
     {
+        $this->value = 'Closure';
         $this->params = $params;
         $this->return_type = $return_type;
     }

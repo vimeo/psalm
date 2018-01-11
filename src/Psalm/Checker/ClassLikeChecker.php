@@ -89,26 +89,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected $fq_class_name;
 
     /**
-     * @var bool
-     */
-    protected $has_custom_get = false;
-
-    /**
      * The parent class
      *
      * @var string|null
      */
     protected $parent_fq_class_name;
-
-    /**
-     * @var array<string, MethodChecker>
-     */
-    protected $method_checkers = [];
-
-    /**
-     * @var array<string, MethodChecker>
-     */
-    protected $property_types = [];
 
     /**
      * @var array<string, array<string, string>>|null
@@ -1552,8 +1537,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return bool
      */
-    public static function propertyExists(ProjectChecker $project_checker, $property_id)
-    {
+    public static function propertyExists(
+        ProjectChecker $project_checker,
+        $property_id,
+        CodeLocation $code_location = null
+    ) {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
@@ -1562,6 +1550,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
+            if ($project_checker->collect_references && $code_location) {
+                $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
+                list($declaring_property_class, $declaring_property_name) = explode('::$', $declaring_property_id);
+
+                $declaring_class_storage = $project_checker->classlike_storage_provider->get($declaring_property_class);
+                $declaring_property_storage = $declaring_class_storage->properties[$declaring_property_name];
+
+                if ($declaring_property_storage->referencing_locations === null) {
+                    $declaring_property_storage->referencing_locations = [];
+                }
+
+                $declaring_property_storage->referencing_locations[$code_location->file_path][] = $code_location;
+            }
+
             return true;
         }
 

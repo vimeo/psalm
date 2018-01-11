@@ -9,8 +9,10 @@ use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
+use Psalm\Issue\PossiblyUnusedProperty;
 use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
+use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
@@ -180,11 +182,6 @@ class ProjectChecker
      * @var array<string, bool>
      */
     private $scanned_files = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    private $visited_classes = [];
 
     /**
      * @var array<string, FileChecker>
@@ -1270,6 +1267,37 @@ class ProjectChecker
                         )) {
                             // fall through
                         }
+                    }
+                }
+            }
+        }
+
+        foreach ($classlike_storage->properties as $property_name => $property_storage) {
+            if (($property_storage->referencing_locations === null
+                    || count($property_storage->referencing_locations) === 0)
+                && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
+                && $property_storage->location
+            ) {
+                $property_id = $classlike_storage->name . '::$' . $property_name;
+
+                if ($property_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUnusedProperty(
+                            'Cannot find public calls to property ' . $property_id,
+                            $property_storage->location
+                        ),
+                        $classlike_storage->suppressed_issues
+                    )) {
+                        // fall through
+                    }
+                } elseif (!isset($classlike_storage->declaring_method_ids['__get'])) {
+                    if (IssueBuffer::accepts(
+                        new UnusedProperty(
+                            'Property ' . $property_id . ' is never used',
+                            $property_storage->location
+                        )
+                    )) {
+                        // fall through
                     }
                 }
             }

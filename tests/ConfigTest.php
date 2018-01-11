@@ -6,9 +6,6 @@ use Psalm\Config;
 
 class ConfigTest extends TestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
     /** @var TestConfig */
     protected static $config;
 

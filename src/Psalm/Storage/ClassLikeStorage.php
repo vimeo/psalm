@@ -35,11 +35,6 @@ class ClassLikeStorage
     /**
      * @var bool
      */
-    public $reflected = false;
-
-    /**
-     * @var bool
-     */
     public $all_properties_set_in_constructor = false;
 
     /**
@@ -61,11 +56,6 @@ class ClassLikeStorage
      * @var string
      */
     public $name;
-
-    /**
-     * @var array<string, string>
-     */
-    public $aliased_classes;
 
     /**
      * Is this class user-defined

@@ -49,16 +49,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $namespace_aliased_classes_flipped = [];
 
     /**
-     * @var array<int, \PhpParser\Node\Stmt>
-     */
-    protected $preloaded_statements = [];
-
-    /**
-     * @var bool
-     */
-    public static $show_notices = true;
-
-    /**
      * @var array<string, ClassLikeChecker>
      */
     protected $interface_checkers_to_analyze = [];
@@ -72,16 +62,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      * @var array<string, FunctionChecker>
      */
     protected $function_checkers = [];
-
-    /**
-     * @var array<int, NamespaceChecker>
-     */
-    protected $namespace_checkers = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    private $included_file_paths = [];
 
     /**
      * @var ?Context

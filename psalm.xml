@@ -45,6 +45,18 @@
             </errorLevel>
         </UnusedClass>
 
+        <UnusedProperty>
+            <errorLevel type="info">
+                <file name="src/Psalm/FileManipulation/FunctionDocblockManipulator.php" />
+            </errorLevel>
+        </UnusedProperty>
+
+        <PossiblyUnusedProperty>
+            <errorLevel type="info">
+                <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
+            </errorLevel>
+        </PossiblyUnusedProperty>
+
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />

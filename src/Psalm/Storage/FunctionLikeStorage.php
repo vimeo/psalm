@@ -23,11 +23,6 @@ class FunctionLikeStorage
     public $param_types = [];
 
     /**
-     * @var string
-     */
-    public $namespace;
-
-    /**
      * @var Type\Union|null
      */
     public $return_type;

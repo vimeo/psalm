@@ -11,16 +11,6 @@ class MethodStorage extends FunctionLikeStorage
     public $is_static;
 
     /**
-     * @var bool
-     */
-    public $reflected;
-
-    /**
-     * @var bool
-     */
-    public $registered;
-
-    /**
      * @var int
      */
     public $visibility;

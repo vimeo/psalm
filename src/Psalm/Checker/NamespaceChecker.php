@@ -27,21 +27,6 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     private $namespace_name;
 
     /**
-     * @var array<int, FunctionChecker>
-     */
-    public $function_checkers = [];
-
-    /**
-     * @var array<int, ClassChecker>
-     */
-    public $class_checkers = [];
-
-    /**
-     * @var array<int, ClassChecker>
-     */
-    public $interface_checkers = [];
-
-    /**
      * A lookup table for public namespace constants
      *
      * @var array<string, array<string, Type\Union>>

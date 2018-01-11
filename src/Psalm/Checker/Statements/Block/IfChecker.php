@@ -89,7 +89,6 @@ class IfChecker
         $context->inside_conditional = false;
 
         $if_scope = new IfScope();
-        $if_scope->has_elseifs = count($stmt->elseifs) > 0;
 
         $if_context = clone $context;
 

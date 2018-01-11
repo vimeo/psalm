@@ -22,11 +22,6 @@ class FileFilter
     protected $files_lowercase = [];
 
     /**
-     * @var array<string>
-     */
-    protected $patterns = [];
-
-    /**
      * @var bool
      */
     protected $inclusive;

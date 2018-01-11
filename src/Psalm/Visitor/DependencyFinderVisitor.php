@@ -42,11 +42,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     protected $file_aliases;
 
     /**
-     * @var bool
-     */
-    protected $in_classlike = false;
-
-    /**
      * @var string[]
      */
     protected $fq_classlike_names = [];

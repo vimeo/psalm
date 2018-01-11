@@ -156,11 +156,16 @@ class UnusedCodeTest extends TestCase
                         public function modifyFoo(string $value) : void {
                             $this->value = $value;
                         }
+
+                        public function getFoo() : string {
+                            return $this->value;
+                        }
                     }
 
                     $m = new A();
                     $m->foo("value");
-                    $m->modifyFoo("value2");',
+                    $m->modifyFoo("value2");
+                    echo $m->getFoo();',
             ],
             'usedTraitMethod' => [
                 '<?php

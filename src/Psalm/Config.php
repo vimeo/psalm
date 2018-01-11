@@ -111,13 +111,6 @@ class Config
     protected $base_dir;
 
     /**
-     * The path to this config file
-     *
-     * @var string
-     */
-    public $file_path;
-
-    /**
      * @var array<int, string>
      */
     private $file_extensions = ['php'];
@@ -186,9 +179,6 @@ class Config
      */
     private $plugins = [];
 
-    /** @var array<string, bool> */
-    private $predefined_classlikes = [];
-
     /** @var array<string, mixed> */
     private $predefined_constants;
 
@@ -237,8 +227,6 @@ class Config
     public static function loadFromXML($file_path, $base_dir, $file_contents)
     {
         $config = new static();
-
-        $config->file_path = $file_path;
 
         $config->base_dir = $base_dir;
 

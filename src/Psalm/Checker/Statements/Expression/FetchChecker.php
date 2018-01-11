@@ -80,6 +80,8 @@ class FetchChecker
             return false;
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         $stmt_var_id = ExpressionChecker::getVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
@@ -97,6 +99,25 @@ class FetchChecker
         if ($var_id && $context->hasVariable($var_id)) {
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
+
+            if ($context->collect_references
+                && isset($stmt->var->inferredType)
+                && $stmt->var->inferredType->hasObjectType()
+                && is_string($stmt->name)
+            ) {
+                // log the appearance
+                foreach ($stmt->var->inferredType->getTypes() as $lhs_type_part) {
+                    if ($lhs_type_part instanceof TNamedObject) {
+                        $property_id = $lhs_type_part->value . '::$' . $stmt->name;
+
+                        ClassLikeChecker::propertyExists(
+                            $project_checker,
+                            $property_id,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        );
+                    }
+                }
+            }
 
             return null;
         }
@@ -208,8 +229,6 @@ class FetchChecker
                 continue;
             }
 
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
-
             if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
                 if (InterfaceChecker::interfaceExists($project_checker, $lhs_type_part->value)) {
                     if (IssueBuffer::accepts(
@@ -260,7 +279,12 @@ class FetchChecker
                 }
             }
 
-            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
+            if (!ClassLikeChecker::propertyExists(
+                $project_checker,
+                $property_id,
+                $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
+            )
+            ) {
                 if ($context->inside_isset) {
                     return;
                 }
@@ -699,16 +723,30 @@ class FetchChecker
                 $statements_checker
             );
 
+            $property_id = $fq_class_name . '::$' . $stmt->name;
+
             if ($var_id && $context->hasVariable($var_id)) {
                 // we don't need to check anything
                 $stmt->inferredType = $context->vars_in_scope[$var_id];
 
+                if ($context->collect_references) {
+                    // log the appearance
+                    ClassLikeChecker::propertyExists(
+                        $project_checker,
+                        $property_id,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    );
+                }
+
                 return null;
             }
 
-            $property_id = $fq_class_name . '::$' . $stmt->name;
-
-            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
+            if (!ClassLikeChecker::propertyExists(
+                $project_checker,
+                $property_id,
+                $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
+            )
+            ) {
                 if (IssueBuffer::accepts(
                     new UndefinedPropertyFetch(
                         'Static property ' . $property_id . ' is not defined',

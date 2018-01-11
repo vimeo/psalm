@@ -7,9 +7,6 @@ use Psalm\Checker\ProjectChecker;
 
 class TestCase extends BaseTestCase
 {
-    /** @var \PhpParser\Parser */
-    protected static $parser;
-
     /** @var TestConfig */
     protected static $config;
 

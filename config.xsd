@@ -203,6 +203,7 @@
             <xs:element name="PossiblyUndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUnusedProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
@@ -233,6 +234,7 @@
             <xs:element name="UnevaluatedCode" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedMethod" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>

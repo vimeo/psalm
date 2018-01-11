@@ -177,7 +177,6 @@ class MethodChecker extends FunctionLikeChecker
         $declaring_class = $method->getDeclaringClass();
 
         $storage->is_static = $method->isStatic();
-        $storage->namespace = $declaring_class->getNamespaceName();
         $class_storage->declaring_method_ids[$method_name] =
             $declaring_class->name . '::' . strtolower((string)$method->getName());
 

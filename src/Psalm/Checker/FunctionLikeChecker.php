@@ -60,11 +60,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     protected $is_static = false;
 
     /**
-     * @var StatementsChecker|null
-     */
-    protected $statements_checker;
-
-    /**
      * @var StatementsSource
      */
     protected $source;
@@ -259,11 +254,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $statements_checker = new StatementsChecker($this);
 
-        // this increases memory, so only do it if running under this flag
-        if ($project_checker->infer_types_from_usage) {
-            $this->statements_checker = $statements_checker;
-        }
-
         $template_types = $storage->template_types;
 
         if ($class_storage && $class_storage->template_types) {
@@ -439,14 +429,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     [],
                     false
                 );
-            } elseif (!$this->function instanceof Closure) {
-                $fleshed_out_return_type = ExpressionChecker::fleshOutType(
-                    $project_checker,
-                    $storage->return_type,
-                    $context->self,
-                    $cased_method_id
-                );
-
+            } else {
                 $fleshed_out_signature_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     $storage->signature_return_type,
@@ -454,38 +437,54 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $cased_method_id
                 );
 
-                if (!TypeChecker::isContainedBy(
-                    $project_checker,
-                    $fleshed_out_return_type,
-                    $fleshed_out_signature_type
-                )
-                ) {
-                    if ($project_checker->alter_code
-                        && isset($project_checker->getIssuesToFix()['MismatchingDocblockReturnType'])
-                    ) {
-                        $this->addOrUpdateReturnType($project_checker, $storage->signature_return_type);
+                $fleshed_out_signature_type->check(
+                    $this,
+                    $storage->signature_return_type_location ?: $storage->return_type_location,
+                    $storage->suppressed_issues,
+                    [],
+                    false
+                );
 
-                        return null;
-                    }
-
-                    if (IssueBuffer::accepts(
-                        new MismatchingDocblockReturnType(
-                            'Docblock has incorrect return type \'' . $storage->return_type .
-                                '\', should be \'' . $storage->signature_return_type . '\'',
-                            $storage->return_type_location
-                        ),
-                        $storage->suppressed_issues
-                    )) {
-                        return false;
-                    }
-
-                    $storage->signature_return_type->check(
-                        $this,
-                        $storage->return_type_location,
-                        $storage->suppressed_issues,
-                        [],
-                        false
+                if (!$this->function instanceof Closure) {
+                    $fleshed_out_return_type = ExpressionChecker::fleshOutType(
+                        $project_checker,
+                        $storage->return_type,
+                        $context->self,
+                        $cased_method_id
                     );
+
+                    $fleshed_out_signature_type = ExpressionChecker::fleshOutType(
+                        $project_checker,
+                        $storage->signature_return_type,
+                        $context->self,
+                        $cased_method_id
+                    );
+
+                    if (!TypeChecker::isContainedBy(
+                        $project_checker,
+                        $fleshed_out_return_type,
+                        $fleshed_out_signature_type
+                    )
+                    ) {
+                        if ($project_checker->alter_code
+                            && isset($project_checker->getIssuesToFix()['MismatchingDocblockReturnType'])
+                        ) {
+                            $this->addOrUpdateReturnType($project_checker, $storage->signature_return_type);
+
+                            return null;
+                        }
+
+                        if (IssueBuffer::accepts(
+                            new MismatchingDocblockReturnType(
+                                'Docblock has incorrect return type \'' . $storage->return_type .
+                                    '\', should be \'' . $storage->signature_return_type . '\'',
+                                $storage->return_type_location
+                            ),
+                            $storage->suppressed_issues
+                        )) {
+                            return false;
+                        }
+                    }
                 }
             }
         }
