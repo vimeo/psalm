@@ -1767,7 +1767,14 @@ class CallChecker
                     $by_ref_type = $by_ref_type ? clone $by_ref_type : Type::getMixed();
                 }
 
-                if ($by_ref && $by_ref_type) {
+                if ($by_ref
+                    && $by_ref_type
+                    && !(
+                        $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                    )
+                ) {
                     // special handling for array sort
                     if ($argument_offset === 0
                         && $method_id
@@ -1991,9 +1998,16 @@ class CallChecker
                 if ($arg->value instanceof PhpParser\Node\Scalar
                     || $arg->value instanceof PhpParser\Node\Expr\Array_
                     || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
-                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                    || (
+                        (
+                        $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                            || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                            || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        ) && (
+                            !isset($arg->value->inferredType)
+                            || !$arg->value->inferredType->by_ref
+                        )
+                    )
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidPassByReference(

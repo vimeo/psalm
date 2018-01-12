@@ -46,6 +46,13 @@ class Union
      */
     public $ignore_nullable_issues = false;
 
+    /**
+     * Whether or not the type was passed by reference
+     *
+     * @var bool
+     */
+    public $by_ref = false;
+
     /** @var ?string */
     private $id;
 

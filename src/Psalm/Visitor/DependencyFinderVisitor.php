@@ -742,6 +742,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 CodeLocation::FUNCTION_RETURN_TYPE
             );
 
+            if ($stmt->returnsByRef()) {
+                $storage->return_type->by_ref = true;
+            }
+
             $storage->signature_return_type = $storage->return_type;
             $storage->signature_return_type_location = $storage->return_type_location;
         }
@@ -900,6 +904,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 if ($storage->return_type && $docblock_info->ignore_nullable_return) {
                     $storage->return_type->ignore_nullable_issues = true;
+                }
+
+                if ($storage->return_type && $stmt->returnsByRef()) {
+                    $storage->return_type->by_ref = true;
                 }
 
                 if ($docblock_info->return_type_line_number) {
