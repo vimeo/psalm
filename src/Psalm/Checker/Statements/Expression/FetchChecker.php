@@ -858,6 +858,10 @@ class FetchChecker
 
         foreach ($array_type->getTypes() as &$type) {
             if ($type instanceof TNull) {
+                if ($array_type->ignore_nullable_issues) {
+                    continue;
+                }
+
                 if ($in_assignment) {
                     if ($replacement_type) {
                         if ($array_access_type) {
