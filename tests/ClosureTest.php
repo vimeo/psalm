@@ -310,7 +310,7 @@ class ClosureTest extends TestCase
 
                             return $bar;
                         };',
-                'error_message' => 'PossiblyNullFunctionCall',
+                'error_message' => 'MixedReturnStatement',
             ],
             'stringFunctionCall' => [
                 '<?php

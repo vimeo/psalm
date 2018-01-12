@@ -276,7 +276,8 @@ class ExpressionChecker
                     $context->vars_in_scope['$' . $use->var] = Type::getMixed();
                 }
 
-                $use_context->vars_in_scope['$' . $use->var] = $context->hasVariable('$' . $use->var)
+                $use_context->vars_in_scope['$' . $use->var] =
+                    $context->hasVariable('$' . $use->var) && !$use->byRef
                     ? clone $context->vars_in_scope['$' . $use->var]
                     : Type::getMixed();
 
