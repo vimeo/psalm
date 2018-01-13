@@ -201,7 +201,7 @@ return [
 'ArrayIterator::next' => [''],
 'ArrayIterator::offsetExists' => ['', 'index'=>'string'],
 'ArrayIterator::offsetGet' => ['', 'index'=>'string'],
-'ArrayIterator::offsetSet' => ['', 'index'=>'string', 'newval'=>'string'],
+'ArrayIterator::offsetSet' => ['', 'index'=>'string', 'newval'=>''],
 'ArrayIterator::offsetUnset' => ['', 'index'=>'string'],
 'ArrayIterator::rewind' => [''],
 'ArrayIterator::seek' => ['', 'position'=>'int'],
