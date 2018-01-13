@@ -87,13 +87,6 @@ class Config
     public $cache_directory;
 
     /**
-     * Whether or not to use property defaults to inform type when none is listed
-     *
-     * @var bool
-     */
-    public $use_property_default_for_type = false;
-
-    /**
      * Whether or not to care about casing of file names
      *
      * @var bool
