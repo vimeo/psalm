@@ -1624,8 +1624,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $appearing_property_class !== $calling_context) {
-                    if ($emit_issues
-                        && IssueBuffer::accepts(
+                    if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access private property ' . $property_id . ' from context ' . $calling_context,
                             $code_location
@@ -1646,8 +1645,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
 
                 if (!$calling_context) {
-                    if ($emit_issues
-                        && IssueBuffer::accepts(
+                    if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id,
                             $code_location
@@ -1665,8 +1663,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
 
                 if (!ClassChecker::classExtends($project_checker, $calling_context, $appearing_property_class)) {
-                    if ($emit_issues
-                        && IssueBuffer::accepts(
+                    if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id . ' from context ' . $calling_context,
                             $code_location
