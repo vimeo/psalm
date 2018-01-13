@@ -743,6 +743,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             );
 
             if ($stmt->returnsByRef()) {
+                $storage->returns_by_ref = true;
                 $storage->return_type->by_ref = true;
             }
 
@@ -907,6 +908,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($storage->return_type && $stmt->returnsByRef()) {
+                    $storage->returns_by_ref = true;
                     $storage->return_type->by_ref = true;
                 }
 

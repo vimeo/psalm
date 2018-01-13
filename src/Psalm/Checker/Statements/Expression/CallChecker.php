@@ -367,6 +367,7 @@ class CallChecker
                             $return_type_location = $function_storage->return_type_location;
 
                             $stmt->inferredType = $return_type;
+                            $return_type->by_ref = $function_storage->returns_by_ref;
 
                             // only check the type locally if it's defined externally
                             if ($return_type_location &&
@@ -792,6 +793,8 @@ class CallChecker
 
         $code_location = new CodeLocation($source, $stmt);
 
+        $returns_by_ref = false;
+
         if ($class_type && is_string($stmt->name)) {
             $return_type = null;
             $method_name_lc = strtolower($stmt->name);
@@ -1052,6 +1055,10 @@ class CallChecker
                                 $context->getPhantomClasses()
                             );
                         }
+                    } else {
+                        $returns_by_ref =
+                            $returns_by_ref
+                                || MethodChecker::getMethodReturnsByRef($project_checker, $method_id);
                     }
                 }
 
@@ -1119,6 +1126,10 @@ class CallChecker
             }
 
             $stmt->inferredType = $return_type;
+
+            if ($returns_by_ref && $stmt->inferredType && !$stmt->inferredType->by_ref) {
+                $stmt->inferredType->by_ref = $returns_by_ref;
+            }
         }
 
         if ($method_id === null) {

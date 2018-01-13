@@ -60,7 +60,7 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string                       $method_id
+     * @param  string $method_id
      *
      * @return Type\Union|null
      */
@@ -101,6 +101,44 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         return null;
+    }
+
+    /**
+     * @param  string $method_id
+     *
+     * @return bool
+     */
+    public static function getMethodReturnsByRef(ProjectChecker $project_checker, $method_id)
+    {
+        $method_id = self::getDeclaringMethodId($project_checker, $method_id);
+
+        if (!$method_id) {
+            return false;
+        }
+
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        if (!ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)
+            && FunctionChecker::inCallMap($method_id)
+        ) {
+            return false;
+        }
+
+        $storage = self::getStorage($project_checker, $method_id);
+
+        if ($storage->return_type) {
+            return $storage->returns_by_ref;
+        }
+
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+        foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
+            $overridden_storage = self::getStorage($project_checker, $overridden_method_id);
+
+            return $overridden_storage->returns_by_ref;
+        }
+
+        return false;
     }
 
     /**
