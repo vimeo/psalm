@@ -15,11 +15,11 @@
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="stopOnFirstError" type="xs:string" />
         <xs:attribute name="useDocblockTypes" type="xs:string" />
+        <xs:attribute name="useDocblockPropertyTypes" type="xs:string" />
         <xs:attribute name="throwExceptionOnError" type="xs:string" />
         <xs:attribute name="hideExternalErrors" type="xs:string" />
         <xs:attribute name="autoloader" type="xs:string" />
         <xs:attribute name="cacheDirectory" type="xs:string" />
-        <xs:attribute name="usePropertyDefaultForType" type="xs:string" />
         <xs:attribute name="allowFileIncludes" type="xs:string" />
         <xs:attribute name="totallyTyped" type="xs:string" />
         <xs:attribute name="strictBinaryOperands" type="xs:string" />

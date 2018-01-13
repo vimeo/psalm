@@ -64,6 +64,15 @@ class Config
     public $use_docblock_types = true;
 
     /**
+     * Whether or not to use types as defined in property docblocks.
+     * This is distinct from the above because you may want to use
+     * property docblocks, but not function docblocks.
+     *
+     * @var bool
+     */
+    public $use_docblock_property_types = true;
+
+    /**
      * Whether or not to throw an exception on first error
      *
      * @var bool
@@ -266,6 +275,11 @@ class Config
             $config->use_docblock_types = $attribute_text === 'true' || $attribute_text === '1';
         }
 
+        if (isset($config_xml['useDocblockPropertyTypes'])) {
+            $attribute_text = (string) $config_xml['useDocblockPropertyTypes'];
+            $config->use_docblock_property_types = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
         if (isset($config_xml['throwExceptionOnError'])) {
             $attribute_text = (string) $config_xml['throwExceptionOnError'];
             $config->throw_exception = $attribute_text === 'true' || $attribute_text === '1';
@@ -289,11 +303,6 @@ class Config
         if (@mkdir($config->cache_directory, 0777, true) === false && is_dir($config->cache_directory) === false) {
             trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
             exit(255);
-        }
-
-        if (isset($config_xml['usePropertyDefaultForType'])) {
-            $attribute_text = (string) $config_xml['usePropertyDefaultForType'];
-            $config->use_property_default_for_type = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['allowFileIncludes'])) {

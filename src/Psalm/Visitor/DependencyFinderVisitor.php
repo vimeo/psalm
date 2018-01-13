@@ -1147,7 +1147,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $property_is_initialized = false;
 
-        if ($comment && $comment->getText() && $config->use_docblock_types) {
+        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
             if (preg_match('/[ \t\*]+@psalm-suppress[ \t]+PropertyNotSetInConstructor/', (string)$comment)) {
                 $property_is_initialized = true;
             }
@@ -1196,15 +1196,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (!$property_group_type) {
                 if ($property->default) {
                     $default_type = StatementsChecker::getSimpleType($property->default);
-
-                    if (!$config->use_property_default_for_type) {
-                        $property_type = false;
-                    } else {
-                        $property_type = $default_type ?: Type::getMixed();
-                    }
-                } else {
-                    $property_type = false;
                 }
+
+                $property_type = false;
             } else {
                 if ($var_comment && $var_comment->line_number) {
                     $property_type_location = new CodeLocation(
