@@ -679,6 +679,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $can_create_objectlike = true;
 
             foreach ($stmt->items as $int_offset => $item) {
+                if ($item === null) {
+                    continue;
+                }
+
                 if ($item->key) {
                     $single_item_key_type = self::getSimpleType(
                         $item->key,

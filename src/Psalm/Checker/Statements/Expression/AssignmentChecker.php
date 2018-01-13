@@ -254,12 +254,12 @@ class AssignmentChecker
                 $var = $assign_var_item->value;
 
                 if ($assign_value instanceof PhpParser\Node\Expr\Array_
-                    && isset($assign_value->items[$offset]->value->inferredType)
+                    && isset($assign_var_item->value->inferredType)
                 ) {
                     self::analyze(
                         $statements_checker,
                         $var,
-                        $assign_value->items[$offset]->value,
+                        $assign_var_item->value,
                         null,
                         $context,
                         $doc_comment

@@ -410,7 +410,7 @@ return [
         'args' => 'array<int, PhpParser\Node\Arg>',
     ],
     'phpparser\\node\\expr\\array_' => [
-        'items' => 'array<int, PhpParser\Node\Expr\ArrayItem>',
+        'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',
     ],
     'phpparser\node\expr\list_' => [
         'items' => 'array<int, PhpParser\Node\Expr\ArrayItem|null>',

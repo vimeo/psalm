@@ -2752,6 +2752,10 @@ class CallChecker
             return [];
         }
 
+        if (!isset($callable_arg->items[0]) || !isset($callable_arg->items[1])) {
+            throw new \UnexpectedValueException('These should never be unset');
+        }
+
         $class_arg = $callable_arg->items[0]->value;
         $method_name_arg = $callable_arg->items[1]->value;
 

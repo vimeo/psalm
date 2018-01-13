@@ -765,6 +765,10 @@ class ExpressionChecker
         $can_create_objectlike = true;
 
         foreach ($stmt->items as $int_offset => $item) {
+            if ($item === null) {
+                continue;
+            }
+
             if ($item->key) {
                 if (self::analyze($statements_checker, $item->key, $context) === false) {
                     return false;
