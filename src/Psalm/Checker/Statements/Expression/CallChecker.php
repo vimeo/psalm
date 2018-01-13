@@ -1127,7 +1127,11 @@ class CallChecker
 
             $stmt->inferredType = $return_type;
 
-            if ($returns_by_ref && $stmt->inferredType && !$stmt->inferredType->by_ref) {
+            if ($returns_by_ref) {
+                if (!$stmt->inferredType) {
+                    $stmt->inferredType = Type::getMixed();
+                }
+
                 $stmt->inferredType->by_ref = $returns_by_ref;
             }
         }

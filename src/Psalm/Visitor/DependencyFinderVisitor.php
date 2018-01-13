@@ -743,12 +743,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             );
 
             if ($stmt->returnsByRef()) {
-                $storage->returns_by_ref = true;
                 $storage->return_type->by_ref = true;
             }
 
             $storage->signature_return_type = $storage->return_type;
             $storage->signature_return_type_location = $storage->return_type_location;
+        }
+
+        if ($stmt->returnsByRef()) {
+            $storage->returns_by_ref = true;
         }
 
         $doc_comment = $stmt->getDocComment();
@@ -907,8 +910,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->return_type->ignore_nullable_issues = true;
                 }
 
-                if ($storage->return_type && $stmt->returnsByRef()) {
-                    $storage->returns_by_ref = true;
+                if ($stmt->returnsByRef() && $storage->return_type) {
                     $storage->return_type->by_ref = true;
                 }
 

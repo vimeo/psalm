@@ -126,19 +126,7 @@ class MethodChecker extends FunctionLikeChecker
 
         $storage = self::getStorage($project_checker, $method_id);
 
-        if ($storage->return_type) {
-            return $storage->returns_by_ref;
-        }
-
-        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-
-        foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
-            $overridden_storage = self::getStorage($project_checker, $overridden_method_id);
-
-            return $overridden_storage->returns_by_ref;
-        }
-
-        return false;
+        return $storage->returns_by_ref;
     }
 
     /**
