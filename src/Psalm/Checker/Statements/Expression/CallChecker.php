@@ -88,6 +88,8 @@ class CallChecker
                 } else {
                     $context->check_classes = false;
                 }
+            } elseif ($method->parts === ['extension_loaded']) {
+                $context->check_classes = false;
             } elseif ($method->parts === ['function_exists']) {
                 $context->check_functions = false;
             } elseif ($method->parts === ['is_callable']) {

@@ -65,11 +65,6 @@ class FunctionLikeStorage
     /**
      * @var bool
      */
-    public $returns_by_ref;
-
-    /**
-     * @var bool
-     */
     public $abstract = false;
 
     /**
