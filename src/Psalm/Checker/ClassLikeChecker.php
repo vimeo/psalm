@@ -1576,15 +1576,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
+     * @param  bool             $emit_issues
      *
-     * @return false|null
+     * @return bool|null
      */
     public static function checkPropertyVisibility(
         $property_id,
         $calling_context,
         StatementsSource $source,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
+        $emit_issues = true
     ) {
         $project_checker = $source->getFileChecker()->project_checker;
 
@@ -1601,11 +1603,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         // if the calling class is the same, we know the property exists, so it must be visible
         if ($appearing_property_class === $calling_context) {
-            return null;
+            return $emit_issues ? null : true;
         }
 
         if ($source->getSource() instanceof TraitChecker && $declaring_property_class === $source->getFQCLN()) {
-            return null;
+            return $emit_issues ? null : true;
         }
 
         $class_storage = $project_checker->classlike_storage_provider->get($declaring_property_class);
@@ -1618,11 +1620,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         switch ($storage->visibility) {
             case self::VISIBILITY_PUBLIC:
-                return null;
+                return $emit_issues ? null : true;
 
             case self::VISIBILITY_PRIVATE:
                 if (!$calling_context || $appearing_property_class !== $calling_context) {
-                    if (IssueBuffer::accepts(
+                    if ($emit_issues
+                        && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access private property ' . $property_id . ' from context ' . $calling_context,
                             $code_location
@@ -1631,9 +1634,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     )) {
                         return false;
                     }
+
+                    return null;
                 }
 
-                return null;
+                return $emit_issues ? null : true;
 
             case self::VISIBILITY_PROTECTED:
                 if ($appearing_property_class === $calling_context) {
@@ -1641,7 +1646,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
 
                 if (!$calling_context) {
-                    if (IssueBuffer::accepts(
+                    if ($emit_issues
+                        && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id,
                             $code_location
@@ -1655,11 +1661,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
 
                 if (ClassChecker::classExtends($project_checker, $appearing_property_class, $calling_context)) {
-                    return null;
+                    return $emit_issues ? null : true;
                 }
 
                 if (!ClassChecker::classExtends($project_checker, $calling_context, $appearing_property_class)) {
-                    if (IssueBuffer::accepts(
+                    if ($emit_issues
+                        && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id . ' from context ' . $calling_context,
                             $code_location
@@ -1668,10 +1675,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     )) {
                         return false;
                     }
+
+                    return null;
                 }
         }
 
-        return null;
+        return $emit_issues ? null : true;
     }
 
     /**

@@ -792,14 +792,27 @@ class AssignmentChecker
 
                 $property_exists = true;
 
-                if (ClassLikeChecker::checkPropertyVisibility(
-                    $property_id,
-                    $context->self,
-                    $statements_checker->getSource(),
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker->getSuppressedIssues()
-                ) === false) {
-                    return false;
+                if (!$context->collect_mutations) {
+                    if (ClassLikeChecker::checkPropertyVisibility(
+                        $property_id,
+                        $context->self,
+                        $statements_checker->getSource(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
+                } else {
+                    if (ClassLikeChecker::checkPropertyVisibility(
+                        $property_id,
+                        $context->self,
+                        $statements_checker->getSource(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues(),
+                        false
+                    ) !== true) {
+                        continue;
+                    }
                 }
 
                 $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
