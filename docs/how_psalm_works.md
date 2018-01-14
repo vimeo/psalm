@@ -38,4 +38,4 @@ After all the statements have been analysed we gather up all the return types an
 
 ### Type Reconciliation
 
-While some updates to the Context object are straightforward, others are not. Updating the Context object in the light of new type information happens in Reconciler which takes an array assertions e.g. `[“$a” => “!null”]` and a list of existing type information e.g. `$a => string|null` and return a set of updated information e.g. `$a => string`
+While some updates to the `Context` object are straightforward, others are not. Updating the `Context` object in the light of new type information happens in [`Reconciler`]((https://github.com/vimeo/psalm/blob/master/src/Psalm/Type/Reconciler.php), which takes an array assertions e.g. `[“$a” => “!null”]` and a list of existing type information e.g. `$a => string|null` and return a set of updated information e.g. `$a => string`
