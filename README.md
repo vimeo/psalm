@@ -39,6 +39,10 @@ The config created above will show you all issues in your code, but will emit `I
 
 You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
 
+## How Psalm Works
+
+A basic rundown of Psalm’s internals can be found in [docs/how_psalm_works.md](https://github.com/vimeo/psalm/blob/master/docs/how_psalm_works.md).
+
 ## Acknowledgements
 
 The engineering team [@vimeo](https://github.com/vimeo) for encouragement and patience, especially [@nbeliard](https://github.com/nbeliard), [@erunion](https://github.com/erunion) and [@nickyr](https://github.com/nickyr).

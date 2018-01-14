@@ -2,7 +2,7 @@
 
 The following is a set of guidelines for contributing to Psalm, which is hosted in the [Vimeo Organization](https://github.com/vimeo) on GitHub.
 
-Also, make sure to check out the [Contributing to Open Source on GitHub](https://guides.github.com/activities/contributing-to-open-source/) guide.
+Make sure to check out the [Contributing to Open Source on GitHub](https://guides.github.com/activities/contributing-to-open-source/) guide.
 
 ## Submitting Issues
 
