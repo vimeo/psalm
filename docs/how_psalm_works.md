@@ -20,7 +20,7 @@ We analyse files in [`FileChecker`](https://github.com/vimeo/psalm/blob/master/s
 
 The `FileChecker` takes a given file and looks for a set of top-level components: classes, traits, interfaces, functions. It can look inside namespaces and extract the classes, interfaces, traits and functions in them as well.
 
-It delegates the analysis of those components to [`ClassChecker](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/ClassChecker.php), [`InterfaceChecker`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/InterfaceChecker.php) and [`FunctionChecker`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/FunctionChecker.php).
+It delegates the analysis of those components to [`ClassChecker`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/ClassChecker.php), [`InterfaceChecker`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/InterfaceChecker.php) and [`FunctionChecker`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/FunctionChecker.php).
 
 Because it’s the most basic use case for the line-by-line analysis (no class inheritance to worry about), let’s drill down into `FunctionChecker`.
 
