@@ -64,7 +64,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     protected $source;
 
-    /** @var FileChecker */
+    /**
+     * @var FileChecker
+     */
     public $file_checker;
 
     /**
@@ -76,6 +78,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @var array<string, array<string, bool>>
      */
     protected $return_vars_possibly_in_scope = [];
+
+    /**
+     * @var Type\Union|null
+     */
+    private $local_return_type;
 
     /**
      * @var array<string, array>
@@ -1873,5 +1880,24 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     public function getFileChecker()
     {
         return $this->file_checker;
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public function getLocalReturnType(Type\Union $storage_return_type)
+    {
+        if ($this->local_return_type) {
+            return $this->local_return_type;
+        }
+
+        $this->local_return_type = ExpressionChecker::fleshOutType(
+            $this->file_checker->project_checker,
+            $storage_return_type,
+            $this->getFQCLN(),
+            ''
+        );
+
+        return $this->local_return_type;
     }
 }

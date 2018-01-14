@@ -1871,27 +1871,8 @@ class CallChecker
                         }
                     }
                 } else {
-                    if ($arg->value instanceof PhpParser\Node\Expr\Variable) {
-                        if (ExpressionChecker::analyzeVariable(
-                            $statements_checker,
-                            $arg->value,
-                            $context
-                        ) === false) {
-                            return false;
-                        }
-                    } elseif ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch) {
-                        if (FetchChecker::analyzePropertyFetch(
-                            $statements_checker,
-                            $arg->value,
-                            $context
-                        ) === false
-                        ) {
-                            return false;
-                        }
-                    } else {
-                        if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
-                            return false;
-                        }
+                    if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
+                        return false;
                     }
                 }
             } else {

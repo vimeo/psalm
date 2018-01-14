@@ -11,6 +11,7 @@ use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
+use Psalm\Checker\Statements\Expression\IncludeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
 use Psalm\CodeLocation;
@@ -1310,14 +1311,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $path_to_file = $stmt->expr->value;
 
             // attempts to resolve using get_include_path dirs
-            $include_path = StatementsChecker::resolveIncludePath($path_to_file, dirname($this->file_path));
+            $include_path = IncludeChecker::resolveIncludePath($path_to_file, dirname($this->file_path));
             $path_to_file = $include_path ? $include_path : $path_to_file;
 
             if ($path_to_file[0] !== DIRECTORY_SEPARATOR) {
                 $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = StatementsChecker::getPathTo($stmt->expr, $this->file_path);
+            $path_to_file = IncludeChecker::getPathTo($stmt->expr, $this->file_path);
         }
 
         if ($path_to_file) {
