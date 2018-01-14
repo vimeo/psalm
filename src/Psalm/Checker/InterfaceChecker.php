@@ -2,6 +2,8 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\StatementsSource;
 
 class InterfaceChecker extends ClassLikeChecker
@@ -14,6 +16,41 @@ class InterfaceChecker extends ClassLikeChecker
     public function __construct(PhpParser\Node\Stmt\Interface_ $interface, StatementsSource $source, $fq_interface_name)
     {
         parent::__construct($interface, $source, $fq_interface_name);
+    }
+
+    /**
+     * @param Context|null  $class_context
+     * @param Context|null  $global_context
+     *
+     * @return void
+     */
+    public function analyze()
+    {
+        if (!$this->class instanceof PhpParser\Node\Stmt\Interface_) {
+            throw new \LogicException('Something went badly wrong');
+        }
+
+        if ($this->class->extends) {
+            foreach ($this->class->extends as $extended_interface) {
+                $extended_interface_name = self::getFQCLNFromNameObject(
+                    $extended_interface,
+                    $this->getAliases()
+                );
+
+                $parent_reference_location = new CodeLocation($this, $extended_interface);
+
+                $project_checker = $this->file_checker->project_checker;
+
+                if (!ClassLikeChecker::classOrInterfaceExists(
+                    $project_checker,
+                    $extended_interface_name,
+                    $parent_reference_location
+                )) {
+                    // we should not normally get here
+                    return;
+                }
+            }
+        }
     }
 
     /**

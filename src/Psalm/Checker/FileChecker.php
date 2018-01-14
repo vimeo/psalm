@@ -49,12 +49,12 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $namespace_aliased_classes_flipped = [];
 
     /**
-     * @var array<string, ClassLikeChecker>
+     * @var array<string, InterfaceChecker>
      */
     protected $interface_checkers_to_analyze = [];
 
     /**
-     * @var array<string, ClassLikeChecker>
+     * @var array<string, ClassChecker>
      */
     protected $class_checkers_to_analyze = [];
 
