@@ -3399,7 +3399,7 @@ return [
 'ibase_param_info' => ['array', 'query'=>'', 'field_number'=>'int'],
 'ibase_pconnect' => ['resource', 'database='=>'string', 'username='=>'string', 'password='=>'string', 'charset='=>'string', 'buffers='=>'int', 'dialect='=>'int', 'role='=>'string'],
 'ibase_prepare' => ['resource', 'link_identifier'=>'', 'query'=>'string', 'trans_identifier'=>''],
-'ibase_query' => ['', 'link_identifier='=>'', 'string='=>']]', 'bind_arg='=>'', '...='=>''],
+'ibase_query' => ['', 'link_identifier='=>'', 'string='=>'string', 'bind_arg='=>'', '...='=>''],
 'ibase_restore' => ['', 'service_handle'=>'', 'source_file'=>'string', 'dest_db'=>'string', 'options='=>'int', 'verbose='=>'bool'],
 'ibase_rollback' => ['bool', 'link_identifier='=>''],
 'ibase_rollback_ret' => ['bool', 'link_identifier='=>''],
