@@ -1360,6 +1360,10 @@ class CallChecker
 
                         $context->include_location = $old_context_include_location;
                         $context->self = $old_self;
+
+                        if (isset($context->vars_in_scope['$this']) && $old_self) {
+                            $context->vars_in_scope['$this'] = Type::parseString($old_self);
+                        }
                     }
                 } else {
                     $namespace = $statements_checker->getNamespace()
