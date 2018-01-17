@@ -37,6 +37,7 @@ class Reconciler
      * @param  array<string, string>     $new_types
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string>             $changed_var_ids
+     * @param  array<string, bool>       $referenced_var_ids
      * @param  StatementsChecker         $statements_checker
      * @param  CodeLocation              $code_location
      * @param  array<string>             $suppressed_issues

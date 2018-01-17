@@ -111,6 +111,7 @@ class IfChecker
             return false;
         }
 
+        /** @var array<string, bool> */
         $more_cond_referenced_var_ids = $if_context->referenced_var_ids;
         $if_context->referenced_var_ids = array_merge(
             $more_cond_referenced_var_ids,

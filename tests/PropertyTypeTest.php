@@ -718,7 +718,7 @@ class PropertyTypeTest extends TestCase
                             $this->prop = 2;
                         }
                     }',
-            ]
+            ],
         ];
     }
 

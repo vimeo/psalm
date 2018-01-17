@@ -74,39 +74,6 @@ class FunctionCallTest extends TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testArrayFilterUseKey()
-    {
-        if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
-            $this->addFile(
-                getcwd() . '/src/somefile.php',
-                '<?php
-                    $bar = "bar";
-
-                    $foo = [
-                        $bar => function (): string {
-                            return "baz";
-                        },
-                    ];
-
-                    $foo = array_filter(
-                        $foo,
-                        function (string $key): bool {
-                            return $key === "bar";
-                        },
-                        ARRAY_FILTER_USE_KEY
-                    );'
-            );
-
-            $file_checker = new FileChecker(getcwd() . '/src/somefile.php', $this->project_checker);
-            $context = new Context();
-            $file_checker->visitAndAnalyzeMethods($context);
-            $this->project_checker->checkClassReferences();
-        }
-    }
-
-    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()
@@ -419,6 +386,42 @@ class FunctionCallTest extends TestCase
                             expectsInt($tmp["item"]);
                         }
                     }',
+            ],
+            'arrayFilterWithAssert' => [
+                '<?php
+                    $a = array_filter(
+                        [1, "hello", 6, "goodbye"],
+                        function ($s): bool {
+                            return is_string($s);
+                        }
+                    );',
+                'assertions' => [
+                    '$a' => 'array<int, string>',
+                ],
+                'error_levels' => [
+                    'UntypedParam',
+                ],
+            ],
+            'arrayFilterUseKey' => [
+                '<?php
+                    $bar = "bar";
+
+                    $foo = [
+                        $bar => function (): string {
+                            return "baz";
+                        },
+                    ];
+
+                    $foo = array_filter(
+                        $foo,
+                        function (string $key): bool {
+                            return $key === "bar";
+                        },
+                        ARRAY_FILTER_USE_KEY
+                    );',
+                'assertions' => [
+                    '$foo' => 'array<string, Closure>',
+                ],
             ],
         ];
     }

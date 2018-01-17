@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\CodeLocation;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidReturnType;
@@ -9,6 +10,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Reconciler;
 
 class FunctionChecker extends FunctionLikeChecker
 {
@@ -460,7 +462,15 @@ class FunctionChecker extends FunctionLikeChecker
         if ($call_map_key === 'array_map') {
             return self::getArrayMapReturnType(
                 $statements_checker,
-                $call_map_key,
+                $call_args,
+                $code_location,
+                $suppressed_issues
+            );
+        }
+
+        if ($call_map_key === 'array_filter') {
+            return self::getArrayFilterReturnType(
+                $statements_checker,
                 $call_args,
                 $code_location,
                 $suppressed_issues
@@ -554,41 +564,6 @@ class FunctionChecker extends FunctionLikeChecker
             return Type::getArray();
         }
 
-        if ($call_map_key === 'array_filter') {
-            $first_arg_array = $first_arg
-                && isset($first_arg->inferredType)
-                && $first_arg->inferredType->hasType('array')
-                && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
-                && ($array_atomic_type instanceof Type\Atomic\TArray ||
-                    $array_atomic_type instanceof Type\Atomic\ObjectLike)
-            ? $array_atomic_type
-            : null;
-
-            if (!$first_arg_array) {
-                return Type::getArray();
-            }
-
-            if ($first_arg_array instanceof Type\Atomic\TArray) {
-                $inner_type = $first_arg_array->type_params[1];
-                $key_type = clone $first_arg_array->type_params[0];
-            } else {
-                $inner_type = $first_arg_array->getGenericValueType();
-                $key_type = $first_arg_array->getGenericKeyType();
-            }
-
-            if (!$second_arg) {
-                $inner_type->removeType('null');
-                $inner_type->removeType('false');
-            }
-
-            return new Type\Union([
-                new Type\Atomic\TArray([
-                    $key_type,
-                    $inner_type,
-                ]),
-            ]);
-        }
-
         if ($call_map_key === 'array_rand') {
             $first_arg_array = $first_arg
                 && isset($first_arg->inferredType)
@@ -633,7 +608,6 @@ class FunctionChecker extends FunctionLikeChecker
     }
 
     /**
-     * @param  string                       $call_map_key
      * @param  array<PhpParser\Node\Arg>    $call_args
      * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
@@ -642,15 +616,11 @@ class FunctionChecker extends FunctionLikeChecker
      */
     protected static function getArrayMapReturnType(
         StatementsChecker $statements_checker,
-        $call_map_key,
         $call_args,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        $function_index = $call_map_key === 'array_map' ? 0 : 1;
-        $array_index = $call_map_key === 'array_map' ? 1 : 0;
-
-        $array_arg = isset($call_args[$array_index]->value) ? $call_args[$array_index]->value : null;
+        $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
         $array_arg_type = $array_arg
                 && isset($array_arg->inferredType)
@@ -660,8 +630,8 @@ class FunctionChecker extends FunctionLikeChecker
             ? $array_atomic_type
             : null;
 
-        if (isset($call_args[$function_index])) {
-            $function_call_arg = $call_args[$function_index];
+        if (isset($call_args[0])) {
+            $function_call_arg = $call_args[0];
 
             if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
                 && isset($function_call_arg->value->inferredType)
@@ -673,7 +643,7 @@ class FunctionChecker extends FunctionLikeChecker
                 if ($closure_return_type->isVoid()) {
                     IssueBuffer::accepts(
                         new InvalidReturnType(
-                            'No return type could be found in the closure passed to ' . $call_map_key,
+                            'No return type could be found in the closure passed to array_map',
                             $code_location
                         ),
                         $suppressed_issues
@@ -684,27 +654,14 @@ class FunctionChecker extends FunctionLikeChecker
 
                 $key_type = $array_arg_type ? clone $array_arg_type->type_params[0] : Type::getMixed();
 
-                if ($call_map_key === 'array_map') {
-                    $inner_type = clone $closure_return_type;
+                $inner_type = clone $closure_return_type;
 
-                    return new Type\Union([
-                        new Type\Atomic\TArray([
-                            $key_type,
-                            $inner_type,
-                        ]),
-                    ]);
-                }
-
-                if ($array_arg_type) {
-                    $inner_type = clone $array_arg_type->type_params[1];
-
-                    return new Type\Union([
-                        new Type\Atomic\TArray([
-                            $key_type,
-                            $inner_type,
-                        ]),
-                    ]);
-                }
+                return new Type\Union([
+                    new Type\Atomic\TArray([
+                        $key_type,
+                        $inner_type,
+                    ]),
+                ]);
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
             ) {
@@ -797,6 +754,114 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         return Type::getArray();
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  CodeLocation                 $code_location
+     * @param  array                        $suppressed_issues
+     *
+     * @return Type\Union
+     */
+    protected static function getArrayFilterReturnType(
+        StatementsChecker $statements_checker,
+        $call_args,
+        CodeLocation $code_location,
+        array $suppressed_issues
+    ) {
+        $array_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+
+        $first_arg_array = $array_arg
+            && isset($array_arg->inferredType)
+            && $array_arg->inferredType->hasType('array')
+            && ($array_atomic_type = $array_arg->inferredType->getTypes()['array'])
+            && ($array_atomic_type instanceof Type\Atomic\TArray ||
+                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+            ? $array_atomic_type
+            : null;
+
+        if (!$first_arg_array) {
+            return Type::getArray();
+        }
+
+        if ($first_arg_array instanceof Type\Atomic\TArray) {
+            $inner_type = $first_arg_array->type_params[1];
+            $key_type = clone $first_arg_array->type_params[0];
+        } else {
+            $inner_type = $first_arg_array->getGenericValueType();
+            $key_type = $first_arg_array->getGenericKeyType();
+        }
+
+        if (!isset($call_args[1])) {
+            $inner_type->removeType('null');
+            $inner_type->removeType('false');
+        } elseif (!isset($call_args[2])) {
+            $function_call_arg = $call_args[1];
+
+            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
+                && isset($function_call_arg->value->inferredType)
+                && ($closure_atomic_type = $function_call_arg->value->inferredType->getTypes()['Closure'])
+                && $closure_atomic_type instanceof Type\Atomic\Fn
+            ) {
+                $closure_return_type = $closure_atomic_type->return_type;
+
+                if ($closure_return_type->isVoid()) {
+                    IssueBuffer::accepts(
+                        new InvalidReturnType(
+                            'No return type could be found in the closure passed to array_filter',
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    );
+
+                    return Type::getArray();
+                }
+
+                if (count($function_call_arg->value->stmts) === 1
+                    && count($function_call_arg->value->params)
+                    && ($first_param = $function_call_arg->value->params[0])
+                    && $first_param->variadic === false
+                    && ($stmt = $function_call_arg->value->stmts[0])
+                    && $stmt instanceof PhpParser\Node\Stmt\Return_
+                    && $stmt->expr
+                ) {
+                    $first_param_name = $first_param->name;
+                    $assertions = AssertionFinder::getAssertions($stmt->expr, null, $statements_checker);
+
+                    if (isset($assertions['$' . $first_param->name])) {
+                        $changed_var_ids = [];
+
+                        $reconciled_types = Reconciler::reconcileKeyedTypes(
+                            ['$inner_type' => $assertions['$' . $first_param->name]],
+                            ['$inner_type' => $inner_type],
+                            $changed_var_ids,
+                            ['$inner_type' => true],
+                            $statements_checker,
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker->getSuppressedIssues()
+                        );
+
+                        if (isset($reconciled_types['$inner_type'])) {
+                            $inner_type = $reconciled_types['$inner_type'];
+                        }
+                    }
+                }
+            }
+
+            return new Type\Union([
+                new Type\Atomic\TArray([
+                    $key_type,
+                    $inner_type,
+                ]),
+            ]);
+        }
+
+        return new Type\Union([
+            new Type\Atomic\TArray([
+                $key_type,
+                $inner_type,
+            ]),
+        ]);
     }
 
     /**
