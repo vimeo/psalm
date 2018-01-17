@@ -94,6 +94,9 @@ class Union
 
     public function __toString()
     {
+        if (empty($this->types)) {
+            return '';
+        }
         $s = '';
         foreach ($this->types as $type) {
             $s .= $type . '|';
