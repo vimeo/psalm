@@ -10,7 +10,6 @@
     <exclude-pattern>src/Psalm/CallMap.php</exclude-pattern>
 
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
-    <exclude-pattern>examples/</exclude-pattern>
     <exclude-pattern>src/Psalm/Stubs/</exclude-pattern>
     <exclude-pattern>tests/stubs/</exclude-pattern>
 </ruleset>

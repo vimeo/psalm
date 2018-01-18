@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Example\Plugin;
 
-use PhpParser;
-use Psalm\Checker;
-use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\StatementsSource;

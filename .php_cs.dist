@@ -2,6 +2,7 @@
 $finder = array_reduce(
     [
         __DIR__ . '/src/',
+        __DIR__ . '/examples/',
         __DIR__ . '/bin/',
         __DIR__ . '/tests/',
     ],

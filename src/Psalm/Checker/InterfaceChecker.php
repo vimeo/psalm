@@ -3,7 +3,6 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\StatementsSource;
 
 class InterfaceChecker extends ClassLikeChecker

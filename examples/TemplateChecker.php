@@ -1,5 +1,4 @@
 <?php
-
 namespace Psalm\Examples\Template;
 
 use PhpParser;
@@ -28,7 +27,6 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $first_stmt = $stmts[0];
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-
             $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {
@@ -69,7 +67,6 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $this_params = null;
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-
             $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {
@@ -91,7 +88,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
                 }
 
                 $this_params->vars_in_scope['$this'] = new Type\Union([
-                    new Type\Atomic\TNamedObject(self::VIEW_CLASS)
+                    new Type\Atomic\TNamedObject(self::VIEW_CLASS),
                 ]);
             }
         }
@@ -101,7 +98,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
             $this_params->check_variables = false;
             $this_params->self = self::VIEW_CLASS;
             $this_params->vars_in_scope['$this'] = new Type\Union([
-                new Type\Atomic\TNamedObject(self::VIEW_CLASS)
+                new Type\Atomic\TNamedObject(self::VIEW_CLASS),
             ]);
         }
 
@@ -113,6 +110,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
     /**
      * @param  string         $method_id
      * @param  PhpParser\Node $stmt
+     *
      * @return Context|false
      */
     private function checkMethod($method_id, PhpParser\Node $stmt)
@@ -160,6 +158,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
     /**
      * @param  Context $context
+     *
      * @return void
      */
     protected function checkWithViewClass(Context $context)
