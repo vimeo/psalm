@@ -473,8 +473,6 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string           $method_id
      * @param  string|null      $calling_context
      * @param  StatementsSource $source
-     * @param  CodeLocation     $code_location
-     * @param  array            $suppressed_issues
      *
      * @return bool
      */

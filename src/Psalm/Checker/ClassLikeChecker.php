@@ -398,7 +398,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      * Gets the fully-qualified class name from a Name object
      *
      * @param  PhpParser\Node\Name      $class_name
-     * @param  StatementsSource         $source
+     * @param  Aliases                  $aliases
      *
      * @return string
      */
@@ -420,7 +420,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
     /**
      * @param  string                   $class
-     * @param  StatementsSource         $source
+     * @param  Aliases                  $aliases
      *
      * @return string
      */

@@ -295,7 +295,6 @@ class Config
 
         if (@mkdir($config->cache_directory, 0777, true) === false && is_dir($config->cache_directory) === false) {
             trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
-            exit(255);
         }
 
         if (isset($config_xml['allowFileIncludes'])) {
