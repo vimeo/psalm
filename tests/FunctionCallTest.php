@@ -88,7 +88,7 @@ class FunctionCallTest extends TestCase
 
                     }',
             ],
-            'typedArrayWithDefault' => [
+            'abs' => [
                 '<?php
                     $a = abs(-5);
                     $b = abs(-7.5);',

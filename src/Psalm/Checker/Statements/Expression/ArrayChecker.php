@@ -4,7 +4,10 @@ namespace Psalm\Checker\Statements\Expression;
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\DuplicateArrayKey;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
@@ -38,6 +41,8 @@ class ArrayChecker
 
         $can_create_objectlike = true;
 
+        $array_keys = [];
+
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
                 continue;
@@ -64,6 +69,27 @@ class ArrayChecker
                 return false;
             }
 
+            if ($item->key instanceof PhpParser\Node\Scalar\String_
+                || $item->key instanceof PhpParser\Node\Scalar\LNumber
+                || !$item->key
+            ) {
+                $array_key = $item->key ? $item->key->value : $int_offset;
+
+                if (isset($array_keys[$array_key])) {
+                    if (IssueBuffer::accepts(
+                        new DuplicateArrayKey(
+                            'Key \'' . $array_key . '\' already exists on array',
+                            new CodeLocation($statements_checker->getSource(), $item)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                $array_keys[$array_key] = true;
+            }
+
             if ($item_value_type && $item_value_type->isMixed() && !$can_create_objectlike) {
                 continue;
             }
@@ -73,7 +99,9 @@ class ArrayChecker
                     || $item->key instanceof PhpParser\Node\Scalar\LNumber
                     || !$item->key
                 ) {
-                    $property_types[$item->key ? $item->key->value : $int_offset] = $item->value->inferredType;
+                    $array_key = $item->key ? $item->key->value : $int_offset;
+
+                    $property_types[$array_key] = $item->value->inferredType;
                 } else {
                     $can_create_objectlike = false;
                 }
@@ -90,6 +118,8 @@ class ArrayChecker
                     || $item->key instanceof PhpParser\Node\Scalar\LNumber
                     || !$item->key
                 ) {
+                    $array_key = $item->key ? $item->key->value : $int_offset;
+
                     $property_types[$item->key ? $item->key->value : $int_offset] = $item_value_type;
                 } else {
                     $can_create_objectlike = false;

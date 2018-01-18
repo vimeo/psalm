@@ -199,8 +199,8 @@ class TypeReconciliationTest extends TestCase
             // @todo in the future this should also work
             //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!falsy', 'MyObject|bool'],
 
-            'notEmptyWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
-            'notEmptyWithMixed' => ['null', 'null', 'mixed'],
+            'nullWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
+            'nullWithMixed' => ['null', 'null', 'mixed'],
 
             'emptyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
             'emptyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],

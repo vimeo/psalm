@@ -188,7 +188,7 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
-            'addMissingStringReturnType70' => [
+            'addMissingNullableStringReturnType70' => [
                 '<?php
                     function foo() {
                         return rand(0, 1) ? "hello" : null;

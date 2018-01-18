@@ -846,7 +846,7 @@ class LoopScopeTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src/somefile.php:6 - Possibly undefined ' .
                     'global variable $car, first seen on line 3',
             ],
-            'possibleUndefinedVariableInForeachAndIf' => [
+            'possibleUndefinedVariableInForeachAndIfWithBreak' => [
                 '<?php
                     foreach ([1,2,3,4] as $i) {
                         if ($i === 1) {

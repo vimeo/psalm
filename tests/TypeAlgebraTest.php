@@ -502,7 +502,7 @@ class TypeAlgebraTest extends TestCase
 
                     if ($a->foo === "somestring") {}',
             ],
-            'propertyFetchAfterNotNullCheck' => [
+            'propertyFetchAfterNotNullCheckInElseif' => [
                 '<?php
                     class A {
                         /** @var ?string */
