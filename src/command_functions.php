@@ -101,10 +101,13 @@ function getPathsToCheck($f_paths)
             $filtered_input_paths[] = $input_path;
         }
 
-        stream_set_blocking(STDIN, false);
-
-        if ($filtered_input_paths === ['-'] && $stdin = fgets(STDIN)) {
-            $filtered_input_paths = preg_split('/\s+/', trim($stdin));
+        if ($filtered_input_paths === ['-']) {
+           $meta = stream_get_meta_data(STDIN);
+           stream_set_blocking(STDIN, false);
+           if($stdin = fgets(STDIN)) {
+               $filtered_input_paths = preg_split('/\s+/', trim($stdin));
+           }
+           stream_set_blocking(STDIN, $meta['blocked']);
         }
 
         foreach ($filtered_input_paths as $i => $path_to_check) {
