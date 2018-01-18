@@ -102,12 +102,14 @@ function getPathsToCheck($f_paths)
         }
 
         if ($filtered_input_paths === ['-']) {
-           $meta = stream_get_meta_data(STDIN);
-           stream_set_blocking(STDIN, false);
-           if($stdin = fgets(STDIN)) {
-               $filtered_input_paths = preg_split('/\s+/', trim($stdin));
-           }
-           stream_set_blocking(STDIN, $meta['blocked']);
+            $meta = stream_get_meta_data(STDIN);
+            stream_set_blocking(STDIN, false);
+            if($stdin = fgets(STDIN)) {
+                $filtered_input_paths = preg_split('/\s+/', trim($stdin));
+            }
+            /** @var bool */
+            $blocked = $meta['blocked'];
+            stream_set_blocking(STDIN, $blocked);
         }
 
         foreach ($filtered_input_paths as $i => $path_to_check) {
