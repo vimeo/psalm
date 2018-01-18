@@ -19,9 +19,6 @@ class InterfaceChecker extends ClassLikeChecker
     }
 
     /**
-     * @param Context|null  $class_context
-     * @param Context|null  $global_context
-     *
      * @return void
      */
     public function analyze()

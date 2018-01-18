@@ -189,9 +189,9 @@ class IssueBuffer
     }
 
     /**
+     * @param  ProjectChecker       $project_checker
      * @param  bool                 $is_full
      * @param  float                $start_time
-     * @param  array<string, bool>  $scanned_files
      *
      * @return void
      */
