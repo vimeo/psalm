@@ -104,7 +104,7 @@ function getPathsToCheck($f_paths)
         if ($filtered_input_paths === ['-']) {
             $meta = stream_get_meta_data(STDIN);
             stream_set_blocking(STDIN, false);
-            if($stdin = fgets(STDIN)) {
+            if ($stdin = fgets(STDIN)) {
                 $filtered_input_paths = preg_split('/\s+/', trim($stdin));
             }
             /** @var bool */
