@@ -215,6 +215,10 @@ abstract class Type
                 throw new \InvalidArgumentException('Object-like type must be array');
             }
 
+            if (!$properties) {
+                throw new \InvalidArgumentException('No properties supplied for ObjectLike');
+            }
+
             return new ObjectLike($properties);
         }
 
