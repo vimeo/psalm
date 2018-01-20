@@ -249,7 +249,7 @@ class PropertyAssignmentChecker
                 }
 
                 if ($lhs_var_id !== '$this' &&
-                    MethodChecker::methodExists($project_checker, $lhs_type_part . '::__set')
+                    MethodChecker::methodExists($project_checker, $lhs_type_part->value . '::__set')
                 ) {
                     $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
