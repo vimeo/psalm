@@ -964,6 +964,26 @@ class TypeTest extends TestCase
 
                     interface I {}',
             ],
+            'intersectionTypeInsideInstanceof' => [
+                '<?php
+                    abstract class A {
+                      /** @var string|null */
+                      public $foo;
+
+                      public static function getFoo(): void {
+                        $a = new static();
+                        if ($a instanceof I) {
+                          takesI($a);
+                          takesA($a);
+                        }
+                      }
+                    }
+
+                    interface I {}
+
+                    function takesI(I $i): void {}
+                    function takesA(A $i): void {}',
+            ],
         ];
     }
 
@@ -1328,6 +1348,46 @@ class TypeTest extends TestCase
                     function returnsFalse() { return rand() % 2 > 0; }
                     ',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'intersectionTypeClassCheckAfterInstanceof' => [
+                '<?php
+                    abstract class A {
+                      /** @var string|null */
+                      public $foo;
+
+                      public static function getFoo(): void {
+                        $a = new static();
+                        if ($a instanceof B) {}
+                        elseif ($a instanceof C) {}
+                        else {}
+                        takesB($a);
+                      }
+                    }
+
+                    class B extends A {}
+                    class C extends A {}
+
+                    function takesB(B $i): void {}',
+                'error_message' => 'TypeCoercion - src/somefile.php:11 - Argument 1 of takesb expects B,'
+                    . ' parent type A provided',
+            ],
+            'intersectionTypeInterfaceCheckAfterInstanceof' => [
+                '<?php
+                    abstract class A {
+                      /** @var string|null */
+                      public $foo;
+
+                      public static function getFoo(): void {
+                        $a = new static();
+                        if ($a instanceof I) {}
+                        takesI($a);
+                      }
+                    }
+
+                    interface I {}
+
+                    function takesI(I $i): void {}',
+                'error_message' => 'InvalidArgument - src/somefile.php:9 - Argument 1 of takesi expects I, A provided',
             ],
         ];
     }

@@ -226,6 +226,8 @@ class IfChecker
             if ($changed_var_ids) {
                 $if_context->removeReconciledClauses($changed_var_ids);
             }
+
+            $if_scope->if_cond_changed_var_ids = $changed_var_ids;
         }
 
         $old_if_context = clone $if_context;
@@ -475,6 +477,15 @@ class IfChecker
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
 
             $changed_var_ids = array_keys($new_assigned_var_ids);
+
+            // if the variable was only set in the conditional, it's not possibly redefined
+            foreach ($if_scope->possibly_redefined_vars as $var_id => $_) {
+                if (!isset($new_assigned_var_ids[$var_id])
+                    && in_array($var_id, $if_scope->if_cond_changed_var_ids, true)
+                ) {
+                    unset($if_scope->possibly_redefined_vars[$var_id]);
+                }
+            }
 
             if ($if_scope->reasonable_clauses) {
                 // remove all reasonable clauses that would be negated by the if stmts
@@ -761,10 +772,10 @@ class IfChecker
             }
         }
 
+        $changed_var_ids = [];
+
         // if the elseif has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_elseif_types) {
-            $changed_var_ids = [];
-
             $elseif_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $reconcilable_elseif_types,
                 $elseif_context->vars_in_scope,
@@ -784,6 +795,9 @@ class IfChecker
 
         $old_elseif_context = clone $elseif_context;
 
+        $pre_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
+        $elseif_context->assigned_var_ids = [];
+
         if ($statements_checker->analyze(
             $elseif->stmts,
             $elseif_context,
@@ -792,6 +806,10 @@ class IfChecker
         ) {
             return false;
         }
+
+        /** @var array<string, bool> */
+        $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
+        $elseif_context->assigned_var_ids = $pre_stmts_assigned_var_ids;
 
         if ($elseif_context->byref_constraints !== null) {
             foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
@@ -829,143 +847,151 @@ class IfChecker
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
-        if (count($elseif->stmts)) {
-            // update the parent context as necessary
-            $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context->vars_in_scope);
+        // update the parent context as necessary
+        $elseif_redefined_vars = $elseif_context->getRedefinedVars($original_context->vars_in_scope);
 
-            if (!$has_leaving_statements) {
-                if ($if_scope->new_vars === null) {
-                    $if_scope->new_vars = array_diff_key($elseif_context->vars_in_scope, $outer_context->vars_in_scope);
-                } else {
-                    foreach ($if_scope->new_vars as $new_var => $type) {
-                        if (!$elseif_context->hasVariable($new_var)) {
-                            unset($if_scope->new_vars[$new_var]);
-                        } else {
-                            $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
-                                $type,
-                                $elseif_context->vars_in_scope[$new_var]
-                            );
-                        }
+        if (!$has_leaving_statements) {
+            if ($if_scope->new_vars === null) {
+                $if_scope->new_vars = array_diff_key($elseif_context->vars_in_scope, $outer_context->vars_in_scope);
+            } else {
+                foreach ($if_scope->new_vars as $new_var => $type) {
+                    if (!$elseif_context->hasVariable($new_var)) {
+                        unset($if_scope->new_vars[$new_var]);
+                    } else {
+                        $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
+                            $type,
+                            $elseif_context->vars_in_scope[$new_var]
+                        );
+                    }
+                }
+            }
+
+            $possibly_redefined_vars = $elseif_redefined_vars;
+
+            foreach ($possibly_redefined_vars as $var_id => $_) {
+                if (!isset($new_stmts_assigned_var_ids[$var_id])
+                    && in_array($var_id, $changed_var_ids, true)
+                ) {
+                    unset($possibly_redefined_vars[$var_id]);
+                }
+            }
+
+            if ($if_scope->redefined_vars === null) {
+                $if_scope->redefined_vars = $elseif_redefined_vars;
+                $if_scope->possibly_redefined_vars = $possibly_redefined_vars;
+            } else {
+                foreach ($if_scope->redefined_vars as $redefined_var => $type) {
+                    if (!isset($elseif_redefined_vars[$redefined_var])) {
+                        unset($if_scope->redefined_vars[$redefined_var]);
+                    } else {
+                        $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
+                            $elseif_redefined_vars[$redefined_var],
+                            $type
+                        );
                     }
                 }
 
-                if ($if_scope->redefined_vars === null) {
-                    $if_scope->redefined_vars = $elseif_redefined_vars;
-                    $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
-                } else {
-                    foreach ($if_scope->redefined_vars as $redefined_var => $type) {
-                        if (!isset($elseif_redefined_vars[$redefined_var])) {
-                            unset($if_scope->redefined_vars[$redefined_var]);
-                        } else {
-                            $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
-                                $elseif_redefined_vars[$redefined_var],
-                                $type
-                            );
-                        }
-                    }
-
-                    foreach ($elseif_redefined_vars as $var => $type) {
-                        if ($type->isMixed()) {
-                            $if_scope->possibly_redefined_vars[$var] = $type;
-                        } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
-                            $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
-                                $type,
-                                $if_scope->possibly_redefined_vars[$var]
-                            );
-                        } else {
-                            $if_scope->possibly_redefined_vars[$var] = $type;
-                        }
+                foreach ($possibly_redefined_vars as $var => $type) {
+                    if ($type->isMixed()) {
+                        $if_scope->possibly_redefined_vars[$var] = $type;
+                    } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
+                        $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
+                            $type,
+                            $if_scope->possibly_redefined_vars[$var]
+                        );
+                    } else {
+                        $if_scope->possibly_redefined_vars[$var] = $type;
                     }
                 }
+            }
 
-                if ($if_scope->reasonable_clauses && $elseif_clauses) {
-                    $if_scope->reasonable_clauses = AlgebraChecker::combineOredClauses(
-                        $if_scope->reasonable_clauses,
-                        $elseif_clauses
-                    );
-                } else {
-                    $if_scope->reasonable_clauses = [];
-                }
+            if ($if_scope->reasonable_clauses && $elseif_clauses) {
+                $if_scope->reasonable_clauses = AlgebraChecker::combineOredClauses(
+                    $if_scope->reasonable_clauses,
+                    $elseif_clauses
+                );
             } else {
                 $if_scope->reasonable_clauses = [];
             }
+        } else {
+            $if_scope->reasonable_clauses = [];
+        }
 
-            if ($project_checker->infer_types_from_usage) {
-                $elseif_possible_param_types = $elseif_context->possible_param_types;
+        if ($project_checker->infer_types_from_usage) {
+            $elseif_possible_param_types = $elseif_context->possible_param_types;
 
-                if ($if_scope->possible_param_types) {
-                    $vars_to_remove = [];
+            if ($if_scope->possible_param_types) {
+                $vars_to_remove = [];
 
-                    foreach ($if_scope->possible_param_types as $var => $type) {
-                        if (isset($elseif_possible_param_types[$var])) {
-                            $if_scope->possible_param_types[$var] = Type::combineUnionTypes(
-                                $elseif_possible_param_types[$var],
-                                $type
-                            );
-                        } else {
-                            $vars_to_remove[] = $var;
-                        }
-                    }
-
-                    foreach ($vars_to_remove as $var) {
-                        unset($if_scope->possible_param_types[$var]);
-                    }
-                }
-            }
-
-            if ($negated_elseif_types) {
-                if ($has_leaving_statements) {
-                    $changed_var_ids = [];
-
-                    $leaving_vars_reconciled = Reconciler::reconcileKeyedTypes(
-                        $negated_elseif_types,
-                        $pre_conditional_context->vars_in_scope,
-                        $changed_var_ids,
-                        [],
-                        $statements_checker,
-                        new CodeLocation($statements_checker->getSource(), $elseif, $outer_context->include_location),
-                        $statements_checker->getSuppressedIssues()
-                    );
-
-                    $implied_outer_context = clone $elseif_context;
-                    $implied_outer_context->vars_in_scope = $leaving_vars_reconciled;
-
-                    $outer_context->update(
-                        $elseif_context,
-                        $implied_outer_context,
-                        false,
-                        array_keys($negated_elseif_types),
-                        $if_scope->updated_vars
-                    );
-                } else {
-                    $outer_context->update(
-                        $old_elseif_context,
-                        $elseif_context,
-                        false,
-                        array_keys($negated_elseif_types),
-                        $if_scope->updated_vars
-                    );
-                }
-            }
-
-            if (!$has_ending_statements) {
-                $vars = array_diff_key($elseif_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
-
-                if ($has_leaving_statements && $loop_scope) {
-                    if (!$has_continue_statement && !$has_break_statement) {
-                        $if_scope->new_vars_possibly_in_scope = array_merge(
-                            $vars,
-                            $if_scope->new_vars_possibly_in_scope
+                foreach ($if_scope->possible_param_types as $var => $type) {
+                    if (isset($elseif_possible_param_types[$var])) {
+                        $if_scope->possible_param_types[$var] = Type::combineUnionTypes(
+                            $elseif_possible_param_types[$var],
+                            $type
                         );
+                    } else {
+                        $vars_to_remove[] = $var;
                     }
-
-                    $loop_scope->vars_possibly_in_scope = array_merge(
-                        $vars,
-                        $loop_scope->vars_possibly_in_scope
-                    );
-                } elseif (!$has_leaving_statements) {
-                    $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
                 }
+
+                foreach ($vars_to_remove as $var) {
+                    unset($if_scope->possible_param_types[$var]);
+                }
+            }
+        }
+
+        if ($negated_elseif_types) {
+            if ($has_leaving_statements) {
+                $changed_var_ids = [];
+
+                $leaving_vars_reconciled = Reconciler::reconcileKeyedTypes(
+                    $negated_elseif_types,
+                    $pre_conditional_context->vars_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_checker,
+                    new CodeLocation($statements_checker->getSource(), $elseif, $outer_context->include_location),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+                $implied_outer_context = clone $elseif_context;
+                $implied_outer_context->vars_in_scope = $leaving_vars_reconciled;
+
+                $outer_context->update(
+                    $elseif_context,
+                    $implied_outer_context,
+                    false,
+                    array_keys($negated_elseif_types),
+                    $if_scope->updated_vars
+                );
+            } else {
+                $outer_context->update(
+                    $old_elseif_context,
+                    $elseif_context,
+                    false,
+                    array_keys($negated_elseif_types),
+                    $if_scope->updated_vars
+                );
+            }
+        }
+
+        if (!$has_ending_statements) {
+            $vars = array_diff_key($elseif_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
+
+            if ($has_leaving_statements && $loop_scope) {
+                if (!$has_continue_statement && !$has_break_statement) {
+                    $if_scope->new_vars_possibly_in_scope = array_merge(
+                        $vars,
+                        $if_scope->new_vars_possibly_in_scope
+                    );
+                }
+
+                $loop_scope->vars_possibly_in_scope = array_merge(
+                    $vars,
+                    $loop_scope->vars_possibly_in_scope
+                );
+            } elseif (!$has_leaving_statements) {
+                $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
             }
         }
 
@@ -1086,92 +1112,90 @@ class IfChecker
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
 
-        if (count($else->stmts)) {
-            $else_redefined_vars = $else_context->getRedefinedVars($original_context->vars_in_scope);
+        $else_redefined_vars = $else_context->getRedefinedVars($original_context->vars_in_scope);
 
-            // if it doesn't end in a return
-            if (!$has_leaving_statements) {
-                if ($if_scope->new_vars === null) {
-                    $if_scope->new_vars = array_diff_key($else_context->vars_in_scope, $outer_context->vars_in_scope);
-                } else {
-                    foreach ($if_scope->new_vars as $new_var => $type) {
-                        if (!$else_context->hasVariable($new_var)) {
-                            unset($if_scope->new_vars[$new_var]);
-                        } else {
-                            $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
-                                $type,
-                                $else_context->vars_in_scope[$new_var]
-                            );
-                        }
-                    }
-                }
-
-                if ($if_scope->redefined_vars === null) {
-                    $if_scope->redefined_vars = $else_redefined_vars;
-                    $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
-                } else {
-                    foreach ($if_scope->redefined_vars as $redefined_var => $type) {
-                        if (!isset($else_redefined_vars[$redefined_var])) {
-                            unset($if_scope->redefined_vars[$redefined_var]);
-                        } else {
-                            $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
-                                $else_redefined_vars[$redefined_var],
-                                $type
-                            );
-                        }
-                    }
-
-                    foreach ($else_redefined_vars as $var => $type) {
-                        if ($type->isMixed()) {
-                            $if_scope->possibly_redefined_vars[$var] = $type;
-                        } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
-                            $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
-                                $type,
-                                $if_scope->possibly_redefined_vars[$var]
-                            );
-                        } else {
-                            $if_scope->possibly_redefined_vars[$var] = $type;
-                        }
-                    }
-                }
-            } elseif ($if_scope->reasonable_clauses) {
-                $outer_context->clauses = AlgebraChecker::simplifyCNF(
-                    array_merge(
-                        $if_scope->reasonable_clauses,
-                        $original_context->clauses
-                    )
-                );
-            }
-
-            // update the parent context as necessary
-            if ($if_scope->negatable_if_types) {
-                $outer_context->update(
-                    $old_else_context,
-                    $else_context,
-                    $has_leaving_statements,
-                    array_keys($if_scope->negatable_if_types),
-                    $if_scope->updated_vars
-                );
-            }
-
-            if (!$has_ending_statements) {
-                $vars = array_diff_key($else_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
-
-                if ($has_leaving_statements && $loop_scope) {
-                    if (!$has_continue_statement && !$has_break_statement) {
-                        $if_scope->new_vars_possibly_in_scope = array_merge(
-                            $vars,
-                            $if_scope->new_vars_possibly_in_scope
+        // if it doesn't end in a return
+        if (!$has_leaving_statements) {
+            if ($if_scope->new_vars === null) {
+                $if_scope->new_vars = array_diff_key($else_context->vars_in_scope, $outer_context->vars_in_scope);
+            } else {
+                foreach ($if_scope->new_vars as $new_var => $type) {
+                    if (!$else_context->hasVariable($new_var)) {
+                        unset($if_scope->new_vars[$new_var]);
+                    } else {
+                        $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
+                            $type,
+                            $else_context->vars_in_scope[$new_var]
                         );
                     }
-
-                    $loop_scope->vars_possibly_in_scope = array_merge(
-                        $vars,
-                        $loop_scope->vars_possibly_in_scope
-                    );
-                } elseif (!$has_leaving_statements) {
-                    $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
                 }
+            }
+
+            if ($if_scope->redefined_vars === null) {
+                $if_scope->redefined_vars = $else_redefined_vars;
+                $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;
+            } else {
+                foreach ($if_scope->redefined_vars as $redefined_var => $type) {
+                    if (!isset($else_redefined_vars[$redefined_var])) {
+                        unset($if_scope->redefined_vars[$redefined_var]);
+                    } else {
+                        $if_scope->redefined_vars[$redefined_var] = Type::combineUnionTypes(
+                            $else_redefined_vars[$redefined_var],
+                            $type
+                        );
+                    }
+                }
+
+                foreach ($else_redefined_vars as $var => $type) {
+                    if ($type->isMixed()) {
+                        $if_scope->possibly_redefined_vars[$var] = $type;
+                    } elseif (isset($if_scope->possibly_redefined_vars[$var])) {
+                        $if_scope->possibly_redefined_vars[$var] = Type::combineUnionTypes(
+                            $type,
+                            $if_scope->possibly_redefined_vars[$var]
+                        );
+                    } else {
+                        $if_scope->possibly_redefined_vars[$var] = $type;
+                    }
+                }
+            }
+        } elseif ($if_scope->reasonable_clauses) {
+            $outer_context->clauses = AlgebraChecker::simplifyCNF(
+                array_merge(
+                    $if_scope->reasonable_clauses,
+                    $original_context->clauses
+                )
+            );
+        }
+
+        // update the parent context as necessary
+        if ($if_scope->negatable_if_types) {
+            $outer_context->update(
+                $old_else_context,
+                $else_context,
+                $has_leaving_statements,
+                array_keys($if_scope->negatable_if_types),
+                $if_scope->updated_vars
+            );
+        }
+
+        if (!$has_ending_statements) {
+            $vars = array_diff_key($else_context->vars_possibly_in_scope, $outer_context->vars_possibly_in_scope);
+
+            if ($has_leaving_statements && $loop_scope) {
+                if (!$has_continue_statement && !$has_break_statement) {
+                    $if_scope->new_vars_possibly_in_scope = array_merge(
+                        $vars,
+                        $if_scope->new_vars_possibly_in_scope
+                    );
+                }
+
+                $loop_scope->vars_possibly_in_scope = array_merge(
+                    $vars,
+                    $loop_scope->vars_possibly_in_scope
+                );
+            } elseif (!$has_leaving_statements) {
+                $if_scope->new_vars_possibly_in_scope = array_merge($vars, $if_scope->new_vars_possibly_in_scope);
             }
         }
 

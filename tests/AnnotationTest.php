@@ -736,7 +736,7 @@ class AnnotationTest extends TestCase
                      */
                     function bar(array $arr): void {}',
                 'error_message' => 'InvalidDocblock',
-            ]
+            ],
         ];
     }
 }

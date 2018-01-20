@@ -42,6 +42,11 @@ class IfScope
     public $negated_types = [];
 
     /**
+     * @var array<mixed, string>
+     */
+    public $if_cond_changed_var_ids = [];
+
+    /**
      * @var array<string, string>|null
      */
     public $negatable_if_types = null;

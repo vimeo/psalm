@@ -766,6 +766,53 @@ class ArrayAssignmentTest extends TestCase
                     '$f' => 'array{0:string}',
                 ],
             ],
+            'assignArrayOrSetNull' => [
+                '<?php
+                    $a = [];
+
+                    if (rand(0, 1)) {
+                        $a[] = 4;
+                    }
+
+                    if (!$a) {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a' => 'array<int, int>|null',
+                ],
+            ],
+            'assignArrayOrSetNullInElseIf' => [
+                '<?php
+                    $a = [];
+
+                    if (rand(0, 1)) {
+                        $a[] = 4;
+                    }
+
+                    if ($a) {
+                    } elseif (rand(0, 1)) {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a' => 'array<int, int>|null',
+                ],
+            ],
+            'assignArrayOrSetNullInElse' => [
+                '<?php
+                    $a = [];
+
+                    if (rand(0, 1)) {
+                        $a[] = 4;
+                    }
+
+                    if ($a) {
+                    } else {
+                        $a = null;
+                    }',
+                'assertions' => [
+                    '$a' => 'array<int, int>|null',
+                ],
+            ],
         ];
     }
 
