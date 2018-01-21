@@ -649,7 +649,7 @@ class TypeChecker
         // gets elements A△B
         $differing_types = array_diff($simple_inferred_types, $simple_declared_types);
 
-        if (count($differing_types)) {
+        if (!empty($differing_types)) {
             // check whether the differing types are subclasses of declared return types
             foreach ($differing_types as $differing_type) {
                 $is_match = false;

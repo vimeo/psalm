@@ -242,9 +242,12 @@ abstract class Type
             $return_type = str_replace(' ', '', $return_type);
         }
 
+        // index of last type token
+        $rtc = 0;
+
         foreach (str_split($return_type) as $char) {
             if ($was_char) {
-                $return_type_tokens[] = '';
+                $return_type_tokens[++$rtc] = '';
             }
 
             if ($char === '<' ||
@@ -259,15 +262,15 @@ abstract class Type
                 $char === ' ' ||
                 $char === ':'
             ) {
-                if ($return_type_tokens[count($return_type_tokens) - 1] === '') {
-                    $return_type_tokens[count($return_type_tokens) - 1] = $char;
+                if ($return_type_tokens[$rtc] === '') {
+                    $return_type_tokens[$rtc] = $char;
                 } else {
-                    $return_type_tokens[] = $char;
+                    $return_type_tokens[++$rtc] = $char;
                 }
 
                 $was_char = true;
             } else {
-                $return_type_tokens[count($return_type_tokens) - 1] .= $char;
+                $return_type_tokens[$rtc] .= $char;
                 $was_char = false;
             }
         }

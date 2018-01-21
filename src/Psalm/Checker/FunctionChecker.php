@@ -363,7 +363,7 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_map_key === 'getenv') {
-            if (count($call_args)) {
+            if (!empty($call_args)) {
                 return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
             }
 

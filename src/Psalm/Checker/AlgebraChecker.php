@@ -103,7 +103,7 @@ class AlgebraChecker
                         $clauses[] = new Clause([$base => ['^!empty']]);
                     }
 
-                    if (count($key_parts)) {
+                    if (!empty($key_parts)) {
                         $clauses[] = new Clause([$base => ['!false']]);
                         $clauses[] = new Clause([$base => ['!int']]);
                     }
@@ -437,7 +437,7 @@ class AlgebraChecker
 
         $new_clauses = [];
 
-        if (count($clauses)) {
+        if (!empty($clauses)) {
             $grouped_clauses = self::groupImpossibilities($clauses);
 
             foreach ($grouped_clauses as $grouped_clause) {
