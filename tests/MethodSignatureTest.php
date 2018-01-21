@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Context;
 
 class MethodSignatureTest extends TestCase
 {
@@ -44,9 +44,7 @@ class MethodSignatureTest extends TestCase
                 }'
         );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $this->project_checker->checkClassReferences();
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**
@@ -88,9 +86,7 @@ class MethodSignatureTest extends TestCase
                 }'
         );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $this->project_checker->checkClassReferences();
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**

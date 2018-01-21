@@ -357,18 +357,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  Context|null $file_context
-     *
-     * @return void
-     */
-    public function visitAndAnalyzeMethods(Context $file_context = null)
-    {
-        $this->project_checker->registerAnalyzableFile($this->file_path);
-        $this->project_checker->scanFiles();
-        $this->analyze($file_context);
-    }
-
-    /**
      * @return array<int, \PhpParser\Node\Stmt>
      */
     public function getStatements()

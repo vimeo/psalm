@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests\Traits;
 
-use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
 
@@ -40,14 +39,13 @@ trait FileCheckerInvalidCodeParseTestTrait
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
+        $file_path = self::$src_dir_path . 'somefile.php';
+
         $this->addFile(
-            self::$src_dir_path . 'somefile.php',
+            $file_path,
             $code
         );
 
-        $context = new Context();
-
-        $file_checker = new FileChecker(self::$src_dir_path . 'somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods($context);
+        $this->analyzeFile($file_path, new Context());
     }
 }

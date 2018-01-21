@@ -254,7 +254,15 @@ $cache_provider = isset($options['no-cache'])
     ? new Psalm\Provider\Cache\NoParserCacheProvider()
     : new Psalm\Provider\ParserCacheProvider();
 
+// initialise custom config, if passed
+if ($path_to_config) {
+    $config = Config::loadFromXMLFile($path_to_config, $current_dir);
+} else {
+    $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+}
+
 $project_checker = new ProjectChecker(
+    $config,
     new Psalm\Provider\FileProvider(),
     $cache_provider,
     !array_key_exists('m', $options),
@@ -267,28 +275,12 @@ $project_checker = new ProjectChecker(
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
 );
 
-// initialise custom config, if passed
-if ($path_to_config) {
-    $project_checker->setConfigXML($path_to_config, $current_dir);
-}
-
 if (isset($options['clear-cache'])) {
-    // initialise config if it hasn't already been
-    if (!$path_to_config) {
-        $project_checker->getConfigForPath($current_dir, $current_dir);
-    }
-
     $cache_directory = Config::getInstance()->getCacheDirectory();
 
     Config::removeCacheDirectory($cache_directory);
     echo 'Cache directory deleted' . PHP_EOL;
     exit;
-}
-
-$config = $project_checker->getConfig();
-
-if (!$config) {
-    $project_checker->getConfigForPath($current_dir, $current_dir);
 }
 
 /** @var string $plugin_path */

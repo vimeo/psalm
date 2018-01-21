@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
 use Psalm\Config;
+use Psalm\Context;
 
 class PropertyTypeTest extends TestCase
 {
@@ -40,8 +40,7 @@ class PropertyTypeTest extends TestCase
                 }'
         );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
+        $this->analyzeFile('somefile.php', new Context());
     }
 
     /**

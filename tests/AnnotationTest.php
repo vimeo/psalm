@@ -1,33 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Context;
-
 class AnnotationTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
     use Traits\FileCheckerValidCodeParseTestTrait;
-
-    /**
-     * @return void
-     */
-    public function testNopType()
-    {
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                $a = "hello";
-
-                /** @var int $a */
-            '
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->assertSame('int', (string) $context->vars_in_scope['$a']);
-    }
 
     /**
      * @return array
@@ -35,6 +12,15 @@ class AnnotationTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
+            'nopType' => [
+                '<?php
+                    $a = "hello";
+
+                    /** @var int $a */',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+            ],
             'deprecatedMethod' => [
                 '<?php
                     class Foo {

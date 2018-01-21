@@ -193,6 +193,59 @@ class Config
     }
 
     /**
+     * Gets a Config object from an XML file.
+     *
+     * Searches up a folder hierarchy for the most immediate config.
+     *
+     * @param  string $path
+     * @param  string $base_dir
+     * @param  string $output_format
+     *
+     * @throws ConfigException if a config path is not found
+     *
+     * @return Config
+     */
+    public static function getConfigForPath($path, $base_dir, $output_format)
+    {
+        $dir_path = realpath($path);
+
+        if ($dir_path === false) {
+            throw new ConfigException('Config not found for path ' . $path);
+        }
+
+        if (!is_dir($dir_path)) {
+            $dir_path = dirname($dir_path);
+        }
+
+        $config = null;
+
+        do {
+            $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
+
+            if (file_exists($maybe_path)) {
+                $config = self::loadFromXMLFile($maybe_path, $base_dir);
+
+                break;
+            }
+
+            $dir_path = dirname($dir_path);
+        } while (dirname($dir_path) !== $dir_path);
+
+        if (!$config) {
+            if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+                exit(
+                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
+                    PHP_EOL
+                );
+            }
+
+            throw new ConfigException('Config not found for path ' . $path);
+        }
+
+        return $config;
+    }
+
+    /**
      * Creates a new config object from the file
      *
      * @param  string           $file_path

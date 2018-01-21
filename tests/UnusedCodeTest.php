@@ -19,11 +19,10 @@ class UnusedCodeTest extends TestCase
         $this->file_provider = new Provider\FakeFileProvider();
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            new TestConfig(),
             $this->file_provider,
             new Provider\FakeParserCacheProvider()
         );
-
-        $this->project_checker->setConfig(new TestConfig());
 
         $this->project_checker->collect_references = true;
     }
@@ -50,15 +49,14 @@ class UnusedCodeTest extends TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        $context = new Context();
+        $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile(
-            self::$src_dir_path . 'somefile.php',
+            $file_path,
             $code
         );
 
-        $file_checker = new FileChecker(self::$src_dir_path . 'somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods($context);
+        $this->analyzeFile($file_path, new Context());
         $this->project_checker->checkClassReferences();
     }
 
@@ -79,15 +77,14 @@ class UnusedCodeTest extends TestCase
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
+        $file_path = self::$src_dir_path . 'somefile.php';
+
         $this->addFile(
-            self::$src_dir_path . 'somefile.php',
+            $file_path,
             $code
         );
 
-        $context = new Context();
-
-        $file_checker = new FileChecker(self::$src_dir_path . 'somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods($context);
+        $this->analyzeFile($file_path, new Context());
         $this->project_checker->checkClassReferences();
     }
 

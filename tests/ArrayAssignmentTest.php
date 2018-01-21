@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
 use Psalm\Context;
 
 class ArrayAssignmentTest extends TestCase
@@ -22,12 +21,12 @@ class ArrayAssignmentTest extends TestCase
                 }'
         );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-
         $context = new Context();
         $context->vars_in_scope['$b'] = \Psalm\Type::getBool();
         $context->vars_in_scope['$foo'] = \Psalm\Type::getArray();
-        $file_checker->visitAndAnalyzeMethods($context);
+
+        $this->analyzeFile('somefile.php', $context);
+
         $this->assertFalse(isset($context->vars_in_scope['$foo[\'a\']']));
     }
 

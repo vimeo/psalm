@@ -3,7 +3,6 @@ namespace Psalm\Checker;
 
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Exception;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\CircularReference;
@@ -31,7 +30,7 @@ class ProjectChecker
     /**
      * Cached config
      *
-     * @var Config|null
+     * @var Config
      */
     private $config;
 
@@ -289,6 +288,7 @@ class ProjectChecker
      * @param string        $reports
      */
     public function __construct(
+        Config $config,
         FileProvider $file_provider,
         ParserCacheProvider $cache_provider,
         $use_color = true,
@@ -308,6 +308,7 @@ class ProjectChecker
         $this->threads = $threads;
         $this->collect_references = $collect_references;
         $this->find_references_to = $find_references_to;
+        $this->config = $config;
 
         if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS, self::TYPE_XML], true)) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
@@ -341,6 +342,12 @@ class ProjectChecker
 
         $this->file_storage_provider = new FileStorageProvider();
         $this->classlike_storage_provider = new ClassLikeStorageProvider();
+
+        $this->cache_provider->use_igbinary = $config->use_igbinary;
+
+        $config->visitStubFiles($this);
+        $config->visitComposerAutoloadFiles($this);
+        $config->initializePlugins($this);
     }
 
     /**
@@ -363,10 +370,6 @@ class ProjectChecker
 
         if (!$base_dir) {
             throw new \InvalidArgumentException('Cannot work with empty base_dir');
-        }
-
-        if (!$this->config) {
-            throw new \InvalidArgumentException('Config should not be null here');
         }
 
         $diff_files = null;
@@ -469,10 +472,6 @@ class ProjectChecker
      */
     public function scanFiles()
     {
-        if (!$this->config) {
-            throw new \UnexpectedValueException('$this->config cannot be null');
-        }
-
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         $has_changes = false;
@@ -901,10 +900,6 @@ class ProjectChecker
         $analyze_too = false,
         $store_failure = true
     ) {
-        if (!$this->config) {
-            throw new \UnexpectedValueException('Config should not be null here');
-        }
-
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         // avoid checking classes that we know will just end in failure
@@ -944,10 +939,6 @@ class ProjectChecker
      */
     private function analyzeFiles()
     {
-        if (!$this->config) {
-            throw new \UnexpectedValueException('$this->config cannot be null');
-        }
-
         $filetype_handlers = $this->config->getFiletypeHandlers();
 
         $analysis_worker =
@@ -1311,10 +1302,6 @@ class ProjectChecker
      */
     public function checkDir($dir_name)
     {
-        if (!$this->config) {
-            throw new \UnexpectedValueException('Config should be set here');
-        }
-
         FileReferenceProvider::loadReferenceCache();
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
@@ -1461,10 +1448,6 @@ class ProjectChecker
             echo 'Checking ' . $file_path . PHP_EOL;
         }
 
-        if (!$this->config) {
-            throw new \UnexpectedValueException('Config should be set here');
-        }
-
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
         $this->files_to_deep_scan[$file_path] = $file_path;
@@ -1561,10 +1544,6 @@ class ProjectChecker
 
         if (isset($this->existing_classlikes_lc[$fq_class_name_lc])) {
             throw new \InvalidArgumentException('Why are you asking about a builtin class?');
-        }
-
-        if (!$this->config) {
-            throw new \UnexpectedValueException('Config should be set here');
         }
 
         if ($this->composer_classmap === null) {
@@ -1731,108 +1710,11 @@ class ProjectChecker
     }
 
     /**
-     * Gets a Config object from an XML file.
-     *
-     * Searches up a folder hierarchy for the most immediate config.
-     *
-     * @param  string $path
-     * @param  string $base_dir
-     *
-     * @throws Exception\ConfigException if a config path is not found
-     *
      * @return Config
-     */
-    public function getConfigForPath($path, $base_dir)
-    {
-        $dir_path = realpath($path);
-
-        if ($dir_path === false) {
-            throw new Exception\ConfigException('Config not found for path ' . $path);
-        }
-
-        if (!is_dir($dir_path)) {
-            $dir_path = dirname($dir_path);
-        }
-
-        $config = null;
-
-        do {
-            $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
-
-            if (file_exists($maybe_path)) {
-                $config = Config::loadFromXMLFile($maybe_path, $base_dir);
-
-                break;
-            }
-
-            $dir_path = dirname($dir_path);
-        } while (dirname($dir_path) !== $dir_path);
-
-        if (!$config) {
-            if ($this->output_format === self::TYPE_CONSOLE) {
-                exit(
-                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
-                    PHP_EOL
-                );
-            }
-
-            throw new Exception\ConfigException('Config not found for path ' . $path);
-        }
-
-        $this->config = $config;
-
-        $this->cache_provider->use_igbinary = $config->use_igbinary;
-
-        $config->visitStubFiles($this);
-        $config->visitComposerAutoloadFiles($this);
-        $config->initializePlugins($this);
-
-        return $config;
-    }
-
-    /**
-     * @return ?Config
      */
     public function getConfig()
     {
         return $this->config;
-    }
-
-    /**
-     * @param  Config $config
-     *
-     * @return void
-     */
-    public function setConfig(Config $config)
-    {
-        $this->config = $config;
-
-        $this->cache_provider->use_igbinary = $config->use_igbinary;
-
-        $config->visitStubFiles($this);
-        $config->visitComposerAutoloadFiles($this);
-        $config->initializePlugins($this);
-    }
-
-    /**
-     * @param string $path_to_config
-     * @param string $base_dir
-     *
-     * @throws Exception\ConfigException if a config file is not found in the given location
-     *
-     * @return void
-     */
-    public function setConfigXML($path_to_config, $base_dir)
-    {
-        if (!file_exists($path_to_config)) {
-            throw new Exception\ConfigException('Config not found at location ' . $path_to_config);
-        }
-
-        $this->config = Config::loadFromXMLFile($path_to_config, $base_dir);
-
-        $this->config->visitStubFiles($this);
-        $this->config->visitComposerAutoloadFiles($this);
-        $this->config->initializePlugins($this);
     }
 
     /**

@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
+use Psalm\Context;
 use Psalm\IssueBuffer;
 
 class JsonOutputTest extends TestCase
@@ -17,7 +18,12 @@ class JsonOutputTest extends TestCase
         FileChecker::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
 
+        $config = new TestConfig();
+        $config->throw_exception = false;
+        $config->stop_on_first_error = false;
+
         $this->project_checker = new ProjectChecker(
+            $config,
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
             false,
@@ -25,10 +31,6 @@ class JsonOutputTest extends TestCase
             ProjectChecker::TYPE_JSON
         );
 
-        $config = new TestConfig();
-        $config->throw_exception = false;
-        $config->stop_on_first_error = false;
-        $this->project_checker->setConfig($config);
         $this->project_checker->collect_references = true;
     }
 
@@ -46,8 +48,7 @@ class JsonOutputTest extends TestCase
     {
         $this->addFile('somefile.php', $code);
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
+        $this->analyzeFile('somefile.php', new Context());
         $issue_data = IssueBuffer::getIssuesData()[0];
 
         $this->assertSame('somefile.php', $issue_data['file_path']);
@@ -86,9 +87,8 @@ echo $a;';
             $file_contents
         );
 
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $file_checker->visitAndAnalyzeMethods();
-        $this->project_checker->checkClassReferences();
+        $this->analyzeFile('somefile.php', new Context());
+
         $issue_data = IssueBuffer::getIssuesData();
         $this->assertSame(
             [

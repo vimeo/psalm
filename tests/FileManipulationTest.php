@@ -19,17 +19,16 @@ class FileManipulationTest extends TestCase
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider()
-        );
-
         if (!self::$config) {
             self::$config = new TestConfig();
             self::$config->addPluginPath('examples/ClassUnqualifier.php');
         }
 
-        $this->project_checker->setConfig(self::$config);
+        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+            self::$config,
+            $this->file_provider,
+            new Provider\FakeParserCacheProvider()
+        );
     }
 
     /**
@@ -73,8 +72,6 @@ class FileManipulationTest extends TestCase
             $keyed_issues_to_fix[$issue] = true;
         }
 
-        $file_checker = new FileChecker($file_path, $this->project_checker);
-
         $this->project_checker->setIssuesToFix($keyed_issues_to_fix);
         $this->project_checker->alterCodeAfterCompletion(
             (int) $php_major_version,
@@ -83,7 +80,7 @@ class FileManipulationTest extends TestCase
             $safe_types
         );
 
-        $file_checker->visitAndAnalyzeMethods($context);
+        $this->analyzeFile($file_path, $context);
         $this->project_checker->updateFile($file_path, false);
         $this->assertSame($output_code, $this->project_checker->getFileContents($file_path));
     }

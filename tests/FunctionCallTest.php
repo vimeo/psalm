@@ -1,43 +1,32 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Context;
-
 class FunctionCallTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
     use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
-     * @return void
+     * @return array
      */
-    public function testArrayFilter()
+    public function providerFileCheckerValidCodeParse()
     {
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
-                $e = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $i): bool { return true; });'
-        );
-
-        $file_checker = new FileChecker('somefile.php', $this->project_checker);
-        $context = new Context();
-        $file_checker->visitAndAnalyzeMethods($context);
-        $this->project_checker->checkClassReferences();
-
-        $this->assertSame('array<string, int>', (string) $context->vars_in_scope['$d']);
-        $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$e']);
-    }
-
-    /**
-     * @return void
-     */
-    public function testArrayFilterAdvanced()
-    {
-        if (version_compare((string)PHP_VERSION, '5.6.0', '>=')) {
-            $this->addFile(
-                'somefile.php',
+        return [
+            'arrayFilter' => [
+                '<?php
+                    $d = array_filter(["a" => 5, "b" => 12, "c" => null]);
+                    $e = array_filter(
+                        ["a" => 5, "b" => 12, "c" => null],
+                        function(?int $i): bool {
+                            return true;
+                        }
+                    );',
+                'assertions' => [
+                    '$d' => 'array<string, int>',
+                    '$e' => 'array<string, null|int>',
+                ],
+            ],
+            'arrayFilterAdvanced' => [
                 '<?php
                     $f = array_filter(["a" => 5, "b" => 12, "c" => null], function(?int $val, string $key): bool {
                         return true;
@@ -60,25 +49,12 @@ class FunctionCallTest extends TestCase
                             return $key === "bar";
                         },
                         ARRAY_FILTER_USE_KEY
-                    );'
-            );
-
-            $file_checker = new FileChecker('somefile.php', $this->project_checker);
-            $context = new Context();
-            $file_checker->visitAndAnalyzeMethods($context);
-            $this->project_checker->checkClassReferences();
-
-            $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$f']);
-            $this->assertSame('array<string, null|int>', (string) $context->vars_in_scope['$g']);
-        }
-    }
-
-    /**
-     * @return array
-     */
-    public function providerFileCheckerValidCodeParse()
-    {
-        return [
+                    );',
+                'assertions' => [
+                    '$f' => 'array<string, null|int>',
+                    '$g' => 'array<string, null|int>',
+                ],
+            ],
             'typedArrayWithDefault' => [
                 '<?php
                     class A {}

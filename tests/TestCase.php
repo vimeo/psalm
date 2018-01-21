@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
+use Psalm\Context;
 
 class TestCase extends BaseTestCase
 {
@@ -41,10 +42,10 @@ class TestCase extends BaseTestCase
         $this->file_provider = new Provider\FakeFileProvider();
 
         $this->project_checker = new ProjectChecker(
+            new TestConfig(),
             $this->file_provider,
             new Provider\FakeParserCacheProvider()
         );
-        $this->project_checker->setConfig(new TestConfig());
         $this->project_checker->infer_types_from_usage = true;
     }
 
@@ -53,8 +54,10 @@ class TestCase extends BaseTestCase
      */
     public function tearDown()
     {
-        $this->project_checker->classlike_storage_provider->deleteAll();
-        $this->project_checker->file_storage_provider->deleteAll();
+        if ($this->project_checker) {
+            $this->project_checker->classlike_storage_provider->deleteAll();
+            $this->project_checker->file_storage_provider->deleteAll();
+        }
     }
 
     /**
@@ -67,5 +70,19 @@ class TestCase extends BaseTestCase
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_checker->queueFileForScanning($file_path);
+    }
+
+    /**
+     * @param  string  $file_path
+     * @param  Context $context
+     *
+     * @return void
+     */
+    public function analyzeFile($file_path, Context $context)
+    {
+        $file_checker = new FileChecker($file_path, $this->project_checker);
+        $this->project_checker->registerAnalyzableFile($file_path);
+        $this->project_checker->scanFiles();
+        $file_checker->analyze($context);
     }
 }
