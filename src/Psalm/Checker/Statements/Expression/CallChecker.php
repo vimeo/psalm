@@ -191,12 +191,12 @@ class CallChecker
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TMixed) {
                         $has_valid_function_call_type = true;
-                        // @todo maybe emit issue here
+                    // @todo maybe emit issue here
                     } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure') ||
                         $var_type_part instanceof TCallable
                     ) {
                         $has_valid_function_call_type = true;
-                        // this is fine
+                    // this is fine
                     } elseif ($var_type_part instanceof TNull) {
                         // handled above
                     } elseif (!$var_type_part instanceof TNamedObject ||
