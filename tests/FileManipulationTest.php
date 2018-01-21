@@ -9,6 +9,9 @@ class FileManipulationTest extends TestCase
     /** @var \Psalm\Checker\ProjectChecker */
     protected $project_checker;
 
+    /** @var TestConfig|null */
+    private static $config;
+
     /**
      * @return void
      */
@@ -81,8 +84,9 @@ class FileManipulationTest extends TestCase
         );
 
         $this->analyzeFile($file_path, $context);
-        $this->project_checker->updateFile($file_path, false);
-        $this->assertSame($output_code, $this->project_checker->getFileContents($file_path));
+
+        $this->project_checker->getCodebase()->updateFile($file_path, false);
+        $this->assertSame($output_code, $this->project_checker->getCodebase()->getFileContents($file_path));
     }
 
     /**

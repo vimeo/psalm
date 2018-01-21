@@ -52,26 +52,4 @@ class TraitChecker extends ClassLikeChecker
     {
         return [];
     }
-
-    /**
-     * @param  string       $fq_trait_name
-     * @param  FileChecker  $file_checker
-     *
-     * @return bool
-     */
-    public static function traitExists($fq_trait_name, FileChecker $file_checker)
-    {
-        return $file_checker->project_checker->hasFullyQualifiedTraitName($fq_trait_name);
-    }
-
-    /**
-     * @param  string       $fq_trait_name
-     * @param  FileChecker  $file_checker
-     *
-     * @return bool
-     */
-    public static function hasCorrectCase($fq_trait_name, FileChecker $file_checker)
-    {
-        return isset($file_checker->project_checker->existing_traits[$fq_trait_name]);
-    }
 }

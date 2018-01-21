@@ -197,7 +197,7 @@ class IssueBuffer
      */
     public static function finish(ProjectChecker $project_checker, $is_full, $start_time)
     {
-        $scanned_files = $project_checker->getScannedFiles();
+        $scanned_files = $project_checker->codebase->getScannedFiles();
         Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
 
         $has_error = false;

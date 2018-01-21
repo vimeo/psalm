@@ -4,13 +4,9 @@ namespace Psalm\Tests;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
-use Psalm\Context;
 
 class TestCase extends BaseTestCase
 {
-    /** @var TestConfig */
-    protected static $config;
-
     /** @var string */
     protected static $src_dir_path;
 
@@ -41,11 +37,15 @@ class TestCase extends BaseTestCase
 
         $this->file_provider = new Provider\FakeFileProvider();
 
+        $config = new TestConfig();
+        $parser_cache_provider = new Provider\FakeParserCacheProvider();
+
         $this->project_checker = new ProjectChecker(
-            new TestConfig(),
+            $config,
             $this->file_provider,
-            new Provider\FakeParserCacheProvider()
+            $parser_cache_provider
         );
+
         $this->project_checker->infer_types_from_usage = true;
     }
 
@@ -58,21 +58,26 @@ class TestCase extends BaseTestCase
     public function addFile($file_path, $contents)
     {
         $this->file_provider->registerFile($file_path, $contents);
-        $this->project_checker->queueFileForScanning($file_path);
+        $this->project_checker->getCodeBase()->queueFileForScanning($file_path);
     }
 
     /**
-     * @param  string  $file_path
-     * @param  Context $context
+     * @param  string         $file_path
+     * @param  \Psalm\Context $context
      *
      * @return void
      */
-    public function analyzeFile($file_path, Context $context)
+    public function analyzeFile($file_path, \Psalm\Context $context)
     {
-        $config = $this->project_checker->getConfig();
-        $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
-        $this->project_checker->registerAnalyzableFile($file_path);
-        $this->project_checker->scanFiles();
+        $codebase = $this->project_checker->getCodebase();
+        $codebase->addFilesToScan([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $file_checker = new FileChecker(
+            $this->project_checker,
+            $file_path,
+            $codebase->config->shortenFileName($file_path)
+        );
         $file_checker->analyze($context);
     }
 }

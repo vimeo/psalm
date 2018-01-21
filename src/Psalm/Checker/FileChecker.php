@@ -95,9 +95,11 @@ class FileChecker extends SourceChecker implements StatementsSource
             $this->context = $file_context;
         }
 
+        $codebase = $this->project_checker->codebase;
+
         if (!$this->context) {
             $this->context = new Context();
-            $this->context->collect_references = $this->project_checker->collect_references;
+            $this->context->collect_references = $codebase->collect_references;
             $this->context->vars_in_scope['$argc'] = Type::getInt();
             $this->context->vars_in_scope['$argv'] = new Type\Union([
                 new Type\Atomic\TArray([
@@ -109,9 +111,11 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $this->context->is_global = true;
 
-        $config = $this->project_checker->getConfig();
+        $codebase = $this->project_checker->codebase;
 
-        $stmts = $this->project_checker->getStatementsForFile($this->file_path);
+        $config = $codebase->config;
+
+        $stmts = $codebase->getStatementsForFile($this->file_path);
 
         $statements_checker = new StatementsChecker($this);
 
@@ -151,14 +155,14 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         foreach ($this->function_checkers as $function_checker) {
             $function_context = new Context($this->context->self);
-            $function_context->collect_references = $this->project_checker->collect_references;
+            $function_context->collect_references = $codebase->collect_references;
             $function_checker->analyze($function_context, $this->context);
 
             if ($config->reportIssueInFile('InvalidReturnType', $this->file_path)) {
                 /** @var string */
                 $method_id = $function_checker->getMethodId();
 
-                $function_storage = FunctionChecker::getStorage(
+                $function_storage = $codebase->getFunctionStorage(
                     $statements_checker,
                     $method_id
                 );
@@ -359,9 +363,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public static function clearCache()
     {
-        ClassLikeChecker::clearCache();
-        FunctionChecker::clearCache();
-        StatementsChecker::clearCache();
         IssueBuffer::clearCache();
         FileManipulationBuffer::clearCache();
         FunctionLikeChecker::clearCache();

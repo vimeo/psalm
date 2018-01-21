@@ -70,10 +70,8 @@ class IncludeChecker
 
             if ($current_file_checker->project_checker->fileExists($path_to_file)) {
                 if (is_subclass_of($current_file_checker, 'Psalm\\Checker\\FileChecker')) {
-                    $project_checker = $statements_checker->getFileChecker()->project_checker;
-
                     $statements_checker->analyze(
-                        $project_checker->getStatementsForFile($path_to_file),
+                        $current_file_checker->project_checker->codebase->getStatementsForFile($path_to_file),
                         $context
                     );
                 }

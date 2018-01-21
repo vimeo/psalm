@@ -31,7 +31,7 @@ class JsonOutputTest extends TestCase
             ProjectChecker::TYPE_JSON
         );
 
-        $this->project_checker->collect_references = true;
+        $this->project_checker->getCodebase()->collect_references = true;
     }
 
     /**
@@ -47,7 +47,6 @@ class JsonOutputTest extends TestCase
     public function testJsonOutputErrors($code, $message, $line_number, $error)
     {
         $this->addFile('somefile.php', $code);
-
         $this->analyzeFile('somefile.php', new Context());
         $issue_data = IssueBuffer::getIssuesData()[0];
 
@@ -86,6 +85,8 @@ echo $a;';
             'somefile.php',
             $file_contents
         );
+
+        $this->project_checker->getCodebase()->checkClassReferences();
 
         $this->analyzeFile('somefile.php', new Context());
 

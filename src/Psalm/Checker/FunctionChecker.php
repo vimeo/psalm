@@ -8,7 +8,6 @@ use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
-use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
@@ -20,117 +19,11 @@ class FunctionChecker extends FunctionLikeChecker
     protected static $call_map = null;
 
     /**
-     * @var array<string, FunctionLikeStorage>
-     */
-    protected static $builtin_functions = [];
-
-    /**
-     * @var array<string, FunctionLikeStorage>
-     */
-    public static $stubbed_functions = [];
-
-    /**
      * @param StatementsSource              $source
      */
     public function __construct(PhpParser\Node\Stmt\Function_ $function, StatementsSource $source)
     {
         parent::__construct($function, $source);
-    }
-
-    /**
-     * @param  string $function_id
-     *
-     * @return bool
-     */
-    public static function functionExists(StatementsChecker $statements_checker, $function_id)
-    {
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
-
-        $file_storage = $project_checker->file_storage_provider->get($statements_checker->getFilePath());
-
-        if (isset($file_storage->declaring_function_ids[$function_id])) {
-            return true;
-        }
-
-        if (strpos($function_id, '::') !== false) {
-            $function_id = strtolower(preg_replace('/^[^:]+::/', '', $function_id));
-        }
-
-        if (isset(self::$builtin_functions[$function_id])) {
-            return true;
-        }
-
-        if (isset(self::$stubbed_functions[$function_id])) {
-            return true;
-        }
-
-        if (isset($statements_checker->getFunctionCheckers()[$function_id])) {
-            return true;
-        }
-
-        if (self::extractReflectionInfo($function_id) === false) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  string $function_id
-     *
-     * @return FunctionLikeStorage
-     */
-    public static function getStorage(StatementsChecker $statements_checker, $function_id)
-    {
-        if (isset(self::$stubbed_functions[$function_id])) {
-            return self::$stubbed_functions[$function_id];
-        }
-
-        if (isset(self::$builtin_functions[$function_id])) {
-            return self::$builtin_functions[$function_id];
-        }
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
-        $file_path = $statements_checker->getFilePath();
-
-        $file_storage = $project_checker->file_storage_provider->get($file_path);
-
-        $function_checkers = $statements_checker->getFunctionCheckers();
-
-        if (isset($function_checkers[$function_id])) {
-            $function_id = $function_checkers[$function_id]->getMethodId();
-
-            if (!isset($file_storage->functions[$function_id])) {
-                throw new \UnexpectedValueException(
-                    'Expecting ' . $function_id . ' to have storage in ' . $file_path
-                );
-            }
-
-            return $file_storage->functions[$function_id];
-        }
-
-        // closures can be returned here
-        if (isset($file_storage->functions[$function_id])) {
-            return $file_storage->functions[$function_id];
-        }
-
-        if (!isset($file_storage->declaring_function_ids[$function_id])) {
-            throw new \UnexpectedValueException(
-                'Expecting ' . $function_id . ' to have storage in ' . $file_path
-            );
-        }
-
-        $declaring_file_path = $file_storage->declaring_function_ids[$function_id];
-
-        $declaring_file_storage = $project_checker->file_storage_provider->get($declaring_file_path);
-
-        if (!isset($declaring_file_storage->functions[$function_id])) {
-            throw new \UnexpectedValueException(
-                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
-            );
-        }
-
-        return $declaring_file_storage->functions[$function_id];
     }
 
     /**
@@ -144,96 +37,6 @@ class FunctionChecker extends FunctionLikeChecker
         $file_storage = $project_checker->file_storage_provider->get($file_path);
 
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
-    }
-
-    /**
-     * @param  string $function_id
-     *
-     * @return false|null
-     */
-    protected static function extractReflectionInfo($function_id)
-    {
-        try {
-            $reflection_function = new \ReflectionFunction($function_id);
-
-            $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
-
-            $reflection_params = $reflection_function->getParameters();
-
-            /** @var \ReflectionParameter $param */
-            foreach ($reflection_params as $param) {
-                $param_obj = self::getReflectionParamData($param);
-                $storage->params[] = $param_obj;
-            }
-
-            $storage->cased_name = $reflection_function->getName();
-
-            $config = \Psalm\Config::getInstance();
-
-            if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                && $reflection_return_type = $reflection_function->getReturnType()
-            ) {
-                $storage->return_type = Type::parseString((string)$reflection_return_type);
-            }
-
-            if ($reflection_function->isUserDefined()) {
-                $doc_comment = $reflection_function->getDocComment();
-
-                if (!$doc_comment) {
-                    return;
-                }
-
-                try {
-                    $docblock_info = CommentChecker::extractFunctionDocblockInfo(
-                        (string)$doc_comment,
-                        0
-                    );
-                } catch (\Psalm\Exception\DocblockParseException $e) {
-                    $docblock_info = null;
-                }
-
-                if (!$docblock_info) {
-                    return;
-                }
-
-                if ($docblock_info->deprecated) {
-                    $storage->deprecated = true;
-                }
-
-                if ($docblock_info->variadic) {
-                    $storage->variadic = true;
-                }
-
-                if ($docblock_info->ignore_nullable_return && $storage->return_type) {
-                    $storage->return_type->ignore_nullable_issues = true;
-                }
-
-                $storage->suppressed_issues = $docblock_info->suppress;
-
-                if (!$config->use_docblock_types) {
-                    return;
-                }
-
-                if ($docblock_info->return_type) {
-                    if (!$storage->return_type) {
-                        $namespace = $reflection_function->getNamespaceName();
-                        $aliases = new \Psalm\Aliases($namespace);
-                        $fq_return_type = FunctionLikeChecker::fixUpLocalType(
-                            $docblock_info->return_type,
-                            $aliases
-                        );
-                        $storage->return_type = Type::parseString($fq_return_type);
-                        $storage->return_type->setFromDocblock();
-
-                        if ($docblock_info->ignore_nullable_return) {
-                            $storage->return_type->ignore_nullable_issues = true;
-                        }
-                    }
-                }
-            }
-        } catch (\ReflectionException $e) {
-            return false;
-        }
     }
 
     /**
@@ -675,6 +478,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $mapping_return_type = null;
 
                 $project_checker = $statements_checker->getFileChecker()->project_checker;
+                $codebase = $project_checker->codebase;
 
                 foreach ($mapping_function_ids as $mapping_function_id) {
                     if (isset($call_map[$mapping_function_id][0])) {
@@ -718,12 +522,12 @@ class FunctionChecker extends FunctionLikeChecker
                                 $mapping_return_type = $return_type;
                             }
                         } else {
-                            if (!FunctionChecker::functionExists($statements_checker, $mapping_function_id)) {
+                            if (!$codebase->functionExists($statements_checker, $mapping_function_id)) {
                                 $mapping_return_type = Type::getMixed();
                                 continue;
                             }
 
-                            $function_storage = FunctionChecker::getStorage(
+                            $function_storage = $codebase->getFunctionStorage(
                                 $statements_checker,
                                 $mapping_function_id
                             );
@@ -945,14 +749,5 @@ class FunctionChecker extends FunctionLikeChecker
         $namespace = $source->getNamespace();
 
         return ($namespace ? $namespace . '\\' : '') . $function_name;
-    }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-        self::$builtin_functions = [];
-        self::$stubbed_functions = [];
     }
 }

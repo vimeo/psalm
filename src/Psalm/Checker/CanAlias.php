@@ -52,14 +52,14 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    if ($this->getFileChecker()->project_checker->collect_references) {
+                    if ($this->getFileChecker()->project_checker->getCodeBase()->collect_references) {
                         // register the path
-                        $project_checker = $this->getFileChecker()->project_checker;
+                        $codebase = $this->getFileChecker()->project_checker->codebase;
 
-                        $project_checker->use_referencing_locations[strtolower($use_path)][$this->getFilePath()][] =
+                        $codebase->use_referencing_locations[strtolower($use_path)][$this->getFilePath()][] =
                             new \Psalm\CodeLocation($this, $use);
 
-                        $project_checker->use_referencing_files[$this->getFilePath()][strtolower($use_path)] = true;
+                        $codebase->use_referencing_files[$this->getFilePath()][strtolower($use_path)] = true;
                     }
 
                     $this->aliased_classes[strtolower($use->alias)] = $use_path;
@@ -92,11 +92,11 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    if ($this->getFileChecker()->project_checker->collect_references) {
+                    if ($this->getFileChecker()->project_checker->getCodeBase()->collect_references) {
                         // register the path
-                        $project_checker = $this->getFileChecker()->project_checker;
+                        $codebase = $this->getFileChecker()->project_checker->codebase;
 
-                        $project_checker->use_referencing_locations[$use_path][$this->getFilePath()][] =
+                        $codebase->use_referencing_locations[$use_path][$this->getFilePath()][] =
                             new \Psalm\CodeLocation($this, $use);
                     }
 

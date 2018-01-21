@@ -4,7 +4,7 @@ namespace Psalm\Examples\Template;
 use PhpParser;
 use Psalm;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Codebase;
 use Psalm\Storage\FileStorage;
 
 class TemplateScanner extends Psalm\Scanner\FileScanner
@@ -16,7 +16,7 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
      *
      * @return void
      */
-    public function scan(ProjectChecker $project_checker, array $stmts, FileStorage $file_storage)
+    public function scan(Codebase $codebase, array $stmts, FileStorage $file_storage)
     {
         if (empty($stmts)) {
             return;
@@ -41,7 +41,7 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
                 /** @psalm-suppress MixedArgument */
                 list($fq_class_name, $method_name) = explode('::', $matches[1]);
 
-                $project_checker->queueClassLikeForScanning(
+                $codebase->queueClassLikeForScanning(
                     $fq_class_name,
                     $this->file_path,
                     true
@@ -49,8 +49,8 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
             }
         }
 
-        $project_checker->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
+        $codebase->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
 
-        parent::scan($project_checker, $stmts, $file_storage);
+        parent::scan($codebase, $stmts, $file_storage);
     }
 }

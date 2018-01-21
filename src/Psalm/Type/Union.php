@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Checker\ProjectChecker;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -604,20 +604,19 @@ class Union
     }
 
     /**
-     * @param  ProjectChecker $project_checker
      * @param  string $referencing_file_path
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
     public function queueClassLikesForScanning(
-        ProjectChecker $project_checker,
+        Codebase $codebase,
         $referencing_file_path = null,
         array $phantom_classes = []
     ) {
         foreach ($this->types as $atomic_type) {
             $atomic_type->queueClassLikesForScanning(
-                $project_checker,
+                $codebase,
                 $referencing_file_path,
                 $phantom_classes
             );

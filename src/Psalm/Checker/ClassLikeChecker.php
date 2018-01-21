@@ -16,10 +16,7 @@ use Psalm\IssueBuffer;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
-use ReflectionClass;
-use ReflectionMethod;
 use ReflectionProperty;
 
 abstract class ClassLikeChecker extends SourceChecker implements StatementsSource
@@ -92,18 +89,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $property_map;
 
     /**
-     * A lookup table of cached ClassCheckers
-     *
-     * @var array<string, ClassChecker>
-     */
-    public static $class_checkers;
-
-    /**
-     * @var array<string, array<string, string>>
-     */
-    public static $file_classes = [];
-
-    /**
      * @var PhpParser\Node\Stmt[]
      */
     protected $leftover_stmts = [];
@@ -161,6 +146,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         Context $context
     ) {
         $project_checker = $this->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
@@ -168,14 +154,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             ) {
                 $method_id = $this->fq_class_name . '::' . $stmt->name;
 
-                if ($project_checker->canCache() && isset($project_checker->method_checkers[$method_id])) {
-                    $method_checker = $project_checker->method_checkers[$method_id];
+                if ($codebase->canCacheCheckers()) {
+                    $method_checker = $codebase->getCachedMethodChecker($method_id);
+
+                    if (!$method_checker) {
+                        $method_checker = new MethodChecker($stmt, $this);
+                        $codebase->cacheMethodChecker($method_id, $method_checker);
+                    }
                 } else {
                     $method_checker = new MethodChecker($stmt, $this);
-
-                    if ($project_checker->canCache()) {
-                        $project_checker->method_checkers[$method_id] = $method_checker;
-                    }
                 }
 
                 $method_checker->analyze($context, null, true);
@@ -186,9 +173,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source->getAliases()
                     );
 
-                    $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
-                    $trait_node = $project_checker->getTraitNode($fq_trait_name);
-                    $trait_aliases = $project_checker->getTraitAliases($fq_trait_name);
+                    $trait_file_checker = $codebase->getFileCheckerForClassLike($project_checker, $fq_trait_name);
+                    $trait_node = $codebase->getTraitNode($fq_trait_name);
+                    $trait_aliases = $codebase->getTraitAliases($fq_trait_name);
                     $trait_checker = new TraitChecker(
                         $trait_node,
                         $trait_file_checker,
@@ -196,7 +183,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $trait_aliases
                     );
 
-                    foreach ($trait_checker->class->stmts as $trait_stmt) {
+                    foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                             strtolower($trait_stmt->name) === strtolower($method_name)
                         ) {
@@ -244,7 +231,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return false;
         }
 
-        if ($project_checker->collect_references && $code_location) {
+        if ($project_checker->getCodeBase()->collect_references && $code_location) {
             $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
             if ($class_storage->referencing_locations === null) {
                 $class_storage->referencing_locations = [];
@@ -289,6 +276,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         }
 
         $project_checker = $statements_source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name);
 
@@ -334,7 +322,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        if ($project_checker->collect_references && !$inferred) {
+        if ($project_checker->getCodeBase()->collect_references && !$inferred) {
             $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
             if ($class_storage->referencing_locations === null) {
                 $class_storage->referencing_locations = [];
@@ -342,8 +330,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
         }
 
-        if (($class_exists && !ClassChecker::hasCorrectCasing($project_checker, $fq_class_name)) ||
-            ($interface_exists && !InterfaceChecker::hasCorrectCasing($project_checker, $fq_class_name))
+        if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||
+            ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
         ) {
             if (ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)) {
                 if (IssueBuffer::accepts(
@@ -364,7 +352,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         );
 
         if (!$inferred) {
-            $plugins = Config::getInstance()->getPlugins();
+            $plugins = $codebase->config->getPlugins();
 
             if ($plugins) {
                 $file_manipulations = [];
@@ -498,254 +486,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @param  string          $class_name
-     * @param  ReflectionClass $reflected_class
-     * @param  ProjectChecker  $project_checker
-     *
-     * @return void
-     */
-    public static function registerReflectedClass(
-        $class_name,
-        ReflectionClass $reflected_class,
-        ProjectChecker $project_checker
-    ) {
-        $class_name = $reflected_class->name;
-
-        if ($class_name === 'LibXMLError') {
-            $class_name = 'libXMLError';
-        }
-
-        $class_name_lower = strtolower($class_name);
-
-        $storage_provider = $project_checker->classlike_storage_provider;
-
-        try {
-            $storage_provider->get($class_name_lower);
-
-            return;
-        } catch (\Exception $e) {
-            // this is fine
-        }
-
-        $reflected_parent_class = $reflected_class->getParentClass();
-
-        $storage = $storage_provider->create($class_name);
-        $storage->abstract = $reflected_class->isAbstract();
-
-        if ($reflected_parent_class) {
-            $parent_class_name = $reflected_parent_class->getName();
-            self::registerReflectedClass($parent_class_name, $reflected_parent_class, $project_checker);
-
-            $parent_storage = $storage_provider->get($parent_class_name);
-
-            self::registerInheritedMethods($project_checker, $class_name, $parent_class_name);
-            self::registerInheritedProperties($project_checker, $class_name, $parent_class_name);
-
-            $storage->class_implements = $parent_storage->class_implements;
-
-            $storage->public_class_constants = $parent_storage->public_class_constants;
-            $storage->protected_class_constants = $parent_storage->protected_class_constants;
-            $storage->parent_classes = array_merge([strtolower($parent_class_name)], $parent_storage->parent_classes);
-
-            $storage->used_traits = $parent_storage->used_traits;
-        }
-
-        $class_properties = $reflected_class->getProperties();
-
-        $public_mapped_properties = self::inPropertyMap($class_name)
-            ? self::getPropertyMap()[strtolower($class_name)]
-            : [];
-
-        /** @var \ReflectionProperty $class_property */
-        foreach ($class_properties as $class_property) {
-            $property_name = $class_property->getName();
-            $storage->properties[$property_name] = new PropertyStorage();
-
-            $storage->properties[$property_name]->type = Type::getMixed();
-
-            if ($class_property->isStatic()) {
-                $storage->properties[$property_name]->is_static = true;
-            }
-
-            if ($class_property->isPublic()) {
-                $storage->properties[$property_name]->visibility = self::VISIBILITY_PUBLIC;
-            } elseif ($class_property->isProtected()) {
-                $storage->properties[$property_name]->visibility = self::VISIBILITY_PROTECTED;
-            } elseif ($class_property->isPrivate()) {
-                $storage->properties[$property_name]->visibility = self::VISIBILITY_PRIVATE;
-            }
-
-            $property_id = (string)$class_property->class . '::$' . $property_name;
-
-            $storage->declaring_property_ids[$property_name] = $property_id;
-            $storage->appearing_property_ids[$property_name] = $property_id;
-
-            if (!$class_property->isPrivate()) {
-                $storage->inheritable_property_ids[$property_name] = $property_id;
-            }
-        }
-
-        // have to do this separately as there can be new properties here
-        foreach ($public_mapped_properties as $property_name => $type) {
-            if (!isset($storage->properties[$property_name])) {
-                $storage->properties[$property_name] = new PropertyStorage();
-                $storage->properties[$property_name]->visibility = self::VISIBILITY_PUBLIC;
-
-                $property_id = $class_name . '::$' . $property_name;
-
-                $storage->declaring_property_ids[$property_name] = $property_id;
-                $storage->appearing_property_ids[$property_name] = $property_id;
-                $storage->inheritable_property_ids[$property_name] = $property_id;
-            }
-
-            $storage->properties[$property_name]->type = Type::parseString($type);
-        }
-
-        /** @var array<string, int|string|float|null|array> */
-        $class_constants = $reflected_class->getConstants();
-
-        foreach ($class_constants as $name => $value) {
-            $storage->public_class_constants[$name] = self::getTypeFromValue($value);
-        }
-
-        if ($reflected_class->isInterface()) {
-            $project_checker->addFullyQualifiedInterfaceName($class_name);
-        } elseif ($reflected_class->isTrait()) {
-            $project_checker->addFullyQualifiedTraitName($class_name);
-        } else {
-            $project_checker->addFullyQualifiedClassName($class_name);
-        }
-
-        $reflection_methods = $reflected_class->getMethods(
-            ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
-        );
-
-        if ($class_name_lower === 'generator') {
-            $storage->template_types = ['TKey' => 'mixed', 'TValue' => 'mixed'];
-        }
-
-        $interfaces = $reflected_class->getInterfaces();
-
-        /** @var \ReflectionClass $interface */
-        foreach ($interfaces as $interface) {
-            $interface_name = $interface->getName();
-            self::registerReflectedClass($interface_name, $interface, $project_checker);
-
-            if ($reflected_class->isInterface()) {
-                $storage->parent_interfaces[strtolower($interface_name)] = $interface_name;
-            } else {
-                $storage->class_implements[strtolower($interface_name)] = $interface_name;
-            }
-        }
-
-        /** @var \ReflectionMethod $reflection_method */
-        foreach ($reflection_methods as $reflection_method) {
-            $method_reflection_class = $reflection_method->getDeclaringClass();
-            $method_class_name = $method_reflection_class->getName();
-
-            self::registerReflectedClass($method_class_name, $method_reflection_class, $project_checker);
-
-            MethodChecker::extractReflectionMethodInfo($reflection_method, $project_checker);
-
-            if ($reflection_method->class !== $class_name) {
-                MethodChecker::setDeclaringMethodId(
-                    $project_checker,
-                    $class_name . '::' . strtolower($reflection_method->name),
-                    $reflection_method->class . '::' . strtolower($reflection_method->name)
-                );
-
-                MethodChecker::setAppearingMethodId(
-                    $project_checker,
-                    $class_name . '::' . strtolower($reflection_method->name),
-                    $reflection_method->class . '::' . strtolower($reflection_method->name)
-                );
-
-                continue;
-            }
-        }
-    }
-
-    /**
-     * @param string $fq_class_name
-     * @param string $parent_class
-     *
-     * @return void
-     */
-    protected static function registerInheritedMethods(ProjectChecker $project_checker, $fq_class_name, $parent_class)
-    {
-        $parent_storage = $project_checker->classlike_storage_provider->get($parent_class);
-        $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-
-        // register where they appear (can never be in a trait)
-        foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
-            $implemented_method_id = $fq_class_name . '::' . $method_name;
-
-            $storage->appearing_method_ids[$method_name] = $appearing_method_id;
-        }
-
-        // register where they're declared
-        foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
-            $implemented_method_id = $fq_class_name . '::' . $method_name;
-
-            $storage->declaring_method_ids[$method_name] = $declaring_method_id;
-            $storage->inheritable_method_ids[$method_name] = $declaring_method_id;
-
-            MethodChecker::setOverriddenMethodId($project_checker, $implemented_method_id, $declaring_method_id);
-        }
-    }
-
-    /**
-     * @param string $fq_class_name
-     * @param string $parent_class
-     *
-     * @return void
-     */
-    protected static function registerInheritedProperties(
-        ProjectChecker $project_checker,
-        $fq_class_name,
-        $parent_class
-    ) {
-        $parent_storage = $project_checker->classlike_storage_provider->get($parent_class);
-        $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-
-        // register where they appear (can never be in a trait)
-        foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === self::VISIBILITY_PRIVATE
-            ) {
-                continue;
-            }
-
-            $storage->appearing_property_ids[$property_name] = $appearing_property_id;
-        }
-
-        // register where they're declared
-        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === self::VISIBILITY_PRIVATE
-            ) {
-                continue;
-            }
-
-            $storage->declaring_property_ids[$property_name] = $declaring_property_id;
-        }
-
-        // register where they're declared
-        foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === self::VISIBILITY_PRIVATE
-            ) {
-                continue;
-            }
-
-            $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
-        }
-    }
-
-    /**
      * Gets the Psalm type from a particular value
      *
      * @param  mixed $value
@@ -860,7 +600,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
-            if ($project_checker->collect_references && $code_location) {
+            if ($project_checker->getCodeBase()->collect_references && $code_location) {
                 $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
                 list($declaring_property_class, $declaring_property_name) = explode('::$', $declaring_property_id);
 
@@ -1098,14 +838,5 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public function getFileChecker()
     {
         return $this->file_checker;
-    }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-        self::$file_classes = [];
-        self::$class_checkers = [];
     }
 }

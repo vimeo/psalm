@@ -90,7 +90,7 @@ class MethodMutationTest extends TestCase
         );
 
         new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
-        $this->project_checker->scanFiles();
+        $this->project_checker->getCodebase()->scanFiles();
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::barBar', $method_context);
 
@@ -127,7 +127,7 @@ class MethodMutationTest extends TestCase
         );
 
         new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
-        $this->project_checker->scanFiles();
+        $this->project_checker->getCodebase()->scanFiles();
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
 
@@ -163,7 +163,7 @@ class MethodMutationTest extends TestCase
         );
 
         new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
-        $this->project_checker->scanFiles();
+        $this->project_checker->getCodebase()->scanFiles();
         $method_context = new Context();
         $this->project_checker->getMethodMutations('FooController::__construct', $method_context);
 

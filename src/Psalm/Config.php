@@ -47,7 +47,7 @@ class Config
     /**
      * @var self|null
      */
-    protected static $config;
+    private static $instance;
 
     /**
      * Whether or not to stop when the first error is seen
@@ -120,7 +120,12 @@ class Config
     /**
      * @var array<string, string>
      */
-    private $filetype_handlers = [];
+    private $filetype_scanners = [];
+
+    /**
+     * @var array<string, string>
+     */
+    private $filetype_checkers = [];
 
     /**
      * @var array<string, IssueHandler>
@@ -189,7 +194,7 @@ class Config
 
     protected function __construct()
     {
-        self::$config = $this;
+        self::$instance = $this;
     }
 
     /**
@@ -458,11 +463,11 @@ class Config
      */
     public static function getInstance()
     {
-        if (self::$config) {
-            return self::$config;
+        if (self::$instance) {
+            return self::$instance;
         }
 
-        return new self();
+        throw new \UnexpectedValueException('No config initialized');
     }
 
     /**
@@ -490,14 +495,24 @@ class Config
             $extension_name = preg_replace('/^\.?/', '', (string)$extension['name']);
             $this->file_extensions[] = $extension_name;
 
-            if (isset($extension['filetypeHandler'])) {
-                $path = $this->base_dir . (string)$extension['filetypeHandler'];
+            if (isset($extension['scanner'])) {
+                $path = $this->base_dir . (string)$extension['scanner'];
 
                 if (!file_exists($path)) {
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
-                $this->filetype_handlers[$extension_name] = $path;
+                $this->filetype_scanners[$extension_name] = $path;
+            }
+
+            if (isset($extension['checker'])) {
+                $path = $this->base_dir . (string)$extension['checker'];
+
+                if (!file_exists($path)) {
+                    throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
+                }
+
+                $this->filetype_checkers[$extension_name] = $path;
             }
         }
     }
@@ -512,13 +527,50 @@ class Config
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {
-        foreach ($this->filetype_handlers as &$path) {
-            $storage = $project_checker->file_storage_provider->create($path);
-            $plugin_file_scanner = new FileScanner($path, $this->shortenFileName($path), false);
-            $plugin_file_scanner->scan(
+        $codebase = $project_checker->codebase;
+
+        foreach ($this->filetype_scanners as &$path) {
+            $file_storage = $codebase->createFileStorageForPath($path);
+            $file_to_scan = new FileScanner($path, $this->shortenFileName($path), false);
+            $file_to_scan->scan(
+                $codebase,
+                $codebase->getStatementsForFile($path),
+                $file_storage
+            );
+
+            $declared_classes = ClassLikeChecker::getClassesForFile($project_checker, $path);
+
+            if (count($declared_classes) !== 1) {
+                throw new \InvalidArgumentException(
+                    'Filetype handlers must have exactly one class in the file - ' . $path . ' has ' .
+                        count($declared_classes)
+                );
+            }
+
+            /** @psalm-suppress UnresolvableInclude */
+            require_once($path);
+
+            if (!\Psalm\Checker\ClassChecker::classExtends(
                 $project_checker,
-                $project_checker->getStatementsForFile($path),
-                $storage
+                $declared_classes[0],
+                'Psalm\\Scanner\\FileScanner'
+            )
+            ) {
+                throw new \InvalidArgumentException(
+                    'Filetype handlers must extend \Psalm\Checker\FileChecker - ' . $path . ' does not'
+                );
+            }
+
+            $path = $declared_classes[0];
+        }
+
+        foreach ($this->filetype_checkers as &$path) {
+            $file_storage = $codebase->createFileStorageForPath($path);
+            $file_to_scan = new FileScanner($path, $this->shortenFileName($path), false);
+            $file_to_scan->scan(
+                $codebase,
+                $codebase->getStatementsForFile($path),
+                $file_storage
             );
 
             $declared_classes = ClassLikeChecker::getClassesForFile($project_checker, $path);
@@ -571,9 +623,9 @@ class Config
         }
 
         if ($this->hide_external_errors) {
-            $project_checker = ProjectChecker::getInstance();
+            $codebase = ProjectChecker::getInstance()->codebase;
 
-            if (!$project_checker->canReportIssues($file_path)) {
+            if (!$codebase->canReportIssues($file_path)) {
                 return false;
             }
         }
@@ -633,9 +685,17 @@ class Config
     /**
      * @return array<string, string>
      */
-    public function getFiletypeHandlers()
+    public function getFiletypeScanners()
     {
-        return $this->filetype_handlers;
+        return $this->filetype_scanners;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getFiletypeCheckers()
+    {
+        return $this->filetype_checkers;
     }
 
     /**
@@ -651,9 +711,9 @@ class Config
      *
      * @return void
      */
-    public function visitStubFiles(ProjectChecker $project_checker)
+    public function visitStubFiles(Codebase $codebase)
     {
-        $project_checker->register_global_functions = true;
+        $codebase->register_global_functions = true;
 
         $generic_stubs_path = realpath(__DIR__ . '/Stubs/CoreGenericFunctions.php');
 
@@ -661,25 +721,25 @@ class Config
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
-        $file_storage = $project_checker->file_storage_provider->create($generic_stubs_path);
+        $file_storage = $codebase->createFileStorageForPath($generic_stubs_path);
         $file_to_scan = new FileScanner($generic_stubs_path, $this->shortenFileName($generic_stubs_path), false);
         $file_to_scan->scan(
-            $project_checker,
-            $project_checker->getStatementsForFile($generic_stubs_path),
+            $codebase,
+            $codebase->getStatementsForFile($generic_stubs_path),
             $file_storage
         );
 
         foreach ($this->stub_files as $stub_file_path) {
-            $file_storage = $project_checker->file_storage_provider->create($stub_file_path);
+            $file_storage = $codebase->createFileStorageForPath($stub_file_path);
             $file_to_scan = new FileScanner($stub_file_path, $this->shortenFileName($stub_file_path), false);
             $file_to_scan->scan(
-                $project_checker,
-                $project_checker->getStatementsForFile($stub_file_path),
+                $codebase,
+                $codebase->getStatementsForFile($stub_file_path),
                 $file_storage
             );
         }
 
-        $project_checker->register_global_functions = false;
+        $codebase->register_global_functions = false;
     }
 
     /**
@@ -754,13 +814,9 @@ class Config
      */
     public function visitComposerAutoloadFiles(ProjectChecker $project_checker)
     {
-        $project_checker->register_global_functions = true;
-
         $composer_json_path = $this->base_dir . 'composer.json'; // this should ideally not be hardcoded
 
         if (!file_exists($composer_json_path)) {
-            $project_checker->register_global_functions = false;
-
             return;
         }
 
@@ -770,6 +826,9 @@ class Config
         }
 
         if (isset($composer_json['autoload']['files'])) {
+            $codebase = $project_checker->codebase;
+            $codebase->register_global_functions = true;
+
             /** @var string[] */
             $files = $composer_json['autoload']['files'];
 
@@ -780,17 +839,17 @@ class Config
                     continue;
                 }
 
-                $file_storage = $project_checker->file_storage_provider->create($file_path);
-                $file_to_scan = new FileScanner($file_path, $this->shortenFileName($file_path), false);
+                $file_storage = $codebase->createFileStorageForPath($file_path);
+                $file_to_scan = new \Psalm\Scanner\FileScanner($file_path, $this->shortenFileName($file_path), false);
                 $file_to_scan->scan(
-                    $project_checker,
-                    $project_checker->getStatementsForFile($file_path),
+                    $codebase,
+                    $codebase->getStatementsForFile($file_path),
                     $file_storage
                 );
             }
-        }
 
-        $project_checker->register_global_functions = false;
+            $project_checker->codebase->register_global_functions = false;
+        }
     }
 
     /**

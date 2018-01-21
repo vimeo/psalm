@@ -56,8 +56,10 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             self::$public_namespace_constants[$this->namespace_name] = [];
         }
 
+        $codebase = $this->getFileChecker()->project_checker->codebase;
+
         $namespace_context = new Context();
-        $namespace_context->collect_references = $this->getFileChecker()->project_checker->collect_references;
+        $namespace_context->collect_references = $codebase->collect_references;
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
@@ -92,7 +94,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
         if ($leftover_stmts) {
             $statements_checker = new StatementsChecker($this);
             $context = new Context();
-            $context->collect_references = $this->getFileChecker()->project_checker->collect_references;
+            $context->collect_references = $codebase->collect_references;
             $statements_checker->analyze($leftover_stmts, $context);
         }
     }

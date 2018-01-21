@@ -75,23 +75,7 @@ class ClassChecker extends ClassLikeChecker
             return true;
         }
 
-        return $project_checker->hasFullyQualifiedClassName($fq_class_name);
-    }
-
-    /**
-     * Determine whether or not a class has the correct casing
-     *
-     * @param  string       $fq_class_name
-     *
-     * @return bool
-     */
-    public static function hasCorrectCasing(ProjectChecker $project_checker, $fq_class_name)
-    {
-        if ($fq_class_name === 'Generator') {
-            return true;
-        }
-
-        return isset($project_checker->existing_classes[$fq_class_name]);
+        return $project_checker->codebase->hasFullyQualifiedClassName($fq_class_name);
     }
 
     /**
@@ -191,6 +175,7 @@ class ClassChecker extends ClassLikeChecker
         $storage = $this->storage;
 
         $project_checker = $this->file_checker->project_checker;
+        $codebase = $project_checker->codebase;
 
         $classlike_storage_provider = $project_checker->classlike_storage_provider;
 
@@ -231,6 +216,8 @@ class ClassChecker extends ClassLikeChecker
             }
         }
 
+        $trait_checkers = [];
+
         $class_interfaces = $storage->class_implements;
 
         if (!$this->class->isAbstract()) {
@@ -268,7 +255,7 @@ class ClassChecker extends ClassLikeChecker
                             : null;
 
                         $implementer_method_storage = $implementer_declaring_method_id
-                            ? MethodChecker::getStorage($project_checker, $implementer_declaring_method_id)
+                            ? $codebase->getMethodStorage($implementer_declaring_method_id)
                             : null;
 
                         if (!$implementer_method_storage) {
@@ -317,7 +304,7 @@ class ClassChecker extends ClassLikeChecker
 
         if (!$class_context) {
             $class_context = new Context($this->fq_class_name);
-            $class_context->collect_references = $this->getFileChecker()->project_checker->collect_references;
+            $class_context->collect_references = $codebase->collect_references;
             $class_context->parent = $this->parent_fq_class_name;
         }
 
@@ -327,7 +314,7 @@ class ClassChecker extends ClassLikeChecker
 
         if (!$storage->abstract) {
             foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
-                $method_storage = MethodChecker::getStorage($project_checker, $declaring_method_id);
+                $method_storage = $codebase->getMethodStorage($declaring_method_id);
 
                 list($declaring_class_name, $method_name) = explode('::', $declaring_method_id);
 
@@ -419,7 +406,7 @@ class ClassChecker extends ClassLikeChecker
                         $this->source->getAliases()
                     );
 
-                    if (!TraitChecker::traitExists($fq_trait_name, $this->getFileChecker())) {
+                    if (!$codebase->hasFullyQualifiedTraitName($fq_trait_name)) {
                         if (IssueBuffer::accepts(
                             new UndefinedTrait(
                                 'Trait ' . $fq_trait_name . ' does not exist',
@@ -430,7 +417,7 @@ class ClassChecker extends ClassLikeChecker
                             return false;
                         }
                     } else {
-                        if (!TraitChecker::hasCorrectCase($fq_trait_name, $this->getFileChecker())) {
+                        if (!$codebase->traitHasCorrectCase($fq_trait_name)) {
                             if (IssueBuffer::accepts(
                                 new UndefinedTrait(
                                     'Trait ' . $fq_trait_name . ' has wrong casing',
@@ -444,9 +431,9 @@ class ClassChecker extends ClassLikeChecker
                             continue;
                         }
 
-                        $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
-                        $trait_node = $project_checker->getTraitNode($fq_trait_name);
-                        $trait_aliases = $project_checker->getTraitAliases($fq_trait_name);
+                        $trait_file_checker = $codebase->getFileCheckerForClassLike($project_checker, $fq_trait_name);
+                        $trait_node = $codebase->getTraitNode($fq_trait_name);
+                        $trait_aliases = $codebase->getTraitAliases($fq_trait_name);
                         $trait_checker = new TraitChecker(
                             $trait_node,
                             $trait_file_checker,
@@ -666,7 +653,7 @@ class ClassChecker extends ClassLikeChecker
                         $this->source->getAliases()
                     );
 
-                    $trait_node = $project_checker->getTraitNode($fq_trait_name);
+                    $trait_node = $codebase->getTraitNode($fq_trait_name);
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -751,6 +738,7 @@ class ClassChecker extends ClassLikeChecker
         $actual_method_id = (string)$method_checker->getMethodId();
 
         $project_checker = $source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
             $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
@@ -771,7 +759,7 @@ class ClassChecker extends ClassLikeChecker
             $return_type_location = null;
             $secondary_return_type_location = null;
 
-            $actual_method_storage = MethodChecker::getStorage($project_checker, $actual_method_id);
+            $actual_method_storage = $codebase->getMethodStorage($actual_method_id);
 
             if (!$actual_method_storage->has_template_return_type) {
                 if ($actual_method_id) {

@@ -114,7 +114,7 @@ class FunctionDocblockManipulator
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
-        $file_contents = $project_checker->getFileContents($file_path);
+        $file_contents = $project_checker->codebase->getFileContents($file_path);
 
         $last_arg_position = $stmt->params
             ? (int) $stmt->params[count($stmt->params) - 1]->getAttribute('endFilePos')

@@ -61,18 +61,7 @@ class InterfaceChecker extends ClassLikeChecker
             return false;
         }
 
-        return $project_checker->hasFullyQualifiedInterfaceName($fq_interface_name);
-    }
-
-    /**
-     * @param  ProjectChecker $project_checker
-     * @param  string         $fq_interface_name
-     *
-     * @return bool
-     */
-    public static function hasCorrectCasing(ProjectChecker $project_checker, $fq_interface_name)
-    {
-        return isset($project_checker->existing_interfaces[$fq_interface_name]);
+        return $project_checker->codebase->hasFullyQualifiedInterfaceName($fq_interface_name);
     }
 
     /**

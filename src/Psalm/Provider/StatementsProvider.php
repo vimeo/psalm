@@ -5,36 +5,48 @@ use PhpParser;
 
 class StatementsProvider
 {
-    /** @var ?PhpParser\Parser */
+    /**
+     * @var FileProvider
+     */
+    private $file_provider;
+
+    /**
+     * @var ParserCacheProvider
+     */
+    private $cache_provider;
+
+    /**
+     * @var PhpParser\Parser|null
+     */
     protected static $parser;
+
+    public function __construct(FileProvider $file_provider, ParserCacheProvider $cache_provider)
+    {
+        $this->file_provider = $file_provider;
+        $this->cache_provider = $cache_provider;
+    }
 
     /**
      * @param  string  $file_path
-     * @param  FileProvider $file_provider
-     * @param  ParserCacheProvider $cache_provider
      * @param  bool    $debug_output
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    public static function getStatementsForFile(
-        $file_path,
-        FileProvider $file_provider,
-        ParserCacheProvider $cache_provider,
-        $debug_output = false
-    ) {
+    public function getStatementsForFile($file_path, $debug_output = false)
+    {
         $stmts = [];
 
         $from_cache = false;
 
         $version = 'parsercache5';
 
-        $file_contents = $file_provider->getContents($file_path);
-        $modified_time = $file_provider->getModifiedTime($file_path);
+        $file_contents = $this->file_provider->getContents($file_path);
+        $modified_time = $this->file_provider->getModifiedTime($file_path);
 
         $file_content_hash = md5($version . $file_contents);
-        $file_cache_key = $cache_provider->getParserCacheKey($file_path);
+        $file_cache_key = $this->cache_provider->getParserCacheKey($file_path);
 
-        $stmts = $cache_provider->loadStatementsFromCache(
+        $stmts = $this->cache_provider->loadStatementsFromCache(
             $modified_time,
             $file_content_hash,
             $file_cache_key
@@ -50,7 +62,7 @@ class StatementsProvider
             $from_cache = true;
         }
 
-        $cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
+        $this->cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
 
         if (!$stmts) {
             return [];

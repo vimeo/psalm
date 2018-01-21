@@ -15,14 +15,16 @@ class IncludeTest extends TestCase
      */
     public function testValidInclude(array $files, array $files_to_check)
     {
+        $codebase = $this->project_checker->getCodebase();
+
         foreach ($files as $filename => $contents) {
             $this->addFile($filename, $contents);
-            $this->project_checker->registerAnalyzableFile($filename);
+            $codebase->addFilesToScan([$filename => $filename]);
         }
 
-        $this->project_checker->scanFiles();
+        $codebase->scanFiles();
 
-        $config = $this->project_checker->getConfig();
+        $config = $codebase->config;
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
@@ -41,17 +43,19 @@ class IncludeTest extends TestCase
      */
     public function testInvalidInclude(array $files, array $files_to_check, $error_message)
     {
+        $codebase = $this->project_checker->getCodebase();
+
         foreach ($files as $filename => $contents) {
             $this->addFile($filename, $contents);
-            $this->project_checker->registerAnalyzableFile($filename);
+            $codebase->addFilesToScan([$filename => $filename]);
         }
 
-        $this->project_checker->scanFiles();
+        $codebase->scanFiles();
 
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
-        $config = $this->project_checker->getConfig();
+        $config = $codebase->config;
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));

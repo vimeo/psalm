@@ -135,6 +135,8 @@ class CallChecker
         $function_storage = null;
 
         $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
+        $codebase = $project_checker->codebase;
+        $config = $codebase->config;
         $defined_constants = [];
 
         $function_exists = false;
@@ -247,12 +249,12 @@ class CallChecker
             $method_id = implode('\\', $stmt->name->parts);
 
             $in_call_map = FunctionChecker::inCallMap($method_id);
-            $is_stubbed = isset(FunctionChecker::$stubbed_functions[strtolower($method_id)]);
+            $is_stubbed = $codebase->hasStubbedFunction($method_id);
 
             $is_predefined = true;
 
             if (!$in_call_map) {
-                $predefined_functions = Config::getInstance()->getPredefinedFunctions();
+                $predefined_functions = $config->getPredefinedFunctions();
                 $is_predefined = isset($predefined_functions[$method_id]);
             }
 
@@ -272,7 +274,7 @@ class CallChecker
                     }
                 }
 
-                $function_exists = $is_stubbed || FunctionChecker::functionExists(
+                $function_exists = $is_stubbed || $codebase->functionExists(
                     $statements_checker,
                     strtolower($method_id)
                 );
@@ -282,7 +284,7 @@ class CallChecker
 
             if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
-                    $function_storage = FunctionChecker::getStorage(
+                    $function_storage = $codebase->getFunctionStorage(
                         $statements_checker,
                         strtolower($method_id)
                     );
@@ -313,8 +315,6 @@ class CallChecker
         ) === false) {
             // fall through
         }
-
-        $config = Config::getInstance();
 
         if ($function_exists) {
             $generic_params = null;
@@ -402,7 +402,7 @@ class CallChecker
                 $context->vars_in_scope[$const_name] = clone $const_type;
             }
 
-            if (Config::getInstance()->use_assert_for_type &&
+            if ($config->use_assert_for_type &&
                 $method instanceof PhpParser\Node\Name &&
                 $method->parts === ['assert'] &&
                 isset($stmt->args[0])
@@ -482,6 +482,7 @@ class CallChecker
         $fq_class_name = null;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $config = $project_checker->config;
 
         $late_static = false;
 
@@ -671,8 +672,6 @@ class CallChecker
                 }
             }
         }
-
-        $config = Config::getInstance();
 
         if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
             $context->removeAllObjectVars();
@@ -1197,6 +1196,7 @@ class CallChecker
         $fq_class_name = (string)$source->getFQCLN();
 
         $project_checker = $source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($context->collect_mutations &&
             $context->self &&
@@ -1230,7 +1230,7 @@ class CallChecker
 
             $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
 
-            $method_storage = MethodChecker::getStorage($project_checker, (string)$declaring_method_id);
+            $method_storage = $codebase->getMethodStorage((string)$declaring_method_id);
 
             $class_checker = $source->getSource();
 
@@ -2795,11 +2795,13 @@ class CallChecker
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
-        if (!FunctionChecker::functionExists($statements_checker, $function_id)) {
+        $codebase = $statements_checker->getFileChecker()->project_checker->codebase;
+
+        if (!$codebase->functionExists($statements_checker, $function_id)) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
-            if ($function_id !== $root_function_id &&
-                FunctionChecker::functionExists($statements_checker, $root_function_id)
+            if ($function_id !== $root_function_id
+                && $codebase->functionExists($statements_checker, $root_function_id)
             ) {
                 $function_id = $root_function_id;
             } else {

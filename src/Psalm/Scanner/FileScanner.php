@@ -3,7 +3,7 @@ namespace Psalm\Scanner;
 
 use PhpParser;
 use PhpParser\NodeTraverser;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Visitor\DependencyFinderVisitor;
@@ -42,10 +42,10 @@ class FileScanner implements FileSource
      *
      * @return void
      */
-    public function scan(ProjectChecker $project_checker, array $stmts, FileStorage $file_storage)
+    public function scan(Codebase $codebase, array $stmts, FileStorage $file_storage)
     {
         $traverser = new NodeTraverser();
-        $traverser->addVisitor(new DependencyFinderVisitor($project_checker, $file_storage, $this));
+        $traverser->addVisitor(new DependencyFinderVisitor($codebase, $file_storage, $this));
         $traverser->traverse($stmts);
     }
 

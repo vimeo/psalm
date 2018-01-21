@@ -63,7 +63,7 @@ abstract class Plugin
     public function visitClassLike(
         PhpParser\Node\Stmt\ClassLike $stmt,
         ClassLikeStorage $storage,
-        FileScanner $file_checker,
+        FileScanner $file,
         Aliases $aliases,
         array &$file_replacements = []
     ) {

@@ -48,11 +48,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     private $all_vars = [];
 
     /**
-     * @var array<string, Type\Union>
-     */
-    public static $stub_constants = [];
-
-    /**
      * @var array<string, FunctionChecker>
      */
     private $function_checkers = [];
@@ -92,6 +87,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         $project_checker = $this->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $original_context = null;
 
@@ -99,7 +95,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $original_context = clone $context;
         }
 
-        $plugins = Config::getInstance()->getPlugins();
+        $plugins = $codebase->config->getPlugins();
 
         foreach ($stmts as $stmt) {
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
@@ -303,10 +299,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                if (!$project_checker->register_global_functions) {
+                if (!$project_checker->codebase->register_global_functions) {
                     $function_id = strtolower($stmt->name);
                     $function_context = new Context($context->self);
-                    $function_context->collect_references = $project_checker->collect_references;
+                    $function_context->collect_references = $project_checker->codebase->collect_references;
                     $this->function_checkers[$function_id]->analyze($function_context, $context);
 
                     $config = Config::getInstance();
@@ -315,7 +311,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         /** @var string */
                         $method_id = $this->function_checkers[$function_id]->getMethodId();
 
-                        $function_storage = FunctionChecker::getStorage(
+                        $function_storage = $codebase->getFunctionStorage(
                             $this,
                             $method_id
                         );
@@ -835,8 +831,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         $file_path = $statements_checker->getFilePath();
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-        $file_storage_provider = $statements_checker->getFileChecker()->project_checker->file_storage_provider;
+        $file_storage_provider = $project_checker->file_storage_provider;
 
         $file_storage = $file_storage_provider->get($file_path);
 
@@ -852,8 +849,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             return ClassLikeChecker::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
         }
 
-        if (isset(self::$stub_constants[$fq_const_name ?: $const_name])) {
-            return self::$stub_constants[$fq_const_name ?: $const_name];
+        $stubbed_const_type = $project_checker->codebase->getStubbedConstantType(
+            $fq_const_name ?: $const_name
+        );
+
+        if ($stubbed_const_type) {
+            return $stubbed_const_type;
         }
 
         return null;
@@ -923,15 +924,5 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     public function getFunctionCheckers()
     {
         return $this->function_checkers;
-    }
-
-    /**
-     * @return void
-     */
-    public static function clearCache()
-    {
-        self::$stub_constants = [];
-
-        ExpressionChecker::clearCache();
     }
 }

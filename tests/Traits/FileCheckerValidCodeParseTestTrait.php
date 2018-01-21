@@ -55,11 +55,7 @@ trait FileCheckerValidCodeParseTestTrait
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        $this->addFile(
-            $file_path,
-            $code
-        );
-
+        $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, $context);
 
         $actual_vars = [];

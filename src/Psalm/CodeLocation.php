@@ -123,7 +123,7 @@ class CodeLocation
 
         $project_checker = Checker\ProjectChecker::getInstance();
 
-        $file_contents = $project_checker->getFileContents($this->file_path);
+        $file_contents = $project_checker->codebase->getFileContents($this->file_path);
 
         $preview_end = strpos(
             $file_contents,
