@@ -19,6 +19,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
+use Psalm\FileManipulation\FileManipulation;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\InvalidDocblock;
@@ -48,6 +49,18 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     private $all_vars = [];
 
     /**
+     * @var array<string, int>
+     */
+    private $var_branch_points = [];
+
+    /**
+     * Possibly undefined variables should be initialised if we're altering code
+     *
+     * @var array<string, int>|null
+     */
+    private $vars_to_initialize;
+
+    /**
      * @var array<string, FunctionChecker>
      */
     private $function_checkers = [];
@@ -67,6 +80,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
      * @param  Context                                          $context
      * @param  Context|null                                     $global_context
+     * @param  bool                                             $root_scope
      *
      * @return null|false
      */
@@ -74,7 +88,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         array $stmts,
         Context $context,
         LoopScope $loop_scope = null,
-        Context $global_context = null
+        Context $global_context = null,
+        $root_scope = false
     ) {
         $has_returned = false;
 
@@ -497,6 +512,18 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
         }
 
+        if ($project_checker->alter_code && $root_scope && $this->vars_to_initialize) {
+            $file_contents = $project_checker->codebase->getFileContents($this->getFilePath());
+
+            foreach ($this->vars_to_initialize as $var_id => $branch_point) {
+                $newline_pos = (int)strrpos($file_contents, "\n", $branch_point - strlen($file_contents)) + 1;
+                $indentation = substr($file_contents, $newline_pos, $branch_point - $newline_pos);
+                FileManipulationBuffer::add($this->getFilePath(), [
+                    new FileManipulation($branch_point, $branch_point, $var_id . ' = null;' . PHP_EOL . $indentation),
+                ]);
+            }
+        }
+
         return null;
     }
 
@@ -518,7 +545,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             if ($context->check_variables) {
                 $context->vars_in_scope['$' . $var->name] = Type::getMixed();
                 $context->vars_possibly_in_scope['$' . $var->name] = true;
-                $this->registerVariable('$' . $var->name, new CodeLocation($this, $stmt));
+                $this->registerVariable('$' . $var->name, new CodeLocation($this, $stmt), null);
             }
         }
 
@@ -888,26 +915,52 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  string       $var_name
+     * @param  string       $var_id
      * @param  CodeLocation $location
+     * @param  int|null     $branch_point
      *
      * @return void
      */
-    public function registerVariable($var_name, CodeLocation $location)
+    public function registerVariable($var_id, CodeLocation $location, $branch_point)
     {
-        $this->all_vars[$var_name] = $location;
+        $this->all_vars[$var_id] = $location;
+
+        if ($branch_point) {
+            $this->var_branch_points[$var_id] = $branch_point;
+        }
     }
 
     /**
      * The first appearance of the variable in this set of statements being evaluated
      *
-     * @param  string  $var_name
+     * @param  string  $var_id
      *
      * @return CodeLocation|null
      */
-    public function getFirstAppearance($var_name)
+    public function getFirstAppearance($var_id)
     {
-        return isset($this->all_vars[$var_name]) ? $this->all_vars[$var_name] : null;
+        return isset($this->all_vars[$var_id]) ? $this->all_vars[$var_id] : null;
+    }
+
+    /**
+     * @param  string $var_id
+     *
+     * @return int|null
+     */
+    public function getBranchPoint($var_id)
+    {
+        return isset($this->var_branch_points[$var_id]) ? $this->var_branch_points[$var_id] : null;
+    }
+
+    /**
+     * @param string $var_id
+     * @param int    $branch_point
+     *
+     * @return void
+     */
+    public function addVariableInitialization($var_id, $branch_point)
+    {
+        $this->vars_to_initialize[$var_id] = $branch_point;
     }
 
     /**

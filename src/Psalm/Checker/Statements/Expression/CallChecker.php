@@ -1899,7 +1899,8 @@ class CallChecker
                     if (!$statements_checker->hasVariable($var_id)) {
                         $statements_checker->registerVariable(
                             $var_id,
-                            new CodeLocation($statements_checker, $arg->value)
+                            new CodeLocation($statements_checker, $arg->value),
+                            null
                         );
                     }
                 }

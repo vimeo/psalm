@@ -529,7 +529,7 @@ class ExpressionChecker
                 $context->vars_possibly_in_scope[$var_id] = true;
 
                 if (!$statements_checker->hasVariable($var_id)) {
-                    $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt));
+                    $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt), null);
                     $context->hasVariable($var_id);
                 }
             } else {
@@ -786,7 +786,11 @@ class ExpressionChecker
                     $context->vars_possibly_in_scope[$use_var_id] = true;
 
                     if (!$statements_checker->hasVariable($use_var_id)) {
-                        $statements_checker->registerVariable($use_var_id, new CodeLocation($statements_checker, $use));
+                        $statements_checker->registerVariable(
+                            $use_var_id,
+                            new CodeLocation($statements_checker, $use),
+                            null
+                        );
                     }
 
                     return;

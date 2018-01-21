@@ -168,6 +168,13 @@ class Context
     public $protected_var_ids = [];
 
     /**
+     * If we've branched from the main scope, a byte offset for where that branch happened
+     *
+     * @var int|null
+     */
+    public $branch_point;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

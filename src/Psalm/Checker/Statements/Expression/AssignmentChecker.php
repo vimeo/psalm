@@ -213,7 +213,11 @@ class AssignmentChecker
             $context->assigned_var_ids[$var_id] = true;
 
             if (!$statements_checker->hasVariable($var_id)) {
-                $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $assign_var));
+                $statements_checker->registerVariable(
+                    $var_id,
+                    new CodeLocation($statements_checker, $assign_var),
+                    $context->branch_point
+                );
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
@@ -285,7 +289,8 @@ class AssignmentChecker
                     if (!$statements_checker->hasVariable($list_var_id)) {
                         $statements_checker->registerVariable(
                             $list_var_id,
-                            new CodeLocation($statements_checker, $var)
+                            new CodeLocation($statements_checker, $var),
+                            $context->branch_point
                         );
                     }
 

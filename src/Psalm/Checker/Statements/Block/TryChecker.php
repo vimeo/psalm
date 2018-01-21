@@ -40,10 +40,16 @@ class TryChecker
             $all_catches_leave = $all_catches_leave && !in_array(ScopeChecker::ACTION_NONE, $catch_actions[$i], true);
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($all_catches_leave) {
             $try_context = $context;
         } else {
             $try_context = clone $context;
+
+            if ($project_checker->alter_code) {
+                $try_context->branch_point = $try_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+            }
         }
 
         $assigned_var_ids = $context->assigned_var_ids;
@@ -89,8 +95,6 @@ class TryChecker
         // and $try_context - which allows all variables to have the union of the values before and after
         // the try was applied
         $original_context = clone $try_context;
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
@@ -171,7 +175,8 @@ class TryChecker
             if (!$statements_checker->hasVariable($catch_var_id)) {
                 $statements_checker->registerVariable(
                     $catch_var_id,
-                    new CodeLocation($statements_checker, $catch, $context->include_location, true)
+                    new CodeLocation($statements_checker, $catch, $context->include_location, true),
+                    $try_context->branch_point
                 );
             }
 

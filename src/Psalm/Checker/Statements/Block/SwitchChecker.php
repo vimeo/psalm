@@ -72,12 +72,17 @@ class SwitchChecker
 
         $leftover_statements = [];
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
 
             $case_context = clone $original_context;
+            if ($project_checker->alter_code) {
+                $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+            }
             $case_context->parent_context = $context;
 
             if ($case->cond) {

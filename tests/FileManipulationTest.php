@@ -625,6 +625,52 @@ class FileManipulationTest extends TestCase
                 ['InvalidReturnType'],
                 true,
             ],
+            'possiblyUndefinedVariable' => [
+                '<?php
+                    $flag = rand(0, 1);
+                    $otherflag = rand(0, 1);
+                    $yetanotherflag = rand(0, 1);
+
+                    if ($flag) {
+                        if ($otherflag) {
+                            $a = 5;
+                        }
+
+                        echo $a;
+                    }
+
+                    if ($flag) {
+                        if ($yetanotherflag) {
+                            $a = 5;
+                        }
+
+                        echo $a;
+                    }',
+                '<?php
+                    $flag = rand(0, 1);
+                    $otherflag = rand(0, 1);
+                    $yetanotherflag = rand(0, 1);
+
+                    $a = null;
+                    if ($flag) {
+                        if ($otherflag) {
+                            $a = 5;
+                        }
+
+                        echo $a;
+                    }
+
+                    if ($flag) {
+                        if ($yetanotherflag) {
+                            $a = 5;
+                        }
+
+                        echo $a;
+                    }',
+                '5.6',
+                ['PossiblyUndefinedVariable'],
+                true,
+            ],
             'useUnqualifierPlugin' => [
                 '<?php
                     namespace A\B\C {

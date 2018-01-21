@@ -20,6 +20,12 @@ class DoChecker
     ) {
         $do_context = clone $context;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        if ($project_checker->alter_code) {
+            $do_context->branch_point = $do_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
+
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 

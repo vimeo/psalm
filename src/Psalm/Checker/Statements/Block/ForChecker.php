@@ -44,6 +44,12 @@ class ForChecker
 
         $for_context = clone $context;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        if ($project_checker->alter_code) {
+            $for_context->branch_point = $for_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
+
         $loop_scope = new LoopScope($for_context, $context);
 
         $loop_scope->protected_var_ids = array_merge(

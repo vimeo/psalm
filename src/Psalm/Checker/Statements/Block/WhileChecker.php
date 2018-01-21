@@ -33,6 +33,12 @@ class WhileChecker
 
         $while_context = clone $context;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        if ($project_checker->alter_code) {
+            $while_context->branch_point = $while_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
+
         $loop_scope = new LoopScope($while_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 

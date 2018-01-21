@@ -132,7 +132,8 @@ class VariableFetchChecker
                     if (!$statements_checker->hasVariable($var_name)) {
                         $statements_checker->registerVariable(
                             $var_name,
-                            new CodeLocation($statements_checker, $stmt)
+                            new CodeLocation($statements_checker, $stmt),
+                            $context->branch_point
                         );
                     }
                 } elseif (!$context->inside_isset) {
@@ -168,6 +169,18 @@ class VariableFetchChecker
             $first_appearance = $statements_checker->getFirstAppearance($var_name);
 
             if ($first_appearance && !$context->inside_isset) {
+                $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+                if ($project_checker->alter_code) {
+                    $branch_point = $statements_checker->getBranchPoint($var_name);
+
+                    if ($branch_point) {
+                        $statements_checker->addVariableInitialization($var_name, $branch_point);
+                    }
+
+                    return;
+                }
+
                 if ($context->is_global) {
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedGlobalVariable(

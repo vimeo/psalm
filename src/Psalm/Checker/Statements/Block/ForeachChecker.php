@@ -43,6 +43,13 @@ class ForeachChecker
 
         $foreach_context = clone $context;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        if ($project_checker->alter_code) {
+            $foreach_context->branch_point =
+                $foreach_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
+
         $key_type = null;
         $value_type = null;
 
@@ -60,8 +67,6 @@ class ForeachChecker
         } else {
             $iterator_type = null;
         }
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($iterator_type) {
             if ($iterator_type->isNull()) {
@@ -261,7 +266,8 @@ class ForeachChecker
             if (!$statements_checker->hasVariable($key_var_id)) {
                 $statements_checker->registerVariable(
                     $key_var_id,
-                    new CodeLocation($statements_checker, $stmt->keyVar)
+                    new CodeLocation($statements_checker, $stmt->keyVar),
+                    $foreach_context->branch_point
                 );
             }
         }

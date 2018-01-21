@@ -92,6 +92,12 @@ class IfChecker
 
         $if_context = clone $context;
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        if ($project_checker->alter_code) {
+            $if_context->branch_point = $if_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
+
         $if_context->parent_context = $context;
 
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
@@ -281,6 +287,11 @@ class IfChecker
         foreach ($stmt->elseifs as $elseif) {
             $elseif_context = clone $original_context;
 
+            if ($project_checker->alter_code) {
+                $elseif_context->branch_point =
+                    $elseif_context->branch_point ?: (int) $elseif->getAttribute('startFilePos');
+            }
+
             if (self::analyzeElseIfBlock(
                 $statements_checker,
                 $elseif,
@@ -296,6 +307,11 @@ class IfChecker
         // check the else
         if ($stmt->else) {
             $else_context = clone $original_context;
+
+            if ($project_checker->alter_code) {
+                $else_context->branch_point =
+                    $else_context->branch_point ?: (int) $stmt->else->getAttribute('startFilePos');
+            }
 
             if (self::analyzeElseBlock(
                 $statements_checker,
