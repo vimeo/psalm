@@ -449,7 +449,7 @@ class BinaryOpChecker
     }
 
     /**
-     * @param  StatementsSource     $statements_source
+     * @param  StatementsSource|null $statements_source
      * @param  PhpParser\Node\Expr   $left
      * @param  PhpParser\Node\Expr   $right
      * @param  PhpParser\Node        $parent
@@ -458,20 +458,24 @@ class BinaryOpChecker
      * @return void
      */
     public static function analyzeNonDivArithmenticOp(
-        StatementsSource $statements_source,
+        $statements_source,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
         Type\Union &$result_type = null,
         Context $context = null
     ) {
-        $project_checker = $statements_source->getFileChecker()->project_checker;
+        $project_checker = $statements_source
+            ? $statements_source->getFileChecker()->project_checker
+            : null;
 
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
 
-        if ($project_checker->infer_types_from_usage
+        if ($project_checker
+            && $project_checker->infer_types_from_usage
+            && $statements_source
             && $context
             && $left_type
             && $right_type
@@ -491,7 +495,7 @@ class BinaryOpChecker
 
         if ($left_type && $right_type) {
             if ($left_type->isNullable()) {
-                if (IssueBuffer::accepts(
+                if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Left operand cannot be nullable, got ' . $left_type,
                         new CodeLocation($statements_source, $left)
@@ -501,7 +505,7 @@ class BinaryOpChecker
                     // fall through
                 }
             } elseif ($left_type->isNull()) {
-                if (IssueBuffer::accepts(
+                if ($statements_source && IssueBuffer::accepts(
                     new NullOperand(
                         'Left operand cannot be null',
                         new CodeLocation($statements_source, $left)
@@ -515,7 +519,7 @@ class BinaryOpChecker
             }
 
             if ($right_type->isNullable()) {
-                if (IssueBuffer::accepts(
+                if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Right operand cannot be nullable, got ' . $right_type,
                         new CodeLocation($statements_source, $right)
@@ -525,7 +529,7 @@ class BinaryOpChecker
                     // fall through
                 }
             } elseif ($right_type->isNull()) {
-                if (IssueBuffer::accepts(
+                if ($statements_source && IssueBuffer::accepts(
                     new NullOperand(
                         'Right operand cannot be null',
                         new CodeLocation($statements_source, $right)
@@ -547,7 +551,7 @@ class BinaryOpChecker
 
                     if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
                         if ($left_type_part instanceof TMixed) {
-                            if (IssueBuffer::accepts(
+                            if ($statements_source && IssueBuffer::accepts(
                                 new MixedOperand(
                                     'Left operand cannot be mixed',
                                     new CodeLocation($statements_source, $left)
@@ -557,7 +561,7 @@ class BinaryOpChecker
                                 // fall through
                             }
                         } else {
-                            if (IssueBuffer::accepts(
+                            if ($statements_source && IssueBuffer::accepts(
                                 new MixedOperand(
                                     'Right operand cannot be mixed',
                                     new CodeLocation($statements_source, $right)
@@ -582,7 +586,7 @@ class BinaryOpChecker
                             || (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)
                         ) {
                             if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
-                                if (IssueBuffer::accepts(
+                                if ($statements_source && IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add an array to a non-array ' . $left_type_part,
                                         new CodeLocation($statements_source, $left)
@@ -592,7 +596,7 @@ class BinaryOpChecker
                                     // fall through
                                 }
                             } else {
-                                if (IssueBuffer::accepts(
+                                if ($statements_source && IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add an array to a non-array ' . $right_type_part,
                                         new CodeLocation($statements_source, $right)
@@ -662,7 +666,7 @@ class BinaryOpChecker
                             ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
                         ) {
                             if ($config->strict_binary_operands) {
-                                if (IssueBuffer::accepts(
+                                if ($statements_source && IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add ints to floats',
                                         new CodeLocation($statements_source, $parent)
@@ -684,7 +688,7 @@ class BinaryOpChecker
 
                         if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
                             if ($config->strict_binary_operands) {
-                                if (IssueBuffer::accepts(
+                                if ($statements_source && IssueBuffer::accepts(
                                     new InvalidOperand(
                                         'Cannot add numeric types together, please cast explicitly',
                                         new CodeLocation($statements_source, $parent)
@@ -706,7 +710,7 @@ class BinaryOpChecker
 
                         $non_numeric_type = $left_type_part->isNumericType() ? $right_type_part : $left_type_part;
 
-                        if (IssueBuffer::accepts(
+                        if ($statements_source && IssueBuffer::accepts(
                             new InvalidOperand(
                                 'Cannot add a numeric type to a non-numeric type ' . $non_numeric_type,
                                 new CodeLocation($statements_source, $parent)

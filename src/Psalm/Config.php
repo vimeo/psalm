@@ -2,11 +2,11 @@
 namespace Psalm;
 
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
+use Psalm\Scanner\FileScanner;
 use SimpleXMLElement;
 
 class Config
@@ -513,9 +513,13 @@ class Config
     public function initializePlugins(ProjectChecker $project_checker)
     {
         foreach ($this->filetype_handlers as &$path) {
-            $project_checker->file_storage_provider->create($path);
-            $plugin_file_checker = new FileChecker($path, $project_checker);
-            $plugin_file_checker->scan();
+            $storage = $project_checker->file_storage_provider->create($path);
+            $plugin_file_scanner = new FileScanner($path, $this->shortenFileName($path), false);
+            $plugin_file_scanner->scan(
+                $project_checker,
+                $project_checker->getStatementsForFile($path),
+                $storage
+            );
 
             $declared_classes = ClassLikeChecker::getClassesForFile($project_checker, $path);
 
@@ -651,23 +655,28 @@ class Config
     {
         $project_checker->register_global_functions = true;
 
-        $generic_stubs = realpath(__DIR__ . '/Stubs/CoreGenericFunctions.php');
+        $generic_stubs_path = realpath(__DIR__ . '/Stubs/CoreGenericFunctions.php');
 
-        if ($generic_stubs) {
-            $generic_stub_checker = new FileChecker(
-                $generic_stubs,
-                $project_checker
-            );
-            $project_checker->file_storage_provider->create($generic_stubs);
-            $generic_stub_checker->scan();
-        } else {
+        if (!$generic_stubs_path) {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
-        foreach ($this->stub_files as $stub_file) {
-            $stub_checker = new FileChecker($stub_file, $project_checker);
-            $project_checker->file_storage_provider->create($stub_file);
-            $stub_checker->scan();
+        $file_storage = $project_checker->file_storage_provider->create($generic_stubs_path);
+        $file_to_scan = new FileScanner($generic_stubs_path, $this->shortenFileName($generic_stubs_path), false);
+        $file_to_scan->scan(
+            $project_checker,
+            $project_checker->getStatementsForFile($generic_stubs_path),
+            $file_storage
+        );
+
+        foreach ($this->stub_files as $stub_file_path) {
+            $file_storage = $project_checker->file_storage_provider->create($stub_file_path);
+            $file_to_scan = new FileScanner($stub_file_path, $this->shortenFileName($stub_file_path), false);
+            $file_to_scan->scan(
+                $project_checker,
+                $project_checker->getStatementsForFile($stub_file_path),
+                $file_storage
+            );
         }
 
         $project_checker->register_global_functions = false;
@@ -771,9 +780,13 @@ class Config
                     continue;
                 }
 
-                $file_checker = new FileChecker($file_path, $project_checker);
-                $project_checker->file_storage_provider->create($file_path);
-                $file_checker->scan();
+                $file_storage = $project_checker->file_storage_provider->create($file_path);
+                $file_to_scan = new FileScanner($file_path, $this->shortenFileName($file_path), false);
+                $file_to_scan->scan(
+                    $project_checker,
+                    $project_checker->getStatementsForFile($file_path),
+                    $file_storage
+                );
             }
         }
 

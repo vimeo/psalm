@@ -50,17 +50,6 @@ class TestCase extends BaseTestCase
     }
 
     /**
-     * @return void
-     */
-    public function tearDown()
-    {
-        if ($this->project_checker) {
-            $this->project_checker->classlike_storage_provider->deleteAll();
-            $this->project_checker->file_storage_provider->deleteAll();
-        }
-    }
-
-    /**
      * @param string $file_path
      * @param string $contents
      *
@@ -80,7 +69,8 @@ class TestCase extends BaseTestCase
      */
     public function analyzeFile($file_path, Context $context)
     {
-        $file_checker = new FileChecker($file_path, $this->project_checker);
+        $config = $this->project_checker->getConfig();
+        $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
         $this->project_checker->registerAnalyzableFile($file_path);
         $this->project_checker->scanFiles();
         $file_checker->analyze($context);

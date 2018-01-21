@@ -28,6 +28,9 @@ class Php56Test extends TestCase
                         const ONE_THIRD = self::ONE / self::THREE;
                         const SENTENCE = "The value of THREE is " . self::THREE;
 
+                        /** @var int */
+                        public $four = self::ONE + self::THREE;
+
                         /**
                          * @param  int $a
                          * @return int
@@ -42,7 +45,8 @@ class Php56Test extends TestCase
                     $c3 = C::THREE;
                     $c1_3rd = C::ONE_THIRD;
                     $c_sentence = C::SENTENCE;
-                    $cf = (new C)->f();',
+                    $cf = (new C)->f();
+                    $c4 = (new C)->four',
                 'assertions' => [
                     '$c1' => 'int',
                     '$c2' => 'int',
@@ -50,6 +54,7 @@ class Php56Test extends TestCase
                     '$c1_3rd' => 'float|int',
                     '$c_sentence' => 'string',
                     '$cf' => 'int',
+                    '$c4' => 'int',
                 ],
             ],
             'constFeatures' => [

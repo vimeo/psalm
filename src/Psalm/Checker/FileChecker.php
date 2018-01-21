@@ -2,7 +2,6 @@
 namespace Psalm\Checker;
 
 use PhpParser;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\IssueBuffer;
@@ -74,36 +73,15 @@ class FileChecker extends SourceChecker implements StatementsSource
     public $project_checker;
 
     /**
-     * @var bool
+     * @param string  $file_path
+     * @param string  $file_name
+     * @param ProjectChecker  $project_checker
      */
-    public $will_analyze;
-
-    /**
-     * @param string                                $file_path
-     * @param ProjectChecker                        $project_checker
-     * @param bool                                  $will_analyze
-     */
-    public function __construct(
-        $file_path,
-        ProjectChecker $project_checker,
-        $will_analyze = true
-    ) {
-        $this->file_path = $file_path;
-        $this->file_name = Config::getInstance()->shortenFileName($this->file_path);
-        $this->project_checker = $project_checker;
-        $this->will_analyze = $will_analyze;
-    }
-
-    /**
-     * @return  void
-     */
-    public function scan()
+    public function __construct(ProjectChecker $project_checker, $file_path, $file_name)
     {
-        $stmts = $this->getStatements();
-
-        $traverser = new PhpParser\NodeTraverser();
-        $traverser->addVisitor(new \Psalm\Visitor\DependencyFinderVisitor($this->project_checker, $this));
-        $traverser->traverse($stmts);
+        $this->file_path = $file_path;
+        $this->file_name = $file_name;
+        $this->project_checker = $project_checker;
     }
 
     /**
@@ -131,9 +109,9 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $this->context->is_global = true;
 
-        $config = Config::getInstance();
+        $config = $this->project_checker->getConfig();
 
-        $stmts = $this->getStatements();
+        $stmts = $this->project_checker->getStatementsForFile($this->file_path);
 
         $statements_checker = new StatementsChecker($this);
 
@@ -171,8 +149,6 @@ class FileChecker extends SourceChecker implements StatementsSource
             $class_checker->analyze(null, $this->context);
         }
 
-        $config = Config::getInstance();
-
         foreach ($this->function_checkers as $function_checker) {
             $function_context = new Context($this->context->self);
             $function_context->collect_references = $this->project_checker->collect_references;
@@ -193,7 +169,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $return_type_location = $function_storage->return_type_location;
 
                     $function_checker->verifyReturnType(
-                        $statements_checker->getFileChecker()->project_checker,
+                        $this->project_checker,
                         $return_type,
                         null,
                         $return_type_location
@@ -357,14 +333,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return array<int, \PhpParser\Node\Stmt>
-     */
-    public function getStatements()
-    {
-        return $this->project_checker->getStatementsForFile($this->file_path);
-    }
-
-    /**
      * @return ?string
      */
     public function getNamespace()
@@ -397,6 +365,8 @@ class FileChecker extends SourceChecker implements StatementsSource
         IssueBuffer::clearCache();
         FileManipulationBuffer::clearCache();
         FunctionLikeChecker::clearCache();
+        \Psalm\Provider\ClassLikeStorageProvider::deleteAll();
+        \Psalm\Provider\FileStorageProvider::deleteAll();
     }
 
     /**

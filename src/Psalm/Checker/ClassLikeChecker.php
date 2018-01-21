@@ -92,13 +92,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     protected static $property_map;
 
     /**
-     * A lookup table of cached TraitCheckers
-     *
-     * @var array<string, TraitChecker>
-     */
-    public static $trait_checkers;
-
-    /**
      * A lookup table of cached ClassCheckers
      *
      * @var array<string, ClassChecker>
@@ -173,8 +166,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name) === strtolower($method_name)
             ) {
-                $project_checker = $this->getFileChecker()->project_checker;
-
                 $method_id = $this->fq_class_name . '::' . $stmt->name;
 
                 if ($project_checker->canCache() && isset($project_checker->method_checkers[$method_id])) {
@@ -195,13 +186,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source->getAliases()
                     );
 
-                    if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
-                        throw new \UnexpectedValueException(
-                            'Expecting trait statements to exist for ' . $fq_trait_name
-                        );
-                    }
-
-                    $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
+                    $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
+                    $trait_node = $project_checker->getTraitNode($fq_trait_name);
+                    $trait_aliases = $project_checker->getTraitAliases($fq_trait_name);
+                    $trait_checker = new TraitChecker(
+                        $trait_node,
+                        $trait_file_checker,
+                        $fq_trait_name,
+                        $trait_aliases
+                    );
 
                     foreach ($trait_checker->class->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
@@ -1113,9 +1106,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public static function clearCache()
     {
         self::$file_classes = [];
-
-        self::$trait_checkers = [];
-
         self::$class_checkers = [];
     }
 }

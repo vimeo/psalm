@@ -584,10 +584,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return null;
             }
 
-            if (!$statements_source) {
-                return null;
-            }
-
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod ||

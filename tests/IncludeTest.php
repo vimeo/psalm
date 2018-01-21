@@ -22,8 +22,10 @@ class IncludeTest extends TestCase
 
         $this->project_checker->scanFiles();
 
-        foreach ($files_to_check as $filename) {
-            $file_checker = new FileChecker($filename, $this->project_checker);
+        $config = $this->project_checker->getConfig();
+
+        foreach ($files_to_check as $file_path) {
+            $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
             $file_checker->analyze();
         }
     }
@@ -49,8 +51,10 @@ class IncludeTest extends TestCase
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
-        foreach ($files_to_check as $filename) {
-            $file_checker = new FileChecker($filename, $this->project_checker);
+        $config = $this->project_checker->getConfig();
+
+        foreach ($files_to_check as $file_path) {
+            $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
             $file_checker->analyze();
         }
     }

@@ -6,8 +6,8 @@ use Psalm\ClassLikeDocblockComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\FileSource;
 use Psalm\FunctionDocblockComment;
-use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\VarDocblockComment;
 
@@ -17,7 +17,6 @@ class CommentChecker
 
     /**
      * @param  string           $comment
-     * @param  StatementsSource $source
      * @param  Aliases          $aliases
      * @param  array<string, string>|null   $template_types
      * @param  int|null         $var_line_number
@@ -30,7 +29,7 @@ class CommentChecker
      */
     public static function getTypeFromComment(
         $comment,
-        StatementsSource $source,
+        FileSource $source,
         Aliases $aliases,
         array $template_types = null,
         $var_line_number = null,

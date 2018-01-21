@@ -56,7 +56,7 @@ class FileStorageProvider
     /**
      * @return void
      */
-    public function deleteAll()
+    public static function deleteAll()
     {
         self::$storage = [];
     }

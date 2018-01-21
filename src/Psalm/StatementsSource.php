@@ -3,7 +3,7 @@ namespace Psalm;
 
 use Psalm\Checker\FileChecker;
 
-interface StatementsSource
+interface StatementsSource extends FileSource
 {
     /**
      * @return ?string
@@ -39,26 +39,6 @@ interface StatementsSource
      * @return string|null
      */
     public function getParentFQCLN();
-
-    /**
-     * @return string
-     */
-    public function getFileName();
-
-    /**
-     * @return string
-     */
-    public function getFilePath();
-
-    /**
-     * @return string
-     */
-    public function getCheckedFileName();
-
-    /**
-     * @return string
-     */
-    public function getCheckedFilePath();
 
     /**
      * @return bool

@@ -404,6 +404,38 @@ class ConfigTest extends TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedFunction - /src/somefile.php:2 - Function barBar does not exist
+     *
+     * @return                   void
+     */
+    public function testNoStubFunction()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                'psalm.xml',
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo barBar("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @return void
      */
     public function testNamespacedStubFunction()

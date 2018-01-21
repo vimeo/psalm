@@ -54,7 +54,8 @@
             <xs:element name="extension" maxOccurs="unbounded">
                 <xs:complexType>
                     <xs:attribute name="name" type="xs:string" use="required" />
-                    <xs:attribute name="filetypeHandler" type="xs:string" />
+                    <xs:attribute name="scanner" type="xs:string" />
+                    <xs:attribute name="checker" type="xs:string" />
                 </xs:complexType>
             </xs:element>
         </xs:sequence>

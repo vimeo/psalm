@@ -67,15 +67,13 @@ class CodeLocation
     const FUNCTION_PARAM_VAR = 5;
 
     /**
-     * @param StatementsSource $statements_source
-     * @param \PhpParser\Node  $stmt
      * @param bool             $single_line
      * @param ?int             $regex_type
      * @param ?CodeLocation    $previous_location
      * @param ?string          $selected_text
      */
     public function __construct(
-        StatementsSource $statements_source,
+        FileSource $file_source,
         \PhpParser\Node $stmt,
         CodeLocation $previous_location = null,
         $single_line = false,
@@ -84,8 +82,8 @@ class CodeLocation
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
-        $this->file_path = $statements_source->getCheckedFilePath();
-        $this->file_name = $statements_source->getCheckedFileName();
+        $this->file_path = $file_source->getCheckedFilePath();
+        $this->file_name = $file_source->getCheckedFileName();
         $this->single_line = $single_line;
         $this->regex_type = $regex_type;
         $this->previous_location = $previous_location;

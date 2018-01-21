@@ -444,15 +444,17 @@ class ClassChecker extends ClassLikeChecker
                             continue;
                         }
 
-                        if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
-                            throw new \UnexpectedValueException(
-                                'Expecting trait statements to exist for ' . $fq_trait_name
-                            );
-                        }
+                        $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
+                        $trait_node = $project_checker->getTraitNode($fq_trait_name);
+                        $trait_aliases = $project_checker->getTraitAliases($fq_trait_name);
+                        $trait_checker = new TraitChecker(
+                            $trait_node,
+                            $trait_file_checker,
+                            $fq_trait_name,
+                            $trait_aliases
+                        );
 
-                        $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
-
-                        foreach ($trait_checker->class->stmts as $trait_stmt) {
+                        foreach ($trait_node->stmts as $trait_stmt) {
                             if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                                 $trait_method_checker = $this->analyzeClassMethod(
                                     $trait_stmt,
@@ -664,15 +666,9 @@ class ClassChecker extends ClassLikeChecker
                         $this->source->getAliases()
                     );
 
-                    if (!isset(self::$trait_checkers[strtolower($fq_trait_name)])) {
-                        throw new \UnexpectedValueException(
-                            'Expecting trait statements to exist for ' . $fq_trait_name
-                        );
-                    }
+                    $trait_node = $project_checker->getTraitNode($fq_trait_name);
 
-                    $trait_checker = self::$trait_checkers[strtolower($fq_trait_name)];
-
-                    foreach ($trait_checker->class->stmts as $trait_stmt) {
+                    foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
                             $this->checkForMissingPropertyType($project_checker, $trait_stmt);
                         }

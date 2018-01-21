@@ -16,47 +16,10 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
-    public function scan()
-    {
-        $stmts = $this->getStatements();
-
-        if (empty($stmts)) {
-            return;
-        }
-
-        $first_stmt = $stmts[0];
-
-        if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-            $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
-
-            if (isset($comment_block['specials']['variablesfrom'])) {
-                $variables_from = trim($comment_block['specials']['variablesfrom'][0]);
-
-                $first_line_regex = '/([A-Za-z\\\0-9]+::[a-z_A-Z]+)(\s+weak)?/';
-
-                $matches = [];
-
-                if (!preg_match($first_line_regex, $variables_from, $matches)) {
-                    throw new \InvalidArgumentException('Could not interpret doc comment correctly');
-                }
-
-                /** @psalm-suppress MixedArgument */
-                list($fq_class_name, $method_name) = explode('::', $matches[1]);
-
-                $this->project_checker->queueClassLikeForScanning($fq_class_name, $this->file_path, true);
-            }
-        }
-
-        $this->project_checker->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
-
-        parent::scan();
-    }
-
     public function analyze(Context $context = null, $update_docblocks = false)
     {
         $this->project_checker->enableCache();
-
-        $stmts = $this->getStatements();
+        $stmts = $this->project_checker->getStatementsForFile($this->file_path);
 
         if (empty($stmts)) {
             return;
@@ -102,7 +65,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
             ]);
         }
 
-        $this->checkWithViewClass($this_params);
+        $this->checkWithViewClass($this_params, $stmts);
 
         $this->project_checker->disableCache();
     }
@@ -158,13 +121,12 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
     /**
      * @param  Context $context
+     * @param  array<PhpParser\Node\Stmt> $stmts
      *
      * @return void
      */
-    protected function checkWithViewClass(Context $context)
+    protected function checkWithViewClass(Context $context, array $stmts)
     {
-        $stmts = $this->getStatements();
-
         $pseudo_method_stmts = [];
 
         foreach ($stmts as $stmt) {

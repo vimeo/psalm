@@ -28,7 +28,7 @@ class TypeReconciliationTest extends TestCase
     {
         parent::setUp();
 
-        $this->file_checker = new FileChecker('somefile.php', $this->project_checker);
+        $this->file_checker = new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
         $this->file_checker->context = new Context();
         $this->statements_checker = new StatementsChecker($this->file_checker);
     }

@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
-use Psalm\Checker\FileChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -71,12 +70,12 @@ class IncludeChecker
 
             if ($current_file_checker->project_checker->fileExists($path_to_file)) {
                 if (is_subclass_of($current_file_checker, 'Psalm\\Checker\\FileChecker')) {
-                    $include_file_checker = new FileChecker(
-                        $path_to_file,
-                        $current_file_checker->project_checker,
-                        false
+                    $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+                    $statements_checker->analyze(
+                        $project_checker->getStatementsForFile($path_to_file),
+                        $context
                     );
-                    $statements_checker->analyze($include_file_checker->getStatements(), $context);
                 }
 
                 return null;

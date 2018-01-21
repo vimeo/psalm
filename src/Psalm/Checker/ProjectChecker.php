@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Checker;
 
+use PhpParser;
+use Psalm\Aliases;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation\FileManipulationBuffer;
@@ -19,6 +21,7 @@ use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\ParserCacheProvider;
 use Psalm\Provider\StatementsProvider;
+use Psalm\Scanner\FileScanner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -269,6 +272,16 @@ class ProjectChecker
      * @var bool
      */
     public $only_replace_php_types_with_non_docblock_types = false;
+
+    /**
+     * @var array<string, PhpParser\Node\Stmt\Trait_>
+     */
+    private $trait_nodes = [];
+
+    /**
+     * @var array<string, Aliases>
+     */
+    private $trait_aliases = [];
 
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
@@ -951,7 +964,7 @@ class ProjectChecker
              * @psalm-suppress UnusedParam
              */
             function ($i, $file_path) use ($filetype_handlers) {
-                $file_checker = $this->getFile($file_path, $filetype_handlers, true);
+                $file_checker = $this->getFile($file_path, $filetype_handlers);
 
                 if ($this->debug_output) {
                     echo 'Analyzing ' . $file_checker->getFilePath() . PHP_EOL;
@@ -1467,15 +1480,17 @@ class ProjectChecker
      *
      * @return FileChecker
      */
-    private function getFile($file_path, array $filetype_handlers, $will_analyze = false)
+    private function getFile($file_path, array $filetype_handlers)
     {
         $extension = (string)pathinfo($file_path)['extension'];
 
+        $file_name = $this->config->shortenFileName($file_path);
+
         if (isset($filetype_handlers[$extension])) {
             /** @var FileChecker */
-            $file_checker = new $filetype_handlers[$extension]($file_path, $this);
+            $file_checker = new $filetype_handlers[$extension]($this, $file_path, $file_name);
         } else {
-            $file_checker = new FileChecker($file_path, $this, $will_analyze);
+            $file_checker = new FileChecker($this, $file_path, $file_name);
         }
 
         if ($this->debug_output) {
@@ -1490,7 +1505,7 @@ class ProjectChecker
      * @param  array  $filetype_handlers
      * @param  bool   $will_analyze
      *
-     * @return FileChecker
+     * @return FileScanner
      */
     private function scanFile($file_path, array $filetype_handlers, $will_analyze = false)
     {
@@ -1498,11 +1513,13 @@ class ProjectChecker
         $file_name_parts = explode('.', array_pop($path_parts));
         $extension = count($file_name_parts) > 1 ? array_pop($file_name_parts) : null;
 
+        $file_name = $this->config->shortenFileName($file_path);
+
         if (isset($filetype_handlers[$extension])) {
-            /** @var FileChecker */
-            $file_checker = new $filetype_handlers[$extension]($file_path, $this);
+            /** @var FileScanner */
+            $file_scanner = new $filetype_handlers[$extension]($file_path, $file_name, $will_analyze);
         } else {
-            $file_checker = new FileChecker($file_path, $this, $will_analyze);
+            $file_scanner = new FileScanner($file_path, $file_name, $will_analyze);
         }
 
         if (isset($this->scanned_files[$file_path])) {
@@ -1521,9 +1538,13 @@ class ProjectChecker
 
         $this->scanned_files[$file_path] = true;
 
-        $file_checker->scan();
+        $file_scanner->scan(
+            $this,
+            $this->getStatementsForFile($file_path),
+            $this->file_storage_provider->create($file_path)
+        );
 
-        return $file_checker;
+        return $file_scanner;
     }
 
     /**
@@ -1664,7 +1685,7 @@ class ProjectChecker
             $file_checker = $this->getFileCheckerForClassLike($appearing_fq_class_name);
         }
 
-        $stmts = $file_checker->getStatements();
+        $stmts = $this->getStatementsForFile($file_checker->getFilePath());
 
         $file_checker->populateCheckers($stmts);
 
@@ -1681,7 +1702,7 @@ class ProjectChecker
      *
      * @return FileChecker
      */
-    private function getFileCheckerForClassLike($fq_class_name)
+    public function getFileCheckerForClassLike($fq_class_name)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -1700,7 +1721,9 @@ class ProjectChecker
             return $this->file_checkers[$file_path];
         }
 
-        $file_checker = new FileChecker($file_path, $this, true);
+        $file_name = $this->config->shortenFileName($file_path);
+
+        $file_checker = new FileChecker($this, $file_path, $file_name);
 
         if ($this->cache) {
             $this->file_checkers[$file_path] = $file_checker;
@@ -2058,5 +2081,53 @@ class ProjectChecker
     public function getIssuesToFix()
     {
         return $this->issues_to_fix;
+    }
+
+    /**
+     * @param  string $fq_trait_name
+     *
+     * @return void
+     */
+    public function addTraitNode($fq_trait_name, PhpParser\Node\Stmt\Trait_ $node, Aliases $aliases)
+    {
+        $fq_trait_name_lc = strtolower($fq_trait_name);
+        $this->trait_nodes[$fq_trait_name_lc] = $node;
+        $this->trait_aliases[$fq_trait_name_lc] = $aliases;
+    }
+
+    /**
+     * @param  string $fq_trait_name
+     *
+     * @return PhpParser\Node\Stmt\Trait_
+     */
+    public function getTraitNode($fq_trait_name)
+    {
+        $fq_trait_name_lc = strtolower($fq_trait_name);
+
+        if (isset($this->trait_nodes[$fq_trait_name_lc])) {
+            return $this->trait_nodes[$fq_trait_name_lc];
+        }
+
+        throw new \UnexpectedValueException(
+            'Expecting trait statements to exist for ' . $fq_trait_name
+        );
+    }
+
+    /**
+     * @param  string $fq_trait_name
+     *
+     * @return Aliases
+     */
+    public function getTraitAliases($fq_trait_name)
+    {
+        $fq_trait_name_lc = strtolower($fq_trait_name);
+
+        if (isset($this->trait_aliases[$fq_trait_name_lc])) {
+            return $this->trait_aliases[$fq_trait_name_lc];
+        }
+
+        throw new \UnexpectedValueException(
+            'Expecting trait aliases to exist for ' . $fq_trait_name
+        );
     }
 }
