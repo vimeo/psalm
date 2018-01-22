@@ -82,6 +82,15 @@ class MethodCallTest extends TestCase
                     '$b' => 'DateTimeImmutable',
                 ],
             ],
+            'magicCall' => [
+                '<?php
+                    class A {
+                        public function __call(string $method_name) {}
+                    }
+
+                    $a = new A;
+                    $a->bar();',
+            ],
         ];
     }
 
@@ -211,6 +220,21 @@ class MethodCallTest extends TestCase
                     $foo = "A";
                     $b = $foo::bar();',
                 'error_message' => 'MixedAssignment',
+            ],
+            'possiblyNullFunctionCall' => [
+                '<?php
+                    $this->foo();',
+                'error_message' => 'InvalidScope',
+            ],
+            'possiblyFalseReference' => [
+                '<?php
+                    class A {
+                        public function bar(): void {}
+                    }
+
+                    $a = rand(0, 1) ? new A : false;
+                    $a->bar();',
+                'error_message' => 'PossiblyFalseReference',
             ],
         ];
     }

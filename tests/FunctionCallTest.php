@@ -556,6 +556,18 @@ class FunctionCallTest extends TestCase
                     a(["a" => "hello"]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'possiblyNullFunctionCall' => [
+                '<?php
+                    $a = rand(0, 1) ? function(): void {} : null;
+                    $a();',
+                'error_message' => 'PossiblyNullFunctionCall',
+            ],
+            'possiblyInvalidFunctionCall' => [
+                '<?php
+                    $a = rand(0, 1) ? function(): void {} : "hello";
+                    $a();',
+                'error_message' => 'PossiblyInvalidFunctionCall',
+            ],
         ];
     }
 }
