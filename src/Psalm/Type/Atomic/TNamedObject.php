@@ -60,7 +60,7 @@ class TNamedObject extends Atomic
         $class_name = array_pop($class_parts);
 
         if ($this->value === $this_class) {
-            return $class_name;
+            return 'self';
         }
 
         if ($namespace && preg_match('/^' . preg_quote($namespace) . '\\\\' . $class_name . '$/i', $this->value)) {

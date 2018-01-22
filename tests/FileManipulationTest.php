@@ -415,6 +415,42 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 false,
             ],
+            'addSelfReturnType' => [
+                '<?php
+                    class A {
+                        public function foo() {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        public function foo(): self {
+                            return $this;
+                        }
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'dontAddMissingVoidReturnType56' => [
+                '<?php
+                    /** @return void */
+                    function foo() { }
+
+                    function bar() {
+                        return foo();
+                    }',
+                '<?php
+                    /** @return void */
+                    function foo() { }
+
+                    function bar() {
+                        return foo();
+                    }',
+                '5.6',
+                ['MissingReturnType'],
+                true,
+            ],
             'fixInvalidIntReturnType56' => [
                 '<?php
                     /**

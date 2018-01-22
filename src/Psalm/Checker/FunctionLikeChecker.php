@@ -1258,7 +1258,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 if ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['MissingClosureReturnType'])
                 ) {
-                    if ($inferred_return_type->isMixed()) {
+                    if ($inferred_return_type->isMixed() || $inferred_return_type->isNull()) {
                         return null;
                     }
 
@@ -1288,7 +1288,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             if ($project_checker->alter_code
                 && isset($project_checker->getIssuesToFix()['MissingReturnType'])
             ) {
-                if ($inferred_return_type->isMixed()) {
+                if ($inferred_return_type->isMixed() || $inferred_return_type->isNull()) {
                     return null;
                 }
 
@@ -1383,6 +1383,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ) {
                 if ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['InvalidNullableReturnType'])
+                    && !$inferred_return_type->isNull()
                 ) {
                     $this->addOrUpdateReturnType(
                         $project_checker,
