@@ -171,17 +171,21 @@ class VariableFetchChecker
             if ($first_appearance && !$context->inside_isset) {
                 $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-                if ($project_checker->alter_code) {
-                    $branch_point = $statements_checker->getBranchPoint($var_name);
+                if ($context->is_global) {
+                    if ($project_checker->alter_code) {
+                        if (!isset($project_checker->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
+                            return;
+                        }
 
-                    if ($branch_point) {
-                        $statements_checker->addVariableInitialization($var_name, $branch_point);
+                        $branch_point = $statements_checker->getBranchPoint($var_name);
+
+                        if ($branch_point) {
+                            $statements_checker->addVariableInitialization($var_name, $branch_point);
+                        }
+
+                        return;
                     }
 
-                    return;
-                }
-
-                if ($context->is_global) {
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedGlobalVariable(
                             'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
@@ -193,6 +197,20 @@ class VariableFetchChecker
                         return false;
                     }
                 } else {
+                    if ($project_checker->alter_code) {
+                        if (!isset($project_checker->getIssuesToFix()['PossiblyUndefinedVariable'])) {
+                            return;
+                        }
+
+                        $branch_point = $statements_checker->getBranchPoint($var_name);
+
+                        if ($branch_point) {
+                            $statements_checker->addVariableInitialization($var_name, $branch_point);
+                        }
+
+                        return;
+                    }
+
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ', first seen on line ' .

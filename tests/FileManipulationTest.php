@@ -668,7 +668,7 @@ class FileManipulationTest extends TestCase
                         echo $a;
                     }',
                 '5.6',
-                ['PossiblyUndefinedVariable'],
+                ['PossiblyUndefinedGlobalVariable'],
                 true,
             ],
             'twoPossiblyUndefinedVariables' => [
@@ -691,7 +691,7 @@ class FileManipulationTest extends TestCase
                     echo $a;
                     echo $b;',
                 '5.6',
-                ['PossiblyUndefinedVariable'],
+                ['PossiblyUndefinedGlobalVariable'],
                 true,
             ],
             'possiblyUndefinedVariableInElse' => [
@@ -713,7 +713,7 @@ class FileManipulationTest extends TestCase
 
                     echo $a;',
                 '5.6',
-                ['PossiblyUndefinedVariable'],
+                ['PossiblyUndefinedGlobalVariable'],
                 true,
             ],
             'useUnqualifierPlugin' => [
