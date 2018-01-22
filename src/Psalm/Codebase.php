@@ -7,6 +7,7 @@ use Psalm\Checker\FileChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\FileManipulation\FileManipulation;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\CircularReference;
@@ -913,9 +914,25 @@ class Codebase
 
         $other_manipulations = FileManipulationBuffer::getForFile($file_path);
 
-        $file_manipulations = $new_return_type_manipulations + $other_manipulations;
+        $file_manipulations = array_merge($new_return_type_manipulations, $other_manipulations);
 
-        krsort($file_manipulations);
+        usort(
+            $file_manipulations,
+            /**
+             * @return int
+             */
+            function (FileManipulation $a, FileManipulation $b) {
+                if ($a->start === $b->start) {
+                    if ($b->end === $a->end) {
+                        return 0;
+                    }
+
+                    return $b->end > $a->end ? 1 : -1;
+                }
+
+                return $b->start > $a->start ? 1 : -1;
+            }
+        );
 
         $docblock_update_count = count($file_manipulations);
 

@@ -671,6 +671,29 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUndefinedVariable'],
                 true,
             ],
+            'possiblyUndefinedVariable' => [
+                '<?php
+                    if (rand(0, 1)) {
+                      $a = 1;
+                      $b = 2;
+                    }
+
+                    echo $a;
+                    echo $b;',
+                '<?php
+                    $b = null;
+                    $a = null;
+                    if (rand(0, 1)) {
+                      $a = 1;
+                      $b = 2;
+                    }
+
+                    echo $a;
+                    echo $b;',
+                '5.6',
+                ['PossiblyUndefinedVariable'],
+                true,
+            ],
             'useUnqualifierPlugin' => [
                 '<?php
                     namespace A\B\C {

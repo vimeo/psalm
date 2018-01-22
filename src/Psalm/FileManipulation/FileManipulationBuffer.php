@@ -30,13 +30,7 @@ class FileManipulationBuffer
             return [];
         }
 
-        $file_manipulations = [];
-
-        foreach (self::$file_manipulations[$file_path] as $file_manipulation) {
-            $file_manipulations[$file_manipulation->start] = $file_manipulation;
-        }
-
-        return $file_manipulations;
+        return self::$file_manipulations[$file_path];
     }
 
     /**
