@@ -250,7 +250,7 @@ class Codebase
         self::$stubbed_functions = [];
         self::$stubbed_constants = [];
 
-        $this->reflection = new Codebase\Reflection($classlike_storage_provider, $this);
+        $this->reflection = new CodeBase\Reflection($classlike_storage_provider, $this);
 
         $this->collectPredefinedClassLikes();
     }
