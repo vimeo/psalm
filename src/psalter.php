@@ -102,6 +102,10 @@ requireAutoloaders($current_dir, isset($options['r']));
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
+if ($paths_to_check && count($paths_to_check) > 1) {
+    die('Psalter can currently only be run on one path at a time' . PHP_EOL);
+}
+
 $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
 if ($path_to_config === false) {
