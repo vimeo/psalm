@@ -289,7 +289,7 @@ class IfChecker
 
             if ($project_checker->alter_code) {
                 $elseif_context->branch_point =
-                    $elseif_context->branch_point ?: (int) $elseif->getAttribute('startFilePos');
+                    $elseif_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
             }
 
             if (self::analyzeElseIfBlock(
@@ -310,7 +310,7 @@ class IfChecker
 
             if ($project_checker->alter_code) {
                 $else_context->branch_point =
-                    $else_context->branch_point ?: (int) $stmt->else->getAttribute('startFilePos');
+                    $else_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
             }
 
             if (self::analyzeElseBlock(
