@@ -671,7 +671,7 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUndefinedVariable'],
                 true,
             ],
-            'possiblyUndefinedVariable' => [
+            'twoPossiblyUndefinedVariables' => [
                 '<?php
                     if (rand(0, 1)) {
                       $a = 1;
