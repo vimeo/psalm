@@ -262,6 +262,43 @@ class UnusedCodeTest extends TestCase
                     new A();',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
+            'possiblyUnusedParam' => [
+                '<?php
+                    class A {
+                        /** @return void */
+                        public function foo(int $i) {}
+                    }
+
+                    (new A)->foo(4);',
+                'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unusedParam' => [
+                '<?php
+                    function foo(int $i) {}
+
+                    foo(4);',
+                'error_message' => 'UnusedParam',
+            ],
+            'possiblyUnusedProperty' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+                    }
+
+                    $a = new A();',
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'unusedProperty' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        private $foo = "hello";
+                    }
+
+                    $a = new A();',
+                'error_message' => 'UnusedProperty',
+            ],
             'privateUnusedMethod' => [
                 '<?php
                     class A {
