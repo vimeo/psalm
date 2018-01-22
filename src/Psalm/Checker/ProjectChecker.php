@@ -141,7 +141,6 @@ class ProjectChecker
      * @param int           $threads
      * @param bool          $debug_output
      * @param bool          $collect_references
-     * @param string        $find_references_to
      * @param string        $reports
      */
     public function __construct(
@@ -154,7 +153,6 @@ class ProjectChecker
         $threads = 1,
         $debug_output = false,
         $collect_references = false,
-        $find_references_to = null,
         $reports = null
     ) {
         $this->file_provider = $file_provider;
@@ -163,7 +161,6 @@ class ProjectChecker
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
         $this->threads = $threads;
-        $this->find_references_to = $find_references_to;
         $this->config = $config;
 
         $this->file_storage_provider = new FileStorageProvider();
@@ -293,45 +290,55 @@ class ProjectChecker
         if ($is_diff) {
             $this->cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
         }
+    }
 
-        if ($this->codebase->collect_references) {
-            if ($this->find_references_to) {
-                if (strpos($this->find_references_to, '::') !== false) {
-                    $locations_by_files = $this->codebase->findReferencesToMethod($this->find_references_to);
-                } else {
-                    $locations_by_files = $this->codebase->findReferencesToClassLike($this->find_references_to);
+    /**
+     * @return void
+     */
+    public function checkClassReferences()
+    {
+        if (!$this->codebase->collect_references) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        $this->codebase->checkClassReferences();
+    }
+
+    /**
+     * @param  string $symbol
+     *
+     * @return void
+     */
+    public function findReferencesTo($symbol)
+    {
+        $locations_by_files = $this->codebase->findReferencesToSymbol($symbol);
+
+        foreach ($locations_by_files as $locations) {
+            $bounds_starts = [];
+
+            foreach ($locations as $location) {
+                $snippet = $location->getSnippet();
+
+                $snippet_bounds = $location->getSnippetBounds();
+                $selection_bounds = $location->getSelectionBounds();
+
+                if (isset($bounds_starts[$selection_bounds[0]])) {
+                    continue;
                 }
 
-                foreach ($locations_by_files as $locations) {
-                    $bounds_starts = [];
+                $bounds_starts[$selection_bounds[0]] = true;
 
-                    foreach ($locations as $location) {
-                        $snippet = $location->getSnippet();
+                $selection_start = $selection_bounds[0] - $snippet_bounds[0];
+                $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
-                        $snippet_bounds = $location->getSnippetBounds();
-                        $selection_bounds = $location->getSelectionBounds();
-
-                        if (isset($bounds_starts[$selection_bounds[0]])) {
-                            continue;
-                        }
-
-                        $bounds_starts[$selection_bounds[0]] = true;
-
-                        $selection_start = $selection_bounds[0] - $snippet_bounds[0];
-                        $selection_length = $selection_bounds[1] - $selection_bounds[0];
-
-                        echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
-                            (
-                                $this->use_color
-                                ? substr($snippet, 0, $selection_start) .
-                                "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
-                                "\e[0m" . substr($snippet, $selection_length + $selection_start)
-                                : $snippet
-                            ) . PHP_EOL . PHP_EOL;
-                    }
-                }
-            } else {
-                $this->codebase->checkClassReferences();
+                echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
+                    (
+                        $this->use_color
+                        ? substr($snippet, 0, $selection_start) .
+                        "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
+                        "\e[0m" . substr($snippet, $selection_length + $selection_start)
+                        : $snippet
+                    ) . PHP_EOL . PHP_EOL;
             }
         }
     }

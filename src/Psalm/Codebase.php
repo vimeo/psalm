@@ -1380,6 +1380,24 @@ class Codebase
     }
 
     /**
+     * @param  string $symbol
+     *
+     * @return array<string, \Psalm\CodeLocation[]>
+     */
+    public function findReferencesToSymbol($symbol)
+    {
+        if (!$this->collect_references) {
+            throw new \UnexpectedValueException('Should not be checking references');
+        }
+
+        if (strpos($symbol, '::') !== false) {
+            return $this->findReferencesToMethod($symbol);
+        }
+
+        return $this->findReferencesToClassLike($symbol);
+    }
+
+    /**
      * @param  string $method_id
      *
      * @return array<string, \Psalm\CodeLocation[]>

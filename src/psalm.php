@@ -271,7 +271,6 @@ $project_checker = new ProjectChecker(
     $threads,
     array_key_exists('debug', $options),
     $find_dead_code || $find_references_to !== null,
-    $find_references_to,
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
 );
 
@@ -302,6 +301,12 @@ if (array_key_exists('self-check', $options)) {
             $project_checker->checkFile($path_to_check);
         }
     }
+}
+
+if ($find_references_to) {
+    $project_checker->findReferencesTo($find_references_to);
+} elseif ($find_dead_code) {
+    $project_checker->checkClassReferences();
 }
 
 IssueBuffer::finish($project_checker, !$is_diff, $start_time);

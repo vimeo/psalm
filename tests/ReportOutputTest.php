@@ -53,7 +53,6 @@ class ReportOutputTest extends TestCase
                 1,
                 false,
                 false,
-                null,
                 '/tmp/report' . $extension
             );
         }
@@ -80,7 +79,6 @@ class ReportOutputTest extends TestCase
             1,
             false,
             false,
-            null,
             '/tmp/report.log'
         );
     }
