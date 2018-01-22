@@ -681,8 +681,8 @@ class FileManipulationTest extends TestCase
                     echo $a;
                     echo $b;',
                 '<?php
-                    $b = null;
                     $a = null;
+                    $b = null;
                     if (rand(0, 1)) {
                       $a = 1;
                       $b = 2;

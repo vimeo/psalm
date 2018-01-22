@@ -924,7 +924,7 @@ class Codebase
             function (FileManipulation $a, FileManipulation $b) {
                 if ($a->start === $b->start) {
                     if ($b->end === $a->end) {
-                        return 0;
+                        return $b->insertion_text > $a->insertion_text ? 1 : -1;
                     }
 
                     return $b->end > $a->end ? 1 : -1;
