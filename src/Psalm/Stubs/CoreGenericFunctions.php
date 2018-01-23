@@ -120,6 +120,15 @@ function array_reverse(array $arr, bool $preserve_keys = false) {}
  * @param array<TKey, TValue> $arr
  * @return TValue|false
  */
+function current(array $arr) {}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ */
 function reset(array &$arr) {}
 
 /**
