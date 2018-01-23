@@ -772,10 +772,24 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             && $implementer_method_storage->return_type
             && $implementer_classlike_storage->user_defined
         ) {
-            if (!TypeChecker::isContainedBy(
+            $implementer_method_storage_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,
                 $implementer_method_storage->return_type,
+                $implementer_classlike_storage->name,
+                null
+            );
+
+            $guide_method_storage_return_type = ExpressionChecker::fleshOutType(
+                $project_checker,
                 $guide_method_storage->return_type,
+                $guide_classlike_storage->name,
+                null
+            );
+
+            if (!TypeChecker::isContainedBy(
+                $project_checker,
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
                 false,
                 false,
                 $has_scalar_match,
