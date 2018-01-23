@@ -826,9 +826,28 @@ class AssertionFinder
             }
         } elseif (self::hasIsACheck($expr)) {
             if ($first_var_name) {
-                /** @var PhpParser\Node\Scalar\String_ */
-                $is_a_type = $expr->args[1]->value;
-                $if_types[$first_var_name] = $prefix . $is_a_type->value;
+                $first_arg = $expr->args[1]->value;
+
+                if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
+                    $if_types[$first_var_name] = $prefix . $first_arg->value;
+                } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $first_arg->class instanceof PhpParser\Node\Name
+                    && is_string($first_arg->name)
+                    && strtolower($first_arg->name) === 'class'
+                ) {
+                    $class_node = $first_arg->class;
+
+                    if ($class_node->parts === ['static'] || $class_node->parts === ['self']) {
+                        $if_types[$first_var_name] = $prefix . $this_class_name;
+                    } elseif ($class_node->parts === ['parent']) {
+                        // do nothing
+                    } else {
+                        $if_types[$first_var_name] = $prefix . ClassLikeChecker::getFQCLNFromNameObject(
+                            $class_node,
+                            $source->getAliases()
+                        );
+                    }
+                }
             }
         } elseif (self::hasArrayCheck($expr)) {
             if ($first_var_name) {
@@ -1080,9 +1099,22 @@ class AssertionFinder
      */
     protected static function hasIsACheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
-        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_a' &&
-            $stmt->args[1]->value instanceof PhpParser\Node\Scalar\String_) {
-            return true;
+        if ($stmt->name instanceof PhpParser\Node\Name
+            && strtolower($stmt->name->parts[0]) === 'is_a'
+            && isset($stmt->args[1])
+        ) {
+            $first_arg = $stmt->args[1]->value;
+
+            if ($first_arg instanceof PhpParser\Node\Scalar\String_
+                || (
+                    $first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $first_arg->class instanceof PhpParser\Node\Name
+                    && is_string($first_arg->name)
+                    && strtolower($first_arg->name) === 'class'
+                )
+            ) {
+                return true;
+            }
         }
 
         return false;

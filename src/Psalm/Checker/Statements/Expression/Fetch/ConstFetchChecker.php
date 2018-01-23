@@ -88,16 +88,17 @@ class ConstFetchChecker
     ) {
         if ($context->check_consts &&
             $stmt->class instanceof PhpParser\Node\Name &&
-            strtolower($stmt->class->parts[0]) !== 'static' &&
             is_string($stmt->name)
         ) {
-            if (strtolower($stmt->class->parts[0]) === 'self') {
+            $first_part_lc = strtolower($stmt->class->parts[0]);
+
+            if ($first_part_lc === 'self' || $first_part_lc === 'static') {
                 if (!$context->self) {
                     throw new \UnexpectedValueException('$context->self cannot be null');
                 }
 
                 $fq_class_name = (string)$context->self;
-            } elseif ($stmt->class->parts[0] === 'parent') {
+            } elseif ($first_part_lc === 'parent') {
                 $fq_class_name = $statements_checker->getParentFQCLN();
 
                 if ($fq_class_name === null) {
