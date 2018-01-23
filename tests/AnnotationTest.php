@@ -362,6 +362,16 @@ class AnnotationTest extends TestCase
                     $a = new Foo();',
                 'error_message' => 'DeprecatedClass',
             ],
+            'deprecatedClassWithExtends' => [
+                '<?php
+                    /**
+                     * @deprecated
+                     */
+                    class Foo { }
+
+                    class Bar extends Foo {}',
+                'error_message' => 'DeprecatedClass',
+            ],
             'deprecatedPropertyGet' => [
                 '<?php
                     class A{

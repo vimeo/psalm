@@ -91,6 +91,7 @@
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedInterface" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateArrayKey" type="IssueHandlerType" minOccurs="0" />

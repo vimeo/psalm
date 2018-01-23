@@ -524,6 +524,14 @@ class InterfaceTest extends TestCase
                     foo(new C);',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'deprecatedInterface' => [
+                '<?php
+                    /** @deprecated */
+                    interface Container {}
+
+                    class A implements Container {}',
+                'error_message' => 'DeprecatedInterface',
+            ],
         ];
     }
 }

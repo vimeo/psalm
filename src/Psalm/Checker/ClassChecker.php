@@ -6,6 +6,8 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MissingConstructor;
@@ -195,6 +197,31 @@ class ClassChecker extends ClassLikeChecker
             ) === false) {
                 return false;
             }
+
+            try {
+                $parent_class_storage = $classlike_storage_provider->get($this->parent_fq_class_name);
+
+                if ($parent_class_storage->deprecated) {
+                    $code_location = new CodeLocation(
+                        $this,
+                        $this->class,
+                        $class_context ? $class_context->include_location : null,
+                        true
+                    );
+
+                    if (IssueBuffer::accepts(
+                        new DeprecatedClass(
+                            $this->parent_fq_class_name . ' is marked deprecated',
+                            $code_location
+                        ),
+                        $this->source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            } catch (\InvalidArgumentException $e) {
+                // do nothing
+            }
         }
 
         foreach ($this->class->implements as $interface_name) {
@@ -236,6 +263,18 @@ class ClassChecker extends ClassLikeChecker
                     $class_context ? $class_context->include_location : null,
                     true
                 );
+
+                if ($interface_storage->deprecated) {
+                    if (IssueBuffer::accepts(
+                        new DeprecatedInterface(
+                            $interface_name . ' is marked deprecated',
+                            $code_location
+                        ),
+                        $this->source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
 
                 foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
                     if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
