@@ -1241,6 +1241,21 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return null;
         }
 
+        $unsafe_return_type = false;
+
+        // prevent any return types that do not return a value from being used in PHP typehints
+        if ($project_checker->alter_code
+            && $inferred_return_type
+            && $inferred_return_type->isNullable()
+            && !$inferred_yield_types
+        ) {
+            foreach ($inferred_return_type_parts as $inferred_return_type_part) {
+                if ($inferred_return_type_part instanceof Type\Atomic\TVoid) {
+                    $unsafe_return_type = true;
+                }
+            }
+        }
+
         $inferred_return_type = TypeChecker::simplifyUnionType(
             $project_checker,
             ExpressionChecker::fleshOutType(
@@ -1279,7 +1294,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->addOrUpdateReturnType(
                         $project_checker,
                         $inferred_return_type,
-                        $project_checker->only_replace_php_types_with_non_docblock_types
+                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
                             && $inferred_return_type->from_docblock
                     );
 
@@ -1309,7 +1325,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $this->addOrUpdateReturnType(
                     $project_checker,
                     $inferred_return_type,
-                    $project_checker->only_replace_php_types_with_non_docblock_types
+                    ($project_checker->only_replace_php_types_with_non_docblock_types
+                        || $unsafe_return_type)
                         && $inferred_return_type->from_docblock
                 );
 
@@ -1402,7 +1419,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->addOrUpdateReturnType(
                         $project_checker,
                         $inferred_return_type,
-                        $project_checker->only_replace_php_types_with_non_docblock_types
+                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
                             && $inferred_return_type->from_docblock
                     );
 
@@ -1431,7 +1449,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->addOrUpdateReturnType(
                         $project_checker,
                         $inferred_return_type,
-                        $project_checker->only_replace_php_types_with_non_docblock_types
+                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
                             && $inferred_return_type->from_docblock
                     );
 
@@ -1479,7 +1498,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         $this->addOrUpdateReturnType(
                             $project_checker,
                             $inferred_return_type,
-                            $project_checker->only_replace_php_types_with_non_docblock_types
+                            ($project_checker->only_replace_php_types_with_non_docblock_types
+                                || $unsafe_return_type)
                                 && $inferred_return_type->from_docblock
                         );
 
@@ -1504,7 +1524,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->addOrUpdateReturnType(
                         $project_checker,
                         $inferred_return_type,
-                        $project_checker->only_replace_php_types_with_non_docblock_types
+                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
                             && $inferred_return_type->from_docblock
                     );
 

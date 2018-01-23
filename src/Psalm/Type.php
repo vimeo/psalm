@@ -618,6 +618,9 @@ abstract class Type
         } elseif (isset($combination->value_types['void'])) {
             unset($combination->value_types['void']);
 
+            // if we're merging with another type, we cannot represent it in PHP
+            $from_docblock = true;
+
             if (!isset($combination->value_types['null'])) {
                 $combination->value_types['null'] = new TNull();
             }

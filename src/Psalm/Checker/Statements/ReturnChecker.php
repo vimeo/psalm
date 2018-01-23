@@ -94,13 +94,12 @@ class ReturnChecker
         ) {
             $source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
 
-            if ($stmt->expr) {
-                $storage = $source->getFunctionLikeStorage($statements_checker);
-                $cased_method_id = $source->getCorrectlyCasedMethodId();
+            $storage = $source->getFunctionLikeStorage($statements_checker);
 
-                if ($storage->return_type
-                    && !$storage->return_type->isMixed()
-                ) {
+            $cased_method_id = $source->getCorrectlyCasedMethodId();
+
+            if ($stmt->expr) {
+                if ($storage->return_type && !$storage->return_type->isMixed()) {
                     $inferred_type = ExpressionChecker::fleshOutType(
                         $project_checker,
                         $stmt->inferredType,
@@ -224,6 +223,22 @@ class ReturnChecker
                             }
                         }
                     }
+                }
+            } else {
+                if ($storage->signature_return_type
+                    && !$storage->signature_return_type->isVoid()
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidReturnStatement(
+                            'Empty return statement is not expected in ' . $cased_method_id,
+                            new CodeLocation($source, $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    return null;
                 }
             }
         }

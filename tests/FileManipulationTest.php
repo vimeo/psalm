@@ -432,6 +432,79 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 false,
             ],
+            'addMissingNullableReturnTypeInDocblockOnly71' => [
+                '<?php
+                    function foo() {
+                      if (rand(0, 1)) {
+                        return;
+                      }
+
+                      return "hello";
+                    }
+
+                    function bar() {
+                      if (rand(0, 1)) {
+                        return;
+                      }
+
+                      if (rand(0, 1)) {
+                        return null;
+                      }
+
+                      return "hello";
+                    }',
+                '<?php
+                    /**
+                     * @return string|null
+                     */
+                    function foo() {
+                      if (rand(0, 1)) {
+                        return;
+                      }
+
+                      return "hello";
+                    }
+
+                    /**
+                     * @return string|null
+                     */
+                    function bar() {
+                      if (rand(0, 1)) {
+                        return;
+                      }
+
+                      if (rand(0, 1)) {
+                        return null;
+                      }
+
+                      return "hello";
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'addMissingVoidReturnTypeToOldArray71' => [
+                '<?php
+                    function foo(array $a = array()) {}
+                    function bar(array $a = array() )  {}',
+                '<?php
+                    function foo(array $a = array()): void {}
+                    function bar(array $a = array() ): void  {}',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'addMissingVoidReturnTypeClosureUse71' => [
+                '<?php
+                    $a = "foo";
+                    $b = function() use ($a) {};',
+                '<?php
+                    $a = "foo";
+                    $b = function() use ($a): void {};',
+                '7.1',
+                ['MissingClosureReturnType'],
+                false,
+            ],
             'dontAddMissingVoidReturnType56' => [
                 '<?php
                     /** @return void */

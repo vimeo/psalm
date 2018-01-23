@@ -117,11 +117,11 @@ class FunctionDocblockManipulator
         $file_contents = $project_checker->codebase->getFileContents($file_path);
 
         $last_arg_position = $stmt->params
-            ? (int) $stmt->params[count($stmt->params) - 1]->getAttribute('endFilePos')
+            ? (int) $stmt->params[count($stmt->params) - 1]->getAttribute('endFilePos') + 1
             : null;
 
         if ($stmt instanceof Closure && $stmt->uses) {
-            $last_arg_position = (int) $stmt->uses[count($stmt->uses) - 1]->getAttribute('endFilePos');
+            $last_arg_position = (int) $stmt->uses[count($stmt->uses) - 1]->getAttribute('endFilePos') + 1;
         }
 
         $end_bracket_position = (int) strpos($file_contents, ')', $last_arg_position ?: $function_start);

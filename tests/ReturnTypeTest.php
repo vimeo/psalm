@@ -649,6 +649,17 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'returnTypehintWithVoidReturnType' => [
+                '<?php
+                    function foo(): ?string {
+                      if (rand(0, 1)) {
+                        return;
+                      }
+
+                      return "hello";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }
