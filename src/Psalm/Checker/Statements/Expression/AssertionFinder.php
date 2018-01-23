@@ -895,7 +895,9 @@ class AssertionFinder
                 );
 
                 return $instanceof_class;
-            } elseif (strtolower($stmt->class->parts[0]) === 'self' && $this_class_name) {
+            } elseif ($this_class_name
+                && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))
+            ) {
                 return $this_class_name;
             }
         }
