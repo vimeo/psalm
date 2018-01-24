@@ -198,7 +198,9 @@ class ConstFetchChecker
 
                 return false;
             }
-            $stmt->inferredType = $class_constants[$stmt->name];
+            $stmt->inferredType = isset($class_constants[$stmt->name])
+                ? $class_constants[$stmt->name]
+                : Type::getMixed();
 
             return null;
         }
