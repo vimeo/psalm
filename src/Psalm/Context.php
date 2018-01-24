@@ -113,6 +113,13 @@ class Context
     public $collect_initializations = false;
 
     /**
+     * Stored to prevent re-analysing methods when checking for initialised properties
+     *
+     * @var array<string, bool>|null
+     */
+    public $initialized_methods = null;
+
+    /**
      * @var array<string, Type\Union>
      */
     public $constants = [];

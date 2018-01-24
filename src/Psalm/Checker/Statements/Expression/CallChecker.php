@@ -1228,9 +1228,19 @@ class CallChecker
         ) {
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+            $declaring_method_id = (string) MethodChecker::getDeclaringMethodId($project_checker, $method_id);
 
-            $method_storage = $codebase->getMethodStorage((string)$declaring_method_id);
+            if (isset($context->initialized_methods[$declaring_method_id])) {
+                return;
+            }
+
+            if ($context->initialized_methods === null) {
+                $context->initialized_methods = [];
+            }
+
+            $context->initialized_methods[$declaring_method_id] = true;
+
+            $method_storage = $codebase->getMethodStorage($declaring_method_id);
 
             $class_checker = $source->getSource();
 
