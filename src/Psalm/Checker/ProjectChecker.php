@@ -502,7 +502,7 @@ class ProjectChecker
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
-        $this->codebase->addFilesToScan([$file_path]);
+        $this->codebase->addFilesToScan([$file_path => $file_path]);
 
         FileReferenceProvider::loadReferenceCache();
 

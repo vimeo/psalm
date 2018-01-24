@@ -256,6 +256,8 @@ class Codebase
     }
 
     /**
+     * @param array<string, string> $files_to_scan
+     *
      * @return void
      */
     public function addFilesToScan(array $files_to_scan)
