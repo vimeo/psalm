@@ -1212,6 +1212,18 @@ class CallChecker
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
             if ($method_id !== $source->getMethodId()) {
+                if ($context->collect_initializations) {
+                    if (isset($context->initialized_methods[$method_id])) {
+                        return;
+                    }
+
+                    if ($context->initialized_methods === null) {
+                        $context->initialized_methods = [];
+                    }
+
+                    $context->initialized_methods[$method_id] = true;
+                }
+
                 $project_checker->getMethodMutations($method_id, $context);
             }
         } elseif ($context->collect_initializations &&

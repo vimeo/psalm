@@ -309,6 +309,8 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $call_context = new Context($this_context->self);
         $call_context->collect_mutations = true;
+        $call_context->collect_initializations = $this_context->collect_initializations;
+        $call_context->initialized_methods = $this_context->initialized_methods;
         $call_context->include_location = $this_context->include_location;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $type) {
