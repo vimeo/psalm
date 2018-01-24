@@ -434,6 +434,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
+                    $var_comment = null;
+
                     try {
                         $var_comment = CommentChecker::getTypeFromComment(
                             (string)$stmt->getDocComment(),
