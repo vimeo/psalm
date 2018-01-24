@@ -245,6 +245,19 @@ class SwitchTypeTest extends TestCase
                             continue;
                     }',
             ],
+            'defaultAboveCase' => [
+                '<?php
+                    function foo(string $a) : string {
+                      switch ($a) {
+                        case "a":
+                          return "hello";
+
+                        default:
+                        case "b":
+                          return "goodbye";
+                      }
+                    }',
+            ],
         ];
     }
 
@@ -388,6 +401,23 @@ class SwitchTypeTest extends TestCase
                             continue 2;
                     }',
                 'error_message' => 'ContinueOutsideLoop',
+            ],
+            'defaultAboveCaseThatBreaks' => [
+                '<?php
+                    function foo(string $a) : string {
+                      switch ($a) {
+                        case "a":
+                          return "hello";
+
+                        default:
+                        case "b":
+                          break;
+
+                        case "c":
+                          return "goodbye";
+                      }
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }

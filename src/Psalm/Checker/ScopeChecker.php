@@ -124,6 +124,7 @@ class ScopeChecker
 
             if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 $has_returned = false;
+                $has_non_breaking_default = false;
                 $has_default_terminator = false;
 
                 // iterate backwards in a case statement
@@ -133,7 +134,14 @@ class ScopeChecker
                     $case_actions = self::getFinalControlActions($case->stmts, true);
 
                     if (array_intersect([self::ACTION_BREAK, self::ACTION_CONTINUE], $case_actions)) {
+                        // clear out any default breaking notions
+                        $has_non_breaking_default = false;
+
                         continue 2;
+                    }
+
+                    if (!$case->cond) {
+                        $has_non_breaking_default = true;
                     }
 
                     $case_does_return = $case_actions == [self::ACTION_END];
@@ -146,7 +154,7 @@ class ScopeChecker
                         continue 2;
                     }
 
-                    if (!$case->cond && $case_does_return) {
+                    if ($has_non_breaking_default && $case_does_return) {
                         $has_default_terminator = true;
                     }
                 }
