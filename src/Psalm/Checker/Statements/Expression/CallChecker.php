@@ -1357,14 +1357,22 @@ class CallChecker
                                 }
                             }
 
-                            $file_checker->getMethodMutations($method_id, $context);
+                            if (!isset($context->initialized_methods[$method_id])) {
+                                if ($context->initialized_methods === null) {
+                                    $context->initialized_methods = [];
+                                }
 
-                            foreach ($local_vars_in_scope as $var => $type) {
-                                $context->vars_in_scope[$var] = $type;
-                            }
+                                $context->initialized_methods[$method_id] = true;
 
-                            foreach ($local_vars_possibly_in_scope as $var => $type) {
-                                $context->vars_possibly_in_scope[$var] = $type;
+                                $file_checker->getMethodMutations($method_id, $context);
+
+                                foreach ($local_vars_in_scope as $var => $type) {
+                                    $context->vars_in_scope[$var] = $type;
+                                }
+
+                                foreach ($local_vars_possibly_in_scope as $var => $type) {
+                                    $context->vars_possibly_in_scope[$var] = $type;
+                                }
                             }
                         }
 
