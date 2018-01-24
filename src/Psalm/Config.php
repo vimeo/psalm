@@ -50,13 +50,6 @@ class Config
     private static $instance;
 
     /**
-     * Whether or not to stop when the first error is seen
-     *
-     * @var bool
-     */
-    public $stop_on_first_error = true;
-
-    /**
      * Whether or not to use types as defined in docblocks
      *
      * @var bool
@@ -315,11 +308,6 @@ class Config
         }
 
         $config_xml = new SimpleXMLElement($file_contents);
-
-        if (isset($config_xml['stopOnFirstError'])) {
-            $attribute_text = (string) $config_xml['stopOnFirstError'];
-            $config->stop_on_first_error = $attribute_text === 'true' || $attribute_text === '1';
-        }
 
         if (isset($config_xml['useDocblockTypes'])) {
             $attribute_text = (string) $config_xml['useDocblockTypes'];

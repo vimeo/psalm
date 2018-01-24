@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <psalm
     name="Psalm for Psalm"
-    stopOnFirstError="false"
     useDocblockTypes="true"
     totallyTyped="true"
     strictBinaryOperands="false"

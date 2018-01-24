@@ -108,10 +108,6 @@ class IssueBuffer
             self::$issues_data[] = $e->toArray(Config::REPORT_ERROR);
         }
 
-        if ($config->stop_on_first_error) {
-            exit(1);
-        }
-
         return true;
     }
 

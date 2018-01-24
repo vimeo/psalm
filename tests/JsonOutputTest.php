@@ -20,7 +20,6 @@ class JsonOutputTest extends TestCase
 
         $config = new TestConfig();
         $config->throw_exception = false;
-        $config->stop_on_first_error = false;
 
         $this->project_checker = new ProjectChecker(
             $config,
