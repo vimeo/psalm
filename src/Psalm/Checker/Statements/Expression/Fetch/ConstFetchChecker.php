@@ -169,7 +169,7 @@ class ConstFetchChecker
                 $class_visibility
             );
 
-            if (!isset($class_constants[$stmt->name])) {
+            if (!isset($class_constants[$stmt->name]) && $first_part_lc !== 'static') {
                 $all_class_constants = [];
 
                 if ($fq_class_name !== $context->self) {
