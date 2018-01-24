@@ -184,7 +184,14 @@ class FunctionChecker extends FunctionLikeChecker
                         return Type::getArray();
                     }
 
-                    return Type::getString();
+                    $return_type = Type::getString();
+
+                    if (in_array($call_map_key, ['preg_replace', 'preg_replace_callback'], true)) {
+                        $return_type->addType(new Type\Atomic\TNull());
+                        $return_type->ignore_nullable_issues = true;
+                    }
+
+                    return $return_type;
                 }
             }
 

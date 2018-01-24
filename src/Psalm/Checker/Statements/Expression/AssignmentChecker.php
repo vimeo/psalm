@@ -169,7 +169,8 @@ class AssignmentChecker
             if (!TypeChecker::isContainedBy(
                 $statements_checker->getFileChecker()->project_checker,
                 $assign_value_type,
-                $context->byref_constraints[$var_id]->type
+                $context->byref_constraints[$var_id]->type,
+                $assign_value_type->ignore_nullable_issues
             )
             ) {
                 if (IssueBuffer::accepts(
