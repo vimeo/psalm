@@ -750,10 +750,10 @@ class CallChecker
             return null;
         }
 
-        if ($class_type &&
-            is_string($stmt->name) &&
-            $class_type->isNullable() &&
-            !$class_type->ignore_nullable_issues
+        if ($class_type
+            && is_string($stmt->name)
+            && $class_type->isNullable()
+            && !$class_type->ignore_nullable_issues
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
@@ -766,9 +766,10 @@ class CallChecker
             }
         }
 
-        if ($class_type &&
-            is_string($stmt->name) &&
-            $class_type->isFalsable()
+        if ($class_type
+            && is_string($stmt->name)
+            && $class_type->isFalsable()
+            && !$class_type->ignore_falsable_issues
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseReference(
@@ -2562,7 +2563,7 @@ class CallChecker
             }
         }
 
-        if ($input_type->isFalsable() && !$param_type->hasBool()) {
+        if ($input_type->isFalsable() && !$param_type->hasBool() && !$input_type->ignore_falsable_issues) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .

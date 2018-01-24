@@ -712,6 +712,7 @@ class ExpressionChecker
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
         $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;
+        $fleshed_out_type->ignore_falsable_issues = $return_type->ignore_falsable_issues;
         $fleshed_out_type->by_ref = $return_type->by_ref;
 
         return $fleshed_out_type;

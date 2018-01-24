@@ -468,7 +468,10 @@ class PropertyAssignmentChecker
                 }
             }
 
-            if ($assignment_value_type->isFalsable() && !$class_property_type->hasBool()) {
+            if (!$assignment_value_type->ignore_falsable_issues
+                && $assignment_value_type->isFalsable()
+                && !$class_property_type->hasBool()
+            ) {
                 if (IssueBuffer::accepts(
                     new PossiblyFalsePropertyAssignmentValue(
                         $var_id . ' with non-falsable declared type \'' . $class_property_type .

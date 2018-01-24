@@ -15,6 +15,7 @@ class EffectsAnalyser
      * @param  array<PhpParser\Node>     $stmts
      * @param  array<int,Type\Atomic>    $yield_types
      * @param  bool                      $ignore_nullable_issues
+     * @param  bool                      $ignore_falsable_issues
      * @param  bool                      $collapse_types
      *
      * @return array<int,Type\Atomic>    a list of return types
@@ -23,6 +24,7 @@ class EffectsAnalyser
         array $stmts,
         array &$yield_types,
         &$ignore_nullable_issues = false,
+        &$ignore_falsable_issues = false,
         $collapse_types = false
     ) {
         $return_types = [];
@@ -47,6 +49,10 @@ class EffectsAnalyser
                         if ($stmt->inferredType->ignore_nullable_issues) {
                             $ignore_nullable_issues = true;
                         }
+
+                        if ($stmt->inferredType->ignore_falsable_issues) {
+                            $ignore_falsable_issues = true;
+                        }
                     } else {
                         $return_types[] = new Atomic\TMixed();
                     }
@@ -56,71 +62,131 @@ class EffectsAnalyser
             } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes([$stmt->expr], $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        [$stmt->expr],
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes($stmt->stmts, $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        $stmt->stmts,
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
 
                 foreach ($stmt->elseifs as $elseif) {
                     $return_types = array_merge(
                         $return_types,
-                        self::getReturnTypes($elseif->stmts, $yield_types, $ignore_nullable_issues)
+                        self::getReturnTypes(
+                            $elseif->stmts,
+                            $yield_types,
+                            $ignore_nullable_issues,
+                            $ignore_falsable_issues
+                        )
                     );
                 }
 
                 if ($stmt->else) {
                     $return_types = array_merge(
                         $return_types,
-                        self::getReturnTypes($stmt->else->stmts, $yield_types, $ignore_nullable_issues)
+                        self::getReturnTypes(
+                            $stmt->else->stmts,
+                            $yield_types,
+                            $ignore_nullable_issues,
+                            $ignore_falsable_issues
+                        )
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes($stmt->stmts, $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        $stmt->stmts,
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
 
                 foreach ($stmt->catches as $catch) {
                     $return_types = array_merge(
                         $return_types,
-                        self::getReturnTypes($catch->stmts, $yield_types, $ignore_nullable_issues)
+                        self::getReturnTypes(
+                            $catch->stmts,
+                            $yield_types,
+                            $ignore_nullable_issues,
+                            $ignore_falsable_issues
+                        )
                     );
                 }
 
                 if ($stmt->finally) {
                     $return_types = array_merge(
                         $return_types,
-                        self::getReturnTypes($stmt->finally->stmts, $yield_types, $ignore_nullable_issues)
+                        self::getReturnTypes(
+                            $stmt->finally->stmts,
+                            $yield_types,
+                            $ignore_nullable_issues,
+                            $ignore_falsable_issues
+                        )
                     );
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes($stmt->stmts, $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        $stmt->stmts,
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes($stmt->stmts, $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        $stmt->stmts,
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes($stmt->stmts, $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        $stmt->stmts,
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $return_types = array_merge(
                     $return_types,
-                    self::getReturnTypes($stmt->stmts, $yield_types, $ignore_nullable_issues)
+                    self::getReturnTypes(
+                        $stmt->stmts,
+                        $yield_types,
+                        $ignore_nullable_issues,
+                        $ignore_falsable_issues
+                    )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 foreach ($stmt->cases as $case) {
                     $return_types = array_merge(
                         $return_types,
-                        self::getReturnTypes($case->stmts, $yield_types, $ignore_nullable_issues)
+                        self::getReturnTypes(
+                            $case->stmts,
+                            $yield_types,
+                            $ignore_nullable_issues,
+                            $ignore_falsable_issues
+                        )
                     );
                 }
             }

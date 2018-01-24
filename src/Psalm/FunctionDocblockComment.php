@@ -35,6 +35,13 @@ class FunctionDocblockComment
     public $ignore_nullable_return = false;
 
     /**
+     * Whether or not to ignore the nullability of this function's return type
+     *
+     * @var bool
+     */
+    public $ignore_falsable_return = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppress = [];

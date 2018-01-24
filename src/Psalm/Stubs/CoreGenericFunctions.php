@@ -119,6 +119,7 @@ function array_reverse(array $arr, bool $preserve_keys = false) {}
  *
  * @param array<TKey, TValue> $arr
  * @return TValue|false
+ * @psalm-ignore-falsable-return
  */
 function current(array $arr) {}
 
@@ -128,6 +129,7 @@ function current(array $arr) {}
  *
  * @param array<TKey, TValue> $arr
  * @return TValue|false
+ * @psalm-ignore-falsable-return
  */
 function reset(array &$arr) {}
 
@@ -137,6 +139,7 @@ function reset(array &$arr) {}
  *
  * @param array<TKey, TValue> $arr
  * @return TValue|false
+ * @psalm-ignore-falsable-return
  */
 function end(array &$arr) {}
 

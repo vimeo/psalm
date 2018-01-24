@@ -543,6 +543,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $this->function->stmts,
                     $closure_yield_types,
                     $ignore_nullable_issues,
+                    $ignore_falsable_issues,
                     true
                 );
 
@@ -1187,6 +1188,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $function_stmts,
             $inferred_yield_types,
             $ignore_nullable_issues,
+            $ignore_falsable_issues,
             true
         );
 
@@ -1439,7 +1441,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            if ($inferred_return_type->isFalsable()
+            if (!$ignore_falsable_issues
+                && $inferred_return_type->isFalsable()
                 && !$declared_return_type->isFalsable()
                 && !$declared_return_type->hasBool()
             ) {

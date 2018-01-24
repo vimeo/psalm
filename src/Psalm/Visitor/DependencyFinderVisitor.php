@@ -804,6 +804,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage->return_type->ignore_nullable_issues = true;
         }
 
+        if ($docblock_info->ignore_falsable_return && $storage->return_type) {
+            $storage->return_type->ignore_falsable_issues = true;
+        }
+
         $storage->suppressed_issues = $docblock_info->suppress;
 
         if (!$this->config->use_docblock_types) {
@@ -907,6 +911,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 if ($storage->return_type && $docblock_info->ignore_nullable_return) {
                     $storage->return_type->ignore_nullable_issues = true;
+                }
+
+                if ($storage->return_type && $docblock_info->ignore_falsable_return) {
+                    $storage->return_type->ignore_falsable_issues = true;
                 }
 
                 if ($stmt->returnsByRef() && $storage->return_type) {

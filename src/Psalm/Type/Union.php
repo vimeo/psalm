@@ -47,6 +47,13 @@ class Union
     public $ignore_nullable_issues = false;
 
     /**
+     * Whether or not to ignore issues with possibly-false values
+     *
+     * @var bool
+     */
+    public $ignore_falsable_issues = false;
+
+    /**
      * Whether or not the type was passed by reference
      *
      * @var bool
@@ -445,6 +452,10 @@ class Union
 
         if ($new_type && $new_type->ignore_nullable_issues) {
             $this->ignore_nullable_issues = true;
+        }
+
+        if ($new_type && $new_type->ignore_falsable_issues) {
+            $this->ignore_falsable_issues = true;
         }
 
         foreach ($old_type->types as $old_type_part) {

@@ -292,7 +292,7 @@ class TypeChecker
                             $input_param,
                             $container_param,
                             $input_param->ignore_nullable_issues,
-                            false,
+                            $input_param->ignore_falsable_issues,
                             $has_scalar_match,
                             $type_coerced,
                             $type_coerced_from_mixed
@@ -370,7 +370,7 @@ class TypeChecker
                         $input_property_type,
                         $container_property_type,
                         $input_property_type->ignore_nullable_issues,
-                        false,
+                        $input_property_type->ignore_falsable_issues,
                         $has_scalar_match,
                         $type_coerced,
                         $type_coerced_from_mixed
@@ -800,6 +800,7 @@ class TypeChecker
 
         $from_docblock = $union->from_docblock;
         $ignore_nullable_issues = $union->ignore_nullable_issues;
+        $ignore_falsable_issues = $union->ignore_falsable_issues;
 
         $unique_types = [];
 
@@ -857,6 +858,7 @@ class TypeChecker
 
         $unique_type->from_docblock = $from_docblock;
         $unique_type->ignore_nullable_issues = $ignore_nullable_issues;
+        $unique_type->ignore_falsable_issues = $ignore_falsable_issues;
 
         return $unique_type;
     }

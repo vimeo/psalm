@@ -263,6 +263,7 @@ class CommentChecker
 
         $info->variadic = isset($comments['specials']['psalm-variadic']);
         $info->ignore_nullable_return = isset($comments['specials']['psalm-ignore-nullable-return']);
+        $info->ignore_falsable_return = isset($comments['specials']['psalm-ignore-falsable-return']);
 
         return $info;
     }

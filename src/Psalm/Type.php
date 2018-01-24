@@ -533,6 +533,10 @@ abstract class Type
             $combined_type->ignore_nullable_issues = true;
         }
 
+        if ($type_1->ignore_falsable_issues || $type_2->ignore_falsable_issues) {
+            $combined_type->ignore_falsable_issues = true;
+        }
+
         if ($both_failed_reconciliation) {
             $combined_type->failed_reconciliation = true;
         }

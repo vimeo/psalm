@@ -170,7 +170,8 @@ class ReturnChecker
                         }
                     }
 
-                    if ($inferred_type->isFalsable()
+                    if (!$stmt->inferredType->ignore_falsable_issues
+                        && $inferred_type->isFalsable()
                         && !$local_return_type->isFalsable()
                         && !$local_return_type->hasBool()
                     ) {
