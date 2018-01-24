@@ -14,16 +14,16 @@ class LoopScopeTest extends TestCase
         return [
             'switchVariableWithContinue' => [
                 '<?php
-                    foreach ([\'a\', \'b\', \'c\'] as $letter) {
+                    foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
-                            case \'a\':
+                            case "b":
                                 $foo = 1;
                                 break;
-                            case \'b\':
+                            case "c":
                                 $foo = 2;
                                 break;
                             default:
-                                continue;
+                                continue 2;
                         }
 
                         $moo = $foo;
@@ -31,22 +31,22 @@ class LoopScopeTest extends TestCase
             ],
             'switchVariableWithContinueAndIfs' => [
                 '<?php
-                    foreach ([\'a\', \'b\', \'c\'] as $letter) {
+                    foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
-                            case \'a\':
+                            case "a":
                                 if (rand(0, 10) === 1) {
-                                    continue;
+                                    continue 2;
                                 }
                                 $foo = 1;
                                 break;
-                            case \'b\':
+                            case "b":
                                 if (rand(0, 10) === 1) {
-                                    continue;
+                                    continue 2;
                                 }
                                 $foo = 2;
                                 break;
                             default:
-                                continue;
+                                continue 2;
                         }
 
                         $moo = $foo;
@@ -54,10 +54,10 @@ class LoopScopeTest extends TestCase
             ],
             'switchVariableWithFallthrough' => [
                 '<?php
-                    foreach ([\'a\', \'b\', \'c\'] as $letter) {
+                    foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
-                            case \'a\':
-                            case \'b\':
+                            case "a":
+                            case "b":
                                 $foo = 2;
                                 break;
 
@@ -71,12 +71,12 @@ class LoopScopeTest extends TestCase
             ],
             'switchVariableWithFallthroughStatement' => [
                 '<?php
-                    foreach ([\'a\', \'b\', \'c\'] as $letter) {
+                    foreach (["a", "b", "c"] as $letter) {
                         switch ($letter) {
-                            case \'a\':
+                            case "a":
                                 $bar = 1;
 
-                            case \'b\':
+                            case "b":
                                 $foo = 2;
                                 break;
 
@@ -814,6 +814,24 @@ class LoopScopeTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'switchVariableWithContinueOnce' => [
+                '<?php
+                    foreach (["a", "b", "c"] as $letter) {
+                        switch ($letter) {
+                            case "b":
+                                $foo = 1;
+                                break;
+                            case "c":
+                                $foo = 2;
+                                break;
+                            default:
+                                continue;
+                        }
+
+                        $moo = $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
             'possiblyUndefinedArrayInForeach' => [
                 '<?php
                     foreach ([1, 2, 3, 4] as $b) {

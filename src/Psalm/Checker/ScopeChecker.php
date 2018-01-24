@@ -50,10 +50,11 @@ class ScopeChecker
 
     /**
      * @param   array<PhpParser\Node> $stmts
+     * @param   bool $continue_is_break when checking inside a switch statement, continue is an alias of break
      *
      * @return  string[] one or more of 'LEAVE', 'CONTINUE', 'BREAK' (or empty if no single action is found)
      */
-    public static function getFinalControlActions(array $stmts)
+    public static function getFinalControlActions(array $stmts, $continue_is_break = false)
     {
         if (empty($stmts)) {
             return [self::ACTION_NONE];
@@ -72,6 +73,12 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
+                if ($continue_is_break
+                    && (!$stmt->num || !$stmt->num instanceof PhpParser\Node\Scalar\LNumber || $stmt->num->value < 2)
+                ) {
+                    return [self::ACTION_BREAK];
+                }
+
                 return [self::ACTION_CONTINUE];
             }
 
@@ -80,8 +87,10 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $if_statement_actions = self::getFinalControlActions($stmt->stmts);
-                $else_statement_actions = $stmt->else ? self::getFinalControlActions($stmt->else->stmts) : [];
+                $if_statement_actions = self::getFinalControlActions($stmt->stmts, $continue_is_break);
+                $else_statement_actions = $stmt->else
+                    ? self::getFinalControlActions($stmt->else->stmts, $continue_is_break)
+                    : [];
 
                 $all_same = count($if_statement_actions) === 1
                     && $if_statement_actions == $else_statement_actions
@@ -91,7 +100,7 @@ class ScopeChecker
 
                 if ($stmt->elseifs) {
                     foreach ($stmt->elseifs as $elseif) {
-                        $elseif_control_actions = self::getFinalControlActions($elseif->stmts);
+                        $elseif_control_actions = self::getFinalControlActions($elseif->stmts, $continue_is_break);
 
                         $all_same = $all_same && $elseif_control_actions == $if_statement_actions;
 
@@ -121,7 +130,7 @@ class ScopeChecker
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
 
-                    $case_actions = self::getFinalControlActions($case->stmts);
+                    $case_actions = self::getFinalControlActions($case->stmts, true);
 
                     if (array_intersect([self::ACTION_BREAK, self::ACTION_CONTINUE], $case_actions)) {
                         continue 2;
@@ -162,13 +171,13 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                $try_statement_actions = self::getFinalControlActions($stmt->stmts);
+                $try_statement_actions = self::getFinalControlActions($stmt->stmts, $continue_is_break);
 
                 if ($stmt->catches) {
                     $all_same = count($try_statement_actions) === 1;
 
                     foreach ($stmt->catches as $catch) {
-                        $catch_actions = self::getFinalControlActions($catch->stmts);
+                        $catch_actions = self::getFinalControlActions($catch->stmts, $continue_is_break);
 
                         $all_same = $all_same && $try_statement_actions == $catch_actions;
 

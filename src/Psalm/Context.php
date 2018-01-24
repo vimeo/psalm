@@ -175,6 +175,13 @@ class Context
     public $branch_point;
 
     /**
+     * If we're inside case statements we allow continue; statements as an alias of break;
+     *
+     * @var bool
+     */
+    public $inside_case = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

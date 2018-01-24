@@ -244,14 +244,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $has_returned = true;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 if ($loop_scope === null) {
-                    if (IssueBuffer::accepts(
-                        new ContinueOutsideLoop(
-                            'Continue call outside loop context',
-                            new CodeLocation($this->source, $stmt)
-                        ),
-                        $this->source->getSuppressedIssues()
-                    )) {
-                        return false;
+                    if (!$context->inside_case) {
+                        if (IssueBuffer::accepts(
+                            new ContinueOutsideLoop(
+                                'Continue call outside loop context',
+                                new CodeLocation($this->source, $stmt)
+                            ),
+                            $this->source->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
                     }
                 } elseif ($original_context) {
                     $loop_scope->final_actions[] = ScopeChecker::ACTION_CONTINUE;

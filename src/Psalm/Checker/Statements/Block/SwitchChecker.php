@@ -55,7 +55,7 @@ class SwitchChecker
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
 
-            $case_actions = $case_action_map[$i] = ScopeChecker::getFinalControlActions($case->stmts);
+            $case_actions = $case_action_map[$i] = ScopeChecker::getFinalControlActions($case->stmts, true);
 
             if (!in_array(ScopeChecker::ACTION_NONE, $case_actions, true)) {
                 if ($case_actions === [ScopeChecker::ACTION_END]) {
@@ -84,6 +84,7 @@ class SwitchChecker
                 $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
             }
             $case_context->parent_context = $context;
+            $case_context->inside_case = true;
 
             if ($case->cond) {
                 if (ExpressionChecker::analyze($statements_checker, $case->cond, $case_context) === false) {

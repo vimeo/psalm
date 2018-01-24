@@ -237,6 +237,14 @@ class SwitchTypeTest extends TestCase
                     '$y' => 'bool',
                 ],
             ],
+            'continueIsBreak' => [
+                '<?php
+                    switch(2) {
+                        case 2:
+                            echo "two\n";
+                            continue;
+                    }',
+            ],
         ];
     }
 
@@ -371,6 +379,15 @@ class SwitchTypeTest extends TestCase
                             break;
                     }',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'continueIsNotBreak' => [
+                '<?php
+                    switch(2) {
+                        case 2:
+                            echo "two\n";
+                            continue 2;
+                    }',
+                'error_message' => 'ContinueOutsideLoop',
             ],
         ];
     }
