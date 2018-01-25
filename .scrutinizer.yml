@@ -9,3 +9,6 @@ build:
     php71:
       environment:
         php: 7.1
+
+checks:
+    php: true
