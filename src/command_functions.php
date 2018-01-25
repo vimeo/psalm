@@ -3,10 +3,11 @@
 /**
  * @param  string $current_dir
  * @param  bool   $has_explicit_root
+ * @param  string $vendor_dir
  *
  * @return void
  */
-function requireAutoloaders($current_dir, $has_explicit_root)
+function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 {
     $autoload_roots = [$current_dir];
 
@@ -28,7 +29,7 @@ function requireAutoloaders($current_dir, $has_explicit_root)
             $has_autoloader = true;
         }
 
-        $vendor_autoload_file = $autoload_root . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+        $vendor_autoload_file = $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
         if (file_exists($vendor_autoload_file)) {
             $autoload_files[] = realpath($vendor_autoload_file);
@@ -54,7 +55,35 @@ function requireAutoloaders($current_dir, $has_explicit_root)
 }
 
 /**
- * @param  string|string[]|null $f_paths
+ * @param  string $current_dir
+ *
+ * @return string
+ *
+ * @psalm-suppress PossiblyFalseArgument
+ * @psalm-suppress MixedArrayAccess
+ * @psalm-suppress MixedAssignment
+ */
+function getVendorDir($current_dir)
+{
+    $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json'; // this should ideally not be hardcoded
+
+    if (!file_exists($composer_json_path)) {
+        return 'vendor';
+    }
+
+    if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+        throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+    }
+
+    if (isset($composer_json['config']['vendor-dir'])) {
+         return (string) $composer_json['config']['vendor-dir'];
+    }
+
+    return 'vendor';
+}
+
+/**
+ * @param  string|array|null|false $f_paths
  *
  * @return string[]|null
  */

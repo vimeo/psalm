@@ -841,11 +841,39 @@ class Config
     }
 
     /**
+     * @param  string $current_dir
+     *
+     * @return string
+     *
+     * @psalm-suppress PossiblyFalseArgument
+     * @psalm-suppress MixedArrayAccess
+     * @psalm-suppress MixedAssignment
+     */
+    private static function getVendorDir($current_dir)
+    {
+        $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json'; // this should ideally not be hardcoded
+
+        if (!file_exists($composer_json_path)) {
+            return 'vendor';
+        }
+
+        if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+            throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+        }
+
+        if (isset($composer_json['config']['vendor-dir'])) {
+             return (string) $composer_json['config']['vendor-dir'];
+        }
+
+        return 'vendor';
+    }
+
+    /**
      * @return array<string, string>
      */
     public function getComposerClassMap()
     {
-        $vendor_dir = realpath($this->base_dir . 'vendor'); // this should ideally not be hardcoded
+        $vendor_dir = realpath($this->base_dir . self::getVendorDir($this->base_dir));
 
         if (!$vendor_dir) {
             return [];

@@ -98,7 +98,9 @@ if (isset($options['r']) && is_string($options['r'])) {
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
 }
 
-requireAutoloaders($current_dir, isset($options['r']));
+$vendor_dir = getVendorDir($current_dir);
+
+requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
