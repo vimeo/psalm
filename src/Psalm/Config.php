@@ -845,7 +845,11 @@ class Config
      */
     public function getComposerClassMap()
     {
-        $vendor_dir = $this->base_dir . 'vendor'; // this should ideally not be hardcoded
+        $vendor_dir = realpath($this->base_dir . 'vendor'); // this should ideally not be hardcoded
+
+        if (!$vendor_dir) {
+            return [];
+        }
 
         $autoload_files_classmap =
             $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_classmap.php';
