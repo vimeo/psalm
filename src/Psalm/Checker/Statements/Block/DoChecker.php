@@ -29,7 +29,7 @@ class DoChecker
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        LoopChecker::analyze($statements_checker, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
+        $statements_checker->analyze($stmt->stmts, $do_context, $loop_scope);
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -37,15 +37,17 @@ class DoChecker
             }
 
             if ($do_context->hasVariable($var)) {
-                if ($do_context->vars_in_scope[$var]->isMixed()) {
-                    $context->vars_in_scope[$var] = $do_context->vars_in_scope[$var];
+                if ($context->vars_in_scope[$var]->isMixed()) {
+                    $do_context->vars_in_scope[$var] = $do_context->vars_in_scope[$var];
                 }
 
                 if ($do_context->vars_in_scope[$var]->getId() !== $type->getId()) {
-                    $context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
+                    $do_context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
                 }
             }
         }
+
+        LoopChecker::analyze($statements_checker, $stmt->stmts, $stmt->cond ? [$stmt->cond] : [], [], $loop_scope, $inner_loop_context);
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
             if (!isset($context->vars_in_scope[$var_id])) {

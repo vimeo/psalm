@@ -778,7 +778,7 @@ class LoopScopeTest extends TestCase
                         $c = true;
                         break;
                     }',
-                'assignments' => [
+                'assertions' => [
                     '$a' => 'string',
                     '$b' => 'int',
                     '$c' => 'true',
@@ -804,6 +804,50 @@ class LoopScopeTest extends TestCase
                     foreach ($list as $i) {
                       foreach ($list as $j) {}
                     }',
+            ],
+            'whileWithNotEmptyCheck' => [
+                '<?php
+                    class A {
+                      /** @var A|null */
+                      public $a;
+
+                      public function __construct() {
+                        $this->a = rand(0, 1) ? new A : null;
+                      }
+                    }
+
+                    function takesA(A $a): void {}
+
+                    $a = new A();
+                    while ($a) {
+                      takesA($a);
+                      $a = $a->a;
+                    };',
+                'assertions' => [
+                    '$a' => 'null',
+                ],
+            ],
+            'doWhileWithNotEmptyCheck' => [
+                '<?php
+                    class A {
+                      /** @var A|null */
+                      public $a;
+
+                      public function __construct() {
+                        $this->a = rand(0, 1) ? new A : null;
+                      }
+                    }
+
+                    function takesA(A $a): void {}
+
+                    $a = new A();
+                    do {
+                      takesA($a);
+                      $a = $a->a;
+                    } while ($a);',
+                'assertions' => [
+                    '$a' => 'null',
+                ],
             ],
         ];
     }
