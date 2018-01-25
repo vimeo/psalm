@@ -365,6 +365,13 @@ class LoopChecker
             $inner_context->referenced_var_ids,
             $loop_scope->loop_context->referenced_var_ids
         );
+
+        if ($inner_context->collect_references) {
+            $loop_scope->loop_context->unreferenced_vars = array_diff_key(
+                $inner_context->unreferenced_vars,
+                $inner_context->referenced_var_ids
+            );
+        }
     }
 
     /**

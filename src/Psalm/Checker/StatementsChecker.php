@@ -26,6 +26,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\UnevaluatedCode;
 use Psalm\Issue\UnrecognizedStatement;
+use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\StatementsSource;
@@ -516,6 +517,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
         }
 
+        if ($root_scope
+            && $context->collect_references
+            && !$project_checker->find_references_to
+            && $context->check_variables
+        ) {
+            $this->checkUnreferencedVars($context);
+        }
+
         if ($project_checker->alter_code && $root_scope && $this->vars_to_initialize) {
             $file_contents = $project_checker->codebase->getFileContents($this->getFilePath());
 
@@ -529,6 +538,35 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         return null;
+    }
+
+    /**
+     * @param  Context  $context
+     *
+     * @return void
+     */
+    private function checkUnreferencedVars(Context $context)
+    {
+        $source = $this->getSource();
+        $function_storage = $source instanceof FunctionLikeChecker ? $source->getFunctionLikeStorage($this) : null;
+
+        foreach ($context->unreferenced_vars as $var_name => $original_location) {
+            if ($var_name === '$_') {
+                continue;
+            }
+
+            if (!$function_storage || !array_key_exists(substr($var_name, 1), $function_storage->param_types)) {
+                if (IssueBuffer::accepts(
+                    new UnusedVariable(
+                        'Variable ' . $var_name . ' is never referenced',
+                        $original_location
+                    ),
+                    $this->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
     }
 
     /**

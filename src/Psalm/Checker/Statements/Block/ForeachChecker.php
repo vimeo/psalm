@@ -272,6 +272,15 @@ class ForeachChecker
             }
         }
 
+        if ($context->collect_references
+            && $stmt->byRef
+            && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+            && is_string($stmt->valueVar->name)
+        ) {
+            $foreach_context->byref_constraints['$' . $stmt->valueVar->name]
+                = new \Psalm\ReferenceConstraint($value_type);
+        }
+
         AssignmentChecker::analyze(
             $statements_checker,
             $stmt->valueVar,
@@ -334,6 +343,10 @@ class ForeachChecker
             $foreach_context->referenced_var_ids,
             $context->referenced_var_ids
         );
+
+        if ($context->collect_references) {
+            $context->unreferenced_vars = $foreach_context->unreferenced_vars;
+        }
 
         return null;
     }

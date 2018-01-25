@@ -380,7 +380,6 @@ class ClassChecker extends ClassLikeChecker
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
             $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
-            $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
 
             $property = $property_class_storage->properties[$property_name];
 
@@ -510,7 +509,6 @@ class ClassChecker extends ClassLikeChecker
             foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
                 $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
                 $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
-                $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
 
                 $property = $property_class_storage->properties[$property_name];
 

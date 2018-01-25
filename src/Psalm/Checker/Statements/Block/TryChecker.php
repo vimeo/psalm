@@ -75,6 +75,18 @@ class TryChecker
             }
 
             $try_context->vars_possibly_in_scope = $context->vars_possibly_in_scope;
+
+            $context->referenced_var_ids = array_merge(
+                $try_context->referenced_var_ids,
+                $context->referenced_var_ids
+            );
+
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $try_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
         }
 
         $try_leaves_loop = $loop_scope
@@ -199,6 +211,13 @@ class TryChecker
                 $catch_context->referenced_var_ids,
                 $context->referenced_var_ids
             );
+
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $catch_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
 
             if ($catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {

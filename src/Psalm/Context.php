@@ -139,6 +139,13 @@ class Context
     public $referenced_var_ids = [];
 
     /**
+     * A list of variables that have never been referenced
+     *
+     * @var array<string, CodeLocation>
+     */
+    public $unreferenced_vars = [];
+
+    /**
      * A list of variables that have been passed by reference (where we know their type)
      *
      * @var array<string, \Psalm\ReferenceConstraint>|null
@@ -629,6 +636,10 @@ class Context
 
         if ($stripped_var[0] === '$' && $stripped_var !== '$this') {
             $this->referenced_var_ids[$var_name] = true;
+
+            if ($this->collect_references) {
+                unset($this->unreferenced_vars[$var_name]);
+            }
         }
 
         return isset($this->vars_in_scope[$var_name]);

@@ -105,6 +105,13 @@ class BinaryOpChecker
                 $context->referenced_var_ids
             );
 
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $op_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
+
             foreach ($op_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
@@ -230,6 +237,13 @@ class BinaryOpChecker
                 $context->referenced_var_ids
             );
 
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $op_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
+
             $context->vars_possibly_in_scope = array_merge(
                 $op_context->vars_possibly_in_scope,
                 $context->vars_possibly_in_scope
@@ -296,6 +310,13 @@ class BinaryOpChecker
                 $t_if_context->referenced_var_ids
             );
 
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $t_if_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
+
             $t_else_context = clone $context;
 
             if ($negated_if_types) {
@@ -324,6 +345,13 @@ class BinaryOpChecker
                 $context->referenced_var_ids,
                 $t_else_context->referenced_var_ids
             );
+
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $t_else_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
 
             $lhs_type = null;
 

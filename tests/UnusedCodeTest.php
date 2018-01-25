@@ -247,6 +247,20 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
+            'unusuedVariableInBranchOfIf' => [
+                '<?php
+                    function foo(): void {
+                        if (rand(0, 1)) {
+                            $a = "foo";
+                            echo $a;
+                        }
+
+                        if (rand(0, 1)) {
+                            $a = "foo";
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
             'unusedClass' => [
                 '<?php
                     class A { }',

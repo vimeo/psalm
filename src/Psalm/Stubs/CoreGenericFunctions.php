@@ -53,6 +53,18 @@ function array_intersect(array $arr, array $arr2, array $arr3 = null, array $arr
  * @template TKey
  * @template TValue
  *
+ * @param array<TKey, TValue> $arr
+ * @param array $arr2
+ * @param array|null $arr3
+ * @param array|null $arr4
+ * @return array<TKey, TValue>
+ */
+function array_intersect_key(array $arr, array $arr2, array $arr3 = null, array $arr4 = null) {}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
  * @param array<mixed, TKey> $arr
  * @param array<mixed, TValue> $arr2
  * @return array<TKey, TValue>

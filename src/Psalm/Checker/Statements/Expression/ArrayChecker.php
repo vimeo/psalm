@@ -120,7 +120,7 @@ class ArrayChecker
                 ) {
                     $array_key = $item->key ? $item->key->value : $int_offset;
 
-                    $property_types[$item->key ? $item->key->value : $int_offset] = $item_value_type;
+                    $property_types[$array_key] = $item_value_type;
                 } else {
                     $can_create_objectlike = false;
                 }

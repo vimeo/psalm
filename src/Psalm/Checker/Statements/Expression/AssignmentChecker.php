@@ -165,11 +165,14 @@ class AssignmentChecker
             )) {
                 // fall through
             }
-        } elseif ($var_id && isset($context->byref_constraints[$var_id])) {
+        } elseif ($var_id
+            && isset($context->byref_constraints[$var_id])
+            && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
+        ) {
             if (!TypeChecker::isContainedBy(
                 $statements_checker->getFileChecker()->project_checker,
                 $assign_value_type,
-                $context->byref_constraints[$var_id]->type,
+                $outer_constraint_type,
                 $assign_value_type->ignore_nullable_issues,
                 $assign_value_type->ignore_falsable_issues
             )
@@ -213,6 +216,10 @@ class AssignmentChecker
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
             $context->assigned_var_ids[$var_id] = true;
+
+            if ($context->collect_references && !isset($context->byref_constraints[$var_id])) {
+                $context->unreferenced_vars[$var_id] = new CodeLocation($statements_checker, $assign_var);
+            }
 
             if (!$statements_checker->hasVariable($var_id)) {
                 $statements_checker->registerVariable(

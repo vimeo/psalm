@@ -283,6 +283,22 @@ class IfChecker
             return false;
         }
 
+        $newly_unreferenced_vars = [];
+        $old_unreferenced_vars = $context->unreferenced_vars;
+
+        if ($context->collect_references) {
+            foreach ($context->unreferenced_vars as $var_id => $_) {
+                if (!isset($if_context->unreferenced_vars[$var_id])) {
+                    unset($context->unreferenced_vars[$var_id]);
+                }
+            }
+
+            $newly_unreferenced_vars = array_diff_key(
+                $if_context->unreferenced_vars,
+                $old_unreferenced_vars
+            );
+        }
+
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {
             $elseif_context = clone $original_context;
@@ -301,6 +317,22 @@ class IfChecker
                 $loop_scope
             ) === false) {
                 return false;
+            }
+
+            if ($context->collect_references) {
+                foreach ($context->unreferenced_vars as $var_id => $_) {
+                    if (!isset($elseif_context->unreferenced_vars[$var_id])) {
+                        unset($context->unreferenced_vars[$var_id]);
+                    }
+                }
+
+                $newly_unreferenced_vars = array_merge(
+                    $newly_unreferenced_vars,
+                    array_diff_key(
+                        $elseif_context->unreferenced_vars,
+                        $old_unreferenced_vars
+                    )
+                );
             }
         }
 
@@ -322,6 +354,22 @@ class IfChecker
                 $loop_scope
             ) === false) {
                 return false;
+            }
+
+            if ($context->collect_references) {
+                foreach ($context->unreferenced_vars as $var_id => $_) {
+                    if (!isset($else_context->unreferenced_vars[$var_id])) {
+                        unset($context->unreferenced_vars[$var_id]);
+                    }
+                }
+
+                $newly_unreferenced_vars = array_merge(
+                    $newly_unreferenced_vars,
+                    array_diff_key(
+                        $else_context->unreferenced_vars,
+                        $old_unreferenced_vars
+                    )
+                );
             }
         } else {
             $if_scope->final_actions[] = ScopeChecker::ACTION_NONE;
@@ -385,6 +433,13 @@ class IfChecker
             }
         }
 
+        if ($context->collect_references) {
+            $context->unreferenced_vars = array_merge(
+                $context->unreferenced_vars,
+                $newly_unreferenced_vars
+            );
+        }
+
         return null;
     }
 
@@ -441,12 +496,14 @@ class IfChecker
 
         if ($if_context->byref_constraints !== null) {
             foreach ($if_context->byref_constraints as $var_id => $byref_constraint) {
-                if ($outer_context->byref_constraints !== null &&
-                    isset($outer_context->byref_constraints[$var_id]) &&
-                    !TypeChecker::isContainedBy(
+                if ($outer_context->byref_constraints !== null
+                    && isset($outer_context->byref_constraints[$var_id])
+                    && $byref_constraint->type
+                    && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
+                    && !TypeChecker::isContainedBy(
                         $project_checker,
                         $byref_constraint->type,
-                        $outer_context->byref_constraints[$var_id]->type
+                        $outer_constraint_type
                     )
                 ) {
                     if (IssueBuffer::accepts(
@@ -829,12 +886,14 @@ class IfChecker
 
         if ($elseif_context->byref_constraints !== null) {
             foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
-                if ($outer_context->byref_constraints !== null &&
-                    isset($outer_context->byref_constraints[$var_id]) &&
-                    !TypeChecker::isContainedBy(
+                if ($outer_context->byref_constraints !== null
+                    && isset($outer_context->byref_constraints[$var_id])
+                    && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
+                    && $byref_constraint->type
+                    && !TypeChecker::isContainedBy(
                         $project_checker,
                         $byref_constraint->type,
-                        $outer_context->byref_constraints[$var_id]->type
+                        $outer_constraint_type
                     )
                 ) {
                     if (IssueBuffer::accepts(
@@ -1087,12 +1146,14 @@ class IfChecker
             $project_checker = $statements_checker->getFileChecker()->project_checker;
 
             foreach ($else_context->byref_constraints as $var_id => $byref_constraint) {
-                if ($outer_context->byref_constraints !== null &&
-                    isset($outer_context->byref_constraints[$var_id]) &&
-                    !TypeChecker::isContainedBy(
+                if ($outer_context->byref_constraints !== null
+                    && isset($outer_context->byref_constraints[$var_id])
+                    && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
+                    && $byref_constraint->type
+                    && !TypeChecker::isContainedBy(
                         $project_checker,
                         $byref_constraint->type,
-                        $outer_context->byref_constraints[$var_id]->type
+                        $outer_constraint_type
                     )
                 ) {
                     if (IssueBuffer::accepts(

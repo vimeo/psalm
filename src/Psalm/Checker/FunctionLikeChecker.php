@@ -32,7 +32,6 @@ use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedParam;
-use Psalm\Issue\UnusedVariable;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
@@ -162,17 +161,22 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->vars_possibly_in_scope['$this'] = true;
             }
 
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
-
-            if (!is_string($declaring_method_id)) {
-                throw new \UnexpectedValueException('The declaring method of ' . $method_id . ' should not be null');
-            }
-
             $fq_class_name = (string)$context->self;
 
             $class_storage = $classlike_storage_provider->get($fq_class_name);
 
-            $storage = $codebase->getMethodStorage($declaring_method_id);
+            try {
+                $storage = $codebase->getMethodStorage($real_method_id);
+            } catch (\UnexpectedValueException $e) {
+                if (!$class_storage->parent_classes) {
+                    throw $e;
+                }
+
+                $declaring_method_id = (string) MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+
+                // happens for fake constructors
+                $storage = $codebase->getMethodStorage($declaring_method_id);
+            }
 
             $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
 
@@ -284,6 +288,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $context->vars_in_scope['$' . $function_param->name] = $param_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
+
+            if ($context->collect_references && $function_param->location) {
+                $context->unreferenced_vars['$' . $function_param->name] = $function_param->location;
+            }
 
             if (!$function_param->type_location || !$function_param->location) {
                 continue;
@@ -404,8 +412,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            if ($function_param->by_ref && !$param_type->isMixed()) {
-                $context->byref_constraints['$' . $function_param->name] = new \Psalm\ReferenceConstraint($param_type);
+            if ($function_param->by_ref) {
+                $context->byref_constraints['$' . $function_param->name]
+                    = new \Psalm\ReferenceConstraint(!$param_type->isMixed() ? $param_type : null);
             }
 
             if ($function_param->by_ref) {
@@ -555,71 +564,57 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        if ($context->collect_references &&
-            !$this->getFileChecker()->project_checker->find_references_to &&
-            $context->check_variables
+        if ($context->collect_references
+            && !$project_checker->find_references_to
+            && $context->check_variables
         ) {
-            foreach ($context->vars_possibly_in_scope as $var_name => $_) {
-                if (strpos($var_name, '->') === false &&
-                    $var_name !== '$this' &&
-                    strpos($var_name, '::$') === false &&
-                    strpos($var_name, '[') === false &&
-                    $var_name !== '$_'
+            foreach ($context->unreferenced_vars as $var_name => $original_location) {
+                if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
+                    continue;
+                }
+
+                if (!($storage instanceof MethodStorage)
+                    || $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
                 ) {
-                    $original_location = $statements_checker->getFirstAppearance($var_name);
+                    if (IssueBuffer::accepts(
+                        new UnusedParam(
+                            'Param ' . $var_name . ' is never referenced in this method',
+                            $original_location
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    $fq_class_name = (string)$context->self;
 
-                    if (!isset($context->referenced_var_ids[$var_name]) && $original_location) {
-                        if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
-                            if (IssueBuffer::accepts(
-                                new UnusedVariable(
-                                    'Variable ' . $var_name . ' is never referenced',
-                                    $original_location
-                                ),
-                                $this->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } elseif (!$storage instanceof MethodStorage
-                            || $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                    if (!$class_storage || $storage->abstract) {
+                        continue;
+                    }
+
+                    $method_name_lc = strtolower($storage->cased_name);
+                    $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
+
+                    $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
+
+                    if ($position === false) {
+                        throw new \UnexpectedValueException('$position should not be false here');
+                    }
+
+                    if ($parent_method_id) {
+                        $parent_method_storage = $codebase->getMethodStorage($parent_method_id);
+
+                        // if the parent method has a param at that position and isn't abstract
+                        if (!$parent_method_storage->abstract
+                            && isset($parent_method_storage->params[$position])
                         ) {
-                            if (IssueBuffer::accepts(
-                                new UnusedParam(
-                                    'Param ' . $var_name . ' is never referenced in this method',
-                                    $original_location
-                                ),
-                                $this->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } else {
-                            if (!$class_storage || $storage->abstract) {
-                                continue;
-                            }
-
-                            /** @var ClassMethod $this->function */
-                            $method_name_lc = strtolower((string)$this->function->name);
-                            $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
-
-                            $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
-
-                            if ($position === false) {
-                                throw new \UnexpectedValueException('$position should not be false here');
-                            }
-
-                            if ($parent_method_id) {
-                                $parent_method_storage = $codebase->getMethodStorage($parent_method_id);
-
-                                // if the parent method has a param at that position and isn't abstract
-                                if (!$parent_method_storage->abstract
-                                    && isset($parent_method_storage->params[$position])
-                                ) {
-                                    continue;
-                                }
-                            }
-
-                            $storage->unused_params[$position] = $original_location;
+                            continue;
                         }
                     }
+
+                    $storage->unused_params[$position] = $original_location;
                 }
             }
 
@@ -629,7 +624,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         $storage->used_params[$i] = true;
 
                         /** @var ClassMethod $this->function */
-                        $method_name_lc = strtolower((string)$this->function->name);
+                        $method_name_lc = strtolower($storage->cased_name);
 
                         if (!isset($class_storage->overridden_method_ids[$method_name_lc])) {
                             continue;
@@ -1066,22 +1061,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public function getFunctionLikeStorage(StatementsChecker $statements_checker)
     {
-        $function_id = $this->getMethodId();
-
         $project_checker = $this->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
-        if (strpos($function_id, '::')) {
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $function_id);
+        if ($this->function instanceof ClassMethod) {
+            $method_id = (string) $this->getMethodId();
 
-            if (!$declaring_method_id) {
-                throw new \UnexpectedValueException('The declaring method of ' . $function_id . ' should not be null');
+            try {
+                return $codebase->getMethodStorage($method_id);
+            } catch (\UnexpectedValueException $e) {
+                $declaring_method_id = (string) MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+
+                // happens for fake constructors
+                return $codebase->getMethodStorage($declaring_method_id);
             }
-
-            return $codebase->getMethodStorage($declaring_method_id);
         }
 
-        return $codebase->getFunctionStorage($statements_checker, $function_id);
+        return $codebase->getFunctionStorage($statements_checker, (string) $this->getMethodId());
     }
 
     /**

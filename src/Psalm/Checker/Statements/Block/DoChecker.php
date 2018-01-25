@@ -72,6 +72,13 @@ class DoChecker
             $do_context->referenced_var_ids
         );
 
+        if ($context->collect_references) {
+            $context->unreferenced_vars = array_intersect_key(
+                $do_context->unreferenced_vars,
+                $context->unreferenced_vars
+            );
+        }
+
         return ExpressionChecker::analyze($statements_checker, $stmt->cond, $context);
     }
 }

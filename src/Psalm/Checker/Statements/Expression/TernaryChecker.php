@@ -87,6 +87,11 @@ class TernaryChecker
                 $context->referenced_var_ids,
                 $t_if_context->referenced_var_ids
             );
+
+            $context->unreferenced_vars = array_intersect_key(
+                $context->unreferenced_vars,
+                $t_if_context->unreferenced_vars
+            );
         }
 
         if ($negated_if_types) {
@@ -120,6 +125,11 @@ class TernaryChecker
         $context->referenced_var_ids = array_merge(
             $context->referenced_var_ids,
             $t_else_context->referenced_var_ids
+        );
+
+        $context->unreferenced_vars = array_intersect_key(
+            $context->unreferenced_vars,
+            $t_else_context->unreferenced_vars
         );
 
         $lhs_type = null;

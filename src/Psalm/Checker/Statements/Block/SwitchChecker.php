@@ -198,6 +198,13 @@ class SwitchChecker
                 $case_context->referenced_var_ids
             );
 
+            if ($context->collect_references) {
+                $context->unreferenced_vars = array_intersect_key(
+                    $case_context->unreferenced_vars,
+                    $context->unreferenced_vars
+                );
+            }
+
             if ($case_exit_type !== 'return_throw') {
                 $vars = array_diff_key(
                     $case_context->vars_possibly_in_scope,

@@ -98,6 +98,13 @@ class ForChecker
             $context->referenced_var_ids
         );
 
+        if ($context->collect_references) {
+            $context->unreferenced_vars = array_intersect_key(
+                $for_context->unreferenced_vars,
+                $context->unreferenced_vars
+            );
+        }
+
         return null;
     }
 }
