@@ -308,7 +308,13 @@ if (array_key_exists('self-check', $options)) {
 if ($find_references_to) {
     $project_checker->findReferencesTo($find_references_to);
 } elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
-    $project_checker->checkClassReferences();
+    if ($threads > 1) {
+        if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+            echo 'Class/method references cannot currently be checked in multithreaded mode' . PHP_EOL;
+        }
+    } else {
+        $project_checker->checkClassReferences();
+    }
 }
 
 IssueBuffer::finish($project_checker, !$is_diff, $start_time);
