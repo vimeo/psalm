@@ -851,7 +851,7 @@ class Config
      */
     private static function getVendorDir($current_dir)
     {
-        $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json'; // this should ideally not be hardcoded
+        $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
 
         if (!file_exists($composer_json_path)) {
             return 'vendor';
@@ -862,7 +862,7 @@ class Config
         }
 
         if (isset($composer_json['config']['vendor-dir'])) {
-             return (string) $composer_json['config']['vendor-dir'];
+            return (string) $composer_json['config']['vendor-dir'];
         }
 
         return 'vendor';

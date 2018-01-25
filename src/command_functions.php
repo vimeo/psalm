@@ -29,7 +29,8 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
             $has_autoloader = true;
         }
 
-        $vendor_autoload_file = $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
+        $vendor_autoload_file =
+            $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
         if (file_exists($vendor_autoload_file)) {
             $autoload_files[] = realpath($vendor_autoload_file);
@@ -65,7 +66,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
  */
 function getVendorDir($current_dir)
 {
-    $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json'; // this should ideally not be hardcoded
+    $composer_json_path = $current_dir . DIRECTORY_SEPARATOR . 'composer.json';
 
     if (!file_exists($composer_json_path)) {
         return 'vendor';
@@ -76,7 +77,7 @@ function getVendorDir($current_dir)
     }
 
     if (isset($composer_json['config']['vendor-dir'])) {
-         return (string) $composer_json['config']['vendor-dir'];
+        return (string) $composer_json['config']['vendor-dir'];
     }
 
     return 'vendor';

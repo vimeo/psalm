@@ -251,7 +251,18 @@ class FunctionChecker extends FunctionLikeChecker
             return Type::getMixed();
         }
 
-        return Type::parseString($call_map[$call_map_key][0]);
+        $call_map_return_type = Type::parseString($call_map[$call_map_key][0]);
+
+        if (!in_array(
+            $call_map_key,
+            ['mb_strpos', 'mb_strrpos', 'mb_stripos', 'mb_strripos', 'strpos', 'strrpos', 'stripos', 'strripos'],
+            true
+        ) && $call_map_return_type->isFalsable()
+        ) {
+            $call_map_return_type->ignore_falsable_issues = true;
+        }
+
+        return $call_map_return_type;
     }
 
     /**

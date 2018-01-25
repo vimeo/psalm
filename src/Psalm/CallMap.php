@@ -2229,7 +2229,7 @@ return [
 'filepro_fieldwidth' => ['int', 'field_number'=>'int'],
 'filepro_retrieve' => ['string', 'row_number'=>'int', 'field_number'=>'int'],
 'filepro_rowcount' => ['int'],
-'file_put_contents' => ['int', 'file'=>'string', 'data'=>'', 'flags='=>'int', 'context='=>''],
+'file_put_contents' => ['int|false', 'file'=>'string', 'data'=>'', 'flags='=>'int', 'context='=>''],
 'filesize' => ['int|false', 'filename'=>'string'],
 'FilesystemIterator::__construct' => ['void', 'path'=>'string', 'flags='=>'int'],
 'FilesystemIterator::current' => ['string'],
