@@ -307,7 +307,7 @@ if (array_key_exists('self-check', $options)) {
 
 if ($find_references_to) {
     $project_checker->findReferencesTo($find_references_to);
-} elseif ($find_dead_code) {
+} elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
     $project_checker->checkClassReferences();
 }
 
