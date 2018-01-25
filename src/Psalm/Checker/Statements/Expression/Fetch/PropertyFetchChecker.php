@@ -83,6 +83,10 @@ class PropertyFetchChecker
                 // log the appearance
                 foreach ($stmt->var->inferredType->getTypes() as $lhs_type_part) {
                     if ($lhs_type_part instanceof TNamedObject) {
+                        if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
+                            continue;
+                        }
+
                         $property_id = $lhs_type_part->value . '::$' . $stmt->name;
 
                         ClassLikeChecker::propertyExists(

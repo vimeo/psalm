@@ -590,11 +590,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-                    if (!$class_storage || $storage->abstract) {
+                    $method_name_lc = strtolower($storage->cased_name);
+
+                    if (!$class_storage
+                        || $storage->abstract
+                        || !isset($class_storage->overridden_method_ids[$method_name_lc])
+                    ) {
                         continue;
                     }
 
-                    $method_name_lc = strtolower($storage->cased_name);
                     $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
 
                     $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);

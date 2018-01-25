@@ -310,7 +310,7 @@ if ($find_references_to) {
 } elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
     if ($threads > 1) {
         if ($output_format === ProjectChecker::TYPE_CONSOLE) {
-            echo 'Class/method references cannot currently be checked in multithreaded mode' . PHP_EOL;
+            echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;
         }
     } else {
         $project_checker->checkClassReferences();
