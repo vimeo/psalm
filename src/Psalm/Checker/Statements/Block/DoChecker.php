@@ -47,7 +47,14 @@ class DoChecker
             }
         }
 
-        LoopChecker::analyze($statements_checker, $stmt->stmts, $stmt->cond ? [$stmt->cond] : [], [], $loop_scope, $inner_loop_context);
+        LoopChecker::analyze(
+            $statements_checker,
+            $stmt->stmts,
+            $stmt->cond ? [$stmt->cond] : [],
+            [],
+            $loop_scope,
+            $inner_loop_context
+        );
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
             if (!isset($context->vars_in_scope[$var_id])) {
