@@ -820,8 +820,8 @@ class ClassChecker extends ClassLikeChecker
                     $self_class
                 );
 
-                if (!$return_type && $class_storage->interface_method_ids) {
-                    foreach ($class_storage->interface_method_ids[$stmt->name] as $interface_method_id) {
+                if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name)])) {
+                    foreach ($class_storage->interface_method_ids[strtolower($stmt->name)] as $interface_method_id) {
                         list($interface_class) = explode('::', $interface_method_id);
 
                         $interface_return_type = MethodChecker::getMethodReturnType(
