@@ -996,7 +996,7 @@ class CallChecker
                         $project_checker,
                         $return_type_candidate,
                         $fq_class_name,
-                        $method_id
+                        $fq_class_name
                     );
                 } else {
                     if (MethodChecker::checkMethodVisibility(
@@ -1039,7 +1039,7 @@ class CallChecker
                             $project_checker,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $method_id
+                            $fq_class_name
                         );
 
                         $return_type_location = MethodChecker::getMethodReturnTypeLocation(
@@ -1567,10 +1567,10 @@ class CallChecker
                 }
 
                 $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
-                    ? $statements_checker->getFQCLN()
+                    ? (string) $statements_checker->getFQCLN()
                     : $fq_class_name;
 
-                $self_fq_class_name = (string) $fq_class_name;
+                $self_fq_class_name = $fq_class_name;
 
                 $return_type_candidate = MethodChecker::getMethodReturnType(
                     $project_checker,
@@ -1591,7 +1591,7 @@ class CallChecker
                         $project_checker,
                         $return_type_candidate,
                         $self_fq_class_name,
-                        $method_id
+                        $fq_class_name
                     );
 
                     $return_type_location = MethodChecker::getMethodReturnTypeLocation(
@@ -2192,7 +2192,7 @@ class CallChecker
                         $project_checker,
                         $param_type,
                         $fq_class_name,
-                        $method_id
+                        $fq_class_name
                     );
 
                     if ($context->check_variables) {

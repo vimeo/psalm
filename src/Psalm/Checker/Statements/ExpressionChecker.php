@@ -7,7 +7,6 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FunctionLikeChecker;
-use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\Expression\ArrayChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
@@ -684,16 +683,16 @@ class ExpressionChecker
 
     /**
      * @param  Type\Union   $return_type
-     * @param  string|null  $calling_class
-     * @param  string|null  $method_id
+     * @param  string|null  $self_class
+     * @param  string|null  $static_class
      *
      * @return Type\Union
      */
     public static function fleshOutType(
         ProjectChecker $project_checker,
         Type\Union $return_type,
-        $calling_class = null,
-        $method_id = null
+        $self_class = null,
+        $static_class = null
     ) {
         $return_type = clone $return_type;
 
@@ -703,8 +702,8 @@ class ExpressionChecker
             $new_return_type_parts[] = self::fleshOutAtomicType(
                 $project_checker,
                 $return_type_part,
-                $calling_class,
-                $method_id
+                $self_class,
+                $static_class
             );
         }
 
@@ -720,47 +719,47 @@ class ExpressionChecker
 
     /**
      * @param  Type\Atomic  &$return_type
-     * @param  string|null  $calling_class
-     * @param  string|null  $method_id
+     * @param  string|null  $self_class
+     * @param  string|null  $static_class
      *
      * @return Type\Atomic
      */
-    protected static function fleshOutAtomicType(
+    private static function fleshOutAtomicType(
         ProjectChecker $project_checker,
         Type\Atomic $return_type,
-        $calling_class,
-        $method_id
+        $self_class,
+        $static_class
     ) {
         if ($return_type instanceof TNamedObject) {
             $return_type_lc = strtolower($return_type->value);
 
-            if (in_array($return_type_lc, ['$this', 'static', 'self'], true)) {
-                if (!$calling_class) {
+            if ($return_type_lc === 'static' || $return_type_lc === '$this') {
+                if (!$static_class) {
                     throw new \InvalidArgumentException(
-                        'Cannot handle ' . $return_type->value . ' when $calling_class is empty'
+                        'Cannot handle ' . $return_type->value . ' when $static_class is empty'
                     );
                 }
 
-                if ($return_type_lc === 'static' || !$method_id) {
-                    $return_type->value = $calling_class;
-                } elseif (strpos($method_id, ':-:closure') !== false) {
-                    $return_type->value = $calling_class;
-                } else {
-                    list(, $method_name) = explode('::', $method_id);
-
-                    $appearing_method_id = MethodChecker::getAppearingMethodId(
-                        $project_checker,
-                        $calling_class . '::' . $method_name
+                $return_type->value = $static_class;
+            } elseif ($return_type_lc === 'self') {
+                if (!$self_class) {
+                    throw new \InvalidArgumentException(
+                        'Cannot handle ' . $return_type->value . ' when $self_class is empty'
                     );
-
-                    $return_type->value = explode('::', (string)$appearing_method_id)[0];
                 }
+
+                $return_type->value = $self_class;
             }
         }
 
         if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
             foreach ($return_type->type_params as &$type_param) {
-                $type_param = self::fleshOutType($project_checker, $type_param, $calling_class, $method_id);
+                $type_param = self::fleshOutType(
+                    $project_checker,
+                    $type_param,
+                    $self_class,
+                    $static_class
+                );
             }
         }
 
@@ -887,6 +886,7 @@ class ExpressionChecker
                 $comment_type = ExpressionChecker::fleshOutType(
                     $statements_checker->getFileChecker()->project_checker,
                     $var_comment->type,
+                    $context->self,
                     $context->self
                 );
 

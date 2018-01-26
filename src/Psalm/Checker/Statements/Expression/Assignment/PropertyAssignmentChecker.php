@@ -380,6 +380,7 @@ class PropertyAssignmentChecker
                     $class_property_type = ExpressionChecker::fleshOutType(
                         $project_checker,
                         $class_property_type,
+                        $lhs_type_part->value,
                         $lhs_type_part->value
                     );
                 }
@@ -714,6 +715,7 @@ class PropertyAssignmentChecker
         $class_property_type = ExpressionChecker::fleshOutType(
             $project_checker,
             $class_property_type,
+            $fq_class_name,
             $fq_class_name
         );
 

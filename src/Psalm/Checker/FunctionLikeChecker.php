@@ -238,7 +238,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $project_checker,
                     $storage->return_type,
                     $context->self,
-                    $this->getMethodId()
+                    $context->self
                 );
             } else {
                 $closure_return_type = Type::getMixed();
@@ -280,7 +280,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $project_checker,
                     $param_type,
                     $context->self,
-                    $this->getMethodId()
+                    $context->self
                 );
             } else {
                 $param_type = Type::getMixed();
@@ -436,6 +436,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $fleshed_out_return_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     $storage->return_type,
+                    $context->self,
                     $context->self
                 );
 
@@ -451,7 +452,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $project_checker,
                     $storage->signature_return_type,
                     $context->self,
-                    $cased_method_id
+                    $context->self
                 );
 
                 $fleshed_out_signature_type->check(
@@ -467,14 +468,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         $project_checker,
                         $storage->return_type,
                         $context->self,
-                        $cased_method_id
+                        $context->self
                     );
 
                     $fleshed_out_signature_type = ExpressionChecker::fleshOutType(
                         $project_checker,
                         $storage->signature_return_type,
                         $context->self,
-                        $cased_method_id
+                        $context->self
                     );
 
                     if (!TypeChecker::isContainedBy(
@@ -732,6 +733,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $guide_signature_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,
                 $guide_method_storage->signature_return_type,
+                $guide_classlike_storage->name,
                 $guide_classlike_storage->name
             );
 
@@ -739,6 +741,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 ? ExpressionChecker::fleshOutType(
                     $project_checker,
                     $implementer_method_storage->signature_return_type,
+                    $implementer_classlike_storage->name,
                     $implementer_classlike_storage->name
                 ) : null;
 
@@ -776,14 +779,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $project_checker,
                 $implementer_method_storage->return_type,
                 $implementer_classlike_storage->name,
-                null
+                $implementer_classlike_storage->name
             );
 
             $guide_method_storage_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,
                 $guide_method_storage->return_type,
                 $guide_classlike_storage->name,
-                null
+                $guide_classlike_storage->name
             );
 
             if (!TypeChecker::isContainedBy(
@@ -1171,8 +1174,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return null;
         }
 
-        $method_id = (string)$this->getMethodId();
-
         $cased_method_id = $this->getCorrectlyCasedMethodId();
 
         if (!$return_type_location) {
@@ -1264,7 +1265,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $project_checker,
                 $inferred_return_type,
                 $this->source->getFQCLN(),
-                ''
+                $this->source->getFQCLN()
             )
         );
 
@@ -1349,12 +1350,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return null;
         }
 
+        $self_fq_class_name = $fq_class_name ?: $this->source->getFQCLN();
+
         // passing it through fleshOutTypes eradicates errant $ vars
         $declared_return_type = ExpressionChecker::fleshOutType(
             $project_checker,
             $return_type,
-            $fq_class_name ?: $this->source->getFQCLN(),
-            $method_id
+            $self_fq_class_name,
+            $self_fq_class_name
         );
 
         if (!$inferred_return_type_parts && !$inferred_yield_types) {
@@ -1884,7 +1887,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $this->file_checker->project_checker,
             $storage_return_type,
             $this->getFQCLN(),
-            ''
+            $this->getFQCLN()
         );
 
         return $this->local_return_type;

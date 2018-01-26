@@ -67,29 +67,42 @@ class MethodChecker extends FunctionLikeChecker
      */
     public static function getMethodReturnType(ProjectChecker $project_checker, $method_id, &$self_class)
     {
-        $method_id = self::getDeclaringMethodId($project_checker, $method_id);
+        $declaring_method_id = self::getDeclaringMethodId($project_checker, $method_id);
 
-        if (!$method_id) {
+        if (!$declaring_method_id) {
             return null;
         }
 
-        list($fq_class_name, $method_name) = explode('::', $method_id);
+        $appearing_method_id = self::getAppearingMethodId($project_checker, $method_id);
 
-        if (!ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)
-            && FunctionChecker::inCallMap($method_id)
-        ) {
-            return FunctionChecker::getReturnTypeFromCallMap($method_id);
+        if (!$appearing_method_id) {
+            return null;
         }
 
-        $storage = $project_checker->codebase->getMethodStorage($method_id);
+        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+        list($appearing_fq_class_name, $appearing_method_name) = explode('::', $appearing_method_id);
+
+        if (!ClassLikeChecker::isUserDefined($project_checker, $appearing_fq_class_name)
+            && FunctionChecker::inCallMap($appearing_method_id)
+        ) {
+            return FunctionChecker::getReturnTypeFromCallMap($appearing_method_id);
+        }
+
+        $storage = $project_checker->codebase->getMethodStorage($declaring_method_id);
 
         if ($storage->return_type) {
+            $self_class = $appearing_fq_class_name;
+
             return clone $storage->return_type;
         }
 
-        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $project_checker->classlike_storage_provider->get($appearing_fq_class_name);
 
-        foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
+        if ($appearing_method_name === '__clone') {
+            return null;
+        }
+
+        foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
             $overridden_storage = $project_checker->codebase->getMethodStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {

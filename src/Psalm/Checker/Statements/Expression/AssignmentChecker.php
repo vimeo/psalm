@@ -93,6 +93,7 @@ class AssignmentChecker
                 $comment_type = ExpressionChecker::fleshOutType(
                     $statements_checker->getFileChecker()->project_checker,
                     $var_comment->type,
+                    $context->self,
                     $context->self
                 );
 

@@ -179,6 +179,26 @@ class MethodSignatureTest extends TestCase
                       }
                     }',
             ],
+            'staticReturnShouldBeStatic' => [
+                '<?php
+                    class A {
+                      /** @return static */
+                      public static function foo() {
+                        return new A();
+                      }
+                    }
+
+                    class B extends A {
+                      public static function foo() {
+                        return new B();
+                      }
+                    }
+
+                    $b = B::foo();',
+                'assertions' => [
+                    '$b' => 'B',
+                ],
+            ],
         ];
     }
 

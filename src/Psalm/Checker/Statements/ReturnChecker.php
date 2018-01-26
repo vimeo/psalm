@@ -62,6 +62,7 @@ class ReturnChecker
                 $comment_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     $var_comment->type,
+                    $context->self,
                     $context->self
                 );
 
@@ -104,7 +105,7 @@ class ReturnChecker
                         $project_checker,
                         $stmt->inferredType,
                         $source->getFQCLN(),
-                        ''
+                        $source->getFQCLN()
                     );
 
                     $local_return_type = $source->getLocalReturnType($storage->return_type);

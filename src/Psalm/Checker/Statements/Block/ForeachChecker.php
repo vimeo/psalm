@@ -216,7 +216,7 @@ class ForeachChecker
                                 $project_checker,
                                 $iterator_class_type,
                                 $self_class,
-                                $iterator_method
+                                $self_class
                             );
 
                             if (!$value_type) {
@@ -322,6 +322,7 @@ class ForeachChecker
                 $comment_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     $var_comment->type,
+                    $context->self,
                     $context->self
                 );
 

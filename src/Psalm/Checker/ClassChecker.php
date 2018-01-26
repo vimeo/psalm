@@ -407,7 +407,7 @@ class ClassChecker extends ClassLikeChecker
                     $project_checker,
                     $property_type,
                     $this->fq_class_name,
-                    null
+                    $this->fq_class_name
                 );
                 $fleshed_out_type->check($this, $property->type_location, $this->getSuppressedIssues(), [], false);
             }
@@ -782,6 +782,8 @@ class ClassChecker extends ClassLikeChecker
         $project_checker = $source->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
+        $analyzed_method_id = $actual_method_id;
+
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
             $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
 
@@ -816,7 +818,7 @@ class ClassChecker extends ClassLikeChecker
 
                 $return_type = MethodChecker::getMethodReturnType(
                     $project_checker,
-                    $actual_method_id,
+                    $analyzed_method_id,
                     $self_class
                 );
 

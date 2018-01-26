@@ -345,6 +345,7 @@ class PropertyFetchChecker
                 $class_property_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     clone $class_property_type,
+                    $declaring_property_class,
                     $declaring_property_class
                 );
 
