@@ -338,6 +338,40 @@ class InterfaceTest extends TestCase
                       }
                     }',
             ],
+            'inheritMultipleInterfacesWithDocblocks' => [
+                '<?php
+                    interface I1 {
+                      /** @return string */
+                      public function foo();
+                    }
+                    interface I2 {
+                      /** @return string */
+                      public function bar();
+                    }
+                    class A implements I1, I2 {
+                      public function foo() {
+                        return "hello";
+                      }
+                      public function bar() {
+                        return "goodbye";
+                      }
+                    }',
+            ],
+            'interfaceReturnType' => [
+                '<?php
+                    interface A {
+                        /** @return string|null */
+                        public function blah();
+                    }
+
+                    class B implements A {
+                        public function blah() {
+                            return rand(0, 10) === 4 ? "blah" : null;
+                        }
+                    }
+
+                    $blah = (new B())->blah();',
+            ],
         ];
     }
 
@@ -487,25 +521,6 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'interfaceReturnType' => [
-                '<?php
-                    interface A {
-                        /** @return string|null */
-                        public function blah();
-                    }
-
-                    class B implements A {
-                        public function blah() {
-                            return rand(0, 10) === 4 ? "blah" : null;
-                        }
-                    }
-
-                    $blah = (new B())->blah();',
-                'error_message' => 'MixedAssignment',
-                'error_levels' => [
-                    'MissingReturnType',
-                ],
-            ],
             'interfaceInstanceofAndTwoReturns' => [
                 '<?php
                     interface A {}
@@ -531,6 +546,23 @@ class InterfaceTest extends TestCase
 
                     class A implements Container {}',
                 'error_message' => 'DeprecatedInterface',
+            ],
+            'inheritMultipleInterfacesWithConflictingDocblocks' => [
+                '<?php
+                    interface I1 {
+                      /** @return string */
+                      public function foo();
+                    }
+                    interface I2 {
+                      /** @return int */
+                      public function foo();
+                    }
+                    class A implements I1, I2 {
+                      public function foo() {
+                        return "hello";
+                      }
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }

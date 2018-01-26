@@ -19,6 +19,7 @@ use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 
 class ClassChecker extends ClassLikeChecker
@@ -426,6 +427,7 @@ class ClassChecker extends ClassLikeChecker
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checker = $this->analyzeClassMethod(
                     $stmt,
+                    $storage,
                     $this,
                     $class_context,
                     $global_context
@@ -483,6 +485,7 @@ class ClassChecker extends ClassLikeChecker
                             if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                                 $trait_method_checker = $this->analyzeClassMethod(
                                     $trait_stmt,
+                                    $storage,
                                     $trait_checker,
                                     $class_context,
                                     $global_context
@@ -606,6 +609,7 @@ class ClassChecker extends ClassLikeChecker
 
                         $constructor_checker = $this->analyzeClassMethod(
                             $fake_stmt,
+                            $storage,
                             $this,
                             $class_context,
                             $global_context
@@ -764,6 +768,7 @@ class ClassChecker extends ClassLikeChecker
      */
     private function analyzeClassMethod(
         PhpParser\Node\Stmt\ClassMethod $stmt,
+        ClassLikeStorage $class_storage,
         StatementsSource $source,
         Context $class_context,
         Context $global_context = null
@@ -814,6 +819,30 @@ class ClassChecker extends ClassLikeChecker
                     $actual_method_id,
                     $self_class
                 );
+
+                if (!$return_type && $class_storage->interface_method_ids) {
+                    foreach ($class_storage->interface_method_ids[$stmt->name] as $interface_method_id) {
+                        list($interface_class) = explode('::', $interface_method_id);
+
+                        $interface_return_type = MethodChecker::getMethodReturnType(
+                            $project_checker,
+                            $interface_method_id,
+                            $interface_class
+                        );
+
+                        $interface_return_type_location = MethodChecker::getMethodReturnTypeLocation(
+                            $project_checker,
+                            $interface_method_id
+                        );
+
+                        $method_checker->verifyReturnType(
+                            $project_checker,
+                            $interface_return_type,
+                            $interface_class,
+                            $interface_return_type_location
+                        );
+                    }
+                }
 
                 $method_checker->verifyReturnType(
                     $project_checker,

@@ -521,6 +521,8 @@ class Codebase
 
         $storage->class_implements = array_merge($extra_interfaces, $storage->class_implements);
 
+        $interface_method_implementers = [];
+
         foreach ($storage->class_implements as $implemented_interface) {
             try {
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
@@ -531,16 +533,20 @@ class Codebase
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
                     $mentioned_method_id = $implemented_interface . '::' . $method_name;
-                    $implemented_method_id = $storage->name . '::' . $method_name;
-
-                    if ($storage->abstract) {
-                        MethodChecker::setOverriddenMethodId(
-                            $this->classlike_storage_provider,
-                            $implemented_method_id,
-                            $mentioned_method_id
-                        );
-                    }
+                    $interface_method_implementers[$method_name][] = $mentioned_method_id;
                 }
+            }
+        }
+
+        foreach ($interface_method_implementers as $method_name => $interface_method_ids) {
+            if (count($interface_method_ids) === 1) {
+                MethodChecker::setOverriddenMethodId(
+                    $this->classlike_storage_provider,
+                    $storage->name . '::' . $method_name,
+                    $interface_method_ids[0]
+                );
+            } else {
+                $storage->interface_method_ids[$method_name] = $interface_method_ids;
             }
         }
 
