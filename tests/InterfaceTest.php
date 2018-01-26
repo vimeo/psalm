@@ -372,6 +372,16 @@ class InterfaceTest extends TestCase
 
                     $blah = (new B())->blah();',
             ],
+            'interfaceExtendsTraversible' => [
+                '<?php
+                    interface Collection extends Countable, IteratorAggregate, ArrayAccess {}
+
+                    function takesCollection(Collection $c): void {
+                        takesIterable($c);
+                    }
+
+                    function takesIterable(iterable $i): void {}',
+            ],
         ];
     }
 

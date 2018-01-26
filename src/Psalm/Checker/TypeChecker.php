@@ -401,8 +401,13 @@ class TypeChecker
                 (
                     $input_type_part instanceof TNamedObject &&
                     (
-                        strtolower($input_type_part->value) === 'traversable' ||
-                        ClassChecker::classExtendsOrImplements(
+                        strtolower($input_type_part->value) === 'traversable'
+                        || ClassChecker::classExtendsOrImplements(
+                            $project_checker,
+                            $input_type_part->value,
+                            'Traversable'
+                        )
+                        || InterfaceChecker::interfaceExtends(
                             $project_checker,
                             $input_type_part->value,
                             'Traversable'
