@@ -98,7 +98,7 @@ class MethodChecker extends FunctionLikeChecker
 
         $class_storage = $project_checker->classlike_storage_provider->get($appearing_fq_class_name);
 
-        if ($appearing_method_name === '__clone') {
+        if (!isset($class_storage->overridden_method_ids[$appearing_method_name])) {
             return null;
         }
 
