@@ -526,9 +526,12 @@ class FunctionChecker extends FunctionLikeChecker
                                 continue;
                             }
 
+                            $self_class = 'self';
+
                             $return_type = MethodChecker::getMethodReturnType(
                                 $project_checker,
-                                $mapping_function_id
+                                $mapping_function_id,
+                                $self_class
                             ) ?: Type::getMixed();
 
                             if ($mapping_return_type) {

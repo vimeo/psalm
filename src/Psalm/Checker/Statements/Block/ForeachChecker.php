@@ -204,13 +204,18 @@ class ForeachChecker
                         )
                     ) {
                         $iterator_method = $iterator_type->value . '::current';
-                        $iterator_class_type = MethodChecker::getMethodReturnType($project_checker, $iterator_method);
+                        $self_class = $iterator_type->value;
+                        $iterator_class_type = MethodChecker::getMethodReturnType(
+                            $project_checker,
+                            $iterator_method,
+                            $self_class
+                        );
 
                         if ($iterator_class_type) {
                             $value_type_part = ExpressionChecker::fleshOutType(
                                 $project_checker,
                                 $iterator_class_type,
-                                $iterator_type->value,
+                                $self_class,
                                 $iterator_method
                             );
 

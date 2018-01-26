@@ -1018,7 +1018,13 @@ class CallChecker
                         return false;
                     }
 
-                    $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
+                    $self_fq_class_name = $fq_class_name;
+
+                    $return_type_candidate = MethodChecker::getMethodReturnType(
+                        $project_checker,
+                        $method_id,
+                        $self_fq_class_name
+                    );
 
                     if ($return_type_candidate) {
                         $return_type_candidate = clone $return_type_candidate;
@@ -1032,7 +1038,7 @@ class CallChecker
                         $return_type_candidate = ExpressionChecker::fleshOutType(
                             $project_checker,
                             $return_type_candidate,
-                            $fq_class_name,
+                            $self_fq_class_name,
                             $method_id
                         );
 
@@ -1564,7 +1570,13 @@ class CallChecker
                     ? $statements_checker->getFQCLN()
                     : $fq_class_name;
 
-                $return_type_candidate = MethodChecker::getMethodReturnType($project_checker, $method_id);
+                $self_fq_class_name = (string) $fq_class_name;
+
+                $return_type_candidate = MethodChecker::getMethodReturnType(
+                    $project_checker,
+                    $method_id,
+                    $self_fq_class_name
+                );
 
                 if ($return_type_candidate) {
                     $return_type_candidate = clone $return_type_candidate;
@@ -1578,7 +1590,7 @@ class CallChecker
                     $return_type_candidate = ExpressionChecker::fleshOutType(
                         $project_checker,
                         $return_type_candidate,
-                        $fq_class_name,
+                        $self_fq_class_name,
                         $method_id
                     );
 

@@ -61,10 +61,11 @@ class MethodChecker extends FunctionLikeChecker
 
     /**
      * @param  string $method_id
+     * @param  string $self_class
      *
      * @return Type\Union|null
      */
-    public static function getMethodReturnType(ProjectChecker $project_checker, $method_id)
+    public static function getMethodReturnType(ProjectChecker $project_checker, $method_id, &$self_class)
     {
         $method_id = self::getDeclaringMethodId($project_checker, $method_id);
 
@@ -83,7 +84,7 @@ class MethodChecker extends FunctionLikeChecker
         $storage = $project_checker->codebase->getMethodStorage($method_id);
 
         if ($storage->return_type) {
-            return $storage->return_type;
+            return clone $storage->return_type;
         }
 
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
@@ -96,7 +97,14 @@ class MethodChecker extends FunctionLikeChecker
                     return Type::getVoid();
                 }
 
-                return $overridden_storage->return_type;
+                list($fq_overridden_class) = explode('::', $overridden_method_id);
+
+                $overridden_class_storage =
+                    $project_checker->classlike_storage_provider->get($fq_overridden_class);
+
+                $self_class = $overridden_class_storage->name;
+
+                return clone $overridden_storage->return_type;
             }
         }
 

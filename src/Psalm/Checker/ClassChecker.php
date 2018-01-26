@@ -807,12 +807,18 @@ class ClassChecker extends ClassLikeChecker
                     );
                 }
 
-                $return_type = MethodChecker::getMethodReturnType($project_checker, $actual_method_id);
+                $self_class = $class_context->self;
+
+                $return_type = MethodChecker::getMethodReturnType(
+                    $project_checker,
+                    $actual_method_id,
+                    $self_class
+                );
 
                 $method_checker->verifyReturnType(
                     $project_checker,
-                    $return_type ? clone $return_type : null,
-                    $class_context->self,
+                    $return_type,
+                    $self_class,
                     $return_type_location
                 );
             }
