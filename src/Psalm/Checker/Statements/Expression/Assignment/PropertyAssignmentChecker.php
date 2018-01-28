@@ -279,8 +279,6 @@ class PropertyAssignmentChecker
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
                 if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
-                    $has_regular_setter = true;
-
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         // if this is a proper error, we'll see it on the first pass
                         if ($context->collect_mutations) {

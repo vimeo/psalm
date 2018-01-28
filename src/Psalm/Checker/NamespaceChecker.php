@@ -152,9 +152,6 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
      */
     public static function getConstantsForNamespace($namespace_name, $visibility)
     {
-        // remove for PHP 7.1 support
-        $visibility = \ReflectionProperty::IS_PUBLIC;
-
         // @todo this does not allow for loading in namespace constants not already defined in the current sweep
         if (!isset(self::$public_namespace_constants[$namespace_name])) {
             self::$public_namespace_constants[$namespace_name] = [];

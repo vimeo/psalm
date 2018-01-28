@@ -99,7 +99,6 @@ class AssertionFinder
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
             $var_name = null;
-            $var_type = null;
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -174,10 +173,6 @@ class AssertionFinder
                     $this_class_name,
                     $source
                 );
-
-                $var_type = isset($base_conditional->inferredType)
-                    ? $base_conditional->inferredType
-                    : null;
 
                 if ($var_name) {
                     $if_types[$var_name] = '!falsy';
@@ -256,8 +251,6 @@ class AssertionFinder
             }
 
             if ($gettype_position) {
-                $var_type = null;
-
                 if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
                     $string_expr = $conditional->left;
                     $gettype_expr = $conditional->right;
@@ -299,8 +292,6 @@ class AssertionFinder
             }
 
             if ($getclass_position) {
-                $var_type = null;
-
                 if ($getclass_position === self::ASSIGNMENT_TO_RIGHT) {
                     $whichclass_expr = $conditional->left;
                     $getclass_expr = $conditional->right;
@@ -352,9 +343,6 @@ class AssertionFinder
             }
 
             if ($typed_value_position) {
-                $var_type = null;
-                $other_type = null;
-
                 if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     /** @var PhpParser\Node\Expr $conditional->right */
                     $var_name = ExpressionChecker::getArrayVarId(
@@ -518,8 +506,6 @@ class AssertionFinder
             }
 
             if ($gettype_position) {
-                $var_type = null;
-
                 if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
                     $whichclass_expr = $conditional->left;
                     $gettype_expr = $conditional->right;
@@ -571,8 +557,6 @@ class AssertionFinder
             }
 
             if ($getclass_position) {
-                $var_type = null;
-
                 if ($getclass_position === self::ASSIGNMENT_TO_RIGHT) {
                     $whichclass_expr = $conditional->left;
                     $getclass_expr = $conditional->right;
@@ -630,9 +614,6 @@ class AssertionFinder
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
             if ($typed_value_position) {
-                $var_type = null;
-                $other_type = null;
-
                 if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     /** @var PhpParser\Node\Expr $conditional->right */
                     $var_name = ExpressionChecker::getArrayVarId(
@@ -640,9 +621,6 @@ class AssertionFinder
                         $this_class_name,
                         $source
                     );
-
-                    $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                    $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     $var_name = null;
                 } else {
@@ -663,9 +641,6 @@ class AssertionFinder
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
             if ($typed_value_position) {
-                $var_type = null;
-                $other_type = null;
-
                 if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
                     $var_name = null;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
@@ -675,9 +650,6 @@ class AssertionFinder
                         $this_class_name,
                         $source
                     );
-
-                    $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                    $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 } else {
                     throw new \UnexpectedValueException('$typed_value_position value');
                 }

@@ -696,7 +696,6 @@ class CallChecker
             return false;
         }
 
-        $class_type = null;
         $method_id = null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
@@ -719,7 +718,9 @@ class CallChecker
             $statements_checker
         );
 
-        $class_type = $var_id && $context->hasVariable($var_id) ? $context->vars_in_scope[$var_id] : null;
+        $class_type = $var_id && $context->hasVariable($var_id)
+            ? $context->vars_in_scope[$var_id]
+            : null;
 
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
@@ -978,7 +979,6 @@ class CallChecker
                     return false;
                 }
 
-                $return_type_location = null;
                 $project_checker = $source->getFileChecker()->project_checker;
 
                 switch (strtolower($stmt->name)) {
@@ -1269,13 +1269,13 @@ class CallChecker
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];
 
-                foreach ($context->vars_in_scope as $var => $type) {
+                foreach ($context->vars_in_scope as $var => $_) {
                     if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                         $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                     }
                 }
 
-                foreach ($context->vars_possibly_in_scope as $var => $type) {
+                foreach ($context->vars_possibly_in_scope as $var => $_) {
                     if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                         $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                     }
@@ -1307,7 +1307,6 @@ class CallChecker
         Context $context
     ) {
         $method_id = null;
-        $fq_class_name = null;
 
         $lhs_type = null;
 
@@ -1786,7 +1785,7 @@ class CallChecker
 
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
-                        $by_ref_type = new Type\Union(
+                        new Type\Union(
                             [
                                 new TArray(
                                     [

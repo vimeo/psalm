@@ -510,8 +510,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $statements_checker->analyze($function_stmts, $context, null, $global_context, true);
 
         foreach ($storage->params as $offset => $function_param) {
-            $signature_type = $function_param->signature_type;
-
             // only complain if there's no type defined by a parent type
             if (!$function_param->type
                 && $function_param->location
@@ -538,8 +536,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($this->function instanceof Closure) {
-            $closure_yield_types = [];
-
             $this->verifyReturnType(
                 $project_checker,
                 $storage->return_type,
@@ -574,6 +570,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
+                $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
+
+                if ($position === false) {
+                    throw new \UnexpectedValueException('$position should not be false here');
+                }
+
+                if ($storage->params[$position]->by_ref) {
+                    continue;
+                }
+
                 if (!($storage instanceof MethodStorage)
                     || $storage->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
                 ) {
@@ -601,12 +607,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
 
                     $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
-
-                    $position = array_search(substr($var_name, 1), array_keys($storage->param_types), true);
-
-                    if ($position === false) {
-                        throw new \UnexpectedValueException('$position should not be false here');
-                    }
 
                     if ($parent_method_id) {
                         $parent_method_storage = $codebase->getMethodStorage($parent_method_id);
@@ -1237,7 +1237,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $inferred_return_type = $inferred_yield_type;
         }
 
-        $project_checker = $this->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
         if (!$return_type && !$codebase->config->add_void_docblocks && $inferred_return_type->isVoid()) {

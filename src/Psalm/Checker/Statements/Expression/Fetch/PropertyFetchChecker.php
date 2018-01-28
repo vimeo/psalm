@@ -49,8 +49,6 @@ class PropertyFetchChecker
             }
         }
 
-        $var_id = null;
-
         if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }

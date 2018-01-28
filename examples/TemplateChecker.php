@@ -109,7 +109,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $view_context->self = self::VIEW_CLASS;
 
         // add all $this-> vars to scope
-        foreach ($this_context->vars_possibly_in_scope as $var => $type) {
+        foreach ($this_context->vars_possibly_in_scope as $var => $_) {
             $view_context->vars_in_scope[str_replace('$this->', '$', $var)] = Type::getMixed();
         }
 

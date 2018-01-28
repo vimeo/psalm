@@ -48,7 +48,6 @@ class ArrayFetchChecker
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context
     ) {
-        $var_type = null;
         $used_key_type = null;
 
         $array_var_id = ExpressionChecker::getArrayVarId(

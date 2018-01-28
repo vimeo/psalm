@@ -55,8 +55,6 @@ class TypeChecker
             return true;
         }
 
-        $type_match_found = false;
-
         foreach ($input_type->getTypes() as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
@@ -747,7 +745,7 @@ class TypeChecker
             foreach ($declared_atomic_type->type_params as $offset => $type_param) {
                 if (!self::hasIdenticalTypes(
                     $project_checker,
-                    $declared_atomic_type->type_params[$offset],
+                    $type_param,
                     $inferred_atomic_type->type_params[$offset]
                 )) {
                     return false;

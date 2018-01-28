@@ -34,8 +34,6 @@ class IncludeChecker
             return false;
         }
 
-        $path_to_file = null;
-
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
             $path_to_file = $stmt->expr->value;
 

@@ -261,8 +261,6 @@ class ForeachChecker
             }
         }
 
-        $before_context = clone $foreach_context;
-
         if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
             $key_var_id = '$' . $stmt->keyVar->name;
             $foreach_context->vars_in_scope[$key_var_id] = $key_type ?: Type::getMixed();

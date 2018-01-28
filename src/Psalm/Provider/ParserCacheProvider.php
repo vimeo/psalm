@@ -44,8 +44,6 @@ class ParserCacheProvider
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
-        $cache_location = null;
-
         $file_content_hashes = $this->getFileContentHashes();
 
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;

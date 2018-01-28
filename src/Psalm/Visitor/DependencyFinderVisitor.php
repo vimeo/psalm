@@ -1304,8 +1304,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             );
         }
 
-        $path_to_file = null;
-
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
             $path_to_file = $stmt->expr->value;
 

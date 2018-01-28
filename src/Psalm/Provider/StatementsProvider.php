@@ -34,8 +34,6 @@ class StatementsProvider
      */
     public function getStatementsForFile($file_path, $debug_output = false)
     {
-        $stmts = [];
-
         $from_cache = false;
 
         $version = 'parsercache5';

@@ -297,8 +297,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_checker_to_examine = null;
-
         if (isset($this->class_checkers_to_analyze[strtolower($fq_class_name)])) {
             $class_checker_to_examine = $this->class_checkers_to_analyze[strtolower($fq_class_name)];
         } else {
@@ -313,7 +311,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         $call_context->initialized_methods = $this_context->initialized_methods;
         $call_context->include_location = $this_context->include_location;
 
-        foreach ($this_context->vars_possibly_in_scope as $var => $type) {
+        foreach ($this_context->vars_possibly_in_scope as $var => $_) {
             if (strpos($var, '$this->') === 0) {
                 $call_context->vars_possibly_in_scope[$var] = true;
             }

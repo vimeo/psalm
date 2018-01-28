@@ -39,15 +39,10 @@ class Reflection
     }
 
     /**
-     * @param  string          $class_name
-     * @param  \ReflectionClass $reflected_class
-     *
      * @return void
      */
-    public function registerClass(
-        $class_name,
-        \ReflectionClass $reflected_class
-    ) {
+    public function registerClass(\ReflectionClass $reflected_class)
+    {
         $class_name = $reflected_class->name;
 
         if ($class_name === 'LibXMLError') {
@@ -71,7 +66,7 @@ class Reflection
 
         if ($reflected_parent_class) {
             $parent_class_name = $reflected_parent_class->getName();
-            $this->registerClass($parent_class_name, $reflected_parent_class);
+            $this->registerClass($reflected_parent_class);
 
             $parent_storage = $this->storage_provider->get($parent_class_name);
 
@@ -166,7 +161,7 @@ class Reflection
         /** @var \ReflectionClass $interface */
         foreach ($interfaces as $interface) {
             $interface_name = $interface->getName();
-            $this->registerClass($interface_name, $interface);
+            $this->registerClass($interface);
 
             if ($reflected_class->isInterface()) {
                 $storage->parent_interfaces[strtolower($interface_name)] = $interface_name;
@@ -178,9 +173,8 @@ class Reflection
         /** @var \ReflectionMethod $reflection_method */
         foreach ($reflection_methods as $reflection_method) {
             $method_reflection_class = $reflection_method->getDeclaringClass();
-            $method_class_name = $method_reflection_class->getName();
 
-            $this->registerClass($method_class_name, $method_reflection_class);
+            $this->registerClass($method_reflection_class);
 
             $this->extractReflectionMethodInfo($reflection_method);
 
@@ -448,8 +442,6 @@ class Reflection
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
-            $implemented_method_id = $fq_class_name . '::' . $method_name;
-
             $storage->appearing_method_ids[$method_name] = $appearing_method_id;
         }
 

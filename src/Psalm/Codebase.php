@@ -322,7 +322,7 @@ class Codebase
                         }
 
                         $reflected_class = new \ReflectionClass($fq_classlike_name);
-                        $this->reflection->registerClass($reflected_class->name, $reflected_class);
+                        $this->reflection->registerClass($reflected_class);
                         $this->reflected_classeslikes_lc[$fq_classlike_name_lc] = true;
                     } elseif ($this->fileExistsForClassLike($fq_classlike_name)) {
                         if (isset($this->classlike_files[$fq_classlike_name_lc])) {
@@ -436,7 +436,7 @@ class Codebase
 
         $storage_provider = $this->classlike_storage_provider;
 
-        foreach ($storage->used_traits as $used_trait_lc => $used_trait) {
+        foreach ($storage->used_traits as $used_trait_lc => $_) {
             try {
                 $trait_storage = $storage_provider->get($used_trait_lc);
             } catch (\InvalidArgumentException $e) {

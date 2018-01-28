@@ -244,8 +244,6 @@ class ClassChecker extends ClassLikeChecker
             }
         }
 
-        $trait_checkers = [];
-
         $class_interfaces = $storage->class_implements;
 
         if (!$this->class->isAbstract()) {

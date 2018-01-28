@@ -47,7 +47,6 @@ class ParseTree
         // We construct a parse tree corresponding to the type
         $parse_tree = new self(null, null);
 
-        $current_parent = null;
         $current_leaf = $parse_tree;
 
         while ($type_tokens) {
