@@ -1938,12 +1938,19 @@ class CallChecker
                     // we don't know if it exists, assume it's passed by reference
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                     $context->vars_possibly_in_scope[$var_id] = true;
-                    if (!$statements_checker->hasVariable($var_id)) {
+
+                    if (strpos($var_id, '-') === false
+                        && strpos($var_id, '[') === false
+                        && !$statements_checker->hasVariable($var_id)
+                    ) {
+                        $location = new CodeLocation($statements_checker, $arg->value);
                         $statements_checker->registerVariable(
                             $var_id,
-                            new CodeLocation($statements_checker, $arg->value),
+                            $location,
                             null
                         );
+
+                        $statements_checker->registerVariableUse($location);
                     }
                 }
             }
