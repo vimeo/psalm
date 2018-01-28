@@ -137,7 +137,7 @@ class MethodChecker extends FunctionLikeChecker
             return false;
         }
 
-        list($fq_class_name, $method_name) = explode('::', $method_id);
+        list($fq_class_name) = explode('::', $method_id);
 
         if (!ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)
             && FunctionChecker::inCallMap($method_id)

@@ -39,7 +39,7 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
                 }
 
                 /** @psalm-suppress MixedArgument */
-                list($fq_class_name, $method_name) = explode('::', $matches[1]);
+                list($fq_class_name) = explode('::', $matches[1]);
 
                 $codebase->queueClassLikeForScanning(
                     $fq_class_name,
