@@ -153,8 +153,6 @@ class CodeLocation
 
             $preview_offset = 0;
 
-            $i = 0;
-
             $comment_line_offset = $this->docblock_line_number - $this->docblock_start_line_number;
 
             for ($i = 0; $i < $comment_line_offset; ++$i) {
