@@ -11,7 +11,10 @@ use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\Expression\ArrayChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\BinaryOpChecker;
-use Psalm\Checker\Statements\Expression\CallChecker;
+use Psalm\Checker\Statements\Expression\Call\FunctionCallChecker;
+use Psalm\Checker\Statements\Expression\Call\MethodCallChecker;
+use Psalm\Checker\Statements\Expression\Call\NewChecker;
+use Psalm\Checker\Statements\Expression\Call\StaticCallChecker;
 use Psalm\Checker\Statements\Expression\Fetch\ArrayFetchChecker;
 use Psalm\Checker\Statements\Expression\Fetch\ConstFetchChecker;
 use Psalm\Checker\Statements\Expression\Fetch\PropertyFetchChecker;
@@ -94,11 +97,11 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall) {
-            if (CallChecker::analyzeMethodCall($statements_checker, $stmt, $context) === false) {
+            if (MethodCallChecker::analyze($statements_checker, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
-            if (CallChecker::analyzeStaticCall($statements_checker, $stmt, $context) === false) {
+            if (StaticCallChecker::analyze($statements_checker, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
@@ -198,7 +201,7 @@ class ExpressionChecker
                 $stmt->inferredType = Type::getMixed();
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\New_) {
-            if (CallChecker::analyzeNew($statements_checker, $stmt, $context) === false) {
+            if (NewChecker::analyze($statements_checker, $stmt, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Array_) {
@@ -211,7 +214,7 @@ class ExpressionChecker
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
             $project_checker = $statements_checker->getFileChecker()->project_checker;
-            if (CallChecker::analyzeFunctionCall(
+            if (FunctionCallChecker::analyze(
                 $project_checker,
                 $statements_checker,
                 $stmt,
