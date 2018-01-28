@@ -55,6 +55,10 @@ class TryChecker
         $assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
+        $old_unreferenced_vars = $try_context->unreferenced_vars;
+        $newly_unreferenced_vars = [];
+        $reassigned_vars = [];
+
         if ($statements_checker->analyze($stmt->stmts, $context, $loop_scope) === false) {
             return false;
         }
@@ -82,10 +86,21 @@ class TryChecker
             );
 
             if ($context->collect_references) {
-                $context->unreferenced_vars = array_intersect_key(
-                    $try_context->unreferenced_vars,
-                    $context->unreferenced_vars
+                $newly_unreferenced_vars = array_merge(
+                    $newly_unreferenced_vars,
+                    array_diff_key(
+                        $context->unreferenced_vars,
+                        $old_unreferenced_vars
+                    )
                 );
+
+                foreach ($context->unreferenced_vars as $var_id => $location) {
+                    if (isset($old_unreferenced_vars[$var_id])
+                        && $old_unreferenced_vars[$var_id] !== $location
+                    ) {
+                        $reassigned_vars[$var_id] = $location;
+                    }
+                }
             }
         }
 
@@ -185,15 +200,23 @@ class TryChecker
             $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
 
             if (!$statements_checker->hasVariable($catch_var_id)) {
+                $location = new CodeLocation(
+                    $statements_checker,
+                    $catch,
+                    $context->include_location,
+                    true,
+                    CodeLocation::CATCH_VAR
+                );
                 $statements_checker->registerVariable(
                     $catch_var_id,
-                    new CodeLocation($statements_checker, $catch, $context->include_location, true),
+                    $location,
                     $try_context->branch_point
                 );
+                $catch_context->unreferenced_vars[$catch_var_id] = $location;
             }
 
             // this registers the variable to avoid unfair deadcode issues
-            $catch_context->hasVariable($catch_var_id);
+            $catch_context->hasVariable($catch_var_id, $statements_checker);
 
             $suppressed_issues = $statements_checker->getSuppressedIssues();
 
@@ -213,10 +236,31 @@ class TryChecker
             );
 
             if ($context->collect_references) {
-                $context->unreferenced_vars = array_intersect_key(
-                    $catch_context->unreferenced_vars,
-                    $context->unreferenced_vars
+                foreach ($context->unreferenced_vars as $var_id => $_) {
+                    if (!isset($catch_context->unreferenced_vars[$var_id])) {
+                        unset($context->unreferenced_vars[$var_id]);
+                    }
+                }
+
+                $newly_unreferenced_vars = array_merge(
+                    $newly_unreferenced_vars,
+                    array_diff_key(
+                        $catch_context->unreferenced_vars,
+                        $old_unreferenced_vars
+                    )
                 );
+
+                foreach ($catch_context->unreferenced_vars as $var_id => $location) {
+                    if (!isset($old_unreferenced_vars[$var_id])
+                        && isset($context->unreferenced_vars[$var_id])
+                    ) {
+                        $statements_checker->registerVariableUse($location);
+                    } elseif (isset($old_unreferenced_vars[$var_id])
+                        && $old_unreferenced_vars[$var_id] !== $location
+                    ) {
+                        $statements_checker->registerVariableUse($location);
+                    }
+                }
             }
 
             if ($catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
@@ -248,6 +292,14 @@ class TryChecker
 
         if ($stmt->finally) {
             $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
+        }
+
+        if ($context->collect_references) {
+            foreach ($old_unreferenced_vars as $var_id => $location) {
+                if (isset($context->unreferenced_vars[$var_id]) && $context->unreferenced_vars[$var_id] !== $location) {
+                    $statements_checker->registerVariableUse($location);
+                }
+            }
         }
 
         return null;

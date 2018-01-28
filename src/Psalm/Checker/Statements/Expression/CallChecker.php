@@ -718,7 +718,7 @@ class CallChecker
             $statements_checker
         );
 
-        $class_type = $var_id && $context->hasVariable($var_id)
+        $class_type = $var_id && $context->hasVariable($var_id, $statements_checker)
             ? $context->vars_in_scope[$var_id]
             : null;
 
@@ -1933,7 +1933,7 @@ class CallChecker
                 }
 
                 if ($var_id &&
-                    (!$context->hasVariable($var_id) || $context->vars_in_scope[$var_id]->isNull())
+                    (!$context->hasVariable($var_id, $statements_checker) || $context->vars_in_scope[$var_id]->isNull())
                 ) {
                     // we don't know if it exists, assume it's passed by reference
                     $context->vars_in_scope[$var_id] = Type::getMixed();

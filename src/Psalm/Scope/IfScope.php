@@ -27,6 +27,11 @@ class IfScope
     public $redefined_vars = null;
 
     /**
+     * @var array<string, bool>|null
+     */
+    public $assigned_var_ids = null;
+
+    /**
      * @var array<string, Type\Union>
      */
     public $possibly_redefined_vars = [];

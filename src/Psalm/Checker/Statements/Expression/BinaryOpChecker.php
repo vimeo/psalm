@@ -106,10 +106,7 @@ class BinaryOpChecker
             );
 
             if ($context->collect_references) {
-                $context->unreferenced_vars = array_intersect_key(
-                    $op_context->unreferenced_vars,
-                    $context->unreferenced_vars
-                );
+                $context->unreferenced_vars = $op_context->unreferenced_vars;
             }
 
             foreach ($op_context->vars_in_scope as $var_id => $type) {

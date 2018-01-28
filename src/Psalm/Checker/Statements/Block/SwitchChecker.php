@@ -166,7 +166,7 @@ class SwitchChecker
                     }
 
                     $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
-                    foreach ($reconcilable_if_types as $var_id => $type) {
+                    foreach ($reconcilable_if_types as $var_id => $_) {
                         $case_context->vars_possibly_in_scope[$var_id] = true;
                     }
 
@@ -197,13 +197,6 @@ class SwitchChecker
                 $context->referenced_var_ids,
                 $case_context->referenced_var_ids
             );
-
-            if ($context->collect_references) {
-                $context->unreferenced_vars = array_intersect_key(
-                    $case_context->unreferenced_vars,
-                    $context->unreferenced_vars
-                );
-            }
 
             if ($case_exit_type !== 'return_throw') {
                 $vars = array_diff_key(
@@ -273,7 +266,7 @@ class SwitchChecker
                         );
                     } else {
                         foreach ($new_vars_in_scope as $new_var => $type) {
-                            if (!$case_context->hasVariable($new_var)) {
+                            if (!$case_context->hasVariable($new_var, $statements_checker)) {
                                 unset($new_vars_in_scope[$new_var]);
                             } else {
                                 $new_vars_in_scope[$new_var] =
@@ -298,6 +291,21 @@ class SwitchChecker
 
             if (!$case->cond) {
                 $has_default = true;
+            }
+
+            if ($context->collect_references) {
+                foreach ($case_context->unreferenced_vars as $var_id => $location) {
+                    if (isset($context->unreferenced_vars[$var_id])
+                        && $context->unreferenced_vars[$var_id] !== $location
+                    ) {
+                        $context->hasVariable($var_id, $statements_checker);
+                    }
+                }
+
+                $context->unreferenced_vars = array_merge(
+                    $context->unreferenced_vars,
+                    $case_context->unreferenced_vars
+                );
             }
         }
 

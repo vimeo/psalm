@@ -70,7 +70,7 @@ class VariableFetchChecker
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 
-                if (!$context->hasVariable($var_name)) {
+                if (!$context->hasVariable($var_name, $statements_checker)) {
                     $context->vars_in_scope[$var_name] = Type::getMixed();
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $stmt->inferredType = Type::getMixed();
@@ -117,7 +117,7 @@ class VariableFetchChecker
 
         $var_name = '$' . $stmt->name;
 
-        if (!$context->hasVariable($var_name)) {
+        if (!$context->hasVariable($var_name, $statements_checker)) {
             if (!isset($context->vars_possibly_in_scope[$var_name]) ||
                 !$statements_checker->getFirstAppearance($var_name)
             ) {

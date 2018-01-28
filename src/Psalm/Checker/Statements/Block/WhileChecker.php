@@ -84,10 +84,7 @@ class WhileChecker
         );
 
         if ($context->collect_references) {
-            $context->unreferenced_vars = array_intersect_key(
-                $while_context->unreferenced_vars,
-                $context->unreferenced_vars
-            );
+            $context->unreferenced_vars = $while_context->unreferenced_vars;
         }
 
         return null;

@@ -69,7 +69,7 @@ class PropertyFetchChecker
 
         $stmt_var_type = null;
 
-        if ($var_id && $context->hasVariable($var_id)) {
+        if ($var_id && $context->hasVariable($var_id, $statements_checker)) {
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
 
@@ -99,7 +99,7 @@ class PropertyFetchChecker
             return null;
         }
 
-        if ($stmt_var_id && $context->hasVariable($stmt_var_id)) {
+        if ($stmt_var_id && $context->hasVariable($stmt_var_id, $statements_checker)) {
             $stmt_var_type = $context->vars_in_scope[$stmt_var_id];
         } elseif (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
@@ -507,7 +507,7 @@ class PropertyFetchChecker
 
             $property_id = $fq_class_name . '::$' . $stmt->name;
 
-            if ($var_id && $context->hasVariable($var_id)) {
+            if ($var_id && $context->hasVariable($var_id, $statements_checker)) {
                 // we don't need to check anything
                 $stmt->inferredType = $context->vars_in_scope[$var_id];
 

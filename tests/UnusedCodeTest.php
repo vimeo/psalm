@@ -94,6 +94,17 @@ class UnusedCodeTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
+            'arrayOffset' => [
+                '<?php
+                    /** @return void */
+                    function foo() {
+                        $a = 0;
+
+                        $arr = ["hello"];
+
+                        echo $arr[$a];
+                    }',
+            ],
             'unset' => [
                 '<?php
                     /** @return void */
@@ -114,7 +125,7 @@ class UnusedCodeTest extends TestCase
                         return $a . implode(",", $b);
                     }',
             ],
-            'ifInFunction' => [
+            'ifInFunctionWithReference' => [
                 '<?php
                     /** @return string */
                     function foo() {
@@ -127,10 +138,35 @@ class UnusedCodeTest extends TestCase
                         return $a . $b;
                     }',
             ],
+            'byrefInForeachLoop' => [
+                '<?php
+                    function foo(): void {
+                        $a = [1, 2, 3];
+                        foreach ($a as &$b) {
+                            $b = $b + 1;
+                        }
+                    }',
+            ],
+            'definedInSecondBranchOfCondition' => [
+                '<?php
+                    function foo(): void {
+                        if (rand(0, 1) && $a = rand(0, 1)) {
+                            echo $a;
+                        }
+                    }',
+            ],
             'booleanOr' => [
                 '<?php
                     function foo(int $a, int $b): bool {
                         return $a || $b;
+                    }',
+            ],
+            'paramUsedInIf' => [
+                '<?php
+                    function foo(string $a): void {
+                        if (rand(0, 1)) {
+                            echo $a;
+                        }
                     }',
             ],
             'magicCall' => [
@@ -214,6 +250,289 @@ class UnusedCodeTest extends TestCase
 
                     bar();',
             ],
+            'foreachReassigned' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        foreach ([1, 2, 3] as $b) {
+                            $a = true;
+                            echo $b;
+                        }
+
+                        echo $a;
+                    }',
+            ],
+            'doWhileReassigned' => [
+                '<?php
+                    function foo(): void {
+                        $a = 5;
+
+                        do {
+                            echo $a;
+                            $a = $a - rand(-3, 3);
+                        } while ($a > 3);
+                    }',
+            ],
+            'whileTypeChangedInIfAndContinueWithReference' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                                continue;
+                            }
+
+                            $a = false;
+                        }
+
+                        echo $a;
+                    }',
+            ],
+            'whileReassignedInIfAndContinueWithReferenceAfter' => [
+                '<?php
+                    function foo(): void {
+                        $a = 5;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = 7;
+                                continue;
+                            }
+
+                            $a = 3;
+                        }
+
+                        echo $a;
+                    }',
+            ],
+            'whileReassignedInIfAndContinueWithReferenceBeforeAndAfter' => [
+                '<?php
+                    function foo(): void {
+                        $a = 5;
+
+                        if ($a) {}
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = 7;
+                                continue;
+                            }
+
+                            $a = 3;
+                        }
+
+                        echo $a;
+                    }',
+            ],
+            'whileReassigned' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        while(rand(0, 1)) {
+                            $a = true;
+                        }
+
+                        echo $a;
+                    }',
+            ],
+            'ifVarReassignedInBranch' => [
+                '<?php
+                    function foo(): void {
+                        $a = true;
+
+                        if (rand(0, 1)) {
+                            $a = false;
+                        }
+
+                        if ($a) {
+                            echo "cool";
+                        }
+                    }',
+            ],
+            'elseVarReassignedInBranchAndReference' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        if (rand(0, 1)) {
+                            // do nothing
+                        } else {
+                            $a = true;
+                            //echo $a;
+                        }
+
+                        if ($a) {
+                            echo "cool";
+                        }
+                    }',
+            ],
+            'switchVarReassignedInBranch' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        switch (rand(0, 2)) {
+                            case 0:
+                                $a = true;
+                        }
+
+                        if ($a) {
+                            echo "cool";
+                        }
+                    }',
+            ],
+            'switchVarReassignedInBranchWithDefault' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        switch (rand(0, 2)) {
+                            case 0:
+                                $a = true;
+                                break;
+
+                            default:
+                                $a = false;
+                        }
+
+                        if ($a) {
+                            echo "cool";
+                        }
+                    }',
+            ],
+            'throwWithMessageCall' => [
+                '<?php
+                    function dangerous(): void {
+                        throw new \Exception("bad");
+                    }
+
+                    function callDangerous(): void {
+                        try {
+                            dangerous();
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                        }
+                    }',
+            ],
+            'throwWithMessageCallAndAssignmentAndReference' => [
+                '<?php
+                    function dangerous(): string {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+
+                        return "hello";
+                    }
+
+                    function callDangerous(): void {
+                        $s = null;
+
+                        try {
+                            $s = dangerous();
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                        }
+
+                        if ($s) {}
+                    }',
+            ],
+            'throwWithMessageCallAndAssignmentInCatchAndReference' => [
+                '<?php
+                    function dangerous(): string {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+
+                        return "hello";
+                    }
+
+                    function callDangerous(): void {
+                        $s = null;
+
+                        try {
+                            dangerous();
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                            $s = "hello";
+                        }
+
+                        if ($s) {}
+                    }',
+            ],
+            'throwWithMessageCallAndAssignmentInTryAndCatchAndReference' => [
+                '<?php
+                    function dangerous(): string {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+
+                        return "hello";
+                    }
+
+                    function callDangerous(): void {
+                        $s = null;
+
+                        try {
+                            $s = dangerous();
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                            $s = "hello";
+                        }
+
+                        if ($s) {}
+                    }',
+            ],
+            'throwWithMessageCallAndNestedAssignmentInTryAndCatchAndReference' => [
+                '<?php
+                    function dangerous(): string {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+
+                        return "hello";
+                    }
+
+                    function callDangerous(): void {
+                        $s = null;
+
+                        if (rand(0, 1)) {
+                            $s = "hello";
+                        } else {
+                            try {
+                                $t = dangerous();
+                            } catch (Exception $e) {
+                                echo $e->getMessage();
+                                $t = "hello";
+                            }
+
+                            if ($t) {
+                                $s = $t;
+                            }
+                        }
+
+                        if ($s) {}
+                    }',
+            ],
+            'ifInReturnBlock' => [
+                '<?php
+                    function foo(): void {
+                        $i = false;
+
+                        foreach ([1, 2, 3] as $a) {
+                            if (rand(0, 1)) {
+                                $i = true;
+                            }
+
+                            echo $a;
+                        }
+
+                        if ($i) {}
+                    }',
+            ],
         ];
     }
 
@@ -233,7 +552,7 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
-            'ifInFunction' => [
+            'ifInFunctionWithoutReference' => [
                 '<?php
                     /** @return int */
                     function foo() {
@@ -247,7 +566,16 @@ class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
-            'unusuedVariableInBranchOfIf' => [
+            'varInNestedAssignmentWithoutReference' => [
+                '<?php
+                    function foo(): void {
+                        if (rand(0, 1)) {
+                            $a = "foo";
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'varInSecondNestedAssignmentWithoutReference' => [
                 '<?php
                     function foo(): void {
                         if (rand(0, 1)) {
@@ -257,6 +585,228 @@ class UnusedCodeTest extends TestCase
 
                         if (rand(0, 1)) {
                             $a = "foo";
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'varReassignedInBothBranchesOfIf' => [
+                '<?php
+                    function foo(): void {
+                        $a = "foo";
+
+                        if (rand(0, 1)) {
+                            $a = "bar";
+                        } else {
+                            $a = "bat";
+                        }
+
+                        echo $a;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'varReassignedInNestedBranchesOfIf' => [
+                '<?php
+                    function foo(): void {
+                        $a = "foo";
+
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = "bar";
+                            } else {
+                                $a = "bat";
+                            }
+                        } else {
+                            $a = "bang";
+                        }
+
+                        echo $a;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'ifVarReassignedInBranch' => [
+                '<?php
+                    function foo(): void {
+                        $a = true;
+
+                        if (rand(0, 1)) {
+                            $a = false;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'elseVarReassignedInBranchAndNoReference' => [
+                '<?php
+                    function foo(): void {
+                        $a = true;
+
+                        if (rand(0, 1)) {
+                            // do nothing
+                        } else {
+                            $a = false;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'switchVarReassignedInBranch' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        switch (rand(0, 2)) {
+                            case 0:
+                                $a = true;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'switchVarReassignedInBranchWithDefault' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        switch (rand(0, 2)) {
+                            case 0:
+                                $a = true;
+                                break;
+
+                            default:
+                                $a = false;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedListVar' => [
+                '<?php
+                    function foo(): void {
+                        list($a, $b) = explode(" ", "hello world");
+                        echo $a;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedPreForVar' => [
+                '<?php
+                    function foo(): void {
+                        $i = 0;
+
+                        for ($i = 0; $i < 10; $i++) {
+                            echo $i;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedIfInReturnBlock' => [
+                '<?php
+                    function foo(): void {
+                        $i = rand(0, 1);
+
+                        foreach ([1, 2, 3] as $a) {
+                            if ($a % 2) {
+                                $i = 7;
+                                return;
+                            }
+                        }
+
+                        if ($i) {}
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedIfVarInBranch' => [
+                '<?php
+                    function foo(): void {
+                        if (rand(0, 1)) {
+
+                        } elseif (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = "foo";
+                            } else {
+                                $a = "bar";
+                                echo $a;
+                            }
+                        }
+
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'throwWithMessageCallAndAssignmentAndNoReference' => [
+                '<?php
+                    function dangerous(): string {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+
+                        return "hello";
+                    }
+
+                    function callDangerous(): void {
+                        $s = null;
+
+                        try {
+                            $s = dangerous();
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'whileTypeChangedInIfWithoutReference' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'whileTypeChangedInIfAndContinueWithoutReference' => [
+                '<?php
+                    function foo(): void {
+                        $a = false;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                                continue;
+                            }
+
+                            $a = false;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'whileReassignedInIfAndContinueWithoutReferenceAfter' => [
+                '<?php
+                    function foo(): void {
+                        $a = 5;
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = 7;
+                                continue;
+                            }
+
+                            $a = 3;
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'whileReassignedInIfAndContinueWithoutReference' => [
+                '<?php
+                    function foo(): void {
+                        $a = 3;
+
+                        if ($a) {}
+
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = 5;
+                                continue;
+                            }
+
+                            $a = 3;
                         }
                     }',
                 'error_message' => 'UnusedVariable',

@@ -330,7 +330,7 @@ class ArrayAssignmentChecker
                 }
             }
         } elseif ($root_var_id) {
-            if ($context->hasVariable($root_var_id)) {
+            if ($context->hasVariable($root_var_id, $statements_checker)) {
                 $context->vars_in_scope[$root_var_id] = $root_type;
             } else {
                 $context->vars_in_scope[$root_var_id] = $root_type;

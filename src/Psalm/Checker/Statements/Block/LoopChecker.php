@@ -225,6 +225,17 @@ class LoopChecker
                     break;
                 }
 
+                if ($inner_context->collect_references) {
+                    foreach ($inner_context->unreferenced_vars as $var_id => $location) {
+                        if (isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
+                            && (!isset($loop_scope->loop_parent_context->unreferenced_vars[$var_id])
+                                || $loop_scope->loop_parent_context->unreferenced_vars[$var_id] !== $location)
+                        ) {
+                            $statements_checker->registerVariableUse($location);
+                        }
+                    }
+                }
+
                 // remove vars that were defined in the foreach
                 foreach ($vars_to_remove as $var_id) {
                     unset($inner_context->vars_in_scope[$var_id]);
@@ -367,10 +378,15 @@ class LoopChecker
         );
 
         if ($inner_context->collect_references) {
-            $loop_scope->loop_context->unreferenced_vars = array_diff_key(
-                $inner_context->unreferenced_vars,
-                $inner_context->referenced_var_ids
-            );
+            foreach ($inner_context->unreferenced_vars as $var_id => $location) {
+                if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
+                    $loop_scope->loop_context->unreferenced_vars[$var_id] = $location;
+                } elseif (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])
+                    || $loop_scope->loop_context->unreferenced_vars[$var_id] !== $location
+                ) {
+                    $statements_checker->registerVariableUse($location);
+                }
+            }
         }
     }
 
@@ -398,7 +414,9 @@ class LoopChecker
 
             if ($loop_scope->possibly_redefined_loop_vars) {
                 foreach ($loop_scope->possibly_redefined_loop_vars as $var => $type) {
-                    if ($loop_scope->loop_context->hasVariable($var) && !isset($updated_loop_vars[$var])) {
+                    if ($loop_scope->loop_context->hasVariable($var)
+                        && !isset($updated_loop_vars[$var])
+                    ) {
                         $loop_scope->loop_context->vars_in_scope[$var] = Type::combineUnionTypes(
                             $loop_scope->loop_context->vars_in_scope[$var],
                             $type

@@ -272,12 +272,12 @@ class ExpressionChecker
             foreach ($stmt->uses as $use) {
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
-                if (!$context->hasVariable('$' . $use->var) && $use->byRef) {
+                if (!$context->hasVariable('$' . $use->var, $statements_checker) && $use->byRef) {
                     $context->vars_in_scope['$' . $use->var] = Type::getMixed();
                 }
 
                 $use_context->vars_in_scope['$' . $use->var] =
-                    $context->hasVariable('$' . $use->var) && !$use->byRef
+                    $context->hasVariable('$' . $use->var, $statements_checker) && !$use->byRef
                     ? clone $context->vars_in_scope['$' . $use->var]
                     : Type::getMixed();
 
@@ -524,12 +524,18 @@ class ExpressionChecker
                 $context->byref_constraints[$var_id] = new \Psalm\ReferenceConstraint($by_ref_type);
             }
 
-            if (!$context->hasVariable($var_id)) {
+            if (!$context->hasVariable($var_id, $statements_checker)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 
                 if (!$statements_checker->hasVariable($var_id)) {
-                    $statements_checker->registerVariable($var_id, new CodeLocation($statements_checker, $stmt), null);
-                    $context->hasVariable($var_id);
+                    $location = new CodeLocation($statements_checker, $stmt);
+                    $statements_checker->registerVariable($var_id, $location, null);
+
+                    if ($context->collect_references) {
+                        $context->unreferenced_vars[$var_id] = $location;
+                    }
+
+                    $context->hasVariable($var_id, $statements_checker);
                 }
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
@@ -780,7 +786,7 @@ class ExpressionChecker
     ) {
         foreach ($stmt->uses as $use) {
             $use_var_id = '$' . $use->var;
-            if (!$context->hasVariable($use_var_id)) {
+            if (!$context->hasVariable($use_var_id, $statements_checker)) {
                 if ($use->byRef) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                     $context->vars_possibly_in_scope[$use_var_id] = true;

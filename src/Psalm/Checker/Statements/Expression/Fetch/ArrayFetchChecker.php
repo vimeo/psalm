@@ -121,7 +121,7 @@ class ArrayFetchChecker
             );
         }
 
-        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id)) {
+        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id, $statements_checker)) {
             $stmt->inferredType = $context->vars_in_scope[$keyed_array_var_id];
         }
 

@@ -65,6 +65,7 @@ class CodeLocation
     const FUNCTION_PHPDOC_RETURN_TYPE = 3;
     const FUNCTION_PHPDOC_PARAM_TYPE = 4;
     const FUNCTION_PARAM_VAR = 5;
+    const CATCH_VAR = 6;
 
     /**
      * @param bool                 $single_line
@@ -198,6 +199,11 @@ class CodeLocation
 
                 case self::FUNCTION_PARAM_VAR:
                     $regex = '/(\$[^ ]*)/';
+                    $match_offset = 1;
+                    break;
+
+                case self::CATCH_VAR:
+                    $regex = '/(\$[^ ^\)]*)/';
                     $match_offset = 1;
                     break;
 

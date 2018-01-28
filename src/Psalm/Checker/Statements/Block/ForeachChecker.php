@@ -62,7 +62,7 @@ class ForeachChecker
         if (isset($stmt->expr->inferredType)) {
             /** @var Type\Union */
             $iterator_type = $stmt->expr->inferredType;
-        } elseif ($var_id && $foreach_context->hasVariable($var_id)) {
+        } elseif ($var_id && $foreach_context->hasVariable($var_id, $statements_checker)) {
             $iterator_type = $foreach_context->vars_in_scope[$var_id];
         } else {
             $iterator_type = null;
@@ -266,12 +266,22 @@ class ForeachChecker
             $foreach_context->vars_in_scope[$key_var_id] = $key_type ?: Type::getMixed();
             $foreach_context->vars_possibly_in_scope[$key_var_id] = true;
 
+            $location = new CodeLocation($statements_checker, $stmt->keyVar);
+
+            if ($context->collect_references && !isset($foreach_context->byref_constraints[$key_var_id])) {
+                $foreach_context->unreferenced_vars[$key_var_id] = $location;
+            }
+
             if (!$statements_checker->hasVariable($key_var_id)) {
                 $statements_checker->registerVariable(
                     $key_var_id,
-                    new CodeLocation($statements_checker, $stmt->keyVar),
+                    $location,
                     $foreach_context->branch_point
                 );
+            }
+
+            if ($stmt->byRef) {
+                $statements_checker->registerVariableUse($location);
             }
         }
 

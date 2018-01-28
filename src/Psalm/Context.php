@@ -623,7 +623,7 @@ class Context
      *
      * @return bool
      */
-    public function hasVariable($var_name)
+    public function hasVariable($var_name, StatementsChecker $statements_checker = null)
     {
         if (!$var_name ||
             (!isset($this->vars_possibly_in_scope[$var_name]) &&
@@ -637,7 +637,11 @@ class Context
         if ($stripped_var[0] === '$' && $stripped_var !== '$this') {
             $this->referenced_var_ids[$var_name] = true;
 
-            if ($this->collect_references) {
+            if ($this->collect_references && $statements_checker) {
+                if (isset($this->unreferenced_vars[$var_name])) {
+                    $statements_checker->registerVariableUse($this->unreferenced_vars[$var_name]);
+                }
+
                 unset($this->unreferenced_vars[$var_name]);
             }
         }

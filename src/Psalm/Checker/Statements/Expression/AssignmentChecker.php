@@ -218,16 +218,27 @@ class AssignmentChecker
             $context->vars_possibly_in_scope[$var_id] = true;
             $context->assigned_var_ids[$var_id] = true;
 
-            if ($context->collect_references && !isset($context->byref_constraints[$var_id])) {
-                $context->unreferenced_vars[$var_id] = new CodeLocation($statements_checker, $assign_var);
+            $location = new CodeLocation($statements_checker, $assign_var);
+
+            if ($context->collect_references) {
+                $context->unreferenced_vars[$var_id] = $location;
             }
 
             if (!$statements_checker->hasVariable($var_id)) {
                 $statements_checker->registerVariable(
                     $var_id,
-                    new CodeLocation($statements_checker, $assign_var),
+                    $location,
                     $context->branch_point
                 );
+            } else {
+                $statements_checker->registerVariableAssignment(
+                    $var_id,
+                    $location
+                );
+            }
+
+            if (isset($context->byref_constraints[$var_id])) {
+                $statements_checker->registerVariableUse($location);
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
@@ -296,12 +307,29 @@ class AssignmentChecker
                 if ($list_var_id) {
                     $context->vars_possibly_in_scope[$list_var_id] = true;
 
-                    if (!$statements_checker->hasVariable($list_var_id)) {
-                        $statements_checker->registerVariable(
-                            $list_var_id,
-                            new CodeLocation($statements_checker, $var),
-                            $context->branch_point
-                        );
+                    if (strpos($list_var_id, '-') === false && strpos($list_var_id, '[') === false) {
+                        $location = new CodeLocation($statements_checker, $assign_var);
+
+                        if ($context->collect_references) {
+                            $context->unreferenced_vars[$list_var_id] = $location;
+                        }
+
+                        if (!$statements_checker->hasVariable($list_var_id)) {
+                            $statements_checker->registerVariable(
+                                $list_var_id,
+                                $location,
+                                $context->branch_point
+                            );
+                        } else {
+                            $statements_checker->registerVariableAssignment(
+                                $list_var_id,
+                                $location
+                            );
+                        }
+
+                        if (isset($context->byref_constraints[$list_var_id])) {
+                            $statements_checker->registerVariableUse($location);
+                        }
                     }
 
                     $new_assign_type = null;

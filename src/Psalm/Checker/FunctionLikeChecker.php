@@ -565,7 +565,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             && !$project_checker->find_references_to
             && $context->check_variables
         ) {
-            foreach ($context->unreferenced_vars as $var_name => $original_location) {
+            foreach ($statements_checker->getUnusedVarLocations() as list($var_name, $original_location)) {
                 if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
                     continue;
                 }
