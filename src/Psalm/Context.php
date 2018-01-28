@@ -467,7 +467,7 @@ class Context
     /**
      * @param  string               $remove_var_id
      * @param  Union|null           $new_type
-     * @param  ?StatementsChecker   $statements_checker
+     * @param  null|StatementsChecker   $statements_checker
      *
      * @return void
      */
@@ -487,7 +487,7 @@ class Context
      * @param  string                 $remove_var_id
      * @param  \Psalm\Type\Union|null $existing_type
      * @param  \Psalm\Type\Union|null $new_type
-     * @param  ?StatementsChecker     $statements_checker
+     * @param  null|StatementsChecker     $statements_checker
      *
      * @return void
      */

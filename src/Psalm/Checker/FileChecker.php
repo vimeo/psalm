@@ -337,7 +337,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return ?string
+     * @return null|string
      */
     public function getNamespace()
     {
@@ -431,7 +431,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return ?string
+     * @return null|string
      */
     public function getFQCLN()
     {
@@ -439,7 +439,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @return ?string
+     * @return null|string
      */
     public function getClassName()
     {

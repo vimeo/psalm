@@ -434,7 +434,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * @return ?string
+     * @return null|string
      */
     public function getNamespace()
     {

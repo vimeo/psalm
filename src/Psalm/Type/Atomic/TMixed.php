@@ -23,7 +23,7 @@ class TMixed extends \Psalm\Type\Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return ?string
+     * @return null|string
      */
     public function toPhpString(
         $namespace,

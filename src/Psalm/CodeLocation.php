@@ -67,10 +67,10 @@ class CodeLocation
     const FUNCTION_PARAM_VAR = 5;
 
     /**
-     * @param bool             $single_line
-     * @param ?int             $regex_type
-     * @param ?CodeLocation    $previous_location
-     * @param ?string          $selected_text
+     * @param bool                 $single_line
+     * @param null|int             $regex_type
+     * @param null|CodeLocation    $previous_location
+     * @param null|string          $selected_text
      */
     public function __construct(
         FileSource $file_source,

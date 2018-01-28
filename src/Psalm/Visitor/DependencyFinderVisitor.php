@@ -96,7 +96,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @param  PhpParser\Node $node
      *
-     * @return ?int
+     * @return null|int
      */
     public function enterNode(PhpParser\Node $node)
     {

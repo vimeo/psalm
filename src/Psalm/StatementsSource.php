@@ -6,7 +6,7 @@ use Psalm\Checker\FileChecker;
 interface StatementsSource extends FileSource
 {
     /**
-     * @return ?string
+     * @return null|string
      */
     public function getNamespace();
 

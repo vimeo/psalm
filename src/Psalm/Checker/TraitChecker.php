@@ -30,7 +30,7 @@ class TraitChecker extends ClassLikeChecker
     }
 
     /**
-     * @return ?string
+     * @return null|string
      */
     public function getNamespace()
     {

@@ -100,7 +100,7 @@ function array_diff_key(array $arr, array $arr2, array $arr3 = null, array $arr4
  * @template TValue
  *
  * @param array<TKey, TValue> $arr
- * @return ?TValue
+ * @return null|TValue
  * @psalm-ignore-nullable-return
  */
 function array_shift(array &$arr) {}
@@ -110,7 +110,7 @@ function array_shift(array &$arr) {}
  * @template TValue
  *
  * @param array<TKey, TValue> $arr
- * @return ?TValue
+ * @return null|TValue
  * @psalm-ignore-nullable-return
  */
 function array_pop(array &$arr) {}
