@@ -83,7 +83,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 (string)getcwd(),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -107,7 +106,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -135,7 +133,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -164,7 +161,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -228,7 +224,6 @@ class ConfigTest extends TestCase
 
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -254,7 +249,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -280,7 +274,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             Config::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -303,7 +296,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -340,7 +332,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -377,7 +368,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -413,7 +403,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -442,7 +431,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -475,7 +463,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -508,7 +495,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm>
@@ -544,7 +530,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm
@@ -574,7 +559,6 @@ class ConfigTest extends TestCase
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
-                'psalm.xml',
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
                 <psalm

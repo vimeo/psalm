@@ -30,10 +30,6 @@ class EffectsAnalyser
         $return_types = [];
 
         foreach ($stmts as $stmt) {
-            if (!$stmt instanceof PhpParser\Node\Stmt\Nop) {
-                $last_stmt = $stmt;
-            }
-
             if ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Yield_ ||
                     $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom) {
