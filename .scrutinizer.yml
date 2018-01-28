@@ -18,3 +18,7 @@ build:
 checks:
     php: true
 
+filter:
+  excluded_paths:
+    - "tests/"
+    - "src/Psalm/Stubs"
