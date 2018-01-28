@@ -153,7 +153,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 $fq_classlike_name = ClassChecker::getAnonymousClassName($node, $this->file_path);
-                $fq_classlike_name_lc = strtolower($fq_classlike_name);
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
                 $fq_classlike_name_lc = strtolower($fq_classlike_name);
@@ -931,7 +930,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $this->improveParamsFromDocblock(
                 $storage,
                 $docblock_info->params,
-                $template_types,
                 $stmt
             );
         }
@@ -1017,7 +1015,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @param  array<int, array{type:string,name:string,line_number:int}>  $docblock_params
      * @param  FunctionLikeStorage          $storage
-     * @param  array<string, string>|null   $template_types
      * @param  PhpParser\Node\FunctionLike  $function
      *
      * @return void
@@ -1025,7 +1022,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     private function improveParamsFromDocblock(
         FunctionLikeStorage $storage,
         array $docblock_params,
-        $template_types,
         PhpParser\Node\FunctionLike $function
     ) {
         $base = $this->fq_classlike_names
