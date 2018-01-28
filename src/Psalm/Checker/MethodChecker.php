@@ -79,7 +79,6 @@ class MethodChecker extends FunctionLikeChecker
             return null;
         }
 
-        list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
         list($appearing_fq_class_name, $appearing_method_name) = explode('::', $appearing_method_id);
 
         if (!ClassLikeChecker::isUserDefined($project_checker, $appearing_fq_class_name)

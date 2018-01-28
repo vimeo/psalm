@@ -263,7 +263,7 @@ class ExpressionChecker
                 }
             }
 
-            foreach ($context->vars_possibly_in_scope as $var => $type) {
+            foreach ($context->vars_possibly_in_scope as $var => $_) {
                 if (strpos($var, '$this->') === 0) {
                     $use_context->vars_possibly_in_scope[$var] = true;
                 }

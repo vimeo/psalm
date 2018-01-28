@@ -259,13 +259,12 @@ class Config
             throw new \InvalidArgumentException('Cannot open ' . $file_path);
         }
 
-        return self::loadFromXML($file_path, $base_dir, $file_contents);
+        return self::loadFromXML($base_dir, $file_contents);
     }
 
     /**
      * Creates a new config object from an XML string
      *
-     * @param  string           $file_path
      * @param  string           $base_dir
      * @param  string           $file_contents
      *
@@ -277,7 +276,7 @@ class Config
      * @psalm-suppress MixedOperand
      * @psalm-suppress MixedPropertyAssignment
      */
-    public static function loadFromXML($file_path, $base_dir, $file_contents)
+    public static function loadFromXML($base_dir, $file_contents)
     {
         $config = new static();
 

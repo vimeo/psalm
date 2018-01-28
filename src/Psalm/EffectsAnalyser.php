@@ -29,8 +29,6 @@ class EffectsAnalyser
     ) {
         $return_types = [];
 
-        $last_stmt = null;
-
         foreach ($stmts as $stmt) {
             if (!$stmt instanceof PhpParser\Node\Stmt\Nop) {
                 $last_stmt = $stmt;

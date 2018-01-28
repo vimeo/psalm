@@ -830,8 +830,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
         }
 
-        list($implemented_fq_class_name) = explode('::', $implementer_method_id);
-
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
                 if (IssueBuffer::accepts(

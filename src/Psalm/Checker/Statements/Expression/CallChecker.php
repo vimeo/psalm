@@ -1287,7 +1287,7 @@ class CallChecker
                     $context->vars_in_scope[$var] = $type;
                 }
 
-                foreach ($local_vars_possibly_in_scope as $var => $type) {
+                foreach ($local_vars_possibly_in_scope as $var => $_) {
                     $context->vars_possibly_in_scope[$var] = true;
                 }
             }
@@ -1363,13 +1363,13 @@ class CallChecker
                             $local_vars_in_scope = [];
                             $local_vars_possibly_in_scope = [];
 
-                            foreach ($context->vars_in_scope as $var => $type) {
+                            foreach ($context->vars_in_scope as $var => $_) {
                                 if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                                     $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                                 }
                             }
 
-                            foreach ($context->vars_possibly_in_scope as $var => $type) {
+                            foreach ($context->vars_possibly_in_scope as $var => $_) {
                                 if (strpos($var, '$this->') !== 0 && $var !== '$this') {
                                     $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                                 }

@@ -1149,7 +1149,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $comment = $stmt->getDocComment();
         $var_comment = null;
-        $property_type_line_number = null;
 
         $property_is_initialized = false;
 
