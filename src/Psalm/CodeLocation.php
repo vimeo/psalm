@@ -41,7 +41,7 @@ class CodeLocation
     /** @var string */
     private $snippet = '';
 
-    /** @var ?string */
+    /** @var null|string */
     private $text;
 
     /** @var int|null */
@@ -50,13 +50,13 @@ class CodeLocation
     /** @var int|null */
     private $docblock_line_number;
 
-    /** @var ?int */
+    /** @var null|int */
     private $regex_type;
 
     /** @var bool */
     private $have_recalculated = false;
 
-    /** @var ?CodeLocation */
+    /** @var null|CodeLocation */
     public $previous_location;
 
     const VAR_TYPE = 0;

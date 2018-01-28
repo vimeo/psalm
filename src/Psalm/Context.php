@@ -45,7 +45,7 @@ class Context
     public $inside_isset = false;
 
     /**
-     * @var ?CodeLocation
+     * @var null|CodeLocation
      */
     public $include_location = null;
 

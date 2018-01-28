@@ -32,25 +32,25 @@ class FunctionDocblockManipulator
     /** @var int */
     private $return_typehint_area_start;
 
-    /** @var ?int */
+    /** @var null|int */
     private $return_typehint_colon_start;
 
-    /** @var ?int */
+    /** @var null|int */
     private $return_typehint_start;
 
-    /** @var ?int */
+    /** @var null|int */
     private $return_typehint_end;
 
-    /** @var ?string */
+    /** @var null|string */
     private $new_php_return_type;
 
     /** @var bool */
     private $return_type_is_php_compatible = false;
 
-    /** @var ?string */
+    /** @var null|string */
     private $new_phpdoc_return_type;
 
-    /** @var ?string */
+    /** @var null|string */
     private $new_psalm_return_type;
 
     /** @var array<string, int> */

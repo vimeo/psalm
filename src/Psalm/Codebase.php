@@ -169,7 +169,7 @@ class Codebase
     public $collect_references = false;
 
     /**
-     * @var ?array<string, string>
+     * @var null|array<string, string>
      */
     private $composer_classmap;
 

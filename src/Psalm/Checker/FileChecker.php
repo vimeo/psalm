@@ -63,7 +63,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $function_checkers = [];
 
     /**
-     * @var ?Context
+     * @var null|Context
      */
     public $context;
 

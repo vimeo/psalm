@@ -60,7 +60,7 @@ class Union
      */
     public $by_ref = false;
 
-    /** @var ?string */
+    /** @var null|string */
     private $id;
 
     /**

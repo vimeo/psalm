@@ -2325,7 +2325,7 @@ class CallChecker
             $array_arg_types[] = $array_arg_type;
         }
 
-        /** @var ?PhpParser\Node\Arg */
+        /** @var null|PhpParser\Node\Arg */
         $closure_arg = isset($args[$closure_index]) ? $args[$closure_index] : null;
 
         /** @var Type\Union|null */
