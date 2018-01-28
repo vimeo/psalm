@@ -98,8 +98,6 @@ class AssertionFinder
             $getclass_position = self::hasGetClassCheck($conditional);
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
-            $var_name = null;
-
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
                     $base_conditional = $conditional->left;

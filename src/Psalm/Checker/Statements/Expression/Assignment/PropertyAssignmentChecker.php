@@ -212,7 +212,6 @@ class PropertyAssignmentChecker
                 }
 
                 if (ExpressionChecker::isMock($lhs_type_part->value)) {
-                    $has_regular_setter = true;
                     if ($var_id) {
                         $context->vars_in_scope[$var_id] = Type::getMixed();
                     }
