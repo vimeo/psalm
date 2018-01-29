@@ -81,6 +81,23 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             $fq_class_name = ClassChecker::getAnonymousClassName($stmt->class, $statements_checker->getFilePath());
         } else {
             ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
+
+            $generic_params = null;
+
+            if (self::checkMethodArgs(
+                null,
+                $stmt->args,
+                $generic_params,
+                $context,
+                new CodeLocation($statements_checker->getSource(), $stmt),
+                $statements_checker
+            ) === false) {
+                return false;
+            }
+
+            $stmt->inferredType = Type::getObject();
+
+            return null;
         }
 
         if ($fq_class_name) {

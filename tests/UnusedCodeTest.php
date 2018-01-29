@@ -138,12 +138,16 @@ class UnusedCodeTest extends TestCase
                         $a = 5;
                         $b = [];
                         $c[] = "hello";
-                        return $a . implode(",", $b) . $c[0];
+                        $d = "Foo";
+                        $e = "arg";
+                        $f = new $d($e);
+                        return $a . implode(",", $b) . $c[0] . get_class($f);
                     }',
                 'error_levels' => [
                     'PossiblyUndefinedVariable',
                     'MixedArrayAccess',
                     'MixedOperand',
+                    'MixedAssignment',
                 ],
             ],
             'ifInFunctionWithReference' => [
