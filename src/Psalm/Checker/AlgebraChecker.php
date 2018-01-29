@@ -86,8 +86,6 @@ class AlgebraChecker
         if ($assertions) {
             $clauses = [];
 
-
-
             foreach ($assertions as $var => $type) {
                 if ($type === 'isset' || $type === '!empty') {
                     $key_parts = preg_split('/(->|\[|\])/', $var, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);

@@ -2,8 +2,10 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Clause;
 use Psalm\Context;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
@@ -47,10 +49,66 @@ class DoChecker
             }
         }
 
+        $mixed_var_ids = [];
+
+        foreach ($do_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed()) {
+                $mixed_var_ids[] = $var_id;
+            }
+        }
+
+        $while_clauses = AlgebraChecker::getFormula(
+            $stmt->cond,
+            $context->self,
+            $statements_checker
+        );
+
+        $while_clauses = array_values(
+            array_filter(
+                $while_clauses,
+                /** @return bool */
+                function (Clause $c) use ($mixed_var_ids) {
+                    $keys = array_keys($c->possibilities);
+
+                    foreach ($keys as $key) {
+                        foreach ($mixed_var_ids as $mixed_var_id) {
+                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            )
+        );
+
+        if (!$while_clauses) {
+            $while_clauses = [new Clause([], true)];
+        }
+
+        $reconcilable_while_types = AlgebraChecker::getTruthsFromFormula($while_clauses);
+
+        if ($reconcilable_while_types) {
+            $changed_var_ids = [];
+            $while_vars_in_scope_reconciled =
+                Type\Reconciler::reconcileKeyedTypes(
+                    $reconcilable_while_types,
+                    $do_context->vars_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_checker,
+                    new \Psalm\CodeLocation($statements_checker->getSource(), $stmt->cond),
+                    $statements_checker->getSuppressedIssues()
+                );
+
+            $do_context->vars_in_scope = $while_vars_in_scope_reconciled;
+        }
+
         LoopChecker::analyze(
             $statements_checker,
             $stmt->stmts,
-            $stmt->cond ? [$stmt->cond] : [],
+            [$stmt->cond],
             [],
             $loop_scope,
             $inner_loop_context
