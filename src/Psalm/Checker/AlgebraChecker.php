@@ -86,40 +86,53 @@ class AlgebraChecker
         if ($assertions) {
             $clauses = [];
 
+
+
             foreach ($assertions as $var => $type) {
                 if ($type === 'isset' || $type === '!empty') {
-                    $key_parts = preg_split(
-                        '/(\]|\[)/',
-                        $var,
-                        -1,
-                        PREG_SPLIT_NO_EMPTY
-                    );
+                    $key_parts = preg_split('/(->|\[|\])/', $var, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
-                    $base = array_shift($key_parts);
+                    $base_key = array_shift($key_parts);
 
                     if ($type === 'isset') {
-                        $clauses[] = new Clause([$base => ['^isset']]);
+                        $clauses[] = new Clause([$base_key => ['^isset']]);
                     } else {
-                        $clauses[] = new Clause([$base => ['^!empty']]);
+                        $clauses[] = new Clause([$base_key => ['^!empty']]);
                     }
 
                     if (!empty($key_parts)) {
-                        $clauses[] = new Clause([$base => ['!false']]);
-                        $clauses[] = new Clause([$base => ['!int']]);
+                        $clauses[] = new Clause([$base_key => ['!false']]);
+                        $clauses[] = new Clause([$base_key => ['!int']]);
                     }
 
-                    foreach ($key_parts as $i => $key_part_dim) {
-                        $base .= '[' . $key_part_dim . ']';
+                    while ($key_parts) {
+                        $divider = array_shift($key_parts);
 
-                        if ($type === 'isset') {
-                            $clauses[] = new Clause([$base => ['^isset']]);
+                        if ($divider === '[') {
+                            $array_key = array_shift($key_parts);
+                            array_shift($key_parts);
+
+                            $new_base_key = $base_key . '[' . $array_key . ']';
+
+                            $base_key = $new_base_key;
+                        } elseif ($divider === '->') {
+                            $property_name = array_shift($key_parts);
+                            $new_base_key = $base_key . '->' . $property_name;
+
+                            $base_key = $new_base_key;
                         } else {
-                            $clauses[] = new Clause([$base => ['^!empty']]);
+                            throw new \InvalidArgumentException('Unexpected divider ' . $divider);
                         }
 
-                        if ($i < count($key_parts) - 1) {
-                            $clauses[] = new Clause([$base => ['!false']]);
-                            $clauses[] = new Clause([$base => ['!int']]);
+                        if ($type === 'isset') {
+                            $clauses[] = new Clause([$base_key => ['^isset']]);
+                        } else {
+                            $clauses[] = new Clause([$base_key => ['^!empty']]);
+                        }
+
+                        if (count($key_parts)) {
+                            $clauses[] = new Clause([$base_key => ['!false']]);
+                            $clauses[] = new Clause([$base_key => ['!int']]);
                         }
                     }
                 } else {

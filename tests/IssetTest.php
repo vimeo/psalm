@@ -116,6 +116,21 @@ class IssetTest extends TestCase
                         if (!isset($item["hide"]) || !$item["hide"]) {}
                     }',
             ],
+            'issetPropertyAffirmsObject' => [
+                '<?php
+                    class A {
+                        /** @var ?int */
+                        public $id;
+                    }
+
+                    function takesA(?A $a): A {
+                        if (isset($a->id)) {
+                            return $a;
+                        }
+
+                        return new A();
+                    }',
+            ],
         ];
     }
 
