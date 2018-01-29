@@ -199,6 +199,23 @@ class ScopeChecker
                     }
                 }
 
+                if ($stmt->finally) {
+                    if ($stmt->finally->stmts) {
+                        $finally_statement_actions = self::getFinalControlActions(
+                            $stmt->finally->stmts,
+                            $continue_is_break
+                        );
+
+                        if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {
+                            return $finally_statement_actions;
+                        }
+                    }
+
+                    if (!$stmt->catches && !in_array(self::ACTION_NONE, $try_statement_actions, true)) {
+                        return $try_statement_actions;
+                    }
+                }
+
                 $control_actions = array_merge($control_actions, $try_statement_actions);
             }
         }

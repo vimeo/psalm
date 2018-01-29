@@ -63,6 +63,36 @@ class TryCatchTest extends TestCase
                         return "hello";
                     }',
             ],
+            'wheresTheCatch' => [
+                '<?php
+                    function foo() : bool {
+                        try {
+                            return true;
+                        } finally {
+                        }
+                    }
+
+                    function bar() : bool {
+                        try {
+                            // do nothing
+                        } finally {
+                            return true;
+                        }
+                    }',
+            ],
+            'catchWithNoReturnButFinallyReturns' => [
+                '<?php
+                    function foo() : bool {
+                        try {
+                            if (rand(0, 1)) throw new Exception("bad");
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                            // do nothing here either
+                        } finally {
+                            return true;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -86,6 +116,52 @@ class TryCatchTest extends TestCase
                     class A {}
                     throw new A();',
                 'error_message' => 'InvalidThrow',
+            ],
+            'theresNoCatch' => [
+                '<?php
+                    function missing_return() : bool {
+                        try {
+                        } finally {
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'catchDoesNotReturn' => [
+                '<?php
+                    function missing_return() : bool {
+                        try {
+                        } finally {
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'catchWithNoReturnAndFinallyDoesNotReturn' => [
+                '<?php
+                    function foo() : bool {
+                        try {
+                            if (rand(0, 1)) throw new Exception("bad");
+                            return true;
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                            // do nothing here either
+                        } finally {
+
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'catchWithNoReturnAndNoFinally' => [
+                '<?php
+                    function foo() : bool {
+                        try {
+                            if (rand(0, 1)) throw new Exception("bad");
+                            return true;
+                        } catch (Exception $e) {
+                            echo $e->getMessage();
+                            // do nothing here either
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }
