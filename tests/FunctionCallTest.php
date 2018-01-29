@@ -195,7 +195,12 @@ class FunctionCallTest extends TestCase
                       }
                     );',
                 'assertions' => [],
-                'error_levels' => ['MixedArrayAccess', 'MixedArgument', 'UntypedParam', 'MissingClosureReturnType'],
+                'error_levels' => [
+                    'MixedArrayAccess',
+                    'MixedArgument',
+                    'MissingClosureParamType',
+                    'MissingClosureReturnType',
+                ],
             ],
             'byRefAfterCallable' => [
                 '<?php
@@ -393,7 +398,7 @@ class FunctionCallTest extends TestCase
                     '$a' => 'array<int, string>',
                 ],
                 'error_levels' => [
-                    'UntypedParam',
+                    'MissingClosureParamType',
                 ],
             ],
             'arrayFilterUseKey' => [
@@ -535,7 +540,7 @@ class FunctionCallTest extends TestCase
                      */
                     function f($p, $p) {}',
                 'error_message' => 'DuplicateParam',
-                'error_levels' => ['UntypedParam'],
+                'error_levels' => ['MissingParamType'],
             ],
             'invalidParamDefault' => [
                 '<?php

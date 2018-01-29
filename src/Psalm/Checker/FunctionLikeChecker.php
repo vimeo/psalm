@@ -22,7 +22,9 @@ use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MismatchingDocblockReturnType;
+use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingClosureReturnType;
+use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MoreSpecificImplementedParamType;
@@ -30,7 +32,6 @@ use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\ReservedWord;
-use Psalm\Issue\UntypedParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -525,13 +526,23 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     ? ', ' . ($possible_type ? 'should be ' . $possible_type : 'could not infer type')
                     : '';
 
-                IssueBuffer::accepts(
-                    new UntypedParam(
-                        'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
-                        $function_param->location
-                    ),
-                    $storage->suppressed_issues
-                );
+                if ($this->function instanceof Closure) {
+                    IssueBuffer::accepts(
+                        new MissingClosureParamType(
+                            'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues
+                    );
+                } else {
+                    IssueBuffer::accepts(
+                        new MissingParamType(
+                            'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
+                            $function_param->location
+                        ),
+                        $storage->suppressed_issues
+                    );
+                }
             }
         }
 
