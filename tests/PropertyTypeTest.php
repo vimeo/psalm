@@ -1167,6 +1167,14 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
+            'invalidPropertyDefault' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public $a = "hello";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
         ];
     }
 }

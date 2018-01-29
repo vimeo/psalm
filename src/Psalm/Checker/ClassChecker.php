@@ -420,6 +420,7 @@ class ClassChecker extends ClassLikeChecker
         }
 
         $constructor_checker = null;
+        $property_stmts = [];
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -498,8 +499,18 @@ class ClassChecker extends ClassLikeChecker
                 }
 
                 $class_context->include_location = $previous_context_include_location;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Property) {
+                foreach ($stmt->props as $prop) {
+                    if ($prop->default) {
+                        $property_stmts[] = $stmt;
+                        break;
+                    }
+                }
             }
         }
+
+        $statements_checker = new StatementsChecker($this);
+        $statements_checker->analyze($property_stmts, $class_context, null, $global_context, true);
 
         $config = Config::getInstance();
 

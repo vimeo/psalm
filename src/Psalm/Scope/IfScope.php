@@ -69,7 +69,7 @@ class IfScope
     /**
      * Variables that were mixed, but are no longer
      *
-     * @var array<string, Type\Union>
+     * @var array<string, Type\Union>|null
      */
     public $possible_param_types = null;
 
