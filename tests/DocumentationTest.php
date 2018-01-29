@@ -76,6 +76,26 @@ class DocumentationTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testAllIssuesCovered()
+    {
+        $all_issues = ConfigTest::getAllIssues();
+        sort($all_issues);
+
+        $code_blocks = self::getCodeBlocksFromDocs();
+
+        // these cannot have code
+        $code_blocks['UnrecognizedExpression'] = true;
+        $code_blocks['UnrecognizedStatement'] = true;
+
+        $documented_issues = array_keys($code_blocks);
+        sort($documented_issues);
+
+        $this->assertSame(implode(PHP_EOL, $all_issues), implode(PHP_EOL, $documented_issues));
+    }
+
+    /**
      * @dataProvider providerFileCheckerInvalidCodeParse
      * @small
      *

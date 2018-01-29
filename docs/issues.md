@@ -27,18 +27,68 @@ class A extends B {}
 class B extends A {}
 ```
 
+### ConflictingReferenceConstraint
+
+Emitted when a by-ref variable is set in two different branches of an if to different types.
+
+```php
+ class A {
+    /** @var int */
+    private $foo;
+
+    public function __construct(int &$foo) {
+        $this->foo = &$foo;
+    }
+}
+
+class B {
+    /** @var string */
+    private $bar;
+
+    public function __construct(string &$bar) {
+        $this->bar = &$bar;
+    }
+}
+
+if (rand(0, 1)) {
+    $v = 5;
+    $c = (new A($v)); // $v is constrained to an int
+} else {
+    $v = "hello";
+    $c = (new B($v)); // $v is constrained to a string
+}
+
+$v = 8;
+```
+
 ### ContinueOutsideLoop
 
 Emitted when encountering a `continue` statement outside a loop context.
 
+```php
+$a = 5;
+continue;
+```
+
 ### DeprecatedClass
 
-Emitted when creating a new instance of a deprecated class:
+Emitted when referring to a deprecated class:
 
 ```php
 /** @deprecated */
 class A {}
 new A();
+```
+
+### DeprecatedInterface
+
+Emitted when referring to a deprecated interface
+
+```php
+/** @deprecated */
+interface I {}
+
+class A implements I {}
 ```
 
 ### DeprecatedMethod
@@ -66,6 +116,19 @@ class A {
     public $foo;
 }
 (new A())->foo = 5;
+```
+
+### DuplicateArrayKey
+
+Emitted when an array has a key more than once
+
+```php
+$arr = [
+    'a' => 1,
+    'b' => 2,
+    'c' => 3,
+    'c' => 4,
+];
 ```
 
 ### DuplicateClass
@@ -367,6 +430,19 @@ Emitted when attempting to assign a property to a non-object
 ```php
 $a = "foo";
 $a->bar = "bar";
+```
+
+### InvalidPropertyAssignmentValue
+
+Emitted when attempting to assign a value to a property that cannot contain that type.
+
+```php
+class A {
+    /** @var string|null */
+    public $foo;
+}
+$a = new A();
+$a->foo = new stdClass();
 ```
 
 ### InvalidPropertyFetch
@@ -777,6 +853,31 @@ function foo(array $a) : void {
 function takesStringArray(array $a) : void {}
 ```
 
+### MoreSpecificImplementedParamType
+
+Emitted when a class implements an interface method but a param type is less specific than the interface method param type
+
+```php
+class A {}
+class B extends A {
+    public function bar(): void {}
+}
+class C extends A {
+    public function bar(): void {}
+}
+
+class D {
+    public function foo(A $a): void {}
+}
+
+class E extends D {
+    /** @param B|C $a */
+    public function foo(A $a): void {
+        $a->bar();
+    }
+}
+```
+
 ### MoreSpecificImplementedReturnType
 
 Emitted when a class implements an interface method but its return type is less specific than the interface method return type
@@ -978,6 +1079,22 @@ function foo(string $s) : void {
 }
 ```
 
+### PossiblyFalsePropertyAssignmentValue
+
+Emitted when trying to assign a value that may be false to a property that only takes non-false values.
+
+```php
+class A {
+    /** @var int */
+    public $foo = 0;
+}
+
+function assignToA(string $s) {
+    $a = new A();
+    $a->foo = strpos("haystack", $s);
+}
+```
+
 ### PossiblyFalseReference
 
 Emitted when making a method call on a value than might be `false`
@@ -1078,6 +1195,25 @@ function foo() {
 
 $a = foo();
 $a->bar = "5";
+```
+
+### PossiblyInvalidPropertyAssignmentValue
+
+Emitted when trying to assign a possibly invalid value to a typed property.
+
+```php
+class A {
+    /** @var int[] */
+    public $bb = [];
+}
+
+class B {
+    /** @var string[] */
+    public $bb;
+}
+
+$c = rand(0, 1) ? new A : new B;
+$c->bb = ["hello", "world"];
 ```
 
 ### PossiblyInvalidPropertyFetch
@@ -1181,6 +1317,22 @@ function foo(?A $a) : void {
 }
 ```
 
+### PossiblyNullPropertyAssignmentValue
+
+Emitted when trying to assign a value that may be null to a property that only takes non-null values.
+
+```php
+class A {
+    /** @var string */
+    public $foo = "bar";
+}
+
+function assignToA(?string $s) {
+    $a = new A();
+    $a->foo = $s;
+}
+```
+
 ### PossiblyNullPropertyFetch
 
 Emitted when trying to fetch a property on a possibly null object
@@ -1271,6 +1423,23 @@ class A {
 
 $a = new A();
 $a->foo(1, 2);
+```
+
+### PossiblyUnusedProperty
+
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a particular public/protected property
+
+```php
+class A {
+    /** @var string|null */
+    public $foo;
+
+    /** @var int|null */
+    public $bar;
+}
+
+$a = new A();
+echo $a->foo;
 ```
 
 ### PropertyNotSetInConstructor
@@ -1573,6 +1742,27 @@ Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a
 function foo(int $a, int $b) : int {
     return $a + 4;
 }
+```
+
+### UnusedProperty
+
+Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a private property
+
+```php
+class A {
+    /** @var string|null */
+    private $foo;
+
+    /** @var int|null */
+    private $bar;
+
+    public function getFoo(): ?string {
+        return $this->foo;
+    }
+}
+
+$a = new A();
+echo $a->getFoo();
 ```
 
 ### UnusedVariable
