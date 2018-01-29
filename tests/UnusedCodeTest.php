@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Checker\FileChecker;
+use Psalm\Config;
 use Psalm\Context;
 
 class UnusedCodeTest extends TestCase
@@ -56,7 +57,10 @@ class UnusedCodeTest extends TestCase
             $code
         );
 
-        $this->analyzeFile($file_path, new Context());
+        $context = new Context();
+        $context->collect_references = true;
+
+        $this->analyzeFile($file_path, $context);
         $this->project_checker->getCodebase()->checkClassReferences();
     }
 
@@ -65,10 +69,11 @@ class UnusedCodeTest extends TestCase
      *
      * @param string $code
      * @param string $error_message
+     * @param array<string> $error_levels
      *
      * @return void
      */
-    public function testInvalidCode($code, $error_message)
+    public function testInvalidCode($code, $error_message, $error_levels = [])
     {
         if (strpos($this->getName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -79,12 +84,19 @@ class UnusedCodeTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
+        foreach ($error_levels as $error_level) {
+            $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+        }
+
         $this->addFile(
             $file_path,
             $code
         );
 
-        $this->analyzeFile($file_path, new Context());
+        $context = new Context();
+        $context->collect_references = true;
+
+        $this->analyzeFile($file_path, $context);
         $this->project_checker->getCodebase()->checkClassReferences();
     }
 
@@ -540,6 +552,17 @@ class UnusedCodeTest extends TestCase
                         $a->passedByRef($b);
                     }',
             ],
+            'constructorIsUsed' => [
+                '<?php
+                    class A {
+                        public function __construct() {
+                            $this->foo();
+                        }
+                        private function foo() : void {}
+                    }
+                    $a = new A();
+                    echo (bool) $a;',
+            ],
         ];
     }
 
@@ -859,6 +882,7 @@ class UnusedCodeTest extends TestCase
 
                     $a = new A();',
                 'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
             ],
             'unusedProperty' => [
                 '<?php
@@ -869,6 +893,7 @@ class UnusedCodeTest extends TestCase
 
                     $a = new A();',
                 'error_message' => 'UnusedProperty',
+                'error_levels' => ['UnusedVariable'],
             ],
             'privateUnusedMethod' => [
                 '<?php

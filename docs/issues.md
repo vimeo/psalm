@@ -79,15 +79,10 @@ class A {}
 
 ### DuplicateParam
 
-Emitted when a class param is defined twice
+Emitted when a function has a param defined twice
 
 ```php
-class A {
-    /** @var ?string */
-    public $foo;
-    /** @var ?string */
-    public $foo;
-}
+function foo(int $b, string $b) {}
 ```
 
 ### EmptyArrayAccess
@@ -583,6 +578,16 @@ Emitted when a required param is before a param that is not required. Included i
 function foo(int $i = 5, string $j) : void {}
 ```
 
+### MissingClosureParamType
+
+Emitted when a closure paramter has no type information associated with it
+
+```php
+$a = function($a): string {
+    return "foo";
+};
+```
+
 ### MissingClosureReturnType
 
 Emitted when a closure lacks a return type
@@ -619,6 +624,14 @@ Emitted when using `include` or `require` on a file that does not exist
 
 ```php
 require("nonexistent.php");
+```
+
+### MissingParamType
+
+Emitted when a function paramter has no type information associated with it
+
+```php
+function foo($a) : void {}
 ```
 
 ### MissingPropertyType
@@ -748,7 +761,7 @@ function foo() : int {
 Emitted when assigning a value on a string using a value for which Psalm cannot infer a type
 
 ```php
-"hello"[$_GET['foo']] = "h";
+"hello"[0] = $_GET['foo'];
 ```
 
 ### MixedTypeCoercion
@@ -813,10 +826,16 @@ function bar(I $i) : void {
 
 ### NonStaticSelfCall
 
-Emitted when
+Emitted when calling a non-static function statically
 
 ```php
+class A {
+    public function foo(): void {}
 
+    public function bar(): void {
+        self::foo();
+    }
+}
 ```
 
 ### NullableReturnStatement
@@ -981,9 +1000,9 @@ foo()->bar();
 Emitted when
 
 ```php
-/** @return string|int */
+/** @return int|stdClass */
 function foo() {
-    return rand(0, 1) ? 5 : "i";
+    return rand(0, 1) ? 5 : new stdClass;
 }
 function bar(int $i) : void {}
 bar(foo());
@@ -1104,9 +1123,8 @@ function foo(?array $a) : void {
 Emitted when trying to set a value on a possibly null array
 
 ```php
-function foo(?array $a) : void {
-    $a[0] = "5";
-}
+$a = null;
+$a[0][] = 1;
 ```
 
 ### PossiblyNullArrayOffset
@@ -1250,6 +1268,9 @@ class A {
         return $a + 4;
     }
 }
+
+$a = new A();
+$a->foo(1, 2);
 ```
 
 ### PropertyNotSetInConstructor
@@ -1271,10 +1292,10 @@ Emitted when iterating over an object’s properties. This issue exists because 
 
 ```php
 class A {
-    /** @var string */
+    /** @var string|null */
     public $foo;
 
-    /** @var string */
+    /** @var string|null */
     public $bar;
 }
 
@@ -1519,14 +1540,6 @@ function requireFile(string $s) : void {
 }
 ```
 
-### UntypedParam
-
-Emitted when a function paramter has no type information associated with it
-
-```php
-function foo($a) : void {}
-```
-
 ### UnusedClass
 
 Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a given class
@@ -1549,7 +1562,7 @@ class A {
     private function foo() : void {}
     private function bar() : void {}
 }
-new A();
+$a = new A();
 ```
 
 ### UnusedParam
