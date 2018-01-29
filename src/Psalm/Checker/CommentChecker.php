@@ -561,7 +561,7 @@ class CommentChecker
             $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
 
             foreach ($description_lines as $line) {
-                $doc_comment_text .= $left_padding . ' * ' . $line . PHP_EOL;
+                $doc_comment_text .= $left_padding . ' *' . (trim($line) ? ' ' . $line : '') . PHP_EOL;
             }
         }
 

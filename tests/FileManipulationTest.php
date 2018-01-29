@@ -709,6 +709,10 @@ class FileManipulationTest extends TestCase
             'preserveFormat' => [
                 '<?php
                     /**
+                     * Here is a paragraph
+                     *
+                     * And another one
+                     *
                      * @other is
                      *    a friend of mine
                      *       + Members
@@ -720,6 +724,10 @@ class FileManipulationTest extends TestCase
                     }',
                 '<?php
                     /**
+                     * Here is a paragraph
+                     *
+                     * And another one
+                     *
                      * @other is
                      *    a friend of mine
                      *       + Members
