@@ -32,12 +32,11 @@ class UnusedCodeTest extends TestCase
      * @dataProvider providerFileCheckerValidCodeParse
      *
      * @param string $code
-     * @param array<string, string> $assertions
      * @param array<string> $error_levels
      *
      * @return void
      */
-    public function testValidCode($code)
+    public function testValidCode($code, array $error_levels = [])
     {
         $test_name = $this->getName();
         if (strpos($test_name, 'PHP7-') !== false) {
@@ -56,6 +55,10 @@ class UnusedCodeTest extends TestCase
             $file_path,
             $code
         );
+
+        foreach ($error_levels as $error_level) {
+            $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+        }
 
         $context = new Context();
         $context->collect_references = true;
@@ -134,8 +137,14 @@ class UnusedCodeTest extends TestCase
                     function foo() {
                         $a = 5;
                         $b = [];
-                        return $a . implode(",", $b);
+                        $c[] = "hello";
+                        return $a . implode(",", $b) . $c[0];
                     }',
+                'error_levels' => [
+                    'PossiblyUndefinedVariable',
+                    'MixedArrayAccess',
+                    'MixedOperand',
+                ],
             ],
             'ifInFunctionWithReference' => [
                 '<?php

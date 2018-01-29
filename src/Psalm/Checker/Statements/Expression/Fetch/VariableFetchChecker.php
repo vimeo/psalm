@@ -222,6 +222,8 @@ class VariableFetchChecker
                         return false;
                     }
                 }
+
+                $statements_checker->registerVariableUse($first_appearance);
             }
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
