@@ -19,13 +19,20 @@ Psalm supports a wide range of docblock annotations.
 ## PHPDoc tags
 
 Psalm uses the following PHPDoc tags to understand your code:
-- [`@var`](https://docs.phpdoc.org/references/phpdoc/tags/var.html)
-- [`@return`](https://docs.phpdoc.org/references/phpdoc/tags/return.html)
-- [`@param`](https://docs.phpdoc.org/references/phpdoc/tags/param.html)
-- [`@property`](https://docs.phpdoc.org/references/phpdoc/tags/property.html)
-- [`@property-read`](https://docs.phpdoc.org/references/phpdoc/tags/property-read.html)
-- [`@property-write`](https://docs.phpdoc.org/references/phpdoc/tags/property-write.html)
+- [`@var`](https://docs.phpdoc.org/references/phpdoc/tags/var.html)  
+  Used for specifying the types of properties and variables
+- [`@return`](https://docs.phpdoc.org/references/phpdoc/tags/return.html)  
+  Used for specifying the return types of functions, methods and closures
+- [`@param`](https://docs.phpdoc.org/references/phpdoc/tags/param.html)  
+  Used for specifying types of parameters passed to functions, methods and closures
+- [`@property`](https://docs.phpdoc.org/references/phpdoc/tags/property.html)  
+  Used to specify what properties can be accessed on an object that uses `__get` and `__set`
+- [`@property-read`](https://docs.phpdoc.org/references/phpdoc/tags/property-read.html)  
+  Used to specify what properties can be read on object that uses `__get`
+- [`@property-write`](https://docs.phpdoc.org/references/phpdoc/tags/property-write.html)  
+  Used to specify what properties can be written on object that uses `__set`
 - [`@deprecated`](https://docs.phpdoc.org/references/phpdoc/tags/deprecated.html)
+  Used to mark functions, methods, classes and interfaces as being deprecated
 
 ### Off-label usage of the `@var` tag
 
@@ -33,7 +40,7 @@ The `@var` tag is supposed to only be used for properties. Psalm, taking a lead 
 
 If `VariableReference` is provided, it should be of the form `$variable` or `$variable->property`. If used above an assignment, Psalm checks whether the `VariableReference` matches the variable being assigned. If they differ, Psalm will assign the `Type` to `VariableReference` and use it in the expression below.
 
-If no `VariableReference` is given, the annotation tells Psalm that the RHS of the expression, whether an assignment or a return, is of type `Type`.
+If no `VariableReference` is given, the annotation tells Psalm that the right hand side of the expression, whether an assignment or a return, is of type `Type`.
 
 ```php
 /** @var string */
@@ -54,7 +61,7 @@ There are a number of custom tags that determine how Psalm treats your code.
 
 ### `@psalm-var`, `@psalm-param` and `@psalm-return`
 
-When specifying types in a format not supported phpDocumentor (but supported by Psalm) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
+When specifying types in a format not supported phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
 
 ### `@psalm-suppress SomeIssueName`
 
@@ -79,8 +86,6 @@ function addString(?string $s) {
     echo "hello " . $s;
 }
 ```
-
-For example, we can suppress the possible 
 
 ### `@psalm-ignore-nullable-return`
 
@@ -137,7 +142,7 @@ function array_combine(array $arr, array $arr2) {}
 
 ### `@psalm-seal-properties`
 
-If you have a magic property getter/setter, you can use `@psalm-seal-properties` to instruct Psalm to disallow getting and setting any properties not contained in a list of `@property(-read|-write)` annotations.
+If you have a magic property getter/setter, you can use `@psalm-seal-properties` to instruct Psalm to disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations.
 
 ```php
 /**
@@ -155,7 +160,7 @@ class A {
 }
 
 $a = new A();
-$a->bar = 5;
+$a->bar = 5; // this call fails
 ```
 
 ## Type Syntax
@@ -196,7 +201,3 @@ function foo(array $arr): void {
 foo(["cool", 4]); // passes
 foo([4, "cool"]); // fails
 ```
-
-
-
-
