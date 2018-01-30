@@ -756,19 +756,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $implementer_classlike_storage->name
                 ) : null;
 
-            $or_null_implementer_return_type = $implementer_signature_return_type
-                ? clone $implementer_signature_return_type
-                : null;
-
-            if ($or_null_implementer_return_type) {
-                $or_null_implementer_return_type->addType(new Type\Atomic\TNull);
-            }
-
-            if ((!$implementer_signature_return_type
-                    || $implementer_signature_return_type->getId() !== $guide_signature_return_type->getId())
-                && (!$or_null_implementer_return_type
-                    || $or_null_implementer_return_type->getId() !== $guide_signature_return_type->getId())
-            ) {
+            if (!TypeChecker::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type)) {
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
@@ -858,24 +846,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $implementer_param = $implementer_method_storage->params[$i];
 
-            $or_null_guide_type = $guide_param->signature_type
-                ? clone $guide_param->signature_type
-                : null;
-
-            if ($or_null_guide_type) {
-                $or_null_guide_type->addType(new Type\Atomic\TNull);
-            }
 
             if ($guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
-                && (
-                    !$guide_param->signature_type
-                    || (
-                        $implementer_param->signature_type->getId() !== $guide_param->signature_type->getId()
-                        && (!$or_null_guide_type
-                            || $implementer_param->signature_type->getId() !== $or_null_guide_type->getId())
-                    )
-                )
+                && !TypeChecker::isContainedByInPhp($guide_param->signature_type, $implementer_param->signature_type)
             ) {
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
@@ -938,6 +912,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             $implemeneter_param_type = $implementer_method_storage->params[$i]->type;
+
+            $or_null_guide_type = $guide_param->signature_type
+                ? clone $guide_param->signature_type
+                : null;
+
+            if ($or_null_guide_type) {
+                $or_null_guide_type->addType(new Type\Atomic\TNull);
+            }
 
             if (!$guide_classlike_storage->user_defined
                 && $guide_param->type

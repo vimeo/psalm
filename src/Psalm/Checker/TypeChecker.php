@@ -109,6 +109,48 @@ class TypeChecker
     }
 
     /**
+     * Used for comparing signature typehints, uses PHP's light contravariance rules
+     *
+     * @param  Type\Union   $input_type
+     * @param  Type\Union   $container_type
+     *
+     * @return bool
+     */
+    public static function isContainedByInPhp(
+        Type\Union $input_type = null,
+        Type\Union $container_type
+    ) {
+        if (!$input_type) {
+            return false;
+        }
+
+        if ($input_type->getId() === $container_type->getId()) {
+            return true;
+        }
+
+        if ($input_type->isNullable() && !$container_type->isNullable()) {
+            return false;
+        }
+
+        $input_type_not_null = clone $input_type;
+        $input_type_not_null->removeType('null');
+
+        $container_type_not_null = clone $container_type;
+        $container_type_not_null->removeType('null');
+
+        if ($input_type_not_null->getId() === $container_type_not_null->getId()) {
+            return true;
+        }
+
+        if ($input_type_not_null->hasArray() && $container_type_not_null->hasType('iterable')) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /**
      * Can any part of the $type1 be equal to any part of $type2
      *
      * @param  Type\Union   $type1
