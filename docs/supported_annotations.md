@@ -5,13 +5,13 @@ Psalm supports a wide range of docblock annotations.
 ## Table of contents
 
 - [PHPDoc tags](#phpdoc-tags)
-  - [Off-label usage of PHPDoc tags](#off-label-usage-of-phpdoc-tags)
+  - [Off-label usage of PHPDoc tags](#off-label-usage-of-the-var-tag)
 - [Psalm-specific tags](#psalm-specific-tags)
-  - [@psalm-var, @psalm-param and @psalm-return][#psalm-var-psalm-param-and-psalm-return]
+  - [@psalm-var, @psalm-param and @psalm-return](#psalm-var-psalm-param-and-psalm-return)
   - [@psalm-suppress](#psalm-suppress-someissuename)
   - [@psalm-ignore-nullable-return](#psalm-ignore-nullable-return)
   - [@psalm-ignore-falsable-return](#psalm-ignore-falsable-return)
-  - [@template](#template)
+  - [@template and @template-typeof](#template-and-template-typeof)
   - [@psalm-seal-properties](#psalm-seal-properties)
 - [Type Syntax](#type-syntax)
   - [Object-like arrays](#object-like-arrays)
