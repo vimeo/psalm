@@ -1073,16 +1073,26 @@ class AssertionFinder
             && strtolower($stmt->name->parts[0]) === 'is_a'
             && isset($stmt->args[1])
         ) {
-            $first_arg = $stmt->args[1]->value;
+            $second_arg = $stmt->args[1]->value;
 
-            if ($first_arg instanceof PhpParser\Node\Scalar\String_
+            if ($second_arg instanceof PhpParser\Node\Scalar\String_
                 || (
-                    $first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->class instanceof PhpParser\Node\Name
-                    && is_string($first_arg->name)
-                    && strtolower($first_arg->name) === 'class'
+                    $second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $second_arg->class instanceof PhpParser\Node\Name
+                    && is_string($second_arg->name)
+                    && strtolower($second_arg->name) === 'class'
                 )
             ) {
+                if (isset($stmt->args[2]->value)) {
+                    $third_arg = $stmt->args[2]->value;
+
+                    if (!$third_arg instanceof PhpParser\Node\Expr\ConstFetch
+                        || strtolower($third_arg->name->parts[0]) !== 'false'
+                    ) {
+                        return false;
+                    }
+                }
+
                 return true;
             }
         }

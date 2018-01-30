@@ -846,7 +846,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $implementer_param = $implementer_method_storage->params[$i];
 
-
             if ($guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
                 && !TypeChecker::isContainedByInPhp($guide_param->signature_type, $implementer_param->signature_type)

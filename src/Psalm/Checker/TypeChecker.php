@@ -149,7 +149,6 @@ class TypeChecker
         return false;
     }
 
-
     /**
      * Can any part of the $type1 be equal to any part of $type2
      *
