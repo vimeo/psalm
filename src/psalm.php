@@ -18,7 +18,7 @@ $options = getopt(
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
         'self-check', 'output-format:', 'report:', 'find-dead-code', 'init',
         'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
-        'version', 'plugin:',
+        'version', 'plugin:', 'stats',
     ]
 );
 
@@ -108,6 +108,9 @@ Options:
 
     --plugin=PATH
         Executes a plugin, an alternative to using the Psalm config
+
+    --stats
+        Shows a breakdown of Psalm's ability to infer types in the codebase
 
 HELP;
 
@@ -317,4 +320,4 @@ if ($find_references_to) {
     }
 }
 
-IssueBuffer::finish($project_checker, !$is_diff, $start_time);
+IssueBuffer::finish($project_checker, !$is_diff, $start_time, isset($options['stats']));

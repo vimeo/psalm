@@ -1834,6 +1834,26 @@ class Codebase
     }
 
     /**
+     * @param  string $file_path
+     * @param  string $closure_id
+     *
+     * @return FunctionLikeStorage
+     */
+    public function getClosureStorage($file_path, $closure_id)
+    {
+        $file_storage = $this->file_storage_provider->get($file_path);
+
+        // closures can be returned here
+        if (isset($file_storage->functions[$closure_id])) {
+            return $file_storage->functions[$closure_id];
+        }
+
+        throw new \UnexpectedValueException(
+            'Expecting ' . $closure_id . ' to have storage in ' . $file_path
+        );
+    }
+
+    /**
      * @param  string $method_id
      *
      * @return MethodStorage
@@ -2032,6 +2052,25 @@ class Codebase
         }
 
         return 100 * $nonmixed_count / $total;
+    }
+
+    /**
+     * @return string
+     */
+    public function getNonMixedStats()
+    {
+        $stats = '';
+
+        foreach ($this->files_to_report as $file_path => $_) {
+            if (isset($this->mixed_counts[$file_path])) {
+                list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
+                $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 0)
+                    . '% ' . $this->config->shortenFileName($file_path)
+                    . ' (' . $path_mixed_count . ' mixed)' . PHP_EOL;
+            }
+        }
+
+        return $stats;
     }
 
     /**

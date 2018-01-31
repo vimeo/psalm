@@ -224,15 +224,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $file_storage = $file_storage_provider->get($this->source->getFilePath());
-
             $function_id = $this->getMethodId();
 
-            if (!isset($file_storage->functions[$function_id])) {
-                throw new \UnexpectedValueException('Closure function ' . $function_id . ' should exist');
-            }
-
-            $storage = $file_storage->functions[$function_id];
+            $storage = $codebase->getClosureStorage($this->source->getFilePath(), $function_id);
 
             if ($storage->return_type) {
                 $closure_return_type = ExpressionChecker::fleshOutType(

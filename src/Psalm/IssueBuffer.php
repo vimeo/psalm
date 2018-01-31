@@ -188,11 +188,16 @@ class IssueBuffer
      * @param  ProjectChecker       $project_checker
      * @param  bool                 $is_full
      * @param  float                $start_time
+     * @param  bool                 $add_stats
      *
      * @return void
      */
-    public static function finish(ProjectChecker $project_checker, $is_full, $start_time)
-    {
+    public static function finish(
+        ProjectChecker $project_checker,
+        $is_full,
+        $start_time,
+        $add_stats = false
+    ) {
         $scanned_files = $project_checker->codebase->getScannedFiles();
         Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
 
@@ -242,7 +247,19 @@ class IssueBuffer
 
             if ($is_full) {
                 echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
-                    . ' of your codebase' . PHP_EOL;
+                    . ' of the codebase';
+
+                if (!$add_stats) {
+                    echo ' - get a breakdown by running Psalm with --stats';
+                }
+
+                echo PHP_EOL;
+            }
+
+            if ($add_stats) {
+                echo '-----------------' . PHP_EOL;
+                echo $project_checker->codebase->getNonMixedStats();
+                echo PHP_EOL;
             }
         }
 
