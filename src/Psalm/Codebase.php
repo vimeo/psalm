@@ -226,6 +226,18 @@ class Codebase
     private $reflection;
 
     /**
+     * Used to store counts of mixed vs non-mixed variables
+     *
+     * @var array<string, array{0: int, 1: int}
+     */
+    private $mixed_counts = [];
+
+    /**
+     * @var bool
+     */
+    private $count_mixed = true;
+
+    /**
      * @param bool $collect_references
      * @param bool $debug_output
      */
@@ -847,6 +859,7 @@ class Codebase
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
                         'file_references' => FileReferenceProvider::getAllFileReferences(),
+                        'mixed_counts' => ProjectChecker::getInstance()->codebase->getMixedCounts(),
                     ];
                 }
             );
@@ -855,13 +868,23 @@ class Codebase
             /**
              * @var array<array{issues: array<int, array{severity: string, line_number: string, type: string,
              *  message: string, file_name: string, file_path: string, snippet: string, from: int, to: int,
-             *  snippet_from: int, snippet_to: int, column: int}>, file_references: array<string, array<string,bool>>}>
+             *  snippet_from: int, snippet_to: int, column: int}>, file_references: array<string, array<string,bool>>,
+             *  mixed_counts: array<string, array{0: int, 1: int}>}>
              */
             $forked_pool_data = $pool->wait();
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
                 FileReferenceProvider::addFileReferences($pool_data['file_references']);
+
+                foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
+                    if (!isset($this->mixed_counts[$file_path])) {
+                        $this->mixed_counts[$file_path] = [$mixed_count, $nonmixed_count];
+                    } else {
+                        $this->mixed_counts[$file_path][0] += $mixed_count;
+                        $this->mixed_counts[$file_path][1] += $nonmixed_count;
+                    }
+                }
             }
 
             // TODO: Tell the caller that the fork pool encountered an error in another PR?
@@ -1940,5 +1963,90 @@ class Codebase
     public function fileExists($file_path)
     {
         return $this->file_provider->fileExists($file_path);
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function incrementMixedCount($file_path)
+    {
+        if (!$this->count_mixed) {
+            return;
+        }
+
+        if (!isset($this->mixed_counts[$file_path])) {
+            $this->mixed_counts[$file_path] = [0, 0];
+        }
+
+        ++$this->mixed_counts[$file_path][0];
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function incrementNonMixedCount($file_path)
+    {
+        if (!$this->count_mixed) {
+            return;
+        }
+
+        if (!isset($this->mixed_counts[$file_path])) {
+            $this->mixed_counts[$file_path] = [0, 0];
+        }
+
+        ++$this->mixed_counts[$file_path][1];
+    }
+
+    /**
+     * @return array<string, array{0: int, 1: int}>
+     */
+    public function getMixedCounts()
+    {
+        return $this->mixed_counts;
+    }
+
+    /**
+     * @return float
+     */
+    public function getNonMixedPercentage()
+    {
+        $mixed_count = 0;
+        $nonmixed_count = 0;
+
+        foreach ($this->files_to_report as $file_path => $_) {
+            if (isset($this->mixed_counts[$file_path])) {
+                list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
+                $mixed_count += $path_mixed_count;
+                $nonmixed_count += $path_nonmixed_count;
+            }
+        }
+
+        $total = $mixed_count + $nonmixed_count;
+
+        if (!$total) {
+            return 0;
+        }
+
+        return 100 * $nonmixed_count / $total;
+    }
+
+    /**
+     * @return void
+     */
+    public function disableMixedCounts()
+    {
+        $this->count_mixed = false;
+    }
+
+    /**
+     * @return void
+     */
+    public function enableMixedCounts()
+    {
+        $this->count_mixed = true;
     }
 }

@@ -616,6 +616,8 @@ class ClassChecker extends ClassLikeChecker
                             ]
                         );
 
+                        $codebase->disableMixedCounts();
+
                         $constructor_checker = $this->analyzeClassMethod(
                             $fake_stmt,
                             $storage,
@@ -623,6 +625,8 @@ class ClassChecker extends ClassLikeChecker
                             $class_context,
                             $global_context
                         );
+
+                        $codebase->enableMixedCounts();
                     }
                 }
 

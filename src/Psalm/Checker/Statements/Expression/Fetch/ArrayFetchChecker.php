@@ -413,15 +413,21 @@ class ArrayFetchChecker
             }
 
             if ($type instanceof TString) {
-                if ($in_assignment && $replacement_type && $replacement_type->isMixed()) {
-                    if (IssueBuffer::accepts(
-                        new MixedStringOffsetAssignment(
-                            'Right-hand-side of string offset assignment cannot be mixed',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
+                if ($in_assignment && $replacement_type) {
+                    if ($replacement_type->isMixed()) {
+                        $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
+                        if (IssueBuffer::accepts(
+                            new MixedStringOffsetAssignment(
+                                'Right-hand-side of string offset assignment cannot be mixed',
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
                     }
                 }
 
@@ -449,6 +455,8 @@ class ArrayFetchChecker
             }
 
             if ($type instanceof TMixed || $type instanceof TEmpty) {
+                $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
                 if ($in_assignment) {
                     if (IssueBuffer::accepts(
                         new MixedArrayAssignment(
@@ -474,6 +482,8 @@ class ArrayFetchChecker
                 $array_access_type = Type::getMixed();
                 break;
             }
+
+            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) !== 'simplexmlelement'
@@ -546,6 +556,8 @@ class ArrayFetchChecker
         }
 
         if ($offset_type->isMixed()) {
+            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
             if (IssueBuffer::accepts(
                 new MixedArrayOffset(
                     'Cannot access value on variable ' . $array_var_id . ' using mixed offset',
@@ -555,30 +567,34 @@ class ArrayFetchChecker
             )) {
                 // fall through
             }
-        } elseif ($invalid_offset_types) {
-            $invalid_offset_type = $invalid_offset_types[0];
+        } else {
+            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
-            if ($has_valid_offset) {
-                if (IssueBuffer::accepts(
-                    new PossiblyInvalidArrayOffset(
-                        'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
-                            . ' offset, expecting ' . $invalid_offset_type,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            } else {
-                if (IssueBuffer::accepts(
-                    new InvalidArrayOffset(
-                        'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
-                            . ' offset, expecting ' . $invalid_offset_type,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
+            if ($invalid_offset_types) {
+                $invalid_offset_type = $invalid_offset_types[0];
+
+                if ($has_valid_offset) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidArrayOffset(
+                            'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
+                                . ' offset, expecting ' . $invalid_offset_type,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidArrayOffset(
+                            'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
+                                . ' offset, expecting ' . $invalid_offset_type,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }

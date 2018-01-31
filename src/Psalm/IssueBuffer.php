@@ -198,8 +198,6 @@ class IssueBuffer
 
         $has_error = false;
 
-        $project_checker = ProjectChecker::getInstance();
-
         if (self::$issues_data) {
             usort(
                 self::$issues_data,
@@ -239,6 +237,13 @@ class IssueBuffer
         if ($start_time) {
             echo 'Checks took ' . ((float)microtime(true) - $start_time);
             echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL;
+
+            $nonmixed_percentage = $project_checker->codebase->getNonMixedPercentage();
+
+            if ($is_full) {
+                echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
+                    . ' of your codebase' . PHP_EOL;
+            }
         }
 
         if ($has_error) {

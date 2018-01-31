@@ -575,6 +575,10 @@ class BinaryOpChecker
                     }
 
                     if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
+                        if ($statements_source && $project_checker) {
+                            $project_checker->codebase->incrementMixedCount($statements_source->getCheckedFilePath());
+                        }
+
                         if ($left_type_part instanceof TMixed) {
                             if ($statements_source && IssueBuffer::accepts(
                                 new MixedOperand(
@@ -600,6 +604,10 @@ class BinaryOpChecker
                         $result_type = Type::getMixed();
 
                         return;
+                    }
+
+                    if ($statements_source && $project_checker) {
+                        $project_checker->codebase->incrementNonMixedCount($statements_source->getCheckedFilePath());
                     }
 
                     if ($left_type_part instanceof TArray
@@ -790,6 +798,8 @@ class BinaryOpChecker
             $result_type = Type::getString();
 
             if ($left_type->isMixed() || $right_type->isMixed()) {
+                $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
                 if ($left_type->isMixed()) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
@@ -814,6 +824,8 @@ class BinaryOpChecker
 
                 return;
             }
+
+            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($left_type->isNull()) {
                 if (IssueBuffer::accepts(

@@ -127,6 +127,8 @@ class PropertyAssignmentChecker
             }
 
             if ($lhs_type->isMixed()) {
+                $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
                         $lhs_var_id . ' of type mixed cannot be assigned to',
@@ -139,6 +141,8 @@ class PropertyAssignmentChecker
 
                 return null;
             }
+
+            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($lhs_type->isNull()) {
                 if (IssueBuffer::accepts(

@@ -156,7 +156,11 @@ class AssignmentChecker
             }
         }
 
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
         if ($assign_value_type->isMixed()) {
+            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
             if (IssueBuffer::accepts(
                 new MixedAssignment(
                     'Cannot assign ' . $var_id . ' to a mixed type',
@@ -166,27 +170,32 @@ class AssignmentChecker
             )) {
                 // fall through
             }
-        } elseif ($var_id
-            && isset($context->byref_constraints[$var_id])
-            && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
-        ) {
-            if (!TypeChecker::isContainedBy(
-                $statements_checker->getFileChecker()->project_checker,
-                $assign_value_type,
-                $outer_constraint_type,
-                $assign_value_type->ignore_nullable_issues,
-                $assign_value_type->ignore_falsable_issues
-            )
+        } else {
+            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+
+            if ($var_id
+                && isset($context->byref_constraints[$var_id])
+                && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
-                if (IssueBuffer::accepts(
-                    new ReferenceConstraintViolation(
-                        'Variable ' . $var_id . ' is limited to values of type ' .
-                            $context->byref_constraints[$var_id]->type . ' because it is passed by reference',
-                        new CodeLocation($statements_checker->getSource(), $assign_var)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
+                if (!TypeChecker::isContainedBy(
+                    $statements_checker->getFileChecker()->project_checker,
+                    $assign_value_type,
+                    $outer_constraint_type,
+                    $assign_value_type->ignore_nullable_issues,
+                    $assign_value_type->ignore_falsable_issues
+                )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ReferenceConstraintViolation(
+                            'Variable ' . $var_id . ' is limited to values of type '
+                                . $context->byref_constraints[$var_id]->type
+                                . ' because it is passed by reference',
+                            new CodeLocation($statements_checker->getSource(), $assign_var)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }

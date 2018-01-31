@@ -127,6 +127,8 @@ class ReturnChecker
                             }
                         }
 
+                        $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
                                 'Could not infer a return type',
@@ -139,6 +141,8 @@ class ReturnChecker
 
                         return null;
                     }
+
+                    $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
                     if ($local_return_type->isVoid()) {
                         if (IssueBuffer::accepts(

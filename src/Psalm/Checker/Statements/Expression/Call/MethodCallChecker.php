@@ -166,6 +166,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                         case 'Psalm\\Type\\Atomic\\TMixed':
                         case 'Psalm\\Type\\Atomic\\TObject':
+                            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
                                     'Cannot call method ' . $stmt->name . ' on a mixed variable ' . $var_id,
@@ -180,6 +182,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                     continue;
                 }
+
+                $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
                 $has_valid_method_call_type = true;
 

@@ -1041,6 +1041,8 @@ class CallChecker
         }
 
         if ($input_type->isMixed()) {
+            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+
             if (IssueBuffer::accepts(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be mixed, expecting ' .
@@ -1054,6 +1056,8 @@ class CallChecker
 
             return null;
         }
+
+        $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
         if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
             if ($input_type->isNull()) {
