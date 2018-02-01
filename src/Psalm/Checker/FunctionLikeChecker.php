@@ -782,6 +782,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $guide_classlike_storage->name
             );
 
+            // treat void as null when comparing against docblock implementer
+            if ($implementer_method_storage_return_type->isVoid()) {
+                $implementer_method_storage_return_type = Type::getNull();
+            }
+
+            if ($guide_method_storage_return_type->isVoid()) {
+                $guide_method_storage_return_type = Type::getNull();
+            }
+
             if (!TypeChecker::isContainedBy(
                 $project_checker,
                 $implementer_method_storage_return_type,

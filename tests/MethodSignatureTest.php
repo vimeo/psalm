@@ -199,7 +199,7 @@ class MethodSignatureTest extends TestCase
                     '$b' => 'B',
                 ],
             ],
-            'allowSomeContravariance' => [
+            'allowSomeCovariance' => [
                 '<?php
                     interface I1 {
                         public function test(string $s) : ?string;
@@ -213,6 +213,35 @@ class MethodSignatureTest extends TestCase
                         public function testIterable(?iterable $i) : array {
                             return [];
                         }
+                    }',
+            ],
+            'allowVoidToNullConversion' => [
+                '<?php
+                    class A {
+                      /** @return ?string */
+                      public function foo() {
+                        return rand(0, 1) ? "hello" : null;
+                      }
+                    }
+
+                    class B extends A {
+                      public function foo(): void {
+                        return;
+                      }
+                    }
+
+                    class C extends A {
+                      /** @return void */
+                      public function foo() {
+                        return;
+                      }
+                    }
+
+                    class D extends A {
+                      /** @return null */
+                      public function foo() {
+                        return null;
+                      }
                     }',
             ],
         ];
@@ -355,6 +384,21 @@ class MethodSignatureTest extends TestCase
                       }
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
+            ],
+            'disallowVoidToNullConversionSignature' => [
+                '<?php
+                    class A {
+                      public function foo(): ?string {
+                        return rand(0, 1) ? "hello" : null;
+                      }
+                    }
+
+                    class B extends A {
+                      public function foo(): void {
+                        return;
+                      }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }
