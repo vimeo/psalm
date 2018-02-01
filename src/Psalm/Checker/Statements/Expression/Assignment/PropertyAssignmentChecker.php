@@ -4,10 +4,7 @@ namespace Psalm\Checker\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\InterfaceChecker;
-use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
@@ -62,6 +59,7 @@ class PropertyAssignmentChecker
         $class_property_types = [];
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $property_exists = false;
 
@@ -127,7 +125,7 @@ class PropertyAssignmentChecker
             }
 
             if ($lhs_type->isMixed()) {
-                $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
@@ -142,7 +140,7 @@ class PropertyAssignmentChecker
                 return null;
             }
 
-            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($lhs_type->isNull()) {
                 if (IssueBuffer::accepts(
@@ -223,8 +221,8 @@ class PropertyAssignmentChecker
                     return null;
                 }
 
-                if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
-                    if (InterfaceChecker::interfaceExists($project_checker, $lhs_type_part->value)) {
+                if (!$codebase->classExists($lhs_type_part->value)) {
+                    if ($codebase->interfaceExists($lhs_type_part->value)) {
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
@@ -252,7 +250,7 @@ class PropertyAssignmentChecker
                 }
 
                 if ($lhs_var_id !== '$this' &&
-                    MethodChecker::methodExists($project_checker, $lhs_type_part->value . '::__set')
+                    $codebase->methodExists($lhs_type_part->value . '::__set')
                 ) {
                     $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
@@ -491,7 +489,7 @@ class PropertyAssignmentChecker
             }
 
             $type_match_found = TypeChecker::isContainedBy(
-                $project_checker,
+                $project_checker->codebase,
                 $assignment_value_type,
                 $class_property_type,
                 true,
@@ -625,6 +623,7 @@ class PropertyAssignmentChecker
         $fq_class_name = (string)$stmt->class->inferredType;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $prop_name = $stmt->name;
 
@@ -721,7 +720,7 @@ class PropertyAssignmentChecker
         );
 
         if (!TypeChecker::isContainedBy(
-            $project_checker,
+            $codebase,
             $assignment_value_type,
             $class_property_type
         )) {

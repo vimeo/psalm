@@ -212,52 +212,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     }
 
     /**
-     * Check whether a class/interface exists
-     *
-     * @param  string          $fq_class_name
-     * @param  ProjectChecker  $project_checker
-     * @param  CodeLocation $code_location
-     *
-     * @return bool
-     */
-    public static function classOrInterfaceExists(
-        ProjectChecker $project_checker,
-        $fq_class_name,
-        CodeLocation $code_location = null
-    ) {
-        if (!ClassChecker::classExists($project_checker, $fq_class_name) &&
-            !InterfaceChecker::interfaceExists($project_checker, $fq_class_name)
-        ) {
-            return false;
-        }
-
-        if ($project_checker->getCodeBase()->collect_references && $code_location) {
-            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-            if ($class_storage->referencing_locations === null) {
-                $class_storage->referencing_locations = [];
-            }
-            $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  string       $fq_class_name
-     * @param  string       $possible_parent
-     *
-     * @return bool
-     */
-    public static function classExtendsOrImplements(
-        ProjectChecker $project_checker,
-        $fq_class_name,
-        $possible_parent
-    ) {
-        return ClassChecker::classExtends($project_checker, $fq_class_name, $possible_parent) ||
-            ClassChecker::classImplements($project_checker, $fq_class_name, $possible_parent);
-    }
-
-    /**
      * @param  string           $fq_class_name
      * @param  array<string>    $suppressed_issues
      * @param  bool             $inferred - whether or not the type was inferred
@@ -305,8 +259,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        $class_exists = ClassChecker::classExists($project_checker, $fq_class_name);
-        $interface_exists = InterfaceChecker::interfaceExists($project_checker, $fq_class_name);
+        $class_exists = $codebase->classExists($fq_class_name);
+        $interface_exists = $codebase->interfaceExists($fq_class_name);
 
         if (!$class_exists && !$interface_exists) {
             if (IssueBuffer::accepts(
@@ -639,6 +593,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $emit_issues = true
     ) {
         $project_checker = $source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $declaring_property_class = self::getDeclaringClassForProperty($project_checker, $property_id);
         $appearing_property_class = self::getAppearingClassForProperty($project_checker, $property_id);
@@ -708,11 +663,11 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                     return null;
                 }
 
-                if (ClassChecker::classExtends($project_checker, $appearing_property_class, $calling_context)) {
+                if ($codebase->classExtends($appearing_property_class, $calling_context)) {
                     return $emit_issues ? null : true;
                 }
 
-                if (!ClassChecker::classExtends($project_checker, $calling_context, $appearing_property_class)) {
+                if (!$codebase->classExtends($calling_context, $appearing_property_class)) {
                     if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id . ' from context ' . $calling_context,

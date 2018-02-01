@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ClosureChecker;
 use Psalm\Checker\CommentChecker;
@@ -248,8 +247,7 @@ class ExpressionChecker
             if (!$statements_checker->isStatic()) {
                 if ($context->collect_mutations &&
                     $context->self &&
-                    ClassChecker::classExtends(
-                        $statements_checker->getFileChecker()->project_checker,
+                    $codebase->classExtends(
                         $context->self,
                         (string)$statements_checker->getFQCLN()
                     )
@@ -328,7 +326,7 @@ class ExpressionChecker
             if (isset($stmt->expr->inferredType)
                 && !$stmt->expr->inferredType->isMixed()
                 && !TypeChecker::isContainedBy(
-                    $statements_checker->getFileChecker()->project_checker,
+                    $statements_checker->getFileChecker()->project_checker->codebase,
                     $stmt->expr->inferredType,
                     $container_type,
                     true,

@@ -4,6 +4,7 @@ namespace Psalm;
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FileChecker;
+use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
@@ -360,12 +361,12 @@ class Codebase
             echo 'ClassLikeStorage is populating' . PHP_EOL;
         }
 
-        foreach ($this->classlike_storage_provider->getAll() as $storage) {
-            if (!$storage->user_defined && !$storage->stubbed) {
+        foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
+            if (!$class_storage->user_defined && !$class_storage->stubbed) {
                 continue;
             }
 
-            $this->populateClassLikeStorage($storage);
+            $this->populateClassLikeStorage($class_storage);
         }
 
         if ($this->debug_output) {
@@ -1686,6 +1687,240 @@ class Codebase
         }
 
         return $file_checker;
+    }
+
+    /**
+     * Check whether a class/interface exists
+     *
+     * @param  string          $fq_class_name
+     * @param  CodeLocation $code_location
+     *
+     * @return bool
+     */
+    public function classOrInterfaceExists(
+        $fq_class_name,
+        CodeLocation $code_location = null
+    ) {
+        if (!$this->classExists($fq_class_name) && !$this->interfaceExists($fq_class_name)) {
+            return false;
+        }
+
+        if ($this->collect_references && $code_location) {
+            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+            if ($class_storage->referencing_locations === null) {
+                $class_storage->referencing_locations = [];
+            }
+            $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  string       $fq_class_name
+     * @param  string       $possible_parent
+     *
+     * @return bool
+     */
+    public function classExtendsOrImplements($fq_class_name, $possible_parent)
+    {
+        return $this->classExtends($fq_class_name, $possible_parent)
+            || $this->classImplements($fq_class_name, $possible_parent);
+    }
+
+    /**
+     * Determine whether or not a given class exists
+     *
+     * @param  string       $fq_class_name
+     *
+     * @return bool
+     */
+    public function classExists($fq_class_name)
+    {
+        if (isset(ClassLikeChecker::$SPECIAL_TYPES[$fq_class_name])) {
+            return false;
+        }
+
+        if ($fq_class_name === 'Generator') {
+            return true;
+        }
+
+        return $this->hasFullyQualifiedClassName($fq_class_name);
+    }
+
+    /**
+     * Determine whether or not a class extends a parent
+     *
+     * @param  string       $fq_class_name
+     * @param  string       $possible_parent
+     *
+     * @return bool
+     */
+    public function classExtends($fq_class_name, $possible_parent)
+    {
+        $fq_class_name = strtolower($fq_class_name);
+
+        if ($fq_class_name === 'generator') {
+            return false;
+        }
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        return in_array(strtolower($possible_parent), $class_storage->parent_classes, true);
+    }
+
+    /**
+     * Check whether a class implements an interface
+     *
+     * @param  string       $fq_class_name
+     * @param  string       $interface
+     *
+     * @return bool
+     */
+    public function classImplements($fq_class_name, $interface)
+    {
+        $interface_id = strtolower($interface);
+
+        $fq_class_name = strtolower($fq_class_name);
+
+        if ($interface_id === 'callable' && $fq_class_name === 'closure') {
+            return true;
+        }
+
+        if ($interface_id === 'traversable' && $fq_class_name === 'generator') {
+            return true;
+        }
+
+        if (isset(ClassLikeChecker::$SPECIAL_TYPES[$interface_id])
+            || isset(ClassLikeChecker::$SPECIAL_TYPES[$fq_class_name])
+        ) {
+            return false;
+        }
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        return isset($class_storage->class_implements[$interface_id]);
+    }
+
+    /**
+     * @param  string         $fq_interface_name
+     *
+     * @return bool
+     */
+    public function interfaceExists($fq_interface_name)
+    {
+        if (isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
+            return false;
+        }
+
+        return $this->hasFullyQualifiedInterfaceName($fq_interface_name);
+    }
+
+    /**
+     * @param  string         $interface_name
+     * @param  string         $possible_parent
+     *
+     * @return bool
+     */
+    public function interfaceExtends($interface_name, $possible_parent)
+    {
+        return in_array($possible_parent, $this->getParentInterfaces($interface_name), true);
+    }
+
+    /**
+     * @param  string         $fq_interface_name
+     *
+     * @return array<string>   all interfaces extended by $interface_name
+     */
+    public function getParentInterfaces($fq_interface_name)
+    {
+        $fq_interface_name = strtolower($fq_interface_name);
+
+        $storage = $this->classlike_storage_provider->get($fq_interface_name);
+
+        return $storage->parent_interfaces;
+    }
+
+    /**
+     * Whether or not a given method exists
+     *
+     * @param  string       $method_id
+     * @param  CodeLocation|null $code_location
+     *
+     * @return bool
+     */
+    public function methodExists(
+        $method_id,
+        CodeLocation $code_location = null
+    ) {
+        // remove trailing backslash if it exists
+        $method_id = preg_replace('/^\\\\/', '', $method_id);
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+        $method_name = strtolower($method_name);
+        $method_id = $fq_class_name . '::' . $method_name;
+
+        $old_method_id = null;
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_method_ids[$method_name])) {
+            if ($this->collect_references && $code_location) {
+                $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
+                list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
+
+                $declaring_class_storage = $this->classlike_storage_provider->get($declaring_method_class);
+                $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
+                if ($declaring_method_storage->referencing_locations === null) {
+                    $declaring_method_storage->referencing_locations = [];
+                }
+                $declaring_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
+
+                foreach ($class_storage->class_implements as $fq_interface_name) {
+                    $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
+                    if (isset($interface_storage->methods[$method_name])) {
+                        $interface_method_storage = $interface_storage->methods[$method_name];
+                        if (!isset($interface_method_storage->referencing_locations)) {
+                            $interface_method_storage->referencing_locations = [];
+                        }
+                        $interface_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
+                    }
+                }
+
+                if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
+                    $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
+
+                    foreach ($overridden_method_ids as $overridden_method_id) {
+                        list($overridden_method_class, $overridden_method_name) = explode('::', $overridden_method_id);
+
+                        $class_storage = $this->classlike_storage_provider->get($overridden_method_class);
+                        $method_storage = $class_storage->methods[strtolower($overridden_method_name)];
+                        if ($method_storage->referencing_locations === null) {
+                            $method_storage->referencing_locations = [];
+                        }
+                        $method_storage->referencing_locations[$code_location->file_path][] = $code_location;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            return true;
+        }
+
+        // support checking oldstyle constructors
+        if ($method_name === '__construct') {
+            $method_name_parts = explode('\\', $fq_class_name);
+            $old_constructor_name = array_pop($method_name_parts);
+            $old_method_id = $fq_class_name . '::' . $old_constructor_name;
+        }
+
+        if (FunctionChecker::inCallMap($method_id) || ($old_method_id && FunctionChecker::inCallMap($method_id))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

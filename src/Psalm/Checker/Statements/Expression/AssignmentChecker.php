@@ -157,9 +157,10 @@ class AssignmentChecker
         }
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($assign_value_type->isMixed()) {
-            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedAssignment(
@@ -171,14 +172,14 @@ class AssignmentChecker
                 // fall through
             }
         } else {
-            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($var_id
                 && isset($context->byref_constraints[$var_id])
                 && ($outer_constraint_type = $context->byref_constraints[$var_id]->type)
             ) {
                 if (!TypeChecker::isContainedBy(
-                    $statements_checker->getFileChecker()->project_checker,
+                    $codebase,
                     $assign_value_type,
                     $outer_constraint_type,
                     $assign_value_type->ignore_nullable_issues,

@@ -521,7 +521,7 @@ class FunctionChecker extends FunctionLikeChecker
                                 continue;
                             }
 
-                            if (!MethodChecker::methodExists($project_checker, $mapping_function_id)) {
+                            if (!$codebase->methodExists($mapping_function_id)) {
                                 $mapping_return_type = Type::getMixed();
                                 continue;
                             }

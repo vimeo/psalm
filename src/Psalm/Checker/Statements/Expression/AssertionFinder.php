@@ -125,11 +125,11 @@ class AssertionFinder
                     $null_type = Type::getNull();
 
                     if (!TypeChecker::isContainedBy(
-                        $project_checker,
+                        $project_checker->codebase,
                         $var_type,
                         $null_type
                     ) && !TypeChecker::isContainedBy(
-                        $project_checker,
+                        $project_checker->codebase,
                         $null_type,
                         $var_type
                     )) {
@@ -218,11 +218,11 @@ class AssertionFinder
                         $false_type = Type::getFalse();
 
                         if (!TypeChecker::isContainedBy(
-                            $project_checker,
+                            $project_checker->codebase,
                             $var_type,
                             $false_type
                         ) && !TypeChecker::isContainedBy(
-                            $project_checker,
+                            $project_checker->codebase,
                             $false_type,
                             $var_type
                         )) {
@@ -370,12 +370,12 @@ class AssertionFinder
                         $if_types[$var_name] = '^' . $var_type;
                     } elseif ($other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                         if (!TypeChecker::isContainedBy(
-                            $project_checker,
+                            $project_checker->codebase,
                             $var_type,
                             $other_type,
                             true
                         ) && !TypeChecker::isContainedBy(
-                            $project_checker,
+                            $project_checker->codebase,
                             $other_type,
                             $var_type,
                             true
@@ -400,7 +400,7 @@ class AssertionFinder
             $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
 
             if ($var_type && $other_type && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                if (!TypeChecker::canBeIdenticalTo($project_checker, $var_type, $other_type)) {
+                if (!TypeChecker::canBeIdenticalTo($project_checker->codebase, $var_type, $other_type)) {
                     if (IssueBuffer::accepts(
                         new TypeDoesNotContainType(
                             $var_type . ' does not contain ' . $other_type,

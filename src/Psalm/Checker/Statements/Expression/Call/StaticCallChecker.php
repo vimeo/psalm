@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Expression\Call;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
@@ -36,6 +35,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
         $file_checker = $statements_checker->getFileChecker();
         $project_checker = $file_checker->project_checker;
+        $codebase = $project_checker->codebase;
         $source = $statements_checker->getSource();
 
         $stmt->inferredType = null;
@@ -209,7 +209,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             $method_id = null;
 
             if (is_string($stmt->name) &&
-                !MethodChecker::methodExists($project_checker, $fq_class_name . '::__callStatic') &&
+                !$codebase->methodExists($fq_class_name . '::__callStatic') &&
                 !$is_mock
             ) {
                 $method_id = $fq_class_name . '::' . strtolower($stmt->name);
@@ -255,7 +255,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     && (
                         !$context->self
                         || $statements_checker->isStatic()
-                        || !ClassChecker::classExtends($project_checker, $context->self, $fq_class_name)
+                        || !$codebase->classExtends($context->self, $fq_class_name)
                     )
                 ) {
                     if (MethodChecker::checkStatic(

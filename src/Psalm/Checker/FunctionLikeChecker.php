@@ -302,7 +302,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if ($signature_type) {
                 if (!TypeChecker::isContainedBy(
-                    $project_checker,
+                    $codebase,
                     $param_type,
                     $signature_type
                 )
@@ -343,7 +343,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                 if ($default_type &&
                     !TypeChecker::isContainedBy(
-                        $project_checker,
+                        $codebase,
                         $default_type,
                         $param_type
                     )
@@ -475,7 +475,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     );
 
                     if (!TypeChecker::isContainedBy(
-                        $project_checker,
+                        $codebase,
                         $fleshed_out_return_type,
                         $fleshed_out_signature_type
                     )
@@ -721,6 +721,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
 
+        $codebase = $project_checker->codebase;
+
         if ($implementer_method_storage->visibility > $guide_method_storage->visibility) {
             if (IssueBuffer::accepts(
                 new OverriddenMethodAccess(
@@ -794,7 +796,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if (!TypeChecker::isContainedBy(
-                $project_checker,
+                $codebase,
                 $implementer_method_storage_return_type,
                 $guide_method_storage_return_type,
                 false,
@@ -877,7 +879,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 && $implementer_param->type->getId() !== $guide_param->type->getId()
             ) {
                 if (!TypeChecker::isContainedBy(
-                    $project_checker,
+                    $codebase,
                     $guide_param->type,
                     $implementer_param->type,
                     false,
@@ -1254,7 +1256,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         $inferred_return_type = TypeChecker::simplifyUnionType(
-            $project_checker,
+            $codebase,
             ExpressionChecker::fleshOutType(
                 $project_checker,
                 $inferred_return_type,
@@ -1470,7 +1472,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if (!TypeChecker::isContainedBy(
-                $this->source->getFileChecker()->project_checker,
+                $codebase,
                 $inferred_return_type,
                 $declared_return_type,
                 true,
@@ -1797,7 +1799,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
-                if (TypeChecker::isContainedBy($project_checker, $arg->value->inferredType, $param_type)) {
+                if (TypeChecker::isContainedBy($project_checker->codebase, $arg->value->inferredType, $param_type)) {
                     continue;
                 }
 

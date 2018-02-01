@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
@@ -59,8 +58,7 @@ class CallChecker
             $context->self &&
             (
                 $context->self === $fq_class_name ||
-                ClassChecker::classExtends(
-                    $project_checker,
+                $codebase->classExtends(
                     $context->self,
                     $fq_class_name
                 )
@@ -87,8 +85,7 @@ class CallChecker
             $context->self &&
             (
                 $context->self === $fq_class_name ||
-                ClassChecker::classExtends(
-                    $project_checker,
+                $codebase->classExtends(
                     $context->self,
                     $fq_class_name
                 )
@@ -915,7 +912,7 @@ class CallChecker
                     }
 
                     $type_match_found = TypeChecker::isContainedBy(
-                        $project_checker,
+                        $project_checker->codebase,
                         $input_type,
                         $closure_param_type,
                         false,
@@ -953,7 +950,7 @@ class CallChecker
 
                     if (!$type_coerced && !$type_match_found) {
                         $types_can_be_identical = TypeChecker::canBeIdenticalTo(
-                            $project_checker,
+                            $project_checker->codebase,
                             $input_type,
                             $closure_param_type
                         );
@@ -1103,12 +1100,12 @@ class CallChecker
         }
 
         $param_type = TypeChecker::simplifyUnionType(
-            $project_checker,
+            $project_checker->codebase,
             $param_type
         );
 
         $type_match_found = TypeChecker::isContainedBy(
-            $project_checker,
+            $project_checker->codebase,
             $input_type,
             $param_type,
             true,
@@ -1160,7 +1157,7 @@ class CallChecker
 
         if (!$type_match_found && !$type_coerced) {
             $types_can_be_identical = TypeChecker::canBeIdenticalTo(
-                $project_checker,
+                $project_checker->codebase,
                 $param_type,
                 $input_type
             );

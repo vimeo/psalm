@@ -194,7 +194,7 @@ class ReturnChecker
                     }
 
                     if (!TypeChecker::isContainedBy(
-                        $source->getFileChecker()->project_checker,
+                        $source->getFileChecker()->project_checker->codebase,
                         $inferred_type,
                         $local_return_type,
                         true,

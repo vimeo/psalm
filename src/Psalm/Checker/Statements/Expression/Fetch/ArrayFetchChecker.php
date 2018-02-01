@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Expression\Fetch;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
@@ -152,6 +151,7 @@ class ArrayFetchChecker
         $inside_isset = false
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $has_array_access = false;
         $non_array_types = [];
@@ -268,7 +268,7 @@ class ArrayFetchChecker
                         }
                     } elseif (!$type->type_params[0]->isEmpty()) {
                         if (!TypeChecker::isContainedBy(
-                            $project_checker,
+                            $project_checker->codebase,
                             $offset_type,
                             $type->type_params[0],
                             true
@@ -361,7 +361,7 @@ class ArrayFetchChecker
                             $array_access_type = Type::getMixed();
                         }
                     } elseif (TypeChecker::isContainedBy(
-                        $project_checker,
+                        $codebase,
                         $offset_type,
                         $type->getGenericKeyType(),
                         true
@@ -415,7 +415,7 @@ class ArrayFetchChecker
             if ($type instanceof TString) {
                 if ($in_assignment && $replacement_type) {
                     if ($replacement_type->isMixed()) {
-                        $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                        $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                         if (IssueBuffer::accepts(
                             new MixedStringOffsetAssignment(
@@ -427,12 +427,12 @@ class ArrayFetchChecker
                             // fall through
                         }
                     } else {
-                        $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                        $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
                     }
                 }
 
                 if (!TypeChecker::isContainedBy(
-                    $project_checker,
+                    $project_checker->codebase,
                     $offset_type,
                     Type::getInt(),
                     true
@@ -455,7 +455,7 @@ class ArrayFetchChecker
             }
 
             if ($type instanceof TMixed || $type instanceof TEmpty) {
-                $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if ($in_assignment) {
                     if (IssueBuffer::accepts(
@@ -483,12 +483,12 @@ class ArrayFetchChecker
                 break;
             }
 
-            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) !== 'simplexmlelement'
-                    && ClassChecker::classExists($project_checker, $type->value)
-                    && !ClassChecker::classImplements($project_checker, $type->value, 'ArrayAccess')
+                    && $codebase->classExists($type->value)
+                    && !$codebase->classImplements($type->value, 'ArrayAccess')
                 ) {
                     $non_array_types[] = (string)$type;
                 } else {

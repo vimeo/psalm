@@ -2,10 +2,8 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
@@ -44,6 +42,7 @@ class ForeachChecker
         $foreach_context = clone $context;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($project_checker->alter_code) {
             $foreach_context->branch_point =
@@ -162,8 +161,7 @@ class ForeachChecker
                     if ($iterator_type instanceof Type\Atomic\TGenericObject &&
                         (strtolower($iterator_type->value) === 'iterable' ||
                             strtolower($iterator_type->value) === 'traversable' ||
-                            ClassChecker::classImplements(
-                                $project_checker,
+                            $codebase->classImplements(
                                 $iterator_type->value,
                                 'Traversable'
                             ))
@@ -189,15 +187,13 @@ class ForeachChecker
                         continue;
                     }
 
-                    if (ClassChecker::classImplements(
-                        $project_checker,
+                    if ($codebase->classImplements(
                         $iterator_type->value,
                         'Iterator'
                     ) ||
                         (
-                            InterfaceChecker::interfaceExists($project_checker, $iterator_type->value)
-                            && InterfaceChecker::interfaceExtends(
-                                $project_checker,
+                            $codebase->interfaceExists($iterator_type->value)
+                            && $codebase->interfaceExtends(
                                 $iterator_type->value,
                                 'Iterator'
                             )
@@ -227,15 +223,13 @@ class ForeachChecker
                         } else {
                             $value_type = Type::getMixed();
                         }
-                    } elseif (ClassChecker::classImplements(
-                        $project_checker,
+                    } elseif ($codebase->classImplements(
                         $iterator_type->value,
                         'Traversable'
                     ) ||
                         (
-                            InterfaceChecker::interfaceExists($project_checker, $iterator_type->value)
-                            && InterfaceChecker::interfaceExtends(
-                                $project_checker,
+                            $codebase->interfaceExists($iterator_type->value)
+                            && $codebase->interfaceExtends(
                                 $iterator_type->value,
                                 'Traversable'
                             )

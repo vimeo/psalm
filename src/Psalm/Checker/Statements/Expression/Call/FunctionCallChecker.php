@@ -3,10 +3,8 @@ namespace Psalm\Checker\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Checker\AlgebraChecker;
-use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
-use Psalm\Checker\MethodChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
@@ -167,15 +165,9 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     // this is fine
                     } elseif ($var_type_part instanceof TNull) {
                         // handled above
-                    } elseif (!$var_type_part instanceof TNamedObject ||
-                        !ClassLikeChecker::classOrInterfaceExists(
-                            $project_checker,
-                            $var_type_part->value
-                        ) ||
-                        !MethodChecker::methodExists(
-                            $project_checker,
-                            $var_type_part->value . '::__invoke'
-                        )
+                    } elseif (!$var_type_part instanceof TNamedObject
+                        || !$codebase->classOrInterfaceExists($var_type_part->value)
+                        || !$codebase->methodExists($var_type_part->value . '::__invoke')
                     ) {
                         $invalid_function_call_types[] = (string)$var_type_part;
                     }

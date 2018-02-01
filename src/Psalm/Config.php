@@ -537,8 +537,7 @@ class Config
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
 
-            if (!\Psalm\Checker\ClassChecker::classExtends(
-                $project_checker,
+            if (!$codebase->classExtends(
                 $declared_classes[0],
                 'Psalm\\Scanner\\FileScanner'
             )
@@ -572,8 +571,7 @@ class Config
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
 
-            if (!\Psalm\Checker\ClassChecker::classExtends(
-                $project_checker,
+            if (!$codebase->classExtends(
                 $declared_classes[0],
                 'Psalm\\Checker\\FileChecker'
             )

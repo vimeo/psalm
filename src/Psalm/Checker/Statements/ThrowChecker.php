@@ -33,7 +33,7 @@ class ThrowChecker
             $file_checker = $statements_checker->getFileChecker();
             $project_checker = $file_checker->project_checker;
 
-            if (!TypeChecker::isContainedBy($project_checker, $throw_type, $exception_type)) {
+            if (!TypeChecker::isContainedBy($project_checker->codebase, $throw_type, $exception_type)) {
                 if (IssueBuffer::accepts(
                     new InvalidThrow(
                         'Cannot throw ' . $throw_type . ' as it does not extend Exception or implement Throwable',

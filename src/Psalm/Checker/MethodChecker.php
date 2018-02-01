@@ -250,7 +250,7 @@ class MethodChecker extends FunctionLikeChecker
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
-        if (self::methodExists($project_checker, $method_id, $code_location)) {
+        if ($project_checker->codebase->methodExists($method_id, $code_location)) {
             return true;
         }
 
@@ -262,90 +262,6 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         return null;
-    }
-
-    /**
-     * Whether or not a given method exists
-     *
-     * @param  string       $method_id
-     * @param  ProjectChecker  $project_checker
-     * @param  CodeLocation|null $code_location
-     *
-     * @return bool
-     */
-    public static function methodExists(
-        ProjectChecker $project_checker,
-        $method_id,
-        CodeLocation $code_location = null
-    ) {
-        // remove trailing backslash if it exists
-        $method_id = preg_replace('/^\\\\/', '', $method_id);
-        list($fq_class_name, $method_name) = explode('::', $method_id);
-        $method_name = strtolower($method_name);
-        $method_id = $fq_class_name . '::' . $method_name;
-
-        $old_method_id = null;
-
-        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-
-        if (isset($class_storage->declaring_method_ids[$method_name])) {
-            if ($project_checker->codebase->collect_references && $code_location) {
-                $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
-                list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
-
-                $declaring_class_storage = $project_checker->classlike_storage_provider->get($declaring_method_class);
-                $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
-                if ($declaring_method_storage->referencing_locations === null) {
-                    $declaring_method_storage->referencing_locations = [];
-                }
-                $declaring_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
-
-                foreach ($class_storage->class_implements as $fq_interface_name) {
-                    $interface_storage = $project_checker->classlike_storage_provider->get($fq_interface_name);
-                    if (isset($interface_storage->methods[$method_name])) {
-                        $interface_method_storage = $interface_storage->methods[$method_name];
-                        if (!isset($interface_method_storage->referencing_locations)) {
-                            $interface_method_storage->referencing_locations = [];
-                        }
-                        $interface_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
-                    }
-                }
-
-                if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
-                    $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
-
-                    foreach ($overridden_method_ids as $overridden_method_id) {
-                        list($overridden_method_class, $overridden_method_name) = explode('::', $overridden_method_id);
-
-                        $class_storage = $project_checker->classlike_storage_provider->get($overridden_method_class);
-                        $method_storage = $class_storage->methods[strtolower($overridden_method_name)];
-                        if ($method_storage->referencing_locations === null) {
-                            $method_storage->referencing_locations = [];
-                        }
-                        $method_storage->referencing_locations[$code_location->file_path][] = $code_location;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
-            return true;
-        }
-
-        // support checking oldstyle constructors
-        if ($method_name === '__construct') {
-            $method_name_parts = explode('\\', $fq_class_name);
-            $old_constructor_name = array_pop($method_name_parts);
-            $old_method_id = $fq_class_name . '::' . $old_constructor_name;
-        }
-
-        if (FunctionChecker::inCallMap($method_id) || ($old_method_id && FunctionChecker::inCallMap($method_id))) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -393,6 +309,7 @@ class MethodChecker extends FunctionLikeChecker
         StatementsSource $source
     ) {
         $project_checker = $source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $declaring_method_id = self::getDeclaringMethodId($project_checker, $method_id);
 
@@ -444,13 +361,13 @@ class MethodChecker extends FunctionLikeChecker
                 }
 
                 if ($appearing_method_class
-                    && ClassChecker::classExtends($project_checker, $appearing_method_class, $calling_context)
+                    && $codebase->classExtends($appearing_method_class, $calling_context)
                 ) {
                     return true;
                 }
 
                 if ($appearing_method_class
-                    && !ClassChecker::classExtends($project_checker, $calling_context, $appearing_method_class)
+                    && !$codebase->classExtends($calling_context, $appearing_method_class)
                 ) {
                     return false;
                 }
@@ -476,6 +393,7 @@ class MethodChecker extends FunctionLikeChecker
         array $suppressed_issues
     ) {
         $project_checker = $source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $declaring_method_id = self::getDeclaringMethodId($project_checker, $method_id);
 
@@ -547,13 +465,13 @@ class MethodChecker extends FunctionLikeChecker
                 }
 
                 if ($appearing_method_class
-                    && ClassChecker::classExtends($project_checker, $appearing_method_class, $calling_context)
+                    && $codebase->classExtends($appearing_method_class, $calling_context)
                 ) {
                     return null;
                 }
 
                 if ($appearing_method_class
-                    && !ClassChecker::classExtends($project_checker, $calling_context, $appearing_method_class)
+                    && !$codebase->classExtends($calling_context, $appearing_method_class)
                 ) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(

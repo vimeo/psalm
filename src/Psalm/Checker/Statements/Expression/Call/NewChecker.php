@@ -33,6 +33,7 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         $fq_class_name = null;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
         $config = $project_checker->config;
 
         $late_static = false;
@@ -105,7 +106,7 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $context->check_classes &&
-                ClassChecker::classExists($project_checker, $fq_class_name)
+                $codebase->classExists($fq_class_name)
             ) {
                 $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
@@ -134,8 +135,7 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
                 }
 
-                if (MethodChecker::methodExists(
-                    $project_checker,
+                if ($codebase->methodExists(
                     $fq_class_name . '::__construct',
                     $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
                 )) {

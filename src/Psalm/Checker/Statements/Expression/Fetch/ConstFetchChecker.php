@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Expression\Fetch;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
@@ -138,9 +137,10 @@ class ConstFetchChecker
             }
 
             $project_checker = $statements_checker->getFileChecker()->project_checker;
+            $codebase = $project_checker->codebase;
 
             // if we're ignoring that the class doesn't exist, exit anyway
-            if (!ClassLikeChecker::classOrInterfaceExists($project_checker, $fq_class_name)) {
+            if (!$codebase->classOrInterfaceExists($fq_class_name)) {
                 $stmt->inferredType = Type::getMixed();
 
                 return null;
@@ -156,7 +156,7 @@ class ConstFetchChecker
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
             } elseif ($context->self &&
-                ClassChecker::classExtends($project_checker, $context->self, $fq_class_name)
+                $codebase->classExtends($context->self, $fq_class_name)
             ) {
                 $class_visibility = \ReflectionProperty::IS_PROTECTED;
             } else {

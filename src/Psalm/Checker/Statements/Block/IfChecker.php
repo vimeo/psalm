@@ -508,7 +508,7 @@ class IfChecker
                     && $byref_constraint->type
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && !TypeChecker::isContainedBy(
-                        $project_checker,
+                        $project_checker->codebase,
                         $byref_constraint->type,
                         $outer_constraint_type
                     )
@@ -899,7 +899,7 @@ class IfChecker
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && $byref_constraint->type
                     && !TypeChecker::isContainedBy(
-                        $project_checker,
+                        $project_checker->codebase,
                         $byref_constraint->type,
                         $outer_constraint_type
                     )
@@ -1174,7 +1174,7 @@ class IfChecker
                     && ($outer_constraint_type = $outer_context->byref_constraints[$var_id]->type)
                     && $byref_constraint->type
                     && !TypeChecker::isContainedBy(
-                        $project_checker,
+                        $project_checker->codebase,
                         $byref_constraint->type,
                         $outer_constraint_type
                     )

@@ -132,6 +132,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
         $config = Config::getInstance();
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $non_existent_method_ids = [];
         $existent_method_ids = [];
@@ -166,7 +167,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                         case 'Psalm\\Type\\Atomic\\TMixed':
                         case 'Psalm\\Type\\Atomic\\TObject':
-                            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                            $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
@@ -183,7 +184,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     continue;
                 }
 
-                $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
                 $has_valid_method_call_type = true;
 
@@ -237,12 +238,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $method_id = $fq_class_name . '::' . $method_name_lc;
 
-                if (MethodChecker::methodExists(
-                    $project_checker,
-                    $fq_class_name . '::__call'
-                )
-                ) {
-                    if (!MethodChecker::methodExists($project_checker, $method_id)
+                if ($codebase->methodExists($fq_class_name . '::__call')) {
+                    if (!$codebase->methodExists($method_id)
                         || !MethodChecker::isMethodVisible(
                             $method_id,
                             $context->self,
@@ -257,18 +254,18 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 if ($var_id === '$this' &&
                     $context->self &&
                     $fq_class_name !== $context->self &&
-                    MethodChecker::methodExists($project_checker, $context->self . '::' . $method_name_lc)
+                    $codebase->methodExists($context->self . '::' . $method_name_lc)
                 ) {
                     $method_id = $context->self . '::' . $method_name_lc;
                     $fq_class_name = $context->self;
                 }
 
-                if ($intersection_types && !MethodChecker::methodExists($project_checker, $method_id)) {
+                if ($intersection_types && !$codebase->methodExists($method_id)) {
                     foreach ($intersection_types as $intersection_type) {
                         $method_id = $intersection_type->value . '::' . $method_name_lc;
                         $fq_class_name = $intersection_type->value;
 
-                        if (MethodChecker::methodExists($project_checker, $method_id)) {
+                        if ($codebase->methodExists($method_id)) {
                             break;
                         }
                     }
@@ -276,7 +273,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
-                if (!MethodChecker::methodExists($project_checker, $method_id, $code_location)) {
+                if (!$codebase->methodExists($method_id, $code_location)) {
                     $non_existent_method_ids[] = $method_id;
                     continue;
                 }

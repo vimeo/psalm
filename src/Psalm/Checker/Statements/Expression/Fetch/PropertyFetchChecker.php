@@ -2,10 +2,7 @@
 namespace Psalm\Checker\Statements\Expression\Fetch;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\InterfaceChecker;
-use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -54,6 +51,7 @@ class PropertyFetchChecker
         }
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $stmt_var_id = ExpressionChecker::getVarId(
             $stmt->var,
@@ -81,7 +79,7 @@ class PropertyFetchChecker
                 // log the appearance
                 foreach ($stmt->var->inferredType->getTypes() as $lhs_type_part) {
                     if ($lhs_type_part instanceof TNamedObject) {
-                        if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
+                        if (!$codebase->classExists($lhs_type_part->value)) {
                             continue;
                         }
 
@@ -139,7 +137,7 @@ class PropertyFetchChecker
         }
 
         if ($stmt_var_type->isMixed()) {
-            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
@@ -156,7 +154,7 @@ class PropertyFetchChecker
             return null;
         }
 
-        $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+        $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues && !$context->inside_isset) {
             if (IssueBuffer::accepts(
@@ -210,8 +208,8 @@ class PropertyFetchChecker
                 continue;
             }
 
-            if (!ClassChecker::classExists($project_checker, $lhs_type_part->value)) {
-                if (InterfaceChecker::interfaceExists($project_checker, $lhs_type_part->value)) {
+            if (!$codebase->classExists($lhs_type_part->value)) {
+                if ($codebase->interfaceExists($lhs_type_part->value)) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -240,7 +238,7 @@ class PropertyFetchChecker
 
             $property_id = $lhs_type_part->value . '::$' . $stmt->name;
 
-            if (MethodChecker::methodExists($project_checker, $lhs_type_part->value . '::__get')) {
+            if ($codebase->methodExists($lhs_type_part->value . '::__get')) {
                 if ($stmt_var_id !== '$this' || !ClassLikeChecker::propertyExists($project_checker, $property_id)) {
                     $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 

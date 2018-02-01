@@ -2,9 +2,7 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -41,6 +39,7 @@ class TryChecker
         }
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($all_catches_leave) {
             $try_context = $context;
@@ -147,13 +146,13 @@ class TryChecker
                     }
                 }
 
-                if ((ClassChecker::classExists($project_checker, $fq_catch_class)
+                if (($codebase->classExists($fq_catch_class)
                         && strtolower($fq_catch_class) !== 'exception'
-                        && !(ClassChecker::classExtends($project_checker, $fq_catch_class, 'Exception')
-                            || ClassChecker::classImplements($project_checker, $fq_catch_class, 'Throwable')))
-                    || (InterfaceChecker::interfaceExists($project_checker, $fq_catch_class)
+                        && !($codebase->classExtends($fq_catch_class, 'Exception')
+                            || $codebase->classImplements($fq_catch_class, 'Throwable')))
+                    || ($codebase->interfaceExists($fq_catch_class)
                         && strtolower($fq_catch_class) !== 'throwable'
-                        && !InterfaceChecker::interfaceExtends($project_checker, $fq_catch_class, 'Throwable'))
+                        && !$codebase->interfaceExtends($fq_catch_class, 'Throwable'))
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidCatch(
@@ -178,12 +177,12 @@ class TryChecker
                      *
                      * @return Type\Atomic
                      */
-                    function ($fq_catch_class) use ($project_checker) {
+                    function ($fq_catch_class) use ($codebase) {
                         $catch_class_type = new TNamedObject($fq_catch_class);
 
                         if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                            && InterfaceChecker::interfaceExists($project_checker, $fq_catch_class)
-                            && !InterfaceChecker::interfaceExtends($project_checker, $fq_catch_class, 'Throwable')
+                            && $codebase->interfaceExists($fq_catch_class)
+                            && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
                         ) {
                             $catch_class_type->addIntersectionType(new TNamedObject('Throwable'));
                         }

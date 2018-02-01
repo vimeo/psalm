@@ -882,7 +882,7 @@ class BinaryOpChecker
             $project_checker = $statements_checker->getFileChecker()->project_checker;
 
             $left_type_match = TypeChecker::isContainedBy(
-                $project_checker,
+                $project_checker->codebase,
                 $left_type,
                 Type::getString(),
                 true,
@@ -891,7 +891,7 @@ class BinaryOpChecker
             );
 
             $right_type_match = TypeChecker::isContainedBy(
-                $project_checker,
+                $project_checker->codebase,
                 $right_type,
                 Type::getString(),
                 true,
