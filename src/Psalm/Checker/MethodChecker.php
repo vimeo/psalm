@@ -114,9 +114,19 @@ class MethodChecker extends FunctionLikeChecker
                 $overridden_class_storage =
                     $project_checker->classlike_storage_provider->get($fq_overridden_class);
 
+                $overridden_return_type = clone $overridden_storage->return_type;
+
+                if ($overridden_class_storage->template_types) {
+                    $generic_types = [];
+                    $overridden_return_type->replaceTemplateTypesWithStandins(
+                        $overridden_class_storage->template_types,
+                        $generic_types
+                    );
+                }
+
                 $self_class = $overridden_class_storage->name;
 
-                return clone $overridden_storage->return_type;
+                return $overridden_return_type;
             }
         }
 

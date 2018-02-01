@@ -4,6 +4,7 @@
  * Interface to detect if a class is traversable using &foreach;.
  * @link http://php.net/manual/en/class.traversable.php
  *
+ * @template TKey
  * @template TValue
  */
 interface Traversable {
@@ -13,9 +14,10 @@ interface Traversable {
  * Interface to create an external Iterator.
  * @link http://php.net/manual/en/class.iteratoraggregate.php
  *
+ * @template TKey
  * @template TValue
  *
- * @template-extends Traversable<TValue>
+ * @template-extends Traversable<TKey, TValue>
  */
 interface IteratorAggregate extends Traversable {
 
@@ -34,9 +36,10 @@ interface IteratorAggregate extends Traversable {
  * themselves internally.
  * @link http://php.net/manual/en/class.iterator.php
  *
+ * @template TKey
  * @template TValue
  *
- * @template-extends Traversable<TValue>
+ * @template-extends Traversable<TKey, TValue>
  */
 interface Iterator extends Traversable {
 
