@@ -4,7 +4,6 @@
  * Interface to detect if a class is traversable using &foreach;.
  * @link http://php.net/manual/en/class.traversable.php
  *
- * @template TKey
  * @template TValue
  */
 interface Traversable {
@@ -14,10 +13,9 @@ interface Traversable {
  * Interface to create an external Iterator.
  * @link http://php.net/manual/en/class.iteratoraggregate.php
  *
- * @template TKey
  * @template TValue
  *
- * @template-extends Traversable<TKey, TValue>
+ * @template-extends Traversable<TValue>
  */
 interface IteratorAggregate extends Traversable {
 
@@ -36,10 +34,9 @@ interface IteratorAggregate extends Traversable {
  * themselves internally.
  * @link http://php.net/manual/en/class.iterator.php
  *
- * @template TKey
  * @template TValue
  *
- * @template-extends Traversable<TKey, TValue>
+ * @template-extends Traversable<TValue>
  */
 interface Iterator extends Traversable {
 
@@ -396,4 +393,224 @@ class ArrayObject implements IteratorAggregate, Traversable, ArrayAccess, Serial
      * @since 5.1.0
      */
     public function getIteratorClass() { }
+}
+
+/**
+ * This iterator allows to unset and modify values and keys while iterating
+ * over Arrays and Objects.
+ * @link http://php.net/manual/en/class.arrayiterator.php
+ *
+ * @template TValue
+ */
+class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Countable {
+    const STD_PROP_LIST = 1;
+    const ARRAY_AS_PROPS = 2;
+    /**
+     * Construct an ArrayIterator
+     * @link http://php.net/manual/en/arrayiterator.construct.php
+     * @param array $array The array or object to be iterated on.
+     * @param int $flags Flags to control the behaviour of the ArrayObject object.
+     * @see ArrayObject::setFlags()
+     * @since 5.0.0
+     */
+    public function __construct($array = array(), $flags = 0) { }
+    /**
+     * Check if offset exists
+     * @link http://php.net/manual/en/arrayiterator.offsetexists.php
+     * @param string $index <p>
+     * The offset being checked.
+     * </p>
+     * @return bool true if the offset exists, otherwise false
+     * @since 5.0.0
+     */
+    public function offsetExists($index) { }
+    /**
+     * Get value for an offset
+     * @link http://php.net/manual/en/arrayiterator.offsetget.php
+     * @param string $index <p>
+     * The offset to get the value from.
+     * </p>
+     * @return TValue The value at offset <i>index</i>.
+     * @since 5.0.0
+     */
+    public function offsetGet($index) { }
+    /**
+     * Set value for an offset
+     * @link http://php.net/manual/en/arrayiterator.offsetset.php
+     * @param string $index <p>
+     * The index to set for.
+     * </p>
+     * @param TValue $newval <p>
+     * The new value to store at the index.
+     * </p>
+     * @return void
+     * @since 5.0.0
+     */
+    public function offsetSet($index, $newval) { }
+    /**
+     * Unset value for an offset
+     * @link http://php.net/manual/en/arrayiterator.offsetunset.php
+     * @param string $index <p>
+     * The offset to unset.
+     * </p>
+     * @return void
+     * @since 5.0.0
+     */
+    public function offsetUnset($index) { }
+    /**
+     * Append an element
+     * @link http://php.net/manual/en/arrayiterator.append.php
+     * @param TValue $value <p>
+     * The value to append.
+     * </p>
+     * @return void
+     * @since 5.0.0
+     */
+    public function append($value) { }
+    /**
+     * Get array copy
+     * @link http://php.net/manual/en/arrayiterator.getarraycopy.php
+     * @return array A copy of the array, or array of public properties
+     * if ArrayIterator refers to an object.
+     * @since 5.0.0
+     */
+    public function getArrayCopy() { }
+    /**
+     * Count elements
+     * @link http://php.net/manual/en/arrayiterator.count.php
+     * @return int The number of elements or public properties in the associated
+     * array or object, respectively.
+     * @since 5.0.0
+     */
+    public function count() { }
+    /**
+     * Get flags
+     * @link http://php.net/manual/en/arrayiterator.getflags.php
+     * @return string The current flags.
+     * @since 5.1.0
+     */
+    public function getFlags() { }
+    /**
+     * Set behaviour flags
+     * @link http://php.net/manual/en/arrayiterator.setflags.php
+     * @param string $flags <p>
+     * A bitmask as follows:
+     * 0 = Properties of the object have their normal functionality
+     * when accessed as list (var_dump, foreach, etc.).
+     * 1 = Array indices can be accessed as properties in read/write.
+     * </p>
+     * @return void
+     * @since 5.1.0
+     */
+    public function setFlags($flags) { }
+    /**
+     * Sort array by values
+     * @link http://php.net/manual/en/arrayiterator.asort.php
+     * @return void
+     * @since 5.2.0
+     */
+    public function asort() { }
+    /**
+     * Sort array by keys
+     * @link http://php.net/manual/en/arrayiterator.ksort.php
+     * @return void
+     * @since 5.2.0
+     */
+    public function ksort() { }
+    /**
+     * User defined sort
+     * @link http://php.net/manual/en/arrayiterator.uasort.php
+     * @param string $cmp_function <p>
+     * The compare function used for the sort.
+     * </p>
+     * @return void
+     * @since 5.2.0
+     */
+    public function uasort($cmp_function) { }
+    /**
+     * User defined sort
+     * @link http://php.net/manual/en/arrayiterator.uksort.php
+     * @param string $cmp_function <p>
+     * The compare function used for the sort.
+     * </p>
+     * @return void
+     * @since 5.2.0
+     */
+    public function uksort($cmp_function) { }
+    /**
+     * Sort an array naturally
+     * @link http://php.net/manual/en/arrayiterator.natsort.php
+     * @return void
+     * @since 5.2.0
+     */
+    public function natsort() { }
+    /**
+     * Sort an array naturally, case insensitive
+     * @link http://php.net/manual/en/arrayiterator.natcasesort.php
+     * @return void
+     * @since 5.2.0
+     */
+    public function natcasesort() { }
+    /**
+     * Unserialize
+     * @link http://php.net/manual/en/arrayiterator.unserialize.php
+     * @param string $serialized <p>
+     * The serialized ArrayIterator object to be unserialized.
+     * </p>
+     * @return string The <b>ArrayIterator</b>.
+     * @since 5.3.0
+     */
+    public function unserialize($serialized) { }
+    /**
+     * Serialize
+     * @link http://php.net/manual/en/arrayiterator.serialize.php
+     * @return string The serialized <b>ArrayIterator</b>.
+     * @since 5.3.0
+     */
+    public function serialize() { }
+    /**
+     * Rewind array back to the start
+     * @link http://php.net/manual/en/arrayiterator.rewind.php
+     * @return void
+     * @since 5.0.0
+     */
+    public function rewind() { }
+    /**
+     * Return current array entry
+     * @link http://php.net/manual/en/arrayiterator.current.php
+     * @return mixed The current array entry.
+     * @since 5.0.0
+     */
+    public function current() { }
+    /**
+     * Return current array key
+     * @link http://php.net/manual/en/arrayiterator.key.php
+     * @return mixed The current array key.
+     * @since 5.0.0
+     */
+    public function key() { }
+    /**
+     * Move to next entry
+     * @link http://php.net/manual/en/arrayiterator.next.php
+     * @return void
+     * @since 5.0.0
+     */
+    public function next() { }
+    /**
+     * Check whether array contains more entries
+     * @link http://php.net/manual/en/arrayiterator.valid.php
+     * @return bool
+     * @since 5.0.0
+     */
+    public function valid() { }
+    /**
+     * Seek to position
+     * @link http://php.net/manual/en/arrayiterator.seek.php
+     * @param int $position <p>
+     * The position to seek to.
+     * </p>
+     * @return void
+     * @since 5.0.0
+     */
+    public function seek($position) { }
 }

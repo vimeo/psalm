@@ -268,6 +268,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
+
             if ($function_param->type) {
                 $param_type = clone $function_param->type;
 
@@ -767,6 +768,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         } elseif ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
             && $implementer_classlike_storage->user_defined
+            && !$guide_classlike_storage->stubbed
         ) {
             $implementer_method_storage_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,
@@ -1691,10 +1693,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
-        if ($fq_class_name && ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)) {
-            $method_params = MethodChecker::getMethodParams($project_checker, $method_id);
+        if ($fq_class_name) {
+            $class_storage = $project_checker->codebase->classlike_storage_provider->get($fq_class_name);
 
-            return $method_params;
+            if ($class_storage->user_defined || $class_storage->stubbed) {
+                $method_params = MethodChecker::getMethodParams($project_checker, $method_id);
+
+                return $method_params;
+            }
         }
 
         $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);

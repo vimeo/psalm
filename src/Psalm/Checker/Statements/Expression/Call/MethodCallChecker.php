@@ -341,7 +341,19 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 if ($method_name_lc === '__tostring') {
                     $return_type_candidate = Type::getString();
                 } elseif (FunctionChecker::inCallMap($cased_method_id)) {
-                    $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
+                    if ($class_template_params
+                        && isset($class_storage->methods[$method_name_lc])
+                        && ($method_storage = $class_storage->methods[$method_name_lc])
+                        && $method_storage->return_type
+                    ) {
+                        $return_type_candidate = clone $method_storage->return_type;
+
+                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                            $class_template_params
+                        );
+                    } else {
+                        $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
+                    }
 
                     $return_type_candidate = ExpressionChecker::fleshOutType(
                         $project_checker,

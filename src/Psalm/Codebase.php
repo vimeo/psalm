@@ -361,7 +361,7 @@ class Codebase
         }
 
         foreach ($this->classlike_storage_provider->getAll() as $storage) {
-            if (!$storage->user_defined) {
+            if (!$storage->user_defined && !$storage->stubbed) {
                 continue;
             }
 

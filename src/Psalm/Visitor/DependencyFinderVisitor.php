@@ -164,7 +164,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage = $this->codebase->createClassLikeStorage($fq_classlike_name);
 
             $storage->location = new CodeLocation($this->file_scanner, $node, null, true);
-            $storage->user_defined = true;
+            $storage->user_defined = !$this->codebase->register_global_functions;
+            $storage->stubbed = $this->codebase->register_global_functions;
 
             $doc_comment = $node->getDocComment();
 
@@ -882,16 +883,22 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                         if ($storage->signature_return_type) {
                             $all_types_match = true;
+                            $signature_return_atomic_types = $storage->signature_return_type->getTypes();
+
                             foreach ($storage->return_type->getTypes() as $key => $type) {
-                                if (isset($storage->signature_return_type->getTypes()[$key])) {
+                                if (isset($signature_return_atomic_types[$key])) {
+                                    if ($signature_return_atomic_types[$key]->getId() !== $type->getId()) {
+                                        $all_types_match = false;
+                                    }
+
                                     $type->from_docblock = false;
                                 } else {
                                     $all_types_match = false;
                                 }
+                            }
 
-                                if ($all_types_match) {
-                                    $storage->return_type->from_docblock = false;
-                                }
+                            if ($all_types_match) {
+                                $storage->return_type->from_docblock = false;
                             }
                         }
 
@@ -1115,7 +1122,23 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 continue;
             }
 
-            if ($storage_param->type->getId() === $new_param_type->getId()) {
+            $storage_param_atomic_types = $storage_param->type->getTypes();
+
+            $all_types_match = true;
+
+            foreach ($new_param_type->getTypes() as $key => $type) {
+                if (isset($storage_param_atomic_types[$key])) {
+                    if ($storage_param_atomic_types[$key]->getId() !== $type->getId()) {
+                        $all_types_match = false;
+                    }
+
+                    $type->from_docblock = false;
+                } else {
+                    $all_types_match = false;
+                }
+            }
+
+            if ($all_types_match) {
                 continue;
             }
 

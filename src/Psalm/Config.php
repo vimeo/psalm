@@ -708,15 +708,15 @@ class Config
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
-        $file_storage = $codebase->createFileStorageForPath($generic_stubs_path);
-        $file_to_scan = new FileScanner($generic_stubs_path, $this->shortenFileName($generic_stubs_path), false);
-        $file_to_scan->scan(
-            $codebase,
-            $codebase->getStatementsForFile($generic_stubs_path),
-            $file_storage
-        );
+        $generic_classes_path = realpath(__DIR__ . '/Stubs/CoreGenericClasses.php');
 
-        foreach ($this->stub_files as $stub_file_path) {
+        if (!$generic_classes_path) {
+            throw new \UnexpectedValueException('Cannot locate core generic classes');
+        }
+
+        $stub_files = array_merge([$generic_stubs_path, $generic_classes_path], $this->stub_files);
+
+        foreach ($stub_files as $stub_file_path) {
             $file_storage = $codebase->createFileStorageForPath($stub_file_path);
             $file_to_scan = new FileScanner($stub_file_path, $this->shortenFileName($stub_file_path), false);
             $file_to_scan->scan(

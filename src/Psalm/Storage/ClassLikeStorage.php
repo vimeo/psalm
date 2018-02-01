@@ -35,6 +35,11 @@ class ClassLikeStorage
     /**
      * @var bool
      */
+    public $stubbed = false;
+
+    /**
+     * @var bool
+     */
     public $all_properties_set_in_constructor = false;
 
     /**
