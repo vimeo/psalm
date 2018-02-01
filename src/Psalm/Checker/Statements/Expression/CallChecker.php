@@ -511,6 +511,15 @@ class CallChecker
             $cased_method_id = MethodChecker::getCasedMethodId($project_checker, $method_id);
         }
 
+        if ($method_id && strpos($method_id, '::')) {
+            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+
+            if ($declaring_method_id && $declaring_method_id !== $method_id) {
+                list($fq_class_name) = explode('::', $declaring_method_id);
+                $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+            }
+        }
+
         if ($function_params) {
             foreach ($function_params as $function_param) {
                 $is_variadic = $is_variadic || $function_param->is_variadic;
