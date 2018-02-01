@@ -1,10 +1,86 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Config;
+use Psalm\Context;
+
 class AnnotationTest extends TestCase
 {
     use Traits\FileCheckerInvalidCodeParseTestTrait;
     use Traits\FileCheckerValidCodeParseTestTrait;
+
+    /**
+     * @return void
+     */
+    public function testPhpStormGenericsWithValidArgument()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param ArrayIterator|string[] $i */
+                function takesArrayIteratorOfString(ArrayIterator $i): void {
+                    $s = $i->offsetGet("a");
+                    takesString($s);
+
+                    foreach ($i as $s2) {
+                        takesString($s2);
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     *
+     * @return                   void
+     */
+    public function testPhpStormGenericsInvalidArgument()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesInt(int $s): void {}
+
+                /** @param ArrayIterator|string[] $i */
+                function takesArrayIteratorOfString(ArrayIterator $i): void {
+                    $s = $i->offsetGet("a");
+                    takesInt($s);
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage PossiblyInvalidMethodCall
+     *
+     * @return                   void
+     */
+    public function testPhpStormGenericsNoTypehint()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param ArrayIterator|string[] $i */
+                function takesArrayIteratorOfString($i): void {
+                    $s = $i->offsetGet("a");
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @return array
@@ -732,6 +808,20 @@ class AnnotationTest extends TestCase
                      */
                     function bar(array $arr): void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'noPhpStormAnnotationsThankYou' => [
+                '<?php
+                    /** @param ArrayIterator|string[] $i */
+                    function takesArrayIteratorOfString(ArrayIterator $i): void {}',
+                'error_message' => 'MismatchingDocblockParamType',
+            ],
+            'noPhpStormAnnotationsPossiblyInvalid' => [
+                '<?php
+                    /** @param ArrayIterator|string[] $i */
+                    function takesArrayIteratorOfString($i): void {
+                        $s = $i->offsetGet("a");
+                    }',
+                'error_message' => 'PossiblyInvalidMethodCall',
             ],
         ];
     }

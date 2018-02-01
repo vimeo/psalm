@@ -173,6 +173,11 @@ class Config
     public $use_igbinary = false;
 
     /**
+     * @var bool
+     */
+    public $allow_phpstorm_generics = false;
+
+    /**
      * Psalm plugins
      *
      * @var array<Plugin>
@@ -380,6 +385,11 @@ class Config
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
             $config->use_igbinary = $attribute_text === 'igbinary';
+        }
+
+        if (isset($config_xml['allowPhpStormGenerics'])) {
+            $attribute_text = (string) $config_xml['allowPhpStormGenerics'];
+            $config->allow_phpstorm_generics = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

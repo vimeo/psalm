@@ -383,6 +383,42 @@ class Codebase
             $this->populateFileStorage($file_storage);
         }
 
+        if ($this->config->allow_phpstorm_generics) {
+            foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
+                foreach ($class_storage->properties as $property_storage) {
+                    if ($property_storage->type) {
+                        $this->convertPhpStormGenericToPsalmGeneric($property_storage->type, true);
+                    }
+                }
+
+                foreach ($class_storage->methods as $method_storage) {
+                    if ($method_storage->return_type) {
+                        $this->convertPhpStormGenericToPsalmGeneric($method_storage->return_type);
+                    }
+
+                    foreach ($method_storage->params as $param_storage) {
+                        if ($param_storage->type) {
+                            $this->convertPhpStormGenericToPsalmGeneric($param_storage->type);
+                        }
+                    }
+                }
+            }
+
+            foreach ($all_file_storage as $file_storage) {
+                foreach ($file_storage->functions as $function_storage) {
+                    if ($function_storage->return_type) {
+                        $this->convertPhpStormGenericToPsalmGeneric($function_storage->return_type);
+                    }
+
+                    foreach ($function_storage->params as $param_storage) {
+                        if ($param_storage->type) {
+                            $this->convertPhpStormGenericToPsalmGeneric($param_storage->type);
+                        }
+                    }
+                }
+            }
+        }
+
         if ($this->debug_output) {
             echo 'FileStorage is populated' . PHP_EOL;
         }
@@ -627,6 +663,49 @@ class Codebase
         }
 
         $storage->populated = true;
+    }
+
+    /**
+     * @param  Type\Union $candidate
+     * @param  bool       $is_property
+     *
+     * @return void
+     */
+    private function convertPhpStormGenericToPsalmGeneric(Type\Union $candidate, $is_property = false)
+    {
+        $atomic_types = $candidate->getTypes();
+
+        if (isset($atomic_types['array']) && count($atomic_types) > 1) {
+            $iterator_name = null;
+            $generic_params = null;
+
+            foreach ($atomic_types as $type) {
+                if ($type instanceof Type\Atomic\TNamedObject
+                    && (!$type->from_docblock || $is_property)
+                    && (
+                        strtolower($type->value) === 'traversable'
+                        || $this->interfaceExtends(
+                            $type->value,
+                            'Traversable'
+                        )
+                        || $this->classImplements(
+                            $type->value,
+                            'Traversable'
+                        )
+                    )
+                ) {
+                    $iterator_name = $type->value;
+                } elseif ($type instanceof Type\Atomic\TArray) {
+                    $generic_params = $type->type_params;
+                }
+            }
+
+            if ($iterator_name && $generic_params) {
+                $generic_iterator = new Type\Atomic\TGenericObject($iterator_name, $generic_params);
+                $candidate->removeType('array');
+                $candidate->addType($generic_iterator);
+            }
+        }
     }
 
     /**
