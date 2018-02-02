@@ -503,7 +503,8 @@ class FunctionCallTest extends TestCase
                 '<?php
                     function fooFoo(int $a): void {}
                     fooFoo(5, "dfd");',
-                'error_message' => 'TooManyArguments',
+                'error_message' => 'TooManyArguments - src/somefile.php:3 - Too many arguments for method fooFoo '
+                    . '- expecting 1 but saw 2',
             ],
             'tooManyArgumentsForConstructor' => [
                 '<?php

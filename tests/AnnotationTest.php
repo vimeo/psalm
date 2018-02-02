@@ -482,7 +482,8 @@ class AnnotationTest extends TestCase
                     }
 
                     fooBar("hello");',
-                'error_message' => 'TooManyArguments',
+                'error_message' => 'TooManyArguments - src/somefile.php:8 - Too many arguments for method fooBar '
+                    . '- expecting 0 but saw 1',
             ],
             'missingParamVar' => [
                 '<?php

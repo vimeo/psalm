@@ -212,7 +212,7 @@ class CallChecker
             );
         }
 
-        if (self::checkFunctionArgumentsMatch(
+        if (self::checkFunctionLikeArgumentsMatch(
             $statements_checker,
             $args,
             $method_id,
@@ -473,7 +473,7 @@ class CallChecker
      *
      * @return  false|null
      */
-    protected static function checkFunctionArgumentsMatch(
+    protected static function checkFunctionLikeArgumentsMatch(
         StatementsChecker $statements_checker,
         array $args,
         $method_id,
@@ -509,6 +509,8 @@ class CallChecker
 
         if ($method_id && strpos($method_id, '::') && !$in_call_map) {
             $cased_method_id = MethodChecker::getCasedMethodId($project_checker, $method_id);
+        } elseif ($function_storage) {
+            $cased_method_id = $function_storage->cased_name;
         }
 
         if ($method_id && strpos($method_id, '::')) {
@@ -769,7 +771,8 @@ class CallChecker
         ) {
             if (IssueBuffer::accepts(
                 new TooManyArguments(
-                    'Too many arguments for method ' . ($cased_method_id ?: $method_id),
+                    'Too many arguments for method ' . ($cased_method_id ?: $method_id)
+                        . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
@@ -787,7 +790,8 @@ class CallChecker
                 if (!$param->is_optional && !$param->is_variadic) {
                     if (IssueBuffer::accepts(
                         new TooFewArguments(
-                            'Too few arguments for method ' . $cased_method_id,
+                            'Too few arguments for method ' . $cased_method_id
+                                . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                             $code_location
                         ),
                         $statements_checker->getSuppressedIssues()

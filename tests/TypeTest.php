@@ -1368,7 +1368,7 @@ class TypeTest extends TestCase
                     class C extends A {}
 
                     function takesB(B $i): void {}',
-                'error_message' => 'TypeCoercion - src/somefile.php:11 - Argument 1 of takesb expects B,'
+                'error_message' => 'TypeCoercion - src/somefile.php:11 - Argument 1 of takesB expects B,'
                     . ' parent type A provided',
             ],
             'intersectionTypeInterfaceCheckAfterInstanceof' => [
@@ -1387,7 +1387,7 @@ class TypeTest extends TestCase
                     interface I {}
 
                     function takesI(I $i): void {}',
-                'error_message' => 'InvalidArgument - src/somefile.php:9 - Argument 1 of takesi expects I, A provided',
+                'error_message' => 'InvalidArgument - src/somefile.php:9 - Argument 1 of takesI expects I, A provided',
             ],
         ];
     }
