@@ -158,41 +158,6 @@ class ReturnChecker
                         return null;
                     }
 
-                    if (!$stmt->inferredType->ignore_nullable_issues
-                        && $inferred_type->isNullable()
-                        && !$local_return_type->isNullable()
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new NullableReturnStatement(
-                                'The declared return type \'' . $local_return_type . '\' for '
-                                    . $cased_method_id . ' is not nullable, but \'' . $inferred_type
-                                    . '\' contains null',
-                                new CodeLocation($source, $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-
-                    if (!$stmt->inferredType->ignore_falsable_issues
-                        && $inferred_type->isFalsable()
-                        && !$local_return_type->isFalsable()
-                        && !$local_return_type->hasBool()
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new FalsableReturnStatement(
-                                'The declared return type \'' . $local_return_type . '\' for '
-                                    . $cased_method_id . ' does not allow false, but \'' . $inferred_type
-                                    . '\' contains false',
-                                new CodeLocation($source, $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-
                     if (!TypeChecker::isContainedBy(
                         $source->getFileChecker()->project_checker->codebase,
                         $inferred_type,
@@ -227,6 +192,41 @@ class ReturnChecker
                             )) {
                                 return false;
                             }
+                        }
+                    }
+
+                    if (!$stmt->inferredType->ignore_nullable_issues
+                        && $inferred_type->isNullable()
+                        && !$local_return_type->isNullable()
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new NullableReturnStatement(
+                                'The declared return type \'' . $local_return_type . '\' for '
+                                    . $cased_method_id . ' is not nullable, but \'' . $inferred_type
+                                    . '\' contains null',
+                                new CodeLocation($source, $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
+
+                    if (!$stmt->inferredType->ignore_falsable_issues
+                        && $inferred_type->isFalsable()
+                        && !$local_return_type->isFalsable()
+                        && !$local_return_type->hasBool()
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new FalsableReturnStatement(
+                                'The declared return type \'' . $local_return_type . '\' for '
+                                    . $cased_method_id . ' does not allow false, but \'' . $inferred_type
+                                    . '\' contains false',
+                                new CodeLocation($source, $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
                         }
                     }
                 }

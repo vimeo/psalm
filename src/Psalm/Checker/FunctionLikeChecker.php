@@ -1408,69 +1408,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 return null;
             }
 
-            if (!$ignore_nullable_issues
-                && $inferred_return_type->isNullable()
-                && !$declared_return_type->isNullable()
-                && !$declared_return_type->isVoid()
-            ) {
-                if ($project_checker->alter_code
-                    && isset($project_checker->getIssuesToFix()['InvalidNullableReturnType'])
-                    && !$inferred_return_type->isNull()
-                ) {
-                    $this->addOrUpdateReturnType(
-                        $project_checker,
-                        $inferred_return_type,
-                        ($project_checker->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock
-                    );
-
-                    return null;
-                }
-
-                if (IssueBuffer::accepts(
-                    new InvalidNullableReturnType(
-                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
-                        $return_type_location
-                    ),
-                    $this->suppressed_issues
-                )) {
-                    return false;
-                }
-            }
-
-            if (!$ignore_falsable_issues
-                && $inferred_return_type->isFalsable()
-                && !$declared_return_type->isFalsable()
-                && !$declared_return_type->hasBool()
-            ) {
-                if ($project_checker->alter_code
-                    && isset($project_checker->getIssuesToFix()['InvalidFalsableReturnType'])
-                ) {
-                    $this->addOrUpdateReturnType(
-                        $project_checker,
-                        $inferred_return_type,
-                        ($project_checker->only_replace_php_types_with_non_docblock_types
-                            || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock
-                    );
-
-                    return null;
-                }
-
-                if (IssueBuffer::accepts(
-                    new InvalidFalsableReturnType(
-                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
-                        $return_type_location
-                    ),
-                    $this->suppressed_issues
-                )) {
-                    return false;
-                }
-            }
-
             if (!TypeChecker::isContainedBy(
                 $codebase,
                 $inferred_return_type,
@@ -1538,6 +1475,69 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     new LessSpecificReturnType(
                         'The inferred return type \'' . $inferred_return_type . '\' for ' . $cased_method_id .
                             ' is more specific than the declared return type \'' . $declared_return_type . '\'',
+                        $return_type_location
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
+            if (!$ignore_nullable_issues
+                && $inferred_return_type->isNullable()
+                && !$declared_return_type->isNullable()
+                && !$declared_return_type->isVoid()
+            ) {
+                if ($project_checker->alter_code
+                    && isset($project_checker->getIssuesToFix()['InvalidNullableReturnType'])
+                    && !$inferred_return_type->isNull()
+                ) {
+                    $this->addOrUpdateReturnType(
+                        $project_checker,
+                        $inferred_return_type,
+                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
+                            && $inferred_return_type->from_docblock
+                    );
+
+                    return null;
+                }
+
+                if (IssueBuffer::accepts(
+                    new InvalidNullableReturnType(
+                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
+                        $return_type_location
+                    ),
+                    $this->suppressed_issues
+                )) {
+                    return false;
+                }
+            }
+
+            if (!$ignore_falsable_issues
+                && $inferred_return_type->isFalsable()
+                && !$declared_return_type->isFalsable()
+                && !$declared_return_type->hasBool()
+            ) {
+                if ($project_checker->alter_code
+                    && isset($project_checker->getIssuesToFix()['InvalidFalsableReturnType'])
+                ) {
+                    $this->addOrUpdateReturnType(
+                        $project_checker,
+                        $inferred_return_type,
+                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
+                            && $inferred_return_type->from_docblock
+                    );
+
+                    return null;
+                }
+
+                if (IssueBuffer::accepts(
+                    new InvalidFalsableReturnType(
+                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                            ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
                         $return_type_location
                     ),
                     $this->suppressed_issues

@@ -660,6 +660,30 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'invalidReturnStatementMoreAccurateThanFalsable' => [
+                '<?php
+                    class A1{}
+                    class B1{}
+
+                    function testFalseable() : A1 {
+                        return (rand() % 2 === 0) ? (new B1()) : false;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'invalidReturnTypeMoreAccurateThanFalsable' => [
+                '<?php
+                    class A1{}
+                    class B1{}
+
+                    function testFalseable() : A1 {
+                        /**
+                         * @psalm-suppress InvalidReturnStatement
+                         * @psalm-suppress FalsableReturnStatement
+                         */
+                        return (rand() % 2 === 0) ? (new B1()) : false;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
         ];
     }
 }
