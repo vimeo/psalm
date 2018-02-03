@@ -162,7 +162,7 @@ class FileChecker extends SourceChecker implements StatementsSource
                 /** @var string */
                 $method_id = $function_checker->getMethodId();
 
-                $function_storage = $codebase->getFunctionStorage(
+                $function_storage = $codebase->functions->getStorage(
                     $statements_checker,
                     $method_id
                 );

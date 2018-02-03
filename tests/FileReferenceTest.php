@@ -25,7 +25,7 @@ class FileReferenceTest extends TestCase
             new Provider\FakeParserCacheProvider()
         );
 
-        $this->project_checker->getCodebase()->collect_references = true;
+        $this->project_checker->getCodebase()->collectReferences();
     }
 
     /**

@@ -415,7 +415,7 @@ class ArrayFetchChecker
             if ($type instanceof TString) {
                 if ($in_assignment && $replacement_type) {
                     if ($replacement_type->isMixed()) {
-                        $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                        $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                         if (IssueBuffer::accepts(
                             new MixedStringOffsetAssignment(
@@ -427,7 +427,7 @@ class ArrayFetchChecker
                             // fall through
                         }
                     } else {
-                        $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                        $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
                     }
                 }
 
@@ -455,7 +455,7 @@ class ArrayFetchChecker
             }
 
             if ($type instanceof TMixed || $type instanceof TEmpty) {
-                $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if ($in_assignment) {
                     if (IssueBuffer::accepts(
@@ -483,7 +483,7 @@ class ArrayFetchChecker
                 break;
             }
 
-            $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) !== 'simplexmlelement'
@@ -556,7 +556,7 @@ class ArrayFetchChecker
         }
 
         if ($offset_type->isMixed()) {
-            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedArrayOffset(
@@ -568,7 +568,7 @@ class ArrayFetchChecker
                 // fall through
             }
         } else {
-            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($invalid_offset_types) {
                 $invalid_offset_type = $invalid_offset_types[0];

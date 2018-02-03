@@ -43,7 +43,12 @@ class TestCase extends BaseTestCase
         $this->project_checker = new ProjectChecker(
             $config,
             $this->file_provider,
-            $parser_cache_provider
+            $parser_cache_provider,
+            false,
+            true,
+            ProjectChecker::TYPE_CONSOLE,
+            1,
+            false
         );
 
         $this->project_checker->infer_types_from_usage = true;
@@ -58,7 +63,7 @@ class TestCase extends BaseTestCase
     public function addFile($file_path, $contents)
     {
         $this->file_provider->registerFile($file_path, $contents);
-        $this->project_checker->getCodeBase()->queueFileForScanning($file_path);
+        $this->project_checker->getCodeBase()->scanner->queueFileForScanning($file_path);
     }
 
     /**
@@ -70,7 +75,8 @@ class TestCase extends BaseTestCase
     public function analyzeFile($file_path, \Psalm\Context $context)
     {
         $codebase = $this->project_checker->getCodebase();
-        $codebase->addFilesToScan([$file_path => $file_path]);
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+
         $codebase->scanFiles();
 
         $file_checker = new FileChecker(

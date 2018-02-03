@@ -19,7 +19,7 @@ class IncludeTest extends TestCase
 
         foreach ($files as $filename => $contents) {
             $this->addFile($filename, $contents);
-            $codebase->addFilesToScan([$filename => $filename]);
+            $codebase->addFilesToAnalyze([$filename => $filename]);
         }
 
         $codebase->scanFiles();
@@ -47,7 +47,7 @@ class IncludeTest extends TestCase
 
         foreach ($files as $filename => $contents) {
             $this->addFile($filename, $contents);
-            $codebase->addFilesToScan([$filename => $filename]);
+            $codebase->addFilesToAnalyze([$filename => $filename]);
         }
 
         $codebase->scanFiles();

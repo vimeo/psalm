@@ -50,7 +50,6 @@ class ReportOutputTest extends TestCase
                 ProjectChecker::TYPE_CONSOLE,
                 1,
                 false,
-                false,
                 '/tmp/report' . $extension
             );
         }
@@ -74,7 +73,6 @@ class ReportOutputTest extends TestCase
             true,
             ProjectChecker::TYPE_CONSOLE,
             1,
-            false,
             false,
             '/tmp/report.log'
         );

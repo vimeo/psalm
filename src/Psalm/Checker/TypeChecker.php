@@ -284,13 +284,8 @@ class TypeChecker
             return true;
         }
 
-        $input_is_object = $input_type_part->isObjectType();
-        $container_is_object = $container_type_part->isObjectType();
-
         if ($input_type_part->shallowEquals($container_type_part) ||
             (
-                $input_is_object &&
-                $container_is_object &&
                 $input_type_part instanceof TNamedObject &&
                 $container_type_part instanceof TNamedObject &&
                 self::isObjectContainedByObject($codebase, $input_type_part, $container_type_part)

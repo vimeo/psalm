@@ -4,7 +4,6 @@ namespace Psalm\Checker\Statements\Block;
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
@@ -201,8 +200,7 @@ class ForeachChecker
                     ) {
                         $iterator_method = $iterator_type->value . '::current';
                         $self_class = $iterator_type->value;
-                        $iterator_class_type = MethodChecker::getMethodReturnType(
-                            $project_checker,
+                        $iterator_class_type = $codebase->methods->getMethodReturnType(
                             $iterator_method,
                             $self_class
                         );

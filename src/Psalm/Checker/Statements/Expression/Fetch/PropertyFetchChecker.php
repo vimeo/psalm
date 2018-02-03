@@ -137,7 +137,7 @@ class PropertyFetchChecker
         }
 
         if ($stmt_var_type->isMixed()) {
-            $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
@@ -154,7 +154,7 @@ class PropertyFetchChecker
             return null;
         }
 
-        $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+        $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues && !$context->inside_isset) {
             if (IssueBuffer::accepts(

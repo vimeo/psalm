@@ -3,8 +3,8 @@ namespace Psalm\Checker;
 
 use PhpParser;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
+use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
-use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -14,132 +14,11 @@ use Psalm\Type\Reconciler;
 class FunctionChecker extends FunctionLikeChecker
 {
     /**
-     * @var array<array<string,string>>|null
-     */
-    protected static $call_map = null;
-
-    /**
      * @param StatementsSource              $source
      */
     public function __construct(PhpParser\Node\Stmt\Function_ $function, StatementsSource $source)
     {
         parent::__construct($function, $source);
-    }
-
-    /**
-     * @param  string $function_id
-     * @param  string $file_path
-     *
-     * @return bool
-     */
-    public static function isVariadic(ProjectChecker $project_checker, $function_id, $file_path)
-    {
-        $file_storage = $project_checker->file_storage_provider->get($file_path);
-
-        return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
-    }
-
-    /**
-     * @param  string $function_id
-     *
-     * @return array|null
-     * @psalm-return array<int, array<int, FunctionLikeParameter>>|null
-     */
-    public static function getParamsFromCallMap($function_id)
-    {
-        $call_map = self::getCallMap();
-
-        $call_map_key = strtolower($function_id);
-
-        if (!isset($call_map[$call_map_key])) {
-            return null;
-        }
-
-        $call_map_functions = [];
-        $call_map_functions[] = $call_map[$call_map_key];
-
-        for ($i = 1; $i < 10; ++$i) {
-            if (!isset($call_map[$call_map_key . '\'' . $i])) {
-                break;
-            }
-
-            $call_map_functions[] = $call_map[$call_map_key . '\'' . $i];
-        }
-
-        $function_type_options = [];
-
-        foreach ($call_map_functions as $call_map_function_args) {
-            array_shift($call_map_function_args);
-
-            $function_types = [];
-
-            /** @var string $arg_name - key type changed with above array_shift */
-            foreach ($call_map_function_args as $arg_name => $arg_type) {
-                $by_reference = false;
-                $optional = false;
-                $variadic = false;
-
-                if ($arg_name[0] === '&') {
-                    $arg_name = substr($arg_name, 1);
-                    $by_reference = true;
-                }
-
-                if (substr($arg_name, -1) === '=') {
-                    $arg_name = substr($arg_name, 0, -1);
-                    $optional = true;
-                }
-
-                if (substr($arg_name, 0, 3) === '...') {
-                    $arg_name = substr($arg_name, 3);
-                    $variadic = true;
-                }
-
-                $param_type = $arg_type
-                    ? Type::parseString($arg_type)
-                    : Type::getMixed();
-
-                if ($param_type->hasScalarType() || $param_type->hasObject()) {
-                    $param_type->from_docblock = true;
-                }
-
-                $function_types[] = new FunctionLikeParameter(
-                    $arg_name,
-                    $by_reference,
-                    $param_type,
-                    null,
-                    null,
-                    $optional,
-                    false,
-                    $variadic
-                );
-            }
-
-            $function_type_options[] = $function_types;
-        }
-
-        return $function_type_options;
-    }
-
-    /**
-     * @param  string  $function_id
-     *
-     * @return Type\Union
-     */
-    public static function getReturnTypeFromCallMap($function_id)
-    {
-        $call_map_key = strtolower($function_id);
-
-        $call_map = self::getCallMap();
-
-        if (!isset($call_map[$call_map_key])) {
-            throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
-        }
-
-        if (!$call_map[$call_map_key][0]) {
-            return Type::getMixed();
-        }
-
-        return Type::parseString($call_map[$call_map_key][0]);
     }
 
     /**
@@ -159,7 +38,7 @@ class FunctionChecker extends FunctionLikeChecker
     ) {
         $call_map_key = strtolower($function_id);
 
-        $call_map = self::getCallMap();
+        $call_map = CallMap::getCallMap();
 
         if (!isset($call_map[$call_map_key])) {
             throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
@@ -491,7 +370,7 @@ class FunctionChecker extends FunctionLikeChecker
                     $function_call_arg->value
                 );
 
-                $call_map = self::getCallMap();
+                $call_map = CallMap::getCallMap();
 
                 $mapping_return_type = null;
 
@@ -528,8 +407,7 @@ class FunctionChecker extends FunctionLikeChecker
 
                             $self_class = 'self';
 
-                            $return_type = MethodChecker::getMethodReturnType(
-                                $project_checker,
+                            $return_type = $codebase->methods->getMethodReturnType(
                                 $mapping_function_id,
                                 $self_class
                             ) ?: Type::getMixed();
@@ -543,12 +421,12 @@ class FunctionChecker extends FunctionLikeChecker
                                 $mapping_return_type = $return_type;
                             }
                         } else {
-                            if (!$codebase->functionExists($statements_checker, $mapping_function_id)) {
+                            if (!$codebase->functions->functionExists($statements_checker, $mapping_function_id)) {
                                 $mapping_return_type = Type::getMixed();
                                 continue;
                             }
 
-                            $function_storage = $codebase->getFunctionStorage(
+                            $function_storage = $codebase->functions->getStorage(
                                 $statements_checker,
                                 $mapping_function_id
                             );
@@ -686,88 +564,5 @@ class FunctionChecker extends FunctionLikeChecker
                 $inner_type,
             ]),
         ]);
-    }
-
-    /**
-     * Gets the method/function call map
-     *
-     * @return array<string, array<int|string, string>>
-     * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
-     * @psalm-suppress MixedAssignment
-     */
-    protected static function getCallMap()
-    {
-        if (self::$call_map !== null) {
-            return self::$call_map;
-        }
-
-        /** @var array<string, array<string, string>> */
-        $call_map = require_once(__DIR__ . '/../CallMap.php');
-
-        self::$call_map = [];
-
-        foreach ($call_map as $key => $value) {
-            $cased_key = strtolower($key);
-            self::$call_map[$cased_key] = $value;
-        }
-
-        return self::$call_map;
-    }
-
-    /**
-     * @param   string $key
-     *
-     * @return  bool
-     */
-    public static function inCallMap($key)
-    {
-        return isset(self::getCallMap()[strtolower($key)]);
-    }
-
-    /**
-     * @param  string                   $function_name
-     * @param  StatementsSource         $source
-     *
-     * @return string
-     */
-    public static function getFQFunctionNameFromString($function_name, StatementsSource $source)
-    {
-        if (empty($function_name)) {
-            throw new \InvalidArgumentException('$function_name cannot be empty');
-        }
-
-        if ($function_name[0] === '\\') {
-            return substr($function_name, 1);
-        }
-
-        $function_name_lcase = strtolower($function_name);
-
-        $aliases = $source->getAliases();
-
-        $imported_function_namespaces = $aliases->functions;
-        $imported_namespaces = $aliases->uses;
-
-        if (strpos($function_name, '\\') !== false) {
-            $function_name_parts = explode('\\', $function_name);
-            $first_namespace = array_shift($function_name_parts);
-            $first_namespace_lcase = strtolower($first_namespace);
-
-            if (isset($imported_namespaces[$first_namespace_lcase])) {
-                return $imported_namespaces[$first_namespace_lcase] . '\\' . implode('\\', $function_name_parts);
-            }
-
-            if (isset($imported_function_namespaces[$first_namespace_lcase])) {
-                return $imported_function_namespaces[$first_namespace_lcase] . '\\' .
-                    implode('\\', $function_name_parts);
-            }
-        } elseif (isset($imported_namespaces[$function_name_lcase])) {
-            return $imported_namespaces[$function_name_lcase];
-        } elseif (isset($imported_function_namespaces[$function_name_lcase])) {
-            return $imported_function_namespaces[$function_name_lcase];
-        }
-
-        $namespace = $source->getNamespace();
-
-        return ($namespace ? $namespace . '\\' : '') . $function_name;
     }
 }

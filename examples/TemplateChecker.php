@@ -19,7 +19,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
     public function analyze(Context $context = null, $update_docblocks = false)
     {
         $codebase = $this->project_checker->getCodebase();
-        $codebase->enableCheckerCache();
+        $this->project_checker->enableCheckerCache();
         $stmts = $codebase->getStatementsForFile($this->file_path);
 
         if (empty($stmts)) {
@@ -68,7 +68,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
         $this->checkWithViewClass($this_params, $stmts);
 
-        $codebase->disableCheckerCache();
+        $this->project_checker->disableCheckerCache();
     }
 
     /**

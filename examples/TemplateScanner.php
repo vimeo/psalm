@@ -41,7 +41,7 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
                 /** @psalm-suppress MixedArgument */
                 list($fq_class_name) = explode('::', $matches[1]);
 
-                $codebase->queueClassLikeForScanning(
+                $codebase->scanner->queueClassLikeForScanning(
                     $fq_class_name,
                     $this->file_path,
                     true
@@ -49,7 +49,7 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
             }
         }
 
-        $codebase->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
+        $codebase->scanner->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
 
         parent::scan($codebase, $stmts, $file_storage);
     }

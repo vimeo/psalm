@@ -7,6 +7,7 @@ use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\Aliases;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\EffectsAnalyser;
@@ -167,21 +168,21 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $class_storage = $classlike_storage_provider->get($fq_class_name);
 
             try {
-                $storage = $codebase->getMethodStorage($real_method_id);
+                $storage = $codebase->methods->getStorage($real_method_id);
             } catch (\UnexpectedValueException $e) {
                 if (!$class_storage->parent_classes) {
                     throw $e;
                 }
 
-                $declaring_method_id = (string) MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+                $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId($method_id);
 
                 // happens for fake constructors
-                $storage = $codebase->getMethodStorage($declaring_method_id);
+                $storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
             $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
 
-            $overridden_method_ids = MethodChecker::getOverriddenMethodIds($project_checker, $method_id);
+            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($method_id);
 
             if ($this->function->name === '__construct') {
                 $context->inside_constructor = true;
@@ -189,7 +190,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if ($overridden_method_ids && $this->function->name !== '__construct') {
                 foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->getMethodStorage($overridden_method_id);
+                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
 
                     list($overridden_fq_class_name) = explode('::', $overridden_method_id);
 
@@ -615,7 +616,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
 
                     if ($parent_method_id) {
-                        $parent_method_storage = $codebase->getMethodStorage($parent_method_id);
+                        $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
 
                         // if the parent method has a param at that position and isn't abstract
                         if (!$parent_method_storage->abstract
@@ -642,7 +643,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         }
 
                         foreach ($class_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
-                            $parent_method_storage = $codebase->getMethodStorage($parent_method_id);
+                            $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
 
                             $parent_method_storage->used_params[$i] = true;
                         }
@@ -709,19 +710,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
+        $codebase = $project_checker->codebase;
+
         $implementer_method_id = $implementer_classlike_storage->name . '::'
             . strtolower($guide_method_storage->cased_name);
-        $implementer_declaring_method_id = MethodChecker::getDeclaringMethodId(
-            $project_checker,
-            $implementer_method_id
-        );
+
+        $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId($implementer_method_id);
 
         $cased_implementer_method_id = $implementer_classlike_storage->name . '::'
             . $implementer_method_storage->cased_name;
 
         $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
-
-        $codebase = $project_checker->codebase;
 
         if ($implementer_method_storage->visibility > $guide_method_storage->visibility) {
             if (IssueBuffer::accepts(
@@ -1070,18 +1069,19 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($this->function instanceof ClassMethod) {
             $method_id = (string) $this->getMethodId();
+            $codebase_methods = $codebase->methods;
 
             try {
-                return $codebase->getMethodStorage($method_id);
+                return $codebase_methods->getStorage($method_id);
             } catch (\UnexpectedValueException $e) {
-                $declaring_method_id = (string) MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+                $declaring_method_id = (string) $codebase_methods->getDeclaringMethodId($method_id);
 
                 // happens for fake constructors
-                return $codebase->getMethodStorage($declaring_method_id);
+                return $codebase_methods->getStorage($declaring_method_id);
             }
         }
 
-        return $codebase->getFunctionStorage($statements_checker, (string) $this->getMethodId());
+        return $codebase->functions->getStorage($statements_checker, (string) $this->getMethodId());
     }
 
     /**
@@ -1695,20 +1695,22 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
+        $codebase = $project_checker->codebase;
+
         if ($fq_class_name) {
             $class_storage = $project_checker->codebase->classlike_storage_provider->get($fq_class_name);
 
             if ($class_storage->user_defined || $class_storage->stubbed) {
-                $method_params = MethodChecker::getMethodParams($project_checker, $method_id);
+                $method_params = $codebase->methods->getMethodParams($method_id);
 
                 return $method_params;
             }
         }
 
-        $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-        if (FunctionChecker::inCallMap($declaring_method_id ?: $method_id)) {
-            $function_param_options = FunctionChecker::getParamsFromCallMap($declaring_method_id ?: $method_id);
+        if (CallMap::inCallMap($declaring_method_id ?: $method_id)) {
+            $function_param_options = CallMap::getParamsFromCallMap($declaring_method_id ?: $method_id);
 
             if ($function_param_options === null) {
                 throw new \UnexpectedValueException(
@@ -1719,7 +1721,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);
         }
 
-        return MethodChecker::getMethodParams($project_checker, $method_id);
+        return $codebase->methods->getMethodParams($method_id);
     }
 
     /**
@@ -1730,7 +1732,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public static function getFunctionParamsFromCallMapById(ProjectChecker $project_checker, $method_id, array $args)
     {
-        $function_param_options = FunctionChecker::getParamsFromCallMap($method_id);
+        $function_param_options = CallMap::getParamsFromCallMap($method_id);
 
         if ($function_param_options === null) {
             throw new \UnexpectedValueException(

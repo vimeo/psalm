@@ -112,7 +112,9 @@ class DocumentationTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $this->project_checker->getCodebase()->collect_references = $check_references;
+        if ($check_references) {
+            $this->project_checker->getCodebase()->collectReferences();
+        }
 
         foreach ($error_levels as $error_level) {
             $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
@@ -131,7 +133,7 @@ class DocumentationTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         if ($check_references) {
-            $this->project_checker->getCodebase()->checkClassReferences();
+            $this->project_checker->getCodebase()->classlikes->checkClassReferences();
         }
     }
 

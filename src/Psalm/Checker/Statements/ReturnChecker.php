@@ -40,6 +40,8 @@ class ReturnChecker
 
         $source = $statements_checker->getSource();
 
+        $codebase = $project_checker->codebase;
+
         if ($doc_comment_text) {
             try {
                 $var_comment = CommentChecker::getTypeFromComment(
@@ -127,7 +129,7 @@ class ReturnChecker
                             }
                         }
 
-                        $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                        $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
@@ -142,7 +144,7 @@ class ReturnChecker
                         return null;
                     }
 
-                    $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                    $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
                     if ($local_return_type->isVoid()) {
                         if (IssueBuffer::accepts(
@@ -159,7 +161,7 @@ class ReturnChecker
                     }
 
                     if (!TypeChecker::isContainedBy(
-                        $source->getFileChecker()->project_checker->codebase,
+                        $codebase,
                         $inferred_type,
                         $local_return_type,
                         true,

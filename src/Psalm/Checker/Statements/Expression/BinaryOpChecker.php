@@ -494,6 +494,8 @@ class BinaryOpChecker
             ? $statements_source->getFileChecker()->project_checker
             : null;
 
+        $codebase = $project_checker ? $project_checker->codebase : null;
+
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
@@ -575,8 +577,8 @@ class BinaryOpChecker
                     }
 
                     if ($left_type_part instanceof TMixed || $right_type_part instanceof TMixed) {
-                        if ($statements_source && $project_checker) {
-                            $project_checker->codebase->incrementMixedCount($statements_source->getCheckedFilePath());
+                        if ($statements_source && $codebase) {
+                            $codebase->analyzer->incrementMixedCount($statements_source->getCheckedFilePath());
                         }
 
                         if ($left_type_part instanceof TMixed) {
@@ -606,8 +608,8 @@ class BinaryOpChecker
                         return;
                     }
 
-                    if ($statements_source && $project_checker) {
-                        $project_checker->codebase->incrementNonMixedCount($statements_source->getCheckedFilePath());
+                    if ($statements_source && $codebase) {
+                        $codebase->analyzer->incrementNonMixedCount($statements_source->getCheckedFilePath());
                     }
 
                     if ($left_type_part instanceof TArray
@@ -774,6 +776,7 @@ class BinaryOpChecker
         Type\Union &$result_type = null
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
@@ -798,7 +801,7 @@ class BinaryOpChecker
             $result_type = Type::getString();
 
             if ($left_type->isMixed() || $right_type->isMixed()) {
-                $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if ($left_type->isMixed()) {
                     if (IssueBuffer::accepts(
@@ -825,7 +828,7 @@ class BinaryOpChecker
                 return;
             }
 
-            $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($left_type->isNull()) {
                 if (IssueBuffer::accepts(

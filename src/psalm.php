@@ -275,9 +275,12 @@ $project_checker = new ProjectChecker(
     $output_format,
     $threads,
     array_key_exists('debug', $options),
-    $find_dead_code || $find_references_to !== null,
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
 );
+
+if ($find_dead_code || $find_references_to !== null) {
+    $project_checker->getCodebase()->collectReferences();
+}
 
 if (isset($options['clear-cache'])) {
     $cache_directory = Config::getInstance()->getCacheDirectory();

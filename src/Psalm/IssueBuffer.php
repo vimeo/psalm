@@ -198,7 +198,7 @@ class IssueBuffer
         $start_time,
         $add_stats = false
     ) {
-        $scanned_files = $project_checker->codebase->getScannedFiles();
+        $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
         Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
 
         $has_error = false;
@@ -243,7 +243,7 @@ class IssueBuffer
             echo 'Checks took ' . ((float)microtime(true) - $start_time);
             echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL;
 
-            $nonmixed_percentage = $project_checker->codebase->getNonMixedPercentage();
+            $nonmixed_percentage = $project_checker->codebase->analyzer->getNonMixedPercentage();
 
             if ($is_full) {
                 echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
@@ -258,7 +258,7 @@ class IssueBuffer
 
             if ($add_stats) {
                 echo '-----------------' . PHP_EOL;
-                echo $project_checker->codebase->getNonMixedStats();
+                echo $project_checker->codebase->analyzer->getNonMixedStats();
                 echo PHP_EOL;
             }
         }

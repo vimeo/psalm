@@ -160,7 +160,7 @@ class AssignmentChecker
         $codebase = $project_checker->codebase;
 
         if ($assign_value_type->isMixed()) {
-            $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedAssignment(
@@ -172,7 +172,7 @@ class AssignmentChecker
                 // fall through
             }
         } else {
-            $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($var_id
                 && isset($context->byref_constraints[$var_id])

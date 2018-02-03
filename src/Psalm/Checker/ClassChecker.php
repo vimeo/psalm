@@ -204,8 +204,7 @@ class ClassChecker extends ClassLikeChecker
 
                 foreach ($interface_storage->methods as $method_name => $interface_method_storage) {
                     if ($interface_method_storage->visibility === self::VISIBILITY_PUBLIC) {
-                        $implementer_declaring_method_id = MethodChecker::getDeclaringMethodId(
-                            $project_checker,
+                        $implementer_declaring_method_id = $codebase->methods->getDeclaringMethodId(
                             $this->fq_class_name . '::' . $method_name
                         );
 
@@ -220,7 +219,7 @@ class ClassChecker extends ClassLikeChecker
                             : null;
 
                         $implementer_method_storage = $implementer_declaring_method_id
-                            ? $codebase->getMethodStorage($implementer_declaring_method_id)
+                            ? $codebase->methods->getStorage($implementer_declaring_method_id)
                             : null;
 
                         if (!$implementer_method_storage) {
@@ -279,7 +278,7 @@ class ClassChecker extends ClassLikeChecker
 
         if (!$storage->abstract) {
             foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
-                $method_storage = $codebase->getMethodStorage($declaring_method_id);
+                $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
                 list($declaring_class_name, $method_name) = explode('::', $declaring_method_id);
 
@@ -372,7 +371,7 @@ class ClassChecker extends ClassLikeChecker
                         $this->source->getAliases()
                     );
 
-                    if (!$codebase->hasFullyQualifiedTraitName($fq_trait_name)) {
+                    if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name)) {
                         if (IssueBuffer::accepts(
                             new UndefinedTrait(
                                 'Trait ' . $fq_trait_name . ' does not exist',
@@ -397,9 +396,9 @@ class ClassChecker extends ClassLikeChecker
                             continue;
                         }
 
-                        $trait_file_checker = $codebase->getFileCheckerForClassLike($project_checker, $fq_trait_name);
-                        $trait_node = $codebase->getTraitNode($fq_trait_name);
-                        $trait_aliases = $codebase->getTraitAliases($fq_trait_name);
+                        $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
+                        $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
+                        $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
                         $trait_checker = new TraitChecker(
                             $trait_node,
                             $trait_file_checker,
@@ -543,7 +542,7 @@ class ClassChecker extends ClassLikeChecker
                             ]
                         );
 
-                        $codebase->disableMixedCounts();
+                        $codebase->analyzer->disableMixedCounts();
 
                         $constructor_checker = $this->analyzeClassMethod(
                             $fake_stmt,
@@ -553,7 +552,7 @@ class ClassChecker extends ClassLikeChecker
                             $global_context
                         );
 
-                        $codebase->enableMixedCounts();
+                        $codebase->analyzer->enableMixedCounts();
                     }
                 }
 
@@ -634,7 +633,7 @@ class ClassChecker extends ClassLikeChecker
                         $this->source->getAliases()
                     );
 
-                    $trait_node = $codebase->getTraitNode($fq_trait_name);
+                    $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -727,7 +726,7 @@ class ClassChecker extends ClassLikeChecker
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
             $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
 
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $analyzed_method_id);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
             if ($actual_method_id !== $declaring_method_id) {
                 return;
@@ -743,12 +742,11 @@ class ClassChecker extends ClassLikeChecker
             $return_type_location = null;
             $secondary_return_type_location = null;
 
-            $actual_method_storage = $codebase->getMethodStorage($actual_method_id);
+            $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
 
             if (!$actual_method_storage->has_template_return_type) {
                 if ($actual_method_id) {
-                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                        $project_checker,
+                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                         $actual_method_id,
                         $secondary_return_type_location
                     );
@@ -756,24 +754,18 @@ class ClassChecker extends ClassLikeChecker
 
                 $self_class = $class_context->self;
 
-                $return_type = MethodChecker::getMethodReturnType(
-                    $project_checker,
-                    $analyzed_method_id,
-                    $self_class
-                );
+                $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $self_class);
 
                 if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name)])) {
                     foreach ($class_storage->interface_method_ids[strtolower($stmt->name)] as $interface_method_id) {
                         list($interface_class) = explode('::', $interface_method_id);
 
-                        $interface_return_type = MethodChecker::getMethodReturnType(
-                            $project_checker,
+                        $interface_return_type = $codebase->methods->getMethodReturnType(
                             $interface_method_id,
                             $interface_class
                         );
 
-                        $interface_return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                            $project_checker,
+                        $interface_return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                             $interface_method_id
                         );
 

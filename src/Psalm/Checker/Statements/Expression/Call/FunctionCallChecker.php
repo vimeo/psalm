@@ -8,6 +8,7 @@ use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -100,6 +101,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
 
         $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
         $codebase = $project_checker->codebase;
+        $codebase_functions = $codebase->functions;
         $config = $codebase->config;
         $defined_constants = [];
 
@@ -166,8 +168,8 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     } elseif ($var_type_part instanceof TNull) {
                         // handled above
                     } elseif (!$var_type_part instanceof TNamedObject
-                        || !$codebase->classOrInterfaceExists($var_type_part->value)
-                        || !$codebase->methodExists($var_type_part->value . '::__invoke')
+                        || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value)
+                        || !$codebase->methods->methodExists($var_type_part->value . '::__invoke')
                     ) {
                         $invalid_function_call_types[] = (string)$var_type_part;
                     }
@@ -206,8 +208,8 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
         } else {
             $method_id = implode('\\', $stmt->name->parts);
 
-            $in_call_map = FunctionChecker::inCallMap($method_id);
-            $is_stubbed = $codebase->hasStubbedFunction($method_id);
+            $in_call_map = CallMap::inCallMap($method_id);
+            $is_stubbed = $codebase_functions->hasStubbedFunction($method_id);
 
             $is_predefined = true;
 
@@ -217,7 +219,10 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
 
             if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
-                $method_id = FunctionChecker::getFQFunctionNameFromString($method_id, $statements_checker);
+                $method_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
+                    $method_id,
+                    $statements_checker
+                );
             }
 
             if (!$in_call_map) {
@@ -232,7 +237,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     }
                 }
 
-                $function_exists = $is_stubbed || $codebase->functionExists(
+                $function_exists = $is_stubbed || $codebase_functions->functionExists(
                     $statements_checker,
                     strtolower($method_id)
                 );
@@ -242,7 +247,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
 
             if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
-                    $function_storage = $codebase->getFunctionStorage(
+                    $function_storage = $codebase_functions->getStorage(
                         $statements_checker,
                         strtolower($method_id)
                     );

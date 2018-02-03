@@ -125,7 +125,7 @@ class PropertyAssignmentChecker
             }
 
             if ($lhs_type->isMixed()) {
-                $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
@@ -140,7 +140,7 @@ class PropertyAssignmentChecker
                 return null;
             }
 
-            $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
             if ($lhs_type->isNull()) {
                 if (IssueBuffer::accepts(

@@ -85,7 +85,7 @@ class FileManipulationTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $this->project_checker->getCodebase()->updateFile($file_path, false);
+        $this->project_checker->getCodebase()->analyzer->updateFile($file_path, false);
         $this->assertSame($output_code, $this->project_checker->getCodebase()->getFileContents($file_path));
     }
 

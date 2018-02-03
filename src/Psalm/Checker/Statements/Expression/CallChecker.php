@@ -3,12 +3,12 @@ namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
+use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FunctionLikeParameter;
@@ -85,7 +85,7 @@ class CallChecker
             $context->self &&
             (
                 $context->self === $fq_class_name ||
-                $codebase->classExtends(
+                $codebase->classlikes->classExtends(
                     $context->self,
                     $fq_class_name
                 )
@@ -94,7 +94,7 @@ class CallChecker
         ) {
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-            $declaring_method_id = (string) MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+            $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId($method_id);
 
             if (isset($context->initialized_methods[$declaring_method_id])) {
                 return;
@@ -106,7 +106,7 @@ class CallChecker
 
             $context->initialized_methods[$declaring_method_id] = true;
 
-            $method_storage = $codebase->getMethodStorage($declaring_method_id);
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
             $class_checker = $source->getSource();
 
@@ -484,7 +484,7 @@ class CallChecker
         CodeLocation $code_location,
         Context $context
     ) {
-        $in_call_map = $method_id ? FunctionChecker::inCallMap($method_id) : false;
+        $in_call_map = $method_id ? CallMap::inCallMap($method_id) : false;
 
         $cased_method_id = $method_id;
 
@@ -493,28 +493,29 @@ class CallChecker
         $fq_class_name = null;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($method_id) {
             if ($in_call_map || !strpos($method_id, '::')) {
-                $is_variadic = FunctionChecker::isVariadic(
+                $is_variadic = $codebase->functions->isVariadic(
                     $project_checker,
                     strtolower($method_id),
                     $statements_checker->getFilePath()
                 );
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
-                $is_variadic = MethodChecker::isVariadic($project_checker, $method_id);
+                $is_variadic = $codebase->methods->isVariadic($method_id);
             }
         }
 
         if ($method_id && strpos($method_id, '::') && !$in_call_map) {
-            $cased_method_id = MethodChecker::getCasedMethodId($project_checker, $method_id);
+            $cased_method_id = $codebase->methods->getCasedMethodId($method_id);
         } elseif ($function_storage) {
             $cased_method_id = $function_storage->cased_name;
         }
 
         if ($method_id && strpos($method_id, '::')) {
-            $declaring_method_id = MethodChecker::getDeclaringMethodId($project_checker, $method_id);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && $declaring_method_id !== $method_id) {
                 list($fq_class_name) = explode('::', $declaring_method_id);
@@ -623,7 +624,7 @@ class CallChecker
                         $arg->value,
                         $by_ref_type,
                         $context,
-                        $method_id && (strpos($method_id, '::') !== false || !FunctionChecker::inCallMap($method_id))
+                        $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id))
                     );
                 }
             }
@@ -1035,6 +1036,7 @@ class CallChecker
         }
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
@@ -1051,7 +1053,7 @@ class CallChecker
         }
 
         if ($input_type->isMixed()) {
-            $project_checker->codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedArgument(
@@ -1067,7 +1069,7 @@ class CallChecker
             return null;
         }
 
-        $project_checker->codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+        $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
         if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
             if ($input_type->isNull()) {
@@ -1118,7 +1120,7 @@ class CallChecker
         );
 
         $type_match_found = TypeChecker::isContainedBy(
-            $project_checker->codebase,
+            $codebase,
             $input_type,
             $param_type,
             true,
@@ -1170,7 +1172,7 @@ class CallChecker
 
         if (!$type_match_found && !$type_coerced) {
             $types_can_be_identical = TypeChecker::canBeIdenticalTo(
-                $project_checker->codebase,
+                $codebase,
                 $param_type,
                 $input_type
             );
@@ -1365,11 +1367,11 @@ class CallChecker
 
         $codebase = $statements_checker->getFileChecker()->project_checker->codebase;
 
-        if (!$codebase->functionExists($statements_checker, $function_id)) {
+        if (!$codebase->functions->functionExists($statements_checker, $function_id)) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
             if ($function_id !== $root_function_id
-                && $codebase->functionExists($statements_checker, $root_function_id)
+                && $codebase->functions->functionExists($statements_checker, $root_function_id)
             ) {
                 $function_id = $root_function_id;
             } else {

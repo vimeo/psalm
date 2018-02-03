@@ -620,7 +620,7 @@ class Config
         if ($this->hide_external_errors) {
             $codebase = ProjectChecker::getInstance()->codebase;
 
-            if (!$codebase->canReportIssues($file_path)) {
+            if (!$codebase->analyzer->canReportIssues($file_path)) {
                 return false;
             }
         }

@@ -86,7 +86,7 @@ class ClassLikeStorage
     /**
      * Parent interfaces
      *
-     * @var  array<string>
+     * @var array<string, string>
      */
     public $parent_classes = [];
 

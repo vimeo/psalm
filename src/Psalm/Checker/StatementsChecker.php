@@ -334,7 +334,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         /** @var string */
                         $method_id = $this->function_checkers[$function_id]->getMethodId();
 
-                        $function_storage = $codebase->getFunctionStorage(
+                        $function_storage = $codebase->functions->getStorage(
                             $this,
                             $method_id
                         );

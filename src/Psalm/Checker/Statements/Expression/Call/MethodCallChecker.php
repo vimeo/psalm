@@ -3,11 +3,11 @@ namespace Psalm\Checker\Statements\Expression\Call;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -167,7 +167,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                         case 'Psalm\\Type\\Atomic\\TMixed':
                         case 'Psalm\\Type\\Atomic\\TObject':
-                            $codebase->incrementMixedCount($statements_checker->getCheckedFilePath());
+                            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
@@ -184,7 +184,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     continue;
                 }
 
-                $codebase->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
                 $has_valid_method_call_type = true;
 
@@ -327,8 +327,6 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     return false;
                 }
 
-                $project_checker = $source->getFileChecker()->project_checker;
-
                 switch (strtolower($stmt->name)) {
                     case '__tostring':
                         $return_type = Type::getString();
@@ -337,7 +335,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 if ($method_name_lc === '__tostring') {
                     $return_type_candidate = Type::getString();
-                } elseif (FunctionChecker::inCallMap($cased_method_id)) {
+                } elseif (CallMap::inCallMap($cased_method_id)) {
                     if ($class_template_params
                         && isset($class_storage->methods[$method_name_lc])
                         && ($method_storage = $class_storage->methods[$method_name_lc])
@@ -349,7 +347,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $class_template_params
                         );
                     } else {
-                        $return_type_candidate = FunctionChecker::getReturnTypeFromCallMap($method_id);
+                        $return_type_candidate = CallMap::getReturnTypeFromCallMap($method_id);
                     }
 
                     $return_type_candidate = ExpressionChecker::fleshOutType(
@@ -380,8 +378,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                     $self_fq_class_name = $fq_class_name;
 
-                    $return_type_candidate = MethodChecker::getMethodReturnType(
-                        $project_checker,
+                    $return_type_candidate = $codebase->methods->getMethodReturnType(
                         $method_id,
                         $self_fq_class_name
                     );
@@ -402,8 +399,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $fq_class_name
                         );
 
-                        $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                            $project_checker,
+                        $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                             $method_id,
                             $secondary_return_type_location
                         );
@@ -424,7 +420,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     } else {
                         $returns_by_ref =
                             $returns_by_ref
-                                || MethodChecker::getMethodReturnsByRef($project_checker, $method_id);
+                                || $codebase->methods->getMethodReturnsByRef($method_id);
                     }
                 }
 

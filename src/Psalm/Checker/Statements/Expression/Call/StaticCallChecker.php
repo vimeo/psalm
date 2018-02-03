@@ -67,7 +67,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         return;
                     }
 
-                    $fq_class_name = $class_storage->parent_classes[0];
+                    $fq_class_name = reset($class_storage->parent_classes);
 
                     $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
@@ -295,8 +295,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $self_fq_class_name = $fq_class_name;
 
-                $return_type_candidate = MethodChecker::getMethodReturnType(
-                    $project_checker,
+                $return_type_candidate = $codebase->methods->getMethodReturnType(
                     $method_id,
                     $self_fq_class_name
                 );
@@ -317,8 +316,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $fq_class_name
                     );
 
-                    $return_type_location = MethodChecker::getMethodReturnTypeLocation(
-                        $project_checker,
+                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
                         $method_id,
                         $secondary_return_type_location
                     );

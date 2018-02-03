@@ -127,6 +127,16 @@ class ProjectChecker
      */
     public $only_replace_php_types_with_non_docblock_types = false;
 
+    /**
+     * @var array<string, FileChecker>
+     */
+    private $file_checkers = [];
+
+    /**
+     * @var bool
+     */
+    private $cache = false;
+
     const TYPE_CONSOLE = 'console';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
@@ -140,7 +150,6 @@ class ProjectChecker
      * @param string        $output_format
      * @param int           $threads
      * @param bool          $debug_output
-     * @param bool          $collect_references
      * @param string        $reports
      */
     public function __construct(
@@ -152,7 +161,6 @@ class ProjectChecker
         $output_format = self::TYPE_CONSOLE,
         $threads = 1,
         $debug_output = false,
-        $collect_references = false,
         $reports = null
     ) {
         $this->file_provider = $file_provider;
@@ -177,7 +185,6 @@ class ProjectChecker
             $this->classlike_storage_provider,
             $file_provider,
             $statements_provider,
-            $collect_references,
             $debug_output
         );
 
@@ -258,7 +265,7 @@ class ProjectChecker
             $this->codebase->scanFiles();
 
             if (!$this->server_mode) {
-                $this->codebase->analyzeFiles($this, $this->threads, $this->alter_code);
+                $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
             }
         } else {
             if ($this->debug_output) {
@@ -275,7 +282,7 @@ class ProjectChecker
             $this->codebase->scanFiles();
 
             if (!$this->server_mode) {
-                $this->codebase->analyzeFiles($this, $this->threads, $this->alter_code);
+                $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
             }
         }
 
@@ -301,7 +308,7 @@ class ProjectChecker
             throw new \UnexpectedValueException('Should not be checking references');
         }
 
-        $this->codebase->checkClassReferences();
+        $this->codebase->classlikes->checkClassReferences();
     }
 
     /**
@@ -355,7 +362,7 @@ class ProjectChecker
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
         $this->codebase->scanFiles();
-        $this->codebase->analyzeFiles($this, $this->threads, $this->alter_code);
+        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
     }
 
     /**
@@ -390,7 +397,7 @@ class ProjectChecker
             $iterator->next();
         }
 
-        $this->codebase->addFilesToScan($files_to_scan);
+        $this->codebase->addFilesToAnalyze($files_to_scan);
     }
 
     /**
@@ -486,7 +493,7 @@ class ProjectChecker
             $files_to_scan[$file_path] = $file_path;
         }
 
-        $this->codebase->addFilesToScan($files_to_scan);
+        $this->codebase->addFilesToAnalyze($files_to_scan);
     }
 
     /**
@@ -502,12 +509,12 @@ class ProjectChecker
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
 
-        $this->codebase->addFilesToScan([$file_path => $file_path]);
+        $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
 
         FileReferenceProvider::loadReferenceCache();
 
         $this->codebase->scanFiles();
-        $this->codebase->analyzeFiles($this, $this->threads, $this->alter_code);
+        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
     }
 
     /**
@@ -607,6 +614,34 @@ class ProjectChecker
     }
 
     /**
+     * @param  string $fq_class_name
+     *
+     * @return FileChecker
+     */
+    public function getFileCheckerForClassLike($fq_class_name)
+    {
+        $fq_class_name_lc = strtolower($fq_class_name);
+
+        $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
+
+        if ($this->cache && isset($this->file_checkers[$file_path])) {
+            return $this->file_checkers[$file_path];
+        }
+
+        $file_checker = new FileChecker(
+            $this,
+            $file_path,
+            $this->config->shortenFileName($file_path)
+        );
+
+        if ($this->cache) {
+            $this->file_checkers[$file_path] = $file_checker;
+        }
+
+        return $file_checker;
+    }
+
+    /**
      * @param  string   $original_method_id
      * @param  Context  $this_context
      *
@@ -616,9 +651,9 @@ class ProjectChecker
     {
         list($fq_class_name) = explode('::', $original_method_id);
 
-        $file_checker = $this->codebase->getFileCheckerForClassLike($this, $fq_class_name);
+        $file_checker = $this->getFileCheckerForClassLike($fq_class_name);
 
-        $appearing_method_id = MethodChecker::getAppearingMethodId($this, $original_method_id);
+        $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);
 
         if (!$appearing_method_id) {
             // this can happen for some abstract classes implementing (but not fully) interfaces
@@ -634,7 +669,7 @@ class ProjectChecker
         }
 
         if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
-            $file_checker = $this->codebase->getFileCheckerForClassLike($this, $appearing_fq_class_name);
+            $file_checker = $this->getFileCheckerForClassLike($appearing_fq_class_name);
         }
 
         $stmts = $this->codebase->getStatementsForFile($file_checker->getFilePath());
@@ -647,5 +682,29 @@ class ProjectChecker
         }
 
         $file_checker->getMethodMutations($appearing_method_id, $this_context);
+    }
+
+    /**
+     * @return void
+     */
+    public function enableCheckerCache()
+    {
+        $this->cache = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function disableCheckerCache()
+    {
+        $this->cache = false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canCacheCheckers()
+    {
+        return $this->cache;
     }
 }

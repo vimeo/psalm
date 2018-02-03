@@ -154,12 +154,12 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             ) {
                 $method_id = $this->fq_class_name . '::' . $stmt->name;
 
-                if ($codebase->canCacheCheckers()) {
-                    $method_checker = $codebase->getCachedMethodChecker($method_id);
+                if ($project_checker->canCacheCheckers()) {
+                    $method_checker = $codebase->methods->getCachedChecker($method_id);
 
                     if (!$method_checker) {
                         $method_checker = new MethodChecker($stmt, $this);
-                        $codebase->cacheMethodChecker($method_id, $method_checker);
+                        $codebase->methods->cacheChecker($method_id, $method_checker);
                     }
                 } else {
                     $method_checker = new MethodChecker($stmt, $this);
@@ -173,9 +173,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                         $this->source->getAliases()
                     );
 
-                    $trait_file_checker = $codebase->getFileCheckerForClassLike($project_checker, $fq_trait_name);
-                    $trait_node = $codebase->getTraitNode($fq_trait_name);
-                    $trait_aliases = $codebase->getTraitAliases($fq_trait_name);
+                    $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
+                    $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
+                    $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
                     $trait_checker = new TraitChecker(
                         $trait_node,
                         $trait_file_checker,
@@ -193,10 +193,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                             if ($context->self && $context->self !== $this->fq_class_name) {
                                 $analyzed_method_id = (string)$method_checker->getMethodId($context->self);
-                                $declaring_method_id = MethodChecker::getDeclaringMethodId(
-                                    $project_checker,
-                                    $analyzed_method_id
-                                );
+                                $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
                                 if ($actual_method_id !== $declaring_method_id) {
                                     break;
@@ -287,7 +284,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||
             ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
         ) {
-            if (ClassLikeChecker::isUserDefined($project_checker, $fq_class_name)) {
+            if ($codebase->classlikes->isUserDefined($fq_class_name)) {
                 if (IssueBuffer::accepts(
                     new InvalidClass(
                         'Class or interface ' . $fq_class_name . ' has wrong casing',
@@ -739,16 +736,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         } catch (\InvalidArgumentException $e) {
             return [];
         }
-    }
-
-    /**
-     * @param  string  $fq_class_name
-     *
-     * @return bool
-     */
-    public static function isUserDefined(ProjectChecker $project_checker, $fq_class_name)
-    {
-        return $project_checker->classlike_storage_provider->get($fq_class_name)->user_defined;
     }
 
     /**
