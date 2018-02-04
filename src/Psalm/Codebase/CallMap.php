@@ -1,33 +1,6 @@
 <?php
 namespace Psalm\Codebase;
 
-use PhpParser;
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\FunctionChecker;
-use Psalm\Checker\MethodChecker;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Checker\StatementsChecker;
-use Psalm\FileManipulation\FileManipulation;
-use Psalm\FileManipulation\FileManipulationBuffer;
-use Psalm\FileManipulation\FunctionDocblockManipulator;
-use Psalm\Issue\CircularReference;
-use Psalm\Issue\PossiblyUnusedMethod;
-use Psalm\Issue\PossiblyUnusedParam;
-use Psalm\Issue\PossiblyUnusedProperty;
-use Psalm\Issue\UnusedClass;
-use Psalm\Issue\UnusedMethod;
-use Psalm\Issue\UnusedProperty;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileProvider;
-use Psalm\Provider\FileReferenceProvider;
-use Psalm\Provider\FileStorageProvider;
-use Psalm\Provider\StatementsProvider;
-use Psalm\Scanner\FileScanner;
-use Psalm\Storage\ClassLikeStorage;
-use Psalm\Storage\FileStorage;
-use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\FunctionLikeParameter;
 

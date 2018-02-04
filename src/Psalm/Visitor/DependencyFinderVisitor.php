@@ -10,6 +10,7 @@ use Psalm\Checker\Statements\Expression\IncludeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase;
 use Psalm\Codebase\CallMap;
+use Psalm\Codebase\PropertyMap;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Exception\DocblockParseException;
@@ -451,8 +452,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $fq_classlike_name = array_pop($this->fq_classlike_names);
 
-            if (ClassLikeChecker::inPropertyMap($fq_classlike_name)) {
-                $public_mapped_properties = ClassLikeChecker::getPropertyMap()[strtolower($fq_classlike_name)];
+            if (PropertyMap::inPropertyMap($fq_classlike_name)) {
+                $public_mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
 
                 if (!$this->classlike_storages) {
                     throw new \UnexpectedValueException('$this->classlike_storages cannot be empty');

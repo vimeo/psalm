@@ -85,8 +85,8 @@ class Reflection
 
         $class_properties = $reflected_class->getProperties();
 
-        $public_mapped_properties = ClassLikeChecker::inPropertyMap($class_name)
-            ? ClassLikeChecker::getPropertyMap()[strtolower($class_name)]
+        $public_mapped_properties = PropertyMap::inPropertyMap($class_name)
+            ? PropertyMap::getPropertyMap()[strtolower($class_name)]
             : [];
 
         /** @var \ReflectionProperty $class_property */
