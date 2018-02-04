@@ -240,8 +240,8 @@ class IssueBuffer
         }
 
         if ($start_time) {
-            echo 'Checks took ' . ((float)microtime(true) - $start_time);
-            echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB' . PHP_EOL;
+            echo 'Checks took ' . number_format((float)microtime(true) - $start_time, 2) . ' seconds';
+            echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . PHP_EOL;
 
             $nonmixed_percentage = $project_checker->codebase->analyzer->getNonMixedPercentage();
 
