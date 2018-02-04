@@ -82,11 +82,6 @@ class ProjectChecker
      */
     public $alter_code = false;
 
-    /**
-     * @var bool
-     */
-    public $server_mode = false;
-
     /** @var int */
     public $threads;
 
@@ -257,16 +252,16 @@ class ProjectChecker
             }
         }
 
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Scanning files...' . PHP_EOL;
+        }
+
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
             foreach ($this->config->getProjectDirectories() as $dir_name) {
                 $this->checkDirWithConfig($dir_name, $this->config);
             }
 
             $this->codebase->scanFiles();
-
-            if (!$this->server_mode) {
-                $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
-            }
         } else {
             if ($this->debug_output) {
                 echo count($diff_files) . ' changed files' . PHP_EOL;
@@ -280,11 +275,13 @@ class ProjectChecker
             $this->checkDiffFilesWithConfig($this->config, $file_list);
 
             $this->codebase->scanFiles();
-
-            if (!$this->server_mode) {
-                $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
-            }
         }
+
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Analyzing files...' . PHP_EOL;
+        }
+
+        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
 
         $removed_parser_files = $this->cache_provider->deleteOldParserCaches(
             $is_diff ? $this->cache_provider->getLastGoodRun() : $start_checks
@@ -361,7 +358,16 @@ class ProjectChecker
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Scanning files...' . PHP_EOL;
+        }
+
         $this->codebase->scanFiles();
+
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Analyzing files...' . PHP_EOL;
+        }
+
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
     }
 
@@ -513,7 +519,16 @@ class ProjectChecker
 
         FileReferenceProvider::loadReferenceCache();
 
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Scanning files...' . PHP_EOL;
+        }
+
         $this->codebase->scanFiles();
+
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Analyzing files...' . PHP_EOL;
+        }
+
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
     }
 
