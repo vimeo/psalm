@@ -138,7 +138,13 @@ class CallMap
             return Type::getMixed();
         }
 
-        return Type::parseString($call_map[$call_map_key][0]);
+        $call_map_type = Type::parseString($call_map[$call_map_key][0]);
+
+        if ($call_map_type->isNullable()) {
+            $call_map_type->from_docblock = true;
+        }
+
+        return $call_map_type;
     }
 
     /**

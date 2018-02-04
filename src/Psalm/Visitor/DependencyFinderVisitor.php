@@ -8,7 +8,6 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
-use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\Expression\IncludeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase;
