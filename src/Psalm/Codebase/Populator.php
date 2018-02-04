@@ -141,7 +141,7 @@ class Populator
      *
      * @return void
      */
-    private function populateClassLikeStorage(ClassLikeStorage $storage, $dependent_classlikes = [])
+    private function populateClassLikeStorage(ClassLikeStorage $storage, array $dependent_classlikes = [])
     {
         if ($storage->populated) {
             return;
@@ -164,6 +164,53 @@ class Populator
 
         $storage_provider = $this->classlike_storage_provider;
 
+        $this->populateDataFromTraits($storage, $storage_provider, $dependent_classlikes);
+
+        $dependent_classlikes[$fq_classlike_name_lc] = true;
+
+        if ($storage->parent_classes) {
+            $this->populateDataFromParentClass($storage, $storage_provider, $dependent_classlikes);
+        }
+
+        $this->populateInterfaceDataFromParentInterfaces($storage, $storage_provider, $dependent_classlikes);
+
+        $this->populateDataFromImplementedInterfaces($storage, $storage_provider, $dependent_classlikes);
+
+        if ($storage->location) {
+            $file_path = $storage->location->file_path;
+
+            foreach ($storage->parent_interfaces as $parent_interface_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_interface_lc);
+            }
+
+            foreach ($storage->parent_classes as $parent_class_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_class_lc);
+            }
+
+            foreach ($storage->class_implements as $implemented_interface) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, strtolower($implemented_interface));
+            }
+
+            foreach ($storage->used_traits as $used_trait_lc) {
+                FileReferenceProvider::addFileInheritanceToClass($file_path, $used_trait_lc);
+            }
+        }
+
+        if ($this->debug_output) {
+            echo 'Have populated ' . $storage->name . PHP_EOL;
+        }
+
+        $storage->populated = true;
+    }
+
+    /**
+     * @return void
+     */
+    private function populateDataFromTraits(
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider,
+        array $dependent_classlikes
+    ) {
         foreach ($storage->used_traits as $used_trait_lc => $_) {
             try {
                 $trait_storage = $storage_provider->get($used_trait_lc);
@@ -176,31 +223,45 @@ class Populator
             $this->inheritMethodsFromParent($storage, $trait_storage);
             $this->inheritPropertiesFromParent($storage, $trait_storage);
         }
+    }
 
-        $dependent_classlikes[$fq_classlike_name_lc] = true;
-
-        if ($storage->parent_classes) {
-            try {
-                $parent_storage = $storage_provider->get(reset($storage->parent_classes));
-            } catch (\InvalidArgumentException $e) {
-                $parent_storage = null;
-            }
-
-            if ($parent_storage) {
-                $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
-
-                $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
-
-                $this->inheritMethodsFromParent($storage, $parent_storage);
-                $this->inheritPropertiesFromParent($storage, $parent_storage);
-
-                $storage->class_implements += $parent_storage->class_implements;
-
-                $storage->public_class_constants += $parent_storage->public_class_constants;
-                $storage->protected_class_constants += $parent_storage->protected_class_constants;
-            }
+    /**
+     * @return void
+     */
+    private function populateDataFromParentClass(
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider,
+        array $dependent_classlikes
+    ) {
+        try {
+            $parent_storage = $storage_provider->get(reset($storage->parent_classes));
+        } catch (\InvalidArgumentException $e) {
+            $parent_storage = null;
         }
 
+        if ($parent_storage) {
+            $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
+
+            $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+
+            $this->inheritMethodsFromParent($storage, $parent_storage);
+            $this->inheritPropertiesFromParent($storage, $parent_storage);
+
+            $storage->class_implements += $parent_storage->class_implements;
+
+            $storage->public_class_constants += $parent_storage->public_class_constants;
+            $storage->protected_class_constants += $parent_storage->protected_class_constants;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function populateInterfaceDataFromParentInterfaces(
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider,
+        array $dependent_classlikes
+    ) {
         $parent_interfaces = [];
 
         foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
@@ -224,7 +285,16 @@ class Populator
         }
 
         $storage->parent_interfaces = array_merge($parent_interfaces, $storage->parent_interfaces);
+    }
 
+    /**
+     * @return void
+     */
+    private function populateDataFromImplementedInterfaces(
+        ClassLikeStorage $storage,
+        ClassLikeStorageProvider $storage_provider,
+        array $dependent_classlikes
+    ) {
         $extra_interfaces = [];
 
         foreach ($storage->class_implements as $implemented_interface_lc => $_) {
@@ -276,32 +346,6 @@ class Populator
                 $storage->interface_method_ids[$method_name] = $interface_method_ids;
             }
         }
-
-        if ($storage->location) {
-            $file_path = $storage->location->file_path;
-
-            foreach ($storage->parent_interfaces as $parent_interface_lc) {
-                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_interface_lc);
-            }
-
-            foreach ($storage->parent_classes as $parent_class_lc) {
-                FileReferenceProvider::addFileInheritanceToClass($file_path, $parent_class_lc);
-            }
-
-            foreach ($storage->class_implements as $implemented_interface) {
-                FileReferenceProvider::addFileInheritanceToClass($file_path, strtolower($implemented_interface));
-            }
-
-            foreach ($storage->used_traits as $used_trait_lc) {
-                FileReferenceProvider::addFileInheritanceToClass($file_path, $used_trait_lc);
-            }
-        }
-
-        if ($this->debug_output) {
-            echo 'Have populated ' . $storage->name . PHP_EOL;
-        }
-
-        $storage->populated = true;
     }
 
     /**

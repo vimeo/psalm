@@ -479,8 +479,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         $class_name = strtolower($class_name);
 
-        $class_name = strtolower($class_name);
-
         $storage = $project_checker->classlike_storage_provider->get($class_name);
 
         if ($visibility === ReflectionProperty::IS_PUBLIC) {
