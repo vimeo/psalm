@@ -21,4 +21,7 @@ checks:
 filter:
   excluded_paths:
     - "tests/"
-    - "src/Psalm/Stubs"
+    - "src/Psalm/Stubs/"
+    - "examples/"
+    - "src/Psalm/CallMap.php"
+    - "src/Psalm/PropertyMap.php"
