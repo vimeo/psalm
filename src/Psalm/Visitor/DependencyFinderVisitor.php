@@ -6,7 +6,9 @@ use Psalm\Aliases;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
+use Psalm\Checker\FunctionChecker;
 use Psalm\Checker\FunctionLikeChecker;
+use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\Expression\IncludeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase;
@@ -207,12 +209,18 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     if ($docblock_info->properties) {
                         foreach ($docblock_info->properties as $property) {
-                            $pseudo_property_type = Type::parseString($property['type']);
+                            $pseudo_property_type_string = FunctionChecker::fixUpLocalType(
+                                $property['type'],
+                                $this->aliases
+                            );
+
+                            $pseudo_property_type = Type::parseString($pseudo_property_type_string);
                             $pseudo_property_type->setFromDocblock();
 
                             if ($property['tag'] !== 'property-read') {
                                 $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
                             }
+
                             if ($property['tag'] !== 'property-write') {
                                 $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
                             }

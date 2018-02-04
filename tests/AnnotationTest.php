@@ -191,6 +191,8 @@ class AnnotationTest extends TestCase
             ],
             'propertyDocblock' => [
                 '<?php
+                    namespace Bar;
+
                     /**
                      * @property string $foo
                      */
@@ -214,8 +216,37 @@ class AnnotationTest extends TestCase
                     $a->foo = "hello";
                     $a->bar = "hello"; // not a property',
             ],
+            'propertyOfTypeClassDocblock' => [
+                '<?php
+                    namespace Bar;
+
+                    class PropertyType {}
+
+                    /**
+                     * @property PropertyType $foo
+                     */
+                    class A {
+                        /** @param string $name */
+                        public function __get($name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /**
+                         * @param string $name
+                         * @param mixed $value
+                         */
+                        public function __set($name, $value): void {
+                        }
+                    }
+
+                    $a = new A();
+                    $a->foo = new PropertyType();',
+            ],
             'propertySealedDocblockDefinedPropertyFetch' => [
                 '<?php
+                    namespace Bar;
                     /**
                      * @property string $foo
                      * @psalm-seal-properties
@@ -524,6 +555,37 @@ class AnnotationTest extends TestCase
                     $a = new A();
                     $a->foo = 5;',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'propertyInvalidClassAssignment' => [
+                '<?php
+                    namespace Bar;
+
+                    class PropertyType {}
+                    class SomeOtherPropertyType {}
+
+                    /**
+                     * @property PropertyType $foo
+                     */
+                    class A {
+                        /** @param string $name */
+                        public function __get($name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /**
+                         * @param string $name
+                         * @param mixed $value
+                         */
+                        public function __set($name, $value): void {
+                        }
+                    }
+
+                    $a = new A();
+                    $a->foo = new SomeOtherPropertyType();',
+                'error_message' => 'InvalidPropertyAssignmentValue - src/somefile.php:27 - $a->foo with declared type'
+                    . ' \'Bar\PropertyType\' cannot',
             ],
             'propertyWriteDocblockInvalidAssignment' => [
                 '<?php
