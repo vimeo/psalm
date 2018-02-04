@@ -5,7 +5,6 @@ use PhpParser;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use Psalm\Aliases;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
@@ -1633,56 +1632,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             ),
             $inferred_return_type->canBeFullyExpressedInPhp()
         );
-    }
-
-    /**
-     * @param  string                       $return_type
-     * @param  Aliases                      $aliases
-     * @param  array<string, string>|null   $template_types
-     *
-     * @return string
-     */
-    public static function fixUpLocalType(
-        $return_type,
-        Aliases $aliases,
-        array $template_types = null
-    ) {
-        if (strpos($return_type, '[') !== false) {
-            $return_type = Type::convertSquareBrackets($return_type);
-        }
-
-        $return_type_tokens = Type::tokenize($return_type);
-
-        foreach ($return_type_tokens as $i => &$return_type_token) {
-            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'], true)) {
-                continue;
-            }
-
-            if (isset($return_type_tokens[$i + 1]) && $return_type_tokens[$i + 1] === ':') {
-                continue;
-            }
-
-            $return_type_token = Type::fixScalarTerms($return_type_token);
-
-            if ($return_type_token[0] === strtoupper($return_type_token[0]) &&
-                !isset($template_types[$return_type_token])
-            ) {
-                if ($return_type_token[0] === '$') {
-                    if ($return_type === '$this') {
-                        $return_type_token = 'static';
-                    }
-
-                    continue;
-                }
-
-                $return_type_token = ClassLikeChecker::getFQCLNFromString(
-                    $return_type_token,
-                    $aliases
-                );
-            }
-        }
-
-        return implode('', $return_type_tokens);
     }
 
     /**

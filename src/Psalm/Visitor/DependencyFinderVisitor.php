@@ -6,8 +6,6 @@ use Psalm\Aliases;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\FunctionChecker;
-use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\Statements\Expression\IncludeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase;
@@ -193,7 +191,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                         foreach ($docblock_info->template_types as $template_type) {
                             if (count($template_type) === 3) {
-                                $as_type_string = ClassLikeChecker::getFQCLNFromString(
+                                $as_type_string = Type::getFQCLNFromString(
                                     $template_type[2],
                                     $this->aliases
                                 );
@@ -208,7 +206,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     if ($docblock_info->properties) {
                         foreach ($docblock_info->properties as $property) {
-                            $pseudo_property_type_string = FunctionChecker::fixUpLocalType(
+                            $pseudo_property_type_string = Type::fixUpLocalType(
                                 $property['type'],
                                 $this->aliases
                             );
@@ -826,7 +824,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             foreach ($docblock_info->template_types as $template_type) {
                 if (count($template_type) === 3) {
-                    $as_type_string = ClassLikeChecker::getFQCLNFromString($template_type[2], $this->aliases);
+                    $as_type_string = Type::getFQCLNFromString($template_type[2], $this->aliases);
                     $storage->template_types[$template_type[0]] = $as_type_string;
                 } else {
                     $storage->template_types[$template_type[0]] = 'mixed';
@@ -876,7 +874,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($docblock_return_type) {
-                    $fixed_type_string = FunctionLikeChecker::fixUpLocalType(
+                    $fixed_type_string = Type::fixUpLocalType(
                         $docblock_return_type,
                         $this->aliases,
                         $this->function_template_types + $this->class_template_types
@@ -1079,7 +1077,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             try {
                 $new_param_type = Type::parseString(
-                    FunctionLikeChecker::fixUpLocalType(
+                    Type::fixUpLocalType(
                         $docblock_param['type'],
                         $this->aliases,
                         $this->function_template_types + $this->class_template_types

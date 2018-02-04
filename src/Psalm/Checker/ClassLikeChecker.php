@@ -344,44 +344,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return $class_name->parts[0];
         }
 
-        return self::getFQCLNFromString(
+        return Type::getFQCLNFromString(
             implode('\\', $class_name->parts),
             $aliases
         );
-    }
-
-    /**
-     * @param  string                   $class
-     * @param  Aliases                  $aliases
-     *
-     * @return string
-     */
-    public static function getFQCLNFromString($class, Aliases $aliases)
-    {
-        if (empty($class)) {
-            throw new \InvalidArgumentException('$class cannot be empty');
-        }
-
-        if ($class[0] === '\\') {
-            return substr($class, 1);
-        }
-
-        $imported_namespaces = $aliases->uses;
-
-        if (strpos($class, '\\') !== false) {
-            $class_parts = explode('\\', $class);
-            $first_namespace = array_shift($class_parts);
-
-            if (isset($imported_namespaces[strtolower($first_namespace)])) {
-                return $imported_namespaces[strtolower($first_namespace)] . '\\' . implode('\\', $class_parts);
-            }
-        } elseif (isset($imported_namespaces[strtolower($class)])) {
-            return $imported_namespaces[strtolower($class)];
-        }
-
-        $namespace = $aliases->namespace;
-
-        return ($namespace ? $namespace . '\\' : '') . $class;
     }
 
     /**

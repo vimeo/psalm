@@ -69,7 +69,7 @@ class CommentChecker
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
 
-                    $var_type_string = FunctionLikeChecker::fixUpLocalType(
+                    $var_type_string = Type::fixUpLocalType(
                         $line_parts[0],
                         $aliases,
                         $template_types

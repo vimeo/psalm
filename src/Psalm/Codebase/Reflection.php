@@ -3,7 +3,6 @@ namespace Psalm\Codebase;
 
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
-use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Codebase;
 use Psalm\FunctionLikeParameter;
 use Psalm\Provider\ClassLikeStorageProvider;
@@ -407,7 +406,7 @@ class Reflection
                     if (!$storage->return_type) {
                         $namespace = $reflection_function->getNamespaceName();
                         $aliases = new \Psalm\Aliases($namespace);
-                        $fq_return_type = FunctionLikeChecker::fixUpLocalType(
+                        $fq_return_type = Type::fixUpLocalType(
                             $docblock_info->return_type,
                             $aliases
                         );

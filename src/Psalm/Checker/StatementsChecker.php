@@ -880,7 +880,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         } elseif ($is_fully_qualified) {
             $fq_const_name = $const_name;
         } elseif (strpos($const_name, '\\')) {
-            $fq_const_name = ClassLikeChecker::getFQCLNFromString($const_name, $this->getAliases());
+            $fq_const_name = Type::getFQCLNFromString($const_name, $this->getAliases());
         }
 
         if ($fq_const_name) {

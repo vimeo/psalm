@@ -110,7 +110,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('Did not expect anonymous class here');
         }
 
-        $fq_class_name = ClassLikeChecker::getFQCLNFromString($stmt->name, $this->getAliases());
+        $fq_class_name = Type::getFQCLNFromString($stmt->name, $this->getAliases());
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             $this->source->addNamespacedClassChecker(
