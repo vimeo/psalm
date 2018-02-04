@@ -6,13 +6,41 @@ The entry point for all analysis is [`ProjectChecker`](https://github.com/vimeo/
 
 For any file or set of files, Psalm needs to determine all the possible dependencies and get their function signatures and constants, so that the analysis phase can be done multithreaded.
 
-It uses a custom `NodeVisitor` called [`DependencyFinderVisitor`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Visitor/DependencyFinderVisitor.php) which has two modes when scanning a given file: a shallow scan, where it just gets function signatures, return types, constants, and inheritance, or a deep scan, where it drills into every function statement to get those dependencies too (e.g. the class names instantiated by a function). It only does a deep scan on files that it knows will be analysed later (so the vast majority of the vendor directory, for example, just gets a shallow scan).
+Scanning happens in `Psalm\Codebase\Scanner`.
+
+The first task is to convert a file into a set of [PHP Parser](https://github.com/nikic/PHP-Parser) statements. PHP Parser converts PHP code into an abstract syntax tree that Psalm uses for all its analysis.
+
+### Deep scanning vs shallow scanning
+
+Psalm then uses a custom PHP Parser `NodeVisitor` called [`DependencyFinderVisitor`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Visitor/DependencyFinderVisitor.php) which has two modes when scanning a given file: a shallow scan, where it just gets function signatures, return types, constants, and inheritance, or a deep scan, where it drills into every function statement to get those dependencies too (e.g. the class names instantiated by a function). It only does a deep scan on files that it knows will be analysed later (so the vast majority of the vendor directory, for example, just gets a shallow scan).
+
+So, when analysing the `src` directory, Psalm will deep scan the following file:
+
+src/A.php
+```php
+use Vendor\VendorClass;
+use Vendor\OtherVendorClass;
+
+class A extends VendorClass {
+    public function foo(OtherVendorClass $c) : void {}
+}
+```
+
+And will also deep scan the file belonging to `Vendor\VendorClass`, because it may have to check instantiations of properties at some point.
+
+It will do a shallow scan of `Vendor\OtherVendorClass` (and any dependents) because all it cares about are the method signatures and return types of the variable `$c`.
+
+### Finding files from class names
+
+To figure out the `ClassName` => `src/FileName.php` mapping it uses reflection for project files and the Composer classmap for vendor files.
+
+### Storing data from scanning
 
 For each file that `DependencyFinderVisitor` visits, Psalm creates a `FileStorage` instance, along with `ClassLikeStorage` and `FunctionLikeStorage` instances depending on the file contents.
 
-To figure out the `ClassName `=> `src/FileName.php` mapping it uses reflection for project files and the Composer classmap for vendor files.
+Once we have a set of all files and their classes and function signatures, we calculate inheritance for everything in the `Psalm\Codebase\Populator` class and then move onto analysis.
 
-Once we have a set of all files and their classes and function signatures, we calculate inheritance for everything (the `populate...Storage` methods) and then move onto analysis.
+At the end of the scanning step we have populated all the necessary information in `Psalm\Codebase\ClassLikes`, `Psalm\Codebase\Functions` and `Psalm\Codebase\Methods` classes, and created a complete list of `FileStorage` and `ClassLikeStorage` objects (in `FileStorageProvider` and `ClassLikeStorageProvider` respectively) for all classes and files used in our project.
 
 ## Analysis
 
