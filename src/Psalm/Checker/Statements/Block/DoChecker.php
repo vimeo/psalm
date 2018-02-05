@@ -31,7 +31,17 @@ class DoChecker
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
+        $suppressed_issues = $statements_checker->getSuppressedIssues();
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_checker->addSuppressedIssues(['RedundantCondition']);
+        }
+
         $statements_checker->analyze($stmt->stmts, $do_context, $loop_scope);
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+        }
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
