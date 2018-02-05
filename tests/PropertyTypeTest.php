@@ -978,8 +978,11 @@ class PropertyTypeTest extends TestCase
             'abstractClassInheritsPrivateConstructor' => [
                 '<?php
                     abstract class A {
+                        /** @var string */
+                        public $foo;
+
                         private function __construct() {
-                            echo "hello";
+                            $this->foo = "hello";
                         }
                     }
 
