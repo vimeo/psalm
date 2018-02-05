@@ -886,22 +886,18 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $storage->return_type->setFromDocblock();
 
                         if ($storage->signature_return_type) {
-                            $all_types_match = true;
+                            $all_typehint_types_match = true;
                             $signature_return_atomic_types = $storage->signature_return_type->getTypes();
 
                             foreach ($storage->return_type->getTypes() as $key => $type) {
                                 if (isset($signature_return_atomic_types[$key])) {
-                                    if ($signature_return_atomic_types[$key]->getId() !== $type->getId()) {
-                                        $all_types_match = false;
-                                    }
-
                                     $type->from_docblock = false;
                                 } else {
-                                    $all_types_match = false;
+                                    $all_typehint_types_match = false;
                                 }
                             }
 
-                            if ($all_types_match) {
+                            if ($all_typehint_types_match) {
                                 $storage->return_type->from_docblock = false;
                             }
                         }
@@ -1129,6 +1125,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage_param_atomic_types = $storage_param->type->getTypes();
 
             $all_types_match = true;
+            $all_typehint_types_match = true;
 
             foreach ($new_param_type->getTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
@@ -1139,11 +1136,16 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $type->from_docblock = false;
                 } else {
                     $all_types_match = false;
+                    $all_typehint_types_match = false;
                 }
             }
 
             if ($all_types_match) {
                 continue;
+            }
+
+            if ($all_typehint_types_match) {
+                $new_param_type->from_docblock = false;
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {

@@ -801,6 +801,14 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullOperand',
             ],
+            'nonDocblockTypeContradiction' => [
+                '<?php
+                    /** @param array[] $arr */
+                    function foo(array $arr) : void {
+                       if ($arr === "hello") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ]
         ];
     }
 }
