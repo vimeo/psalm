@@ -394,10 +394,6 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     $statements_checker->getSuppressedIssues()
                 );
 
-                if ($op_vars_in_scope === false) {
-                    return false;
-                }
-
                 foreach ($changed_vars as $changed_var) {
                     if (isset($op_vars_in_scope[$changed_var])) {
                         $op_vars_in_scope[$changed_var]->from_docblock = true;

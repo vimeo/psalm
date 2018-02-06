@@ -605,10 +605,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                     $method_name_lc = strtolower($storage->cased_name);
 
-                    if (!$class_storage
-                        || $storage->abstract
-                        || !isset($class_storage->overridden_method_ids[$method_name_lc])
-                    ) {
+                    if ($storage->abstract || !isset($class_storage->overridden_method_ids[$method_name_lc])) {
                         continue;
                     }
 
@@ -1243,7 +1240,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         // prevent any return types that do not return a value from being used in PHP typehints
         if ($project_checker->alter_code
-            && $inferred_return_type
             && $inferred_return_type->isNullable()
             && !$inferred_yield_types
         ) {

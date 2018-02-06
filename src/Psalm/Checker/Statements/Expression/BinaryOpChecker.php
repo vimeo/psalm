@@ -87,10 +87,6 @@ class BinaryOpChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($op_vars_in_scope === false) {
-                return false;
-            }
-
             $op_context = clone $context;
             $op_context->vars_in_scope = $op_vars_in_scope;
 
@@ -183,10 +179,6 @@ class BinaryOpChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($op_vars_in_scope === false) {
-                return false;
-            }
-
             $op_context = clone $context;
             $op_context->clauses = $rhs_clauses;
             $op_context->vars_in_scope = $op_vars_in_scope;
@@ -219,9 +211,7 @@ class BinaryOpChecker
                         $statements_checker->getSuppressedIssues()
                     );
 
-                    if ($left_inferred_reconciled) {
-                        $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
-                    }
+                    $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
                 }
             }
 
@@ -284,10 +274,6 @@ class BinaryOpChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($t_if_vars_in_scope_reconciled === false) {
-                return false;
-            }
-
             $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
 
             if (ExpressionChecker::analyze($statements_checker, $stmt->left, $t_if_context) === false) {
@@ -327,10 +313,6 @@ class BinaryOpChecker
                     $statements_checker->getSuppressedIssues()
                 );
 
-                if ($t_else_vars_in_scope_reconciled === false) {
-                    return false;
-                }
-
                 $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
             }
 
@@ -361,10 +343,6 @@ class BinaryOpChecker
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
-
-                if ($if_return_type_reconciled === false) {
-                    return false;
-                }
 
                 $lhs_type = $if_return_type_reconciled;
             }

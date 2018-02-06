@@ -281,20 +281,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         }
                     }
 
-                    if ($loop_scope->possibly_redefined_loop_vars === null) {
-                        $loop_scope->possibly_redefined_loop_vars = $redefined_vars;
-                    } else {
-                        foreach ($redefined_vars as $var => $type) {
-                            if ($type->isMixed()) {
-                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
-                            } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
-                                $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
-                                    $type,
-                                    $loop_scope->possibly_redefined_loop_vars[$var]
-                                );
-                            } else {
-                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
-                            }
+                    foreach ($redefined_vars as $var => $type) {
+                        if ($type->isMixed()) {
+                            $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                        } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                            $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
+                                $type,
+                                $loop_scope->possibly_redefined_loop_vars[$var]
+                            );
+                        } else {
+                            $loop_scope->possibly_redefined_loop_vars[$var] = $type;
                         }
                     }
                 }
