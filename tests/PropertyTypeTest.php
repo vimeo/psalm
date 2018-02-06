@@ -44,6 +44,42 @@ class PropertyTypeTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testRemovePropertyAfterReassignment()
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    /** @var A|null */
+                    public $parent;
+
+                    public function __construct() {
+                        $this->parent = rand(0, 1) ? new A : null;
+                    }
+                }
+
+                $a = new A();
+
+                if ($a->parent === null) {
+                    throw new \Exception("bad");
+                }
+
+                $a = $a->parent;'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('A', (string) $context->vars_in_scope['$a']);
+        $this->assertFalse(isset($context->vars_in_scope['$a->parent']));
+    }
+
+    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()

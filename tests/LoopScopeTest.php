@@ -872,6 +872,48 @@ class LoopScopeTest extends TestCase
                         $done = rand(0, 1) > 0;
                     } while (!$done);',
             ],
+            'doWhileWithIfException' => [
+                '<?php
+                    class A
+                    {
+                        /**
+                         * @var null|A
+                         */
+                        public $parent;
+
+                        public static function foo(A $a) : void
+                        {
+                            do {
+                                if ($a->parent === null) {
+                                    throw new \Exception("bad");
+                                }
+
+                                $a = $a->parent;
+                            } while (rand(0,1));
+                        }
+                    }',
+            ],
+            'doWhileWithIfExceptionOutside' => [
+                '<?php
+                    class A
+                    {
+                        /**
+                         * @var null|A
+                         */
+                        public $parent;
+
+                        public static function foo(A $a) : void
+                        {
+                            if ($a->parent === null) {
+                                throw new \Exception("bad");
+                            }
+
+                            do {
+                                $a = $a->parent;
+                            } while ($a->parent && rand(0, 1));
+                        }
+                    }',
+            ],
         ];
     }
 

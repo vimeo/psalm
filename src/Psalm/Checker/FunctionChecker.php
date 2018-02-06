@@ -524,40 +524,36 @@ class FunctionChecker extends FunctionLikeChecker
 
                 if (count($function_call_arg->value->stmts) === 1
                     && count($function_call_arg->value->params)
-                    && ($first_param = $function_call_arg->value->params[0])
-                    && $first_param->variadic === false
-                    && ($stmt = $function_call_arg->value->stmts[0])
-                    && $stmt instanceof PhpParser\Node\Stmt\Return_
-                    && $stmt->expr
                 ) {
-                    $assertions = AssertionFinder::getAssertions($stmt->expr, null, $statements_checker);
+                    $first_param = $function_call_arg->value->params[0];
+                    $stmt = $function_call_arg->value->stmts[0];
 
-                    if (isset($assertions['$' . $first_param->name])) {
-                        $changed_var_ids = [];
+                    if ($first_param->variadic === false
+                        && $stmt instanceof PhpParser\Node\Stmt\Return_
+                        && $stmt->expr
+                    ) {
+                        $assertions = AssertionFinder::getAssertions($stmt->expr, null, $statements_checker);
 
-                        $reconciled_types = Reconciler::reconcileKeyedTypes(
-                            ['$inner_type' => $assertions['$' . $first_param->name]],
-                            ['$inner_type' => $inner_type],
-                            $changed_var_ids,
-                            ['$inner_type' => true],
-                            $statements_checker,
-                            new CodeLocation($statements_checker->getSource(), $stmt),
-                            $statements_checker->getSuppressedIssues()
-                        );
+                        if (isset($assertions['$' . $first_param->name])) {
+                            $changed_var_ids = [];
 
-                        if (isset($reconciled_types['$inner_type'])) {
-                            $inner_type = $reconciled_types['$inner_type'];
+                            $reconciled_types = Reconciler::reconcileKeyedTypes(
+                                ['$inner_type' => $assertions['$' . $first_param->name]],
+                                ['$inner_type' => $inner_type],
+                                $changed_var_ids,
+                                ['$inner_type' => true],
+                                $statements_checker,
+                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                $statements_checker->getSuppressedIssues()
+                            );
+
+                            if (isset($reconciled_types['$inner_type'])) {
+                                $inner_type = $reconciled_types['$inner_type'];
+                            }
                         }
                     }
                 }
             }
-
-            return new Type\Union([
-                new Type\Atomic\TArray([
-                    $key_type,
-                    $inner_type,
-                ]),
-            ]);
         }
 
         return new Type\Union([

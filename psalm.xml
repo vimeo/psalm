@@ -5,7 +5,7 @@
     totallyTyped="true"
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
-    throwExceptionOnError="false"
+    throwExceptionOnError="0"
 >
     <projectFiles>
         <directory name="src" />

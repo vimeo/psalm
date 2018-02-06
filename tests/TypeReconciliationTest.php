@@ -264,6 +264,8 @@ class TypeReconciliationTest extends TestCase
                         if ($a instanceof A) {
                         }
                     }',
+                'assertions' => [],
+                'error_levels' => ['DocblockTypeContradiction'],
             ],
             'arrayTypeResolutionFromDocblock' => [
                 '<?php
@@ -273,9 +275,11 @@ class TypeReconciliationTest extends TestCase
                      */
                     function foo(array $strs) {
                         foreach ($strs as $str) {
-                            if (is_string($str)) {} // Issue emitted here
+                            if (is_string($str)) {}
                         }
                     }',
+                'assertions' => [],
+                'error_levels' => ['DocblockTypeContradiction'],
             ],
             'typeResolutionFromDocblockInside' => [
                 '<?php
@@ -289,6 +293,8 @@ class TypeReconciliationTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'error_levels' => ['DocblockTypeContradiction'],
             ],
             'notInstanceof' => [
                 '<?php
