@@ -157,7 +157,7 @@ class ArrayFetchChecker
         $non_array_types = [];
 
         $has_valid_offset = false;
-        $invalid_offset_types = [];
+        $expected_offset_types = [];
 
         $key_value = null;
 
@@ -273,7 +273,7 @@ class ArrayFetchChecker
                             $type->type_params[0],
                             true
                         )) {
-                            $invalid_offset_types[] = (string)$type->type_params[0];
+                            $expected_offset_types[] = (string)$type->type_params[0];
                         } else {
                             $has_valid_offset = true;
                         }
@@ -356,7 +356,7 @@ class ArrayFetchChecker
                                     '\' or \'' . $last_key . '\'';
                             }
 
-                            $invalid_offset_types[] = $expected_keys_string;
+                            $expected_offset_types[] = $expected_keys_string;
 
                             $array_access_type = Type::getMixed();
                         }
@@ -404,7 +404,7 @@ class ArrayFetchChecker
 
                         $has_valid_offset = true;
                     } else {
-                        $invalid_offset_types[] = (string)$type->getGenericKeyType();
+                        $expected_offset_types[] = (string)$type->getGenericKeyType();
 
                         $array_access_type = Type::getMixed();
                     }
@@ -437,7 +437,7 @@ class ArrayFetchChecker
                     Type::getInt(),
                     true
                 )) {
-                    $invalid_offset_types[] = 'int';
+                    $expected_offset_types[] = 'int';
                 } else {
                     $has_valid_offset = true;
                 }
@@ -570,14 +570,21 @@ class ArrayFetchChecker
         } else {
             $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
-            if ($invalid_offset_types) {
-                $invalid_offset_type = $invalid_offset_types[0];
+            if ($expected_offset_types) {
+                $invalid_offset_type = $expected_offset_types[0];
+
+                $used_offset = 'using a ' . $offset_type . ' offset';
+
+                if ($key_value !== null) {
+                    $used_offset = 'using offset value of '
+                        . (is_int($key_value) ? $key_value : '\'' . $key_value . '\'');
+                }
 
                 if ($has_valid_offset) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArrayOffset(
-                            'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
-                                . ' offset, expecting ' . $invalid_offset_type,
+                            'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
+                                . ', expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -587,8 +594,8 @@ class ArrayFetchChecker
                 } else {
                     if (IssueBuffer::accepts(
                         new InvalidArrayOffset(
-                            'Cannot access value on variable ' . $array_var_id . ' using ' . $offset_type
-                                . ' offset, expecting ' . $invalid_offset_type,
+                            'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
+                                . ', expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
                         $statements_checker->getSuppressedIssues()

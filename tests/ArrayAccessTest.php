@@ -181,6 +181,13 @@ class ArrayAccessTest extends TestCase
                     echo $a[0];',
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
+            'specificErrorMessage' => [
+                '<?php
+                    $params = ["key" => "value"];
+                    echo $params["fieldName"];',
+                'error_message' => 'InvalidArrayOffset - src/somefile.php:3 - Cannot access '
+                    . 'value on variable $params using offset value of',
+            ],
         ];
     }
 }

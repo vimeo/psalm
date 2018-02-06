@@ -808,7 +808,7 @@ class TypeReconciliationTest extends TestCase
                        if ($arr === "hello") {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
-            ]
+            ],
         ];
     }
 }
