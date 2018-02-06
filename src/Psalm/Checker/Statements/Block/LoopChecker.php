@@ -24,6 +24,7 @@ class LoopChecker
      * @param  PhpParser\Node\Expr[]                            $post_expressions
      * @param  Context                                          $loop_scope->loop_context
      * @param  Context                                          $loop_scope->loop_parent_context
+     * @param  bool                                             $is_do
      *
      * @return false|null
      */
@@ -33,7 +34,8 @@ class LoopChecker
         array $pre_conditions,
         array $post_expressions,
         LoopScope $loop_scope,
-        Context &$inner_context = null
+        Context &$inner_context = null,
+        $is_do = false
     ) {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -86,14 +88,16 @@ class LoopChecker
 
             $inner_context->parent_context = $loop_scope->loop_context;
 
-            foreach ($pre_conditions as $pre_condition) {
-                self::applyPreConditionToLoopContext(
-                    $statements_checker,
-                    $pre_condition,
-                    $pre_condition_clauses,
-                    $inner_context,
-                    $loop_scope->loop_parent_context
-                );
+            if (!$is_do) {
+                foreach ($pre_conditions as $pre_condition) {
+                    self::applyPreConditionToLoopContext(
+                        $statements_checker,
+                        $pre_condition,
+                        $pre_condition_clauses,
+                        $inner_context,
+                        $loop_scope->loop_parent_context
+                    );
+                }
             }
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
@@ -121,17 +125,19 @@ class LoopChecker
 
             IssueBuffer::startRecording();
 
-            foreach ($pre_conditions as $pre_condition) {
-                $asserted_var_ids = array_merge(
-                    self::applyPreConditionToLoopContext(
-                        $statements_checker,
-                        $pre_condition,
-                        $pre_condition_clauses,
-                        $loop_scope->loop_context,
-                        $loop_scope->loop_parent_context
-                    ),
-                    $asserted_var_ids
-                );
+            if (!$is_do) {
+                foreach ($pre_conditions as $pre_condition) {
+                    $asserted_var_ids = array_merge(
+                        self::applyPreConditionToLoopContext(
+                            $statements_checker,
+                            $pre_condition,
+                            $pre_condition_clauses,
+                            $loop_scope->loop_context,
+                            $loop_scope->loop_parent_context
+                        ),
+                        $asserted_var_ids
+                    );
+                }
             }
 
             // record all the vars that existed before we did the first pass through the loop

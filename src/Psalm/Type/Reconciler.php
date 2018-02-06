@@ -126,6 +126,7 @@ class Reconciler
 
             if ($result_type->getId() !== $before_adjustment
                 || $result_type->from_docblock !== $from_docblock
+                || $failed_reconciliation
             ) {
                 $changed_var_ids[] = $key;
             }

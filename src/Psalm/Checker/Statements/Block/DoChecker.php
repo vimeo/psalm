@@ -121,7 +121,8 @@ class DoChecker
             [$stmt->cond],
             [],
             $loop_scope,
-            $inner_loop_context
+            $inner_loop_context,
+            true
         );
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
