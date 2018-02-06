@@ -322,13 +322,15 @@ class FunctionChecker extends FunctionLikeChecker
     ) {
         $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
-        $array_arg_type = $array_arg
-                && isset($array_arg->inferredType)
-                && isset($array_arg->inferredType->getTypes()['array'])
-                && ($array_atomic_type = $array_arg->inferredType->getTypes()['array'])
-                && $array_atomic_type instanceof Type\Atomic\TArray
-            ? $array_atomic_type
-            : null;
+        $array_arg_type = null;
+
+        if ($array_arg && isset($array_arg->inferredType)) {
+            $arg_types = $array_arg->inferredType->getTypes();
+
+            if (isset($arg_types['array']) && $arg_types['array'] instanceof Type\Atomic\TArray) {
+                $array_arg_type = $arg_types['array'];
+            }
+        }
 
         if (isset($call_args[0])) {
             $function_call_arg = $call_args[0];
