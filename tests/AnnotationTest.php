@@ -384,6 +384,52 @@ class AnnotationTest extends TestCase
                         return $i;
                     }',
             ],
+            /**
+             * The property $foo is not defined on the object, but you can do whatever you want
+             * with magic setters, so that's OK. See magicSetterUndefinedProperty for usage of
+             * the `@property` annotation to make psalm more strict.
+             */
+            'magicSetterUndefinedPropertyNoPropertyAnnotation' => [
+                '<?php
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badSet(): void {
+                            $this->__set("foo", new stdClass());
+                        }
+                    }',
+            ],
+            /**
+             * The property $foo is not defined on the object, but you can do whatever you want
+             * with magic getters, so that's OK. See magicGetterUndefinedProperty for usage of
+             * the `@property` annotation to make psalm more strict.
+             */
+            'magicGetterUndefinedPropertyNoPropertyAnnotation' => [
+                '<?php
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badGet(): void {
+                            echo $this->__get("foo");
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -885,6 +931,62 @@ class AnnotationTest extends TestCase
                         $s = $i->offsetGet("a");
                     }',
                 'error_message' => 'PossiblyInvalidMethodCall',
+            ],
+            /**
+             * The property $foo is not defined on the object, but accessed with the magic setter.
+             * This is an error because `@property` is specified on the class block. Compare to
+             * magicSetterUndefinedPropertyNoPropertyAnnotation, which has no `@property`
+             * annotation.
+             */
+            'magicSetterUndefinedProperty' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badSet(): void {
+                            $this->__set("foo", new stdClass());
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyAssignment',
+            ],
+            /**
+             * The property $foo is not defined on the object, but accessed with the magic getter.
+             * This is an error because `@property` is specified on the class block. Compare to
+             * magicGetterUndefinedPropertyNoPropertyAnnotation, which has no `@property`
+             * annotation.
+             */
+            'magicGetterUndefinedProperty' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badGet(): void {
+                            echo $this->__get("foo");
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
             ],
         ];
     }
