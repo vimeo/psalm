@@ -215,12 +215,6 @@ class LoopChecker
                     }
                 }
 
-                foreach ($asserted_var_ids as $var_id) {
-                    if (!isset($inner_context->vars_in_scope[$var_id])) {
-                        $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
-                    }
-                }
-
                 $loop_scope->loop_parent_context->vars_possibly_in_scope = array_merge(
                     $inner_context->vars_possibly_in_scope,
                     $loop_scope->loop_parent_context->vars_possibly_in_scope
@@ -257,6 +251,12 @@ class LoopChecker
                         $inner_context,
                         $loop_scope->loop_parent_context
                     );
+                }
+
+                foreach ($asserted_var_ids as $var_id) {
+                    if (!isset($inner_context->vars_in_scope[$var_id])) {
+                        $inner_context->vars_in_scope[$var_id] = clone $pre_loop_context->vars_in_scope[$var_id];
+                    }
                 }
 
                 $inner_context->clauses = $pre_loop_context->clauses;
