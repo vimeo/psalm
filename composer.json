@@ -38,7 +38,7 @@
         "php-coveralls/php-coveralls": "^2.0"
     },
     "scripts": {
-        "psalm": "./bin/psalm",
+        "psalm": "./psalm",
         "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
         "tests": [
             "php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
