@@ -120,9 +120,7 @@ class A {
 
 ### DocblockTypeContradiction
 
-Emitted when conditional is redundant given information supplied in one or more docblocks.
-
-This may be desired (e.g. when checking user input) so is distinct from RedundantCondition, which only applies to non-docblock types.
+Emitted when conditional doesn't make sense given the docblock types supplied.
 
 ```php
 class A {}
@@ -133,7 +131,7 @@ class A {}
  * @return void
  */
 function foo($s) {
-    if (is_string($s)) {};
+    if ($s === 5) { }
 }
 ```
 
@@ -1501,6 +1499,25 @@ class A {}
 function foo(?A $a) : ?A {
     if ($a) return $a;
     if ($a) echo "cannot happen";
+}
+```
+
+### RedundantConditionGivenDocblockType
+
+Emitted when conditional is redundant given information supplied in one or more docblocks.
+
+This may be desired (e.g. when checking user input) so is distinct from RedundantCondition, which only applies to non-docblock types.
+
+```php
+class A {}
+
+/**
+ * @param string $s
+ *
+ * @return void
+ */
+function foo($s) {
+    if (is_string($s)) {};
 }
 ```
 

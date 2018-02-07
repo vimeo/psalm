@@ -48,7 +48,10 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => [
+                    'RedundantConditionGivenDocblockType',
+                    'DocblockTypeContradiction',
+                ],
             ],
             'assignmentInIf' => [
                 '<?php
@@ -71,7 +74,9 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => [
+                    'RedundantConditionGivenDocblockType',
+                ],
             ],
             'noRedundantConditionAfterDocblockTypeNullCheck' => [
                 '<?php
@@ -99,7 +104,7 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'noRedundantConditionTypeReplacementWithDocblock' => [
                 '<?php
@@ -120,7 +125,9 @@ class RedundantConditionTest extends TestCase
 
                     if ($maybe_a === null) {}',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => [
+                    'DocblockTypeContradiction',
+                ],
             ],
             'noRedundantConditionAfterPossiblyNullCheck' => [
                 '<?php
@@ -152,7 +159,9 @@ class RedundantConditionTest extends TestCase
 
                     if ($a->foo() || $a->bar()) {}',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => [
+                    'DocblockTypeContradiction',
+                ],
             ],
             'noEmptyUndefinedArrayVar' => [
                 '<?php
@@ -233,7 +242,10 @@ class RedundantConditionTest extends TestCase
                       return 2;
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => [
+                    'DocblockTypeContradiction',
+                    'RedundantConditionGivenDocblockType',
+                ],
             ],
             'evaluateArrayCheck' => [
                 '<?php
@@ -267,7 +279,7 @@ class RedundantConditionTest extends TestCase
                         if ($bar !== null) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
         ];
     }
@@ -299,7 +311,7 @@ class RedundantConditionTest extends TestCase
             'unnecessaryInstanceof' => [
                 '<?php
                     class One {
-                        public function fooFoo() {}
+                        public function fooFoo() : void {}
                     }
 
                     $var = new One();
@@ -343,7 +355,7 @@ class RedundantConditionTest extends TestCase
                     /**
                      * @param  A $a
                      * @return void
-                     * @psalm-suppress DocblockTypeContradiction
+                     * @psalm-suppress RedundantConditionGivenDocblockType
                      */
                     function fooFoo($a) {
                         if ($a instanceof A) {

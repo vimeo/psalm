@@ -29,7 +29,7 @@ class FileFilter
     /**
      * @param  bool             $inclusive
      *
-     * @psalm-suppress DocblockTypeContradiction
+     * @psalm-suppress RedundantConditionGivenDocblockType
      */
     public function __construct($inclusive)
     {

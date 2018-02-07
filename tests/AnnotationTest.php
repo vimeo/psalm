@@ -139,7 +139,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['DocblockTypeContradiction'],
+                'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'checkArrayWithIs' => [
                 '<?php
@@ -152,7 +152,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['DocblockTypeContradiction'],
+                'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'checkArrayWithIsInsideLoop' => [
                 '<?php
@@ -167,7 +167,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['LoopInvalidation', 'MixedArrayOffset', 'DocblockTypeContradiction'],
+                'error_level' => ['LoopInvalidation', 'MixedArrayOffset', 'RedundantConditionGivenDocblockType'],
             ],
             'goodDocblock' => [
                 '<?php

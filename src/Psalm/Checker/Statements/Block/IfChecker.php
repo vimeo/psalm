@@ -257,7 +257,7 @@ class IfChecker
                 $if_scope->negated_types,
                 $temp_else_context->vars_in_scope,
                 $changed_var_ids,
-                $cond_referenced_var_ids,
+                $stmt->else || $stmt->elseifs ? $cond_referenced_var_ids : [],
                 $statements_checker,
                 new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
                 $statements_checker->getSuppressedIssues()

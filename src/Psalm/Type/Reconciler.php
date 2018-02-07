@@ -9,6 +9,7 @@ use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
@@ -344,7 +345,7 @@ class Reconciler
                 $did_remove_type = $existing_var_type->hasString()
                     || $existing_var_type->hasNumericType()
                     || $existing_var_type->isEmpty()
-                    || $existing_var_type->hasBool();
+                    || $existing_var_type->hasType('bool');
 
                 if ($existing_var_type->hasType('null')) {
                     $did_remove_type = true;
@@ -753,6 +754,16 @@ class Reconciler
         } elseif ($code_location && !$new_type->isMixed()) {
             $has_match = true;
 
+            if ($key && $new_type->getId() === $existing_var_type->getId() && !$is_strict_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $key,
+                    $new_var_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
+
             foreach ($new_type->getTypes() as $new_type_part) {
                 $has_local_match = false;
 
@@ -862,7 +873,7 @@ class Reconciler
         $reconciliation = ' and trying to reconcile type \'' . $existing_var_type . '\' to ' . $new_var_type;
         if ($existing_var_type->from_docblock) {
             if (IssueBuffer::accepts(
-                new DocblockTypeContradiction(
+                new RedundantConditionGivenDocblockType(
                     'Found a contradiction with a docblock-defined type '
                         . 'when evaluating ' . $key . $reconciliation,
                     $code_location

@@ -75,7 +75,7 @@ class TemplateTest extends TestCase
                 'error_levels' => [
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
-                    'DocblockTypeContradiction',
+                    'RedundantConditionGivenDocblockType',
                 ],
             ],
             'classTemplateWithInstanceofCheck' => [
@@ -120,7 +120,7 @@ class TemplateTest extends TestCase
                 'error_levels' => [
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
-                    'DocblockTypeContradiction',
+                    'RedundantConditionGivenDocblockType',
                 ],
             ],
             'classTemplateExternalClasses' => [

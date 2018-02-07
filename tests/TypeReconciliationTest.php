@@ -265,7 +265,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'arrayTypeResolutionFromDocblock' => [
                 '<?php
@@ -279,7 +279,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'typeResolutionFromDocblockInside' => [
                 '<?php
@@ -294,7 +294,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['DocblockTypeContradiction'],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'notInstanceof' => [
                 '<?php
@@ -499,6 +499,8 @@ class TypeReconciliationTest extends TestCase
 
                         throw new \LogicException("Runtime error");
                     }',
+                'assertions' => [],
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'ignoreNullCheckAndMaintainNullValue' => [
                 '<?php
@@ -807,7 +809,7 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullOperand',
             ],
-            'nonDocblockTypeContradiction' => [
+            'nonRedundantConditionGivenDocblockType' => [
                 '<?php
                     /** @param array[] $arr */
                     function foo(array $arr) : void {

@@ -217,7 +217,7 @@ class FunctionCallTest extends TestCase
                 'error_levels' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
-                    'DocblockTypeContradiction',
+                    'RedundantConditionGivenDocblockType',
                 ],
             ],
             'ignoreNullablePregReplace' => [
@@ -586,7 +586,7 @@ class FunctionCallTest extends TestCase
                 'error_levels' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
-                    'DocblockTypeContradiction',
+                    'RedundantConditionGivenDocblockType',
                 ],
             ],
             'undefinedFunctionInArrayMap' => [
