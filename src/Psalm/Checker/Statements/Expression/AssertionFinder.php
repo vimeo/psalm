@@ -901,15 +901,15 @@ class AssertionFinder
      */
     protected static function hasNullVariable(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
-            $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'null') {
+        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($conditional->right->name->parts[0]) === 'null'
+        ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
-            $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'null') {
+        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($conditional->left->name->parts[0]) === 'null'
+        ) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -923,15 +923,15 @@ class AssertionFinder
      */
     protected static function hasFalseVariable(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
-            $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'false') {
+        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($conditional->right->name->parts[0]) === 'false'
+        ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
-            $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'false') {
+        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($conditional->left->name->parts[0]) === 'false'
+        ) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 
@@ -945,15 +945,15 @@ class AssertionFinder
      */
     protected static function hasTrueVariable(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch &&
-            $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'true') {
+        if ($conditional->right instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($conditional->right->name->parts[0]) === 'true'
+        ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch &&
-            $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'true') {
+        if ($conditional->left instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($conditional->left->name->parts[0]) === 'true'
+        ) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 

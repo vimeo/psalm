@@ -310,7 +310,7 @@ class ArrayFetchChecker
                             $array_access_type = Type::getMixed();
                         }
                     }
-                } elseif ($type instanceof ObjectLike) {
+                } else {
                     if ($key_value !== null) {
                         if (isset($type->properties[$key_value]) || $replacement_type) {
                             $has_valid_offset = true;

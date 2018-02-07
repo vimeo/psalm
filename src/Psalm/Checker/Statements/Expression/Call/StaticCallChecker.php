@@ -260,7 +260,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 ) {
                     if (MethodChecker::checkStatic(
                         $method_id,
-                        $stmt->class instanceof PhpParser\Node\Name && strtolower($stmt->class->parts[0]) === 'self',
+                        strtolower($stmt->class->parts[0]) === 'self',
                         $project_checker,
                         new CodeLocation($source, $stmt),
                         $statements_checker->getSuppressedIssues()
