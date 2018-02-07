@@ -26,5 +26,6 @@
         <MissingParamType errorLevel="info" />
 
         <DocblockTypeContradiction errorLevel="info" />
+        <RedundantConditionGivenDocblockType errorLevel="info" />
     </issueHandlers>
 </psalm>
