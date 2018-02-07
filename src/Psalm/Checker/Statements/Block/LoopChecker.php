@@ -303,7 +303,7 @@ class LoopChecker
         }
 
         foreach ($loop_scope->loop_parent_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed()) {
+            if ($type->isMixed() || !isset($loop_scope->loop_context->vars_in_scope[$var_id])) {
                 continue;
             }
 
