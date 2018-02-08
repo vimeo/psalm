@@ -123,8 +123,6 @@ class A {
 Emitted when conditional doesn't make sense given the docblock types supplied.
 
 ```php
-class A {}
-
 /**
  * @param string $s
  *
@@ -1509,8 +1507,6 @@ Emitted when conditional is redundant given information supplied in one or more 
 This may be desired (e.g. when checking user input) so is distinct from RedundantCondition, which only applies to non-docblock types.
 
 ```php
-class A {}
-
 /**
  * @param string $s
  *
