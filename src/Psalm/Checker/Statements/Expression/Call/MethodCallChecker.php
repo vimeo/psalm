@@ -579,44 +579,48 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         }
 
         $method_name = strtolower($stmt->name);
-        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-        if (in_array($method_name, ['__get', '__set'], true)) {
-            $first_arg_value = $stmt->args[0]->value;
-            if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
-                $prop_name = $first_arg_value->value;
-                $property_id = $fq_class_name . '::$' . $prop_name;
+        if (!in_array($method_name, ['__get', '__set'], true)) {
+            return true;
+        }
 
-                switch ($method_name) {
-                    case '__set':
-                        if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
-                            && isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-                            && IssueBuffer::accepts(
-                                new UndefinedThisPropertyAssignment(
-                                    'Instance property ' . $property_id . ' is not defined',
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )
-                        ) {
-                            return false;
-                        }
-                        break;
-                    case '__get':
-                        if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
-                            && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
-                            && IssueBuffer::accepts(
-                                new UndefinedThisPropertyFetch(
-                                    'Instance property ' . $property_id . ' is not defined',
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )
-                        ) {
-                            return false;
-                        }
-                        break;
+        $first_arg_value = $stmt->args[0]->value;
+        if (!$first_arg_value instanceof PhpParser\Node\Scalar\String_) {
+            return true;
+        }
+
+        $prop_name = $first_arg_value->value;
+        $property_id = $fq_class_name . '::$' . $prop_name;
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+        switch ($method_name) {
+            case '__set':
+                if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
+                    && isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+                    && IssueBuffer::accepts(
+                        new UndefinedThisPropertyAssignment(
+                            'Instance property ' . $property_id . ' is not defined',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )
+                ) {
+                    return false;
                 }
-            }
+                break;
+            case '__get':
+                if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
+                    && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
+                    && IssueBuffer::accepts(
+                        new UndefinedThisPropertyFetch(
+                            'Instance property ' . $property_id . ' is not defined',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )
+                ) {
+                    return false;
+                }
+                break;
         }
 
         return true;
