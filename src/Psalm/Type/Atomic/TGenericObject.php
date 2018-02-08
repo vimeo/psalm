@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TGenericObject extends TNamedObject implements Generic
+class TGenericObject extends TNamedObject
 {
     use GenericTrait;
 

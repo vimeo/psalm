@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TArray extends \Psalm\Type\Atomic implements Generic
+class TArray extends \Psalm\Type\Atomic
 {
     use GenericTrait;
 

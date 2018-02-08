@@ -62,6 +62,8 @@ class IfChecker
 
         $context->inside_conditional = true;
 
+        $pre_condition_vars_in_scope = $context->vars_in_scope;
+
         $referenced_var_ids = $context->referenced_var_ids;
         $context->referenced_var_ids = [];
 
@@ -143,6 +145,20 @@ class IfChecker
 
         // get all the var ids that were referened in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
+
+        // remove all newly-asserted var ids too
+        $cond_referenced_var_ids = array_filter(
+            $cond_referenced_var_ids,
+            /**
+             * @param string $var_id
+             *
+             * @return bool
+             */
+            function ($var_id) use ($pre_condition_vars_in_scope) {
+                return isset($pre_condition_vars_in_scope[$var_id]);
+            },
+            ARRAY_FILTER_USE_KEY
+        );
 
         $if_context->inside_conditional = false;
 

@@ -3,7 +3,6 @@ namespace Psalm;
 
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\Generic;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;

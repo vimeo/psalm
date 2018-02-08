@@ -283,7 +283,7 @@ class Union
     public function hasGeneric()
     {
         foreach ($this->types as $type) {
-            if ($type instanceof Atomic\Generic) {
+            if ($type instanceof Atomic\TGenericObject || $type instanceof Atomic\TArray) {
                 return true;
             }
         }
