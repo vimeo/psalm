@@ -106,6 +106,11 @@ class Codebase
     public $methods;
 
     /**
+     * @var Codebase\Properties
+     */
+    public $properties;
+
+    /**
      * @var Codebase\Populator
      */
     public $populator;
@@ -147,6 +152,7 @@ class Codebase
 
         $this->functions = new Codebase\Functions($file_storage_provider, $this->reflection);
         $this->methods = new Codebase\Methods($classlike_storage_provider);
+        $this->properties = new Codebase\Properties($classlike_storage_provider);
         $this->classlikes = new Codebase\ClassLikes(
             $config,
             $classlike_storage_provider,
@@ -172,6 +178,7 @@ class Codebase
         $this->collect_references = true;
         $this->classlikes->collect_references = true;
         $this->methods->collect_references = true;
+        $this->properties->collect_references = true;
     }
 
     /**

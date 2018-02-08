@@ -15,6 +15,8 @@ use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Type;
+use ReflectionProperty;
 
 class ClassLikes
 {
@@ -612,6 +614,31 @@ class ClassLikes
                     $this->checkMethodReferences($classlike_storage);
                 }
             }
+        }
+    }
+
+    /**
+     * @param   string      $class_name
+     * @param   string      $const_name
+     * @param   Type\Union  $type
+     * @param   int         $visibility
+     *
+     * @return  void
+     */
+    public function setConstantType(
+        $class_name,
+        $const_name,
+        Type\Union $type,
+        $visibility
+    ) {
+        $storage = $this->classlike_storage_provider->get($class_name);
+
+        if ($visibility === ReflectionProperty::IS_PUBLIC) {
+            $storage->public_class_constants[$const_name] = $type;
+        } elseif ($visibility === ReflectionProperty::IS_PROTECTED) {
+            $storage->protected_class_constants[$const_name] = $type;
+        } elseif ($visibility === ReflectionProperty::IS_PRIVATE) {
+            $storage->private_class_constants[$const_name] = $type;
         }
     }
 

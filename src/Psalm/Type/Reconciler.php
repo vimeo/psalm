@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
@@ -994,12 +993,11 @@ class Reconciler
 
                             $property_id = $existing_key_type_part->value . '::$' . $property_name;
 
-                            if (!ClassLikeChecker::propertyExists($project_checker, $property_id)) {
+                            if (!$codebase->properties->propertyExists($property_id)) {
                                 return null;
                             }
 
-                            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
-                                $project_checker,
+                            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                                 $property_id
                             );
 

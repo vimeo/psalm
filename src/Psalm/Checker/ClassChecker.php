@@ -303,7 +303,7 @@ class ClassChecker extends ClassLikeChecker
         }
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
+            $property_class_name = $codebase->properties->getDeclaringClassForProperty($appearing_property_id);
             $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
 
             $property = $property_class_storage->properties[$property_name];
@@ -445,7 +445,7 @@ class ClassChecker extends ClassLikeChecker
             $uninitialized_properties = [];
 
             foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-                $property_class_name = self::getDeclaringClassForProperty($project_checker, $appearing_property_id);
+                $property_class_name = $codebase->properties->getDeclaringClassForProperty($appearing_property_id);
                 $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
 
                 $property = $property_class_storage->properties[$property_name];
@@ -658,8 +658,9 @@ class ClassChecker extends ClassLikeChecker
             $fq_class_name = $this->fq_class_name;
             $property_name = $stmt->props[0]->name;
 
-            $declaring_property_class = ClassLikeChecker::getDeclaringClassForProperty(
-                $project_checker,
+            $codebase = $project_checker->codebase;
+
+            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                 $fq_class_name . '::$' . $property_name
             );
 

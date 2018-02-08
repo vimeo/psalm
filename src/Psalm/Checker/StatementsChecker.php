@@ -417,8 +417,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     ExpressionChecker::analyze($this, $const->value, $context);
 
                     if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
-                        ClassLikeChecker::setConstantType(
-                            $project_checker,
+                        $codebase->classlikes->setConstantType(
                             (string)$this->getFQCLN(),
                             $const->name,
                             $const->value->inferredType,

@@ -1,0 +1,105 @@
+<?php
+namespace Psalm\Codebase;
+
+use Psalm\CodeLocation;
+use Psalm\Provider\ClassLikeStorageProvider;
+
+class Properties
+{
+    /**
+     * @var ClassLikeStorageProvider
+     */
+    private $classlike_storage_provider;
+
+    /**
+     * @var bool
+     */
+    public $collect_references = false;
+
+    public function __construct(
+        ClassLikeStorageProvider $storage_provider
+    ) {
+        $this->classlike_storage_provider = $storage_provider;
+    }
+
+    /**
+     * Whether or not a given property exists
+     *
+     * @param  string $property_id
+     *
+     * @return bool
+     */
+    public function propertyExists(
+        $property_id,
+        CodeLocation $code_location = null
+    ) {
+        // remove trailing backslash if it exists
+        $property_id = preg_replace('/^\\\\/', '', $property_id);
+
+        list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_property_ids[$property_name])) {
+            if ($this->collect_references && $code_location) {
+                $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
+                list($declaring_property_class, $declaring_property_name) = explode('::$', $declaring_property_id);
+
+                $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
+                $declaring_property_storage = $declaring_class_storage->properties[$declaring_property_name];
+
+                if ($declaring_property_storage->referencing_locations === null) {
+                    $declaring_property_storage->referencing_locations = [];
+                }
+
+                $declaring_property_storage->referencing_locations[$code_location->file_path][] = $code_location;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  string $property_id
+     *
+     * @return string|null
+     */
+    public function getDeclaringClassForProperty($property_id)
+    {
+        list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        $fq_class_name = strtolower($fq_class_name);
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_property_ids[$property_name])) {
+            $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
+
+            return explode('::$', $declaring_property_id)[0];
+        }
+    }
+
+    /**
+     * Get the class this property appears in (vs is declared in, which could give a trait)
+     *
+     * @param  string $property_id
+     *
+     * @return string|null
+     */
+    public function getAppearingClassForProperty($property_id)
+    {
+        list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        $fq_class_name = strtolower($fq_class_name);
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->appearing_property_ids[$property_name])) {
+            $appearing_property_id = $class_storage->appearing_property_ids[$property_name];
+
+            return explode('::$', $appearing_property_id)[0];
+        }
+    }
+}
