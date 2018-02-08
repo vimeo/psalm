@@ -436,10 +436,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
-                    $var_comment = null;
+                    $var_comments = [];
 
                     try {
-                        $var_comment = CommentChecker::getTypeFromComment(
+                        $var_comments = CommentChecker::getTypeFromComment(
                             (string)$stmt->getDocComment(),
                             $this->getSource(),
                             $this->getSource()->getAliases()
@@ -455,7 +455,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         }
                     }
 
-                    if ($var_comment && $var_comment->var_id) {
+                    foreach ($var_comments as $var_comment) {
+                        if (!$var_comment->var_id) {
+                            continue;
+                        }
+
                         $comment_type = ExpressionChecker::fleshOutType(
                             $project_checker,
                             $var_comment->type,

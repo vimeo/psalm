@@ -402,10 +402,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             || $node instanceof PhpParser\Node\Expr\AssignRef
         ) {
             if ($doc_comment = $node->getDocComment()) {
-                $var_comment = null;
+                $var_comments = [];
 
                 try {
-                    $var_comment = CommentChecker::getTypeFromComment(
+                    $var_comments = CommentChecker::getTypeFromComment(
                         (string)$doc_comment,
                         $this->file_scanner,
                         $this->aliases,
@@ -416,9 +416,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     // do nothing
                 }
 
-                if ($var_comment) {
+                foreach ($var_comments as $var_comment) {
                     $var_type = $var_comment->type;
-
                     $var_type->queueClassLikesForScanning($this->codebase, $this->file_path);
                 }
             }
@@ -1188,13 +1187,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             try {
                 $property_type_line_number = $comment->getLine();
-                $var_comment = CommentChecker::getTypeFromComment(
+                $var_comments = CommentChecker::getTypeFromComment(
                     $comment->getText(),
                     $this->file_scanner,
                     $this->aliases,
                     $this->function_template_types + $this->class_template_types,
                     $property_type_line_number
                 );
+
+                $var_comment = array_pop($var_comments);
             } catch (IncorrectDocblockException $e) {
                 if (IssueBuffer::accepts(
                     new MissingDocblockType(

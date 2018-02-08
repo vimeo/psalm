@@ -24,7 +24,7 @@ class CommentChecker
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
-     * @return VarDocblockComment|null
+     * @return VarDocblockComment[]
      * @psalm-suppress MixedArrayAccess
      */
     public static function getTypeFromComment(
@@ -40,10 +40,11 @@ class CommentChecker
         $var_type_string = null;
         $original_type = null;
 
+        $var_comments = [];
         $comments = self::parseDocComment($comment, $var_line_number);
 
         if (!isset($comments['specials']['var']) && !isset($comments['specials']['psalm-var'])) {
-            return;
+            return [];
         }
 
         if ($comments) {
@@ -79,49 +80,47 @@ class CommentChecker
 
                     $var_line_number = $line_number;
 
-                    // support PHPStorm-style docblocks like
-                    // @var Type $variable
                     if (count($line_parts) > 1 && $line_parts[1][0] === '$') {
                         $var_id = $line_parts[1];
                     }
-
-                    break;
                 }
+
+                if (!$var_type_string || !$original_type) {
+                    continue;
+                }
+
+                try {
+                    $defined_type = Type::parseString($var_type_string);
+                } catch (TypeParseTreeException $e) {
+                    if (is_int($came_from_line_number)) {
+                        throw new DocblockParseException(
+                            $var_type_string .
+                            ' is not a valid type' .
+                            ' (from ' .
+                            $source->getCheckedFilePath() .
+                            ':' .
+                            $came_from_line_number .
+                            ')'
+                        );
+                    }
+
+                    throw new DocblockParseException($var_type_string . ' is not a valid type');
+                }
+
+                $defined_type->setFromDocblock();
+
+                $var_comment = new VarDocblockComment();
+                $var_comment->type = $defined_type;
+                $var_comment->original_type = $original_type;
+                $var_comment->var_id = $var_id;
+                $var_comment->line_number = $var_line_number;
+                $var_comment->deprecated = isset($comments['specials']['deprecated']);
+
+                $var_comments[] = $var_comment;
             }
         }
 
-        if (!$var_type_string || !$original_type) {
-            return null;
-        }
-
-        try {
-            $defined_type = Type::parseString($var_type_string);
-        } catch (TypeParseTreeException $e) {
-            if (is_int($came_from_line_number)) {
-                throw new DocblockParseException(
-                    $var_type_string .
-                    ' is not a valid type' .
-                    ' (from ' .
-                    $source->getCheckedFilePath() .
-                    ':' .
-                    $came_from_line_number .
-                    ')'
-                );
-            }
-
-            throw new DocblockParseException($var_type_string . ' is not a valid type');
-        }
-
-        $defined_type->setFromDocblock();
-
-        $var_comment = new VarDocblockComment();
-        $var_comment->type = $defined_type;
-        $var_comment->original_type = $original_type;
-        $var_comment->var_id = $var_id;
-        $var_comment->line_number = $var_line_number;
-        $var_comment->deprecated = isset($comments['specials']['deprecated']);
-
-        return $var_comment;
+        return $var_comments;
     }
 
     /**

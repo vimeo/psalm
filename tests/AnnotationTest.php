@@ -388,6 +388,28 @@ class AnnotationTest extends TestCase
                         return $i;
                     }',
             ],
+            'doubleVar' => [
+                '<?php
+                    function foo() : array {
+                        return ["hello" => new stdClass, "goodbye" => new stdClass];
+                    }
+
+                    $a = null;
+                    $b = null;
+
+                    /**
+                     * @var string $key
+                     * @var stdClass $value
+                     */
+                    foreach (foo() as $key => $value) {
+                        $a = $key;
+                        $b = $value;
+                    }',
+                'assertions' => [
+                    '$a' => 'null|string',
+                    '$b' => 'null|stdClass',
+                ],
+            ],
         ];
     }
 

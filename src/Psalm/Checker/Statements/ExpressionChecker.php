@@ -867,11 +867,12 @@ class ExpressionChecker
     ) {
         $doc_comment_text = (string)$stmt->getDocComment();
 
-        $var_comment = null;
+        $var_comments = [];
+        $var_comment_type = null;
 
         if ($doc_comment_text) {
             try {
-                $var_comment = CommentChecker::getTypeFromComment(
+                $var_comments = CommentChecker::getTypeFromComment(
                     $doc_comment_text,
                     $statements_checker,
                     $statements_checker->getAliases()
@@ -887,13 +888,18 @@ class ExpressionChecker
                 }
             }
 
-            if ($var_comment && $var_comment->var_id) {
+            foreach ($var_comments as $var_comment) {
                 $comment_type = ExpressionChecker::fleshOutType(
                     $statements_checker->getFileChecker()->project_checker,
                     $var_comment->type,
                     $context->self,
                     $context->self
                 );
+
+                if (!$var_comment->var_id) {
+                    $var_comment_type = $comment_type;
+                    continue;
+                }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
@@ -910,8 +916,8 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($var_comment && !$var_comment->var_id) {
-                $stmt->inferredType = $var_comment->type;
+            if ($var_comment_type) {
+                $stmt->inferredType = $var_comment_type;
             } elseif (isset($stmt->value->inferredType)) {
                 $stmt->inferredType = $stmt->value->inferredType;
             } else {

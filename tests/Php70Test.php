@@ -282,7 +282,7 @@ class Php70Test extends TestCase
                         }
                         yield 2;
                     }',
-            ]
+            ],
         ];
     }
 
