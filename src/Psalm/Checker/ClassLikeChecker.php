@@ -17,7 +17,6 @@ use Psalm\Provider\FileReferenceProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
-use ReflectionProperty;
 
 abstract class ClassLikeChecker extends SourceChecker implements StatementsSource
 {
@@ -428,40 +427,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             default:
                 return Type::getMixed();
         }
-    }
-
-    /**
-     * @param  string $class_name
-     * @param  mixed  $visibility
-     *
-     * @return array<string,Type\Union>
-     */
-    public static function getConstantsForClass(ProjectChecker $project_checker, $class_name, $visibility)
-    {
-        $class_name = strtolower($class_name);
-
-        $storage = $project_checker->classlike_storage_provider->get($class_name);
-
-        if ($visibility === ReflectionProperty::IS_PUBLIC) {
-            return $storage->public_class_constants;
-        }
-
-        if ($visibility === ReflectionProperty::IS_PROTECTED) {
-            return array_merge(
-                $storage->public_class_constants,
-                $storage->protected_class_constants
-            );
-        }
-
-        if ($visibility === ReflectionProperty::IS_PRIVATE) {
-            return array_merge(
-                $storage->public_class_constants,
-                $storage->protected_class_constants,
-                $storage->private_class_constants
-            );
-        }
-
-        throw new \InvalidArgumentException('Must specify $visibility');
     }
 
     /**
