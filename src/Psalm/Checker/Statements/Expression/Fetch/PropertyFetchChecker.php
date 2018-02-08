@@ -193,11 +193,8 @@ class PropertyFetchChecker
             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-            if ($lhs_type_part instanceof TObject ||
-                (
-                    $lhs_type_part instanceof TNamedObject &&
-                    in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
-                )
+            if ($lhs_type_part instanceof TObject
+                || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
             ) {
                 $stmt->inferredType = Type::getMixed();
                 continue;

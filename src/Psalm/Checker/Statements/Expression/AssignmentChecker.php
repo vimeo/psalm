@@ -57,12 +57,12 @@ class AssignmentChecker
             $statements_checker
         );
 
-        $var_comment = null;
+        $var_comments = [];
         $comment_type = null;
 
         if ($doc_comment) {
             try {
-                $var_comment = CommentChecker::getTypeFromComment(
+                $var_comments = CommentChecker::getTypeFromComment(
                     $doc_comment,
                     $statements_checker->getSource(),
                     $statements_checker->getAliases(),
@@ -89,19 +89,22 @@ class AssignmentChecker
                 }
             }
 
-            if ($var_comment) {
-                $comment_type = ExpressionChecker::fleshOutType(
+            foreach ($var_comments as $var_comment) {
+                $var_comment_type = ExpressionChecker::fleshOutType(
                     $statements_checker->getFileChecker()->project_checker,
                     $var_comment->type,
                     $context->self,
                     $context->self
                 );
 
-                $comment_type->setFromDocblock();
+                $var_comment_type->setFromDocblock();
 
-                if ($var_comment->var_id && $var_comment->var_id !== $var_id) {
-                    $context->vars_in_scope[$var_comment->var_id] = $comment_type;
+                if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
+                    $comment_type = $var_comment_type;
+                    continue;
                 }
+
+                $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
             }
         }
 
@@ -112,16 +115,13 @@ class AssignmentChecker
                 }
 
                 // if we're not exiting immediately, make everything mixed
-                $context->vars_in_scope[$var_id] =
-                    $var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id) && $comment_type
-                        ? $comment_type
-                        : Type::getMixed();
+                $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
             }
 
             return false;
         }
 
-        if ($var_comment && (!$var_comment->var_id || $var_comment->var_id === $var_id) && $comment_type) {
+        if ($comment_type) {
             $assign_value_type = $comment_type;
         } elseif (!$assign_value_type) {
             if (isset($assign_value->inferredType)) {

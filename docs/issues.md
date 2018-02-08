@@ -118,6 +118,21 @@ class A {
 (new A())->foo = 5;
 ```
 
+### DocblockTypeContradiction
+
+Emitted when conditional doesn't make sense given the docblock types supplied.
+
+```php
+/**
+ * @param string $s
+ *
+ * @return void
+ */
+function foo($s) {
+    if ($s === 5) { }
+}
+```
+
 ### DuplicateArrayKey
 
 Emitted when an array has a key more than once
@@ -641,7 +656,7 @@ Emitted when an `@param` entry in a function’s docblock doesn’t match the pa
 
 ```php
 /**
- * @param int $b 
+ * @param int $b
  */
 function foo(string $b) : void {}
 ```
@@ -1482,6 +1497,23 @@ class A {}
 function foo(?A $a) : ?A {
     if ($a) return $a;
     if ($a) echo "cannot happen";
+}
+```
+
+### RedundantConditionGivenDocblockType
+
+Emitted when conditional is redundant given information supplied in one or more docblocks.
+
+This may be desired (e.g. when checking user input) so is distinct from RedundantCondition, which only applies to non-docblock types.
+
+```php
+/**
+ * @param string $s
+ *
+ * @return void
+ */
+function foo($s) {
+    if (is_string($s)) {};
 }
 ```
 

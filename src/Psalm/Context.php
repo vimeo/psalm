@@ -516,7 +516,7 @@ class Context
             );
         }
 
-        if ($existing_type->hasArray() || $existing_type->isMixed()) {
+        if ($existing_type->hasArray() || $existing_type->isMixed() || $existing_type->hasObjectType()) {
             $vars_to_remove = [];
 
             foreach ($this->vars_in_scope as $var_id => $_) {

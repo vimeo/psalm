@@ -55,6 +55,7 @@ class BinaryOpChecker
 
             $pre_referenced_var_ids = $context->referenced_var_ids;
             $context->referenced_var_ids = [];
+            $original_vars_in_scope = $context->vars_in_scope;
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
 
@@ -68,6 +69,20 @@ class BinaryOpChecker
             $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
 
             $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
+
+            // remove all newly-asserted var ids too
+            $new_referenced_var_ids = array_filter(
+                $new_referenced_var_ids,
+                /**
+                 * @param string $var_id
+                 *
+                 * @return bool
+                 */
+                function ($var_id) use ($original_vars_in_scope) {
+                    return isset($original_vars_in_scope[$var_id]);
+                },
+                ARRAY_FILTER_USE_KEY
+            );
 
             $simplified_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
@@ -86,10 +101,6 @@ class BinaryOpChecker
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
-
-            if ($op_vars_in_scope === false) {
-                return false;
-            }
 
             $op_context = clone $context;
             $op_context->vars_in_scope = $op_vars_in_scope;
@@ -183,10 +194,6 @@ class BinaryOpChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($op_vars_in_scope === false) {
-                return false;
-            }
-
             $op_context = clone $context;
             $op_context->clauses = $rhs_clauses;
             $op_context->vars_in_scope = $op_vars_in_scope;
@@ -219,9 +226,7 @@ class BinaryOpChecker
                         $statements_checker->getSuppressedIssues()
                     );
 
-                    if ($left_inferred_reconciled) {
-                        $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
-                    }
+                    $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
                 }
             }
 
@@ -284,10 +289,6 @@ class BinaryOpChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            if ($t_if_vars_in_scope_reconciled === false) {
-                return false;
-            }
-
             $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
 
             if (ExpressionChecker::analyze($statements_checker, $stmt->left, $t_if_context) === false) {
@@ -327,10 +328,6 @@ class BinaryOpChecker
                     $statements_checker->getSuppressedIssues()
                 );
 
-                if ($t_else_vars_in_scope_reconciled === false) {
-                    return false;
-                }
-
                 $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
             }
 
@@ -361,10 +358,6 @@ class BinaryOpChecker
                     new CodeLocation($statements_checker->getSource(), $stmt),
                     $statements_checker->getSuppressedIssues()
                 );
-
-                if ($if_return_type_reconciled === false) {
-                    return false;
-                }
 
                 $lhs_type = $if_return_type_reconciled;
             }

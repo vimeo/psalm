@@ -284,11 +284,10 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $class_template_params = null;
 
-                if ($stmt->var instanceof PhpParser\Node\Expr\Variable &&
-                    ($context->collect_initializations || $context->collect_mutations) &&
-                    $stmt->var->name === 'this' &&
-                    is_string($stmt->name) &&
-                    $source instanceof FunctionLikeChecker
+                if ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                    && ($context->collect_initializations || $context->collect_mutations)
+                    && $stmt->var->name === 'this'
+                    && $source instanceof FunctionLikeChecker
                 ) {
                     self::collectSpecialInformation($source, $stmt->name, $context);
                 }

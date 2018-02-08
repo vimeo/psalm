@@ -402,10 +402,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             || $node instanceof PhpParser\Node\Expr\AssignRef
         ) {
             if ($doc_comment = $node->getDocComment()) {
-                $var_comment = null;
+                $var_comments = [];
 
                 try {
-                    $var_comment = CommentChecker::getTypeFromComment(
+                    $var_comments = CommentChecker::getTypeFromComment(
                         (string)$doc_comment,
                         $this->file_scanner,
                         $this->aliases,
@@ -416,9 +416,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     // do nothing
                 }
 
-                if ($var_comment) {
+                foreach ($var_comments as $var_comment) {
                     $var_type = $var_comment->type;
-
                     $var_type->queueClassLikesForScanning($this->codebase, $this->file_path);
                 }
             }
@@ -886,22 +885,18 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $storage->return_type->setFromDocblock();
 
                         if ($storage->signature_return_type) {
-                            $all_types_match = true;
+                            $all_typehint_types_match = true;
                             $signature_return_atomic_types = $storage->signature_return_type->getTypes();
 
                             foreach ($storage->return_type->getTypes() as $key => $type) {
                                 if (isset($signature_return_atomic_types[$key])) {
-                                    if ($signature_return_atomic_types[$key]->getId() !== $type->getId()) {
-                                        $all_types_match = false;
-                                    }
-
                                     $type->from_docblock = false;
                                 } else {
-                                    $all_types_match = false;
+                                    $all_typehint_types_match = false;
                                 }
                             }
 
-                            if ($all_types_match) {
+                            if ($all_typehint_types_match) {
                                 $storage->return_type->from_docblock = false;
                             }
                         }
@@ -1129,6 +1124,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage_param_atomic_types = $storage_param->type->getTypes();
 
             $all_types_match = true;
+            $all_typehint_types_match = true;
 
             foreach ($new_param_type->getTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
@@ -1139,11 +1135,16 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $type->from_docblock = false;
                 } else {
                     $all_types_match = false;
+                    $all_typehint_types_match = false;
                 }
             }
 
             if ($all_types_match) {
                 continue;
+            }
+
+            if ($all_typehint_types_match) {
+                $new_param_type->from_docblock = false;
             }
 
             if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
@@ -1186,13 +1187,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             try {
                 $property_type_line_number = $comment->getLine();
-                $var_comment = CommentChecker::getTypeFromComment(
+                $var_comments = CommentChecker::getTypeFromComment(
                     $comment->getText(),
                     $this->file_scanner,
                     $this->aliases,
                     $this->function_template_types + $this->class_template_types,
                     $property_type_line_number
                 );
+
+                $var_comment = array_pop($var_comments);
             } catch (IncorrectDocblockException $e) {
                 if (IssueBuffer::accepts(
                     new MissingDocblockType(

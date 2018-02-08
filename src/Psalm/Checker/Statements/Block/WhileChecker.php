@@ -21,9 +21,8 @@ class WhileChecker
         PhpParser\Node\Stmt\While_ $stmt,
         Context $context
     ) {
-        $while_true = $stmt->cond
-            && ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch && $stmt->cond->name->parts === ['true'])
-                || ($stmt->cond instanceof PhpParser\Node\Scalar\LNumber && $stmt->cond->value > 0);
+        $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch && $stmt->cond->name->parts === ['true'])
+            || ($stmt->cond instanceof PhpParser\Node\Scalar\LNumber && $stmt->cond->value > 0);
 
         $pre_context = null;
 
@@ -45,7 +44,7 @@ class WhileChecker
         LoopChecker::analyze(
             $statements_checker,
             $stmt->stmts,
-            $stmt->cond ? [$stmt->cond] : [],
+            [$stmt->cond],
             [],
             $loop_scope,
             $inner_loop_context

@@ -281,20 +281,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         }
                     }
 
-                    if ($loop_scope->possibly_redefined_loop_vars === null) {
-                        $loop_scope->possibly_redefined_loop_vars = $redefined_vars;
-                    } else {
-                        foreach ($redefined_vars as $var => $type) {
-                            if ($type->isMixed()) {
-                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
-                            } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
-                                $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
-                                    $type,
-                                    $loop_scope->possibly_redefined_loop_vars[$var]
-                                );
-                            } else {
-                                $loop_scope->possibly_redefined_loop_vars[$var] = $type;
-                            }
+                    foreach ($redefined_vars as $var => $type) {
+                        if ($type->isMixed()) {
+                            $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                        } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
+                            $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
+                                $type,
+                                $loop_scope->possibly_redefined_loop_vars[$var]
+                            );
+                        } else {
+                            $loop_scope->possibly_redefined_loop_vars[$var] = $type;
                         }
                     }
                 }
@@ -440,10 +436,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
                 if ((string)$stmt->getDocComment()) {
-                    $var_comment = null;
+                    $var_comments = [];
 
                     try {
-                        $var_comment = CommentChecker::getTypeFromComment(
+                        $var_comments = CommentChecker::getTypeFromComment(
                             (string)$stmt->getDocComment(),
                             $this->getSource(),
                             $this->getSource()->getAliases()
@@ -459,7 +455,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         }
                     }
 
-                    if ($var_comment && $var_comment->var_id) {
+                    foreach ($var_comments as $var_comment) {
+                        if (!$var_comment->var_id) {
+                            continue;
+                        }
+
                         $comment_type = ExpressionChecker::fleshOutType(
                             $project_checker,
                             $var_comment->type,

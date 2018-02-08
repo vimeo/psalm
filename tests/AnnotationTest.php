@@ -138,6 +138,8 @@ class AnnotationTest extends TestCase
                             // do something
                         }
                     }',
+                'assertions' => [],
+                'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'checkArrayWithIs' => [
                 '<?php
@@ -149,6 +151,8 @@ class AnnotationTest extends TestCase
                             // do something
                         }
                     }',
+                'assertions' => [],
+                'error_level' => ['RedundantConditionGivenDocblockType'],
             ],
             'checkArrayWithIsInsideLoop' => [
                 '<?php
@@ -163,7 +167,7 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_level' => ['LoopInvalidation', 'MixedArrayOffset'],
+                'error_level' => ['LoopInvalidation', 'MixedArrayOffset', 'RedundantConditionGivenDocblockType'],
             ],
             'goodDocblock' => [
                 '<?php
@@ -383,6 +387,28 @@ class AnnotationTest extends TestCase
                         /** @var int */
                         return $i;
                     }',
+            ],
+            'doubleVar' => [
+                '<?php
+                    function foo() : array {
+                        return ["hello" => new stdClass, "goodbye" => new stdClass];
+                    }
+
+                    $a = null;
+                    $b = null;
+
+                    /**
+                     * @var string $key
+                     * @var stdClass $value
+                     */
+                    foreach (foo() as $key => $value) {
+                        $a = $key;
+                        $b = $value;
+                    }',
+                'assertions' => [
+                    '$a' => 'null|string',
+                    '$b' => 'null|stdClass',
+                ],
             ],
             /**
              * The property $foo is not defined on the object, but you can do whatever you want

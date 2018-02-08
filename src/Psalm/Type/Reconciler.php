@@ -7,7 +7,9 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
+use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
@@ -107,11 +109,6 @@ class Reconciler
                         $failed_reconciliation
                     );
 
-                    if ($result_type_candidate === false) {
-                        $failed_reconciliation = true;
-                        $result_type_candidate = Type::getMixed();
-                    }
-
                     $orred_type = $orred_type
                         ? Type::combineUnionTypes($result_type_candidate, $orred_type)
                         : $result_type_candidate;
@@ -126,6 +123,7 @@ class Reconciler
 
             if ($result_type->getId() !== $before_adjustment
                 || $result_type->from_docblock !== $from_docblock
+                || $failed_reconciliation
             ) {
                 $changed_var_ids[] = $key;
             }
@@ -154,7 +152,7 @@ class Reconciler
      * @param   string|null         $key
      * @param   StatementsChecker   $statements_checker
      * @param   CodeLocation        $code_location
-     * @param   array               $suppressed_issues
+     * @param   string[]            $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
      *
      * @return  Type\Union
@@ -221,17 +219,15 @@ class Reconciler
                     }
                 }
 
-                if ((!$did_remove_type || !$non_object_types) && !$existing_var_type->from_docblock) {
+                if ((!$did_remove_type || !$non_object_types)) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                $code_location
-                            ),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -256,17 +252,15 @@ class Reconciler
                     }
                 }
 
-                if ((!$did_remove_type || !$non_scalar_types) && !$existing_var_type->from_docblock) {
+                if ((!$did_remove_type || !$non_scalar_types)) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                $code_location
-                            ),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -291,17 +285,15 @@ class Reconciler
                     }
                 }
 
-                if ((!$did_remove_type || !$non_bool_types) && !$existing_var_type->from_docblock) {
+                if (!$did_remove_type || !$non_bool_types) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                $code_location
-                            ),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -326,17 +318,15 @@ class Reconciler
                     }
                 }
 
-                if ((!$non_numeric_types || !$did_remove_type) && !$existing_var_type->from_docblock) {
+                if ((!$non_numeric_types || !$did_remove_type)) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                $code_location
-                            ),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -355,7 +345,7 @@ class Reconciler
                 $did_remove_type = $existing_var_type->hasString()
                     || $existing_var_type->hasNumericType()
                     || $existing_var_type->isEmpty()
-                    || $existing_var_type->hasBool();
+                    || $existing_var_type->hasType('bool');
 
                 if ($existing_var_type->hasType('null')) {
                     $did_remove_type = true;
@@ -381,19 +371,15 @@ class Reconciler
                     }
                 }
 
-                if ((!$did_remove_type || empty($existing_var_type->getTypes()))
-                    && !$existing_var_type->from_docblock
-                ) {
+                if (!$did_remove_type || empty($existing_var_type->getTypes())) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                $code_location
-                            ),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -414,19 +400,15 @@ class Reconciler
                     $existing_var_type->removeType('null');
                 }
 
-                if ((!$did_remove_type || empty($existing_var_type->getTypes()))
-                    && !$existing_var_type->from_docblock
-                ) {
+                if (!$did_remove_type || empty($existing_var_type->getTypes())) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition(
-                                'Found a redundant condition when evaluating ' . $key,
-                                $code_location
-                            ),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -452,16 +434,17 @@ class Reconciler
             }
 
             if (empty($existing_var_type->getTypes())) {
-                if (!$existing_var_type->from_docblock
-                    && ($key !== '$this' || !($statements_checker->getSource()->getSource() instanceof TraitChecker))
+                if ($key !== '$this'
+                    || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
                 ) {
                     if ($key && $code_location) {
-                        if (IssueBuffer::accepts(
-                            new RedundantCondition('Cannot resolve types for ' . $key, $code_location),
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $key,
+                            $new_var_type,
+                            $code_location,
                             $suppressed_issues
-                        )) {
-                            // fall through
-                        }
+                        );
                     }
                 }
 
@@ -554,17 +537,15 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || empty($existing_var_type->getTypes())) && !$existing_var_type->from_docblock) {
+            if (!$did_remove_type || empty($existing_var_type->getTypes())) {
                 if ($key && $code_location) {
-                    if (IssueBuffer::accepts(
-                        new RedundantCondition(
-                            'Found a redundant condition when evaluating ' . $key,
-                            $code_location
-                        ),
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $key,
+                        $new_var_type,
+                        $code_location,
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -589,20 +570,15 @@ class Reconciler
                 }
             }
 
-            if ((!$object_types || !$did_remove_type)
-                && !$existing_var_type->from_docblock
-                && !$is_strict_equality
-            ) {
+            if ((!$object_types || !$did_remove_type) && !$is_strict_equality) {
                 if ($key && $code_location) {
-                    if (IssueBuffer::accepts(
-                        new RedundantCondition(
-                            'Found a redundant condition when evaluating ' . $key,
-                            $code_location
-                        ),
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $key,
+                        $new_var_type,
+                        $code_location,
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -638,20 +614,15 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$numeric_types)
-                && !$existing_var_type->from_docblock
-                && !$is_strict_equality
-            ) {
+            if ((!$did_remove_type || !$numeric_types) && !$is_strict_equality) {
                 if ($key && $code_location) {
-                    if (IssueBuffer::accepts(
-                        new RedundantCondition(
-                            'Found a redundant condition when evaluating ' . $key,
-                            $code_location
-                        ),
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $key,
+                        $new_var_type,
+                        $code_location,
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -676,20 +647,15 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$scalar_types)
-                && !$existing_var_type->from_docblock
-                && !$is_strict_equality
-            ) {
+            if ((!$did_remove_type || !$scalar_types) && !$is_strict_equality) {
                 if ($key && $code_location) {
-                    if (IssueBuffer::accepts(
-                        new RedundantCondition(
-                            'Found a redundant condition when evaluating ' . $key,
-                            $code_location
-                        ),
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $key,
+                        $new_var_type,
+                        $code_location,
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -714,20 +680,15 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$bool_types)
-                && !$existing_var_type->from_docblock
-                && !$is_strict_equality
-            ) {
+            if ((!$did_remove_type || !$bool_types) && !$is_strict_equality) {
                 if ($key && $code_location) {
-                    if (IssueBuffer::accepts(
-                        new RedundantCondition(
-                            'Found a redundant condition when evaluating ' . $key,
-                            $code_location
-                        ),
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $key,
+                        $new_var_type,
+                        $code_location,
                         $suppressed_issues
-                    )) {
-                        // fall through
-                    }
+                    );
                 }
             }
 
@@ -790,11 +751,18 @@ class Reconciler
             if ($acceptable_atomic_types) {
                 return new Type\Union($acceptable_atomic_types);
             }
-        } elseif ($code_location &&
-            !$new_type->isMixed() &&
-            !$existing_var_type->from_docblock
-        ) {
+        } elseif ($code_location && !$new_type->isMixed()) {
             $has_match = true;
+
+            if ($key && $new_type->getId() === $existing_var_type->getId() && !$is_strict_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $key,
+                    $new_var_type,
+                    $code_location,
+                    $suppressed_issues
+                );
+            }
 
             foreach ($new_type->getTypes() as $new_type_part) {
                 $has_local_match = false;
@@ -823,28 +791,54 @@ class Reconciler
 
             if (!$has_match) {
                 if ($new_var_type === 'null') {
-                    if (IssueBuffer::accepts(
-                        new TypeDoesNotContainNull(
-                            'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
-                            ' does not contain null',
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        // fall through
+                    if ($existing_var_type->from_docblock) {
+                        if (IssueBuffer::accepts(
+                            new DocblockTypeContradiction(
+                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                    . $existing_var_type . ' does not contain null',
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new TypeDoesNotContainNull(
+                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
+                                    . ' does not contain null',
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 } elseif ($key !== '$this'
                     || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
                 ) {
-                    if (IssueBuffer::accepts(
-                        new TypeDoesNotContainType(
-                            'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
-                            ' does not contain ' . $new_type,
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        // fall through
+                    if ($existing_var_type->from_docblock) {
+                        if (IssueBuffer::accepts(
+                            new DocblockTypeContradiction(
+                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                    . $existing_var_type . ' does not contain ' . $new_type,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new TypeDoesNotContainType(
+                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type .
+                                ' does not contain ' . $new_type,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 
@@ -863,6 +857,53 @@ class Reconciler
     }
 
     /**
+     * @param  string       $key
+     * @param  string       $new_var_type
+     * @param  string[]     $suppressed_issues
+     *
+     * @return void
+     */
+    private static function triggerIssueForImpossible(
+        Union $existing_var_type,
+        $key,
+        $new_var_type,
+        CodeLocation $code_location,
+        array $suppressed_issues
+    ) {
+        $reconciliation = ' and trying to reconcile type \'' . $existing_var_type . '\' to ' . $new_var_type;
+
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $potential_key = str_replace('!', '', $new_var_type);
+
+        $from_docblock = $existing_var_type->from_docblock
+            || (isset($existing_var_atomic_types[$potential_key])
+                && $existing_var_atomic_types[$potential_key]->from_docblock);
+
+        if ($from_docblock) {
+            if (IssueBuffer::accepts(
+                new RedundantConditionGivenDocblockType(
+                    'Found a contradiction with a docblock-defined type '
+                        . 'when evaluating ' . $key . $reconciliation,
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+        } else {
+            if (IssueBuffer::accepts(
+                new RedundantCondition(
+                    'Found a redundant condition when evaluating ' . $key . $reconciliation,
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                // fall through
+            }
+        }
+    }
+
+    /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
      * @param  string                    $key
@@ -871,7 +912,7 @@ class Reconciler
      *
      * @return Type\Union|null
      */
-    protected static function getValueForKey(ProjectChecker $project_checker, $key, array &$existing_keys)
+    private static function getValueForKey(ProjectChecker $project_checker, $key, array &$existing_keys)
     {
         $key_parts = preg_split('/(->|\[|\])/', $key, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 

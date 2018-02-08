@@ -3,7 +3,6 @@ namespace Psalm;
 
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\Generic;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -597,6 +596,10 @@ abstract class Type
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
+        if ($type_1->isMixed() || $type_2->isMixed()) {
+            return Type::getMixed();
+        }
+
         $both_failed_reconciliation = false;
 
         if ($type_1->failed_reconciliation) {

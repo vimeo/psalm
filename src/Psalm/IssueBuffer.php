@@ -247,13 +247,7 @@ class IssueBuffer
 
             if ($is_full) {
                 echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
-                    . ' of the codebase';
-
-                if (!$add_stats) {
-                    echo ' - get a breakdown by running Psalm with --stats';
-                }
-
-                echo PHP_EOL;
+                    . ' of the codebase' . PHP_EOL;
             }
 
             if ($add_stats) {

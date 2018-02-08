@@ -18,7 +18,6 @@ use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
-use Psalm\VarDocblockComment;
 
 class ForeachChecker
 {
@@ -298,11 +297,10 @@ class ForeachChecker
         $doc_comment_text = (string)$stmt->getDocComment();
 
         if ($doc_comment_text) {
-            /** @var VarDocblockComment|null $var_comment */
-            $var_comment = null;
+            $var_comments = [];
 
             try {
-                $var_comment = CommentChecker::getTypeFromComment(
+                $var_comments = CommentChecker::getTypeFromComment(
                     $doc_comment_text,
                     $statements_checker->getSource(),
                     $statements_checker->getSource()->getAliases()
@@ -318,7 +316,11 @@ class ForeachChecker
                 }
             }
 
-            if ($var_comment && $var_comment->var_id) {
+            foreach ($var_comments as $var_comment) {
+                if (!$var_comment->var_id) {
+                    continue;
+                }
+
                 $comment_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     $var_comment->type,

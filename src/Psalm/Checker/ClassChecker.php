@@ -300,34 +300,6 @@ class ClassChecker extends ClassLikeChecker
                     }
                 }
             }
-
-            foreach ($storage->appearing_method_ids as $method_name => $appearing_method_id) {
-                list($appearing_class_name, $method_name) = explode('::', $appearing_method_id);
-
-                if ($method_name === '__construct'
-                    && $appearing_class_name !== $fq_class_name
-                ) {
-                    $method_storage = $codebase->methods->getStorage($appearing_method_id);
-
-                    if ($method_storage->visibility === self::VISIBILITY_PRIVATE) {
-                        if (IssueBuffer::accepts(
-                            new InaccessibleMethod(
-                                'Constructor of ' . $appearing_class_name . ' is marked private'
-                                    . ' and cannot be used by ' . $fq_class_name,
-                                new CodeLocation(
-                                    $this,
-                                    $this->class,
-                                    $class_context->include_location,
-                                    true
-                                )
-                            ),
-                            $this->source->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-                }
-            }
         }
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {

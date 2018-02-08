@@ -1279,6 +1279,10 @@ class CallChecker
 
                 if ($input_type->getId() === $param_type->getId()) {
                     $input_type->from_docblock = false;
+
+                    foreach ($input_type->getTypes() as $atomic_type) {
+                        $atomic_type->from_docblock = false;
+                    }
                 }
 
                 $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);

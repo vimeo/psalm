@@ -65,10 +65,6 @@ class TernaryChecker
             $statements_checker->getSuppressedIssues()
         );
 
-        if ($t_if_vars_in_scope_reconciled === false) {
-            return false;
-        }
-
         $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
         $t_else_context = clone $context;
 
@@ -104,10 +100,6 @@ class TernaryChecker
                 new CodeLocation($statements_checker->getSource(), $stmt->else),
                 $statements_checker->getSuppressedIssues()
             );
-
-            if ($t_else_vars_in_scope_reconciled === false) {
-                return false;
-            }
 
             $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
         }
@@ -147,10 +139,6 @@ class TernaryChecker
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker->getSuppressedIssues()
             );
-
-            if ($if_return_type_reconciled === false) {
-                return false;
-            }
 
             $lhs_type = $if_return_type_reconciled;
         }

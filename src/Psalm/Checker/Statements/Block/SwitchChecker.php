@@ -161,10 +161,6 @@ class SwitchChecker
                             $statements_checker->getSuppressedIssues()
                         );
 
-                    if ($case_vars_in_scope_reconciled === false) {
-                        return false;
-                    }
-
                     $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
                     foreach ($reconcilable_if_types as $var_id => $_) {
                         $case_context->vars_possibly_in_scope[$var_id] = true;

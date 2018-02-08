@@ -564,14 +564,40 @@ class LoopScopeTest extends TestCase
                     '$tag' => 'null',
                 ],
             ],
-            'nullToNullableWithNullCheck' => [
+            'nullToMixedWithNullCheckNoContinue' => [
+                '<?php
+                    function getStrings(): array {
+                        return ["hello", "world"];
+                    }
+
+                    $a = null;
+
+                    foreach (getStrings() as $s) {
+                      if ($a === null) {
+                        $a = $s;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'mixed',
+                ],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
+            'nullToMixedWithNullCheckAndContinue' => [
                 '<?php
                     $a = null;
 
-                    foreach ([1, 2, 3] as $i) {
+                    function getStrings(): array {
+                        return ["hello", "world"];
+                    }
+
+                    $a = null;
+
+                    foreach (getStrings() as $s) {
                       if ($a === null) {
-                        /** @var mixed */
-                        $a = "hello";
+                        $a = $s;
+                        continue;
                       }
                     }',
                 'assignments' => [
@@ -865,6 +891,89 @@ class LoopScopeTest extends TestCase
                 'assertions' => [
                     '$a' => 'null',
                 ],
+            ],
+            'doWhileFirstGood' => [
+                '<?php
+                    do {
+                        $done = rand(0, 1) > 0;
+                    } while (!$done);',
+            ],
+            'doWhileWithIfException' => [
+                '<?php
+                    class A
+                    {
+                        /**
+                         * @var null|A
+                         */
+                        public $parent;
+
+                        public static function foo(A $a) : void
+                        {
+                            do {
+                                if ($a->parent === null) {
+                                    throw new \Exception("bad");
+                                }
+
+                                $a = $a->parent;
+                            } while (rand(0,1));
+                        }
+                    }',
+            ],
+            'doWhileWithIfExceptionOutside' => [
+                '<?php
+                    class A
+                    {
+                        /**
+                         * @var null|A
+                         */
+                        public $parent;
+
+                        public static function foo(A $a) : void
+                        {
+                            if ($a->parent === null) {
+                                throw new \Exception("bad");
+                            }
+
+                            do {
+                                $a = $a->parent;
+                            } while ($a->parent && rand(0, 1));
+                        }
+                    }',
+            ],
+            'whileInstanceOf' => [
+                '<?php
+                    class A {
+                        /** @var null|A */
+                        public $parent;
+                    }
+
+                    class B extends A {}
+
+                    $a = new A();
+
+                    while ($a->parent instanceof B) {
+                        $a = $a->parent;
+                    }',
+            ],
+            'whileInstanceOfAndNotEmptyCheck' => [
+                '<?php
+                    class A {
+                        /** @var null|A */
+                        public $parent;
+                    }
+
+                    class B extends A {}
+
+                    $a = (new A())->parent;
+
+                    $foo = rand(0, 1) ? "hello" : null;
+
+                    if (!$foo) {
+                        while ($a instanceof B && !$foo) {
+                            $a = $a->parent;
+                            $foo = rand(0, 1) ? "hello" : null;
+                        }
+                    }',
             ],
         ];
     }

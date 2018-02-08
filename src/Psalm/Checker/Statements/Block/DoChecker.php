@@ -13,7 +13,7 @@ use Psalm\Type;
 class DoChecker
 {
     /**
-     * @return false|null
+     * @return void
      */
     public static function analyze(
         StatementsChecker $statements_checker,
@@ -31,7 +31,17 @@ class DoChecker
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
+        $suppressed_issues = $statements_checker->getSuppressedIssues();
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_checker->addSuppressedIssues(['RedundantCondition']);
+        }
+
         $statements_checker->analyze($stmt->stmts, $do_context, $loop_scope);
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+        }
 
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
@@ -111,7 +121,8 @@ class DoChecker
             [$stmt->cond],
             [],
             $loop_scope,
-            $inner_loop_context
+            $inner_loop_context,
+            true
         );
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
@@ -121,11 +132,13 @@ class DoChecker
         }
 
         // because it's a do {} while, inner loop vars belong to the main context
-        if ($inner_loop_context) {
-            foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
-                if (!isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = $type;
-                }
+        if (!$inner_loop_context) {
+            throw new \UnexpectedValueException('Should never be null');
+        }
+
+        foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = $type;
             }
         }
 
@@ -143,6 +156,6 @@ class DoChecker
             $context->unreferenced_vars = $do_context->unreferenced_vars;
         }
 
-        return ExpressionChecker::analyze($statements_checker, $stmt->cond, $context);
+        ExpressionChecker::analyze($statements_checker, $stmt->cond, $inner_loop_context);
     }
 }

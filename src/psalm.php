@@ -266,6 +266,14 @@ if ($path_to_config) {
     $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
 }
 
+if (isset($options['clear-cache'])) {
+    $cache_directory = $config->getCacheDirectory();
+
+    Config::removeCacheDirectory($cache_directory);
+    echo 'Cache directory deleted' . PHP_EOL;
+    exit;
+}
+
 $project_checker = new ProjectChecker(
     $config,
     new Psalm\Provider\FileProvider(),
@@ -280,14 +288,6 @@ $project_checker = new ProjectChecker(
 
 if ($find_dead_code || $find_references_to !== null) {
     $project_checker->getCodebase()->collectReferences();
-}
-
-if (isset($options['clear-cache'])) {
-    $cache_directory = Config::getInstance()->getCacheDirectory();
-
-    Config::removeCacheDirectory($cache_directory);
-    echo 'Cache directory deleted' . PHP_EOL;
-    exit;
 }
 
 /** @var string $plugin_path */

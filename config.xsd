@@ -95,6 +95,7 @@
             <xs:element name="DeprecatedInterface" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateArrayKey" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
@@ -213,6 +214,7 @@
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
