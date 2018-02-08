@@ -21,7 +21,7 @@ class ConstFetchChecker
      * @param   PhpParser\Node\Expr\ConstFetch  $stmt
      * @param   Context                         $context
      *
-     * @return  false|null
+     * @return  void
      */
     public static function analyze(
         StatementsChecker $statements_checker,
@@ -65,12 +65,10 @@ class ConstFetchChecker
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 }
         }
-
-        return null;
     }
 
     /**

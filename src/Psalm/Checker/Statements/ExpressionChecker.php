@@ -104,9 +104,7 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            if (ConstFetchChecker::analyze($statements_checker, $stmt, $context) === false) {
-                return false;
-            }
+            ConstFetchChecker::analyze($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
             $stmt->inferredType = Type::getString();
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
