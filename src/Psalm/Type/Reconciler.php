@@ -871,7 +871,15 @@ class Reconciler
         array $suppressed_issues
     ) {
         $reconciliation = ' and trying to reconcile type \'' . $existing_var_type . '\' to ' . $new_var_type;
-        if ($existing_var_type->from_docblock) {
+
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+        $potential_key = str_replace('!', '', $new_var_type);
+
+        $from_docblock = $existing_var_type->from_docblock
+            || (isset($existing_var_atomic_types[$potential_key])
+                && $existing_var_atomic_types[$potential_key]->from_docblock);
+
+        if ($from_docblock) {
             if (IssueBuffer::accepts(
                 new RedundantConditionGivenDocblockType(
                     'Found a contradiction with a docblock-defined type '
