@@ -378,49 +378,13 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         return false;
                     }
 
-                    // If a magic getter or setter is used to access a property on a class that is not defined
-                    // but a `@property` annotation for the property exists, throw an error. If no `@property`
-                    // annotation exists, it's not an error because you're allowed to make magic getters and
-                    // setters do crazy things.
-                    $method_name = strtolower($stmt->name);
-                    $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-                    if (in_array($method_name, ['__get', '__set'], true)) {
-                        $first_arg_value = $stmt->args[0]->value;
-                        if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
-                            $prop_name = $first_arg_value->value;
-                            $property_id = $fq_class_name . '::$' . $prop_name;
-
-                            switch ($method_name) {
-                                case '__set':
-                                    if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
-                                        && isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-                                        && IssueBuffer::accepts(
-                                            new UndefinedThisPropertyAssignment(
-                                                'Instance property ' . $property_id . ' is not defined',
-                                                new CodeLocation($statements_checker->getSource(), $stmt)
-                                            ),
-                                            $statements_checker->getSuppressedIssues()
-                                        )
-                                    ) {
-                                        return false;
-                                    }
-                                    break;
-                                case '__get':
-                                    if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
-                                        && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
-                                        && IssueBuffer::accepts(
-                                            new UndefinedThisPropertyFetch(
-                                                'Instance property ' . $property_id . ' is not defined',
-                                                new CodeLocation($statements_checker->getSource(), $stmt)
-                                            ),
-                                            $statements_checker->getSuppressedIssues()
-                                        )
-                                    ) {
-                                        return false;
-                                    }
-                                    break;
-                            }
-                        }
+                    if (!self::checkMagicGetterOrSetterUndefinedProperty(
+                        $statements_checker,
+                        $project_checker,
+                        $stmt,
+                        $fq_class_name
+                    )) {
+                        return false;
                     }
 
                     $self_fq_class_name = $fq_class_name;
@@ -589,5 +553,72 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
             $context->vars_in_scope[$var_id] = $class_type;
         }
+    }
+
+    /**
+     * If a magic getter or setter is used to access a property on a class that is not defined
+     * but a `@property` annotation for the property exists, throw an error. If no `@property`
+     * annotation exists, it's not an error because you're allowed to make magic getters and
+     * setters do crazy things.
+     *
+     * @param StatementsChecker $statements_checker
+     * @param \Psalm\Checker\ProjectChecker $project_checker
+     * @param PhpParser\Node\Expr\MethodCall $stmt
+     * @param string $fq_class_name
+     *
+     * @return bool
+     */
+    private static function checkMagicGetterOrSetterUndefinedProperty(
+        StatementsChecker $statements_checker,
+        \Psalm\Checker\ProjectChecker $project_checker,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        string $fq_class_name
+    ) {
+        if (!is_string($stmt->name)) {
+            return true;
+        }
+
+        $method_name = strtolower($stmt->name);
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+        if (in_array($method_name, ['__get', '__set'], true)) {
+            $first_arg_value = $stmt->args[0]->value;
+            if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
+                $prop_name = $first_arg_value->value;
+                $property_id = $fq_class_name . '::$' . $prop_name;
+
+                switch ($method_name) {
+                    case '__set':
+                        if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
+                            && isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+                            && IssueBuffer::accepts(
+                                new UndefinedThisPropertyAssignment(
+                                    'Instance property ' . $property_id . ' is not defined',
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )
+                        ) {
+                            return false;
+                        }
+                        break;
+                    case '__get':
+                        if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
+                            && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
+                            && IssueBuffer::accepts(
+                                new UndefinedThisPropertyFetch(
+                                    'Instance property ' . $property_id . ' is not defined',
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )
+                        ) {
+                            return false;
+                        }
+                        break;
+                }
+            }
+        }
+
+        return true;
     }
 }
