@@ -564,14 +564,40 @@ class LoopScopeTest extends TestCase
                     '$tag' => 'null',
                 ],
             ],
-            'nullToNullableWithNullCheck' => [
+            'nullToMixedWithNullCheckNoContinue' => [
+                '<?php
+                    function getStrings(): array {
+                        return ["hello", "world"];
+                    }
+
+                    $a = null;
+
+                    foreach (getStrings() as $s) {
+                      if ($a === null) {
+                        $a = $s;
+                      }
+                    }',
+                'assignments' => [
+                    '$a' => 'mixed',
+                ],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
+            'nullToMixedWithNullCheckAndContinue' => [
                 '<?php
                     $a = null;
 
-                    foreach ([1, 2, 3] as $i) {
+                    function getStrings(): array {
+                        return ["hello", "world"];
+                    }
+
+                    $a = null;
+
+                    foreach (getStrings() as $s) {
                       if ($a === null) {
-                        /** @var mixed */
-                        $a = "hello";
+                        $a = $s;
+                        continue;
                       }
                     }',
                 'assignments' => [
