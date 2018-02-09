@@ -411,11 +411,11 @@ class AnnotationTest extends TestCase
                 ],
             ],
             /**
-             * The property $foo is not defined on the object, but you can do whatever you want
-             * with magic setters, so that's OK. See magicSetterUndefinedProperty for usage of
-             * the `@property` annotation to make psalm more strict.
+             * With a magic setter and no annotations specifying properties or types, we can
+             * set anything we want on any variable name. The magic setter is trusted to figure
+             * it out.
              */
-            'magicSetterUndefinedPropertyNoPropertyAnnotation' => [
+            'magicSetterUndefinedPropertyNoAnnotation' => [
                 '<?php
                     class A {
                         public function __get(string $name): ?string {
@@ -428,17 +428,17 @@ class AnnotationTest extends TestCase
                         public function __set(string $name, $value): void {
                         }
 
-                        public function badSet(): void {
+                        public function goodSet(): void {
                             $this->__set("foo", new stdClass());
                         }
                     }',
             ],
             /**
-             * The property $foo is not defined on the object, but you can do whatever you want
-             * with magic getters, so that's OK. See magicGetterUndefinedProperty for usage of
-             * the `@property` annotation to make psalm more strict.
+             * With a magic getter and no annotations specifying properties or types, we can
+             * get anything we want with any variable name. The magic getter is trusted to figure
+             * it out.
              */
-            'magicGetterUndefinedPropertyNoPropertyAnnotation' => [
+            'magicGetterUndefinedPropertyNoAnnotation' => [
                 '<?php
                     class A {
                         public function __get(string $name): ?string {
@@ -451,8 +451,33 @@ class AnnotationTest extends TestCase
                         public function __set(string $name, $value): void {
                         }
 
-                        public function badGet(): void {
+                        public function goodGet(): void {
                             echo $this->__get("foo");
+                        }
+                    }',
+            ],
+            /**
+             * The property $foo is defined as a string with the `@property` annotation. We
+             * use the magic setter to set it to a string, so everything is cool.
+             */
+            'magicSetterValidAssignmentType' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function goodSet(): void {
+                            $this->__set("foo", "value");
                         }
                     }',
             ],
@@ -960,11 +985,61 @@ class AnnotationTest extends TestCase
             ],
             /**
              * The property $foo is not defined on the object, but accessed with the magic setter.
-             * This is an error because `@property` is specified on the class block. Compare to
-             * magicSetterUndefinedPropertyNoPropertyAnnotation, which has no `@property`
-             * annotation.
+             * This is an error because `@psalm-seal-properties` is specified on the class block.
              */
             'magicSetterUndefinedProperty' => [
+                '<?php
+                    /**
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badSet(): void {
+                            $this->__set("foo", "value");
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyAssignment',
+            ],
+            /**
+             * The property $foo is not defined on the object, but accessed with the magic getter.
+             * This is an error because `@psalm-seal-properties` is specified on the class block.
+             */
+            'magicGetterUndefinedProperty' => [
+                '<?php
+                    /**
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badGet(): void {
+                            $this->__get("foo");
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            /**
+             * The property $foo is defined as a string with the `@property` annotation, but
+             * the magic setter is used to set it to an object.
+             */
+            'magicSetterInvalidAssignmentType' => [
                 '<?php
                     /**
                      * @property string $foo
@@ -984,35 +1059,7 @@ class AnnotationTest extends TestCase
                             $this->__set("foo", new stdClass());
                         }
                     }',
-                'error_message' => 'UndefinedThisPropertyAssignment',
-            ],
-            /**
-             * The property $foo is not defined on the object, but accessed with the magic getter.
-             * This is an error because `@property` is specified on the class block. Compare to
-             * magicGetterUndefinedPropertyNoPropertyAnnotation, which has no `@property`
-             * annotation.
-             */
-            'magicGetterUndefinedProperty' => [
-                '<?php
-                    /**
-                     * @property string $foo
-                     */
-                    class A {
-                        public function __get(string $name): ?string {
-                            if ($name === "foo") {
-                                return "hello";
-                            }
-                        }
-
-                        /** @param mixed $value */
-                        public function __set(string $name, $value): void {
-                        }
-
-                        public function badGet(): void {
-                            echo $this->__get("foo");
-                        }
-                    }',
-                'error_message' => 'UndefinedThisPropertyFetch',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

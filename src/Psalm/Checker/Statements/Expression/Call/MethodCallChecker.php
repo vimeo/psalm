@@ -7,11 +7,13 @@ use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\MethodChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
+use Psalm\Checker\TypeChecker;
 use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\InvalidMethodCall;
+use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\NullReference;
@@ -379,7 +381,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         return false;
                     }
 
-                    if (!self::checkMagicGetterOrSetterUndefinedProperty(
+                    if (!self::checkMagicGetterOrSetterProperty(
                         $statements_checker,
                         $project_checker,
                         $stmt,
@@ -557,10 +559,10 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
     }
 
     /**
-     * If a magic getter or setter is used to access a property on a class that is not defined
-     * but a `@property` annotation for the property exists, throw an error. If no `@property`
-     * annotation exists, it's not an error because you're allowed to make magic getters and
-     * setters do crazy things.
+     * Check properties accessed with magic getters and setters.
+     * If `@psalm-seal-properties` is set, they must be defined.
+     * If an `@property` annotation is specified, the setter must set something with the correct
+     * type.
      *
      * @param StatementsChecker $statements_checker
      * @param \Psalm\Checker\ProjectChecker $project_checker
@@ -569,11 +571,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
      *
      * @return bool
      */
-    private static function checkMagicGetterOrSetterUndefinedProperty(
+    private static function checkMagicGetterOrSetterProperty(
         StatementsChecker $statements_checker,
         \Psalm\Checker\ProjectChecker $project_checker,
         PhpParser\Node\Expr\MethodCall $stmt,
-        string $fq_class_name
+        $fq_class_name
     ) {
         if (!is_string($stmt->name)) {
             return true;
@@ -593,10 +595,17 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         $property_id = $fq_class_name . '::$' . $prop_name;
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
+        // if the property exists on the object, everything is good
+        if ($project_checker->codebase->properties->propertyExists($property_id)) {
+            return true;
+        }
+
         switch ($method_name) {
             case '__set':
-                if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
-                    && isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+                // If `@psalm-seal-properties` is set, the property must be defined with
+                // a `@property` annotation
+                if ($class_storage->sealed_properties
+                    && !isset($class_storage->pseudo_property_set_types['$' . $prop_name])
                     && IssueBuffer::accepts(
                         new UndefinedThisPropertyAssignment(
                             'Instance property ' . $property_id . ' is not defined',
@@ -607,10 +616,41 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 ) {
                     return false;
                 }
+
+                // If a `@property` annotation is set, the type of the value passed to the
+                // magic setter must match the annotation.
+                $second_arg_type = $stmt->args[1]->value->inferredType;
+                if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+                    && isset($second_arg_type)
+                    && !TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $second_arg_type,
+                        ExpressionChecker::fleshOutType(
+                            $project_checker,
+                            $class_storage->pseudo_property_set_types['$' . $prop_name],
+                            $fq_class_name,
+                            $fq_class_name
+                        )
+                    )
+                    && IssueBuffer::accepts(
+                        new InvalidPropertyAssignmentValue(
+                            $prop_name . ' with declared type \''
+                            . $class_storage->pseudo_property_set_types['$' . $prop_name]
+                            . '\' cannot be assigned type \'' . $second_arg_type . '\'',
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )
+                ) {
+                    return false;
+                }
                 break;
+
             case '__get':
-                if (!ClassLikeChecker::propertyExists($project_checker, $property_id)
-                    && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
+                // If `@psalm-seal-properties` is set, the property must be defined with
+                // a `@property` annotation
+                if ($class_storage->sealed_properties
+                    && !isset($class_storage->pseudo_property_get_types['$' . $prop_name])
                     && IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
