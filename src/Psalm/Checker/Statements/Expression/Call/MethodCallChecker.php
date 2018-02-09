@@ -180,6 +180,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             )) {
                                 // fall through
                             }
+
+                            $return_type = Type::getMixed();
                             break;
                     }
 

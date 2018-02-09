@@ -24,6 +24,9 @@ class Methods
      */
     public $collect_references = false;
 
+    /**
+     * @param ClassLikeStorageProvider $storage_provider
+     */
     public function __construct(
         ClassLikeStorageProvider $storage_provider
     ) {
