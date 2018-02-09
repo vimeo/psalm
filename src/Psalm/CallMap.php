@@ -49,7 +49,7 @@ namespace Psalm;
  *
  * Constructors have the class they belong to as a return type.
  *
- * Void types are declared as 'void' or ''.
+ * Void types are always declared as 'void'.
  */
 
 return [
