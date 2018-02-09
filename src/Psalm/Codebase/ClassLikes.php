@@ -18,6 +18,11 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
 
+/**
+ * @internal
+ *
+ * Handles information about classes, interfaces and traits
+ */
 class ClassLikes
 {
     /**

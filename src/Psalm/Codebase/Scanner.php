@@ -8,6 +8,11 @@ use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Scanner\FileScanner;
 
+/**
+ * @internal
+ *
+ * Contains methods that aid in the scanning of Psalm's codebase
+ */
 class Scanner
 {
     /**

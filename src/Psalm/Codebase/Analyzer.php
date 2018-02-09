@@ -11,6 +11,11 @@ use Psalm\IssueBuffer;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 
+/**
+ * @internal
+ *
+ * Called in the analysis phase of Psalm's execution
+ */
 class Analyzer
 {
     /**

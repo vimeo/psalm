@@ -11,6 +11,11 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ *
+ * Handles information gleaned from class and function reflection
+ */
 class Reflection
 {
     /**

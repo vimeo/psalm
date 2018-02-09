@@ -4,6 +4,11 @@ namespace Psalm\Codebase;
 use Psalm\Type;
 use Psalm\FunctionLikeParameter;
 
+/**
+ * @internal
+ *
+ * Gets values from the call map array, which stores data about native functions and methods
+ */
 class CallMap
 {
     /**

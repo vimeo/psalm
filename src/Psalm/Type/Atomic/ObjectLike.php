@@ -4,6 +4,9 @@ namespace Psalm\Type\Atomic;
 use Psalm\Type;
 use Psalm\Type\Union;
 
+/**
+ * Represents an array where we know its key values
+ */
 class ObjectLike extends \Psalm\Type\Atomic
 {
     /**

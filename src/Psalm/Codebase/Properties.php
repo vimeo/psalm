@@ -4,6 +4,11 @@ namespace Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Provider\ClassLikeStorageProvider;
 
+/**
+ * @internal
+ *
+ * Handles information about class properties
+ */
 class Properties
 {
     /**

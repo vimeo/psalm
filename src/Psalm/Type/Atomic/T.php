@@ -1,6 +1,10 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+/**
+ * Represents a string that we know holds some type information about another variable,
+ * specified in the $typeof property
+ */
 abstract class T extends TString
 {
     /**

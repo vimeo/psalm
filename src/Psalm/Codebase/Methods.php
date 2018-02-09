@@ -7,6 +7,11 @@ use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ *
+ * Handles information about class methods
+ */
 class Methods
 {
     /**

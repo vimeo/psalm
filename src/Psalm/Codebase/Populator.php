@@ -12,6 +12,11 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ *
+ * Populates file and class information so that analysis can work properly
+ */
 class Populator
 {
     /**
