@@ -812,6 +812,16 @@ class ArrayAssignmentTest extends TestCase
                     '$a' => 'array<int, int>|null',
                 ],
             ],
+            'mixedMethodCallArrayAccess' => [
+                '<?php
+                    function foo(object $obj) : array {
+                        $ret = [];
+                        $ret["a"][$obj->foo()] = 1;
+                        return $ret["a"];
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall', 'MixedArrayOffset'],
+            ],
         ];
     }
 
