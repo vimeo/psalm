@@ -168,7 +168,7 @@ class VariableFetchChecker
 
             $first_appearance = $statements_checker->getFirstAppearance($var_name);
 
-            if ($first_appearance && !$context->inside_isset) {
+            if ($first_appearance && !$context->inside_isset && !$context->inside_unset) {
                 $project_checker = $statements_checker->getFileChecker()->project_checker;
 
                 if ($context->is_global) {

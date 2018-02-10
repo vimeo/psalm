@@ -184,15 +184,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 $this->analyzeConstAssignment($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
-                $suppressed_issues = $this->getSuppressedIssues();
-
-                if (!in_array('PossiblyUndefinedGlobalVariable', $suppressed_issues, true)) {
-                    $this->addSuppressedIssues(['PossiblyUndefinedGlobalVariable']);
-                }
-
-                if (!in_array('PossiblyUndefinedVariable', $suppressed_issues, true)) {
-                    $this->addSuppressedIssues(['PossiblyUndefinedVariable']);
-                }
+                $context->inside_unset = true;
 
                 foreach ($stmt->vars as $var) {
                     ExpressionChecker::analyze($this, $var, $context);
@@ -208,13 +200,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
 
-                if (!in_array('PossiblyUndefinedGlobalVariable', $suppressed_issues, true)) {
-                    $this->removeSuppressedIssues(['PossiblyUndefinedGlobalVariable']);
-                }
-
-                if (!in_array('PossiblyUndefinedVariable', $suppressed_issues, true)) {
-                    $this->removeSuppressedIssues(['PossiblyUndefinedVariable']);
-                }
+                $context->inside_unset = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
                 $has_returned = true;
                 ReturnChecker::analyze($this, $project_checker, $stmt, $context);

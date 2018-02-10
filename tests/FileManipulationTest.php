@@ -833,6 +833,22 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUndefinedGlobalVariable'],
                 true,
             ],
+            'unsetPossiblyUndefinedVariable' => [
+                '<?php
+                    if (rand(0, 1)) {
+                      $a = "bar";
+                    }
+                    unset($a);',
+                '<?php
+                    if (rand(0, 1)) {
+                      $a = "bar";
+                    }
+                    unset($a);',
+                '5.6',
+                ['PossiblyUndefinedGlobalVariable'],
+                true,
+            ],
+
             'useUnqualifierPlugin' => [
                 '<?php
                     namespace A\B\C {

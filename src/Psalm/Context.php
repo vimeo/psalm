@@ -45,6 +45,13 @@ class Context
     public $inside_isset = false;
 
     /**
+     * Whether or not we're inside an unset call, where we don't care about possibly undefined variables
+     *
+     * @var bool
+     */
+    public $inside_unset = false;
+
+    /**
      * @var null|CodeLocation
      */
     public $include_location = null;
