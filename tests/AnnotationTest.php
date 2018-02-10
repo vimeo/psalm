@@ -410,6 +410,77 @@ class AnnotationTest extends TestCase
                     '$b' => 'null|stdClass',
                 ],
             ],
+            /**
+             * With a magic setter and no annotations specifying properties or types, we can
+             * set anything we want on any variable name. The magic setter is trusted to figure
+             * it out.
+             */
+            'magicSetterUndefinedPropertyNoAnnotation' => [
+                '<?php
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function goodSet(): void {
+                            $this->__set("foo", new stdClass());
+                        }
+                    }',
+            ],
+            /**
+             * With a magic getter and no annotations specifying properties or types, we can
+             * get anything we want with any variable name. The magic getter is trusted to figure
+             * it out.
+             */
+            'magicGetterUndefinedPropertyNoAnnotation' => [
+                '<?php
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function goodGet(): void {
+                            echo $this->__get("foo");
+                        }
+                    }',
+            ],
+            /**
+             * The property $foo is defined as a string with the `@property` annotation. We
+             * use the magic setter to set it to a string, so everything is cool.
+             */
+            'magicSetterValidAssignmentType' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function goodSet(): void {
+                            $this->__set("foo", "value");
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -911,6 +982,84 @@ class AnnotationTest extends TestCase
                         $s = $i->offsetGet("a");
                     }',
                 'error_message' => 'PossiblyInvalidMethodCall',
+            ],
+            /**
+             * The property $foo is not defined on the object, but accessed with the magic setter.
+             * This is an error because `@psalm-seal-properties` is specified on the class block.
+             */
+            'magicSetterUndefinedProperty' => [
+                '<?php
+                    /**
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badSet(): void {
+                            $this->__set("foo", "value");
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyAssignment',
+            ],
+            /**
+             * The property $foo is not defined on the object, but accessed with the magic getter.
+             * This is an error because `@psalm-seal-properties` is specified on the class block.
+             */
+            'magicGetterUndefinedProperty' => [
+                '<?php
+                    /**
+                     * @psalm-seal-properties
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badGet(): void {
+                            $this->__get("foo");
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            /**
+             * The property $foo is defined as a string with the `@property` annotation, but
+             * the magic setter is used to set it to an object.
+             */
+            'magicSetterInvalidAssignmentType' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+
+                        public function badSet(): void {
+                            $this->__set("foo", new stdClass());
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }
