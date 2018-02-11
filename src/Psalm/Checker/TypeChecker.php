@@ -385,12 +385,13 @@ class TypeChecker
         if ($container_type_part instanceof ObjectLike && $input_type_part instanceof ObjectLike) {
             $all_types_contain = true;
 
-            foreach ($input_type_part->properties as $key => $input_property_type) {
-                if (!isset($container_type_part->properties[$key])) {
-                    return false;
+            foreach ($container_type_part->properties as $key => $container_property_type) {
+                if (!isset($input_type_part->properties[$key])) {
+                    $all_types_contain = false;
+                    continue;
                 }
 
-                $container_property_type = $container_type_part->properties[$key];
+                $input_property_type = $input_type_part->properties[$key];
 
                 if (!$input_property_type->isEmpty() &&
                     !self::isContainedBy(
@@ -399,9 +400,9 @@ class TypeChecker
                         $container_property_type,
                         $input_property_type->ignore_nullable_issues,
                         $input_property_type->ignore_falsable_issues,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed
+                        $property_has_scalar_match,
+                        $property_type_coerced,
+                        $property_type_coerced_from_mixed
                     )
                 ) {
                     if (self::isContainedBy($codebase, $container_property_type, $input_property_type)) {

@@ -732,6 +732,22 @@ class TypeReconciliationTest extends TestCase
                       echo "cool";
                     }',
             ],
+            'specificArrayFields' => [
+                '<?php
+                    /**
+                     * @param array{field:string} $array
+                     */
+                    function print_field($array) : void {
+                        echo $array["field"];
+                    }
+
+                    /**
+                     * @param array{field:string,otherField:string} $array
+                     */
+                    function has_mix_of_fields($array) : void {
+                        print_field($array);
+                    }',
+            ],
         ];
     }
 
@@ -816,6 +832,23 @@ class TypeReconciliationTest extends TestCase
                        if ($arr === "hello") {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'lessSpecificArrayFields' => [
+                '<?php
+                    /**
+                     * @param array{field:string, otherField:string} $array
+                     */
+                    function print_field($array) : void {
+                        echo $array["field"] . " " . $array["otherField"];
+                    }
+
+                    /**
+                     * @param array{field:string} $array
+                     */
+                    function has_mix_of_fields($array) : void {
+                        print_field($array);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
         ];
     }

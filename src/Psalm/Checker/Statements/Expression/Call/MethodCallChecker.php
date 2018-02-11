@@ -595,11 +595,6 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         $property_id = $fq_class_name . '::$' . $prop_name;
         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
-        // if the property exists on the object, everything is good
-        if ($project_checker->codebase->properties->propertyExists($property_id)) {
-            return true;
-        }
-
         switch ($method_name) {
             case '__set':
                 // If `@psalm-seal-properties` is set, the property must be defined with
@@ -619,9 +614,12 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 // If a `@property` annotation is set, the type of the value passed to the
                 // magic setter must match the annotation.
-                $second_arg_type = $stmt->args[1]->value->inferredType;
+                $second_arg_type = isset($stmt->args[1]->value->inferredType)
+                    ? $stmt->args[1]->value->inferredType
+                    : null;
+
                 if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-                    && isset($second_arg_type)
+                    && $second_arg_type
                     && !TypeChecker::isContainedBy(
                         $project_checker->codebase,
                         $second_arg_type,
