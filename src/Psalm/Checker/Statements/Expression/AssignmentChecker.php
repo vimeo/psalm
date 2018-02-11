@@ -543,5 +543,25 @@ class AssignmentChecker
         ) === false) {
             return false;
         }
+
+        $lhs_var_id = ExpressionChecker::getVarId(
+            $stmt->var,
+            $statements_checker->getFQCLN(),
+            $statements_checker
+        );
+
+        $rhs_var_id = ExpressionChecker::getVarId(
+            $stmt->expr,
+            $statements_checker->getFQCLN(),
+            $statements_checker
+        );
+
+        if ($lhs_var_id) {
+            $context->vars_in_scope[$lhs_var_id] = Type::getMixed();
+        }
+
+        if ($rhs_var_id) {
+            $context->vars_in_scope[$rhs_var_id] = Type::getMixed();
+        }
     }
 }

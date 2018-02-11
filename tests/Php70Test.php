@@ -74,7 +74,7 @@ class Php70Test extends TestCase
                     $var = 0;
                     ($a =& $var) ?? "hello";',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'mixed',
                 ],
             ],
             'spaceship' => [

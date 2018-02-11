@@ -60,6 +60,27 @@ class ReferenceConstraintTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedArgument'],
             ],
+            'assignByRefToMixed' => [
+                '<?php
+                    function testRef() : array {
+                        $result = [];
+                        foreach ([1, 2, 1] as $v) {
+                            $x = &$result;
+                            if (!isset($x[$v])) {
+                                $x[$v] = 0;
+                            }
+                            $x[$v] ++;
+                        }
+                        return $result;
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'MixedAssignment',
+                    'MixedArrayAccess',
+                    'MixedReturnStatement',
+                    'MixedInferredReturnType',
+                ],
+            ],
         ];
     }
 
