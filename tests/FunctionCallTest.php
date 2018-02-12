@@ -464,6 +464,14 @@ class FunctionCallTest extends TestCase
                         return file_get_contents($s);
                     }',
             ],
+            'byRefString' => [
+                '<?php
+                    $arr = [];
+                    function fooFoo(array &$v): void {}
+                    $function = "fooFoo";
+                    $function($arr);
+                    if ($arr) {}',
+            ],
         ];
     }
 
@@ -631,7 +639,7 @@ class FunctionCallTest extends TestCase
             ],
             'possiblyInvalidFunctionCall' => [
                 '<?php
-                    $a = rand(0, 1) ? function(): void {} : "hello";
+                    $a = rand(0, 1) ? function(): void {} : 23515;
                     $a();',
                 'error_message' => 'PossiblyInvalidFunctionCall',
             ],

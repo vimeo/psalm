@@ -88,6 +88,8 @@ class Analyzer
      * @param  bool   $will_analyze
      *
      * @return FileChecker
+     *
+     * @psalm-suppress MixedOperand
      */
     private function getFileChecker(ProjectChecker $project_checker, $file_path, array $filetype_checkers)
     {

@@ -12,6 +12,7 @@ use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
@@ -435,6 +436,25 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $returns_by_ref =
                             $returns_by_ref
                                 || $codebase->methods->getMethodReturnsByRef($method_id);
+                    }
+                }
+
+                if ($config->after_method_checks) {
+                    $file_manipulations = [];
+
+                    foreach ($config->after_method_checks as $plugin_method_id) {
+                        $plugin_method_id(
+                            $statements_checker,
+                            $method_id,
+                            $stmt->args,
+                            $code_location,
+                            $file_manipulations
+                        );
+                    }
+
+                    if ($file_manipulations) {
+                        /** @psalm-suppress MixedTypeCoercion */
+                        FileManipulationBuffer::add($statements_checker->getFilePath(), $file_manipulations);
                     }
                 }
 

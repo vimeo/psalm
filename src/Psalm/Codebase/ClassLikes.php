@@ -4,6 +4,7 @@ namespace Psalm\Codebase;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Issue\PossiblyUnusedMethod;
@@ -25,6 +26,11 @@ use ReflectionProperty;
  */
 class ClassLikes
 {
+    /**
+     * @var Codebase
+     */
+    private $codebase;
+
     /**
      * @var ClassLikeStorageProvider
      */
@@ -110,6 +116,7 @@ class ClassLikes
      */
     public function __construct(
         Config $config,
+        Codebase $codebase,
         ClassLikeStorageProvider $storage_provider,
         Scanner $scanner,
         Methods $methods,
@@ -120,6 +127,7 @@ class ClassLikes
         $this->scanner = $scanner;
         $this->debug_output = $debug_output;
         $this->methods = $methods;
+        $this->codebase = $codebase;
 
         $this->collectPredefinedClassLikes();
     }
@@ -255,7 +263,7 @@ class ClassLikes
                 }
                 // attempt to load in the class
                 $this->scanner->queueClassLikeForScanning($fq_class_name);
-                $this->scanner->scanFiles($this);
+                $this->codebase->scanFiles();
 
                 if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
                     $this->existing_classes_lc[$fq_class_name_lc] = false;

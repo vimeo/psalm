@@ -433,25 +433,44 @@ class CallChecker
                     );
                 }
 
-                if ($var_id &&
-                    (!$context->hasVariable($var_id, $statements_checker) || $context->vars_in_scope[$var_id]->isNull())
-                ) {
-                    // we don't know if it exists, assume it's passed by reference
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                    $context->vars_possibly_in_scope[$var_id] = true;
-
-                    if (strpos($var_id, '-') === false
-                        && strpos($var_id, '[') === false
-                        && !$statements_checker->hasVariable($var_id)
+                if ($var_id) {
+                    if (!$context->hasVariable($var_id, $statements_checker)
+                        || $context->vars_in_scope[$var_id]->isNull()
                     ) {
-                        $location = new CodeLocation($statements_checker, $arg->value);
-                        $statements_checker->registerVariable(
+                        // we don't know if it exists, assume it's passed by reference
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                        $context->vars_possibly_in_scope[$var_id] = true;
+
+                        if (strpos($var_id, '-') === false
+                            && strpos($var_id, '[') === false
+                            && !$statements_checker->hasVariable($var_id)
+                        ) {
+                            $location = new CodeLocation($statements_checker, $arg->value);
+                            $statements_checker->registerVariable(
+                                $var_id,
+                                $location,
+                                null
+                            );
+
+                            $statements_checker->registerVariableUse($location);
+                        }
+                    } else {
+                        $context->removeVarFromConflictingClauses(
                             $var_id,
-                            $location,
-                            null
+                            $context->vars_in_scope[$var_id],
+                            $statements_checker
                         );
 
-                        $statements_checker->registerVariableUse($location);
+                        foreach ($context->vars_in_scope[$var_id]->getTypes() as $key => &$type) {
+                            if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
+                                $context->vars_in_scope[$var_id]->removeType('array');
+                                $context->vars_in_scope[$var_id]->addType(
+                                    new TArray(
+                                        [Type::getMixed(), Type::getMixed()]
+                                    )
+                                );
+                            }
+                        }
                     }
                 }
             }

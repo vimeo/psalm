@@ -155,6 +155,7 @@ class Codebase
         $this->properties = new Codebase\Properties($classlike_storage_provider);
         $this->classlikes = new Codebase\ClassLikes(
             $config,
+            $this,
             $classlike_storage_provider,
             $this->scanner,
             $this->methods,

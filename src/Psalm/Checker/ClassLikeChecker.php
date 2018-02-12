@@ -297,13 +297,13 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         );
 
         if (!$inferred) {
-            $plugins = $codebase->config->getPlugins();
+            $plugin_method_ids = $codebase->config->after_classlike_exists_checks;
 
-            if ($plugins) {
+            if ($plugin_method_ids) {
                 $file_manipulations = [];
 
-                foreach ($plugins as $plugin) {
-                    $plugin->afterClassLikeExistsCheck(
+                foreach ($plugin_method_ids as $plugin_method_id) {
+                    $plugin_method_id(
                         $statements_source,
                         $fq_class_name,
                         $code_location,
@@ -312,6 +312,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 }
 
                 if ($file_manipulations) {
+                    /** @psalm-suppress MixedTypeCoercion */
                     FileManipulationBuffer::add($code_location->file_path, $file_manipulations);
                 }
             }

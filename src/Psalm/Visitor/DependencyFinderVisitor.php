@@ -77,8 +77,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var ClassLikeStorage[] */
     private $classlike_storages = [];
 
-    /** @var \Psalm\Plugin[] */
-    private $plugins;
+    /** @var string[] */
+    private $plugin_method_ids;
 
     public function __construct(Codebase $codebase, FileStorage $file_storage, FileScanner $file_scanner)
     {
@@ -89,7 +89,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->config = $codebase->config;
         $this->aliases = $this->file_aliases = new Aliases();
         $this->file_storage = $file_storage;
-        $this->plugins = $this->config->getPlugins();
+        $this->plugin_method_ids = $this->config->after_visit_classlikes;
     }
 
     /**
@@ -483,11 +483,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $this->class_template_types = [];
 
-            if ($this->plugins) {
+            if ($this->plugin_method_ids) {
                 $file_manipulations = [];
 
-                foreach ($this->plugins as $plugin) {
-                    $plugin->visitClassLike(
+                foreach ($this->plugin_method_ids as $plugin_method_id) {
+                    $plugin_method_id(
                         $node,
                         $classlike_storage,
                         $this->file_scanner,

@@ -316,7 +316,7 @@ class ClosureTest extends TestCase
                 '<?php
                     $bad_one = "hello";
                     $a = $bad_one(1);',
-                'error_message' => 'InvalidFunctionCall',
+                'error_message' => 'MixedAssignment',
             ],
             'wrongParamType' => [
                 '<?php

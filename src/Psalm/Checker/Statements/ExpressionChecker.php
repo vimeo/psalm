@@ -469,14 +469,14 @@ class ExpressionChecker
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-        $plugins = $project_checker->config->getPlugins();
+        $plugin_method_ids = $project_checker->config->after_expression_checks;
 
-        if ($plugins) {
+        if ($plugin_method_ids) {
             $file_manipulations = [];
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
 
-            foreach ($plugins as $plugin) {
-                if ($plugin->afterExpressionCheck(
+            foreach ($plugin_method_ids as $plugin_method_id) {
+                if ($plugin_method_id(
                     $statements_checker,
                     $stmt,
                     $context,
@@ -489,6 +489,7 @@ class ExpressionChecker
             }
 
             if ($file_manipulations) {
+                /** @psalm-suppress MixedTypeCoercion */
                 FileManipulationBuffer::add($statements_checker->getFilePath(), $file_manipulations);
             }
         }

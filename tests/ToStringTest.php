@@ -21,6 +21,23 @@ class ToStringTest extends TestCase
                     }
                     echo (new A);',
             ],
+            'inheritedToString' => [
+                '<?php
+                    class A {
+                        function __toString() {
+                            return "hello";
+                        }
+                    }
+                    class B {
+                        function __toString() {
+                            return "goodbye";
+                        }
+                    }
+                    class C extends B {}
+
+                    $c = new C();
+                    echo (string) $c',
+            ],
             'goodCast' => [
                 '<?php
                     class A {

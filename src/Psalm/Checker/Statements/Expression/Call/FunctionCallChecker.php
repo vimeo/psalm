@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Reconciler;
 
 class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
@@ -163,8 +164,11 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure') ||
                         $var_type_part instanceof TCallable
                     ) {
+                        // this is fine
                         $has_valid_function_call_type = true;
-                    // this is fine
+                    } elseif ($var_type_part instanceof TString) {
+                        // this is also kind of fine
+                        $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TNull) {
                         // handled above
                     } elseif (!$var_type_part instanceof TNamedObject

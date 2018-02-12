@@ -11,9 +11,6 @@ use Psalm\FileManipulation\FileManipulation;
 /**
  * Checks all strings to see if they contain references to classes
  * and, if so, checks that those classes exist.
- *
- * You will need to add `"nikic/PHP-Parser": ">=3.0.2"` to your
- * composer.json.
  */
 class StringChecker extends \Psalm\Plugin
 {
@@ -29,7 +26,7 @@ class StringChecker extends \Psalm\Plugin
      *
      * @return null|false
      */
-    public function afterExpressionCheck(
+    public static function afterExpressionCheck(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Context $context,
@@ -70,5 +67,3 @@ class StringChecker extends \Psalm\Plugin
         }
     }
 }
-
-return new StringChecker;

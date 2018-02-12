@@ -14,7 +14,7 @@ class ClassUnqualifier extends \Psalm\Plugin
      *
      * @return void
      */
-    public function afterClassLikeExistsCheck(
+    public static function afterClassLikeExistsCheck(
         StatementsSource $statements_source,
         $fq_class_name,
         CodeLocation $code_location,
@@ -47,5 +47,3 @@ class ClassUnqualifier extends \Psalm\Plugin
         }
     }
 }
-
-return new ClassUnqualifier;
