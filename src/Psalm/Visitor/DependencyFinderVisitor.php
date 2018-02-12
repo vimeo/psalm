@@ -78,7 +78,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     private $classlike_storages = [];
 
     /** @var string[] */
-    private $plugin_method_ids;
+    private $after_classlike_check_plugins;
 
     public function __construct(Codebase $codebase, FileStorage $file_storage, FileScanner $file_scanner)
     {
@@ -89,7 +89,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->config = $codebase->config;
         $this->aliases = $this->file_aliases = new Aliases();
         $this->file_storage = $file_storage;
-        $this->plugin_method_ids = $this->config->after_visit_classlikes;
+        $this->after_classlike_check_plugins = $this->config->after_visit_classlikes;
     }
 
     /**
@@ -155,7 +155,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
                 $fq_classlike_name_lc = strtolower($fq_classlike_name);
-                $this->file_storage->classes_in_file[] = $fq_classlike_name_lc;
+                $this->file_storage->classes_in_file[$fq_classlike_name_lc] = $fq_classlike_name;
             }
 
             $this->fq_classlike_names[] = $fq_classlike_name;
@@ -483,11 +483,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $this->class_template_types = [];
 
-            if ($this->plugin_method_ids) {
+            if ($this->after_classlike_check_plugins) {
                 $file_manipulations = [];
 
-                foreach ($this->plugin_method_ids as $plugin_method_id) {
-                    $plugin_method_id(
+                foreach ($this->after_classlike_check_plugins as $plugin_fq_class_name) {
+                    $plugin_fq_class_name::afterVisitClassLike(
                         $node,
                         $classlike_storage,
                         $this->file_scanner,

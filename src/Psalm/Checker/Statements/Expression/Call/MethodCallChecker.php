@@ -445,8 +445,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
                     $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                    foreach ($config->after_method_checks as $plugin_method_id) {
-                        $plugin_method_id(
+                    foreach ($config->after_method_checks as $plugin_fq_class_name) {
+                        $plugin_fq_class_name::afterMethodCallCheck(
                             $statements_checker,
                             $method_id,
                             $appearing_method_id,

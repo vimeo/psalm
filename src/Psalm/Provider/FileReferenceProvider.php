@@ -121,11 +121,11 @@ class FileReferenceProvider
 
         $file_classes = ClassLikeChecker::getClassesForFile($project_checker, $file);
 
-        foreach ($file_classes as $file_class) {
-            if (isset(self::$file_references_to_class[$file_class])) {
+        foreach ($file_classes as $file_class_lc => $_) {
+            if (isset(self::$file_references_to_class[$file_class_lc])) {
                 $referenced_files = array_merge(
                     $referenced_files,
-                    array_keys(self::$file_references_to_class[$file_class])
+                    array_keys(self::$file_references_to_class[$file_class_lc])
                 );
             }
         }
@@ -144,11 +144,11 @@ class FileReferenceProvider
 
         $file_classes = ClassLikeChecker::getClassesForFile($project_checker, $file);
 
-        foreach ($file_classes as $file_class) {
-            if (isset(self::$files_inheriting_classes[$file_class])) {
+        foreach ($file_classes as $file_class_lc => $_) {
+            if (isset(self::$files_inheriting_classes[$file_class_lc])) {
                 $referenced_files = array_merge(
                     $referenced_files,
-                    array_keys(self::$files_inheriting_classes[$file_class])
+                    array_keys(self::$files_inheriting_classes[$file_class_lc])
                 );
             }
         }

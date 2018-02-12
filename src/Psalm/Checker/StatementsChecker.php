@@ -116,7 +116,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             $original_context = clone $context;
         }
 
-        $plugin_method_ids = $codebase->config->after_statement_checks;
+        $plugin_classes = $codebase->config->after_statement_checks;
 
         foreach ($stmts as $stmt) {
             if ($has_returned && !($stmt instanceof PhpParser\Node\Stmt\Nop) &&
@@ -479,12 +479,12 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 //$has_returned = true;
             }
 
-            if ($plugin_method_ids) {
+            if ($plugin_classes) {
                 $file_manipulations = [];
                 $code_location = new CodeLocation($this->source, $stmt);
 
-                foreach ($plugin_method_ids as $plugin_method_id) {
-                    if ($plugin_method_id(
+                foreach ($plugin_classes as $plugin_fq_class_name) {
+                    if ($plugin_fq_class_name::afterStatementCheck(
                         $this,
                         $stmt,
                         $context,

@@ -9,6 +9,7 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -182,6 +183,16 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             $lhs_type = $stmt->class->inferredType;
 
             if (!isset($lhs_type) || $lhs_type->hasString()) {
+                if (self::checkFunctionArguments(
+                    $statements_checker,
+                    $stmt->args,
+                    null,
+                    null,
+                    $context
+                ) === false) {
+                    return false;
+                }
+
                 return null;
             }
         }
@@ -333,6 +344,33 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $statements_checker->getSuppressedIssues(),
                             $context->getPhantomClasses()
                         );
+                    }
+                }
+
+                if ($config->after_method_checks) {
+                    $file_manipulations = [];
+
+                    $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                    $code_location = new CodeLocation($source, $stmt);
+
+                    foreach ($config->after_method_checks as $plugin_fq_class_name) {
+                        $plugin_fq_class_name::afterMethodCallCheck(
+                            $statements_checker,
+                            $method_id,
+                            $appearing_method_id,
+                            $declaring_method_id,
+                            $stmt->args,
+                            $code_location,
+                            $file_manipulations,
+                            $return_type_candidate
+                        );
+                    }
+
+                    if ($file_manipulations) {
+                        /** @psalm-suppress MixedTypeCoercion */
+                        FileManipulationBuffer::add($statements_checker->getFilePath(), $file_manipulations);
                     }
                 }
 

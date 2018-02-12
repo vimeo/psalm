@@ -469,14 +469,14 @@ class ExpressionChecker
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-        $plugin_method_ids = $project_checker->config->after_expression_checks;
+        $plugin_classes = $project_checker->config->after_expression_checks;
 
-        if ($plugin_method_ids) {
+        if ($plugin_classes) {
             $file_manipulations = [];
             $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
 
-            foreach ($plugin_method_ids as $plugin_method_id) {
-                if ($plugin_method_id(
+            foreach ($plugin_classes as $plugin_fq_class_name) {
+                if ($plugin_fq_class_name::afterExpressionCheck(
                     $statements_checker,
                     $stmt,
                     $context,

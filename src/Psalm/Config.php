@@ -608,23 +608,23 @@ class Config
             require_once($path);
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterMethodCallCheck')) {
-                $this->after_method_checks[$fq_class_name] = $fq_class_name . '::afterMethodCallCheck';
+                $this->after_method_checks[$fq_class_name] = $fq_class_name;
             }
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterExpressionCheck')) {
-                $this->after_expression_checks[$fq_class_name] = $fq_class_name . '::afterExpressionCheck';
+                $this->after_expression_checks[$fq_class_name] = $fq_class_name;
             }
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterStatementCheck')) {
-                $this->after_statement_checks[$fq_class_name] = $fq_class_name . '::afterStatementCheck';
+                $this->after_statement_checks[$fq_class_name] = $fq_class_name;
             }
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterClassLikeExistsCheck')) {
-                $this->after_classlike_exists_checks[$fq_class_name] = $fq_class_name . '::afterClassLikeExistsCheck';
+                $this->after_classlike_exists_checks[$fq_class_name] = $fq_class_name;
             }
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterVisitClassLike')) {
-                $this->after_visit_classlikes[$fq_class_name] = $fq_class_name . '::afterVisitClassLike';
+                $this->after_visit_classlikes[$fq_class_name] = $fq_class_name;
             }
         }
     }
@@ -656,8 +656,10 @@ class Config
             );
         }
 
+        $fq_class_name = reset($declared_classes);
+
         if (!$codebase->classExtends(
-            $declared_classes[0],
+            $fq_class_name,
             $must_extend
         )
         ) {
@@ -666,7 +668,7 @@ class Config
             );
         }
 
-        return $declared_classes[0];
+        return $fq_class_name;
     }
 
     /**
