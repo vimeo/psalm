@@ -40,6 +40,7 @@
 
         <UnusedClass>
             <errorLevel type="suppress">
+                <directory name="examples" />
                 <directory name="tests" />
             </errorLevel>
         </UnusedClass>
@@ -60,6 +61,7 @@
             <errorLevel type="suppress">
                 <directory name="tests" />
                 <file name="src/Psalm/Type/Atomic/GenericTrait.php" />
+                <file name="src/Psalm/Plugin.php" />
             </errorLevel>
             <errorLevel type="info">
                 <file name="src/Psalm/Codebase.php" />
