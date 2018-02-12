@@ -625,7 +625,7 @@ class ClassChecker extends ClassLikeChecker
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                $this->checkForMissingPropertyType($project_checker, $stmt);
+                $this->checkForMissingPropertyType($project_checker, $this, $stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -633,11 +633,19 @@ class ClassChecker extends ClassLikeChecker
                         $this->source->getAliases()
                     );
 
+                    $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);
                     $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
+                    $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
+                    $trait_checker = new TraitChecker(
+                        $trait_node,
+                        $trait_file_checker,
+                        $fq_trait_name,
+                        $trait_aliases
+                    );
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($project_checker, $trait_stmt);
+                            $this->checkForMissingPropertyType($project_checker, $trait_checker, $trait_stmt);
                         }
                     }
                 }
@@ -650,12 +658,15 @@ class ClassChecker extends ClassLikeChecker
      *
      * @return  void
      */
-    private function checkForMissingPropertyType(ProjectChecker $project_checker, PhpParser\Node\Stmt\Property $stmt)
-    {
+    private function checkForMissingPropertyType(
+        ProjectChecker $project_checker,
+        StatementsSource $source,
+        PhpParser\Node\Stmt\Property $stmt
+    ) {
         $comment = $stmt->getDocComment();
 
         if (!$comment || !$comment->getText()) {
-            $fq_class_name = $this->fq_class_name;
+            $fq_class_name = $source->getFQCLN();
             $property_name = $stmt->props[0]->name;
 
             $codebase = $project_checker->codebase;
@@ -689,7 +700,7 @@ class ClassChecker extends ClassLikeChecker
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     $message,
-                    new CodeLocation($this, $stmt)
+                    new CodeLocation($source, $stmt)
                 ),
                 $this->source->getSuppressedIssues()
             )) {

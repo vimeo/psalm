@@ -507,6 +507,17 @@ class TraitTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
+            'missingTraitPropertyType' => [
+                '<?php
+                    trait T {
+                        public $foo;
+                    }
+
+                    class A {
+                        use T;
+                    }',
+                'error_message' => 'MissingPropertyType',
+            ],
         ];
     }
 }
