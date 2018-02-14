@@ -12,7 +12,6 @@ use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\TooManyArguments;
-use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -110,34 +109,6 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $codebase->classExists($fq_class_name)
             ) {
                 $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
-
-                foreach ($storage->parent_classes as $parent_class_name) {
-                    if (!$codebase->classlikes->classExists($parent_class_name)) {
-                        if (IssueBuffer::accepts(
-                            new UndefinedClass(
-                                'Parent class ' . $parent_class_name . ' does not exist',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-                }
-
-                foreach ($storage->class_implements as $interface_name) {
-                    if (!$codebase->classlikes->interfaceExists($interface_name)) {
-                        if (IssueBuffer::accepts(
-                            new UndefinedClass(
-                                'Implemented interface ' . $interface_name . ' does not exist',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-                }
 
                 // if we're not calling this constructor via new static()
                 if ($storage->abstract && !$late_static) {

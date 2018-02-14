@@ -194,4 +194,9 @@ class ClassLikeStorage
      * @var array<string, bool>
      */
     public $initialized_properties = [];
+
+    /**
+     * @var array<string>
+     */
+    public $invalid_dependencies = [];
 }

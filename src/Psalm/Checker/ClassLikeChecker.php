@@ -267,8 +267,22 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
+        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+        foreach ($class_storage->invalid_dependencies as $dependency_class_name) {
+            if (IssueBuffer::accepts(
+                new UndefinedClass(
+                    $fq_class_name . ' depends on class or interface '
+                        . $dependency_class_name . ' that does not exist',
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                return false;
+            }
+        }
+
         if ($project_checker->getCodeBase()->collect_references && !$inferred) {
-            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
             if ($class_storage->referencing_locations === null) {
                 $class_storage->referencing_locations = [];
             }
