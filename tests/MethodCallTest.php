@@ -236,6 +236,16 @@ class MethodCallTest extends TestCase
                     $a->bar();',
                 'error_message' => 'PossiblyFalseReference',
             ],
+            'undefinedParentClass' => [
+                '<?php
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     */
+                    class B extends A {}
+
+                    $b = new B();',
+                'error_message' => 'UndefinedClass - src/somefile.php:7',
+            ],
         ];
     }
 }

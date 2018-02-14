@@ -76,6 +76,8 @@ class ClassChecker extends ClassLikeChecker
 
         $fq_class_name = $class_context && $class_context->self ? $class_context->self : $this->fq_class_name;
 
+        $storage = $this->storage;
+
         if (preg_match(
             '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',
             $fq_class_name
@@ -94,15 +96,13 @@ class ClassChecker extends ClassLikeChecker
                         true
                     )
                 ),
-                $this->source->getSuppressedIssues()
+                array_merge($storage->suppressed_issues, $this->source->getSuppressedIssues())
             )) {
                 // fall through
             }
 
             return null;
         }
-
-        $storage = $this->storage;
 
         $project_checker = $this->file_checker->project_checker;
         $codebase = $project_checker->codebase;
@@ -120,7 +120,7 @@ class ClassChecker extends ClassLikeChecker
                 $this,
                 $this->parent_fq_class_name,
                 $parent_reference_location,
-                $this->getSuppressedIssues(),
+                array_merge($storage->suppressed_issues, $this->getSuppressedIssues()),
                 false
             ) === false) {
                 return false;
@@ -142,7 +142,7 @@ class ClassChecker extends ClassLikeChecker
                             $this->parent_fq_class_name . ' is marked deprecated',
                             $code_location
                         ),
-                        $this->source->getSuppressedIssues()
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
                         // fall through
                     }
@@ -196,7 +196,7 @@ class ClassChecker extends ClassLikeChecker
                             $interface_name . ' is marked deprecated',
                             $code_location
                         ),
-                        $this->source->getSuppressedIssues()
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
                         // fall through
                     }
@@ -229,7 +229,7 @@ class ClassChecker extends ClassLikeChecker
                                     $storage->name,
                                     $code_location
                                 ),
-                                $this->source->getSuppressedIssues()
+                                array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                             )) {
                                 return false;
                             }
@@ -244,7 +244,7 @@ class ClassChecker extends ClassLikeChecker
                                         . ' must be public in ' . $storage->name,
                                     $code_location
                                 ),
-                                $this->source->getSuppressedIssues()
+                                array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                             )) {
                                 return false;
                             }
@@ -294,7 +294,7 @@ class ClassChecker extends ClassLikeChecker
                                 true
                             )
                         ),
-                        $this->source->getSuppressedIssues()
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
                         return false;
                     }
@@ -377,7 +377,7 @@ class ClassChecker extends ClassLikeChecker
                                 'Trait ' . $fq_trait_name . ' does not exist',
                                 new CodeLocation($this, $trait)
                             ),
-                            $this->source->getSuppressedIssues()
+                            array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                         )) {
                             return false;
                         }
@@ -388,7 +388,7 @@ class ClassChecker extends ClassLikeChecker
                                     'Trait ' . $fq_trait_name . ' has wrong casing',
                                     new CodeLocation($this, $trait)
                                 ),
-                                $this->source->getSuppressedIssues()
+                                array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                             )) {
                                 return false;
                             }
@@ -614,7 +614,7 @@ class ClassChecker extends ClassLikeChecker
                                     ', but no constructor',
                                 $first_uninitialized_property->location
                             ),
-                            $this->source->getSuppressedIssues()
+                            array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                         )) {
                             // fall through
                         }
