@@ -339,7 +339,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             if ($parser_param->default) {
-                $default_type = StatementsChecker::getSimpleType($parser_param->default);
+                ExpressionChecker::analyze($statements_checker, $parser_param->default, $context);
+
+                $default_type = isset($parser_param->default->inferredType)
+                    ? $parser_param->default->inferredType
+                    : null;
 
                 if ($default_type &&
                     !TypeChecker::isContainedBy(

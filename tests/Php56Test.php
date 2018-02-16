@@ -35,7 +35,7 @@ class Php56Test extends TestCase
                          * @param  int $a
                          * @return int
                          */
-                        public function f($a = ONE + self::THREE) {
+                        public function f($a = self::ONE + self::THREE) {
                             return $a;
                         }
                     }

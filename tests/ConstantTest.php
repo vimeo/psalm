@@ -117,6 +117,13 @@ class ConstantTest extends TestCase
                     echo CONSTANT;',
                 'error_message' => 'UndefinedConstant',
             ],
+            'undefinedClassConstantInParamDefault' => [
+                '<?php
+                    class A {
+                        public function doSomething(int $howManyTimes = self::DEFAULT_TIMES): void {}
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
         ];
     }
 }
