@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
@@ -407,6 +408,16 @@ abstract class Type
     public static function getInt()
     {
         $type = new TInt;
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public static function getNumeric()
+    {
+        $type = new TNumeric;
 
         return new Union([$type]);
     }

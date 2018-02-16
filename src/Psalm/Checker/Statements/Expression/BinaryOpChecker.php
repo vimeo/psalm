@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
 
 class BinaryOpChecker
@@ -670,6 +671,18 @@ class BinaryOpChecker
                     }
 
                     if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
+                        if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
+                            && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
+                        ) {
+                            if (!$result_type) {
+                                $result_type = Type::getNumeric();
+                            } else {
+                                $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
+                            }
+
+                            continue;
+                        }
+
                         if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                             if (!$result_type) {
                                 $result_type = Type::getInt();

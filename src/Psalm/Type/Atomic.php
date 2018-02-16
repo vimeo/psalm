@@ -122,7 +122,10 @@ abstract class Atomic
      */
     public function isNumericType()
     {
-        return $this instanceof TInt || $this instanceof TFloat || $this instanceof TNumericString;
+        return $this instanceof TInt
+            || $this instanceof TFloat
+            || $this instanceof TNumericString
+            || $this instanceof TNumeric;
     }
 
     /**

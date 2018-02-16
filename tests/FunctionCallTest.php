@@ -472,6 +472,13 @@ class FunctionCallTest extends TestCase
                     $function($arr);
                     if ($arr) {}',
             ],
+            'arraySumEmpty' => [
+                '<?php
+                    $foo = array_sum([]) + 1;',
+                'assertions' => [
+                    '$foo' => 'numeric',
+                ],
+            ],
         ];
     }
 
