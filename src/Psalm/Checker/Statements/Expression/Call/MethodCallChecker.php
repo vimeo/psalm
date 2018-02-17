@@ -149,9 +149,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
         $returns_by_ref = false;
 
-        if ($class_type && is_string($stmt->name)) {
+        if ($class_type) {
             $return_type = null;
-            $method_name_lc = strtolower($stmt->name);
 
             foreach ($class_type->getTypes() as $class_type_part) {
                 if (!$class_type_part instanceof TNamedObject) {
@@ -176,7 +175,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
-                                    'Cannot call method ' . $stmt->name . ' on a mixed variable ' . $var_id,
+                                    'Cannot call method on a mixed variable ' . $var_id,
                                     $code_location
                                 ),
                                 $statements_checker->getSuppressedIssues()
@@ -242,6 +241,13 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                     return;
                 }
+
+                if (!is_string($stmt->name)) {
+                    $return_type = Type::getMixed();
+                    break;
+                }
+
+                $method_name_lc = strtolower($stmt->name);
 
                 $method_id = $fq_class_name . '::' . $method_name_lc;
 

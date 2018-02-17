@@ -246,6 +246,13 @@ class MethodCallTest extends TestCase
                     $b = new B();',
                 'error_message' => 'MissingDependency - src/somefile.php:7',
             ],
+            'variableMethodCallOnArray' => [
+                '<?php
+                    $arr = [];
+                    $b = "foo";
+                    $arr->$b();',
+                'error_message' => 'InvalidMethodCall',
+            ],
         ];
     }
 }
