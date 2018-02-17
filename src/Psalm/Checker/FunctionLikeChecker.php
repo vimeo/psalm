@@ -572,6 +572,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         }
 
         if ($context->collect_references
+            && !$context->collect_initializations
             && !$project_checker->find_references_to
             && $context->check_variables
         ) {

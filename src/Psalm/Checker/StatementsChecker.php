@@ -510,6 +510,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         if ($root_scope
             && $context->collect_references
+            && !$context->collect_initializations
             && !$project_checker->find_references_to
             && $context->check_variables
         ) {
