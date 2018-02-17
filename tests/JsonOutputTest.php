@@ -30,7 +30,7 @@ class JsonOutputTest extends TestCase
             ProjectChecker::TYPE_JSON
         );
 
-        $this->project_checker->getCodebase()->collectReferences();
+        $this->project_checker->getCodebase()->reportUnusedCode();
     }
 
     /**

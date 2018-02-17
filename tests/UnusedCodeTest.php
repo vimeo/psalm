@@ -25,7 +25,7 @@ class UnusedCodeTest extends TestCase
             new Provider\FakeParserCacheProvider()
         );
 
-        $this->project_checker->getCodebase()->collectReferences();
+        $this->project_checker->getCodebase()->reportUnusedCode();
     }
 
     /**
@@ -64,7 +64,8 @@ class UnusedCodeTest extends TestCase
         $context->collect_references = true;
 
         $this->analyzeFile($file_path, $context);
-        $this->project_checker->getCodebase()->classlikes->checkClassReferences();
+
+        $this->project_checker->checkClassReferences();
     }
 
     /**
@@ -100,7 +101,8 @@ class UnusedCodeTest extends TestCase
         $context->collect_references = true;
 
         $this->analyzeFile($file_path, $context);
-        $this->project_checker->getCodebase()->classlikes->checkClassReferences();
+
+        $this->project_checker->checkClassReferences();
     }
 
     /**

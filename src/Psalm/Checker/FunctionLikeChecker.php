@@ -573,7 +573,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($context->collect_references
             && !$context->collect_initializations
-            && !$project_checker->find_references_to
+            && $project_checker->codebase->find_unused_code
             && $context->check_variables
         ) {
             foreach ($statements_checker->getUnusedVarLocations() as list($var_name, $original_location)) {

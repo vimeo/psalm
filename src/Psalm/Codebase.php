@@ -76,6 +76,11 @@ class Codebase
     public $register_global_functions = false;
 
     /**
+     * @var bool
+     */
+    public $find_unused_code = false;
+
+    /**
      * @var Codebase\Reflection
      */
     private $reflection;
@@ -180,6 +185,15 @@ class Codebase
         $this->classlikes->collect_references = true;
         $this->methods->collect_references = true;
         $this->properties->collect_references = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function reportUnusedCode()
+    {
+        $this->collectReferences();
+        $this->find_unused_code = true;
     }
 
     /**

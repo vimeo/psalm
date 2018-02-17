@@ -290,6 +290,10 @@ if ($find_dead_code || $find_references_to !== null) {
     $project_checker->getCodebase()->collectReferences();
 }
 
+if ($find_dead_code) {
+    $project_checker->getCodebase()->reportUnusedCode();
+}
+
 /** @var string $plugin_path */
 foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);

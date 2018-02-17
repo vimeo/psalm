@@ -68,11 +68,6 @@ class ProjectChecker
     public $output_format;
 
     /**
-     * @var string|null
-     */
-    public $find_references_to;
-
-    /**
      * @var bool
      */
     public $debug_output = false;

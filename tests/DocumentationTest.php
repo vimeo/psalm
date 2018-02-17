@@ -113,7 +113,7 @@ class DocumentationTest extends TestCase
         }
 
         if ($check_references) {
-            $this->project_checker->getCodebase()->collectReferences();
+            $this->project_checker->getCodebase()->reportUnusedCode();
         }
 
         foreach ($error_levels as $error_level) {
