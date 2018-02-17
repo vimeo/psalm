@@ -700,6 +700,19 @@ class A {
 }
 ```
 
+### MissingDependency
+
+Emitted when referencing a class that doesn’t exist
+
+```php
+/**
+ * @psalm-suppress UndefinedClass
+ */
+class A extends B {}
+
+$a = new A();
+```
+
 ### MissingDocblockType
 
 Emitted when a docblock is present, but the type is missing or badly formatted

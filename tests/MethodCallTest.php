@@ -244,7 +244,7 @@ class MethodCallTest extends TestCase
                     class B extends A {}
 
                     $b = new B();',
-                'error_message' => 'UndefinedClass - src/somefile.php:7',
+                'error_message' => 'MissingDependency - src/somefile.php:7',
             ],
         ];
     }

@@ -146,6 +146,7 @@
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingDependency" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />

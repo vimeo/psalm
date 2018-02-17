@@ -10,6 +10,7 @@ use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
+use Psalm\Issue\MissingDependency;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
@@ -271,7 +272,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($class_storage->invalid_dependencies as $dependency_class_name) {
             if (IssueBuffer::accepts(
-                new UndefinedClass(
+                new MissingDependency(
                     $fq_class_name . ' depends on class or interface '
                         . $dependency_class_name . ' that does not exist',
                     $code_location
