@@ -107,7 +107,7 @@ class ArrayAssignmentChecker
 
         $var_id_additions = [];
 
-        $real_var_id = true;
+        $full_var_id = true;
 
         $child_stmt = null;
 
@@ -144,11 +144,11 @@ class ArrayAssignmentChecker
                     $var_id_additions[] = '[$' . $child_stmt->dim->name . ']';
                 } else {
                     $var_id_additions[] = '[' . $child_stmt->dim->inferredType . ']';
-                    $real_var_id = false;
+                    $full_var_id = false;
                 }
             } else {
                 $var_id_additions[] = '';
-                $real_var_id = false;
+                $full_var_id = false;
             }
 
             if (!isset($child_stmt->var->inferredType)) {
@@ -179,12 +179,13 @@ class ArrayAssignmentChecker
             $current_dim = $child_stmt->dim;
 
             if ($child_stmt->var->inferredType->isMixed()) {
+                $full_var_id = false;
                 break;
             }
         }
 
         if ($root_var_id
-            && $real_var_id
+            && $full_var_id
             && isset($child_stmt->var->inferredType)
             && !$child_stmt->var->inferredType->hasObjectType()
         ) {

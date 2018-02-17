@@ -822,6 +822,22 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedMethodCall', 'MixedArrayOffset'],
             ],
+            'mixedAccessNestedKeys' => [
+                '<?php
+                    function takesString(string $s) : void {}
+                    function updateArray(array $arr) : array {
+                        foreach ($arr as $i => $item) {
+                            $arr[$i]["a"]["b"] = 5;
+                            $arr[$i]["a"]["c"] = takesString($arr[$i]["a"]["c"]);
+                        }
+
+                        return $arr;
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset', 'MixedArrayAssignment', 'MixedArgument',
+                ],
+            ],
         ];
     }
 
