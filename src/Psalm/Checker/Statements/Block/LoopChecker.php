@@ -391,9 +391,7 @@ class LoopChecker
             foreach ($inner_context->unreferenced_vars as $var_id => $location) {
                 if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
                     $loop_scope->loop_context->unreferenced_vars[$var_id] = $location;
-                } elseif (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])
-                    || $loop_scope->loop_context->unreferenced_vars[$var_id] !== $location
-                ) {
+                } elseif ($loop_scope->loop_context->unreferenced_vars[$var_id] !== $location) {
                     $statements_checker->registerVariableUse($location);
                 }
             }
