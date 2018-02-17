@@ -19,11 +19,6 @@ class IfScope
     /**
      * @var array<string, Type\Union>|null
      */
-    public $forced_new_vars = null;
-
-    /**
-     * @var array<string, Type\Union>|null
-     */
     public $redefined_vars = null;
 
     /**

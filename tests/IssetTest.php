@@ -131,6 +131,52 @@ class IssetTest extends TestCase
                         return new A();
                     }',
             ],
+            'issetVariableKeysWithoutChange' => [
+                '<?php
+                    $arr = [[1, 2, 3], null, [1, 2, 3], null];
+                    $b = 2;
+                    $c = 0;
+                    if (isset($arr[$b][$c])) {
+                        echo $arr[$b][$c];
+                    }',
+            ],
+            'issetNonNullArrayKey' => [
+                '<?php
+                    /**
+                     * @param  array<int, int> $arr
+                     */
+                    function foo(array $arr) : int {
+                        $b = rand(0, 3);
+                        if (!isset($arr[$b])) {
+                            throw new \Exception("bad");
+                        }
+                        return $arr[$b];
+                    }',
+            ],
+            'issetArrayOffsetConditionalCreationWithInt' => [
+                '<?php
+                    /** @param array<int, string> $arr */
+                    function foo(array $arr) : string {
+                        if (!isset($arr[0])) {
+                            $arr[0] = "hello";
+                        }
+
+                        return $arr[0];
+                    }',
+            ],
+            'issetArrayOffsetConditionalCreationWithVariable' => [
+                '<?php
+                    /** @param array<int, string> $arr */
+                    function foo(array $arr) : string {
+                        $b = 5;
+
+                        if (!isset($arr[$b])) {
+                            $arr[$b] = "hello";
+                        }
+
+                        return $arr[$b];
+                    }',
+            ],
         ];
     }
 
@@ -145,6 +191,17 @@ class IssetTest extends TestCase
                     class A {}
                     $a = isset(A::foo()[0]);',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'issetVariableKeysWithChange' => [
+                '<?php
+                    $arr = [[1, 2, 3], null, [1, 2, 3], null];
+                    $b = 2;
+                    $c = 0;
+                    if (isset($arr[$b][$c])) {
+                        $b = 1;
+                        echo $arr[$b][$c];
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
             ],
         ];
     }

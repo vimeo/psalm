@@ -561,43 +561,6 @@ abstract class Type
     }
 
     /**
-     * @param  array<string, Union> $redefined_vars
-     * @param  Context              $context
-     *
-     * @return void
-     */
-    public static function redefineGenericUnionTypes(array $redefined_vars, Context $context)
-    {
-        foreach ($redefined_vars as $var_name => $redefined_union_type) {
-            foreach ($redefined_union_type->getTypes() as $redefined_atomic_type) {
-                foreach ($context->vars_in_scope[$var_name]->getTypes() as $context_type) {
-                    if ($context_type instanceof Type\Atomic\TArray &&
-                        $redefined_atomic_type instanceof Type\Atomic\TArray
-                    ) {
-                        if ($context_type->type_params[1]->isEmpty()) {
-                            $context_type->type_params[1] = $redefined_atomic_type->type_params[1];
-                        } else {
-                            $context_type->type_params[1] = Type::combineUnionTypes(
-                                $redefined_atomic_type->type_params[1],
-                                $context_type->type_params[1]
-                            );
-                        }
-
-                        if ($context_type->type_params[0]->isEmpty()) {
-                            $context_type->type_params[0] = $redefined_atomic_type->type_params[0];
-                        } else {
-                            $context_type->type_params[0] = Type::combineUnionTypes(
-                                $redefined_atomic_type->type_params[0],
-                                $context_type->type_params[0]
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Combines two union types into one
      *
      * @param  Union  $type_1

@@ -672,16 +672,26 @@ class ExpressionChecker
             return self::getArrayVarId($stmt->var, $this_class_name, $source);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch &&
-            ($stmt->dim instanceof PhpParser\Node\Scalar\String_ ||
-                $stmt->dim instanceof PhpParser\Node\Scalar\LNumber)
-        ) {
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $root_var_id = self::getArrayVarId($stmt->var, $this_class_name, $source);
-            $offset = $stmt->dim instanceof PhpParser\Node\Scalar\String_
-                ? '\'' . $stmt->dim->value . '\''
-                : $stmt->dim->value;
 
-            return $root_var_id ? $root_var_id . '[' . $offset . ']' : null;
+            $offset = null;
+
+            if ($root_var_id) {
+                if ($stmt->dim instanceof PhpParser\Node\Scalar\String_
+                    || $stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+                ) {
+                    $offset = $stmt->dim instanceof PhpParser\Node\Scalar\String_
+                        ? '\'' . $stmt->dim->value . '\''
+                        : $stmt->dim->value;
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\Variable
+                    && is_string($stmt->dim->name)
+                ) {
+                    $offset = '$' . $stmt->dim->name;
+                }
+
+                return $root_var_id && $offset !== null ? $root_var_id . '[' . $offset . ']' : null;
+            }
         }
 
         return self::getVarId($stmt, $this_class_name, $source);

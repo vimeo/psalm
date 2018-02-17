@@ -284,7 +284,7 @@ class IfChecker
 
         // we calculate the vars redefined in a hypothetical else statement to determine
         // which vars of the if we can safely change
-        $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context->vars_in_scope);
+        $pre_assignment_else_redefined_vars = $temp_else_context->getRedefinedVars($context->vars_in_scope, true);
 
         $old_unreferenced_vars = $context->unreferenced_vars;
         $newly_unreferenced_locations = [];
@@ -426,10 +426,6 @@ class IfChecker
                 }
             }
         } else {
-            if ($if_scope->forced_new_vars) {
-                $context->vars_in_scope = array_merge($context->vars_in_scope, $if_scope->forced_new_vars);
-            }
-
             if ($loop_scope && !in_array(ScopeChecker::ACTION_NONE, $if_scope->final_actions, true)) {
                 $loop_scope->redefined_loop_vars = null;
             }
@@ -555,19 +551,6 @@ class IfChecker
 
         if (!$has_leaving_statements) {
             $if_scope->new_vars = array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope);
-
-            // if we have a check like if (!isset($a)) { $a = true; } we want to make sure $a is always set
-            foreach ($if_scope->new_vars as $var_id => $_) {
-                if (isset($if_scope->negated_types[$var_id])
-                    && (
-                        $if_scope->negated_types[$var_id] === 'isset'
-                        || $if_scope->negated_types[$var_id] === '^isset'
-                        || $if_scope->negated_types[$var_id] === '!empty'
-                    )
-                ) {
-                    $if_scope->forced_new_vars[$var_id] = Type::getMixed();
-                }
-            }
 
             $if_scope->redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
             $if_scope->possibly_redefined_vars = $if_scope->redefined_vars;

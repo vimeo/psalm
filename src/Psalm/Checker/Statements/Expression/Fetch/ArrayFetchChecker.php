@@ -82,6 +82,11 @@ class ArrayFetchChecker
             return false;
         }
 
+        if ($keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])) {
+            $stmt->inferredType = clone $context->vars_in_scope[$keyed_array_var_id];
+            return;
+        }
+
         if (isset($stmt->var->inferredType)) {
             /** @var Type\Union */
             $var_type = $stmt->var->inferredType;

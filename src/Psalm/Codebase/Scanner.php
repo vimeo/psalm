@@ -227,7 +227,9 @@ class Scanner
                         $this->reflection->registerClass($reflected_class);
                         $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
                     } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
+                        // even though we've checked this above, calling the method invalidates it
                         if (isset($this->classlike_files[$fq_classlike_name_lc])) {
+                            /** @var string */
                             $file_path = $this->classlike_files[$fq_classlike_name_lc];
                             $this->files_to_scan[$file_path] = $file_path;
                             if (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])) {

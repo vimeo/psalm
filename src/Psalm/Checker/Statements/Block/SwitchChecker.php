@@ -220,8 +220,6 @@ class SwitchChecker
                 } else {
                     $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
-                    Type::redefineGenericUnionTypes($case_redefined_vars, $context);
-
                     if ($possibly_redefined_vars === null) {
                         $possibly_redefined_vars = $case_redefined_vars;
                     } else {

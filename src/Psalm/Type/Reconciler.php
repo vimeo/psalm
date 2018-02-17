@@ -944,6 +944,8 @@ class Reconciler
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return null;
+                        } elseif ($array_key[0] === '$') {
+                            $new_base_type_candidate = $existing_key_type_part->getGenericValueType();
                         } else {
                             $array_properties = $existing_key_type_part->properties;
 
