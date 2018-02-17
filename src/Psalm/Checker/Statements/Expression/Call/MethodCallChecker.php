@@ -48,6 +48,12 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             return false;
         }
 
+        if (!is_string($stmt->name)) {
+            if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
+                return false;
+            }
+        }
+
         $method_id = null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {

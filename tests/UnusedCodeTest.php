@@ -623,6 +623,23 @@ class UnusedCodeTest extends TestCase
 
                     new A([1, 2, 3]);',
             ],
+            'usedMethodCallVariable' => [
+                '<?php
+                    function reindex(array $arr, string $methodName): array {
+                        $ret = [];
+
+                        foreach ($arr as $element) {
+                            $ret[$element->$methodName()] = true;
+                        }
+
+                        return $ret;
+                    }',
+                'error_levels' => [
+                    'MixedAssignment',
+                    'MixedMethodCall',
+                    'MixedArrayOffset',
+                ],
+            ],
         ];
     }
 
