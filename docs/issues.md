@@ -251,6 +251,15 @@ class A {
 echo (new A)->foo();
 ```
 
+### InterfaceInstantiation
+
+Emitted when an attempt is made to instatiate an interface:
+
+```php
+interface I {}
+new I();
+```
+
 ### InaccessibleProperty
 
 Emitted when attempting to access a protected/private property from outside its available scope

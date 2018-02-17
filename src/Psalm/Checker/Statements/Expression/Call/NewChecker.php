@@ -11,6 +11,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Issue\InterfaceInstantiation;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -59,6 +60,20 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     ) === false) {
                         return false;
                     }
+
+                    if ($codebase->interfaceExists($fq_class_name)) {
+                        if (IssueBuffer::accepts(
+                            new InterfaceInstantiation(
+                                'Interface ' . $fq_class_name . ' cannot be instantiated',
+                                new CodeLocation($statements_checker->getSource(), $stmt->class)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
                 }
             } else {
                 switch ($stmt->class->parts[0]) {
@@ -106,7 +121,7 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $context->check_classes &&
-                $codebase->classExists($fq_class_name)
+                $codebase->classlikes->classExists($fq_class_name)
             ) {
                 $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 

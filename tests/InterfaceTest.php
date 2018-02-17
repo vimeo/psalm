@@ -574,6 +574,12 @@ class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'interfaceInstantiation' => [
+                '<?php
+                    interface myInterface{}
+                    new myInterface();',
+                'error_message' => 'InterfaceInstantiation',
+            ],
         ];
     }
 }
