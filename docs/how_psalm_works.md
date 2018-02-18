@@ -1,3 +1,5 @@
+# How Psalm works
+
 The entry point for all analysis is [`ProjectChecker`](https://github.com/vimeo/psalm/blob/master/src/Psalm/Checker/ProjectChecker.php)
 
 `ProjectChecker` is in charge of two things: Scanning and Analysis
