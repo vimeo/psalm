@@ -778,8 +778,6 @@ class Config
     }
 
     /**
-     * @param  ProjectChecker $project_checker
-     *
      * @return void
      */
     public function visitStubFiles(Codebase $codebase)

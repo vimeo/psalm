@@ -4,7 +4,6 @@ namespace Psalm\Checker;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;

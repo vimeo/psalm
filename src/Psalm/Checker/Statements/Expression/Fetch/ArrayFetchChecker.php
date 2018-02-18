@@ -140,8 +140,8 @@ class ArrayFetchChecker
     /**
      * @param  Type\Union $array_type
      * @param  Type\Union $offset_type
-     * @param  null|string    $array_var_id
      * @param  bool       $in_assignment
+     * @param  null|string    $array_var_id
      * @param  bool       $inside_isset
      *
      * @return Type\Union

@@ -86,7 +86,6 @@ abstract class Plugin
 
     /**
      * @param  string $method_id - the method id being checked
-     * @param  string $appearing_method_id - the method id of the class that contains the method
      * @param  string $declaring_method_id - the method id of the class or trait that declares the method
      * @param  PhpParser\Node\Arg[] $args
      * @param  FileManipulation[] $file_replacements

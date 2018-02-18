@@ -121,7 +121,6 @@ class Codebase
     public $populator;
 
     /**
-     * @param bool $collect_references
      * @param bool $debug_output
      */
     public function __construct(

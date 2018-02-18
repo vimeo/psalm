@@ -9,7 +9,6 @@ use Psalm\Context;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InaccessibleMethod;
-use Psalm\Issue\InvalidReturnType;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\PropertyNotSetInConstructor;
