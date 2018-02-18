@@ -151,6 +151,8 @@ if (array_key_exists('v', $options)) {
 // If XDebug is enabled, restart without it
 (new \Composer\XdebugHandler(\Composer\Factory::createOutput()))->check();
 
+setlocale(LC_CTYPE, 'C');
+
 if (isset($options['i'])) {
     if (file_exists('psalm.xml')) {
         die('A config file already exists in the current directory' . PHP_EOL);
