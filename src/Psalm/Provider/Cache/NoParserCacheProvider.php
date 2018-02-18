@@ -6,9 +6,9 @@ use PhpParser;
 class NoParserCacheProvider extends \Psalm\Provider\ParserCacheProvider
 {
     /**
+     * @param  int      $file_modified_time
      * @param  string   $file_content_hash
      * @param  string   $file_cache_key
-     * @param mixed $file_modified_time
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      */

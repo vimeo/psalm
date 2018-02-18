@@ -254,9 +254,9 @@ class TypeChecker
     /**
      * Does the input param atomic type match the given param atomic type
      *
+     * @param  Codebase     $codebase
      * @param  Type\Atomic  $input_type_part
      * @param  Type\Atomic  $container_type_part
-     * @param  Codebase     $codebase
      * @param  bool         &$has_scalar_match
      * @param  bool         &$type_coerced    whether or not there was type coercion involved
      * @param  bool         &$type_coerced_from_mixed

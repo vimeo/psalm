@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Config;
 
-use Psalm\Config;
 use SimpleXMLElement;
 
 class FileFilter

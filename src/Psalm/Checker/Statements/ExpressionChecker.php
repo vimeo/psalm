@@ -501,8 +501,8 @@ class ExpressionChecker
      * @param  StatementsChecker    $statements_checker
      * @param  PhpParser\Node\Expr  $stmt
      * @param  Type\Union           $by_ref_type
-     * @param  bool                 $constrain_type
      * @param  Context              $context
+     * @param  bool                 $constrain_type
      *
      * @return void
      */

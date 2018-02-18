@@ -85,7 +85,6 @@ class Analyzer
     /**
      * @param  string $file_path
      * @param  array<string, string> $filetype_checkers
-     * @param  bool   $will_analyze
      *
      * @return FileChecker
      *

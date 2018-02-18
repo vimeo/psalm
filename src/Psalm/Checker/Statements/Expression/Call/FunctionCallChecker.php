@@ -10,7 +10,6 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
-use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidFunctionCall;

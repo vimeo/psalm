@@ -905,9 +905,9 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
+     * @param  ProjectChecker            $project_checker
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
-     * @param  ProjectChecker            $project_checker
      *
      * @return Type\Union|null
      */

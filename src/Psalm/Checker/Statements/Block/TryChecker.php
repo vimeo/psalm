@@ -170,7 +170,7 @@ class TryChecker
 
             $catch_var_id = '$' . $catch->var;
 
-            $catch_context->vars_in_scope[$catch_var_id] = new Type\Union(
+            $catch_context->vars_in_scope[$catch_var_id] = new Union(
                 array_map(
                     /**
                      * @param string $fq_catch_class

@@ -69,8 +69,8 @@ class CodeLocation
 
     /**
      * @param bool                 $single_line
-     * @param null|int             $regex_type
      * @param null|CodeLocation    $previous_location
+     * @param null|int             $regex_type
      * @param null|string          $selected_text
      */
     public function __construct(

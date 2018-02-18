@@ -73,9 +73,9 @@ class FileChecker extends SourceChecker implements StatementsSource
     public $project_checker;
 
     /**
+     * @param ProjectChecker  $project_checker
      * @param string  $file_path
      * @param string  $file_name
-     * @param ProjectChecker  $project_checker
      */
     public function __construct(ProjectChecker $project_checker, $file_path, $file_name)
     {
