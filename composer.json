@@ -38,7 +38,7 @@
         "php-coveralls/php-coveralls": "^2.0"
     },
     "suggest": {
-        "ext-igbinary": "2"
+        "ext-igbinary": "^2.0.5"
     },
     "scripts": {
         "psalm": "./psalm",
