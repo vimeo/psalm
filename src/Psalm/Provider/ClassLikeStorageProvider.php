@@ -62,7 +62,7 @@ class ClassLikeStorageProvider
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         if (isset(self::$storage[$fq_classlike_name_lc])) {
-            throw new \UnexpectedValueException('Already exists');
+            return self::$storage[$fq_classlike_name_lc];
         }
 
         self::$storage[$fq_classlike_name_lc]

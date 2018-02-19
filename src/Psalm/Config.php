@@ -645,7 +645,6 @@ class Config
         $file_to_scan = new FileScanner($path, $this->shortenFileName($path), false);
         $file_to_scan->scan(
             $codebase,
-            $codebase->getStatementsForFile($path),
             $file_storage
         );
 
@@ -805,7 +804,6 @@ class Config
             $file_to_scan = new FileScanner($stub_file_path, $this->shortenFileName($stub_file_path), false);
             $file_to_scan->scan(
                 $codebase,
-                $codebase->getStatementsForFile($stub_file_path),
                 $file_storage
             );
         }
@@ -906,7 +904,6 @@ class Config
                 $file_to_scan = new \Psalm\Scanner\FileScanner($file_path, $this->shortenFileName($file_path), false);
                 $file_to_scan->scan(
                     $codebase,
-                    $codebase->getStatementsForFile($file_path),
                     $file_storage
                 );
             }

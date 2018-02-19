@@ -56,7 +56,7 @@ class Codebase
     /**
      * @var StatementsProvider
      */
-    private $statements_provider;
+    public $statements_provider;
 
     /**
      * @var bool
@@ -148,7 +148,6 @@ class Codebase
             $config,
             $file_storage_provider,
             $file_provider,
-            $statements_provider,
             $this->reflection,
             $debug_output
         );

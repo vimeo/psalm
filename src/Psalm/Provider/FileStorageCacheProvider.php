@@ -106,10 +106,9 @@ class FileStorageCacheProvider
             if ($this->config->use_igbinary) {
                 /** @var FileStorage */
                 return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
-            } else {
-                /** @var FileStorage */
-                return unserialize((string)file_get_contents($cache_location)) ?: null;
             }
+            /** @var FileStorage */
+            return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
 
         return null;

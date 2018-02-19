@@ -6,7 +6,6 @@ use Psalm\Config;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
-use Psalm\Provider\StatementsProvider;
 use Psalm\Scanner\FileScanner;
 
 /**
@@ -92,11 +91,6 @@ class Scanner
     private $file_provider;
 
     /**
-     * @var StatementsProvider
-     */
-    private $statements_provider;
-
-    /**
      * @param bool $debug_output
      */
     public function __construct(
@@ -104,7 +98,6 @@ class Scanner
         Config $config,
         FileStorageProvider $file_storage_provider,
         FileProvider $file_provider,
-        StatementsProvider $statements_provider,
         Reflection $reflection,
         $debug_output
     ) {
@@ -113,7 +106,6 @@ class Scanner
         $this->file_provider = $file_provider;
         $this->debug_output = $debug_output;
         $this->file_storage_provider = $file_storage_provider;
-        $this->statements_provider = $statements_provider;
         $this->config = $config;
     }
 
@@ -283,26 +275,15 @@ class Scanner
             $this->file_storage_provider->create($file_path);
         }
 
-        if ($this->debug_output) {
-            if (isset($this->files_to_deep_scan[$file_path])) {
-                echo 'Deep scanning ' . $file_path . PHP_EOL;
-            } else {
-                echo 'Scanning ' . $file_path . PHP_EOL;
-            }
-        }
-
         $this->scanned_files[$file_path] = true;
 
         $file_storage = $this->file_storage_provider->get($file_path);
 
         $file_scanner->scan(
             $this->codebase,
-            $this->statements_provider->getStatementsForFile(
-                $file_path,
-                $this->debug_output
-            ),
             $file_storage,
-            $from_cache
+            $from_cache,
+            $this->debug_output
         );
 
         $file_storage->deep_scan = $will_analyze;

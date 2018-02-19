@@ -79,9 +79,9 @@ class FileStorageProvider
      */
     public function create($file_path)
     {
-        $file_path = strtolower($file_path);
+        $file_path_lc = strtolower($file_path);
 
-        self::$storage[$file_path] = $storage = new FileStorage();
+        self::$storage[$file_path_lc] = $storage = new FileStorage();
 
         $storage->file_path = $file_path;
 

@@ -40,13 +40,31 @@ class FileScanner implements FileSource
     /**
      * @param array<mixed, PhpParser\Node> $stmts
      * @param bool $storage_from_cache
+     * @param bool $debug_output
      *
      * @return void
      */
-    public function scan(Codebase $codebase, array $stmts, FileStorage $file_storage, $storage_from_cache = false)
-    {
+    public function scan(
+        Codebase $codebase,
+        FileStorage $file_storage,
+        $storage_from_cache = false,
+        $debug_output = false
+    ) {
         if ((!$this->will_analyze || $file_storage->deep_scan) && $storage_from_cache) {
             return;
+        }
+
+        $stmts = $codebase->statements_provider->getStatementsForFile(
+            $file_storage->file_path,
+            $debug_output
+        );
+
+        if ($debug_output) {
+            if ($this->will_analyze) {
+                echo 'Deep scanning ' . $file_storage->file_path . PHP_EOL;
+            } else {
+                echo 'Scanning ' . $file_storage->file_path . PHP_EOL;
+            }
         }
 
         $traverser = new NodeTraverser();

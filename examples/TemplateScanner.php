@@ -14,11 +14,21 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
     /**
      * @param array<mixed, PhpParser\Node> $stmts
      * @param bool $storage_from_cache
+     * @param bool $debug_output
      *
      * @return void
      */
-    public function scan(Codebase $codebase, array $stmts, FileStorage $file_storage, $storage_from_cache = false)
-    {
+    public function scan(
+        Codebase $codebase,
+        FileStorage $file_storage,
+        $storage_from_cache = false,
+        $debug_output = false
+    ) {
+        $stmts = $codebase->statements_provider->getStatementsForFile(
+            $file_storage->file_path,
+            $debug_output
+        );
+
         if (empty($stmts)) {
             return;
         }
@@ -52,6 +62,6 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
 
         $codebase->scanner->queueClassLikeForScanning(self::VIEW_CLASS, $this->file_path);
 
-        parent::scan($codebase, $stmts, $file_storage);
+        parent::scan($codebase, $file_storage, $storage_from_cache, $debug_output);
     }
 }

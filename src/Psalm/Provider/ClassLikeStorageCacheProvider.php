@@ -108,10 +108,9 @@ class ClassLikeStorageCacheProvider
             if ($this->config->use_igbinary) {
                 /** @var ClassLikeStorage */
                 return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
-            } else {
-                /** @var ClassLikeStorage */
-                return unserialize((string)file_get_contents($cache_location)) ?: null;
             }
+            /** @var ClassLikeStorage */
+            return unserialize((string)file_get_contents($cache_location)) ?: null;
         }
 
         return null;
