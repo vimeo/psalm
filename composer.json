@@ -41,12 +41,15 @@
         "ext-igbinary": "^2.0.5"
     },
     "scripts": {
-        "psalm": "./psalm",
-        "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",
+        "psalm": "./psalm --find-dead-code",
+        "standards": "phpcs",
         "tests": [
-            "php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-            "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run .php_cs.dist",
-            "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes --dry-run",
+            "phpcs",
+            "phpunit"
+        ],
+        "all-tests": [
+            "phpcs",
+            "./psalm --find-dead-code",
             "phpunit"
         ]
     }
