@@ -129,9 +129,18 @@ class ProjectChecker
     private $cache = false;
 
     const TYPE_CONSOLE = 'console';
+    const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
     const TYPE_XML = 'xml';
+
+    const SUPPORTED_OUTPUT_TYPES = [
+        self::TYPE_CONSOLE,
+        self::TYPE_PYLINT,
+        self::TYPE_JSON,
+        self::TYPE_EMACS,
+        self::TYPE_XML,
+    ];
 
     /**
      * @param FileProvider  $file_provider
@@ -181,7 +190,7 @@ class ProjectChecker
             $debug_output
         );
 
-        if (!in_array($output_format, [self::TYPE_CONSOLE, self::TYPE_JSON, self::TYPE_EMACS, self::TYPE_XML], true)) {
+        if (!in_array($output_format, self::SUPPORTED_OUTPUT_TYPES, true)) {
             throw new \UnexpectedValueException('Unrecognised output format ' . $output_format);
         }
 
@@ -194,6 +203,7 @@ class ProjectChecker
                 '.json' => self::TYPE_JSON,
                 '.txt' => self::TYPE_EMACS,
                 '.emacs' => self::TYPE_EMACS,
+                '.pylint' => self::TYPE_PYLINT,
             ];
             foreach ($mapping as $extension => $type) {
                 if (substr($reports, -strlen($extension)) === $extension) {

@@ -84,7 +84,7 @@ Options:
         Psalm checks itself
 
     --output-format=console
-        Changes the output format. Possible values: console, json, xml
+        Changes the output format. Possible values: console, emacs, json, pylint, xml
 
     --find-dead-code
         Look for dead code
