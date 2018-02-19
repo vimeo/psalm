@@ -42,7 +42,7 @@ class StatementsProvider
         $modified_time = $this->file_provider->getModifiedTime($file_path);
 
         $file_content_hash = md5($version . $file_contents);
-        $file_cache_key = $this->cache_provider->getParserCacheKey($file_path);
+        $file_cache_key = $this->cache_provider->getParserCacheKey($file_path, $this->cache_provider->use_igbinary);
 
         $stmts = $this->cache_provider->loadStatementsFromCache(
             $modified_time,

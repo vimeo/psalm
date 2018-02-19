@@ -37,6 +37,9 @@
         "squizlabs/php_codesniffer": "^3.0",
         "php-coveralls/php-coveralls": "^2.0"
     },
+    "suggest": {
+        "ext-igbinary": "2"
+    },
     "scripts": {
         "psalm": "./psalm",
         "standards": "php ./vendor/friendsofphp/php-cs-fixer/php-cs-fixer fix --verbose --allow-risky=yes",

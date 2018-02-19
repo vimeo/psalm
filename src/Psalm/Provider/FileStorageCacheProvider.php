@@ -50,7 +50,11 @@ class FileStorageCacheProvider
         $cache_location = $this->getCacheLocationForPath($file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
-        file_put_contents($cache_location, serialize($storage));
+        if ($this->config->use_igbinary) {
+            file_put_contents($cache_location, igbinary_serialize($storage));
+        } else {
+            file_put_contents($cache_location, serialize($storage));
+        }
     }
 
     /**
@@ -99,8 +103,13 @@ class FileStorageCacheProvider
         $cache_location = $this->getCacheLocationForPath($file_path);
 
         if (file_exists($cache_location)) {
-            /** @var FileStorage */
-            return unserialize((string)file_get_contents($cache_location)) ?: null;
+            if ($this->config->use_igbinary) {
+                /** @var FileStorage */
+                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+            } else {
+                /** @var FileStorage */
+                return unserialize((string)file_get_contents($cache_location)) ?: null;
+            }
         }
 
         return null;
@@ -126,6 +135,9 @@ class FileStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
-        return $parser_cache_directory . DIRECTORY_SEPARATOR . sha1($file_path);
+        return $parser_cache_directory
+            . DIRECTORY_SEPARATOR
+            . sha1($file_path)
+            . ($this->config->use_igbinary ? '-igbinary' : '');
     }
 }

@@ -428,6 +428,8 @@ class Config
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
             $config->use_igbinary = $attribute_text === 'igbinary';
+        } elseif ($igbinary_version = phpversion('igbinary')) {
+            $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
         if (isset($config_xml['allowPhpStormGenerics'])) {

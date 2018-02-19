@@ -244,7 +244,8 @@ class ParserCacheProvider
 
         if (is_dir($cache_directory)) {
             foreach ($file_names as $file_name) {
-                $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . $this->getParserCacheKey($file_name);
+                $hash_file_name =
+                    $cache_directory . DIRECTORY_SEPARATOR . $this->getParserCacheKey($file_name, $this->use_igbinary);
 
                 if (file_exists($hash_file_name)) {
                     if (filemtime($hash_file_name) < $min_time) {
@@ -256,12 +257,13 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_name
+     * @param  string  $file_name
+     * @param  bool $use_igbinary
      *
      * @return string
      */
-    public static function getParserCacheKey($file_name)
+    public static function getParserCacheKey($file_name, $use_igbinary)
     {
-        return md5($file_name);
+        return md5($file_name) . ($use_igbinary ? '-igbinary' : '');
     }
 }

@@ -268,9 +268,13 @@ if ($path_to_config) {
     $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
 }
 
-$file_storage_cache_provider = new Psalm\Provider\NoCache\NoFileStorageCacheProvider();
+$file_storage_cache_provider = isset($options['no-cache'])
+    ? new Psalm\Provider\NoCache\NoFileStorageCacheProvider()
+    : new Psalm\Provider\FileStorageCacheProvider($config);
 
-$classlike_storage_cache_provider = new Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider();
+$classlike_storage_cache_provider = isset($options['no-cache'])
+    ? new Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
+    : new Psalm\Provider\ClassLikeStorageCacheProvider($config);
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();

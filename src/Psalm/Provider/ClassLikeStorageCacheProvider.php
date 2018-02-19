@@ -51,7 +51,11 @@ class ClassLikeStorageCacheProvider
         $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
-        file_put_contents($cache_location, serialize($storage));
+        if ($this->config->use_igbinary) {
+            file_put_contents($cache_location, igbinary_serialize($storage));
+        } else {
+            file_put_contents($cache_location, serialize($storage));
+        }
     }
 
     /**
@@ -101,8 +105,13 @@ class ClassLikeStorageCacheProvider
         $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc);
 
         if (file_exists($cache_location)) {
-            /** @var ClassLikeStorage */
-            return unserialize((string)file_get_contents($cache_location)) ?: null;
+            if ($this->config->use_igbinary) {
+                /** @var ClassLikeStorage */
+                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+            } else {
+                /** @var ClassLikeStorage */
+                return unserialize((string)file_get_contents($cache_location)) ?: null;
+            }
         }
 
         return null;
@@ -128,6 +137,9 @@ class ClassLikeStorageCacheProvider
             mkdir($parser_cache_directory, 0777, true);
         }
 
-        return $parser_cache_directory . DIRECTORY_SEPARATOR . sha1($fq_classlike_name_lc);
+        return $parser_cache_directory
+            . DIRECTORY_SEPARATOR
+            . sha1($fq_classlike_name_lc)
+            . ($this->config->use_igbinary ? '-igbinary' : '');
     }
 }
