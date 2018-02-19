@@ -527,7 +527,7 @@ class IfChecker
                 ) {
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
-                            'There is more than one pass-by--reference constraint on ' . $var_id,
+                            'There is more than one pass-by-reference constraint on ' . $var_id,
                             new CodeLocation($statements_checker, $stmt, $outer_context->include_location, true)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -905,7 +905,7 @@ class IfChecker
                 ) {
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
-                            'There is more than one pass-by--reference constraint on ' . $var_id,
+                            'There is more than one pass-by-reference constraint on ' . $var_id,
                             new CodeLocation($statements_checker, $elseif, $outer_context->include_location, true)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1180,7 +1180,7 @@ class IfChecker
                 ) {
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
-                            'There is more than one pass-by--reference constraint on ' . $var_id,
+                            'There is more than one pass-by-reference constraint on ' . $var_id,
                             new CodeLocation($statements_checker, $else, $outer_context->include_location, true)
                         ),
                         $statements_checker->getSuppressedIssues()

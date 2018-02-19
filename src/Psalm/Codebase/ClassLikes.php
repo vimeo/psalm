@@ -792,7 +792,7 @@ class ClassLikes
                 if ($property_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
                     if (IssueBuffer::accepts(
                         new PossiblyUnusedProperty(
-                            'Cannot find public calls to property ' . $property_id,
+                            'Cannot find uses of public property ' . $property_id,
                             $property_storage->location
                         ),
                         $classlike_storage->suppressed_issues
