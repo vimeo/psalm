@@ -83,14 +83,14 @@ class FileStorageCacheProvider
     }
 
     /**
-     * @param  string|null $file_path
-     * @param  string|null $file_contents
+     * @param  string $file_path
+     * @param  string $file_contents
      *
      * @return string
      */
     private function getCacheHash($file_path, $file_contents)
     {
-        return sha1($file_path . ' ' . $file_contents . $this->modified_timestamps);
+        return sha1(strtolower($file_path) . ' ' . $file_contents . $this->modified_timestamps);
     }
 
     /**

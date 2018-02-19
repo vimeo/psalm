@@ -92,7 +92,7 @@ class ClassLikeStorageCacheProvider
      */
     private function getCacheHash($file_path, $file_contents)
     {
-        return sha1($file_path . ' ' . $file_contents . $this->modified_timestamps);
+        return sha1(($file_path ? strtolower($file_path) . ' ' . $file_contents : '') . $this->modified_timestamps);
     }
 
     /**
