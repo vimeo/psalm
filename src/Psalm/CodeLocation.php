@@ -15,6 +15,9 @@ class CodeLocation
     private $line_number;
 
     /** @var int */
+    private $end_line_number = -1;
+
+    /** @var int */
     private $file_start;
 
     /** @var int */
@@ -36,7 +39,10 @@ class CodeLocation
     private $selection_end = -1;
 
     /** @var int */
-    private $column = -1;
+    private $column_from = -1;
+
+    /** @var int */
+    private $column_to = -1;
 
     /** @var string */
     private $snippet = '';
@@ -252,11 +258,17 @@ class CodeLocation
         }
 
         // reset preview start to beginning of line
-        $this->column = $this->selection_start -
+        $this->column_from = $this->selection_start -
             (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+
+        // reset preview start to beginning of line
+        $this->column_to = $this->selection_end -
+            (int)strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents));
 
         $this->snippet = substr($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
         $this->text = substr($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
+
+        $this->end_line_number = $this->line_number + substr_count($this->snippet, "\n");
     }
 
     /**
@@ -265,6 +277,16 @@ class CodeLocation
     public function getLineNumber()
     {
         return $this->docblock_line_number ?: $this->line_number;
+    }
+
+    /**
+     * @return int
+     */
+    public function getEndLineNumber()
+    {
+        $this->calculateRealLocation();
+
+        return $this->end_line_number;
     }
 
     /**
@@ -294,7 +316,17 @@ class CodeLocation
     {
         $this->calculateRealLocation();
 
-        return $this->column;
+        return $this->column_from;
+    }
+
+    /**
+     * @return int
+     */
+    public function getEndColumn()
+    {
+        $this->calculateRealLocation();
+
+        return $this->column_to;
     }
 
     /**

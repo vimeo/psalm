@@ -8,8 +8,9 @@ use Psalm\Issue\CodeIssue;
 class IssueBuffer
 {
     /**
-     * @var array<int, array{severity: string, line_number: string, type: string, message: string, file_name: string,
-     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}>
+     * @var array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
+     * file_name: string, file_path: string, snippet: string, from: int, to: int,
+     * snippet_from: int, snippet_to: int, column_from: int, column_to: int}>
      */
     protected static $issues_data = [];
 
@@ -112,22 +113,22 @@ class IssueBuffer
     }
 
     /**
-     * @param  array{severity: string, line_number: string, type: string, message: string, file_name: string,
-     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column: int} $issue_data
+     * @param  array{severity: string, line_from: int, line_to: int, type: string, message: string,
+     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
+     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int} $issue_data
      *
      * @return string
      */
     protected static function getEmacsOutput(array $issue_data)
     {
-        return $issue_data['file_path'] . ':' . $issue_data['line_number'] . ':' . $issue_data['column'] . ':' .
+        return $issue_data['file_path'] . ':' . $issue_data['line_from'] . ':' . $issue_data['column_from'] . ':' .
             ($issue_data['severity'] === Config::REPORT_ERROR ? 'error' : 'warning') . ' - ' . $issue_data['message'];
     }
 
     /**
-     * @param  array{severity: string, line_number: string, type: string, message: string, file_name: string,
+     * @param  array{severity: string, line_from: int, type: string, message: string, file_name: string,
      *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column: int} $issue_data
+     *  column_from: int, column_to: int} $issue_data
      * @param  bool  $use_color
      *
      * @return string
@@ -145,7 +146,7 @@ class IssueBuffer
         }
 
         $issue_string .= ': ' . $issue_data['type'] . ' - ' . $issue_data['file_name'] . ':' .
-            $issue_data['line_number'] . ':' . $issue_data['column'] . ' - ' . $issue_data['message'] . PHP_EOL;
+            $issue_data['line_from'] . ':' . $issue_data['column_from'] . ' - ' . $issue_data['message'] . PHP_EOL;
 
         $snippet = $issue_data['snippet'];
 
@@ -164,8 +165,9 @@ class IssueBuffer
     }
 
     /**
-     * @return array<int, array{severity: string, line_number: string, type: string, message: string, file_name: string,
-     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column: int}>
+     * @return array<int, array{severity: string, line_from: int, type: string, message: string, file_name: string,
+     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column_from: int,
+     *  column_to: int}>
      */
     public static function getIssuesData()
     {
@@ -173,9 +175,9 @@ class IssueBuffer
     }
 
     /**
-     * @param array<int, array{severity: string, line_number: string, type: string, message: string,
+     * @param array<int, array{severity: string, line_from: int, type: string, message: string,
      *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
-     *  snippet_to: int, column: int}> $issues_data
+     *  snippet_to: int, column_from: int, column_to: int}> $issues_data
      *
      * @return void
      */
@@ -209,15 +211,15 @@ class IssueBuffer
                 /** @return int */
                 function (array $d1, array $d2) {
                     if ($d1['file_path'] === $d2['file_path']) {
-                        if ($d1['line_number'] === $d2['line_number']) {
-                            if ($d1['column'] === $d2['column']) {
+                        if ($d1['line_from'] === $d2['line_from']) {
+                            if ($d1['column_from'] === $d2['column_from']) {
                                 return 0;
                             }
 
-                            return $d1['column'] > $d2['column'] ? 1 : -1;
+                            return $d1['column_from'] > $d2['column_from'] ? 1 : -1;
                         }
 
-                        return $d1['line_number'] > $d2['line_number'] ? 1 : -1;
+                        return $d1['line_from'] > $d2['line_from'] ? 1 : -1;
                     }
 
                     return $d1['file_path'] > $d2['file_path'] ? 1 : -1;

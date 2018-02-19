@@ -82,9 +82,9 @@ abstract class CodeIssue
     /**
      * @param  string          $severity
      *
-     * @return array{severity: string, line_number: int, type: string, message: string, file_name: string,
+     * @return array{severity: string, line_from: int, line_to: int, type: string, message: string, file_name: string,
      *  file_path: string, snippet: string, selected_text: string, from: int, to: int, snippet_from: int,
-     *  snippet_to: int, column: int}
+     *  snippet_to: int, column_from: int, column_to: int}
      */
     public function toArray($severity = Config::REPORT_ERROR)
     {
@@ -97,7 +97,8 @@ abstract class CodeIssue
 
         return [
             'severity' => $severity,
-            'line_number' => $location->getLineNumber(),
+            'line_from' => $location->getLineNumber(),
+            'line_to' => $location->getEndLineNumber(),
             'type' => $issue_type,
             'message' => $this->getMessage(),
             'file_name' => $location->file_name,
@@ -108,7 +109,8 @@ abstract class CodeIssue
             'to' => $selection_bounds[1],
             'snippet_from' => $snippet_bounds[0],
             'snippet_to' => $snippet_bounds[1],
-            'column' => $location->getColumn(),
+            'column_from' => $location->getColumn(),
+            'column_to' => $location->getEndColumn(),
         ];
     }
 }

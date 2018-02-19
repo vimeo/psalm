@@ -170,10 +170,10 @@ class Analyzer
 
             // Wait for all tasks to complete and collect the results.
             /**
-             * @var array<array{issues: array<int, array{severity: string, line_number: string, type: string,
+             * @var array<array{issues: array<int, array{severity: string, line_from: int, line_to: int, type: string,
              *  message: string, file_name: string, file_path: string, snippet: string, from: int, to: int,
-             *  snippet_from: int, snippet_to: int, column: int}>, file_references: array<string, array<string,bool>>,
-             *  mixed_counts: array<string, array{0: int, 1: int}>}>
+             *  snippet_from: int, snippet_to: int, column_from: int, column_to: int}>, file_references: array<string,
+             *  array<string,bool>>, mixed_counts: array<string, array{0: int, 1: int}>}>
              */
             $forked_pool_data = $pool->wait();
 
