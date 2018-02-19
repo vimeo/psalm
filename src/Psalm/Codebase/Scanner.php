@@ -293,6 +293,10 @@ class Scanner
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
             }
         } else {
+            foreach ($file_storage->included_file_paths as $file_path) {
+                $this->codebase->scanner->queueFileForScanning($file_path);
+            }
+
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
                 $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
             }
