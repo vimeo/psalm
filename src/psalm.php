@@ -258,7 +258,7 @@ $find_references_to = isset($options['find-references-to']) && is_string($option
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
 $cache_provider = isset($options['no-cache'])
-    ? new Psalm\Provider\Cache\NoParserCacheProvider()
+    ? new Psalm\Provider\NoCache\NoParserCacheProvider()
     : new Psalm\Provider\ParserCacheProvider();
 
 // initialise custom config, if passed
@@ -267,6 +267,10 @@ if ($path_to_config) {
 } else {
     $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
 }
+
+$file_storage_cache_provider = new Psalm\Provider\NoCache\NoFileStorageCacheProvider();
+
+$classlike_storage_cache_provider = new Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider();
 
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
@@ -280,6 +284,8 @@ $project_checker = new ProjectChecker(
     $config,
     new Psalm\Provider\FileProvider(),
     $cache_provider,
+    $file_storage_cache_provider,
+    $classlike_storage_cache_provider,
     !array_key_exists('m', $options),
     $show_info,
     $output_format,

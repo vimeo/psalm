@@ -147,6 +147,7 @@ class Codebase
             $this,
             $config,
             $file_storage_provider,
+            $file_provider,
             $statements_provider,
             $this->reflection,
             $debug_output
@@ -251,6 +252,37 @@ class Codebase
     public function createClassLikeStorage($fq_classlike_name)
     {
         return $this->classlike_storage_provider->create($fq_classlike_name);
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, $file_path)
+    {
+        $file_contents = $this->file_provider->getContents($file_path);
+        $this->classlike_storage_provider->cache->writeToCache($classlike_storage, $file_path, $file_contents);
+    }
+
+    /**
+     * @param  string $fq_classlike_name
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function exhumeClassLikeStorage($fq_classlike_name, $file_path)
+    {
+        $file_contents = $this->file_provider->getContents($file_path);
+        $storage = $this->classlike_storage_provider->exhume($fq_classlike_name, $file_path, $file_contents);
+
+        if ($storage->is_trait) {
+            $this->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $file_path);
+        } elseif ($storage->is_interface) {
+            $this->classlikes->addFullyQualifiedInterfaceName($fq_classlike_name, $file_path);
+        } else {
+            $this->classlikes->addFullyQualifiedClassName($fq_classlike_name, $file_path);
+        }
     }
 
     /**

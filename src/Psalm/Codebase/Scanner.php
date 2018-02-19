@@ -3,6 +3,7 @@ namespace Psalm\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\StatementsProvider;
@@ -86,6 +87,11 @@ class Scanner
     private $file_storage_provider;
 
     /**
+     * @var FileProvider
+     */
+    private $file_provider;
+
+    /**
      * @var StatementsProvider
      */
     private $statements_provider;
@@ -97,12 +103,14 @@ class Scanner
         Codebase $codebase,
         Config $config,
         FileStorageProvider $file_storage_provider,
+        FileProvider $file_provider,
         StatementsProvider $statements_provider,
         Reflection $reflection,
         $debug_output
     ) {
         $this->codebase = $codebase;
         $this->reflection = $reflection;
+        $this->file_provider = $file_provider;
         $this->debug_output = $debug_output;
         $this->file_storage_provider = $file_storage_provider;
         $this->statements_provider = $statements_provider;
@@ -267,7 +275,13 @@ class Scanner
             throw new \UnexpectedValueException('Should not be rescanning ' . $file_path);
         }
 
-        $this->file_storage_provider->create($file_path);
+        $file_contents = $this->file_provider->getContents($file_path);
+
+        $from_cache = $this->file_storage_provider->has($file_path, $file_contents);
+
+        if (!$from_cache) {
+            $this->file_storage_provider->create($file_path);
+        }
 
         if ($this->debug_output) {
             if (isset($this->files_to_deep_scan[$file_path])) {
@@ -279,14 +293,41 @@ class Scanner
 
         $this->scanned_files[$file_path] = true;
 
+        $file_storage = $this->file_storage_provider->get($file_path);
+
         $file_scanner->scan(
             $this->codebase,
             $this->statements_provider->getStatementsForFile(
                 $file_path,
                 $this->debug_output
             ),
-            $this->file_storage_provider->get($file_path)
+            $file_storage,
+            $from_cache
         );
+
+        $file_storage->deep_scan = $will_analyze;
+
+        if (!$from_cache) {
+            if (!$file_storage->has_trait) {
+                $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
+            }
+        } else {
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
+            }
+
+            foreach ($file_storage->required_classes as $fq_classlike_name) {
+                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, $will_analyze);
+            }
+
+            foreach ($file_storage->required_interfaces as $fq_classlike_name) {
+                $this->queueClassLikeForScanning($fq_classlike_name, $file_path);
+            }
+
+            foreach ($file_storage->referenced_classlikes as $fq_classlike_name) {
+                $this->queueClassLikeForScanning($fq_classlike_name, $file_path);
+            }
+        }
 
         return $file_scanner;
     }

@@ -22,7 +22,9 @@ class UnusedCodeTest extends TestCase
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             new TestConfig(),
             $this->file_provider,
-            new Provider\FakeParserCacheProvider()
+            new Provider\FakeParserCacheProvider(),
+            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
+            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
         );
 
         $this->project_checker->getCodebase()->reportUnusedCode();

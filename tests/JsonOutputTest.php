@@ -25,6 +25,8 @@ class JsonOutputTest extends TestCase
             $config,
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
+            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
+            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
             false,
             true,
             ProjectChecker::TYPE_JSON

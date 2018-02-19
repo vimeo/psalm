@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Provider\Cache;
+namespace Psalm\Provider\NoCache;
 
 use PhpParser;
 

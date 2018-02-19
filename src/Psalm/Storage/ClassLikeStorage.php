@@ -121,6 +121,11 @@ class ClassLikeStorage
     public $is_trait = false;
 
     /**
+     * @var bool
+     */
+    public $is_interface = false;
+
+    /**
      * @var array<string, MethodStorage>
      */
     public $methods = [];
@@ -199,4 +204,11 @@ class ClassLikeStorage
      * @var array<string>
      */
     public $invalid_dependencies = [];
+
+    /**
+     * A hash of the source file's name, contents, and this file's modified on date
+     *
+     * @var string
+     */
+    public $hash = '';
 }

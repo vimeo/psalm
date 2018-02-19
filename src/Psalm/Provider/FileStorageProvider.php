@@ -14,6 +14,16 @@ class FileStorageProvider
     private static $storage = [];
 
     /**
+     * @var FileStorageCacheProvider
+     */
+    public $cache;
+
+    public function __construct(FileStorageCacheProvider $cache)
+    {
+        $this->cache = $cache;
+    }
+
+    /**
      * @param  string $file_path
      *
      * @return FileStorage
@@ -27,6 +37,31 @@ class FileStorageProvider
         }
 
         return self::$storage[$file_path];
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  string $file_contents
+     *
+     * @return bool
+     */
+    public function has($file_path, $file_contents)
+    {
+        $file_path = strtolower($file_path);
+
+        if (isset(self::$storage[$file_path])) {
+            return true;
+        }
+
+        $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
+
+        if (!$cached_value) {
+            return false;
+        }
+
+        self::$storage[$file_path] = $cached_value;
+
+        return true;
     }
 
     /**

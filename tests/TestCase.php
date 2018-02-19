@@ -44,6 +44,8 @@ class TestCase extends BaseTestCase
             $config,
             $this->file_provider,
             $parser_cache_provider,
+            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
+            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
             false,
             true,
             ProjectChecker::TYPE_CONSOLE,

@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Issue\ReservedWord;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
@@ -190,18 +191,23 @@ abstract class Atomic
     }
 
     /**
-     * @param  string $referencing_file_path
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
-        $referencing_file_path = null,
+        FileStorage $file_storage = null,
         array $phantom_classes = []
     ) {
         if ($this instanceof TNamedObject && !isset($phantom_classes[strtolower($this->value)])) {
-            $codebase->scanner->queueClassLikeForScanning($this->value, $referencing_file_path);
+            $codebase->scanner->queueClassLikeForScanning(
+                $this->value,
+                $file_storage ? $file_storage->file_path : null
+            );
+            if ($file_storage) {
+                $file_storage->referenced_classlikes[] = $this->value;
+            }
 
             return;
         }
@@ -210,7 +216,7 @@ abstract class Atomic
             foreach ($this->type_params as $type_param) {
                 $type_param->queueClassLikesForScanning(
                     $codebase,
-                    $referencing_file_path,
+                    $file_storage,
                     $phantom_classes
                 );
             }

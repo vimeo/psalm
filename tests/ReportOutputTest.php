@@ -26,6 +26,8 @@ class ReportOutputTest extends TestCase
             $config,
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
+            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
+            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
             false
         );
         $this->project_checker->reports['json'] = __DIR__ . '/test-report.json';
@@ -45,6 +47,8 @@ class ReportOutputTest extends TestCase
                 $config,
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider(),
+                new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
+                new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
                 false,
                 true,
                 ProjectChecker::TYPE_CONSOLE,
@@ -69,6 +73,8 @@ class ReportOutputTest extends TestCase
             $config,
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
+            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
+            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
             false,
             true,
             ProjectChecker::TYPE_CONSOLE,

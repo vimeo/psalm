@@ -4,6 +4,7 @@ namespace Psalm\Type;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 
 class Union
@@ -615,20 +616,19 @@ class Union
     }
 
     /**
-     * @param  string $referencing_file_path
      * @param  array<string, mixed> $phantom_classes
      *
      * @return void
      */
     public function queueClassLikesForScanning(
         Codebase $codebase,
-        $referencing_file_path = null,
+        FileStorage $file_storage = null,
         array $phantom_classes = []
     ) {
         foreach ($this->types as $atomic_type) {
             $atomic_type->queueClassLikesForScanning(
                 $codebase,
-                $referencing_file_path,
+                $file_storage,
                 $phantom_classes
             );
         }

@@ -126,6 +126,8 @@ $project_checker = new ProjectChecker(
     $config,
     new Psalm\Provider\FileProvider(),
     new Psalm\Provider\ParserCacheProvider(),
+    new Psalm\Provider\FileStorageCacheProvider($config),
+    new Psalm\Provider\ClassLikeStorageCacheProvider($config),
     !array_key_exists('m', $options),
     false,
     ProjectChecker::TYPE_CONSOLE,

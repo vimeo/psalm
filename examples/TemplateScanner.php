@@ -13,10 +13,11 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
 
     /**
      * @param array<mixed, PhpParser\Node> $stmts
+     * @param bool $storage_from_cache
      *
      * @return void
      */
-    public function scan(Codebase $codebase, array $stmts, FileStorage $file_storage)
+    public function scan(Codebase $codebase, array $stmts, FileStorage $file_storage, $storage_from_cache = false)
     {
         if (empty($stmts)) {
             return;

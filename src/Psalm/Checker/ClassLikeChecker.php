@@ -564,7 +564,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     public static function getClassesForFile(ProjectChecker $project_checker, $file_path)
     {
         try {
-            return $project_checker->file_storage_provider->get($file_path)->classes_in_file;
+            return $project_checker->file_storage_provider->get($file_path)->classlikes_in_file;
         } catch (\InvalidArgumentException $e) {
             return [];
         }

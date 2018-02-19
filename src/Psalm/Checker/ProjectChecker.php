@@ -4,9 +4,11 @@ namespace Psalm\Checker;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Provider\FileStorageCacheProvider;
 use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\ParserCacheProvider;
 use Psalm\Provider\StatementsProvider;
@@ -145,6 +147,8 @@ class ProjectChecker
         Config $config,
         FileProvider $file_provider,
         ParserCacheProvider $cache_provider,
+        FileStorageCacheProvider $file_storage_cache_provider,
+        ClassLikeStorageCacheProvider $classlike_storage_cache_provider,
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
@@ -160,8 +164,8 @@ class ProjectChecker
         $this->threads = $threads;
         $this->config = $config;
 
-        $this->file_storage_provider = new FileStorageProvider();
-        $this->classlike_storage_provider = new ClassLikeStorageProvider();
+        $this->file_storage_provider = new FileStorageProvider($file_storage_cache_provider);
+        $this->classlike_storage_provider = new ClassLikeStorageProvider($classlike_storage_cache_provider);
 
         $statements_provider = new StatementsProvider(
             $file_provider,

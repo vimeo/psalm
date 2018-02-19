@@ -66,7 +66,7 @@ class ParserCacheProvider
     /**
      * @return array<string, string>
      */
-    private function getFileContentHashes()
+    public function getFileContentHashes()
     {
         $config = Config::getInstance();
         $root_cache_directory = $config->getCacheDirectory();
