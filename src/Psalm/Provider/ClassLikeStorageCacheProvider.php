@@ -48,7 +48,7 @@ class ClassLikeStorageCacheProvider
     public function writeToCache(ClassLikeStorage $storage, $file_path, $file_contents)
     {
         $fq_classlike_name_lc = strtolower($storage->name);
-        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, true);
+        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
         if ($this->config->use_igbinary) {
@@ -67,7 +67,7 @@ class ClassLikeStorageCacheProvider
      */
     public function getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents)
     {
-        $cached_value = $this->loadFromCache($fq_classlike_name_lc);
+        $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
 
         if (!$cached_value) {
             throw new \UnexpectedValueException('Should be in cache');
@@ -76,7 +76,7 @@ class ClassLikeStorageCacheProvider
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
 
         if ($cache_hash !== $cached_value->hash) {
-            unlink($this->getCacheLocationForClass($fq_classlike_name_lc));
+            unlink($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
 
             throw new \UnexpectedValueException('Should not be outdated');
         }
@@ -92,17 +92,18 @@ class ClassLikeStorageCacheProvider
      */
     private function getCacheHash($file_path, $file_contents)
     {
-        return sha1(($file_path ? strtolower($file_path) . ' ' . $file_contents : '') . $this->modified_timestamps);
+        return sha1(($file_path ? $file_contents : '') . $this->modified_timestamps);
     }
 
     /**
      * @param  string  $fq_classlike_name_lc
+     * @param  string|null  $file_path
      *
      * @return ClassLikeStorage|null
      */
-    private function loadFromCache($fq_classlike_name_lc)
+    private function loadFromCache($fq_classlike_name_lc, $file_path)
     {
-        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc);
+        $cache_location = $this->getCacheLocationForClass($fq_classlike_name_lc, $file_path);
 
         if (file_exists($cache_location)) {
             if ($this->config->use_igbinary) {
@@ -118,11 +119,12 @@ class ClassLikeStorageCacheProvider
 
     /**
      * @param  string  $fq_classlike_name_lc
+     * @param  string|null  $file_path
      * @param  bool $create_directory
      *
      * @return string
      */
-    private function getCacheLocationForClass($fq_classlike_name_lc, $create_directory = false)
+    private function getCacheLocationForClass($fq_classlike_name_lc, $file_path, $create_directory = false)
     {
         $root_cache_directory = $this->config->getCacheDirectory();
 
@@ -138,7 +140,7 @@ class ClassLikeStorageCacheProvider
 
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR
-            . sha1($fq_classlike_name_lc)
+            . sha1(($file_path ? strtolower($file_path) . ' ' : '') . $fq_classlike_name_lc)
             . ($this->config->use_igbinary ? '-igbinary' : '');
     }
 }
