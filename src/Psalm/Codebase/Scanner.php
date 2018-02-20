@@ -289,9 +289,7 @@ class Scanner
         $file_storage->deep_scan = $will_analyze;
 
         if (!$from_cache) {
-            if (!$file_storage->has_trait) {
-                $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
-            }
+            $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
         } else {
             foreach ($file_storage->included_file_paths as $include_file_path) {
                 $this->codebase->scanner->queueFileForScanning($include_file_path);
