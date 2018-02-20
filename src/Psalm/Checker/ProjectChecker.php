@@ -275,14 +275,16 @@ class ProjectChecker
                 echo count($diff_files) . ' changed files' . PHP_EOL;
             }
 
-            $file_list = self::getReferencedFilesFromDiff($diff_files);
+            if ($diff_files) {
+                $file_list = self::getReferencedFilesFromDiff($diff_files);
 
-            // strip out deleted files
-            $file_list = array_diff($file_list, $deleted_files);
+                // strip out deleted files
+                $file_list = array_diff($file_list, $deleted_files);
 
-            $this->checkDiffFilesWithConfig($this->config, $file_list);
+                $this->checkDiffFilesWithConfig($this->config, $file_list);
 
-            $this->codebase->scanFiles();
+                $this->codebase->scanFiles();
+            }
         }
 
         if ($this->output_format === self::TYPE_CONSOLE) {

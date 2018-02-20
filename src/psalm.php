@@ -339,4 +339,4 @@ if ($find_references_to) {
     }
 }
 
-IssueBuffer::finish($project_checker, !$is_diff, $start_time, isset($options['stats']));
+IssueBuffer::finish($project_checker, !$paths_to_check, $start_time, isset($options['stats']));
