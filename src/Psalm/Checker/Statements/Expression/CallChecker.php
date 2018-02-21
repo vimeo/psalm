@@ -1414,4 +1414,31 @@ class CallChecker
 
         return true;
     }
+
+    /**
+     * @param  StatementsChecker    $statements_checker
+     * @param  string               $function_id
+     *
+     * @return string
+     */
+    protected static function getExistingFunctionId(StatementsChecker $statements_checker, $function_id)
+    {
+        $function_id = strtolower($function_id);
+
+        $codebase = $statements_checker->getFileChecker()->project_checker->codebase;
+
+        if ($codebase->functions->functionExists($statements_checker, $function_id)) {
+            return $function_id;
+        }
+
+        $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+
+        if ($function_id !== $root_function_id
+            && $codebase->functions->functionExists($statements_checker, $root_function_id)
+        ) {
+            return $root_function_id;
+        }
+
+        return $function_id;
+    }
 }

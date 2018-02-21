@@ -39,8 +39,8 @@ class Functions
      */
     public function getStorage(StatementsChecker $statements_checker, $function_id)
     {
-        if (isset(self::$stubbed_functions[$function_id])) {
-            return self::$stubbed_functions[$function_id];
+        if (isset(self::$stubbed_functions[strtolower($function_id)])) {
+            return self::$stubbed_functions[strtolower($function_id)];
         }
 
         if ($this->reflection->hasFunction($function_id)) {
@@ -96,7 +96,7 @@ class Functions
      */
     public function addStubbedFunction($function_id, FunctionLikeStorage $storage)
     {
-        self::$stubbed_functions[$function_id] = $storage;
+        self::$stubbed_functions[strtolower($function_id)] = $storage;
     }
 
     /**
@@ -106,7 +106,7 @@ class Functions
      */
     public function hasStubbedFunction($function_id)
     {
-        return isset(self::$stubbed_functions[$function_id]);
+        return isset(self::$stubbed_functions[strtolower($function_id)]);
     }
 
     /**
@@ -126,7 +126,7 @@ class Functions
             return true;
         }
 
-        if (isset(self::$stubbed_functions[$function_id])) {
+        if (isset(self::$stubbed_functions[strtolower($function_id)])) {
             return true;
         }
 

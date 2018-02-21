@@ -40,41 +40,41 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
     ) {
-        $method = $stmt->name;
+        $function = $stmt->name;
 
-        if ($method instanceof PhpParser\Node\Name) {
+        if ($function instanceof PhpParser\Node\Name) {
             $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
 
-            if ($method->parts === ['method_exists']) {
+            if ($function->parts === ['method_exists']) {
                 $context->check_methods = false;
-            } elseif ($method->parts === ['class_exists']) {
+            } elseif ($function->parts === ['class_exists']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $context->addPhantomClass($first_arg->value->value);
                 } else {
                     $context->check_classes = false;
                 }
-            } elseif ($method->parts === ['extension_loaded']) {
+            } elseif ($function->parts === ['extension_loaded']) {
                 $context->check_classes = false;
-            } elseif ($method->parts === ['function_exists']) {
+            } elseif ($function->parts === ['function_exists']) {
                 $context->check_functions = false;
-            } elseif ($method->parts === ['is_callable']) {
+            } elseif ($function->parts === ['is_callable']) {
                 $context->check_methods = false;
                 $context->check_functions = false;
-            } elseif ($method->parts === ['defined']) {
+            } elseif ($function->parts === ['defined']) {
                 $context->check_consts = false;
-            } elseif ($method->parts === ['extract']) {
+            } elseif ($function->parts === ['extract']) {
                 $context->check_variables = false;
-            } elseif ($method->parts === ['var_dump'] || $method->parts === ['shell_exec']) {
+            } elseif ($function->parts === ['var_dump'] || $function->parts === ['shell_exec']) {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
-                        'Unsafe ' . implode('', $method->parts),
+                        'Unsafe ' . implode('', $function->parts),
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
                     return false;
                 }
-            } elseif ($method->parts === ['define']) {
+            } elseif ($function->parts === ['define']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $second_arg = $stmt->args[1];
                     ExpressionChecker::analyze($statements_checker, $second_arg->value, $context);
@@ -91,7 +91,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
         }
 
-        $method_id = null;
+        $function_id = null;
         $function_params = null;
         $in_call_map = false;
 
@@ -209,21 +209,21 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 $stmt->inferredType = Type::getMixed();
             }
         } else {
-            $method_id = implode('\\', $stmt->name->parts);
+            $function_id = implode('\\', $stmt->name->parts);
 
-            $in_call_map = CallMap::inCallMap($method_id);
-            $is_stubbed = $codebase_functions->hasStubbedFunction($method_id);
+            $in_call_map = CallMap::inCallMap($function_id);
+            $is_stubbed = $codebase_functions->hasStubbedFunction($function_id);
 
             $is_predefined = true;
 
             if (!$in_call_map) {
                 $predefined_functions = $config->getPredefinedFunctions();
-                $is_predefined = isset($predefined_functions[$method_id]);
+                $is_predefined = isset($predefined_functions[$function_id]);
             }
 
             if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
-                $method_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
-                    $method_id,
+                $function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
+                    $function_id,
                     $statements_checker
                 );
             }
@@ -232,17 +232,19 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
                         $statements_checker,
-                        $method_id,
+                        $function_id,
                         $code_location
                     ) === false
                     ) {
                         return false;
                     }
+                } else {
+                    $function_id = self::getExistingFunctionId($statements_checker, $function_id);
                 }
 
                 $function_exists = $is_stubbed || $codebase_functions->functionExists(
                     $statements_checker,
-                    strtolower($method_id)
+                    strtolower($function_id)
                 );
             } else {
                 $function_exists = true;
@@ -252,7 +254,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 if (!$in_call_map || $is_stubbed) {
                     $function_storage = $codebase_functions->getStorage(
                         $statements_checker,
-                        strtolower($method_id)
+                        strtolower($function_id)
                     );
 
                     $function_params = $function_storage->params;
@@ -265,7 +267,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 if ($in_call_map && !$is_stubbed) {
                     $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
                         $statements_checker->getFileChecker()->project_checker,
-                        $method_id,
+                        $function_id,
                         $stmt->args
                     );
                 }
@@ -276,7 +278,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             $statements_checker,
             $stmt->args,
             $function_params,
-            $method_id,
+            $function_id,
             $context
         ) === false) {
             // fall through
@@ -285,11 +287,11 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
         if ($function_exists) {
             $generic_params = null;
 
-            if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
+            if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
                     $function_params = FunctionLikeChecker::getFunctionParamsFromCallMapById(
                         $statements_checker->getFileChecker()->project_checker,
-                        $method_id,
+                        $function_id,
                         $stmt->args
                     );
                 }
@@ -299,7 +301,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             if (self::checkFunctionLikeArgumentsMatch(
                 $statements_checker,
                 $stmt->args,
-                $method_id,
+                $function_id,
                 $function_params ?: [],
                 $function_storage,
                 null,
@@ -310,7 +312,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 // fall through
             }
 
-            if ($stmt->name instanceof PhpParser\Node\Name && $method_id) {
+            if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$in_call_map || $is_stubbed) {
                     if ($function_storage && $function_storage->template_types) {
                         foreach ($function_storage->template_types as $template_name => $_) {
@@ -355,7 +357,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 } else {
                     $stmt->inferredType = FunctionChecker::getReturnTypeFromCallMapWithArgs(
                         $statements_checker,
-                        $method_id,
+                        $function_id,
                         $stmt->args,
                         $code_location,
                         $statements_checker->getSuppressedIssues()
@@ -369,8 +371,8 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
 
             if ($config->use_assert_for_type &&
-                $method instanceof PhpParser\Node\Name &&
-                $method->parts === ['assert'] &&
+                $function instanceof PhpParser\Node\Name &&
+                $function->parts === ['assert'] &&
                 isset($stmt->args[0])
             ) {
                 $assert_clauses = AlgebraChecker::getFormula(
