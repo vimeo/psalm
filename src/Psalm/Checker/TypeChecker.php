@@ -281,7 +281,7 @@ class TypeChecker
             $type_coerced = true;
             $type_coerced_from_mixed = true;
 
-            return true;
+            return false;
         }
 
         if ($input_type_part->shallowEquals($container_type_part) ||

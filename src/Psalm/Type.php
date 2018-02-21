@@ -27,7 +27,7 @@ use Psalm\Type\Union;
 abstract class Type
 {
     /**
-     * @var array<string, string[]>
+     * @var array<string, array<int, string>>
      */
     private static $memoized_tokens = [];
 

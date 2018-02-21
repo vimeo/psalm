@@ -177,7 +177,6 @@ class FileChecker extends SourceChecker implements StatementsSource
                     $return_type_location = $function_storage->return_type_location;
 
                     $function_checker->verifyReturnType(
-                        $this->project_checker,
                         $return_type,
                         null,
                         $return_type_location

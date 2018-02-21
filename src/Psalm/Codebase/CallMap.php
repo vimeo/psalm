@@ -131,6 +131,8 @@ class CallMap
      * @return array<string, array<int|string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
+     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress LessSpecificReturnStatement
      */
     public static function getCallMap()
     {
@@ -138,7 +140,7 @@ class CallMap
             return self::$call_map;
         }
 
-        /** @var array<string, array<string, string>> */
+        /** @var array<string, array<int|string, string>> */
         $call_map = require_once(__DIR__ . '/../CallMap.php');
 
         self::$call_map = [];

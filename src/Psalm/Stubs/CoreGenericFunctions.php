@@ -130,6 +130,15 @@ function array_reverse(array $arr, bool $preserve_keys = false) {}
  * @template TValue
  *
  * @param array<TKey, TValue> $arr
+ * @return array<TValue, TKey>
+ */
+function array_flip(array $arr) {}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
+ * @param array<TKey, TValue> $arr
  * @return TValue|false
  * @psalm-ignore-falsable-return
  */

@@ -261,7 +261,7 @@ class MethodSignatureTest extends TestCase
                         {
                             return serialize([$this->id]);
                         }
-                    }'
+                    }',
             ],
         ];
     }

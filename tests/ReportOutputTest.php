@@ -128,7 +128,7 @@ echo $a;';
                 'snippet_from' => 120,
                 'snippet_to' => 135,
                 'column_from' => 6,
-                'column_to' => 15
+                'column_to' => 15,
             ],
             [
                 'severity' => 'error',
@@ -145,7 +145,7 @@ echo $a;';
                 'snippet_from' => 196,
                 'snippet_to' => 203,
                 'column_from' => 6,
-                'column_to' => 8
+                'column_to' => 8,
             ],
             [
                 'severity' => 'error',
@@ -162,7 +162,7 @@ echo $a;';
                 'snippet_from' => 57,
                 'snippet_to' => 83,
                 'column_from' => 10,
-                'column_to' => 17
+                'column_to' => 17,
             ],
             [
                 'severity' => 'error',
@@ -181,7 +181,7 @@ echo $a;';
                 'snippet_from' => 6,
                 'snippet_to' => 85,
                 'column_from' => 42,
-                'column_to' => 49
+                'column_to' => 49,
             ],
         ];
 

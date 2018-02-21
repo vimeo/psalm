@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\Checker\FunctionLike\ReturnTypeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -251,7 +252,7 @@ class ClassChecker extends ClassLikeChecker
                             return null;
                         }
 
-                        FunctionLikeChecker::compareMethods(
+                        MethodChecker::compareMethods(
                             $project_checker,
                             $implementer_classlike_storage ?: $storage,
                             $interface_storage,
@@ -780,8 +781,10 @@ class ClassChecker extends ClassLikeChecker
                             $interface_method_id
                         );
 
-                        $method_checker->verifyReturnType(
-                            $project_checker,
+                        ReturnTypeChecker::verifyReturnType(
+                            $stmt,
+                            $source,
+                            $method_checker,
                             $interface_return_type,
                             $interface_class,
                             $interface_return_type_location
@@ -789,8 +792,10 @@ class ClassChecker extends ClassLikeChecker
                     }
                 }
 
-                $method_checker->verifyReturnType(
-                    $project_checker,
+                ReturnTypeChecker::verifyReturnType(
+                    $stmt,
+                    $source,
+                    $method_checker,
                     $return_type,
                     $self_class,
                     $return_type_location

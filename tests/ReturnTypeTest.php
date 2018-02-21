@@ -684,6 +684,14 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'moreSpecificDocblockReturnType' => [
+                '<?php
+                    /** @return int[] */
+                    function foo(array $arr) : array {
+                      return $arr;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
         ];
     }
 }

@@ -51,7 +51,7 @@ class DocumentationTest extends TestCase
                     ++$i;
                 } while (substr($file_lines[$i], 0, 3) !== '```' && $i < $j);
 
-                $issue_code[$current_issue][] = trim($current_block);
+                $issue_code[(string) $current_issue][] = trim($current_block);
             }
         }
 

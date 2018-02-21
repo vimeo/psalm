@@ -942,6 +942,9 @@ class Config
 
     /**
      * @return array<string, string>
+     *
+     * @psalm-suppress LessSpecificReturnStatement
+     * @psalm-suppress MoreSpecificReturnType
      */
     public function getComposerClassMap()
     {

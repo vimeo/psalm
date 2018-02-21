@@ -156,6 +156,7 @@ class IssueBuffer
             $code,
             $message
         );
+
         return $issue_string;
     }
 
