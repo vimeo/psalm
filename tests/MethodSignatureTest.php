@@ -244,6 +244,25 @@ class MethodSignatureTest extends TestCase
                       }
                     }',
             ],
+            'allowNoChildClassPropertyWhenMixed' => [
+                '<?php
+                    class A implements Serializable {
+                        /** @var int */
+                        private $id = 1;
+
+                        public function unserialize($serialized) : void
+                        {
+                            [
+                                $this->id,
+                            ] = (array) \unserialize((string) $serialized);
+                        }
+
+                        public function serialize() : string
+                        {
+                            return serialize([$this->id]);
+                        }
+                    }'
+            ],
         ];
     }
 

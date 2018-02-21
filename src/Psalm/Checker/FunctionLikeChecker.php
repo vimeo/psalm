@@ -211,7 +211,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     );
 
                     foreach ($parent_method_storage->params as $i => $guide_param) {
-                        if ($guide_param->type && (!$guide_param->signature_type || !$class_storage->user_defined)) {
+                        if ($guide_param->type && (!$guide_param->signature_type || !$parent_storage->user_defined)) {
                             $implemented_docblock_param_types[$i] = true;
                         }
                     }
