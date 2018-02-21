@@ -642,7 +642,7 @@ class Config
         $codebase = $project_checker->codebase;
 
         $file_storage = $codebase->createFileStorageForPath($path);
-        $file_to_scan = new FileScanner($path, $this->shortenFileName($path), false);
+        $file_to_scan = new FileScanner($path, $this->shortenFileName($path), true);
         $file_to_scan->scan(
             $codebase,
             $file_storage

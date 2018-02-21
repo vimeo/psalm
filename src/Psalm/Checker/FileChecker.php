@@ -91,11 +91,17 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function analyze(Context $file_context = null, $preserve_checkers = false)
     {
+        $codebase = $this->project_checker->codebase;
+
+        $file_storage = $codebase->file_storage_provider->get($this->file_path);
+
+        if (!$file_storage->deep_scan) {
+            throw new \UnexpectedValueException('File ' . $this->file_path . ' has not been properly scanned');
+        }
+
         if ($file_context) {
             $this->context = $file_context;
         }
-
-        $codebase = $this->project_checker->codebase;
 
         if (!$this->context) {
             $this->context = new Context();
@@ -110,8 +116,6 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         $this->context->is_global = true;
-
-        $codebase = $this->project_checker->codebase;
 
         $config = $codebase->config;
 

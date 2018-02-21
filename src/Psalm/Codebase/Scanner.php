@@ -286,8 +286,6 @@ class Scanner
             $this->debug_output
         );
 
-        $file_storage->deep_scan = $will_analyze;
-
         if (!$from_cache) {
             $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
         } else {
