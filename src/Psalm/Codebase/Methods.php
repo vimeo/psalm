@@ -113,7 +113,9 @@ class Methods
             $old_method_id = $fq_class_name . '::' . $old_constructor_name;
         }
 
-        if (CallMap::inCallMap($method_id) || ($old_method_id && CallMap::inCallMap($method_id))) {
+        if (!$class_storage->user_defined
+            && (CallMap::inCallMap($method_id) || ($old_method_id && CallMap::inCallMap($method_id)))
+        ) {
             return true;
         }
 

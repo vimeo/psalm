@@ -263,6 +263,17 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
+            'clashWithCallMapClass' => [
+                '<?php
+                    class Event {}
+                    class AClass
+                    {
+                        public function get(): Event
+                        {
+                            return new Event;
+                        }
+                    }',
+            ],
         ];
     }
 
