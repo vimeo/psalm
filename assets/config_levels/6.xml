@@ -71,5 +71,20 @@
         <TooManyArguments errorLevel="info" />
         <TypeDoesNotContainType errorLevel="info" />
         <TypeDoesNotContainNull errorLevel="info" />
+
+        <!-- level 6 issues - really bad things -->
+
+        <InvalidNullableReturnType errorLevel="info" />
+        <ImplementedReturnTypeMismatch errorLevel="info" />
+
+        <InvalidReturnStatement errorLevel="info" />
+        <InvalidReturnType errorLevel="info" />
+        <UndefinedThisPropertyAssignment errorLevel="info" />
+
+        <InvalidArgument errorLevel="info" />
+
+        <PossiblyUndefinedMethod errorLevel="info" />
+        <ReservedWord errorLevel="info" />
+
     </issueHandlers>
 </psalm>

@@ -60,7 +60,7 @@ Options:
 
     -i, --init [source_dir=src] [--level=3]
         Create a psalm config file in the current directory that points to [source_dir]
-        at the required level, from 1, most strict, to 5, most permissive
+        at the required level, from 1, most strict, to 6, most permissive
 
     --debug
         Debug information

@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
 <psalm
-    name="Example Psalm config with recommended defaults"
-    useDocblockTypes="true"
     totallyTyped="false"
 >
     <projectFiles>
@@ -27,5 +25,7 @@
 
         <DocblockTypeContradiction errorLevel="info" />
         <RedundantConditionGivenDocblockType errorLevel="info" />
+
+        <UnresolvableInclude errorLevel="info" />
     </issueHandlers>
 </psalm>
