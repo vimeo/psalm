@@ -5,12 +5,11 @@
 [![Travis CI](https://img.shields.io/travis/vimeo/psalm/master.svg)](https://travis-ci.org/vimeo/psalm/branches)
 [![Coverage Status](https://coveralls.io/repos/github/vimeo/psalm/badge.svg)](https://coveralls.io/github/vimeo/psalm)
 
-Psalm is a static analysis tool for finding errors in PHP applications.
+Psalm is a static analysis tool for finding errors in PHP applications, built on top of [PHP Parser](https://github.com/nikic/php-parser).
 
- - **v0.3.x** supports checking PHP 5.4 - 7.1 code, and requires **PHP 5.6+** to run.
- - **v0.2.x** supports checking PHP 5.4 - 7.0 code and requires **PHP 5.4+** to run.
+It's able to find a [large number issues](https://github.com/vimeo/psalm/blob/master/docs/issues.md), but it can also be configured to only care about a small subset of those.
 
-Check out the [wiki](https://github.com/vimeo/psalm/wiki) or [try a live demo](https://getpsalm.org/)!
+[Read more about Psalm](https://github.com/vimeo/psalm/blob/master/docs/index.md), [try a live demo](https://getpsalm.org/), or install it in your project by following the guide below.
 
 ## Quickstart Guide
 
@@ -32,13 +31,13 @@ Then run Psalm:
 ./vendor/bin/psalm
 ```
 
-The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level with 
+The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level with
 
 ```bash
 ./vendor/bin/psalm --init [source_dir] [level]
 ```
 
-You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/wiki/Dealing-with-code-issues).
+You can also [learn how to suppress certain issues](https://github.com/vimeo/psalm/blob/master/docs/dealing_with_code_issues.md).
 
 ## How Psalm Works
 
@@ -47,5 +46,3 @@ A basic rundown of Psalm’s internals can be found in [docs/how_psalm_works.md]
 ## Acknowledgements
 
 The engineering team [@vimeo](https://github.com/vimeo) for encouragement and patience, especially [@nbeliard](https://github.com/nbeliard), [@erunion](https://github.com/erunion) and [@nickyr](https://github.com/nickyr).
-
-Thanks also to [@nikic](https://github.com/nikic) for creating the excellent [php-parser](https://github.com/nikic/php-parser), on top of which Psalm is built.
