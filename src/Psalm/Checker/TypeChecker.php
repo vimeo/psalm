@@ -292,16 +292,16 @@ class TypeChecker
                 && self::isObjectContainedByObject($codebase, $input_type_part, $container_type_part)
             )
         ) {
-            if ($container_type_part instanceof TGenericObject && !$input_type_part instanceof TGenericObject) {
-                $type_coerced = true;
-                $type_coerced_from_mixed = true;
-
-                return false;
-            }
-
             $all_types_contain = true;
 
-            if ($input_type_part instanceof TGenericObject && $container_type_part instanceof TGenericObject) {
+            if ($container_type_part instanceof TGenericObject) {
+                if (!$input_type_part instanceof TGenericObject) {
+                    $type_coerced = true;
+                    $type_coerced_from_mixed = true;
+
+                    return false;
+                }
+
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     if (!isset($container_type_part->type_params[$i])) {
                         $type_coerced = true;
