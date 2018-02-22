@@ -481,6 +481,31 @@ class AnnotationTest extends TestCase
                         }
                     }',
             ],
+            'propertyDocblockAssignmentToMixed' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                         public function __get(string $name): ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         /** @param mixed $value */
+                         public function __set(string $name, $value): void {
+                         }
+                    }
+
+                    /** @param mixed $b */
+                    function foo($b) : void {
+                        $a = new A();
+                        $a->__set("foo", $b);
+                    }',
+                'assertions' => [],
+                'error_level' => ['MixedAssignment', 'MixedTypeCoercion'],
+            ],
         ];
     }
 
@@ -1060,6 +1085,31 @@ class AnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'propertyDocblockAssignmentToMixed' => [
+                '<?php
+                    /**
+                     * @property string $foo
+                     */
+                    class A {
+                         public function __get(string $name): ?string {
+                              if ($name === "foo") {
+                                   return "hello";
+                              }
+                         }
+
+                         /** @param mixed $value */
+                         public function __set(string $name, $value): void {
+                         }
+                    }
+
+                    /** @param mixed $b */
+                    function foo($b) : void {
+                        $a = new A();
+                        $a->__set("foo", $b);
+                    }',
+                'error_message' => 'MixedTypeCoercion',
+                'error_levels' => ['MixedAssignment'],
             ],
         ];
     }

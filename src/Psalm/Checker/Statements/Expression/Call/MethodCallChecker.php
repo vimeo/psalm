@@ -17,11 +17,13 @@ use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidMethodCall;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
+use Psalm\Issue\TypeCoercion;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
@@ -656,29 +658,65 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     ? $stmt->args[1]->value->inferredType
                     : null;
 
-                if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])
-                    && $second_arg_type
-                    && !TypeChecker::isContainedBy(
+                if (isset($class_storage->pseudo_property_set_types['$' . $prop_name]) && $second_arg_type) {
+                    $pseudo_set_type = ExpressionChecker::fleshOutType(
+                        $project_checker,
+                        $class_storage->pseudo_property_set_types['$' . $prop_name],
+                        $fq_class_name,
+                        $fq_class_name
+                    );
+
+                    $type_match_found = TypeChecker::isContainedBy(
                         $project_checker->codebase,
                         $second_arg_type,
-                        ExpressionChecker::fleshOutType(
-                            $project_checker,
-                            $class_storage->pseudo_property_set_types['$' . $prop_name],
-                            $fq_class_name,
-                            $fq_class_name
-                        )
-                    )
-                    && IssueBuffer::accepts(
-                        new InvalidPropertyAssignmentValue(
-                            $prop_name . ' with declared type \''
-                            . $class_storage->pseudo_property_set_types['$' . $prop_name]
-                            . '\' cannot be assigned type \'' . $second_arg_type . '\'',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )
-                ) {
-                    return false;
+                        $pseudo_set_type,
+                        false,
+                        false,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $to_string_cast
+                    );
+
+                    if ($type_coerced) {
+                        if ($type_coerced_from_mixed) {
+                            if (IssueBuffer::accepts(
+                                new MixedTypeCoercion(
+                                    $prop_name . ' expects \'' . $pseudo_set_type . '\', '
+                                        . ' parent type `' . $second_arg_type . '` provided',
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                // keep soldiering on
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new TypeCoercion(
+                                    $prop_name . ' expects \'' . $pseudo_set_type . '\', '
+                                        . ' parent type `' . $second_arg_type . '` provided',
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                // keep soldiering on
+                            }
+                        }
+                    }
+
+                    if (!$type_match_found && !$type_coerced_from_mixed) {
+                        if (IssueBuffer::accepts(
+                            new InvalidPropertyAssignmentValue(
+                                $prop_name . ' with declared type \''
+                                . $pseudo_set_type
+                                . '\' cannot be assigned type \'' . $second_arg_type . '\'',
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
                 }
                 break;
 

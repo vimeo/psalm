@@ -754,6 +754,40 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'noIssueWhenSuppressingMixedAssignmentForProperty' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $foo;
+
+                        /** @param mixed $a */
+                        public function barBar($a): void
+                        {
+                            $this->foo = $a;
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
+            'propertyAssignmentToMixed' => [
+                '<?php
+                    class C {
+                        /** @var string|null */
+                        public $foo;
+                    }
+
+                    /** @param mixed $a */
+                    function barBar(C $c, $a): void
+                    {
+                        $c->foo = $a;
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
         ];
     }
 
