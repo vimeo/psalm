@@ -11,6 +11,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -286,12 +287,48 @@ class TypeChecker
 
         if ($input_type_part->shallowEquals($container_type_part) ||
             (
-                $input_type_part instanceof TNamedObject &&
-                $container_type_part instanceof TNamedObject &&
-                self::isObjectContainedByObject($codebase, $input_type_part, $container_type_part)
+                $input_type_part instanceof TNamedObject
+                && $container_type_part instanceof TNamedObject
+                && self::isObjectContainedByObject($codebase, $input_type_part, $container_type_part)
             )
         ) {
+            if ($container_type_part instanceof TGenericObject && !$input_type_part instanceof TGenericObject) {
+                $type_coerced = true;
+                $type_coerced_from_mixed = true;
+
+                return false;
+            }
+
             $all_types_contain = true;
+
+            if ($input_type_part instanceof TGenericObject && $container_type_part instanceof TGenericObject) {
+                foreach ($input_type_part->type_params as $i => $input_param) {
+                    if (!isset($container_type_part->type_params[$i])) {
+                        $type_coerced = true;
+                        $type_coerced_from_mixed = true;
+
+                        $all_types_contain = false;
+                        break;
+                    }
+
+                    $container_param = $container_type_part->type_params[$i];
+
+                    if (!$input_param->isEmpty() &&
+                        !self::isContainedBy(
+                            $codebase,
+                            $input_param,
+                            $container_param,
+                            $input_param->ignore_nullable_issues,
+                            $input_param->ignore_falsable_issues,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed
+                        )
+                    ) {
+                        $all_types_contain = false;
+                    }
+                }
+            }
 
             if (($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike)
                 && ($container_type_part instanceof TArray || $container_type_part instanceof ObjectLike)

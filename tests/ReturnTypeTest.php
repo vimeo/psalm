@@ -692,6 +692,24 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'moreSpecificGenericReturnType' => [
+                '<?php
+                    /** @return Iterator<int, string> */
+                    function foo(array $a) {
+                        $obj = new ArrayObject($a);
+                        return $obj->getIterator();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'invalidGenericReturnType' => [
+                '<?php
+                    /** @return ArrayIterator<int, string> */
+                    function foo(array $a) {
+                        $obj = new ArrayObject([1, 2, 3, 4]);
+                        return $obj->getIterator();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }
