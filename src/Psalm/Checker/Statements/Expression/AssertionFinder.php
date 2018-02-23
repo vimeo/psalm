@@ -332,12 +332,12 @@ class AssertionFinder
 
                 if ($source instanceof StatementsSource
                     && ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $source,
-                    $var_type,
-                    new CodeLocation($source, $whichclass_expr),
-                    $source->getSuppressedIssues(),
-                    false
-                ) === false
+                        $source,
+                        $var_type,
+                        new CodeLocation($source, $whichclass_expr),
+                        $source->getSuppressedIssues(),
+                        false
+                    ) === false
                 ) {
                     // fall through
                 } else {
@@ -604,12 +604,12 @@ class AssertionFinder
                 if ($source instanceof StatementsSource
                     && $project_checker
                     && ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $source,
-                    $var_type,
-                    new CodeLocation($source, $whichclass_expr),
-                    $source->getSuppressedIssues(),
-                    false
-                ) === false
+                        $source,
+                        $var_type,
+                        new CodeLocation($source, $whichclass_expr),
+                        $source->getSuppressedIssues(),
+                        false
+                    ) === false
                 ) {
                     // fall through
                 } else {
