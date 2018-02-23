@@ -157,10 +157,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
-            if ($this->use_storage_cache) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
-            }
-
             if ($node->name === null) {
                 if (!$node instanceof PhpParser\Node\Stmt\Class_) {
                     throw new \LogicException('Anonymous classes are always classes');
@@ -177,15 +173,24 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $this->fq_classlike_names[] = $fq_classlike_name;
 
-            $storage = $this->codebase->createClassLikeStorage($fq_classlike_name);
+            if (!$this->use_storage_cache) {
+                $storage = $this->codebase->createClassLikeStorage($fq_classlike_name);
 
-            $storage->location = new CodeLocation($this->file_scanner, $node, null, true);
-            $storage->user_defined = !$this->codebase->register_global_functions;
-            $storage->stubbed = $this->codebase->register_global_functions;
-
-            $doc_comment = $node->getDocComment();
+                $storage->location = new CodeLocation($this->file_scanner, $node, null, true);
+                $storage->user_defined = !$this->codebase->register_global_functions;
+                $storage->stubbed = $this->codebase->register_global_functions;
+            } else {
+                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $this->file_path);
+                $storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name);
+            }
 
             $this->classlike_storages[] = $storage;
+
+            if ($this->use_storage_cache) {
+                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            }
+
+            $doc_comment = $node->getDocComment();
 
             if ($doc_comment) {
                 $docblock_info = null;
