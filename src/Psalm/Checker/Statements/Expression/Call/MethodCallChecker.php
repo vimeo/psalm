@@ -451,6 +451,19 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $returns_by_ref
                                 || $codebase->methods->getMethodReturnsByRef($method_id);
                     }
+
+                    if (strpos($stmt->name, 'assert') === 0) {
+                        $assertions = $codebase->methods->getMethodAssertions($method_id);
+
+                        if ($assertions) {
+                            self::applyAssertionsToContext(
+                                $assertions,
+                                $stmt->args,
+                                $context,
+                                $statements_checker
+                            );
+                        }
+                    }
                 }
 
                 if ($config->after_method_checks) {

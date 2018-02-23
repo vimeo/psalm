@@ -108,4 +108,12 @@ class FileScanner implements FileSource
     {
         return $this->file_name;
     }
+
+    /**
+     * @return \Psalm\Aliases
+     */
+    public function getAliases()
+    {
+        return new \Psalm\Aliases();
+    }
 }

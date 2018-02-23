@@ -27,6 +27,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation\FileManipulationBuffer;
+use Psalm\FileSource;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
@@ -565,7 +566,7 @@ class ExpressionChecker
     /**
      * @param  PhpParser\Node\Expr      $stmt
      * @param  string|null              $this_class_name
-     * @param  StatementsSource|null    $source
+     * @param  FileSource|null    $source
      * @param  int|null                 &$nesting
      *
      * @return string|null
@@ -573,7 +574,7 @@ class ExpressionChecker
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        StatementsSource $source = null,
+        FileSource $source = null,
         &$nesting = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
@@ -626,14 +627,14 @@ class ExpressionChecker
     /**
      * @param  PhpParser\Node\Expr      $stmt
      * @param  string|null              $this_class_name
-     * @param  StatementsSource|null    $source
+     * @param  FileSource|null    $source
      *
      * @return string|null
      */
     public static function getRootVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        StatementsSource $source = null
+        FileSource $source = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable
             || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -659,14 +660,14 @@ class ExpressionChecker
     /**
      * @param  PhpParser\Node\Expr      $stmt
      * @param  string|null              $this_class_name
-     * @param  StatementsSource|null    $source
+     * @param  FileSource|null    $source
      *
      * @return string|null
      */
     public static function getArrayVarId(
         PhpParser\Node\Expr $stmt,
         $this_class_name,
-        StatementsSource $source = null
+        FileSource $source = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getArrayVarId($stmt->var, $this_class_name, $source);

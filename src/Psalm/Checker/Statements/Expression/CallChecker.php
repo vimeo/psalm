@@ -1441,4 +1441,60 @@ class CallChecker
 
         return $function_id;
     }
+
+    /**
+     * @param  \Psalm\Storage\Assertion[] $assertions
+     * @param  array<int, PhpParser\Node\Arg> $args
+     * @param  Context           $context
+     * @param  StatementsChecker $statements_checker
+     *
+     * @return void
+     */
+    protected static function applyAssertionsToContext(
+        array $assertions,
+        array $args,
+        Context $context,
+        StatementsChecker $statements_checker
+    ) {
+        $type_assertions = [];
+
+        foreach ($assertions as $assertion) {
+            if (is_int($assertion->var_id)) {
+                if (!isset($args[$assertion->var_id])) {
+                    continue;
+                }
+
+                $arg_value = $args[$assertion->var_id]->value;
+
+                $arg_var_id = ExpressionChecker::getArrayVarId($arg_value, null, $statements_checker);
+
+                if ($arg_var_id) {
+                    $type_assertions[$arg_var_id] = $assertion->rule;
+                }
+            } else {
+                $type_assertions[$assertion->var_id] = $assertion->rule;
+            }
+        }
+
+        $changed_vars = [];
+
+        // while in an and, we allow scope to boil over to support
+        // statements of the form if ($x && $x->foo())
+        $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
+            $type_assertions,
+            $context->vars_in_scope,
+            $changed_vars,
+            [],
+            $statements_checker,
+            null
+        );
+
+        foreach ($changed_vars as $changed_var) {
+            if (isset($op_vars_in_scope[$changed_var])) {
+                $op_vars_in_scope[$changed_var]->from_docblock = true;
+            }
+        }
+
+        $context->vars_in_scope = $op_vars_in_scope;
+    }
 }

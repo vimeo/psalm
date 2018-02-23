@@ -5,24 +5,24 @@ use PhpParser;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Clause;
 use Psalm\CodeLocation;
+use Psalm\FileSource;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 
 class AlgebraChecker
 {
     /**
      * @param  PhpParser\Node\Expr      $conditional
      * @param  string|null              $this_class_name
-     * @param  StatementsSource         $source
+     * @param  FileSource         $source
      *
      * @return array<int, Clause>
      */
     public static function getFormula(
         PhpParser\Node\Expr $conditional,
         $this_class_name,
-        StatementsSource $source
+        FileSource $source
     ) {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd

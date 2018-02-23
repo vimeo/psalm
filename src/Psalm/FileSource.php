@@ -22,4 +22,9 @@ interface FileSource
      * @return string
      */
     public function getCheckedFilePath();
+
+    /**
+     * @return Aliases
+     */
+    public function getAliases();
 }

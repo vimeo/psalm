@@ -428,6 +428,18 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
         }
 
+        if ($function_storage
+            && strpos($function_storage->cased_name, 'assert') === 0
+            && $function_storage->assertions
+        ) {
+            self::applyAssertionsToContext(
+                $function_storage->assertions,
+                $stmt->args,
+                $context,
+                $statements_checker
+            );
+        }
+
         return null;
     }
 }

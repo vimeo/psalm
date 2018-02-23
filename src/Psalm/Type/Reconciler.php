@@ -38,7 +38,7 @@ class Reconciler
      * @param  array<string>             $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
      * @param  StatementsChecker         $statements_checker
-     * @param  CodeLocation              $code_location
+     * @param  CodeLocation|null         $code_location
      * @param  array<string>             $suppressed_issues
      *
      * @return array<string, Type\Union>
@@ -49,7 +49,7 @@ class Reconciler
         array &$changed_var_ids,
         array $referenced_var_ids,
         StatementsChecker $statements_checker,
-        CodeLocation $code_location,
+        CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
         $keys = [];
@@ -103,7 +103,7 @@ class Reconciler
                         $result_type,
                         $key,
                         $statements_checker,
-                        isset($referenced_var_ids[$key]) ? $code_location : null,
+                        $code_location && isset($referenced_var_ids[$key]) ? $code_location : null,
                         $suppressed_issues,
                         $failed_reconciliation
                     );

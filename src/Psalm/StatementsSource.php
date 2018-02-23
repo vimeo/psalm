@@ -11,11 +11,6 @@ interface StatementsSource extends FileSource
     public function getNamespace();
 
     /**
-     * @return Aliases
-     */
-    public function getAliases();
-
-    /**
      * @return array<string, string>
      */
     public function getAliasedClassesFlipped();

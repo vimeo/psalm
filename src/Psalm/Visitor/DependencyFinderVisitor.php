@@ -17,6 +17,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\FileSource;
 use Psalm\FunctionLikeParameter;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
@@ -31,7 +32,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 
-class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor, FileSource
 {
     /** @var Aliases */
     private $aliases;
@@ -637,7 +638,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         foreach ($stmt->getParams() as $param) {
             $param_array = $this->getTranslatedFunctionParam($param);
 
-            if (isset($existing_params[$param_array->name])) {
+            if (isset($existing_params['$' . $param_array->name])) {
                 if (IssueBuffer::accepts(
                     new DuplicateParam(
                         'Duplicate param $' . $param->name . ' in docblock for ' . $cased_function_id,
@@ -648,7 +649,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
 
-            $existing_params[$param_array->name] = $i;
+            $existing_params['$' . $param_array->name] = $i;
             $storage->param_types[$param_array->name] = $param_array->type;
             $storage->params[] = $param_array;
 
@@ -683,32 +684,42 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $var_assertions = [];
 
             foreach ($stmt->stmts as $function_stmt) {
-                if ($function_stmt instanceof PhpParser\Node\Stmt\If_
-                    && $function_stmt->stmts[0] instanceof PhpParser\Node\Stmt\Throw_
-                ) {
-                    $conditional = $function_stmt->cond;
+                if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
+                    $final_actions = \Psalm\Checker\ScopeChecker::getFinalControlActions(
+                        $function_stmt->stmts,
+                        false,
+                        false
+                    );
 
-                    if ($conditional instanceof PhpParser\Node\Expr\BooleanNot
-                        && $conditional->expr instanceof PhpParser\Node\Expr\Instanceof_
-                        && $conditional->expr->expr instanceof PhpParser\Node\Expr\Variable
-                        && is_string($conditional->expr->expr->name)
-                        && isset($existing_params[$conditional->expr->expr->name])
-                    ) {
-                        $param_offset = $existing_params[$conditional->expr->expr->name];
+                    if ($final_actions !== [\Psalm\Checker\ScopeChecker::ACTION_END]) {
+                        continue;
+                    }
 
-                        if ($conditional->expr->class instanceof PhpParser\Node\Expr\Variable
-                            && is_string($conditional->expr->class->name)
-                            && isset($existing_params[$conditional->expr->class->name])
-                        ) {
-                            $var_assertions[$param_offset]
-                                = $existing_params[$conditional->expr->class->name];
-                        } elseif ($conditional->expr->class instanceof PhpParser\Node\Name) {
-                            $instanceof_class = ClassLikeChecker::getFQCLNFromNameObject(
-                                $conditional->expr->class,
-                                $this->aliases
+                    $if_clauses = \Psalm\Checker\AlgebraChecker::getFormula(
+                        $function_stmt->cond,
+                        $this->fq_classlike_names
+                            ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1]
+                            : null,
+                        $this->file_scanner
+                    );
+
+                    $negated_formula = \Psalm\Checker\AlgebraChecker::negateFormula($if_clauses);
+
+                    $rules = \Psalm\Checker\AlgebraChecker::getTruthsFromFormula($negated_formula);
+
+                    foreach ($rules as $var_id => $rule) {
+                        if (isset($existing_params[$var_id])) {
+                            $param_offset = $existing_params[$var_id];
+
+                            $var_assertions[] = new \Psalm\Storage\Assertion(
+                                $param_offset,
+                                $rule
                             );
-
-                            $var_assertions[$param_offset] = $instanceof_class;
+                        } elseif (strpos($var_id, '$this->') === 0) {
+                            $var_assertions[] = new \Psalm\Storage\Assertion(
+                                $var_id,
+                                $rule
+                            );
                         }
                     }
                 }
@@ -1385,5 +1396,45 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         }
 
         return null;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFilePath()
+    {
+        return $this->file_path;
+    }
+
+    /**
+     * @return string
+     */
+    public function getFileName()
+    {
+        return $this->file_scanner->getFileName();
+    }
+
+    /**
+     * @return string
+     */
+    public function getCheckedFilePath()
+    {
+        return $this->file_scanner->getCheckedFilePath();
+    }
+
+    /**
+     * @return string
+     */
+    public function getCheckedFileName()
+    {
+        return $this->file_scanner->getCheckedFileName();
+    }
+
+    /**
+     * @return Aliases
+     */
+    public function getAliases()
+    {
+        return $this->aliases;
     }
 }
