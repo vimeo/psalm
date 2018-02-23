@@ -50,12 +50,10 @@ class FileScanner implements FileSource
         $storage_from_cache = false,
         $debug_output = false
     ) {
-        $can_use_storage_cache =
-            (!$this->will_analyze || $file_storage->deep_scan)
-                && $storage_from_cache
-                && !$file_storage->has_trait;
-
-        if ($can_use_storage_cache && !$codebase->config->after_visit_classlikes) {
+        if ((!$this->will_analyze || $file_storage->deep_scan)
+            && $storage_from_cache
+            && !$file_storage->has_trait
+        ) {
             return;
         }
 
@@ -73,7 +71,7 @@ class FileScanner implements FileSource
         }
 
         $traverser = new NodeTraverser();
-        $traverser->addVisitor(new DependencyFinderVisitor($codebase, $file_storage, $this, $can_use_storage_cache));
+        $traverser->addVisitor(new DependencyFinderVisitor($codebase, $file_storage, $this));
         $traverser->traverse($stmts);
 
         $file_storage->deep_scan = $this->will_analyze;

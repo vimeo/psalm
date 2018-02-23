@@ -80,17 +80,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var string[] */
     private $after_classlike_check_plugins;
 
-    /** @var bool */
-    private $use_storage_cache;
-
-    /**
-     * @param bool $use_storage_cache
-     */
     public function __construct(
         Codebase $codebase,
         FileStorage $file_storage,
-        FileScanner $file_scanner,
-        $use_storage_cache
+        FileScanner $file_scanner
     ) {
         $this->codebase = $codebase;
         $this->file_scanner = $file_scanner;
@@ -100,7 +93,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $this->aliases = $this->file_aliases = new Aliases();
         $this->file_storage = $file_storage;
         $this->after_classlike_check_plugins = $this->config->after_visit_classlikes;
-        $this->use_storage_cache = $use_storage_cache;
     }
 
     /**
@@ -173,24 +165,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $this->fq_classlike_names[] = $fq_classlike_name;
 
-            if (!$this->use_storage_cache) {
-                $storage = $this->codebase->createClassLikeStorage($fq_classlike_name);
+            $storage = $this->codebase->createClassLikeStorage($fq_classlike_name);
 
-                $storage->location = new CodeLocation($this->file_scanner, $node, null, true);
-                $storage->user_defined = !$this->codebase->register_global_functions;
-                $storage->stubbed = $this->codebase->register_global_functions;
-            } else {
-                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $this->file_path);
-                $storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name);
-            }
-
-            $this->classlike_storages[] = $storage;
-
-            if ($this->use_storage_cache) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
-            }
+            $storage->location = new CodeLocation($this->file_scanner, $node, null, true);
+            $storage->user_defined = !$this->codebase->register_global_functions;
+            $storage->stubbed = $this->codebase->register_global_functions;
 
             $doc_comment = $node->getDocComment();
+
+            $this->classlike_storages[] = $storage;
 
             if ($doc_comment) {
                 $docblock_info = null;
