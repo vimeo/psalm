@@ -1269,7 +1269,8 @@ class CallChecker
                             if (self::checkFunctionExists(
                                 $statements_checker,
                                 $function_id,
-                                $code_location
+                                $code_location,
+                                false
                             ) === false
                             ) {
                                 return false;
@@ -1377,13 +1378,15 @@ class CallChecker
      * @param  StatementsChecker    $statements_checker
      * @param  string               $function_id
      * @param  CodeLocation         $code_location
+     * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      *
      * @return bool
      */
     protected static function checkFunctionExists(
         StatementsChecker $statements_checker,
         &$function_id,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        $can_be_in_root_scope
     ) {
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
@@ -1393,7 +1396,8 @@ class CallChecker
         if (!$codebase->functions->functionExists($statements_checker, $function_id)) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
-            if ($function_id !== $root_function_id
+            if ($can_be_in_root_scope
+                && $function_id !== $root_function_id
                 && $codebase->functions->functionExists($statements_checker, $root_function_id)
             ) {
                 $function_id = $root_function_id;
@@ -1418,16 +1422,24 @@ class CallChecker
     /**
      * @param  StatementsChecker    $statements_checker
      * @param  string               $function_id
+     * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      *
      * @return string
      */
-    protected static function getExistingFunctionId(StatementsChecker $statements_checker, $function_id)
-    {
+    protected static function getExistingFunctionId(
+        StatementsChecker $statements_checker,
+        $function_id,
+        $can_be_in_root_scope
+    ) {
         $function_id = strtolower($function_id);
 
         $codebase = $statements_checker->getFileChecker()->project_checker->codebase;
 
         if ($codebase->functions->functionExists($statements_checker, $function_id)) {
+            return $function_id;
+        }
+
+        if (!$can_be_in_root_scope) {
             return $function_id;
         }
 

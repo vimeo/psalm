@@ -4,6 +4,7 @@ namespace Psalm\Tests;
 class NamespaceTest extends TestCase
 {
     use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
 
     /**
      * @return array
@@ -16,17 +17,17 @@ class NamespaceTest extends TestCase
                     namespace A {
                         /** @return void */
                         function foo() {
-            
+
                         }
-            
+
                         class Bar {
-            
+
                         }
                     }
                     namespace {
                         A\foo();
                         \A\foo();
-            
+
                         (new A\Bar);
                     }',
             ],
@@ -40,7 +41,7 @@ class NamespaceTest extends TestCase
                         function foo() {
                             echo \Aye\Bee\HELLO;
                         }
-            
+
                         class Bar {
                             /** @return void */
                             public function foo() {
@@ -48,6 +49,41 @@ class NamespaceTest extends TestCase
                             }
                         }
                     }',
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerInvalidCodeParse()
+    {
+        return [
+            'callNamespacedFunctionFromEmptyNamespace' => [
+                '<?php
+                    namespace A {
+                        /** @return void */
+                        function foo() {
+
+                        }
+                    }
+                    namespace {
+                        foo();
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'callRootFunctionFromNamespace' => [
+                '<?php
+                    namespace {
+                        /** @return void */
+                        function foo() {
+
+                        }
+                    }
+                    namespace A {
+                        \A\foo();
+                    }',
+                'error_message' => 'UndefinedFunction',
             ],
         ];
     }

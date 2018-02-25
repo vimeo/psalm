@@ -216,6 +216,9 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
 
             $is_predefined = true;
 
+            $is_maybe_root_function = !$stmt->name instanceof PhpParser\Node\Name\FullyQualified
+                && count($stmt->name->parts) === 1;
+
             if (!$in_call_map) {
                 $predefined_functions = $config->getPredefinedFunctions();
                 $is_predefined = isset($predefined_functions[$function_id]);
@@ -233,13 +236,18 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     if (self::checkFunctionExists(
                         $statements_checker,
                         $function_id,
-                        $code_location
+                        $code_location,
+                        $is_maybe_root_function
                     ) === false
                     ) {
                         return false;
                     }
                 } else {
-                    $function_id = self::getExistingFunctionId($statements_checker, $function_id);
+                    $function_id = self::getExistingFunctionId(
+                        $statements_checker,
+                        $function_id,
+                        $is_maybe_root_function
+                    );
                 }
 
                 $function_exists = $is_stubbed || $codebase_functions->functionExists(
