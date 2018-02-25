@@ -53,6 +53,8 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         /** @psalm-suppress UnresolvableInclude */
         require_once $file;
     }
+
+    define('PSALM_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm'));
 }
 
 /**
