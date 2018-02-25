@@ -141,10 +141,10 @@ $vendor_dir = getVendorDir($current_dir);
 
 requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
+define('PSALM_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm'));
+
 if (array_key_exists('v', $options)) {
-    /** @var string */
-    $version = \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm');
-    echo 'Psalm ' . $version . PHP_EOL;
+    echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
     exit;
 }
 
