@@ -644,6 +644,15 @@ class UnusedCodeTest extends TestCase
                     'MixedArrayOffset',
                 ],
             ],
+            'globalVariableUsage' => [
+                '<?php
+                    $a = "hello";
+                    function example() : void {
+                        global $a;
+                        echo $a;
+                    }
+                    example();',
+            ],
         ];
     }
 

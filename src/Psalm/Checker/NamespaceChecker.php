@@ -50,7 +50,6 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
     public function collectAnalyzableInformation()
     {
         $leftover_stmts = [];
-        $function_stmts = [];
 
         if (!isset(self::$public_namespace_constants[$this->namespace_name])) {
             self::$public_namespace_constants[$this->namespace_name] = [];
@@ -74,21 +73,9 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
                 }
 
                 $leftover_stmts[] = $stmt;
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_stmts[] = $stmt;
             } else {
                 $leftover_stmts[] = $stmt;
             }
-        }
-
-        // hoist functions to the top
-        foreach ($function_stmts as $stmt) {
-            $function_checker = new FunctionChecker($stmt, $this);
-
-            $this->source->addNamespacedFunctionChecker(
-                (string)$function_checker->getMethodId(),
-                $function_checker
-            );
         }
 
         if ($leftover_stmts) {

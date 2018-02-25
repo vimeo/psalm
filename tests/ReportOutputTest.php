@@ -115,40 +115,6 @@ echo $a;';
         $issue_data = [
             [
                 'severity' => 'error',
-                'line_from' => 7,
-                'line_to' => 7,
-                'type' => 'UndefinedConstant',
-                'message' => 'Const CHANGE_ME is not defined',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => 'echo CHANGE_ME;',
-                'selected_text' => 'CHANGE_ME',
-                'from' => 125,
-                'to' => 134,
-                'snippet_from' => 120,
-                'snippet_to' => 135,
-                'column_from' => 6,
-                'column_to' => 15,
-            ],
-            [
-                'severity' => 'error',
-                'line_from' => 15,
-                'line_to' => 15,
-                'type' => 'PossiblyUndefinedGlobalVariable',
-                'message' => 'Possibly undefined global variable $a, first seen on line 10',
-                'file_name' => 'somefile.php',
-                'file_path' => 'somefile.php',
-                'snippet' => 'echo $a',
-                'selected_text' => '$a',
-                'from' => 201,
-                'to' => 203,
-                'snippet_from' => 196,
-                'snippet_to' => 203,
-                'column_from' => 6,
-                'column_to' => 8,
-            ],
-            [
-                'severity' => 'error',
                 'line_from' => 3,
                 'line_to' => 3,
                 'type' => 'UndefinedVariable',
@@ -183,12 +149,46 @@ echo $a;';
                 'column_from' => 42,
                 'column_to' => 49,
             ],
+            [
+                'severity' => 'error',
+                'line_from' => 7,
+                'line_to' => 7,
+                'type' => 'UndefinedConstant',
+                'message' => 'Const CHANGE_ME is not defined',
+                'file_name' => 'somefile.php',
+                'file_path' => 'somefile.php',
+                'snippet' => 'echo CHANGE_ME;',
+                'selected_text' => 'CHANGE_ME',
+                'from' => 125,
+                'to' => 134,
+                'snippet_from' => 120,
+                'snippet_to' => 135,
+                'column_from' => 6,
+                'column_to' => 15,
+            ],
+            [
+                'severity' => 'error',
+                'line_from' => 15,
+                'line_to' => 15,
+                'type' => 'PossiblyUndefinedGlobalVariable',
+                'message' => 'Possibly undefined global variable $a, first seen on line 10',
+                'file_name' => 'somefile.php',
+                'file_path' => 'somefile.php',
+                'snippet' => 'echo $a',
+                'selected_text' => '$a',
+                'from' => 201,
+                'to' => 203,
+                'snippet_from' => 196,
+                'snippet_to' => 203,
+                'column_from' => 6,
+                'column_to' => 8,
+            ],
         ];
 
-        $emacs = 'somefile.php:7:6:error - Const CHANGE_ME is not defined
-somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
-somefile.php:3:10:error - Cannot find referenced variable $as_you
+        $emacs = 'somefile.php:3:10:error - Cannot find referenced variable $as_you
 somefile.php:2:42:error - Could not verify return type \'string|null\' for psalmCanVerify
+somefile.php:7:6:error - Const CHANGE_ME is not defined
+somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
 ';
         $this->assertSame(
             $issue_data,

@@ -539,14 +539,14 @@ class ReturnTypeTest extends TestCase
                 '<?php
                     /**
                      * @psalm-suppress UndefinedClass
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function fooFoo(): A {
-                        return array_pop([]);
+                        return $_GET["a"];
                     }
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement'],
             ],
             'returnArrayOfNullableInvalid' => [
                 '<?php

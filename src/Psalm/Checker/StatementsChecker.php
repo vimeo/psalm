@@ -304,6 +304,23 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+                foreach ($stmt->stmts as $function_stmt) {
+                    if ($function_stmt instanceof PhpParser\Node\Stmt\Global_) {
+                        foreach ($function_stmt->vars as $var) {
+                            if ($var instanceof PhpParser\Node\Expr\Variable) {
+                                if (is_string($var->name)) {
+                                    $var_id = '$' . $var->name;
+
+                                    // registers variable in global context
+                                    $context->hasVariable($var_id, $this);
+                                }
+                            }
+                        }
+                    } elseif (!$function_stmt instanceof PhpParser\Node\Stmt\Nop) {
+                        break;
+                    }
+                }
+
                 if (!$project_checker->codebase->register_global_functions) {
                     $function_id = strtolower($stmt->name);
                     $function_context = new Context($context->self);
@@ -534,7 +551,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @return void
      */
-    private function checkUnreferencedVars()
+    public function checkUnreferencedVars()
     {
         $source = $this->getSource();
         $function_storage = $source instanceof FunctionLikeChecker ? $source->getFunctionLikeStorage($this) : null;
