@@ -708,6 +708,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $rules = \Psalm\Checker\AlgebraChecker::getTruthsFromFormula($negated_formula);
 
                     foreach ($rules as $var_id => $rule) {
+                        if (strpos($rule, '|') !== false) {
+                            continue;
+                        }
+
                         if (isset($existing_params[$var_id])) {
                             $param_offset = $existing_params[$var_id];
 
