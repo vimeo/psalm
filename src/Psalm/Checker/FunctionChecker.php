@@ -377,7 +377,7 @@ class FunctionChecker extends FunctionLikeChecker
                                  * @return Type\Union
                                  * @psalm-suppress UnusedParam
                                  */
-                                function(Type\Union $t) use ($inner_type) {
+                                function (Type\Union $t) use ($inner_type) {
                                     return clone $inner_type;
                                 },
                                 $array_arg_type->properties
@@ -484,7 +484,7 @@ class FunctionChecker extends FunctionLikeChecker
                                      * @return Type\Union
                                      * @psalm-suppress UnusedParam
                                      */
-                                    function(Type\Union $t) use ($mapping_return_type) {
+                                    function (Type\Union $t) use ($mapping_return_type) {
                                         return clone $mapping_return_type;
                                     },
                                     $array_arg_type->properties
