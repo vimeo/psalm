@@ -369,6 +369,23 @@ class FunctionChecker extends FunctionLikeChecker
 
                 $inner_type = clone $closure_return_type;
 
+                if ($array_arg_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
+                    return new Type\Union([
+                        new Type\Atomic\ObjectLike(
+                            array_map(
+                                /**
+                                 * @return Type\Union
+                                 * @psalm-suppress UnusedParam
+                                 */
+                                function(Type\Union $t) use ($inner_type) {
+                                    return clone $inner_type;
+                                },
+                                $array_arg_type->properties
+                            )
+                        ),
+                    ]);
+                }
+
                 return new Type\Union([
                     new Type\Atomic\TArray([
                         $generic_key_type,
@@ -459,6 +476,23 @@ class FunctionChecker extends FunctionLikeChecker
                 }
 
                 if ($mapping_return_type) {
+                    if ($array_arg_type instanceof Type\Atomic\ObjectLike && count($call_args) === 2) {
+                        return new Type\Union([
+                            new Type\Atomic\ObjectLike(
+                                array_map(
+                                    /**
+                                     * @return Type\Union
+                                     * @psalm-suppress UnusedParam
+                                     */
+                                    function(Type\Union $t) use ($mapping_return_type) {
+                                        return clone $mapping_return_type;
+                                    },
+                                    $array_arg_type->properties
+                                )
+                            ),
+                        ]);
+                    }
+
                     return new Type\Union([
                         new Type\Atomic\TArray([
                             $generic_key_type,

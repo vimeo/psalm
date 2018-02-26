@@ -139,12 +139,12 @@ class ClosureTest extends TestCase
                     $e = array_map([$a_instance, "bar"], ["one", "two"]);
                     $f = array_map("baz", ["one", "two"]);',
                 'assertions' => [
-                    '$a' => 'array<int, string>',
-                    '$b' => 'array<int, string>',
-                    '$c' => 'array<int, string>',
-                    '$d' => 'array<int, string>',
-                    '$e' => 'array<int, string>',
-                    '$f' => 'array<int, string>',
+                    '$a' => 'array{0:string, 1:string}',
+                    '$b' => 'array{0:string, 1:string}',
+                    '$c' => 'array{0:string, 1:string}',
+                    '$d' => 'array{0:string, 1:string}',
+                    '$e' => 'array{0:string, 1:string}',
+                    '$f' => 'array{0:string, 1:string}',
                 ],
             ],
             'arrayCallableMethod' => [
