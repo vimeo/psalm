@@ -53,11 +53,11 @@ Psalm uses an XML config file. A barebones example looks like this:
 - `<projectFiles>`<br />
   Contains a list of all the directories that Psalm should inspect
 - `<fileExtensions>` (optional)<br />
-  A list of extensions to search over. See [[Checking non-PHP files]] to understand how to extend this.
+  A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 - `<plugins>` (optional)<br />
-  A list of `<plugin filename="path_to_plugin.php" />` entries. See the [[Plugins]] section for more information.
+  A list of `<plugin filename="path_to_plugin.php" />` entries. See the [Plugins](plugins.md) section for more information.
 - `<issueHandlers>` (optional)<br />
-  If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [[Dealing with code issues]] tells you more.
+  If you don't want Psalm to complain about every single issue it finds, the issueHandler tag allows you to configure that. [Dealing with code issues](dealing_with_code_issues.md) tells you more.
 - `<mockClasses>` (optional)<br />
   Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
 - `<stubs>` (optional)<br />

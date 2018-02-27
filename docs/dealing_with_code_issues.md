@@ -1,6 +1,8 @@
 # Dealing with code issues
 
-Code issues in Psalm fall into three categories:
+Psalm has a large number of [code issues](issues.md). Each project can specify its own reporting level for a given issue.
+
+Code issue levels in Psalm fall into three categories:
 <dl>
   <dt>error</dt>
   <dd>this will cause Psalm to print a message, and to ultimately terminate with a non-zero exist status</dd>
