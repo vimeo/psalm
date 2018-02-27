@@ -591,9 +591,23 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($context->check_variables) {
-                $context->vars_in_scope['$' . $var->name] = Type::getMixed();
-                $context->vars_possibly_in_scope['$' . $var->name] = true;
-                $this->registerVariable('$' . $var->name, new CodeLocation($this, $stmt), null);
+                $var_id = '$' . $var->name;
+
+                $context->vars_in_scope[$var_id] = Type::getMixed();
+                $context->vars_possibly_in_scope[$var_id] = true;
+                $context->assigned_var_ids[$var_id] = true;
+
+                $location = new CodeLocation($this, $stmt);
+
+                if ($context->collect_references) {
+                    $context->unreferenced_vars[$var_id] = $location;
+                }
+
+                $this->registerVariable(
+                    $var_id,
+                    $location,
+                    $context->branch_point
+                );
             }
         }
 
