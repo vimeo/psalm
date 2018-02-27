@@ -1,15 +1,8 @@
-## Using Psalter
+# Using Psalter
 
 Psalm is good at finding potential issues in large codebases, but once found, it can be something of a gargantuan task to fix all the issues.
 
-## Safety features
-
-Updating code is inherently risky, doing so automatically is even more so. I've added a few features to make it a little more reassuring:
-
-- To see what changes Psalter will make ahead of time, you can run it with `--dry-run`.
-- You can target particular versions of PHP via `--php-version`, so that (for example) you don't add nullable typehints to PHP 7.0 code, or any typehints at all to PHP 5.6 code. `--php-version` defaults to your current version.
-- it has a `--safe-types` mode that will only update PHP 7 return typehints with information Psalm has gathered from non-docblock sources of type information (e.g. typehinted params, `instanceof` checks, other return typehints etc.)
-
+- [Safety features](#safety-features)
 - [Plugins](#plugins)
 - [Supported fixes](#supported-fixes)
   - [MissingReturnType and MissingClosureReturnType](#missingreturntype)
@@ -20,6 +13,16 @@ Updating code is inherently risky, doing so automatically is even more so. I've 
   - [MismatchingDocblockReturnType](#mismatchingdocblockreturntype)
   - [LessSpecificReturnType](#lessspecificreturntype)
   - [PossiblyUndefinedVariable](#possiblyundefinedvariable)
+
+
+## Safety features
+
+Updating code is inherently risky, doing so automatically is even more so. I've added a few features to make it a little more reassuring:
+
+- To see what changes Psalter will make ahead of time, you can run it with `--dry-run`.
+- You can target particular versions of PHP via `--php-version`, so that (for example) you don't add nullable typehints to PHP 7.0 code, or any typehints at all to PHP 5.6 code. `--php-version` defaults to your current version.
+- it has a `--safe-types` mode that will only update PHP 7 return typehints with information Psalm has gathered from non-docblock sources of type information (e.g. typehinted params, `instanceof` checks, other return typehints etc.)
+
 
 ## Plugins
 
