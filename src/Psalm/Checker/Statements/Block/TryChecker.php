@@ -51,7 +51,7 @@ class TryChecker
             }
         }
 
-        $assigned_var_ids = $context->assigned_var_ids;
+        $assigned_var_ids = $try_context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
         $old_unreferenced_vars = $try_context->unreferenced_vars;
@@ -62,7 +62,13 @@ class TryChecker
             return false;
         }
 
-        $context->assigned_var_ids = $assigned_var_ids;
+        /** @var array<string, bool> */
+        $newly_assigned_var_ids = $context->assigned_var_ids;
+
+        $context->assigned_var_ids = array_merge(
+            $assigned_var_ids,
+            $newly_assigned_var_ids
+        );
 
         if ($try_context !== $context) {
             foreach ($context->vars_in_scope as $var_id => $type) {
@@ -108,11 +114,11 @@ class TryChecker
             && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true);
 
         if (!$all_catches_leave) {
-            foreach ($assigned_var_ids as $assigned_var_id => $_) {
+            foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
                 $context->removeVarFromConflictingClauses($assigned_var_id);
             }
         } else {
-            foreach ($assigned_var_ids as $assigned_var_id => $_) {
+            foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
                 $try_context->removeVarFromConflictingClauses($assigned_var_id);
             }
         }
@@ -251,7 +257,8 @@ class TryChecker
 
                 foreach ($catch_context->unreferenced_vars as $var_id => $location) {
                     if (!isset($old_unreferenced_vars[$var_id])
-                        && isset($context->unreferenced_vars[$var_id])
+                        && (isset($context->unreferenced_vars[$var_id])
+                            || isset($newly_assigned_var_ids[$var_id]))
                     ) {
                         $statements_checker->registerVariableUse($location);
                     } elseif (isset($old_unreferenced_vars[$var_id])
