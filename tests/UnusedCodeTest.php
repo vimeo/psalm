@@ -684,6 +684,34 @@ class UnusedCodeTest extends TestCase
                         printf("s is %s\n", $s);
                     }',
             ],
+            'unusedParamWithUnderscore' => [
+                '<?php
+                    function foo(int $_) : void {}
+
+                    foo(4);',
+            ],
+            'unusedParamWithUnusedPrefix' => [
+                '<?php
+                    function foo(int $unusedArg) : void {}
+
+                    foo(4);',
+            ],
+            'possiblyUnusedParamWithUnderscore' => [
+                '<?php
+                    class A {
+                        public static function foo(int $_ = null) : void {}
+                    }
+
+                    A::foo();',
+            ],
+            'possiblyUnusedParamWithUnusedPrefix' => [
+                '<?php
+                    class A {
+                        public static function foo(int $unusedArg = null) : void {}
+                    }
+
+                    A::foo();',
+            ],
         ];
     }
 

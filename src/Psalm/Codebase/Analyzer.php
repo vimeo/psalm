@@ -123,14 +123,12 @@ class Analyzer
 
         $analysis_worker =
             /**
-             * @param int $i
+             * @param int $_
              * @param string $file_path
              *
              * @return void
-             *
-             * @psalm-suppress UnusedParam
              */
-            function ($i, $file_path) use ($project_checker, $filetype_checkers) {
+            function ($_, $file_path) use ($project_checker, $filetype_checkers) {
                 $file_checker = $this->getFileChecker($project_checker, $file_path, $filetype_checkers);
 
                 if ($this->debug_output) {
