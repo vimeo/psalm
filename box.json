@@ -1,0 +1,18 @@
+{
+    "main" : "./psalm",
+    "output" : "./psalm.phar",
+    "directories" : [
+        "src",
+        "assets",
+        "vendor"
+    ],
+    "files" : [
+        "config.xsd"
+    ],
+    "intercept" : false,
+    "compactors" : [
+        "Herrera\\Box\\Compactor\\Php"
+    ],
+    "compression" : "BZ2",
+    "chmod" : "0755"
+}
