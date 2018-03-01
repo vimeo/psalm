@@ -27,7 +27,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
 
         if (file_exists($nested_autoload_file)) {
-            $nested_autoload_file_path = realpath($nested_autoload_file);
+            $nested_autoload_file_path = /*realpath(*/$nested_autoload_file/*)*/;
             if (!in_array($nested_autoload_file_path, $autoload_files, false)) {
                 $autoload_files[] = $nested_autoload_file_path;
             }
@@ -38,7 +38,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
             $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
         if (file_exists($vendor_autoload_file)) {
-            $autoload_file_path = realpath($vendor_autoload_file);
+            $autoload_file_path = /*realpath(*/$vendor_autoload_file/*)*/;
             if (!in_array($autoload_file_path, $autoload_files, false)) {
                 $autoload_files[] = $autoload_file_path;
             }
@@ -134,6 +134,7 @@ function getPathsToCheck($f_paths)
 
             if (realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalm')
                 || realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalter')
+                || (class_exists(\Phar::class, false) && realpath($input_path) === \Phar::running(false))
             ) {
                 continue;
             }
