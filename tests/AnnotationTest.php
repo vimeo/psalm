@@ -36,6 +36,29 @@ class AnnotationTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testPhpStormGenericsWithValidIterableArgument()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param iterable|string[] $i */
+                function takesArrayIteratorOfString(iterable $i): void {
+                    foreach ($i as $s2) {
+                        takesString($s2);
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidScalarArgument
      *
