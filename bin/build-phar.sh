@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-if ! ( php -m | grep -q bz2 ) ; then
+if ! php -r 'extension_loaded("bz2") or exit(1);' ; then
 	echo "You need to install (or enable) bz2 php extension"
 	exit 1
 fi
