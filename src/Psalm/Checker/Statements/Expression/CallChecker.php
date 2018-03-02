@@ -1035,7 +1035,8 @@ class CallChecker
         if ($required_param_count < $min_closure_param_count) {
             if (IssueBuffer::accepts(
                 new TooManyArguments(
-                    'Too many arguments in closure for ' . $method_id,
+                    'The callable passed to ' . $method_id . ' will be called with too many arguments, expecting '
+                        . $required_param_count,
                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                 ),
                 $statements_checker->getSuppressedIssues()
@@ -1045,7 +1046,8 @@ class CallChecker
         } elseif ($required_param_count > $max_closure_param_count) {
             if (IssueBuffer::accepts(
                 new TooFewArguments(
-                    'You must supply a param in the closure for ' . $method_id,
+                    'The callable passed to ' . $method_id . ' will be called with too few arguments, expecting '
+                        . $required_param_count,
                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                 ),
                 $statements_checker->getSuppressedIssues()
