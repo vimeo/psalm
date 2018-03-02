@@ -499,7 +499,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
-                if ($var_name === '$_' || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused')) {
+                if (strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused')) {
                     continue;
                 }
 
