@@ -520,6 +520,24 @@ class FunctionCallTest extends TestCase
                     array_filter([1, 2, 3], "foo");
                     array_filter([1, 2, 3], "A::bar");',
             ],
+            'arrayFilterIgnoreMissingClass' => [
+                '<?php
+                    array_filter([1, 2, 3], "A::bar");',
+                'assertions' => [],
+                'error_levels' => ['UndefinedClass'],
+            ],
+            'arrayFilterIgnoreMissingMethod' => [
+                '<?php
+                    class A {
+                        public static function bar(int $i) : bool {
+                            return true;
+                        }
+                    }
+
+                    array_filter([1, 2, 3], "A::foo");',
+                'assertions' => [],
+                'error_levels' => ['UndefinedMethod'],
+            ],
         ];
     }
 

@@ -953,9 +953,18 @@ class CallChecker
                             $callable_fq_class_name = $container_class;
                     }
 
-                    $method_storage = $codebase->methods->getStorage(
-                        $callable_fq_class_name . '::' . $method_name
-                    );
+                    if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
+                        return;
+                    }
+
+                    try {
+                        $method_storage = $codebase->methods->getStorage(
+                            $callable_fq_class_name . '::' . $method_name
+                        );
+                    } catch (\UnexpectedValueException $e) {
+                        // the method may not exist, but we're suppressing that issue
+                        return;
+                    }
 
                     $closure_types[] = new Type\Atomic\Fn(
                         'Closure',
@@ -1398,6 +1407,10 @@ class CallChecker
                             ) === false
                             ) {
                                 return false;
+                            }
+
+                            if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
+                                return;
                             }
 
                             if (MethodChecker::checkMethodExists(
