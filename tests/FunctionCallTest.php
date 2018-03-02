@@ -745,6 +745,15 @@ class FunctionCallTest extends TestCase
                     array_map("foo", [1, 2, 3]);',
                 'error_message' => 'TooFewArguments',
             ],
+            'arrayMapTooManyArgs' => [
+                '<?php
+                    function foo() : bool {
+                      return true;
+                    }
+
+                    array_map("foo", [1, 2, 3]);',
+                'error_message' => 'TooManyArguments',
+            ],
         ];
     }
 }
