@@ -1033,9 +1033,11 @@ class CallChecker
         }
 
         if ($required_param_count < $min_closure_param_count) {
+            $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . 'arguments';
+
             if (IssueBuffer::accepts(
                 new TooManyArguments(
-                    'The callable passed to ' . $method_id . ' will be called with too many arguments, expecting '
+                    'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                 ),
@@ -1044,9 +1046,11 @@ class CallChecker
                 return false;
             }
         } elseif ($required_param_count > $max_closure_param_count) {
+            $argument_text = $max_closure_param_count === 1 ? 'one argument' : $max_closure_param_count . 'arguments';
+
             if (IssueBuffer::accepts(
                 new TooFewArguments(
-                    'The callable passed to ' . $method_id . ' will be called with too few arguments, expecting '
+                    'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
                     new CodeLocation($statements_checker->getSource(), $closure_arg)
                 ),
