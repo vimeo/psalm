@@ -957,10 +957,10 @@ class CallChecker
                         return;
                     }
 
+                    $function_id = $callable_fq_class_name . '::' . $method_name;
+
                     try {
-                        $method_storage = $codebase->methods->getStorage(
-                            $callable_fq_class_name . '::' . $method_name
-                        );
+                        $method_storage = $codebase->methods->getStorage($function_id);
                     } catch (\UnexpectedValueException $e) {
                         // the method may not exist, but we're suppressing that issue
                         return;
@@ -1380,7 +1380,7 @@ class CallChecker
 
                     foreach ($function_ids as $function_id) {
                         if (strpos($function_id, '::') !== false) {
-                            list($callable_fq_class_name) = explode('::', $function_id);
+                            list($callable_fq_class_name, $method_name) = explode('::', $function_id);
 
                             switch ($callable_fq_class_name) {
                                 case 'self':
@@ -1398,6 +1398,8 @@ class CallChecker
 
                                     $callable_fq_class_name = $container_class;
                             }
+
+                            $function_id = $callable_fq_class_name . '::' . $method_name;
 
                             if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                 $statements_checker,
