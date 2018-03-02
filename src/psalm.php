@@ -177,8 +177,8 @@ if (isset($options['i'])) {
         }
 
         if (isset($args[1])) {
-            if (!preg_match('/^[1-5]$/', $args[1])) {
-                die('Config strictness must be a number between 1 and 5 inclusive' . PHP_EOL);
+            if (!preg_match('/^[1-6]$/', $args[1])) {
+                die('Config strictness must be a number between 1 and 6 inclusive' . PHP_EOL);
             }
 
             $level = (int)$args[1];

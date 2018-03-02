@@ -6,6 +6,7 @@
 - [Installation](installation.md)
 - [Configuration](configuration.md)
 - [Running Psalm](running_psalm.md)
+- [Supported Annotations](supported_annotations.md)
 - [Dealing with code issues](dealing_with_code_issues.md)
 - [Typing in Psalm](typing_in_psalm.md)
 - [Plugins](plugins.md)
