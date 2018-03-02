@@ -166,7 +166,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                         // this is fine
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TString
-                        || $var_type_part instanceof TArray
+                        || $var_type_part instanceof Type\Atomic\TArray
                         || ($var_type_part instanceof Type\Atomic\ObjectLike
                             && count($var_type_part->properties) === 2)
                     ) {
