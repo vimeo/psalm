@@ -1,6 +1,6 @@
 {
     "main" : "./psalm",
-    "output" : "./psalm.phar",
+    "output" : "./build/psalm.phar",
     "directories" : [
         "src",
         "assets",
@@ -14,5 +14,7 @@
         "Herrera\\Box\\Compactor\\Php"
     ],
     "compression" : "BZ2",
-    "chmod" : "0755"
+    "chmod" : "0755",
+    "shebang" : "#!/usr/bin/env php",
+    "stub" : true
 }
