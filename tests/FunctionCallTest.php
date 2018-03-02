@@ -505,6 +505,21 @@ class FunctionCallTest extends TestCase
                     'MissingClosureParamType',
                 ],
             ],
+            'arrayFilterGoodArgs' => [
+                '<?php
+                    function foo(int $i) : bool {
+                      return true;
+                    }
+
+                    class A {
+                        public static function bar(int $i) : bool {
+                            return true;
+                        }
+                    }
+
+                    array_filter([1, 2, 3], "foo");
+                    array_filter([1, 2, 3], "A::bar");',
+            ],
         ];
     }
 
@@ -675,6 +690,42 @@ class FunctionCallTest extends TestCase
                     $a = rand(0, 1) ? function(): void {} : 23515;
                     $a();',
                 'error_message' => 'PossiblyInvalidFunctionCall',
+            ],
+            'arrayFilterBadArgs' => [
+                '<?php
+                    function foo(int $i) : bool {
+                      return true;
+                    }
+
+                    array_filter(["hello"], "foo");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'arrayFilterTooFewArgs' => [
+                '<?php
+                    function foo(int $i, string $s) : bool {
+                      return true;
+                    }
+
+                    array_filter([1, 2, 3], "foo");',
+                'error_message' => 'TooFewArguments',
+            ],
+            'arrayMapBadArgs' => [
+                '<?php
+                    function foo(int $i) : bool {
+                      return true;
+                    }
+
+                    array_map("foo", ["hello"]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'arrayMapTooFewArgs' => [
+                '<?php
+                    function foo(int $i, string $s) : bool {
+                      return true;
+                    }
+
+                    array_map("foo", [1, 2, 3]);',
+                'error_message' => 'TooFewArguments',
             ],
         ];
     }

@@ -6,6 +6,7 @@ use Psalm\Aliases;
 use Psalm\Checker\ClassChecker;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
+use Psalm\Checker\Statements\Expression\CallChecker;
 use Psalm\Checker\Statements\Expression\IncludeChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase;
@@ -365,6 +366,38 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         } else {
                             $this->file_storage->constants[$const_name] = $const_type;
                             $this->file_storage->declaring_constants[$const_name] = $this->file_path;
+                        }
+                    }
+                }
+
+                $mapping_function_ids = [];
+
+                if (($function_id === 'array_map' && isset($node->args[0]))
+                    || ($function_id === 'array_filter' && isset($node->args[1]))
+                ) {
+                    $node_arg_value = $function_id = 'array_map' ? $node->args[0]->value : $node->args[1]->value;
+
+                    if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
+                        || $node_arg_value instanceof PhpParser\Node\Expr\Array_
+                    ) {
+                        $mapping_function_ids = CallChecker::getFunctionIdsFromCallableArg(
+                            $this->file_scanner,
+                            $node_arg_value
+                        );
+                    }
+
+                    foreach ($mapping_function_ids as $potential_method_id) {
+                        if (strpos($potential_method_id, '::') === false) {
+                            continue;
+                        }
+
+                        list($callable_fqcln) = explode('::', $potential_method_id);
+
+                        if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
+                            $this->codebase->scanner->queueClassLikeForScanning(
+                                $callable_fqcln,
+                                $this->file_path
+                            );
                         }
                     }
                 }

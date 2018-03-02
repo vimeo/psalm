@@ -359,6 +359,14 @@ class Reflection
                 $storage->params[] = $param_obj;
             }
 
+            $storage->required_param_count = 0;
+
+            foreach ($storage->params as $i => $param) {
+                if (!$param->is_optional) {
+                    $storage->required_param_count = $i + 1;
+                }
+            }
+
             $storage->cased_name = $reflection_function->getName();
 
             $config = \Psalm\Config::getInstance();
