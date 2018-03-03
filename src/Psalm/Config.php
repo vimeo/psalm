@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use Composer\Autoload\ClassLoader;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config\IssueHandler;
@@ -232,6 +233,9 @@ class Config
 
     /** @var array<string, bool> */
     private $predefined_functions = [];
+
+    /** @var ClassLoader|null */
+    private $composer_class_loader;
 
     protected function __construct()
     {
@@ -510,6 +514,11 @@ class Config
         }
 
         throw new \UnexpectedValueException('No config initialized');
+    }
+
+    public function setComposerClassLoader(ClassLoader $loader)
+    {
+        $this->composer_class_loader = $loader;
     }
 
     /**
@@ -941,74 +950,17 @@ class Config
     }
 
     /**
-     * @param bool $debug_output
-     * @return array<string, string>
+     * @param  string $fq_classlike_name
      *
-     * @psalm-suppress LessSpecificReturnStatement
-     * @psalm-suppress MoreSpecificReturnType
+     * @return string|false
      */
-    public function getComposerClassMap($debug_output)
+    public function getComposerFilePathForClassLike($fq_classlike_name)
     {
-        if ($debug_output) {
-            echo 'Trying to get composer classmap in ' . $this->base_dir . PHP_EOL;
+        if (!$this->composer_class_loader) {
+            throw new \LogicException('Composer class loader should exist here');
         }
 
-        $vendor_dir_path = $this->base_dir . self::getVendorDir($this->base_dir);
-
-        if (!is_dir($vendor_dir_path)) {
-            if ($debug_output) {
-                echo 'Could not resolve path to ' . $vendor_dir_path . PHP_EOL;
-            }
-
-            return [];
-        }
-
-        $vendor_dir_path = realpath($vendor_dir_path);
-
-        if (!$vendor_dir_path) {
-            if ($debug_output) {
-                echo 'Realpath failed when loading composer classmap' . PHP_EOL;
-            }
-
-            return [];
-        }
-
-        $autoload_files_classmap =
-            $vendor_dir_path . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_classmap.php';
-
-        if (!file_exists($autoload_files_classmap)) {
-            if ($debug_output) {
-                echo 'No autoload_classmap.php found in ' . $vendor_dir_path . PHP_EOL;
-            }
-
-            return [];
-        }
-
-        /**
-         * @psalm-suppress MixedAssignment
-         * @psalm-suppress UnresolvableInclude
-         */
-        $class_map = include_once $autoload_files_classmap;
-
-        if (is_array($class_map)) {
-            $composer_classmap = array_change_key_case($class_map);
-
-            $composer_classmap = array_filter(
-                $composer_classmap,
-                /**
-                 * @param string $file_path
-                 *
-                 * @return bool
-                 */
-                function ($file_path) use ($vendor_dir_path) {
-                    return strpos($file_path, $vendor_dir_path) === 0;
-                }
-            );
-        } else {
-            $composer_classmap = [];
-        }
-
-        return $composer_classmap;
+        return $this->composer_class_loader->findFile($fq_classlike_name);
     }
 
     /**

@@ -5,7 +5,7 @@
  * @param  bool   $has_explicit_root
  * @param  string $vendor_dir
  *
- * @return void
+ * @return \Composer\Autoload\ClassLoader
  */
 function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 {
@@ -25,7 +25,10 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
 
         if (file_exists($nested_autoload_file)) {
-            $autoload_files[] = realpath($nested_autoload_file);
+            $nested_autoload_file_path = realpath($nested_autoload_file);
+            if (!in_array($nested_autoload_file_path, $autoload_files, false)) {
+                $autoload_files[] = $nested_autoload_file_path;
+            }
             $has_autoloader = true;
         }
 
@@ -33,7 +36,10 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
             $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
         if (file_exists($vendor_autoload_file)) {
-            $autoload_files[] = realpath($vendor_autoload_file);
+            $autoload_file_path = realpath($vendor_autoload_file);
+            if (!in_array($autoload_file_path, $autoload_files, false)) {
+                $autoload_files[] = $autoload_file_path;
+            }
             $has_autoloader = true;
         }
 
@@ -49,12 +55,20 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         }
     }
 
+    $first_autoloader = null;
+
     foreach ($autoload_files as $file) {
         /** @psalm-suppress UnresolvableInclude */
-        require_once $file;
+        $autoloader = require_once $file;
+
+        if (!$first_autoloader) {
+            $first_autoloader = $autoloader;
+        }
     }
 
     define('PSALM_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm'));
+
+    return $first_autoloader;
 }
 
 /**

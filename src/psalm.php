@@ -139,7 +139,7 @@ if (isset($options['r']) && is_string($options['r'])) {
 
 $vendor_dir = getVendorDir($current_dir);
 
-requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+$first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
 if (array_key_exists('v', $options)) {
     echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
@@ -265,6 +265,8 @@ if ($path_to_config) {
 } else {
     $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
 }
+
+$config->setComposerClassLoader($first_autoloader);
 
 $file_storage_cache_provider = isset($options['no-cache'])
     ? new Psalm\Provider\NoCache\NoFileStorageCacheProvider()
