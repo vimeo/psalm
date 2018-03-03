@@ -170,17 +170,29 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                IfChecker::analyze($this, $stmt, $context, $loop_scope);
+                if (IfChecker::analyze($this, $stmt, $context, $loop_scope) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
-                TryChecker::analyze($this, $stmt, $context, $loop_scope);
+                if (TryChecker::analyze($this, $stmt, $context, $loop_scope) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
-                ForChecker::analyze($this, $stmt, $context);
+                if (ForChecker::analyze($this, $stmt, $context) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
-                ForeachChecker::analyze($this, $stmt, $context);
+                if (ForeachChecker::analyze($this, $stmt, $context) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
-                WhileChecker::analyze($this, $stmt, $context);
+                if (WhileChecker::analyze($this, $stmt, $context) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
-                DoChecker::analyze($this, $stmt, $context);
+                if (DoChecker::analyze($this, $stmt, $context) === false) {
+                    return false;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 $this->analyzeConstAssignment($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {

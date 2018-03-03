@@ -93,6 +93,23 @@ class TryCatchTest extends TestCase
                         }
                     }',
             ],
+            'stopAnalysisAfterBadTryIssue' => [
+                '<?php
+                    $foo = true;
+
+                    try {
+                      $a->bar();
+                    } catch (\TypeError $e) {
+                      $foo = false;
+                    }
+
+                    if (!$foo) {}',
+                'assertions' => [],
+                'error_message' => [
+                    'UndefinedGlobalVariable' => \Psalm\Config::REPORT_INFO,
+                    'MixedMethodCall' => \Psalm\Config::REPORT_INFO,
+                ],
+            ],
         ];
     }
 
