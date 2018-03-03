@@ -25,4 +25,9 @@ class TestConfig extends Config
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
     }
+
+    public function getComposerFilePathForClassLike($fq_classlike_name)
+    {
+        return false;
+    }
 }

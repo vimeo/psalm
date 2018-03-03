@@ -5,6 +5,8 @@
  * @param  bool   $has_explicit_root
  * @param  string $vendor_dir
  *
+ * @psalm-suppress MixedInferred
+ *
  * @return \Composer\Autoload\ClassLoader
  */
 function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
@@ -58,12 +60,19 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
     $first_autoloader = null;
 
     foreach ($autoload_files as $file) {
-        /** @psalm-suppress UnresolvableInclude */
+        /**
+         * @psalm-suppress UnresolvableInclude
+         * @var \Composer\Autoload\ClassLoader
+         */
         $autoloader = require_once $file;
 
         if (!$first_autoloader) {
             $first_autoloader = $autoloader;
         }
+    }
+
+    if ($first_autoloader === null) {
+        throw new \LogicException('Cannot be null here');
     }
 
     define('PSALM_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm'));

@@ -516,6 +516,9 @@ class Config
         throw new \UnexpectedValueException('No config initialized');
     }
 
+    /**
+     * @return void
+     */
     public function setComposerClassLoader(ClassLoader $loader)
     {
         $this->composer_class_loader = $loader;
