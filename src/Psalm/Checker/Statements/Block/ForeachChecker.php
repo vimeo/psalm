@@ -185,6 +185,10 @@ class ForeachChecker
                         continue;
                     }
 
+                    if (!$codebase->classlikes->classOrInterfaceExists($iterator_type->value)) {
+                        continue;
+                    }
+
                     if ($codebase->classImplements(
                         $iterator_type->value,
                         'Iterator'
