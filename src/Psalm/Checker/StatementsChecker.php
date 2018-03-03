@@ -190,9 +190,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     return false;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
-                if (DoChecker::analyze($this, $stmt, $context) === false) {
-                    return false;
-                }
+                DoChecker::analyze($this, $stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 $this->analyzeConstAssignment($stmt, $context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Unset_) {
