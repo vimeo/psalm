@@ -51,11 +51,6 @@ class Scanner
     private $scanned_files = [];
 
     /**
-     * @var null|array<string, string>
-     */
-    private $composer_classmap;
-
-    /**
      * @var array<string, bool>
      */
     private $store_scan_failure = [];
