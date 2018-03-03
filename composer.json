@@ -37,7 +37,6 @@
         "squizlabs/php_codesniffer": "^3.0",
         "php-coveralls/php-coveralls": "^2.0"
     },
-    "prepend-autoloader": false,
     "suggest": {
         "ext-igbinary": "^2.0.5"
     },
