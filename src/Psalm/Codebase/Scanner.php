@@ -378,7 +378,7 @@ class Scanner
         }
 
         if ($this->composer_classmap === null) {
-            $this->composer_classmap = $this->config->getComposerClassMap();
+            $this->composer_classmap = $this->config->getComposerClassMap($this->debug_output);
         }
 
         if (isset($this->composer_classmap[$fq_class_name_lc])) {

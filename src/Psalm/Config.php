@@ -941,23 +941,46 @@ class Config
     }
 
     /**
+     * @param bool $debug_output
      * @return array<string, string>
      *
      * @psalm-suppress LessSpecificReturnStatement
      * @psalm-suppress MoreSpecificReturnType
      */
-    public function getComposerClassMap()
+    public function getComposerClassMap($debug_output)
     {
-        $vendor_dir = realpath($this->base_dir . self::getVendorDir($this->base_dir));
+        if ($debug_output) {
+            echo 'Trying to get composer classmap in ' . $this->base_dir . PHP_EOL;
+        }
 
-        if (!$vendor_dir) {
+        $vendor_dir_path = $this->base_dir . self::getVendorDir($this->base_dir);
+
+        if (!is_dir($vendor_dir_path)) {
+            if ($debug_output) {
+                echo 'Could not resolve path to ' . $vendor_dir_path . PHP_EOL;
+            }
+
+            return [];
+        }
+
+        $vendor_dir_path = realpath($vendor_dir_path);
+
+        if (!$vendor_dir_path) {
+            if ($debug_output) {
+                echo 'Realpath failed when loading composer classmap' . PHP_EOL;
+            }
+
             return [];
         }
 
         $autoload_files_classmap =
-            $vendor_dir . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_classmap.php';
+            $vendor_dir_path . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_classmap.php';
 
         if (!file_exists($autoload_files_classmap)) {
+            if ($debug_output) {
+                echo 'No autoload_classmap.php found in ' . $vendor_dir_path . PHP_EOL;
+            }
+
             return [];
         }
 
@@ -977,8 +1000,8 @@ class Config
                  *
                  * @return bool
                  */
-                function ($file_path) use ($vendor_dir) {
-                    return strpos($file_path, $vendor_dir) === 0;
+                function ($file_path) use ($vendor_dir_path) {
+                    return strpos($file_path, $vendor_dir_path) === 0;
                 }
             );
         } else {
