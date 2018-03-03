@@ -777,7 +777,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             try {
                 return $codebase_methods->getStorage($method_id);
             } catch (\UnexpectedValueException $e) {
-                $declaring_method_id = (string) $codebase_methods->getDeclaringMethodId($method_id);
+                $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
+
+                if (!$declaring_method_id) {
+                    throw new \UnexpectedValueException('Cannot get storage for function that doesn‘t exist');
+                }
 
                 // happens for fake constructors
                 return $codebase_methods->getStorage($declaring_method_id);
