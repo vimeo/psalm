@@ -461,11 +461,11 @@ class Config
         if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
             /** @var \SimpleXMLElement $stub_file */
             foreach ($config_xml->stubs->file as $stub_file) {
-                $file_path = realpath($stub_file['name']);
+                $file_path = realpath($config->base_dir . DIRECTORY_SEPARATOR . $stub_file['name']);
 
                 if (!$file_path) {
                     throw new Exception\ConfigException(
-                        'Cannot resolve stubfile path ' . getcwd() . '/' . $stub_file['name']
+                        'Cannot resolve stubfile path ' . $config->base_dir . DIRECTORY_SEPARATOR . $stub_file['name']
                     );
                 }
 
