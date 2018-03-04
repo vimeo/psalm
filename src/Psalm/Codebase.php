@@ -170,7 +170,6 @@ class Codebase
             $classlike_storage_provider,
             $file_storage_provider,
             $this->classlikes,
-            $this->methods,
             $debug_output
         );
     }

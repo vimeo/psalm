@@ -462,10 +462,7 @@ class Reflection
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
             $storage->inheritable_method_ids[$method_name] = $declaring_method_id;
 
-            $this->codebase->methods->setOverriddenMethodId(
-                $implemented_method_id,
-                $declaring_method_id
-            );
+            $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
         }
     }
 

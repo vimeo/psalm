@@ -151,7 +151,7 @@ class ClassTest extends TestCase
                     echo A::HELLO;',
                 'error_message' => 'UndefinedConstant',
             ],
-            'overridePublicAccessLevelToPublic' => [
+            'overridePublicAccessLevelToPrivate' => [
                 '<?php
                     class A {
                         public function fooFoo(): void {}
@@ -183,6 +183,45 @@ class ClassTest extends TestCase
                         private function fooFoo(): void {}
                     }',
                 'error_message' => 'OverriddenMethodAccess',
+            ],
+            'overridePublicPropertyAccessLevelToPrivate' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $foo;
+                    }
+
+                    class B extends A {
+                        /** @var string|null */
+                        private $foo;
+                    }',
+                'error_message' => 'OverriddenPropertyAccess',
+            ],
+            'overridePublicPropertyAccessLevelToProtected' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $foo;
+                    }
+
+                    class B extends A {
+                        /** @var string|null */
+                        protected $foo;
+                    }',
+                'error_message' => 'OverriddenPropertyAccess',
+            ],
+            'overrideProtectedPropertyAccessLevelToPrivate' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        protected $foo;
+                    }
+
+                    class B extends A {
+                        /** @var string|null */
+                        private $foo;
+                    }',
+                'error_message' => 'OverriddenPropertyAccess',
             ],
             'classRedefinition' => [
                 '<?php

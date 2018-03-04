@@ -389,23 +389,6 @@ class Methods
     }
 
     /**
-     * @param string  $method_id
-     * @param string  $overridden_method_id
-     *
-     * @return void
-     */
-    public function setOverriddenMethodId(
-        $method_id,
-        $overridden_method_id
-    ) {
-        list($fq_class_name, $method_name) = explode('::', $method_id);
-
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-
-        $class_storage->overridden_method_ids[$method_name][] = $overridden_method_id;
-    }
-
-    /**
      * @param  string $method_id
      *
      * @return array<string>

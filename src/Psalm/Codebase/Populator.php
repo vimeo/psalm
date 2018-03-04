@@ -40,11 +40,6 @@ class Populator
     private $classlikes;
 
     /**
-     * @var Methods
-     */
-    private $methods;
-
-    /**
      * @var Config
      */
     private $config;
@@ -57,13 +52,11 @@ class Populator
         ClassLikeStorageProvider $classlike_storage_provider,
         FileStorageProvider $file_storage_provider,
         ClassLikes $classlikes,
-        Methods $methods,
         $debug_output
     ) {
         $this->classlike_storage_provider = $classlike_storage_provider;
         $this->file_storage_provider = $file_storage_provider;
         $this->classlikes = $classlikes;
-        $this->methods = $methods;
         $this->debug_output = $debug_output;
         $this->config = $config;
     }
@@ -362,10 +355,7 @@ class Populator
 
         foreach ($interface_method_implementers as $method_name => $interface_method_ids) {
             if (count($interface_method_ids) === 1) {
-                $this->methods->setOverriddenMethodId(
-                    $storage->name . '::' . $method_name,
-                    $interface_method_ids[0]
-                );
+                $storage->overridden_method_ids[$method_name][] = $interface_method_ids[0];
             } else {
                 $storage->interface_method_ids[$method_name] = $interface_method_ids;
             }
@@ -492,12 +482,7 @@ class Populator
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
             if (!$parent_storage->is_trait) {
-                $implemented_method_id = $fq_class_name . '::' . $method_name;
-
-                $this->methods->setOverriddenMethodId(
-                    $implemented_method_id,
-                    $declaring_method_id
-                );
+                $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
             }
 
             if ($parent_storage->is_trait
@@ -577,6 +562,10 @@ class Populator
                 && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
             ) {
                 continue;
+            }
+
+            if (!$parent_storage->is_trait) {
+                $storage->overridden_property_ids[$property_name][] = $inheritable_property_id;
             }
 
             $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;

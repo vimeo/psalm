@@ -1082,6 +1082,21 @@ class B extends A {
 }
 ```
 
+### OverriddenPropertyAccess
+
+Emitted when a property is less accessible than the same-named property in its parent class
+
+```php
+class A {
+    /** @var string|null */
+    public $foo;
+}
+class B extends A {
+    /** @var string|null */
+    protected $foo;
+}
+```
+
 ### ParadoxicalCondition
 
 Emitted when a paradox is encountered in your programs logic that could not be caught by `RedundantCondition`

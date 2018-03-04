@@ -186,6 +186,11 @@ class ClassLikeStorage
     public $inheritable_property_ids = [];
 
     /**
+     * @var array<string, array<string>>
+     */
+    public $overridden_property_ids = [];
+
+    /**
      * @var array<string, string>|null
      */
     public $template_types;

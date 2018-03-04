@@ -182,6 +182,7 @@
             <xs:element name="NullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="OverriddenMethodAccess" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="OverriddenPropertyAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="IssueHandlerType" minOccurs="0" />

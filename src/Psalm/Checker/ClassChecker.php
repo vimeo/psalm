@@ -12,6 +12,7 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
+use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UndefinedTrait;
@@ -306,14 +307,39 @@ class ClassChecker extends ClassLikeChecker
             $property_class_name = $codebase->properties->getDeclaringClassForProperty($appearing_property_id);
             $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
 
-            $property = $property_class_storage->properties[$property_name];
+            $property_storage = $property_class_storage->properties[$property_name];
 
-            if ($property->type) {
-                $property_type = clone $property->type;
+            if (isset($storage->overridden_property_ids[$property_name])) {
+                foreach ($storage->overridden_property_ids[$property_name] as $overridden_property_id) {
+                    list($guide_class_name) = explode('::$', $overridden_property_id);
+                    $guide_class_storage = $classlike_storage_provider->get($guide_class_name);
+                    $guide_property_storage = $guide_class_storage->properties[$property_name];
+
+                    if ($property_storage->visibility > $guide_property_storage->visibility
+                        && $property_storage->location
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $guide_class_storage->name . '::$' . $property_name
+                                    . ' has different access level than '
+                                    . $storage->name . '::$' . $property_name,
+                                $property_storage->location
+                            )
+                        )) {
+                            return false;
+                        }
+
+                        return null;
+                    }
+                }
+            }
+
+            if ($property_storage->type) {
+                $property_type = clone $property_storage->type;
 
                 if (!$property_type->isMixed() &&
-                    !$property->has_default &&
-                    !$property->type->isNullable()
+                    !$property_storage->has_default &&
+                    !$property_storage->type->isNullable()
                 ) {
                     $property_type->initialized = false;
                 }
@@ -326,17 +352,23 @@ class ClassChecker extends ClassLikeChecker
                 $property_type = Type::getMixed();
             }
 
-            if ($property->type_location && !$property_type->isMixed()) {
+            if ($property_storage->type_location && !$property_type->isMixed()) {
                 $fleshed_out_type = ExpressionChecker::fleshOutType(
                     $project_checker,
                     $property_type,
                     $this->fq_class_name,
                     $this->fq_class_name
                 );
-                $fleshed_out_type->check($this, $property->type_location, $this->getSuppressedIssues(), [], false);
+                $fleshed_out_type->check(
+                    $this,
+                    $property_storage->type_location,
+                    $this->getSuppressedIssues(),
+                    [],
+                    false
+                );
             }
 
-            if ($property->is_static) {
+            if ($property_storage->is_static) {
                 $property_id = $this->fq_class_name . '::$' . $property_name;
 
                 $class_context->vars_in_scope[$property_id] = $property_type;
