@@ -267,6 +267,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $statements_checker->getSource()
                         )
                     ) {
+                        $has_valid_method_call_type = true;
+                        $existent_method_ids[] = $method_id;
                         $return_type = Type::getMixed();
                         continue;
                     }

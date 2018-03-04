@@ -91,6 +91,20 @@ class MethodCallTest extends TestCase
                     $a = new A;
                     $a->bar();',
             ],
+            'canBeCalledOnMagic' => [
+                '<?php
+                    class A {
+                      public function __call(string $method) {}
+                    }
+
+                    class B {}
+
+                    $a = rand(0, 1) ? new A : new B;
+
+                    $a->maybeUndefinedMethod();',
+                'assertions' => [],
+                'error_levels' => ['PossiblyUndefinedMethod'],
+            ],
         ];
     }
 
