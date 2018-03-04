@@ -2,9 +2,17 @@
     "main" : "./psalm",
     "output" : "./build/psalm.phar",
     "directories" : [
-        "src",
         "assets",
         "vendor"
+    ],
+    "directories-bin": [
+        "src/Psalm/Stubs"
+    ],
+    "finder": [
+        {
+            "in" : "src",
+            "exclude": "Psalm/Stubs"
+        }
     ],
     "files" : [
         "config.xsd"
