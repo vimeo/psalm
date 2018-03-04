@@ -134,7 +134,7 @@ function getPathsToCheck($f_paths)
 
             if (realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalm')
                 || realpath($input_path) === realpath(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'psalter')
-                || (class_exists(\Phar::class, false) && realpath($input_path) === \Phar::running(false))
+                || realpath($input_path) === \Phar::running(false)
             ) {
                 continue;
             }
