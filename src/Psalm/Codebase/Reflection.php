@@ -457,8 +457,6 @@ class Reflection
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
-            $implemented_method_id = $fq_class_name . '::' . $method_name;
-
             $storage->declaring_method_ids[$method_name] = $declaring_method_id;
             $storage->inheritable_method_ids[$method_name] = $declaring_method_id;
 
