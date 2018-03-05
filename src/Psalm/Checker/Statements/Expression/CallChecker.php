@@ -1034,8 +1034,8 @@ class CallChecker
             }
         }
 
-        if ($required_param_count < $min_closure_param_count) {
-            $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . 'arguments';
+        if (count($closure_params) < $min_closure_param_count) {
+            $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . ' arguments';
 
             if (IssueBuffer::accepts(
                 new TooManyArguments(
@@ -1048,7 +1048,7 @@ class CallChecker
                 return false;
             }
         } elseif ($required_param_count > $max_closure_param_count) {
-            $argument_text = $max_closure_param_count === 1 ? 'one argument' : $max_closure_param_count . 'arguments';
+            $argument_text = $max_closure_param_count === 1 ? 'one argument' : $max_closure_param_count . ' arguments';
 
             if (IssueBuffer::accepts(
                 new TooFewArguments(
