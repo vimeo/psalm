@@ -1380,7 +1380,36 @@ class CallChecker
             || $input_expr instanceof PhpParser\Node\Expr\Array_
         ) {
             foreach ($param_type->getTypes() as $param_type_part) {
-                if ($param_type_part instanceof TCallable) {
+                if ($param_type_part instanceof TClassString
+                    && $input_expr instanceof PhpParser\Node\Scalar\String_
+                ) {
+                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $statements_checker,
+                        $input_expr->value,
+                        $code_location,
+                        $statements_checker->getSuppressedIssues()
+                    ) === false
+                    ) {
+                        return false;
+                    }
+                } elseif ($param_type_part instanceof TArray
+                    && isset($param_type_part->type_params[1]->getTypes()['class-string'])
+                    && $input_expr instanceof PhpParser\Node\Expr\Array_
+                ) {
+                    foreach ($input_expr->items as $item) {
+                        if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
+                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                $statements_checker,
+                                $item->value->value,
+                                $code_location,
+                                $statements_checker->getSuppressedIssues()
+                            ) === false
+                            ) {
+                                return false;
+                            }
+                        }
+                    }
+                } elseif ($param_type_part instanceof TCallable) {
                     $function_ids = self::getFunctionIdsFromCallableArg(
                         $statements_checker,
                         $input_expr

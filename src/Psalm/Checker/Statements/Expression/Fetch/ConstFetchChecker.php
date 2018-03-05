@@ -129,7 +129,7 @@ class ConstFetchChecker
             }
 
             if ($stmt->name === 'class') {
-                $stmt->inferredType = Type::getString();
+                $stmt->inferredType = Type::getClassString();
 
                 return null;
             }

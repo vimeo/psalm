@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -104,10 +105,14 @@ abstract class Atomic
             case 'mixed':
                 return $php_compatible ? new TNamedObject($value) : new TMixed();
 
-            case 'numeric-string':
-                return new TNumericString();
+            case 'class-string':
+                return new TClassString();
 
             default:
+                if (strpos($value, '-')) {
+                    throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');
+                }
+
                 return new TNamedObject($value);
         }
     }

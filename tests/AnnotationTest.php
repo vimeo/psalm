@@ -529,6 +529,56 @@ class AnnotationTest extends TestCase
                 'assertions' => [],
                 'error_level' => ['MixedAssignment', 'MixedTypeCoercion'],
             ],
+            'arrayOfClassConstants' => [
+                '<?php
+                    /**
+                     * @param array<class-string> $arr
+                     */
+                    function takesClassConstants(array $arr) : void {}
+
+                    class A {}
+                    class B {}
+
+                    takesClassConstants([A::class, B::class]);',
+            ],
+            'arrayOfStringClasses' => [
+                '<?php
+                    /**
+                     * @param array<class-string> $arr
+                     */
+                    function takesClassConstants(array $arr) : void {}
+
+                    class A {}
+                    class B {}
+
+                    takesClassConstants(["A", "B"]);',
+                'annotations' => [],
+                'error_levels' => ['TypeCoercion'],
+            ],
+            'singleClassConstant' => [
+                '<?php
+                    /**
+                     * @param class-string $s
+                     */
+                    function takesClassConstants(string $s) : void {}
+
+                    class A {}
+
+                    takesClassConstants(A::class);',
+            ],
+            'singleClassConstant' => [
+                '<?php
+                    /**
+                     * @param class-string $s
+                     */
+                    function takesClassConstants(string $s) : void {}
+
+                    class A {}
+
+                    takesClassConstants("A");',
+                'annotations' => [],
+                'error_levels' => ['TypeCoercion'],
+            ],
         ];
     }
 
@@ -1133,6 +1183,37 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MixedTypeCoercion',
                 'error_levels' => ['MixedAssignment'],
+            ],
+            'arrayOfStringClasses' => [
+                '<?php
+                    /**
+                     * @param array<class-string> $arr
+                     */
+                    function takesClassConstants(array $arr) : void {}
+
+                    class A {}
+                    class B {}
+
+                    takesClassConstants(["A", "B"]);',
+                'error_message' => 'TypeCoercion',
+            ],
+            'arrayOfNonExistentStringClasses' => [
+                '<?php
+                    /**
+                     * @param array<class-string> $arr
+                     */
+                    function takesClassConstants(array $arr) : void {}
+                    takesClassConstants(["A", "B"]);',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => ['TypeCoercion'],
+            ],
+            'singleClassConstantWithInvalidDocblock' => [
+                '<?php
+                    /**
+                     * @param clas-string $s
+                     */
+                    function takesClassConstants(string $s) : void {}',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }

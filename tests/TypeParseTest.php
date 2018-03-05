@@ -62,6 +62,14 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testPsalmOnlyAtomic()
+    {
+        $this->assertSame('class-string', (string) Type::parseString('class-string'));
+    }
+
+    /**
      * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void

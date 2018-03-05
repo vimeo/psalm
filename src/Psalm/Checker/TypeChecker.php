@@ -8,6 +8,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -485,6 +486,15 @@ class TypeChecker
 
         if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
             return true;
+        }
+
+        if ($container_type_part instanceof TString && $input_type_part instanceof TClassString) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TClassString && $input_type_part instanceof TString) {
+            $type_coerced = true;
+            return false;
         }
 
         if ($container_type_part instanceof TString &&

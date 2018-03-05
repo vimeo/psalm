@@ -729,6 +729,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return $existing_class_constants[$stmt->name];
             }
 
+            if (strtolower($stmt->name) === 'class') {
+                return Type::getClassString();
+            }
+
             return null;
         }
 

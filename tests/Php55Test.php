@@ -73,7 +73,7 @@ class Php55Test extends TestCase
 
                     $a = ClassName::class;',
                 'assertions' => [
-                    '$a' => 'string',
+                    '$a' => 'class-string',
                 ],
             ],
         ];

@@ -6,6 +6,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -42,7 +43,7 @@ abstract class Type
     public static function parseString($type_string, $php_compatible = false)
     {
         // remove all unacceptable characters
-        $type_string = preg_replace('/[^A-Za-z0-9_\\\\|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
+        $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
 
         if (strpos($type_string, '[') !== false) {
             $type_string = self::convertSquareBrackets($type_string);
@@ -428,6 +429,16 @@ abstract class Type
     public static function getString()
     {
         $type = new TString;
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public static function getClassString()
+    {
+        $type = new TClassString;
 
         return new Union([$type]);
     }

@@ -174,6 +174,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         case 'Psalm\\Type\\Atomic\\TArray':
                         case 'Psalm\\Type\\Atomic\\TString':
                         case 'Psalm\\Type\\Atomic\\TNumericString':
+                        case 'Psalm\\Type\\Atomic\\TClassString':
                             $invalid_method_call_types[] = (string)$class_type_part;
                             break;
 
