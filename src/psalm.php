@@ -144,7 +144,7 @@ if (array_key_exists('v', $options)) {
 }
 
 // If XDebug is enabled, restart without it
-(new \Composer\XdebugHandler\XdebugHandler())->check();
+(new \Composer\XdebugHandler\XdebugHandler('PSALM'))->check();
 
 setlocale(LC_CTYPE, 'C');
 
