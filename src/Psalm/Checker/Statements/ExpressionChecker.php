@@ -116,10 +116,13 @@ class ExpressionChecker
                     $stmt->inferredType = Type::getInt();
                     break;
 
+                case '__class__':
+                    $stmt->inferredType = Type::getClassString();
+                    break;
+
                 case '__file__':
                 case '__dir__':
                 case '__function__':
-                case '__class__':
                 case '__trait__':
                 case '__method__':
                 case '__namespace__':

@@ -686,6 +686,10 @@ class CallChecker
                                 );
                             } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_ && $arg->value->value) {
                                 $offset_value_type = Type::parseString($arg->value->value);
+                            } elseif ($arg->value instanceof PhpParser\Node\Scalar\MagicConst\Class_
+                                && ($fq_class_name = $statements_checker->getFQCLN())
+                            ) {
+                                $offset_value_type = Type::parseString($fq_class_name);
                             }
 
                             if ($offset_value_type) {
