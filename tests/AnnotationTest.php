@@ -618,6 +618,7 @@ class AnnotationTest extends TestCase
             'returnClassConstantArrayAllowCoercion' => [
                 '<?php
                     class A {}
+                    class B {}
 
                     /**
                      * @return array<class-string>
@@ -1287,6 +1288,19 @@ class AnnotationTest extends TestCase
                         return ["A", "B"];
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'returnClassConstantArrayAllowCoercionWithUndefinedClass' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return array<class-string>
+                     */
+                    function takesClassConstants() : array {
+                        return ["A", "B"];
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
         ];
     }
