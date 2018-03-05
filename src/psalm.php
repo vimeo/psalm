@@ -16,7 +16,7 @@ $options = getopt(
     'f:mhvc:ir:',
     [
         'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
-        'self-check', 'output-format:', 'report:', 'find-dead-code', 'init',
+        'output-format:', 'report:', 'find-dead-code', 'init',
         'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
         'version', 'plugin:', 'stats',
     ]
@@ -79,9 +79,6 @@ Options:
 
     --diff
         Runs Psalm in diff mode, only checking files that have changed (and their dependents)
-
-    --self-check
-        Psalm checks itself
 
     --output-format=console
         Changes the output format. Possible values: console, emacs, json, pylint, xml
@@ -313,9 +310,7 @@ foreach ($plugins as $plugin_path) {
 
 $start_time = (float) microtime(true);
 
-if (array_key_exists('self-check', $options)) {
-    $project_checker->checkDir(__DIR__);
-} elseif ($paths_to_check === null) {
+if ($paths_to_check === null) {
     $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
