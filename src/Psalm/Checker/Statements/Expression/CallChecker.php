@@ -933,6 +933,8 @@ class CallChecker
             $closure_types = [];
 
             foreach ($function_ids as $function_id) {
+                $function_id = strtolower($function_id);
+
                 if (strpos($function_id, '::') !== false) {
                     list($callable_fq_class_name, $method_name) = explode('::', $function_id);
 

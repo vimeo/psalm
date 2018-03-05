@@ -507,18 +507,22 @@ class FunctionCallTest extends TestCase
             ],
             'arrayFilterGoodArgs' => [
                 '<?php
-                    function foo(int $i) : bool {
+                    function fooFoo(int $i) : bool {
                       return true;
                     }
 
                     class A {
-                        public static function bar(int $i) : bool {
+                        public static function barBar(int $i) : bool {
                             return true;
                         }
                     }
 
-                    array_filter([1, 2, 3], "foo");
-                    array_filter([1, 2, 3], "A::bar");',
+                    array_filter([1, 2, 3], "fooFoo");
+                    array_filter([1, 2, 3], "foofoo");
+                    array_filter([1, 2, 3], "FOOFOO");
+                    array_filter([1, 2, 3], "A::barBar");
+                    array_filter([1, 2, 3], "A::BARBAR");
+                    array_filter([1, 2, 3], "A::barbar");',
             ],
             'arrayFilterIgnoreMissingClass' => [
                 '<?php
