@@ -566,7 +566,7 @@ class AnnotationTest extends TestCase
 
                     takesClassConstants(A::class);',
             ],
-            'singleClassConstant' => [
+            'singleClassConstantWithString' => [
                 '<?php
                     /**
                      * @param class-string $s
@@ -578,6 +578,55 @@ class AnnotationTest extends TestCase
                     takesClassConstants("A");',
                 'annotations' => [],
                 'error_levels' => ['TypeCoercion'],
+            ],
+            'returnClassConstant' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string
+                     */
+                    function takesClassConstants() : string {
+                        return A::class;
+                    }',
+            ],
+            'returnClassConstantAllowCoercion' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string
+                     */
+                    function takesClassConstants() : string {
+                        return "A";
+                    }',
+                'annotations' => [],
+                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+            ],
+            'returnClassConstantArray' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @return array<class-string>
+                     */
+                    function takesClassConstants() : array {
+                        return [A::class, B::class];
+                    }',
+            ],
+            'returnClassConstantArrayAllowCoercion' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return array<class-string>
+                     */
+                    function takesClassConstants() : array {
+                        return ["A", "B"];
+                    }',
+                'annotations' => [],
+                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
         ];
     }
@@ -1214,6 +1263,30 @@ class AnnotationTest extends TestCase
                      */
                     function takesClassConstants(string $s) : void {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'returnClassConstantDisallowCoercion' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string
+                     */
+                    function takesClassConstants() : string {
+                        return "A";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'returnClassConstantArrayDisallowCoercion' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return array<class-string>
+                     */
+                    function takesClassConstants() : array {
+                        return ["A", "B"];
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }
