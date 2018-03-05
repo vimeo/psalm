@@ -407,6 +407,8 @@ class FunctionChecker extends FunctionLikeChecker
                 $codebase = $project_checker->codebase;
 
                 foreach ($mapping_function_ids as $mapping_function_id) {
+                    $mapping_function_id = strtolower($mapping_function_id);
+
                     if (isset($call_map[$mapping_function_id][0])) {
                         if ($call_map[$mapping_function_id][0]) {
                             $mapped_function_return = Type::parseString($call_map[$mapping_function_id][0]);
