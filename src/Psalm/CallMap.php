@@ -952,7 +952,7 @@ return [
 'ctype_punct' => ['bool', 'c'=>'string|int'],
 'ctype_space' => ['bool', 'c'=>'string|int'],
 'ctype_upper' => ['bool', 'c'=>'string|int'],
-'ctype_xdigit' => ['bool', 'c'=>'string'],
+'ctype_xdigit' => ['bool', 'c'=>'string|int'],
 'cubrid_affected_rows' => ['int', 'req_identifier='=>''],
 'cubrid_bind' => ['bool', 'req_identifier'=>'resource', 'bind_param'=>'int', 'bind_value'=>'mixed', 'bind_value_type='=>'string'],
 'cubrid_client_encoding' => ['string', 'conn_identifier='=>''],
