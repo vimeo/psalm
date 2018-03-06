@@ -684,6 +684,13 @@ class CallChecker
                                         $statements_checker->getAliases()
                                     )
                                 );
+
+                                $offset_value_type = ExpressionChecker::fleshOutType(
+                                    $project_checker,
+                                    $offset_value_type,
+                                    $context->self,
+                                    $context->self
+                                );
                             } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_ && $arg->value->value) {
                                 $offset_value_type = Type::parseString($arg->value->value);
                             } elseif ($arg->value instanceof PhpParser\Node\Scalar\MagicConst\Class_
@@ -695,9 +702,7 @@ class CallChecker
                             if ($offset_value_type) {
                                 foreach ($offset_value_type->getTypes() as $offset_value_type_part) {
                                     // register class if the class exists
-                                    if ($offset_value_type_part instanceof TNamedObject
-                                        && !in_array($offset_value_type, ['self', 'static', 'parent'])
-                                    ) {
+                                    if ($offset_value_type_part instanceof TNamedObject) {
                                         ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                             $statements_checker,
                                             $offset_value_type_part->value,
