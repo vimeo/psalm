@@ -59,18 +59,7 @@ class TemplateTest extends TestCase
                     $cfoo_bar = $cfoo->bar();
 
                     $dt = "D";
-                    $dfoo = new Foo($dt);
-
-                    class E {
-                        /**
-                         * @return Foo<self>
-                         */
-                        public static function getFoo() {
-                            return new Foo(__CLASS__);
-                        }
-                    }
-
-                    $efoo = E::getFoo();',
+                    $dfoo = new Foo($dt);',
                 'assertions' => [
                     '$afoo' => 'Foo<A>',
                     '$afoo_bar' => 'A',
@@ -82,8 +71,78 @@ class TemplateTest extends TestCase
                     '$cfoo_bar' => 'C',
 
                     '$dfoo' => 'Foo<mixed>',
+                ],
+                'error_levels' => [
+                    'MixedReturnStatement',
+                    'LessSpecificReturnStatement',
+                    'RedundantConditionGivenDocblockType',
+                ],
+            ],
+            'classTemplateSelfs' => [
+                '<?php
+                    /**
+                     * @template T as object
+                     */
+                    class Foo {
+                        /** @var string */
+                        public $T;
 
+                        /**
+                         * @param string $T
+                         * @template-typeof T $T
+                         */
+                        public function __construct(string $T) {
+                            $this->T = $T;
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function bar() {
+                            $t = $this->T;
+                            return new $t();
+                        }
+                    }
+
+                    class E {
+                        /**
+                         * @return Foo<self>
+                         */
+                        public static function getFoo() {
+                            return new Foo(__CLASS__);
+                        }
+
+                        /**
+                         * @return Foo<self>
+                         */
+                        public static function getFoo2() {
+                            return new Foo(self::class);
+                        }
+
+                        /**
+                         * @return Foo<static>
+                         */
+                        public static function getFoo3() {
+                            return new Foo(static::class);
+                        }
+                    }
+
+                    class G extends E {}
+
+                    $efoo = E::getFoo();
+                    $efoo2 = E::getFoo2();
+                    $efoo3 = E::getFoo3();
+
+                    $gfoo = G::getFoo();
+                    $gfoo2 = G::getFoo2();
+                    $gfoo3 = G::getFoo3();',
+                'assertions' => [
                     '$efoo' => 'Foo<E>',
+                    '$efoo2' => 'Foo<E>',
+                    '$efoo3' => 'Foo<E>',
+                    '$gfoo' => 'Foo<E>',
+                    '$gfoo2' => 'Foo<E>',
+                    '$gfoo3' => 'Foo<G>',
                 ],
                 'error_levels' => [
                     'MixedReturnStatement',

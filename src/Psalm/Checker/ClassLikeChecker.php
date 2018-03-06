@@ -218,7 +218,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $inferred = true
     ) {
         if (empty($fq_class_name)) {
-            throw new \InvalidArgumentException('$class cannot be empty');
+            if (IssueBuffer::accepts(
+                new UndefinedClass(
+                    'Class or interface <empty string> does not exist',
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                return false;
+            }
+
+            return;
         }
 
         $project_checker = $statements_source->getFileChecker()->project_checker;

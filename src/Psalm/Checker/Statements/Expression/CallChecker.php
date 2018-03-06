@@ -695,7 +695,9 @@ class CallChecker
                             if ($offset_value_type) {
                                 foreach ($offset_value_type->getTypes() as $offset_value_type_part) {
                                     // register class if the class exists
-                                    if ($offset_value_type_part instanceof TNamedObject) {
+                                    if ($offset_value_type_part instanceof TNamedObject
+                                        && !in_array($offset_value_type, ['self', 'static', 'parent'])
+                                    ) {
                                         ClassLikeChecker::checkFullyQualifiedClassLikeName(
                                             $statements_checker,
                                             $offset_value_type_part->value,
