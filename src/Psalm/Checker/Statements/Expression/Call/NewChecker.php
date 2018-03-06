@@ -144,6 +144,12 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         continue;
                     }
 
+                    if ($lhs_type_part instanceof Type\Atomic\TNull
+                        && $stmt->class->inferredType->ignore_nullable_issues
+                    ) {
+                        continue;
+                    }
+
                     if (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Type ' . $lhs_type_part . ' cannot be called as a class',
