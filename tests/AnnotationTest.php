@@ -106,6 +106,80 @@ class AnnotationTest extends TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidArgument
+     *
+     * @return                   void
+     */
+    public function testDontAllowStringConstCoercion()
+    {
+        Config::getInstance()->allow_coercion_from_string_to_class_const = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @param class-string $s
+                 */
+                function takesClassConstants(string $s) : void {}
+
+                class A {}
+
+                takesClassConstants("A");'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidClass
+     *
+     * @return                   void
+     */
+    public function testDontAllowStringStandInForNewClass()
+    {
+        Config::getInstance()->allow_string_standin_for_class = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {}
+
+                $a = "A";
+
+                new $a();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidClass
+     *
+     * @return                   void
+     */
+    public function testDontAllowStringStandInForStaticMethodCall()
+    {
+        Config::getInstance()->allow_string_standin_for_class = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public static function foo() : void {}
+                }
+
+                $a = "A";
+
+                $a::foo();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()

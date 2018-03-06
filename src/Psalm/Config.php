@@ -189,6 +189,16 @@ class Config
     public $allow_phpstorm_generics = false;
 
     /**
+     * @var bool
+     */
+    public $allow_coercion_from_string_to_class_const = true;
+
+    /**
+     * @var bool
+     */
+    public $allow_string_standin_for_class = true;
+
+    /**
      * @var string[]
      */
     private $plugin_paths = [];
@@ -439,6 +449,16 @@ class Config
         if (isset($config_xml['allowPhpStormGenerics'])) {
             $attribute_text = (string) $config_xml['allowPhpStormGenerics'];
             $config->allow_phpstorm_generics = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['allowCoercionFromStringToClassConst'])) {
+            $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
+            $config->allow_coercion_from_string_to_class_const = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['allowStringToStandInForClass'])) {
+            $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
+            $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

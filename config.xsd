@@ -29,6 +29,8 @@
         <xs:attribute name="rememberPropertyAssignmentsAfterCall" type="xs:string" />
         <xs:attribute name="serializer" type="xs:string" />
         <xs:attribute name="allowPhpStormGenerics" type="xs:string" />
+        <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:string" />
+        <xs:attribute name="allowStringToStandInForClass" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

@@ -493,7 +493,10 @@ class TypeChecker
         }
 
         if ($container_type_part instanceof TClassString && $input_type_part instanceof TString) {
-            $type_coerced = true;
+            if (\Psalm\Config::getInstance()->allow_coercion_from_string_to_class_const) {
+                $type_coerced = true;
+            }
+
             return false;
         }
 

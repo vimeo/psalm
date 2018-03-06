@@ -267,6 +267,18 @@ class MethodCallTest extends TestCase
                     $arr->$b();',
                 'error_message' => 'InvalidMethodCall',
             ],
+            'intVarStaticCall' => [
+                '<?php
+                    $a = 5;
+                    $a::bar();',
+                'error_message' => 'InvalidClass',
+            ],
+            'intVarNewCall' => [
+                '<?php
+                    $a = 5;
+                    new $a();',
+                'error_message' => 'InvalidClass',
+            ],
         ];
     }
 }
