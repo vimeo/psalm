@@ -133,7 +133,7 @@ class AnnotationTest extends TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidClass
+     * @expectedExceptionMessage InvalidStringClass
      *
      * @return                   void
      */
@@ -156,7 +156,7 @@ class AnnotationTest extends TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidClass
+     * @expectedExceptionMessage InvalidStringClass
      *
      * @return                   void
      */

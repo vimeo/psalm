@@ -137,6 +137,7 @@
             <xs:element name="InvalidScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticInvocation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidStringClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidThrow" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />

@@ -271,13 +271,13 @@ class MethodCallTest extends TestCase
                 '<?php
                     $a = 5;
                     $a::bar();',
-                'error_message' => 'InvalidClass',
+                'error_message' => 'UndefinedClass',
             ],
             'intVarNewCall' => [
                 '<?php
                     $a = 5;
                     new $a();',
-                'error_message' => 'InvalidClass',
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }

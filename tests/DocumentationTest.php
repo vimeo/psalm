@@ -148,6 +148,9 @@ class DocumentationTest extends TestCase
 
         foreach (self::getCodeBlocksFromDocs() as $issue_name => $blocks) {
             switch ($issue_name) {
+                case 'InvalidStringClass':
+                    continue 2;
+
                 case 'InvalidFalsableReturnType':
                     $ignored_issues = ['FalsableReturnStatement'];
                     break;

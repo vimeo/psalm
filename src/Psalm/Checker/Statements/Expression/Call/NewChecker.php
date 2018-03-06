@@ -12,8 +12,9 @@ use Psalm\Context;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InterfaceInstantiation;
-use Psalm\Issue\InvalidClass;
+use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\TooManyArguments;
+use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -125,12 +126,26 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         ) {
                             continue;
                         }
-                    } elseif ($lhs_type_part instanceof Type\Atomic\TMixed) {
+
+                        if (IssueBuffer::accepts(
+                            new InvalidStringClass(
+                                'String cannot be used as a class',
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+
+                        continue;
+                    }
+
+                    if ($lhs_type_part instanceof Type\Atomic\TMixed) {
                         continue;
                     }
 
                     if (IssueBuffer::accepts(
-                        new InvalidClass(
+                        new UndefinedClass(
                             'Type ' . $lhs_type_part . ' cannot be called as a class',
                             new CodeLocation($statements_checker->getSource(), $stmt)
                         ),
