@@ -952,7 +952,7 @@ class Config
     public function getComposerFilePathForClassLike($fq_classlike_name)
     {
         if (!$this->composer_class_loader) {
-            throw new \LogicException('Composer class loader should exist here');
+            return false;
         }
 
         return $this->composer_class_loader->findFile($fq_classlike_name);
