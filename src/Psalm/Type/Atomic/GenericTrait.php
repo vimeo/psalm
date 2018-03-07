@@ -31,9 +31,13 @@ trait GenericTrait
      */
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
+        $base_value = $this instanceof TNamedObject
+            ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
+            : $this->value;
+
         if ($use_phpdoc_format) {
-            if ($this->value !== 'array') {
-                return $this->value;
+            if ($this instanceof TNamedObject) {
+                return $base_value;
             }
 
             $value_type = $this->type_params[1];
@@ -51,7 +55,7 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
-        return $this->value .
+        return $base_value .
                 '<' .
                 implode(
                     ', ',

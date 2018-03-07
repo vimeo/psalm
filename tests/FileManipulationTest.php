@@ -370,6 +370,44 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
+            'addLessSpecificArrayReturnType71' => [
+                '<?php
+                    namespace A\B {
+                        class C {}
+                    }
+
+                    namespace C {
+                        use A\B;
+
+                        class D {
+                            public function getArrayOfC(): array {
+                                return [new \A\B\C];
+                            }
+                        }
+                    }',
+                '<?php
+                    namespace A\B {
+                        class C {}
+                    }
+
+                    namespace C {
+                        use A\B;
+
+                        class D {
+                            /**
+                             * @return \A\B\C[]
+                             *
+                             * @psalm-return array{0:\A\B\C}
+                             */
+                            public function getArrayOfC(): array {
+                                return [new \A\B\C];
+                            }
+                        }
+                    }',
+                '7.1',
+                ['LessSpecificReturnType'],
+                true,
+            ],
             'addMissingNullableStringReturnTypeWithMaybeReturn71' => [
                 '<?php
                     function foo() {
