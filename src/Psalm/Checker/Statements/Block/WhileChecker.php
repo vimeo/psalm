@@ -41,14 +41,16 @@ class WhileChecker
         $loop_scope = new LoopScope($while_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        LoopChecker::analyze(
+        if (LoopChecker::analyze(
             $statements_checker,
             $stmt->stmts,
             [$stmt->cond],
             [],
             $loop_scope,
             $inner_loop_context
-        );
+        ) === false) {
+            return false;
+        }
 
         if ($inner_loop_context && $while_true) {
             // if we actually leave the loop

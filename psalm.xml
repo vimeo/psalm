@@ -24,6 +24,12 @@
         <MissingConstructor errorLevel="suppress" />
         <DeprecatedProperty errorLevel="suppress" />
 
+        <LessSpecificReturnType>
+            <errorLevel type="suppress">
+                <file name="src/Psalm/Plugin.php" />
+            </errorLevel>
+        </LessSpecificReturnType>
+
         <UnusedParam>
             <errorLevel type="suppress">
                 <file name="src/Psalm/Plugin.php" />

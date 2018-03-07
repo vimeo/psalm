@@ -485,7 +485,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @param  PhpParser\Node $node
      *
-     * @return array<mixed, PhpParser\Node>|null|false|int|PhpParser\Node
+     * @return null
      */
     public function leaveNode(PhpParser\Node $node)
     {
@@ -1381,7 +1381,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @param  PhpParser\Node\Expr\Include_ $stmt
      *
-     * @return false|null
+     * @return void
      */
     public function visitInclude(PhpParser\Node\Expr\Include_ $stmt)
     {
@@ -1416,11 +1416,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             // if the file is already included, we can't check much more
             if (in_array($path_to_file, get_included_files(), true)) {
-                return null;
+                return;
             }
 
             if ($this->file_path === $path_to_file) {
-                return null;
+                return;
             }
 
             if ($this->codebase->fileExists($path_to_file)) {
@@ -1428,11 +1428,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 $this->file_storage->included_file_paths[strtolower($path_to_file)] = $path_to_file;
 
-                return null;
+                return;
             }
         }
 
-        return null;
+        return;
     }
 
     /**

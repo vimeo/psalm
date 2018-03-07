@@ -18,7 +18,7 @@ class ArrayAssignmentChecker
      * @param   Context                             $context
      * @param   Type\Union                          $assignment_value_type
      *
-     * @return  false|null
+     * @return  void
      * @psalm-suppress MixedMethodCall - some funky logic here
      */
     public static function analyze(
@@ -45,8 +45,6 @@ class ArrayAssignmentChecker
         if (!isset($stmt->var->inferredType) && $var_id) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
         }
-
-        return null;
     }
 
     /**

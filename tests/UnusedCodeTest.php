@@ -712,6 +712,11 @@ class UnusedCodeTest extends TestCase
 
                     A::foo();',
             ],
+            'usedClass' => [
+                '<?php
+                    class A { }
+                    new A();',
+            ],
         ];
     }
 

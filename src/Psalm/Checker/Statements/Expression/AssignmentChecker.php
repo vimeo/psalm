@@ -375,15 +375,12 @@ class AssignmentChecker
                 }
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            if (ArrayAssignmentChecker::analyze(
+            ArrayAssignmentChecker::analyze(
                 $statements_checker,
                 $assign_var,
                 $context,
                 $assign_value_type
-            ) === false
-            ) {
-                return false;
-            }
+            );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
             if (is_string($assign_var->name)) {
                 PropertyAssignmentChecker::analyzeInstance(

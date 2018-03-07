@@ -371,10 +371,16 @@ class ReturnTypeChecker
                         return false;
                     }
                 }
-            } elseif (!$inferred_return_type->isNullable() && $declared_return_type->isNullable()) {
-                if ($project_checker->alter_code
+            } elseif ($project_checker->alter_code
                     && isset($project_checker->getIssuesToFix()['LessSpecificReturnType'])
-                ) {
+            ) {
+                if (!TypeChecker::isContainedBy(
+                    $codebase,
+                    $declared_return_type,
+                    $inferred_return_type,
+                    false,
+                    false
+                )) {
                     self::addOrUpdateReturnType(
                         $function,
                         $project_checker,
@@ -388,7 +394,9 @@ class ReturnTypeChecker
 
                     return null;
                 }
-
+            } elseif ((!$inferred_return_type->isNullable() && $declared_return_type->isNullable())
+                || (!$inferred_return_type->isFalsable() && $declared_return_type->isFalsable())
+            ) {
                 if (IssueBuffer::accepts(
                     new LessSpecificReturnType(
                         'The inferred return type \'' . $inferred_return_type . '\' for ' . $cased_method_id .
