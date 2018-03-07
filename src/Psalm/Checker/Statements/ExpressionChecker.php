@@ -781,6 +781,15 @@ class ExpressionChecker
                     $static_class
                 );
             }
+        } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
+            foreach ($return_type->properties as &$property_type) {
+                $property_type = self::fleshOutType(
+                    $project_checker,
+                    $property_type,
+                    $self_class,
+                    $static_class
+                );
+            }
         }
 
         return $return_type;
