@@ -100,7 +100,7 @@ if (isset($options['r']) && is_string($options['r'])) {
 
 $vendor_dir = getVendorDir($current_dir);
 
-requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
+$first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
@@ -121,6 +121,8 @@ if ($path_to_config) {
 } else {
     $config = Config::getConfigForPath($current_dir, $current_dir, ProjectChecker::TYPE_CONSOLE);
 }
+
+$config->setComposerClassLoader($first_autoloader);
 
 $project_checker = new ProjectChecker(
     $config,
