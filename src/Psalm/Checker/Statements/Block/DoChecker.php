@@ -59,6 +59,12 @@ class DoChecker
             }
         }
 
+        foreach ($do_context->vars_in_scope as $var_id => $type) {
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = clone $type;
+            }
+        }
+
         $mixed_var_ids = [];
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
