@@ -788,6 +788,46 @@ class PropertyTypeTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
+            'propertySetInBothIfBranches' => [
+                '<?php
+                    class Foo
+                    {
+                        /** @var int */
+                        private $status;
+
+                        public function __construct(int $in)
+                        {
+                            if (rand(0, 1)) {
+                                $this->status = 1;
+                            } else {
+                                $this->status = $in;
+                            }
+                        }
+                    }',
+            ],
+            'propertySetInPrivateMethodWithIfAndElse' => [
+                '<?php
+                    class A {
+                        /** @var int */
+                        public $a;
+
+                        public function __construct() {
+                            if (rand(0, 1)) {
+                                $this->foo();
+                            } else {
+                                $this->bar();
+                            }
+                        }
+
+                        private function foo(): void {
+                            $this->a = 5;
+                        }
+
+                        private function bar(): void {
+                            $this->a = 5;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1132,30 +1172,6 @@ class PropertyTypeTest extends TestCase
                         }
 
                         private function foo(): void {
-                            $this->a = 5;
-                        }
-                    }',
-                'error_message' => 'PropertyNotSetInConstructor',
-            ],
-            'propertySetInPrivateMethodWithIfAndElse' => [
-                '<?php
-                    class A {
-                        /** @var int */
-                        public $a;
-
-                        public function __construct() {
-                            if (rand(0, 1)) {
-                                $this->foo();
-                            } else {
-                                $this->bar();
-                            }
-                        }
-
-                        private function foo(): void {
-                            $this->a = 5;
-                        }
-
-                        private function bar(): void {
                             $this->a = 5;
                         }
                     }',

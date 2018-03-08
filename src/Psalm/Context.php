@@ -307,7 +307,8 @@ class Context
             if (!$this_type->failed_reconciliation
                 && !$this_type->isEmpty()
                 && !$new_type->isEmpty()
-                && $this_type->getId() !== $new_type->getId()
+                && ($this_type->getId() !== $new_type->getId()
+                    || $this_type->initialized !== $new_type->initialized)
             ) {
                 $redefined_vars[$var_id] = $this_type;
             }
