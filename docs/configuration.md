@@ -31,6 +31,10 @@ Psalm uses an XML config file. A barebones example looks like this:
   Setting this to `false` means that any function calls will cause Psalm to forget anything it knew about object properties within the scope of the function it's currently analysing. This duplicates functionality that Hack has. Defaults to `true`.
 - `allowPhpStormGenerics=[bool]`<br />
   Allows you to specify whether or not to use the typed iterator docblock format supported by PHP Storm e.g. `ArrayIterator|string[]`, which Psalm transforms to `ArrayIterator<string>`. Defaults to `false`.
+- `allowCoercionFromStringToClassConst`<br />
+  When `true`, strings can be coerced to [`class-string`](supported_annotations.md#class-constants), with Psalm emitting a `TypeCoercion` issue. If disabled, that issue changes to a more serious one. Defaults to `true`.
+- `allowStringToStandInForClass`<br />
+  When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `true` (no issues emitted).
 
 ### Running Psalm
 
