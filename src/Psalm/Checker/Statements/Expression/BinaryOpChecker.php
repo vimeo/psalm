@@ -769,6 +769,17 @@ class BinaryOpChecker
                         )) {
                             // fall through
                         }
+                    } else {
+                        if ($statements_source && IssueBuffer::accepts(
+                            new InvalidOperand(
+                                'Cannot perform a numeric operation with non-numeric types ' . $left_type_part
+                                    . ' and ' . $right_type_part,
+                                new CodeLocation($statements_source, $parent)
+                            ),
+                            $statements_source->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

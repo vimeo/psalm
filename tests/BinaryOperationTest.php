@@ -23,7 +23,7 @@ class BinaryOperationTest extends TestCase
             'numericAddition' => [
                 '<?php
                     $a = "5";
-            
+
                     if (is_numeric($a)) {
                         $b = $a + 4;
                     }',
@@ -70,6 +70,11 @@ class BinaryOperationTest extends TestCase
                 'error_message' => 'InvalidOperand',
                 'error_levels' => [],
                 'strict_mode' => true,
+            ],
+            'additionWithClassInWeakMode' => [
+                '<?php
+                    $a = "hi" + (new stdClass);',
+                'error_message' => 'InvalidOperand',
             ],
         ];
     }
