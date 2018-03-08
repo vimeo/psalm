@@ -817,15 +817,17 @@ class Config
     {
         $codebase->register_global_functions = true;
 
-        $generic_stubs_path = /*realpath(*/__DIR__ . '/Stubs/CoreGenericFunctions.php'/*)*/;
+        // note: don't realpath $generic_stubs_path, or phar version will fail
+        $generic_stubs_path = __DIR__ . '/Stubs/CoreGenericFunctions.php';
 
-        if (!$generic_stubs_path) {
+        if (!file_exists($generic_stubs_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
+        // note: don't realpath $generic_classes_path, or phar version will fail
         $generic_classes_path = /*realpath(*/__DIR__ . '/Stubs/CoreGenericClasses.php'/*)*/;
 
-        if (!$generic_classes_path) {
+        if (!file_exists($generic_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic classes');
         }
 
