@@ -177,6 +177,10 @@ class IssetTest extends TestCase
                         return $arr[$b];
                     }',
             ],
+            'noExceptionOnBracketString' => [
+                '<?php
+                    if (isset($foo["bar[]"])) {}',
+            ],
         ];
     }
 

@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
@@ -913,7 +914,7 @@ class Reconciler
      */
     private static function getValueForKey(ProjectChecker $project_checker, $key, array &$existing_keys)
     {
-        $key_parts = preg_split('/(->|\[|\])/', $key, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+        $key_parts = AlgebraChecker::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
             return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;
