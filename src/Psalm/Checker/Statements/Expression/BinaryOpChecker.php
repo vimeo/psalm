@@ -20,6 +20,7 @@ use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
@@ -515,7 +516,7 @@ class BinaryOpChecker
         }
 
         if ($left_type && $right_type) {
-            if ($left_type->isNullable()) {
+            if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Left operand cannot be nullable, got ' . $left_type,
@@ -565,8 +566,16 @@ class BinaryOpChecker
 
             foreach ($left_type->getTypes() as $left_type_part) {
                 foreach ($right_type->getTypes() as $right_type_part) {
-                    if ($left_type_part instanceof TNull) {
+                    if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {
                         // null case is handled above
+                        continue;
+                    }
+
+                    if ($left_type_part instanceof TFalse && $left_type->ignore_falsable_issues) {
+                        continue;
+                    }
+
+                    if ($right_type_part instanceof TFalse && $right_type->ignore_falsable_issues) {
                         continue;
                     }
 
@@ -753,7 +762,7 @@ class BinaryOpChecker
 
                         if ($statements_source && IssueBuffer::accepts(
                             new InvalidOperand(
-                                'Cannot add a numeric type to a non-numeric type ' . $non_numeric_type,
+                                'Cannot perform a numeric operation with a non-numeric type ' . $non_numeric_type,
                                 new CodeLocation($statements_source, $parent)
                             ),
                             $statements_source->getSuppressedIssues()
