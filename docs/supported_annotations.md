@@ -185,7 +185,7 @@ class A {}
 function takesClassName(string $s) : void {}
 ```
 
-`takesClassName("A");` would trigger a `TypeCoercion` issue (or a `PossiblyInvalidArgument` issue if `allowCoercionFromStringToClassConst` was set to `false` in your config), whereas `takesClassName(A::class)` is fine.
+`takesClassName("A");` would trigger a `TypeCoercion` issue (or a `PossiblyInvalidArgument` issue if [`allowCoercionFromStringToClassConst`](configuration.md#coding-style) was set to `false` in your config), whereas `takesClassName(A::class)` is fine.
 
 ### Object-like Arrays
 
