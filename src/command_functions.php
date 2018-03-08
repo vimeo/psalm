@@ -26,10 +26,10 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 
         $nested_autoload_file = dirname(dirname($autoload_root)) . DIRECTORY_SEPARATOR . 'autoload.php';
 
+        // note: don't realpath $nested_autoload_file, or phar version will fail
         if (file_exists($nested_autoload_file)) {
-            $nested_autoload_file_path = /*realpath(*/$nested_autoload_file/*)*/;
-            if (!in_array($nested_autoload_file_path, $autoload_files, false)) {
-                $autoload_files[] = $nested_autoload_file_path;
+            if (!in_array($nested_autoload_file, $autoload_files, false)) {
+                $autoload_files[] = $nested_autoload_file;
             }
             $has_autoloader = true;
         }
@@ -37,10 +37,10 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         $vendor_autoload_file =
             $autoload_root . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'autoload.php';
 
+        // note: don't realpath $vendor_autoload_file, or phar version will fail
         if (file_exists($vendor_autoload_file)) {
-            $autoload_file_path = /*realpath(*/$vendor_autoload_file/*)*/;
-            if (!in_array($autoload_file_path, $autoload_files, false)) {
-                $autoload_files[] = $autoload_file_path;
+            if (!in_array($vendor_autoload_file, $autoload_files, false)) {
+                $autoload_files[] = $vendor_autoload_file;
             }
             $has_autoloader = true;
         }
