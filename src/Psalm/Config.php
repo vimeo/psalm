@@ -825,7 +825,7 @@ class Config
         }
 
         // note: don't realpath $generic_classes_path, or phar version will fail
-        $generic_classes_path = /*realpath(*/__DIR__ . '/Stubs/CoreGenericClasses.php'/*)*/;
+        $generic_classes_path = __DIR__ . '/Stubs/CoreGenericClasses.php';
 
         if (!file_exists($generic_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic classes');
