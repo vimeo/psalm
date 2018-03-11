@@ -1,26 +1,21 @@
 {
+    "base-path": "build/psalm",
     "main" : "./psalm",
-    "output" : "./build/psalm.phar",
+    "output" : "../../build/psalm.phar",
     "directories" : [
         "assets",
         "vendor"
     ],
-    "directories-bin": [
-        "src/Psalm/Stubs"
-    ],
     "finder": [
         {
-            "in" : "src",
-            "exclude": "Psalm/Stubs"
+            "in" : "src"
         }
     ],
     "files" : [
         "config.xsd"
     ],
     "intercept" : false,
-    "compactors" : [
-        "Herrera\\Box\\Compactor\\Php"
-    ],
+    "compactors" : [],
     "compression" : "BZ2",
     "chmod" : "0755",
     "shebang" : "#!/usr/bin/env php",
