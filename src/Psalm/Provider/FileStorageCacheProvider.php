@@ -75,13 +75,29 @@ class FileStorageCacheProvider
 
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
 
-        if ($cache_hash !== $cached_value->hash) {
-            unlink($this->getCacheLocationForPath($file_path));
+        if (@get_class($cached_value) === '__PHP_Incomplete_Class'
+            || $cache_hash !== $cached_value->hash
+        ) {
+            $this->removeCacheForFile($file_path);
 
             return null;
         }
 
         return $cached_value;
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function removeCacheForFile($file_path)
+    {
+        $cache_path = $this->getCacheLocationForPath($file_path);
+
+        if (file_exists($cache_path)) {
+            unlink($cache_path);
+        }
     }
 
     /**

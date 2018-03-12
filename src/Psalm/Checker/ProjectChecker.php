@@ -178,7 +178,8 @@ class ProjectChecker
 
         $statements_provider = new StatementsProvider(
             $file_provider,
-            $cache_provider
+            $cache_provider,
+            $file_storage_cache_provider
         );
 
         $this->codebase = new Codebase(

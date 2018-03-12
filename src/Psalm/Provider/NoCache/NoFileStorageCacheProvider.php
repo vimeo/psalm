@@ -28,4 +28,8 @@ class NoFileStorageCacheProvider extends \Psalm\Provider\FileStorageCacheProvide
     public function getLatestFromCache($file_path, $file_contents)
     {
     }
+
+    public function removeCacheForFile($file_path)
+    {
+    }
 }
