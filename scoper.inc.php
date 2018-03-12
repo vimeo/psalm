@@ -4,7 +4,7 @@ use Isolated\Symfony\Component\Finder\Finder;
 
 return [
     'finders' => [
-        Finder::create()->files()->exclude(['Psalm/Stubs'])->in('src'),
+        Finder::create()->files()->in('src'),
         Finder::create()->files()->in('assets'),
         Finder::create()
             ->files()
@@ -58,9 +58,13 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if ($filePath === realpath(__DIR__ . '/src/Psalm/PropertyMap.php')) {
+            if ($filePath === realpath(__DIR__ . '/src/Psalm/PropertyMap.php')
+                || $filePath === realpath(__DIR__ . '/src/Psalm/CallMap.php')
+                || $filePath === realpath(__DIR__ . '/src/Psalm/Stubs/CoreGenericFunctions.php')
+                || $filePath === realpath(__DIR__ . '/src/Psalm/Stubs/CoreGenericClasses.php')
+            ) {
                 return str_replace(
-                    [$prefix . '\\\\', $prefix . '\\'],
+                    ['namespace ' . $prefix . ';', $prefix . '\\\\', $prefix . '\\'],
                     '',
                     $contents
                 );

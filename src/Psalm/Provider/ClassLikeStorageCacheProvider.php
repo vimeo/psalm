@@ -77,7 +77,9 @@ class ClassLikeStorageCacheProvider
 
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
 
-        if ($cache_hash !== $cached_value->hash) {
+        if (@get_class($cached_value) === '__PHP_Incomplete_Class'
+            || $cache_hash !== $cached_value->hash
+        ) {
             unlink($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
 
             throw new \UnexpectedValueException('Should not be outdated');

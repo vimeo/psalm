@@ -16,14 +16,29 @@ class StatementsProvider
     private $cache_provider;
 
     /**
+     * @var int
+     */
+    private $this_modified_time;
+
+    /**
+     * @var FileStorageCacheProvider
+     */
+    private $file_storage_cache_provider;
+
+    /**
      * @var PhpParser\Parser|null
      */
     protected static $parser;
 
-    public function __construct(FileProvider $file_provider, ParserCacheProvider $cache_provider)
-    {
+    public function __construct(
+        FileProvider $file_provider,
+        ParserCacheProvider $cache_provider,
+        FileStorageCacheProvider $file_storage_cache_provider
+    ) {
         $this->file_provider = $file_provider;
         $this->cache_provider = $cache_provider;
+        $this->this_modified_time = filemtime(__FILE__);
+        $this->file_storage_cache_provider = $file_storage_cache_provider;
     }
 
     /**
@@ -36,7 +51,7 @@ class StatementsProvider
     {
         $from_cache = false;
 
-        $version = 'parsercache5';
+        $version = 'parsercache' . $this->this_modified_time;
 
         $file_contents = $this->file_provider->getContents($file_path);
         $modified_time = $this->file_provider->getModifiedTime($file_path);
@@ -56,6 +71,7 @@ class StatementsProvider
             }
 
             $stmts = self::parseStatementsInFile($file_contents);
+            $this->file_storage_cache_provider->removeCacheForFile($file_path);
         } else {
             $from_cache = true;
         }
