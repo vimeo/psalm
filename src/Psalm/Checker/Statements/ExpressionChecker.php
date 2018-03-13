@@ -440,7 +440,9 @@ class ExpressionChecker
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ErrorSuppress) {
-            // do nothing
+            if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
+                return false;
+            }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
