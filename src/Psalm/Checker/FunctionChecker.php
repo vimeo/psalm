@@ -200,7 +200,7 @@ class FunctionChecker extends FunctionLikeChecker
                                 return Type::getArray();
                             }
                         } else {
-                            $type_part_value_type = $type_part->type_params[0];
+                            $type_part_value_type = $type_part->type_params[1];
                         }
 
                         $unpacked_type_parts = [];
