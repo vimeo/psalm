@@ -392,6 +392,23 @@ class MethodChecker extends FunctionLikeChecker
             return null;
         }
 
+        if (!$guide_method_storage->abstract
+            && $implementer_method_storage->abstract
+            && !$implementer_classlike_storage->abstract
+        ) {
+            if (IssueBuffer::accepts(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' cannot be abstract when inherited method '
+                        . $cased_guide_method_id . ' is non-abstract',
+                    $code_location
+                )
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
         if ($guide_method_storage->signature_return_type) {
             $guide_signature_return_type = ExpressionChecker::fleshOutType(
                 $project_checker,

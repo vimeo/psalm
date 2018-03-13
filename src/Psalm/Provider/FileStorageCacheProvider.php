@@ -27,6 +27,8 @@ class FileStorageCacheProvider
         $dependent_files = [
             $storage_dir . 'FileStorage.php',
             $storage_dir . 'FunctionLikeStorage.php',
+            $storage_dir . 'ClassLikeStorage.php',
+            $storage_dir . 'MethodStorage.php',
         ];
 
         foreach ($dependent_files as $dependent_file_path) {

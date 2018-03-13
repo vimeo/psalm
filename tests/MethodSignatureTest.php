@@ -430,6 +430,17 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
+            'abstractExtendsNonAbstractWithMethod' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    abstract class B extends A {
+                        abstract public function foo() : void;
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }

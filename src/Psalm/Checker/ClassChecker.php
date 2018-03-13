@@ -782,7 +782,10 @@ class ClassChecker extends ClassLikeChecker
             $global_context ? clone $global_context : null
         );
 
-        if ($stmt->name !== '__construct' && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())) {
+        if ($stmt->name !== '__construct'
+            && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())
+            && $stmt->stmts !== null
+        ) {
             $return_type_location = null;
             $secondary_return_type_location = null;
 

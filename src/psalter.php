@@ -102,6 +102,9 @@ $vendor_dir = getVendorDir($current_dir);
 
 $first_autoloader = requireAutoloaders($current_dir, isset($options['r']), $vendor_dir);
 
+// If XDebug is enabled, restart without it
+(new \Composer\XdebugHandler\XdebugHandler('PSALTER'))->check();
+
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
 if ($paths_to_check && count($paths_to_check) > 1) {

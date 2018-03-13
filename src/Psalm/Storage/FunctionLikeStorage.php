@@ -68,11 +68,6 @@ class FunctionLikeStorage
     public $returns_by_ref = false;
 
     /**
-     * @var bool
-     */
-    public $abstract = false;
-
-    /**
      * @var int
      */
     public $required_param_count;
