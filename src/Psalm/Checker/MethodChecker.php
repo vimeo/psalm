@@ -394,7 +394,8 @@ class MethodChecker extends FunctionLikeChecker
 
         if (!$guide_method_storage->abstract
             && $implementer_method_storage->abstract
-            && !$implementer_classlike_storage->abstract
+            && !$guide_classlike_storage->abstract
+            && !$guide_classlike_storage->is_interface
         ) {
             if (IssueBuffer::accepts(
                 new MethodSignatureMismatch(
