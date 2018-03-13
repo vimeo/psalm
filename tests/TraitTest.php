@@ -392,6 +392,46 @@ class TraitTest extends TestCase
                         $a = (new Classes\B)->getA();
                     }',
             ],
+            'useAndMap' => [
+                '<?php
+                    class C
+                    {
+                        use T2;
+                        use T1 {
+                            traitFunc as _func;
+                        }
+
+                        public static function func(): void
+                        {
+                            static::_func();
+                        }
+                    }
+                    trait T1
+                    {
+                        public static function traitFunc(): void {}
+                    }
+                    trait T2 { }',
+            ],
+            'mapAndUse' => [
+                '<?php
+                    class C
+                    {
+                        use T1 {
+                            traitFunc as _func;
+                        }
+                        use T2;
+
+                        public static function func(): void
+                        {
+                            static::_func();
+                        }
+                    }
+                    trait T1
+                    {
+                        public static function traitFunc(): void {}
+                    }
+                    trait T2 { }',
+            ],
         ];
     }
 

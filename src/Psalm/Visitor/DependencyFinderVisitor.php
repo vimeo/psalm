@@ -420,7 +420,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $storage = $this->classlike_storages[count($this->classlike_storages) - 1];
 
-            $method_map = [];
+            $method_map = $storage->trait_alias_map ?: [];
 
             foreach ($node->adaptations as $adaptation) {
                 if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
