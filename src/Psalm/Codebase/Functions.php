@@ -33,11 +33,12 @@ class Functions
     }
 
     /**
+     * @param  StatementsChecker|null $statements_checker
      * @param  string $function_id
      *
      * @return FunctionLikeStorage
      */
-    public function getStorage(StatementsChecker $statements_checker, $function_id)
+    public function getStorage($statements_checker, $function_id)
     {
         if (isset(self::$stubbed_functions[strtolower($function_id)])) {
             return self::$stubbed_functions[strtolower($function_id)];
@@ -45,6 +46,10 @@ class Functions
 
         if ($this->reflection->hasFunction($function_id)) {
             return $this->reflection->getFunctionStorage($function_id);
+        }
+
+        if (!$statements_checker) {
+            throw new \UnexpectedValueException('$statements_checker must not be null here');
         }
 
         $file_path = $statements_checker->getFilePath();

@@ -354,6 +354,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  MethodStorage    $guide_method_storage
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
+     * @param  bool             $prevent_abstract_override
      *
      * @return false|null
      */
@@ -364,7 +365,8 @@ class MethodChecker extends FunctionLikeChecker
         MethodStorage $implementer_method_storage,
         MethodStorage $guide_method_storage,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
+        $prevent_abstract_override = true
     ) {
         $codebase = $project_checker->codebase;
 
@@ -392,7 +394,8 @@ class MethodChecker extends FunctionLikeChecker
             return null;
         }
 
-        if (!$guide_method_storage->abstract
+        if ($prevent_abstract_override
+            && !$guide_method_storage->abstract
             && $implementer_method_storage->abstract
             && !$guide_classlike_storage->abstract
             && !$guide_classlike_storage->is_interface

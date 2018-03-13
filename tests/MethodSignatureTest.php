@@ -274,6 +274,20 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
             ],
+            'classWithTraitExtendsNonAbstractWithMethod' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        abstract public function foo() : void;
+                    }
+
+                    class B extends A {
+                        use T;
+                    }',
+            ],
         ];
     }
 
@@ -438,6 +452,21 @@ class MethodSignatureTest extends TestCase
 
                     abstract class B extends A {
                         abstract public function foo() : void;
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'traitReturnTypeMismatch' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        abstract public function foo() : string;
+                    }
+
+                    class B extends A {
+                        use T;
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],

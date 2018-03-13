@@ -172,7 +172,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->inside_constructor = true;
             }
 
-            if ($overridden_method_ids && $this->function->name !== '__construct') {
+            if ($overridden_method_ids
+                && $this->function->name !== '__construct'
+                && !$context->collect_initializations
+                && !$context->collect_mutations
+            ) {
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
 
@@ -765,7 +769,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
     /**
      * @return FunctionLikeStorage
      */
-    public function getFunctionLikeStorage(StatementsChecker $statements_checker)
+    public function getFunctionLikeStorage(StatementsChecker $statements_checker = null)
     {
         $project_checker = $this->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
