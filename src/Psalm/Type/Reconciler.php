@@ -429,6 +429,21 @@ class Reconciler
             } elseif ($negated_type === 'true' && isset($existing_var_type->getTypes()['bool'])) {
                 $existing_var_type->removeType('bool');
                 $existing_var_type->addType(new TFalse);
+            } elseif (strtolower($negated_type) === 'traversable'
+                && isset($existing_var_type->getTypes()['iterable'])
+            ) {
+                $existing_var_type->removeType('iterable');
+                $existing_var_type->addType(new TArray(
+                    [
+                        new Type\Union([new TMixed]),
+                        new Type\Union([new TMixed]),
+                    ]
+                ));
+            } elseif (strtolower($negated_type) === 'array'
+                && isset($existing_var_type->getTypes()['iterable'])
+            ) {
+                $existing_var_type->removeType('iterable');
+                $existing_var_type->addType(new TNamedObject('Traversable'));
             } else {
                 $existing_var_type->removeType($negated_type);
             }
