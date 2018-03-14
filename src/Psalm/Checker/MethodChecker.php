@@ -514,6 +514,10 @@ class MethodChecker extends FunctionLikeChecker
 
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
+                if (!$prevent_abstract_override && $i >= $guide_method_storage->required_param_count) {
+                    continue;
+                }
+
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' has fewer arguments than parent method ' .
