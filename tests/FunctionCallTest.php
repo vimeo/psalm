@@ -67,11 +67,15 @@ class FunctionCallTest extends TestCase
             'abs' => [
                 '<?php
                     $a = abs(-5);
-                    $b = abs(-7.5);',
+                    $b = abs(-7.5);
+                    $c = $_GET["c"];
+                    $c = is_numeric($c) ? abs($c) : null;',
                 'assertions' => [
                     '$a' => 'int',
-                    '$b' => 'int',
+                    '$b' => 'float',
+                    '$c' => 'numeric|null',
                 ],
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
             'validDocblockParamDefault' => [
                 '<?php

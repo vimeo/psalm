@@ -100,6 +100,28 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::parseString('array<int, string>');
             }
 
+            if ($call_map_key === 'abs'
+                && isset($call_args[0]->value)
+            ) {
+                $first_arg = $call_args[0]->value;
+
+                if (isset($first_arg->inferredType)) {
+                    $numeric_types = [];
+
+                    foreach ($first_arg->inferredType->getTypes() as $inner_type) {
+                        if ($inner_type->isNumericType()) {
+                            $numeric_types[] = $inner_type;
+                        }
+                    }
+
+                    if ($numeric_types) {
+                        return new Type\Union($numeric_types);
+                    }
+                }
+
+
+            }
+
             if ($call_map_key === 'min' || $call_map_key === 'max') {
                 if (isset($call_args[0])) {
                     $first_arg = $call_args[0]->value;
