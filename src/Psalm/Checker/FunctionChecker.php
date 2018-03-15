@@ -118,8 +118,6 @@ class FunctionChecker extends FunctionLikeChecker
                         return new Type\Union($numeric_types);
                     }
                 }
-
-
             }
 
             if ($call_map_key === 'min' || $call_map_key === 'max') {
