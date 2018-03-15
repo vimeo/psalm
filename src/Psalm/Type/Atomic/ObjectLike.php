@@ -125,7 +125,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         $key_types = [];
 
         foreach ($this->properties as $key => $_) {
-            if (is_int($key) || preg_match('/^\d+$/', $key)) {
+            if (is_int($key)) {
                 $key_types[] = new Type\Atomic\TInt();
             } else {
                 $key_types[] = new Type\Atomic\TString();
@@ -166,7 +166,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         $value_type = null;
 
         foreach ($this->properties as $key => $property) {
-            if (is_int($key) || preg_match('/^\d+$/', $key)) {
+            if (is_int($key)) {
                 $key_types[] = new Type\Atomic\TInt();
             } else {
                 $key_types[] = new Type\Atomic\TString();
