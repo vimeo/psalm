@@ -475,21 +475,30 @@ class Union
 
         foreach ($old_type->types as $old_type_part) {
             if (!$this->removeType($old_type_part->getKey())) {
-                if ($old_type_part instanceof Type\Atomic\TFalse && isset($this->types['bool'])) {
+                if ($old_type_part instanceof Type\Atomic\TFalse
+                    && isset($this->types['bool'])
+                    && !isset($this->types['true'])
+                ) {
                     $this->removeType('bool');
                     $this->types['true'] = new Type\Atomic\TTrue;
-                } elseif ($old_type_part instanceof Type\Atomic\TTrue && isset($this->types['bool'])) {
+                } elseif ($old_type_part instanceof Type\Atomic\TTrue
+                    && isset($this->types['bool'])
+                    && !isset($this->types['false'])
+                ) {
                     $this->removeType('bool');
                     $this->types['false'] = new Type\Atomic\TFalse;
                 } elseif (isset($this->types['iterable'])) {
                     if ($old_type_part instanceof Type\Atomic\TNamedObject
                         && $old_type_part->value === 'Traversable'
+                        && !isset($this->types['array'])
                     ) {
                         $this->removeType('iterable');
                         $this->types['array'] = new Type\Atomic\TArray([Type::getMixed(), Type::getMixed()]);
                     }
 
-                    if ($old_type_part instanceof Type\Atomic\TArray) {
+                    if ($old_type_part instanceof Type\Atomic\TArray
+                        && !isset($this->types['traversable'])
+                    ) {
                         $this->removeType('iterable');
                         $this->types['traversable'] = new Type\Atomic\TNamedObject('Traversable');
                     }

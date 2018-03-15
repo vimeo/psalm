@@ -177,28 +177,26 @@ class IfChecker
         );
 
         $if_clauses = array_values(
-            array_filter(
-                $if_clauses,
-                /** @return bool */
+            array_map(
+                /**
+                 * @return Clause
+                 */
                 function (Clause $c) use ($mixed_var_ids) {
                     $keys = array_keys($c->possibilities);
 
                     foreach ($keys as $key) {
                         foreach ($mixed_var_ids as $mixed_var_id) {
                             if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return false;
+                                return new Clause([], true);
                             }
                         }
                     }
 
-                    return true;
-                }
+                    return $c;
+                },
+                $if_clauses
             )
         );
-
-        if (!$if_clauses) {
-            $if_clauses = [new Clause([], true)];
-        }
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraChecker::checkForParadox(
