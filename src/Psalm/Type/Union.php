@@ -260,11 +260,25 @@ class Union
     /**
      * @param  string $type_string
      *
-     * @return void
+     * @return bool
      */
     public function removeType($type_string)
     {
-        unset($this->types[$type_string]);
+        if (isset($this->types[$type_string])) {
+            unset($this->types[$type_string]);
+            $this->id = null;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return void
+     */
+    public function bustCache()
+    {
         $this->id = null;
     }
 
@@ -460,7 +474,27 @@ class Union
         }
 
         foreach ($old_type->types as $old_type_part) {
-            $this->removeType($old_type_part->getKey());
+            if (!$this->removeType($old_type_part->getKey())) {
+                if ($old_type_part instanceof Type\Atomic\TFalse && isset($this->types['bool'])) {
+                    $this->removeType('bool');
+                    $this->types['true'] = new Type\Atomic\TTrue;
+                } elseif ($old_type_part instanceof Type\Atomic\TTrue && isset($this->types['bool'])) {
+                    $this->removeType('bool');
+                    $this->types['false'] = new Type\Atomic\TFalse;
+                } elseif (isset($this->types['iterable'])) {
+                    if ($old_type_part instanceof Type\Atomic\TNamedObject
+                        && $old_type_part->value === 'Traversable'
+                    ) {
+                        $this->removeType('iterable');
+                        $this->types['array'] = new Type\Atomic\TArray([Type::getMixed(), Type::getMixed()]);
+                    }
+
+                    if ($old_type_part instanceof Type\Atomic\TArray) {
+                        $this->removeType('iterable');
+                        $this->types['traversable'] = new Type\Atomic\TNamedObject('Traversable');
+                    }
+                }
+            }
         }
 
         if ($new_type) {

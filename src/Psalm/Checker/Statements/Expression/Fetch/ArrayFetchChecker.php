@@ -616,6 +616,10 @@ class ArrayFetchChecker
             throw new \InvalidArgumentException('This is a bad place');
         }
 
+        if ($in_assignment) {
+            $array_type->bustCache();
+        }
+
         return $array_access_type;
     }
 }

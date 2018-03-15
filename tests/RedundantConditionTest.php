@@ -477,6 +477,28 @@ class RedundantConditionTest extends TestCase
                     if ($a instanceof A) {}',
                 'error_message' => 'RedundantCondition - src/somefile.php:15',
             ],
+            'replaceFalseType' => [
+                '<?php
+                    function foo(bool $b) : void {
+                      if (!$b) {
+                        $b = true;
+                      }
+
+                      if ($b) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'replaceTrueType' => [
+                '<?php
+                    function foo(bool $b) : void {
+                      if ($b) {
+                        $b = false;
+                      }
+
+                      if ($b) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }
