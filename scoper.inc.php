@@ -72,5 +72,27 @@ return [
 
             return $contents;
         },
+        function ($filePath, $prefix, $contents) {
+            if ($filePath === realpath(__DIR__ . '/src/Psalm/Checker/Statements/Expression/Call/MethodCallChecker.php')) {
+                return str_replace(
+                    'case \'Psalm\\\\',
+                    'case \'' . $prefix . '\\\\Psalm\\\\',
+                    $contents
+                );
+            }
+
+            return $contents;
+        },
+        function ($filePath, $prefix, $contents) {
+            if ($filePath === realpath(__DIR__ . '/src/Psalm/Type.php')) {
+                return str_replace(
+                    'get_class($type) === \'Psalm\\\\',
+                    'get_class($type) === \'' . $prefix . '\\\\Psalm\\\\',
+                    $contents
+                );
+            }
+
+            return $contents;
+        },
     ],
 ];
