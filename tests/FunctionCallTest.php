@@ -575,6 +575,12 @@ class FunctionCallTest extends TestCase
                         return $aTime - $bTime;
                     }',
             ],
+            'strposIntSecondParam' => [
+                '<?php
+                    function hasZeroByteOffset(string $s) : bool {
+                        return strpos($s, 0) !== false;
+                    }'
+            ],
         ];
     }
 

@@ -9178,6 +9178,7 @@ return [
 'str_pad' => ['string', 'input'=>'string', 'pad_length'=>'int', 'pad_string='=>'string', 'pad_type='=>'int'],
 'strpbrk' => ['string|false', 'haystack'=>'string', 'char_list'=>'string'],
 'strpos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
+'strpos\'1' => ['int|false', 'haystack'=>'string', 'needle'=>'int', 'offset='=>'int'],
 'strptime' => ['array|false', 'datestr'=>'string', 'format'=>'string'],
 'strrchr' => ['string', 'haystack'=>'string', 'needle'=>'string'],
 'str_repeat' => ['string', 'input'=>'string', 'mult'=>'int'],
