@@ -81,7 +81,7 @@ class IssueBuffer
 
         $project_checker = ProjectChecker::getInstance();
 
-        if ($project_checker->alter_code) {
+        if (!$project_checker->show_issues) {
             return false;
         }
 

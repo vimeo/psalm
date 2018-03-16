@@ -297,6 +297,10 @@ $project_checker = new ProjectChecker(
 
 if ($find_dead_code || $find_references_to !== null) {
     $project_checker->getCodebase()->collectReferences();
+
+    if ($find_references_to) {
+        $project_checker->show_issues = false;
+    }
 }
 
 if ($find_dead_code) {

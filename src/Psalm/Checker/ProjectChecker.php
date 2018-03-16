@@ -78,6 +78,11 @@ class ProjectChecker
      */
     public $alter_code = false;
 
+    /**
+     * @var bool
+     */
+    public $show_issues = true;
+
     /** @var int */
     public $threads;
 
@@ -605,6 +610,7 @@ class ProjectChecker
         $safe_types = false
     ) {
         $this->alter_code = true;
+        $this->show_issues = false;
         $this->php_major_version = $php_major_version;
         $this->php_minor_version = $php_minor_version;
         $this->dry_run = $dry_run;
