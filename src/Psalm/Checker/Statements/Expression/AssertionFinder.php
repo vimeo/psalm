@@ -875,6 +875,26 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = $prefix . 'callable';
             }
+        } elseif (self::hasArrayKeyExistsCheck($expr)) {
+            $array_root = isset($expr->args[1]->value)
+                ? ExpressionChecker::getArrayVarId(
+                    $expr->args[1]->value,
+                    $this_class_name,
+                    $source
+                )
+                : null;
+
+            if ($first_var_name === null && isset($expr->args[0]->value)) {
+                if ($expr->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                    $first_var_name = '"' . $expr->args[0]->value->value . '"';
+                } elseif ($expr->args[0]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    $first_var_name = (string) $expr->args[0]->value->value;
+                }
+            }
+
+            if ($first_var_name !== null && $array_root) {
+                $if_types[$array_root . '[' . $first_var_name . ']'] = $prefix . 'array-key-exists';
+            }
         }
 
         return $if_types;
@@ -1258,6 +1278,20 @@ class AssertionFinder
     protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_callable']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  bool
+     */
+    protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['array_key_exists']) {
             return true;
         }
 

@@ -176,7 +176,7 @@ class Reconciler
                 return Type::getMixed();
             }
 
-            if ($new_var_type === 'isset' || $new_var_type === '!empty') {
+            if ($new_var_type === 'isset' || $new_var_type === '!empty' || $new_var_type === 'array-key-exists') {
                 return Type::getMixed();
             }
 
@@ -205,7 +205,7 @@ class Reconciler
                 return $existing_var_type;
             }
 
-            if ($new_var_type === '!isset') {
+            if ($new_var_type === '!isset' || $new_var_type === '!array-key-exists') {
                 return Type::getNull();
             }
 
@@ -484,6 +484,12 @@ class Reconciler
                 return Type::getMixed();
             }
 
+            $existing_var_type->possibly_undefined = false;
+
+            return $existing_var_type;
+        }
+
+        if ($new_var_type === 'array-key-exists') {
             $existing_var_type->possibly_undefined = false;
 
             return $existing_var_type;
