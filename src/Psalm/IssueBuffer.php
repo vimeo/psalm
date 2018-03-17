@@ -210,7 +210,7 @@ class IssueBuffer
     }
 
     /**
-     * @param array<int, array{severity: string, line_from: int, type: string, message: string,
+     * @param array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int,
      *  snippet_to: int, column_from: int, column_to: int}> $issues_data
      *

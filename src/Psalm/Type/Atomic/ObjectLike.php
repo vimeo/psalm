@@ -154,6 +154,8 @@ class ObjectLike extends \Psalm\Type\Atomic
             throw new \UnexpectedValueException('$value_type should not be null here');
         }
 
+        $value_type->possibly_undefined = false;
+
         return $value_type;
     }
 
@@ -182,6 +184,8 @@ class ObjectLike extends \Psalm\Type\Atomic
         if (!$value_type) {
             throw new \UnexpectedValueException('$value_type should not be null here');
         }
+
+        $value_type->possibly_undefined = false;
 
         return new TArray([Type::combineTypes($key_types), $value_type]);
     }

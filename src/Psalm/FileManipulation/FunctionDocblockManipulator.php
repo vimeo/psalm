@@ -284,7 +284,7 @@ class FunctionDocblockManipulator
         if ($docblock) {
             $parsed_docblock = CommentChecker::parseDocComment((string)$docblock, null, true);
         } else {
-            $parsed_docblock = ['description' => ''];
+            $parsed_docblock = ['description' => '', 'specials' => []];
         }
 
         foreach ($this->new_phpdoc_param_types as $param_name => $phpdoc_type) {

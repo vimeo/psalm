@@ -464,6 +464,13 @@ class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
+            'objectLikeArrayOptionalKeyReturn' => [
+                '<?php
+                    /** @return array{a: int, b?: int} */
+                    function foo() : array {
+                        return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
+                    }',
+            ],
         ];
     }
 
@@ -709,6 +716,14 @@ class ReturnTypeTest extends TestCase
                         return $obj->getIterator();
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'objectLikeArrayOptionalKeyWithNonOptionalReturn' => [
+                '<?php
+                    /** @return array{a: int, b: int} */
+                    function foo() : array {
+                        return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

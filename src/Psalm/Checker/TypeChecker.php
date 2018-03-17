@@ -57,6 +57,10 @@ class TypeChecker
             return true;
         }
 
+        if ($input_type->possibly_undefined && !$container_type->possibly_undefined) {
+            return false;
+        }
+
         foreach ($input_type->getTypes() as $input_type_part) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
