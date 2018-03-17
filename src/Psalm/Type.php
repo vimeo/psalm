@@ -51,7 +51,7 @@ abstract class Type
 
         $type_string = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $type_string);
 
-        if (preg_match('/[\[\]()\?]/', $type_string)) {
+        if (preg_match('/[\[\]()]/', $type_string)) {
             throw new TypeParseTreeException('Invalid characters in type');
         }
 
@@ -203,9 +203,11 @@ abstract class Type
             foreach ($parse_tree->children as $i => $property_branch) {
                 if ($property_branch->value !== ParseTree::OBJECT_PROPERTY) {
                     $property_type = self::getTypeFromTree($property_branch, false);
+                    $property_maybe_undefined = false;
                     $property_key = (string)$i;
                 } elseif (count($property_branch->children) === 2) {
                     $property_type = self::getTypeFromTree($property_branch->children[1], false);
+                    $property_maybe_undefined = $property_branch->possibly_undefined;
                     $property_key = (string)($property_branch->children[0]->value);
                 } else {
                     throw new \InvalidArgumentException('Unexpected number of property parts');
@@ -214,6 +216,11 @@ abstract class Type
                 if (!$property_type instanceof Union) {
                     $property_type = new Union([$property_type]);
                 }
+
+                if ($property_maybe_undefined) {
+                    $property_type->possibly_undefined = true;
+                }
+
                 $properties[$property_key] = $property_type;
             }
 

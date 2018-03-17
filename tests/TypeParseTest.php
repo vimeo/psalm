@@ -109,5 +109,21 @@ class TypeParseTest extends TestCase
             'array{0:array<int, string>}',
             (string)Type::parseString('array{array<int, string>}')
         );
+
+        $this->assertSame(
+            'array{a:int, b?:int}',
+            (string)Type::parseString('array{a:int, b?:int}')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testObjectLikeOptional()
+    {
+        $this->assertSame(
+            'array{a:int, b?:int}',
+            (string)Type::parseString('array{a:int, b?:int}')
+        );
     }
 }

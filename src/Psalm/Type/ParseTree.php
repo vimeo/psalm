@@ -26,6 +26,11 @@ class ParseTree
     public $parent;
 
     /**
+     * @var bool
+     */
+    public $possibly_undefined = false;
+
+    /**
      * @param string|null    $value
      * @param ParseTree|null $parent
      */
@@ -48,6 +53,8 @@ class ParseTree
         $parse_tree = new self(null, null);
 
         $current_leaf = $parse_tree;
+
+        $last_token = null;
 
         while ($type_tokens) {
             $type_token = array_shift($type_tokens);
@@ -144,11 +151,15 @@ class ParseTree
 
                     $new_parent_leaf = new self(self::OBJECT_PROPERTY, $current_parent);
                     $new_parent_leaf->children = [$current_leaf];
+                    $new_parent_leaf->possibly_undefined = $last_token === '?';
                     $current_leaf->parent = $new_parent_leaf;
 
                     array_pop($current_parent->children);
                     $current_parent->children[] = $new_parent_leaf;
 
+                    break;
+
+                case '?':
                     break;
 
                 case '|':
@@ -187,6 +198,8 @@ class ParseTree
 
                     $current_leaf = $new_leaf;
             }
+
+            $last_token = $type_token;
         }
 
         return $parse_tree;

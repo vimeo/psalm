@@ -55,6 +55,13 @@ class Union
     public $ignore_falsable_issues = false;
 
     /**
+     * Whether or not this variable is possibly undefined
+     *
+     * @var bool
+     */
+    public $possibly_undefined = false;
+
+    /**
      * Whether or not the type was passed by reference
      *
      * @var bool
