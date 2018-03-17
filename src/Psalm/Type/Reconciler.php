@@ -347,7 +347,8 @@ class Reconciler
                 $did_remove_type = $existing_var_type->hasString()
                     || $existing_var_type->hasNumericType()
                     || $existing_var_type->isEmpty()
-                    || $existing_var_type->hasType('bool');
+                    || $existing_var_type->hasType('bool')
+                    || $existing_var_type->possibly_undefined;
 
                 if ($existing_var_type->hasType('null')) {
                     $did_remove_type = true;
@@ -372,6 +373,8 @@ class Reconciler
                         $existing_var_type->removeType('array');
                     }
                 }
+
+                $existing_var_type->possibly_undefined = false;
 
                 if (!$did_remove_type || empty($existing_var_type->getTypes())) {
                     if ($key && $code_location) {

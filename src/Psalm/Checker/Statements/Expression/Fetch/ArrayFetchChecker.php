@@ -83,7 +83,10 @@ class ArrayFetchChecker
             return false;
         }
 
-        if ($keyed_array_var_id && isset($context->vars_in_scope[$keyed_array_var_id])) {
+        if ($keyed_array_var_id
+            && isset($context->vars_in_scope[$keyed_array_var_id])
+            && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
+        ) {
             $stmt->inferredType = clone $context->vars_in_scope[$keyed_array_var_id];
 
             return;

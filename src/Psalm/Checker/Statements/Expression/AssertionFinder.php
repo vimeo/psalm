@@ -884,15 +884,17 @@ class AssertionFinder
                 )
                 : null;
 
-            if ($first_var_name === null && isset($expr->args[0]->value)) {
-                if ($expr->args[0]->value instanceof PhpParser\Node\Scalar\String_) {
-                    $first_var_name = '"' . $expr->args[0]->value->value . '"';
-                } elseif ($expr->args[0]->value instanceof PhpParser\Node\Scalar\LNumber) {
-                    $first_var_name = (string) $expr->args[0]->value->value;
+            if ($first_var_name === null && isset($expr->args[0])) {
+                $first_arg = $expr->args[0];
+
+                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $first_var_name = '"' . $first_arg->value->value . '"';
+                } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    $first_var_name = (string) $first_arg->value->value;
                 }
             }
 
-            if ($first_var_name !== null && $array_root) {
+            if ($first_var_name !== null && $array_root && !strpos($first_var_name, '->')) {
                 $if_types[$array_root . '[' . $first_var_name . ']'] = $prefix . 'array-key-exists';
             }
         }
