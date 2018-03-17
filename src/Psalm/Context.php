@@ -361,8 +361,9 @@ class Context
         $redefined_var_ids = [];
 
         foreach ($new_context->vars_in_scope as $var_id => $context_type) {
-            if (!isset($original_context->vars_in_scope[$var_id]) ||
-                $original_context->vars_in_scope[$var_id]->getId() !== $context_type->getId()
+            if (!isset($original_context->vars_in_scope[$var_id])
+                || $original_context->vars_in_scope[$var_id]->getId() !== $context_type->getId()
+                || $original_context->vars_in_scope[$var_id]->possibly_undefined !== $context_type->possibly_undefined
             ) {
                 $redefined_var_ids[] = $var_id;
             }

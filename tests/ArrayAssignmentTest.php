@@ -838,6 +838,18 @@ class ArrayAssignmentTest extends TestCase
                     'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset', 'MixedArrayAssignment', 'MixedArgument',
                 ],
             ],
+            'possiblyUndefinedArrayAccessWithIsset' => [
+                '<?php
+                    if (rand(0,1)) {
+                      $a = ["a" => 1];
+                    } else {
+                      $a = [2, 3];
+                    }
+
+                    if (isset($a[0])) {
+                        echo $a[0];
+                    }',
+            ],
         ];
     }
 
@@ -858,6 +870,17 @@ class ArrayAssignmentTest extends TestCase
                     $a = 5;
                     $a[0] = 5;',
                 'error_message' => 'InvalidArrayAssignment',
+            ],
+            'possiblyUndefinedArrayAccess' => [
+                '<?php
+                    if (rand(0,1)) {
+                      $a = ["a" => 1];
+                    } else {
+                      $a = [2, 3];
+                    }
+
+                    echo $a[0];',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'mixedStringOffsetAssignment' => [
                 '<?php

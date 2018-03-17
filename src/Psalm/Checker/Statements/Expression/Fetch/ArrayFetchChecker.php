@@ -23,6 +23,8 @@ use Psalm\Issue\PossiblyInvalidArrayOffset;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyNullArrayAssignment;
 use Psalm\Issue\PossiblyNullArrayOffset;
+use Psalm\Issue\PossiblyUndefinedGlobalVariable;
+use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
@@ -130,6 +132,30 @@ class ArrayFetchChecker
 
         if (!isset($stmt->inferredType)) {
             $stmt->inferredType = Type::getMixed();
+        } else {
+            if ($stmt->inferredType->possibly_undefined && !$context->inside_isset && !$context->inside_unset) {
+                if ($context->is_global) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedGlobalVariable(
+                            'Possibly undefined array key ' . $keyed_array_var_id,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined array key ' . $keyed_array_var_id,
+                            new CodeLocation($statements_checker->getSource(), $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+            }
         }
 
         return null;

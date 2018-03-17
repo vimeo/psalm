@@ -92,6 +92,7 @@ class Reconciler
 
             $failed_reconciliation = false;
             $from_docblock = $result_type && $result_type->from_docblock;
+            $possibly_undefined = $result_type && $result_type->possibly_undefined;
 
             foreach ($new_type_parts as $new_type_part) {
                 $new_type_part_parts = explode('|', $new_type_part);
@@ -123,6 +124,7 @@ class Reconciler
 
             if ($result_type->getId() !== $before_adjustment
                 || $result_type->from_docblock !== $from_docblock
+                || $result_type->possibly_undefined !== $possibly_undefined
                 || $failed_reconciliation
             ) {
                 $changed_var_ids[] = $key;
@@ -481,6 +483,8 @@ class Reconciler
                 // mixed will have to do.
                 return Type::getMixed();
             }
+
+            $existing_var_type->possibly_undefined = false;
 
             return $existing_var_type;
         }
