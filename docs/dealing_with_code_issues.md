@@ -5,11 +5,11 @@ Psalm has a large number of [code issues](issues.md). Each project can specify i
 Code issue levels in Psalm fall into three categories:
 <dl>
   <dt>error</dt>
-  <dd>this will cause Psalm to print a message, and to ultimately terminate with a non-zero exist status</dd>
+  <dd>This will cause Psalm to print a message, and to ultimately terminate with a non-zero exit status</dd>
   <dt>info</dt>
-  <dd>this will cause Psalm to print a message</dd>
+  <dd>This will cause Psalm to print a message</dd>
   <dt>suppress</dt>
-  <dd>this will cause Psalm to ignore the code issue entirely</dd>
+  <dd>This will cause Psalm to ignore the code issue entirely</dd>
 </dl>
 
 The third category, `suppress`, is the one you will probably be most interested in, especially when introducing Psalm to a large codebase.
