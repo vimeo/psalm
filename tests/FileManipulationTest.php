@@ -282,6 +282,24 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
+            'addMissingObjectLikeReturnType70' => [
+                '<?php
+                    function foo() {
+                        return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
+                    }',
+                '<?php
+                    /**
+                     * @return string[]
+                     *
+                     * @psalm-return array{a:string, b?:string}
+                     */
+                    function foo(): array {
+                        return rand(0, 1) ? ["a" => "hello"] : ["a" => "goodbye", "b" => "hello again"];
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                true,
+            ],
             'addMissingStringArrayReturnTypeFromCall71' => [
                 '<?php
                     /** @return string[] */

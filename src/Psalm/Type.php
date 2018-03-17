@@ -631,6 +631,10 @@ abstract class Type
             $combined_type->failed_reconciliation = true;
         }
 
+        if ($type_1->possibly_undefined || $type_2->possibly_undefined) {
+            $combined_type->possibly_undefined = true;
+        }
+
         return $combined_type;
     }
 
@@ -741,18 +745,18 @@ abstract class Type
         foreach ($combination->type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'array') {
                 if ($combination->objectlike_entries) {
-                    $object_like_generic_type = null;
+                    $objectlike_generic_type = null;
 
                     $objectlike_keys = [];
 
                     foreach ($combination->objectlike_entries as $property_name => $property_type) {
-                        if ($object_like_generic_type) {
-                            $object_like_generic_type = Type::combineUnionTypes(
+                        if ($objectlike_generic_type) {
+                            $objectlike_generic_type = Type::combineUnionTypes(
                                 $property_type,
-                                $object_like_generic_type
+                                $objectlike_generic_type
                             );
                         } else {
-                            $object_like_generic_type = $property_type;
+                            $objectlike_generic_type = clone $property_type;
                         }
 
                         if (is_int($property_name)) {
@@ -766,9 +770,11 @@ abstract class Type
                         }
                     }
 
-                    if (!$object_like_generic_type) {
+                    if (!$objectlike_generic_type) {
                         throw new \InvalidArgumentException('Cannot be null');
                     }
+
+                    $objectlike_generic_type->possibly_undefined = false;
 
                     $objectlike_key_type = new Type\Union(array_values($objectlike_keys));
 
@@ -778,7 +784,7 @@ abstract class Type
                     );
                     $generic_type_params[1] = Type::combineUnionTypes(
                         $generic_type_params[1],
-                        $object_like_generic_type
+                        $objectlike_generic_type
                     );
                 }
 
@@ -847,19 +853,31 @@ abstract class Type
                 }
             }
         } elseif ($type instanceof ObjectLike) {
+            $existing_objectlike_entries = (bool) $combination->objectlike_entries;
+            $possibly_undefined_entries = $combination->objectlike_entries;
+
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
                     ? $combination->objectlike_entries[$candidate_property_name]
                     : null;
 
                 if (!$value_type) {
-                    $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type;
+                    $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;
+                    // it's possibly undefined if there are existing objectlike entries
+                    $combination->objectlike_entries[$candidate_property_name]->possibly_undefined
+                        = $existing_objectlike_entries;
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
                         $candidate_property_type
                     );
                 }
+
+                unset($possibly_undefined_entries[$candidate_property_name]);
+            }
+
+            foreach ($possibly_undefined_entries as $type) {
+                $type->possibly_undefined = true;
             }
         } else {
             $combination->value_types[$type_key] = $type;

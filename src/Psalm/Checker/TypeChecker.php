@@ -870,6 +870,7 @@ class TypeChecker
         $from_docblock = $union->from_docblock;
         $ignore_nullable_issues = $union->ignore_nullable_issues;
         $ignore_falsable_issues = $union->ignore_falsable_issues;
+        $possibly_undefined = $union->possibly_undefined;
 
         $unique_types = [];
 
@@ -928,6 +929,7 @@ class TypeChecker
         $unique_type->from_docblock = $from_docblock;
         $unique_type->ignore_nullable_issues = $ignore_nullable_issues;
         $unique_type->ignore_falsable_issues = $ignore_falsable_issues;
+        $unique_type->possibly_undefined = $possibly_undefined;
 
         return $unique_type;
     }

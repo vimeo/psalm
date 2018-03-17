@@ -200,14 +200,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineObjectType1' => [
-                'array{a:int, b:string}',
+                'array{a?:int, b?:string}',
                 [
                     'array{a:int}',
                     'array{b:string}',
                 ],
             ],
             'combineObjectType2' => [
-                'array{a:int|string, b:string}',
+                'array{a:int|string, b?:string}',
                 [
                     'array{a:int}',
                     'array{a:string,b:string}',

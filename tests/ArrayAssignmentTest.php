@@ -251,7 +251,7 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{bar:array{baz:array{bat:string}}}',
                 ],
             ],
-            'conflictingTypes' => [
+            'conflictingTypesWithNoAssignment' => [
                 '<?php
                     $foo = [
                         "bar" => ["a" => "b"],
