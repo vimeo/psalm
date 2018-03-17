@@ -35,6 +35,34 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+     /**
+     * @return void
+     */
+    public function testPhpStormGenericsWithClassProperty()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress MissingConstructor */
+                class Foo {
+                  /** @var \stdClass[]|\ArrayObject */
+                  public $bar;
+
+                  /**
+                   * @return \stdClass[]|\ArrayObject
+                   */
+                  public function getBar(): \ArrayObject
+                  {
+                    return $this->bar;
+                  }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @return void
      */
