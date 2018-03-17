@@ -109,6 +109,16 @@ class Scanner
      *
      * @return void
      */
+    public function addFilesToShallowScan(array $files_to_scan)
+    {
+        $this->files_to_scan += $files_to_scan;
+    }
+
+    /**
+     * @param array<string, string> $files_to_scan
+     *
+     * @return void
+     */
     public function addFilesToDeepScan(array $files_to_scan)
     {
         $this->files_to_scan += $files_to_scan;

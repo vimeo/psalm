@@ -17,9 +17,13 @@ class IncludeTest extends TestCase
     {
         $codebase = $this->project_checker->getCodebase();
 
-        foreach ($files as $filename => $contents) {
-            $this->addFile($filename, $contents);
-            $codebase->addFilesToAnalyze([$filename => $filename]);
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        }
+
+        foreach ($files_to_check as $file_path) {
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
         $codebase->scanFiles();
@@ -45,9 +49,13 @@ class IncludeTest extends TestCase
     {
         $codebase = $this->project_checker->getCodebase();
 
-        foreach ($files as $filename => $contents) {
-            $this->addFile($filename, $contents);
-            $codebase->addFilesToAnalyze([$filename => $filename]);
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        }
+
+        foreach ($files_to_check as $file_path) {
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
         $codebase->scanFiles();
@@ -286,6 +294,20 @@ class IncludeTest extends TestCase
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+            ],
+            'variadicArgs' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");
+                        variadicArgs(5, 2, "hello");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        function variadicArgs() {
+                            $args = func_get_args();
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
         ];

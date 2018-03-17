@@ -203,6 +203,16 @@ class Functions
     {
         $file_storage = $project_checker->file_storage_provider->get($file_path);
 
+        if (!isset($file_storage->declaring_function_ids[$function_id])) {
+            return;
+        }
+
+        $declaring_file_path = $file_storage->declaring_function_ids[$function_id];
+
+        $file_storage = $declaring_file_path === $file_path
+            ? $file_storage
+            : $project_checker->file_storage_provider->get($declaring_file_path);
+
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
 }
