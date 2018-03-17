@@ -770,10 +770,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         ) {
             // pick up func_get_args that would otherwise be missed
             foreach ($stmt->stmts as $function_stmt) {
-                if ($function_stmt instanceof PhpParser\Node\Expr\FuncCall
-                    && $function_stmt->name instanceof PhpParser\Node\Name
+                if ($function_stmt instanceof PhpParser\Node\Expr\Assign
+                    && ($function_stmt->expr instanceof PhpParser\Node\Expr\FuncCall)
+                    && ($function_stmt->expr->name instanceof PhpParser\Node\Name)
                 ) {
-                    $function_id = implode('\\', $function_stmt->name->parts);
+                    $function_id = implode('\\', $function_stmt->expr->name->parts);
 
                     if ($function_id === 'func_get_arg'
                         || $function_id === 'func_get_args'
