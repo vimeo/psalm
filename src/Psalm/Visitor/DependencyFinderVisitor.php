@@ -762,6 +762,29 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage->assertions = $var_assertions;
         }
 
+        if (!$this->scan_deep
+            && ($stmt instanceof PhpParser\Node\Stmt\Function_
+                || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                || $stmt instanceof PhpParser\Node\Expr\Closure)
+            && $stmt->stmts
+        ) {
+            // pick up func_get_args that would otherwise be missed
+            foreach ($stmt->stmts as $function_stmt) {
+                if ($function_stmt instanceof PhpParser\Node\Expr\FuncCall
+                    && $function_stmt->name instanceof PhpParser\Node\Name
+                ) {
+                    $function_id = implode('\\', $function_stmt->name->parts);
+
+                    if ($function_id === 'func_get_arg'
+                        || $function_id === 'func_get_args'
+                        || $function_id === 'func_num_args'
+                    ) {
+                        $storage->variadic = true;
+                    }
+                }
+            }
+        }
+
         /**
          * @psalm-suppress MixedAssignment
          *
