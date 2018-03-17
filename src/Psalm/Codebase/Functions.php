@@ -204,7 +204,7 @@ class Functions
         $file_storage = $project_checker->file_storage_provider->get($file_path);
 
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
-            return;
+            return false;
         }
 
         $declaring_file_path = $file_storage->declaring_function_ids[$function_id];
