@@ -83,7 +83,6 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             : null;
 
         if (isset($stmt->var->inferredType)) {
-            /** @var Type\Union */
             $class_type = $stmt->var->inferredType;
         } elseif (!$class_type) {
             $stmt->inferredType = Type::getMixed();

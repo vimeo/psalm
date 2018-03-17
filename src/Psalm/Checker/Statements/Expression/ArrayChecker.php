@@ -57,7 +57,6 @@ class ArrayChecker
                     if ($item_key_type) {
                         $item_key_type = Type::combineUnionTypes($item->key->inferredType, $item_key_type);
                     } else {
-                        /** @var Type\Union */
                         $item_key_type = $item->key->inferredType;
                     }
                 }

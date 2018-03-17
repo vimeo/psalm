@@ -146,7 +146,6 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function populateCheckers(array $stmts)
     {
-        /** @var array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt> */
         $leftover_stmts = [];
 
         foreach ($stmts as $stmt) {

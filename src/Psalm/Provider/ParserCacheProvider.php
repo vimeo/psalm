@@ -159,7 +159,6 @@ class ParserCacheProvider
         $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
         if (is_dir($cache_directory)) {
-            /** @var array<string> */
             $directory_files = scandir($cache_directory);
 
             foreach ($directory_files as $directory_file) {
@@ -206,7 +205,6 @@ class ParserCacheProvider
         $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
         if (is_dir($cache_directory)) {
-            /** @var array<string> */
             $directory_files = scandir($cache_directory);
 
             foreach ($directory_files as $directory_file) {

@@ -57,7 +57,6 @@ class ForeachChecker
         );
 
         if (isset($stmt->expr->inferredType)) {
-            /** @var Type\Union */
             $iterator_type = $stmt->expr->inferredType;
         } elseif ($var_id && $foreach_context->hasVariable($var_id, $statements_checker)) {
             $iterator_type = $foreach_context->vars_in_scope[$var_id];
@@ -86,6 +85,16 @@ class ForeachChecker
                 )) {
                     return false;
                 }
+            } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
+                if (IssueBuffer::accepts(
+                    new InvalidIterator(
+                        'Cannot iterate over falsable var ' . $iterator_type,
+                        new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
             }
 
             foreach ($iterator_type->getTypes() as $iterator_type) {
@@ -96,7 +105,7 @@ class ForeachChecker
                     continue;
                 }
 
-                if ($iterator_type instanceof Type\Atomic\TNull) {
+                if ($iterator_type instanceof Type\Atomic\TNull || $iterator_type instanceof Type\Atomic\TFalse) {
                     continue;
                 }
 

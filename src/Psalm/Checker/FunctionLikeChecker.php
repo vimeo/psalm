@@ -94,7 +94,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      */
     public function analyze(Context $context, Context $global_context = null, $add_mutations = false)
     {
-        /** @var array<PhpParser\Node\Expr|PhpParser\Node\Stmt> */
         $function_stmts = $this->function->getStmts() ?: [];
 
         $hash = null;

@@ -55,8 +55,6 @@ class TNamedObject extends Atomic
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
         $class_parts = explode('\\', $this->value);
-
-        /** @var string */
         $class_name = array_pop($class_parts);
 
         if ($this->value === $this_class) {

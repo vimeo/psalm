@@ -232,7 +232,6 @@ class Reflection
             );
         }
 
-        /** @var \ReflectionClass */
         $declaring_class = $method->getDeclaringClass();
 
         $storage->is_static = $method->isStatic();
@@ -299,7 +298,6 @@ class Reflection
             $param_type_string = 'array';
         } else {
             try {
-                /** @var \ReflectionClass */
                 $param_class = $param->getClass();
             } catch (\ReflectionException $e) {
                 $param_class = null;

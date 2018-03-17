@@ -447,7 +447,6 @@ class CommentChecker
 
         $line_map = [];
 
-        /** @var int|false */
         $last = false;
         foreach ($lines as $k => $line) {
             if (preg_match('/^\s?@\w/i', $line)) {
@@ -525,7 +524,6 @@ class CommentChecker
                 ++$indent;
             }
 
-            /** @var int */
             $min_indent = min($indent, $min_indent);
         }
 

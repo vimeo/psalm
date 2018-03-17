@@ -182,8 +182,6 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             }
         } else {
             ExpressionChecker::analyze($statements_checker, $stmt->class, $context);
-
-            /** @var Type\Union|null */
             $lhs_type = $stmt->class->inferredType;
         }
 

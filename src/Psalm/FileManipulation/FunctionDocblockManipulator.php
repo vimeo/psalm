@@ -133,7 +133,6 @@ class FunctionDocblockManipulator
         $function_code_after_bracket = substr($function_code, $end_bracket_position + 1 - $function_start);
 
         // do a little parsing here
-        /** @var array<int, string> */
         $chars = str_split($function_code_after_bracket);
 
         $in_single_line_comment = $in_multi_line_comment = false;

@@ -125,7 +125,6 @@ class AssignmentChecker
             $assign_value_type = $comment_type;
         } elseif (!$assign_value_type) {
             if (isset($assign_value->inferredType)) {
-                /** @var Type\Union */
                 $assign_value_type = $assign_value->inferredType;
             } else {
                 $assign_value_type = Type::getMixed();

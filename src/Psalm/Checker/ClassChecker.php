@@ -776,8 +776,11 @@ class ClassChecker extends ClassLikeChecker
             if ($actual_method_id !== $declaring_method_id) {
                 // the method is an abstract trait method
 
-                /** @var \Psalm\Storage\MethodStorage */
                 $implementer_method_storage = $method_checker->getFunctionLikeStorage();
+
+                if (!$implementer_method_storage instanceof \Psalm\Storage\MethodStorage) {
+                    throw new \LogicException('This should never happen');
+                }
 
                 if ($declaring_method_id && $implementer_method_storage->abstract) {
                     $classlike_storage_provider = $project_checker->classlike_storage_provider;

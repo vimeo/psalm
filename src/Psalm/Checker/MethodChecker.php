@@ -55,8 +55,11 @@ class MethodChecker extends FunctionLikeChecker
     ) {
         $codebase_methods = $project_checker->codebase->methods;
 
-        /** @var string */
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
+
+        if (!$method_id) {
+            throw new \LogicException('Method id should not be null');
+        }
 
         $storage = $codebase_methods->getStorage($method_id);
 

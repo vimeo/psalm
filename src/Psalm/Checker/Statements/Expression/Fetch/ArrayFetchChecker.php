@@ -65,7 +65,6 @@ class ArrayFetchChecker
 
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType)) {
-                /** @var Type\Union */
                 $used_key_type = $stmt->dim->inferredType;
             } else {
                 $used_key_type = Type::getMixed();
@@ -89,7 +88,6 @@ class ArrayFetchChecker
         }
 
         if (isset($stmt->var->inferredType)) {
-            /** @var Type\Union */
             $var_type = $stmt->var->inferredType;
 
             if ($var_type->isNull()) {

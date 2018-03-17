@@ -632,11 +632,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $class_storage->overridden_method_ids[strtolower($stmt->name)] = [];
             }
 
-            /** @var bool */
-            $storage->is_static = $stmt->isStatic();
-
-            /** @var bool */
-            $storage->abstract = $stmt->isAbstract();
+            $storage->is_static = (bool) $stmt->isStatic();
+            $storage->abstract = (bool) $stmt->isAbstract();
 
             $storage->final = $class_storage->final || $stmt->isFinal();
 

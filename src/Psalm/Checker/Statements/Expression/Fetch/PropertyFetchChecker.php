@@ -99,7 +99,6 @@ class PropertyFetchChecker
         if ($stmt_var_id && $context->hasVariable($stmt_var_id, $statements_checker)) {
             $stmt_var_type = $context->vars_in_scope[$stmt_var_id];
         } elseif (isset($stmt->var->inferredType)) {
-            /** @var Type\Union */
             $stmt_var_type = $stmt->var->inferredType;
         }
 
