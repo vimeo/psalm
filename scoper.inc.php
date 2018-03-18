@@ -94,5 +94,16 @@ return [
 
             return $contents;
         },
+        function ($filePath, $prefix, $contents) {
+            if ($filePath === realpath(__DIR__ . '/src/psalm.php')) {
+                return str_replace(
+                    '\\' . $prefix . '\\PSALM_VERSION',
+                    'PSALM_VERSION',
+                    $contents
+                );
+            }
+
+            return $contents;
+        },
     ],
 ];
