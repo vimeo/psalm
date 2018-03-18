@@ -64,8 +64,12 @@ class TNamedObject extends Atomic
                     /**
                      * @return string
                      */
-                    function (TNamedObject $extra_type)
-                        use ($namespace, $aliased_classes, $this_class, $use_phpdoc_format) {
+                    function (TNamedObject $extra_type) use (
+                        $namespace,
+                        $aliased_classes,
+                        $this_class,
+                        $use_phpdoc_format
+                    ) {
                         return $extra_type->toNamespacedString(
                             $namespace,
                             $aliased_classes,
