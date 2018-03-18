@@ -11,6 +11,7 @@ use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
@@ -916,7 +917,10 @@ class BinaryOpChecker
                 Type::getString(),
                 true,
                 false,
-                $left_has_scalar_match
+                $left_has_scalar_match,
+                $left_type_coerced,
+                $left_type_coerced_from_mixed,
+                $left_type_to_string_cast
             );
 
             $right_type_match = TypeChecker::isContainedBy(
@@ -925,8 +929,37 @@ class BinaryOpChecker
                 Type::getString(),
                 true,
                 false,
-                $right_has_scalar_match
+                $right_has_scalar_match,
+                $right_type_coerced,
+                $right_type_coerced_from_mixed,
+                $right_type_to_string_cast
             );
+
+            if ($left_type_to_string_cast && $config->strict_binary_operands) {
+                if (IssueBuffer::accepts(
+                    new ImplicitToStringCast(
+                        'Left side of concat op expects string, '
+                            . '\'' . $left_type . '\' provided with a __toString method',
+                        new CodeLocation($statements_checker->getSource(), $left)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($right_type_to_string_cast && $config->strict_binary_operands) {
+                if (IssueBuffer::accepts(
+                    new ImplicitToStringCast(
+                        'Right side of concat op expects string, '
+                            . '\'' . $right_type . '\' provided with a __toString method',
+                        new CodeLocation($statements_checker->getSource(), $right)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
 
             if (!$left_type_match && (!$left_has_scalar_match || $config->strict_binary_operands)) {
                 if (IssueBuffer::accepts(

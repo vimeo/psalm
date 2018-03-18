@@ -118,6 +118,20 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'ImplicitToStringCast',
             ],
+            'implicitConcatenation' => [
+                '<?php
+                    interface I {
+                        public function __toString();
+                    }
+
+                    function takesI(I $i): void
+                    {
+                        $a = $i . "hello";
+                    }',
+                'error_message' => 'ImplicitToStringCast',
+                [],
+                true
+            ],
         ];
     }
 }
