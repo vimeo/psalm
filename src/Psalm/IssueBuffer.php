@@ -283,7 +283,10 @@ class IssueBuffer
         $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
         Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
 
+        echo PHP_EOL;
+
         $error_count = 0;
+        $info_count = 0;
 
         if (self::$issues_data) {
             usort(
@@ -309,11 +312,14 @@ class IssueBuffer
             foreach (self::$issues_data as $issue_data) {
                 if ($issue_data['severity'] === Config::REPORT_ERROR) {
                     ++$error_count;
+                } else {
+                    ++$info_count;
                 }
             }
 
             echo self::getOutput($project_checker->output_format, $project_checker->use_color);
         }
+
         foreach ($project_checker->reports as $format => $path) {
             file_put_contents(
                 $path,
@@ -321,7 +327,7 @@ class IssueBuffer
             );
         }
 
-        echo PHP_EOL . str_repeat('-', 30) . PHP_EOL;
+        echo str_repeat('-', 30) . PHP_EOL;
 
         if ($error_count) {
             echo ($project_checker->use_color
@@ -331,6 +337,15 @@ class IssueBuffer
         } else {
             echo 'No errors found!' . PHP_EOL;
         }
+
+        if ($info_count) {
+            echo str_repeat('-', 30) . PHP_EOL;
+
+            echo $info_count . ' other issues found.' . PHP_EOL
+                . 'You can hide them with ' .
+                ($project_checker->use_color ? "\e[30;48;5;195m--show-info=false\e[0m" : '--show-info=false') . PHP_EOL;
+        }
+
         echo str_repeat('-', 30) . PHP_EOL . PHP_EOL;
 
         if ($start_time) {
