@@ -40,6 +40,7 @@
         <RedundantCondition errorLevel="info" />
 
         <PossiblyFalseArgument errorLevel="info" />
+        <PossiblyFalseOperand errorLevel="info" />
         <PossiblyFalsePropertyAssignmentValue errorLevel="info" />
         <PossiblyFalseReference errorLevel="info" />
         <PossiblyInvalidArgument errorLevel="info" />
@@ -63,6 +64,7 @@
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
+        <PossiblyInvalidOperand errorLevel="info" />
 
     </issueHandlers>
 </psalm>

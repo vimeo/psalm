@@ -76,6 +76,18 @@ class BinaryOperationTest extends TestCase
                     $a = "hi" + (new stdClass);',
                 'error_message' => 'InvalidOperand',
             ],
+            'possiblyInvalidOperand' => [
+                '<?php
+                    $b = rand(0, 1) ? [] : 4;
+                    echo $b + 5;',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'possiblyInvalidConcat' => [
+                '<?php
+                    $b = rand(0, 1) ? [] : "hello";
+                    echo $b . "goodbye";',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
         ];
     }
 }

@@ -11,10 +11,13 @@ use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
+use Psalm\Issue\PossiblyFalseOperand;
+use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -541,7 +544,7 @@ class BinaryOpChecker
                 return;
             }
 
-            if ($right_type->isNullable()) {
+            if ($right_type->isNullable() && $right_type->ignore_falsable_issues) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Right operand cannot be nullable, got ' . $right_type,
@@ -564,6 +567,59 @@ class BinaryOpChecker
 
                 return;
             }
+
+            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new PossiblyFalseOperand(
+                        'Left operand cannot be falsable, got ' . $left_type,
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($left_type->isFalse()) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new FalseOperand(
+                        'Left operand cannot be null',
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
+            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new PossiblyFalseOperand(
+                        'Right operand cannot be falsable, got ' . $right_type,
+                        new CodeLocation($statements_source, $right)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } elseif ($right_type->isFalse()) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new FalseOperand(
+                        'Right operand cannot be false',
+                        new CodeLocation($statements_source, $right)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
+            $invalid_left_messages = [];
+            $invalid_right_messages = [];
+            $has_valid_left_operand = false;
+            $has_valid_right_operand = false;
 
             foreach ($left_type->getTypes() as $left_type_part) {
                 foreach ($right_type->getTypes() as $right_type_part) {
@@ -625,31 +681,24 @@ class BinaryOpChecker
                             || (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)
                         ) {
                             if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
-                                if ($statements_source && IssueBuffer::accepts(
-                                    new InvalidOperand(
-                                        'Cannot add an array to a non-array ' . $left_type_part,
-                                        new CodeLocation($statements_source, $left)
-                                    ),
-                                    $statements_source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
                             } else {
-                                if ($statements_source && IssueBuffer::accepts(
-                                    new InvalidOperand(
-                                        'Cannot add an array to a non-array ' . $right_type_part,
-                                        new CodeLocation($statements_source, $right)
-                                    ),
-                                    $statements_source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                                $invalid_right_messages[] = 'Cannot add an array to a non-array ' . $right_type_part;
+                            }
+
+                            if ($left_type_part instanceof TArray || $left_type_part instanceof ObjectLike) {
+                                $has_valid_left_operand = true;
+                            } elseif ($right_type_part instanceof TArray || $right_type_part instanceof ObjectLike) {
+                                $has_valid_right_operand = true;
                             }
 
                             $result_type = Type::getArray();
 
-                            return;
+                            continue;
                         }
+
+                        $has_valid_right_operand = true;
+                        $has_valid_left_operand = true;
 
                         if ($left_type_part instanceof ObjectLike && $right_type_part instanceof ObjectLike) {
                             $properties = $left_type_part->properties + $right_type_part->properties;
@@ -690,6 +739,9 @@ class BinaryOpChecker
                                 $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
                             }
 
+                            $has_valid_right_operand = true;
+                            $has_valid_left_operand = true;
+
                             continue;
                         }
 
@@ -700,6 +752,9 @@ class BinaryOpChecker
                                 $result_type = Type::combineUnionTypes(Type::getInt(), $result_type);
                             }
 
+                            $has_valid_right_operand = true;
+                            $has_valid_left_operand = true;
+
                             continue;
                         }
 
@@ -709,6 +764,9 @@ class BinaryOpChecker
                             } else {
                                 $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                             }
+
+                            $has_valid_right_operand = true;
+                            $has_valid_left_operand = true;
 
                             continue;
                         }
@@ -734,6 +792,9 @@ class BinaryOpChecker
                                 $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                             }
 
+                            $has_valid_right_operand = true;
+                            $has_valid_left_operand = true;
+
                             continue;
                         }
 
@@ -756,19 +817,20 @@ class BinaryOpChecker
                                 $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                             }
 
+                            $has_valid_right_operand = true;
+                            $has_valid_left_operand = true;
+
                             continue;
                         }
 
-                        $non_numeric_type = $left_type_part->isNumericType() ? $right_type_part : $left_type_part;
-
-                        if ($statements_source && IssueBuffer::accepts(
-                            new InvalidOperand(
-                                'Cannot perform a numeric operation with a non-numeric type ' . $non_numeric_type,
-                                new CodeLocation($statements_source, $parent)
-                            ),
-                            $statements_source->getSuppressedIssues()
-                        )) {
-                            // fall through
+                        if (!$left_type_part->isNumericType()) {
+                            $invalid_left_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
+                                . $left_type_part;
+                            $has_valid_right_operand = true;
+                        } else {
+                            $invalid_right_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
+                                . $right_type_part;
+                            $has_valid_left_operand = true;
                         }
                     } else {
                         if ($statements_source && IssueBuffer::accepts(
@@ -781,6 +843,56 @@ class BinaryOpChecker
                         )) {
                             // fall through
                         }
+                    }
+                }
+            }
+
+            if ($invalid_left_messages && $statements_source) {
+                $first_left_message = $invalid_left_messages[0];
+
+                if ($has_valid_left_operand) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidOperand(
+                            $first_left_message,
+                            new CodeLocation($statements_source, $left)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidOperand(
+                            $first_left_message,
+                            new CodeLocation($statements_source, $left)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            if ($invalid_right_messages && $statements_source) {
+                if ($has_valid_right_operand) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidOperand(
+                            'Cannot add an array to a non-array ' . $right_type,
+                            new CodeLocation($statements_source, $right)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot add an array to a non-array ' . $right_type,
+                            new CodeLocation($statements_source, $right)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
                     }
                 }
             }
@@ -885,6 +997,34 @@ class BinaryOpChecker
                 return;
             }
 
+            if ($left_type->isFalse()) {
+                if (IssueBuffer::accepts(
+                    new FalseOperand(
+                        'Cannot concatenate with a ' . $left_type,
+                        new CodeLocation($statements_checker->getSource(), $left)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
+            if ($right_type->isFalse()) {
+                if (IssueBuffer::accepts(
+                    new FalseOperand(
+                        'Cannot concatenate with a ' . $right_type,
+                        new CodeLocation($statements_checker->getSource(), $right)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                return;
+            }
+
             if ($left_type->isNullable() && !$left_type->ignore_nullable_issues) {
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
@@ -909,37 +1049,10 @@ class BinaryOpChecker
                 }
             }
 
-            $project_checker = $statements_checker->getFileChecker()->project_checker;
-
-            $left_type_match = TypeChecker::isContainedBy(
-                $project_checker->codebase,
-                $left_type,
-                Type::getString(),
-                true,
-                false,
-                $left_has_scalar_match,
-                $left_type_coerced,
-                $left_type_coerced_from_mixed,
-                $left_type_to_string_cast
-            );
-
-            $right_type_match = TypeChecker::isContainedBy(
-                $project_checker->codebase,
-                $right_type,
-                Type::getString(),
-                true,
-                false,
-                $right_has_scalar_match,
-                $right_type_coerced,
-                $right_type_coerced_from_mixed,
-                $right_type_to_string_cast
-            );
-
-            if ($left_type_to_string_cast && $config->strict_binary_operands) {
+            if ($left_type->isFalsable() && !$left_type->ignore_falsable_issues) {
                 if (IssueBuffer::accepts(
-                    new ImplicitToStringCast(
-                        'Left side of concat op expects string, '
-                            . '\'' . $left_type . '\' provided with a __toString method',
+                    new PossiblyFalseOperand(
+                        'Cannot concatenate with a possibly false ' . $left_type,
                         new CodeLocation($statements_checker->getSource(), $left)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -948,40 +1061,140 @@ class BinaryOpChecker
                 }
             }
 
-            if ($right_type_to_string_cast && $config->strict_binary_operands) {
+            if ($right_type->isFalsable() && !$right_type->ignore_falsable_issues) {
                 if (IssueBuffer::accepts(
-                    new ImplicitToStringCast(
-                        'Right side of concat op expects string, '
-                            . '\'' . $right_type . '\' provided with a __toString method',
+                    new PossiblyFalseOperand(
+                        'Cannot concatenate with a possibly false ' . $right_type,
                         new CodeLocation($statements_checker->getSource(), $right)
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
                     // fall through
+                }
+            }
+
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+            $left_type_match = true;
+            $right_type_match = true;
+
+            $left_has_scalar_match = false;
+            $right_has_scalar_match = false;
+
+            $has_valid_left_operand = false;
+            $has_valid_right_operand = false;
+
+            foreach ($left_type->getTypes() as $left_type_part) {
+                if ($left_type_part instanceof Type\Atomic\TNull || $left_type_part instanceof Type\Atomic\TFalse) {
+                    continue;
+                }
+
+                $left_type_part_match = TypeChecker::isAtomicContainedBy(
+                    $project_checker->codebase,
+                    $left_type_part,
+                    new Type\Atomic\TString,
+                    $left_has_scalar_match,
+                    $left_type_coerced,
+                    $left_type_coerced_from_mixed,
+                    $left_to_string_cast
+                );
+
+                $left_type_match = $left_type_match && $left_type_part_match;
+
+                $has_valid_left_operand = $has_valid_left_operand || $left_type_part_match;
+
+                if ($left_to_string_cast && $config->strict_binary_operands) {
+                    if (IssueBuffer::accepts(
+                        new ImplicitToStringCast(
+                            'Left side of concat op expects string, '
+                                . '\'' . $left_type . '\' provided with a __toString method',
+                            new CodeLocation($statements_checker->getSource(), $left)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            foreach ($right_type->getTypes() as $right_type_part) {
+                if ($right_type_part instanceof Type\Atomic\TNull || $right_type_part instanceof Type\Atomic\TFalse) {
+                    continue;
+                }
+
+                $right_type_part_match = TypeChecker::isAtomicContainedBy(
+                    $project_checker->codebase,
+                    $right_type_part,
+                    new Type\Atomic\TString,
+                    $right_has_scalar_match,
+                    $right_type_coerced,
+                    $right_type_coerced_from_mixed,
+                    $right_to_string_cast
+                );
+
+                $right_type_match = $right_type_match && $right_type_part_match;
+
+                $has_valid_right_operand = $has_valid_right_operand || $right_type_part_match;
+
+                if ($right_to_string_cast && $config->strict_binary_operands) {
+                    if (IssueBuffer::accepts(
+                        new ImplicitToStringCast(
+                            'Right side of concat op expects string, '
+                                . '\'' . $right_type . '\' provided with a __toString method',
+                            new CodeLocation($statements_checker->getSource(), $right)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
             if (!$left_type_match && (!$left_has_scalar_match || $config->strict_binary_operands)) {
-                if (IssueBuffer::accepts(
-                    new InvalidOperand(
-                        'Cannot concatenate with a ' . $left_type,
-                        new CodeLocation($statements_checker->getSource(), $left)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($has_valid_left_operand) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidOperand(
+                            'Cannot concatenate with a ' . $left_type,
+                            new CodeLocation($statements_checker->getSource(), $left)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot concatenate with a ' . $left_type,
+                            new CodeLocation($statements_checker->getSource(), $left)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
 
             if (!$right_type_match && (!$right_has_scalar_match || $config->strict_binary_operands)) {
-                if (IssueBuffer::accepts(
-                    new InvalidOperand(
-                        'Cannot concatenate with a ' . $right_type,
-                        new CodeLocation($statements_checker->getSource(), $right)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    // fall through
+                if ($has_valid_right_operand) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidOperand(
+                            'Cannot concatenate with a ' . $right_type,
+                            new CodeLocation($statements_checker->getSource(), $right)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot concatenate with a ' . $right_type,
+                            new CodeLocation($statements_checker->getSource(), $right)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }

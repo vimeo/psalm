@@ -186,6 +186,15 @@ function foo() : string {
 }
 ```
 
+
+### FalseOperand
+
+Emitted when using `false` as part of an operation (e.g. `+`, `.`, `^` etc.`)
+
+```php
+echo false . 'hello';
+```
+
 ### ForbiddenCode
 
 Emitted when Psalm encounters a var_dump, exec or similar expression that may make your code more vulnerable
@@ -1141,6 +1150,16 @@ function foo(string $s) : void {
 }
 ```
 
+### PossiblyFalseOperand
+
+Emitted when using a possibly `false` value as part of an operation (e.g. `+`, `.`, `^` etc.`)
+
+```php
+function foo(string $a) : void {
+    echo strpos($a, ":") + 5;
+}
+```
+
 ### PossiblyFalsePropertyAssignmentValue
 
 Emitted when trying to assign a value that may be false to a property that only takes non-false values.
@@ -1238,6 +1257,17 @@ function foo() {
 }
 
 foo()->bar();
+```
+
+### PossiblyInvalidOperand
+
+Emitted when using a possibly invalid value as part of an operation (e.g. `+`, `.`, `^` etc.`)
+
+```php
+function foo() : void {
+    $b = rand(0, 1) ? [] : 4;
+    echo $b + 5;
+}
 ```
 
 ### PossiblyInvalidPropertyAssignment

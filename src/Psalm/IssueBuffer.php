@@ -56,6 +56,22 @@ class IssueBuffer
             return false;
         }
 
+        if (strpos($issue_type, 'Possibly') === 0) {
+            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
+
+            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
+                $stripped_issue_type = 'Invalid' . $stripped_issue_type;
+            }
+
+            if (in_array($stripped_issue_type, $suppressed_issues, true)) {
+                return false;
+            }
+
+            if (!$config->reportIssueInFile($stripped_issue_type, $e->getFilePath())) {
+                return false;
+            }
+        }
+
         if (self::$recording_level > 0) {
             self::$recorded_issues[self::$recording_level][] = $e;
 
