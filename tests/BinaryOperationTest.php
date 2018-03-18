@@ -36,6 +36,14 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = "hi" . 5;',
             ],
+            'possiblyInvalidAdditionOnBothSides' => [
+                '<?php
+                    function foo(string $s) : int {
+                        return strpos($s, "a") + strpos($s, "b");
+                    }',
+                'assertions' => [],
+                'error_levels' => ['PossiblyFalseOperand'],
+            ],
         ];
     }
 

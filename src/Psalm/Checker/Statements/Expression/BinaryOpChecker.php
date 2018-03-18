@@ -628,11 +628,8 @@ class BinaryOpChecker
                         continue;
                     }
 
-                    if ($left_type_part instanceof TFalse && $left_type->ignore_falsable_issues) {
-                        continue;
-                    }
-
-                    if ($right_type_part instanceof TFalse && $right_type->ignore_falsable_issues) {
+                    if ($left_type_part instanceof TFalse || $right_type_part instanceof TFalse) {
+                        // null case is handled above
                         continue;
                     }
 
@@ -833,16 +830,9 @@ class BinaryOpChecker
                             $has_valid_left_operand = true;
                         }
                     } else {
-                        if ($statements_source && IssueBuffer::accepts(
-                            new InvalidOperand(
-                                'Cannot perform a numeric operation with non-numeric types ' . $left_type_part
-                                    . ' and ' . $right_type_part,
-                                new CodeLocation($statements_source, $parent)
-                            ),
-                            $statements_source->getSuppressedIssues()
-                        )) {
-                            // fall through
-                        }
+                        $invalid_left_messages[] =
+                            'Cannot perform a numeric operation with non-numeric types ' . $left_type_part
+                                . ' and ' . $right_type_part;
                     }
                 }
             }
