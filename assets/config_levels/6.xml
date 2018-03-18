@@ -46,7 +46,10 @@
         <PossiblyInvalidArgument errorLevel="info" />
         <PossiblyInvalidArrayAccess errorLevel="info" />
         <PossiblyInvalidArrayAssignment errorLevel="info" />
+        <PossiblyInvalidArrayOffset errorLevel="info" />
+        <PossiblyInvalidFunctionCall errorLevel="info" />
         <PossiblyInvalidMethodCall errorLevel="info" />
+        <PossiblyInvalidOperand errorLevel="info" />
         <PossiblyInvalidPropertyAssignment errorLevel="info" />
         <PossiblyInvalidPropertyAssignmentValue errorLevel="info" />
         <PossiblyInvalidPropertyFetch errorLevel="info" />
@@ -64,7 +67,6 @@
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
-        <PossiblyInvalidOperand errorLevel="info" />
 
         <!-- level 5 issues - should be avoided at mosts costs... -->
 
