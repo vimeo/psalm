@@ -9,7 +9,11 @@ Psalm is a static analysis tool for finding errors in PHP applications, built on
 
 It's able to find a [large number issues](https://github.com/vimeo/psalm/blob/master/docs/issues.md), but it can also be configured to only care about a small subset of those.
 
-[Read more about Psalm](https://github.com/vimeo/psalm/blob/master/docs/index.md), [try a live demo](https://getpsalm.org/), or install it in your project by following the guide below.
+[Try a live demo](https://getpsalm.org/), or install it in your project by following the Quickstart Guide below.
+
+## Psalm documentation
+
+All the documentation for Psalm are found in the docs folder - [the index is located here](https://github.com/vimeo/psalm/blob/master/docs/index.md), 
 
 ## Quickstart Guide
 
