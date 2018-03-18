@@ -812,7 +812,9 @@ class ExpressionChecker
     ) {
         foreach ($stmt->uses as $use) {
             $use_var_id = '$' . $use->var;
-            if (!$context->hasVariable($use_var_id, $statements_checker)) {
+            if (!$context->hasVariable($use_var_id, $statements_checker)
+                && (!$context->is_global || !in_array($use_var_id, ['$argv', '$argc'], true))
+            ) {
                 if ($use->byRef) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                     $context->vars_possibly_in_scope[$use_var_id] = true;

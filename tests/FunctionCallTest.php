@@ -581,6 +581,10 @@ class FunctionCallTest extends TestCase
                         return strpos($s, 0) !== false;
                     }'
             ],
+            'functionCallInGlobalScope' => [
+                '<?php
+                    $a = function() use ($argv) : void {};',
+            ],
         ];
     }
 
