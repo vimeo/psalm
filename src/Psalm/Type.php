@@ -43,7 +43,7 @@ abstract class Type
     public static function parseString($type_string, $php_compatible = false)
     {
         // remove all unacceptable characters
-        $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
+        $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
 
         if (strpos($type_string, '[') !== false) {
             $type_string = self::convertSquareBrackets($type_string);
@@ -195,6 +195,39 @@ abstract class Type
             return self::combineTypes($union_types);
         }
 
+        if ($parse_tree->value === ParseTree::INTERSECTION) {
+            $intersection_types = array_map(
+                /**
+                 * @return Atomic
+                 */
+                function (ParseTree $child_tree) {
+                    $atomic_type = self::getTypeFromTree($child_tree, false);
+
+                    if (!$atomic_type instanceof Atomic) {
+                        throw new \UnexpectedValueException(
+                            'Was expecting an atomic type, got ' . get_class($atomic_type)
+                        );
+                    }
+
+                    return $atomic_type;
+                },
+                $parse_tree->children
+            );
+
+            foreach ($intersection_types as $intersection_type) {
+                if (!$intersection_type instanceof TNamedObject) {
+                    throw new TypeParseTreeException('Intersection types must all be objects');
+                }
+            }
+
+            /** @var TNamedObject[] $intersection_types */
+            $first_type = array_shift($intersection_types);
+
+            $first_type->extra_types = $intersection_types;
+
+            return new Type\Union([$first_type]);
+        }
+
         if ($parse_tree->value === ParseTree::OBJECT_LIKE) {
             $properties = [];
 
@@ -277,6 +310,7 @@ abstract class Type
                 $char === '[' ||
                 $char === ']' ||
                 $char === ' ' ||
+                $char === '&' ||
                 $char === ':'
             ) {
                 if ($return_type_tokens[$rtc] === '') {

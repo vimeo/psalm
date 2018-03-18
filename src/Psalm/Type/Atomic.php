@@ -161,17 +161,34 @@ abstract class Atomic
             return;
         }
 
-        if ($this instanceof TNamedObject &&
-            !isset($phantom_classes[strtolower($this->value)]) &&
-            ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                $source,
-                $this->value,
-                $code_location,
-                $suppressed_issues,
-                $inferred
-            ) === false
-        ) {
-            return false;
+        if ($this instanceof TNamedObject) {
+            if (!isset($phantom_classes[strtolower($this->value)]) &&
+                ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                    $source,
+                    $this->value,
+                    $code_location,
+                    $suppressed_issues,
+                    $inferred
+                ) === false
+            ) {
+                return false;
+            }
+
+            if ($this->extra_types) {
+                foreach ($this->extra_types as $extra_type) {
+                    if (!isset($phantom_classes[strtolower($extra_type->value)]) &&
+                        ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                            $source,
+                            $extra_type->value,
+                            $code_location,
+                            $suppressed_issues,
+                            $inferred
+                        ) === false
+                    ) {
+                        return false;
+                    }
+                }
+            }
         }
 
         if ($this instanceof TResource && !$this->from_docblock) {

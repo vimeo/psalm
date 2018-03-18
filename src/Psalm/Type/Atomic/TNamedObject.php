@@ -57,23 +57,44 @@ class TNamedObject extends Atomic
         $class_parts = explode('\\', $this->value);
         $class_name = array_pop($class_parts);
 
+        $intersection_types = $this->extra_types
+            ? '&' . implode(
+                '&',
+                array_map(
+                    /**
+                     * @return string
+                     */
+                    function (TNamedObject $extra_type)
+                        use ($namespace, $aliased_classes, $this_class, $use_phpdoc_format) {
+                        return $extra_type->toNamespacedString(
+                            $namespace,
+                            $aliased_classes,
+                            $this_class,
+                            $use_phpdoc_format
+                        );
+                    },
+                    $this->extra_types
+                )
+            )
+            : '';
+
         if ($this->value === $this_class) {
-            return 'self';
+            return 'self' . $intersection_types;
         }
 
         if ($namespace && preg_match('/^' . preg_quote($namespace) . '\\\\' . $class_name . '$/i', $this->value)) {
-            return $class_name;
+            return $class_name . $intersection_types;
         }
 
         if (!$namespace && stripos($this->value, '\\') === false) {
-            return $this->value;
+            return $this->value . $intersection_types;
         }
 
         if (isset($aliased_classes[strtolower($this->value)])) {
-            return $aliased_classes[strtolower($this->value)];
+            return $aliased_classes[strtolower($this->value)] . $intersection_types;
         }
 
-        return '\\' . $this->value;
+        return '\\' . $this->value . $intersection_types;
     }
 
     /**

@@ -51,6 +51,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testIntersection()
+    {
+        $this->assertSame('I1&I2', (string) Type::parseString('I1&I2'));
+    }
+
+    /**
+     * @return void
+     */
     public function testPhpDocStyle()
     {
         $this->assertSame('array<mixed, A>', (string) Type::parseString('A[]'));
