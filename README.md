@@ -13,7 +13,7 @@ It's able to find a [large number issues](https://github.com/vimeo/psalm/blob/ma
 
 ## Psalm documentation
 
-All the documentation for Psalm are found in the docs folder - [the index is located here](https://github.com/vimeo/psalm/blob/master/docs/index.md), 
+All the documentation for Psalm is found in the docs folder - [the index is located here](https://github.com/vimeo/psalm/blob/master/docs/index.md), 
 
 ## Quickstart Guide
 
