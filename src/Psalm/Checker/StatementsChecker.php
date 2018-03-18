@@ -438,7 +438,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 try {
-                    $class_checker = (new ClassChecker($stmt, $this->source, $stmt->name));
+                    $class_checker = new ClassChecker($stmt, $this->source, $stmt->name);
                     $class_checker->analyze(null, $global_context);
                 } catch (\InvalidArgumentException $e) {
                     // disregard this exception, we'll likely see it elsewhere in the form

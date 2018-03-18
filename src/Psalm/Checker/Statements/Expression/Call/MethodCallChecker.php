@@ -59,7 +59,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         $method_id = null;
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable) {
-            if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$statements_checker->getClassName()) {
+            if (is_string($stmt->var->name) && $stmt->var->name === 'this' && !$statements_checker->getFQCLN()) {
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Use of $this in non-class context',
