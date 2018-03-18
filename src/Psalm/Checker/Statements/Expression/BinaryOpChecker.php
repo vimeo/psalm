@@ -874,10 +874,12 @@ class BinaryOpChecker
             }
 
             if ($invalid_right_messages && $statements_source) {
+                $first_right_message = $invalid_right_messages[0];
+
                 if ($has_valid_right_operand) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(
-                            'Cannot add an array to a non-array ' . $right_type,
+                            $first_right_message,
                             new CodeLocation($statements_source, $right)
                         ),
                         $statements_source->getSuppressedIssues()
@@ -887,7 +889,7 @@ class BinaryOpChecker
                 } else {
                     if (IssueBuffer::accepts(
                         new InvalidOperand(
-                            'Cannot add an array to a non-array ' . $right_type,
+                            $first_right_message,
                             new CodeLocation($statements_source, $right)
                         ),
                         $statements_source->getSuppressedIssues()
