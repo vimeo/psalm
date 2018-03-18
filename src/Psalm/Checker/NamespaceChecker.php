@@ -82,6 +82,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             $statements_checker = new StatementsChecker($this);
             $context = new Context();
             $context->collect_references = $codebase->collect_references;
+            $context->is_global = true;
             $statements_checker->analyze($leftover_stmts, $context);
         }
     }

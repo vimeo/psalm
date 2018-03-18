@@ -50,6 +50,23 @@ class NamespaceTest extends TestCase
                         }
                     }',
             ],
+            'argvReference' => [
+                '<?php
+                    namespace Foo;
+
+                    $a = $argv;
+                    $b = $argc;',
+            ],
+            'argvReferenceInFunction' => [
+                '<?php
+                    namespace Foo;
+
+                    function foo() : void {
+                        global $argv;
+
+                        $c = $argv;
+                    }',
+            ],
         ];
     }
 

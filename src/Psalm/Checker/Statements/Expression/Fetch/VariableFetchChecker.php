@@ -105,6 +105,27 @@ class VariableFetchChecker
             return null;
         }
 
+        if ($context->is_global && ($stmt->name === 'argv' || $stmt->name === 'argc')) {
+            $var_name = '$' . $stmt->name;
+
+            if (!$context->hasVariable($var_name, $statements_checker)) {
+                if ($stmt->name === 'argv') {
+                    $context->vars_in_scope[$var_name] = new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getInt(),
+                            Type::getString(),
+                        ]),
+                    ]);
+                } else {
+                    $context->vars_in_scope[$var_name] = Type::getInt();
+                }
+            }
+
+            $context->vars_possibly_in_scope[$var_name] = true;
+            $stmt->inferredType = clone $context->vars_in_scope[$var_name];
+            return null;
+        }
+
         if (!is_string($stmt->name)) {
             return ExpressionChecker::analyze($statements_checker, $stmt->name, $context);
         }

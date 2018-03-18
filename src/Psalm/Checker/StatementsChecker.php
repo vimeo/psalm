@@ -12,6 +12,7 @@ use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\Expression\Assignment\PropertyAssignmentChecker;
 use Psalm\Checker\Statements\Expression\BinaryOpChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
+use Psalm\Checker\Statements\Expression\Fetch\VariableFetchChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\ReturnChecker;
 use Psalm\Checker\Statements\ThrowChecker;
@@ -378,6 +379,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
+                        if ($global_context && VariableFetchChecker::analyze($this, $var, $global_context) === false) {
+                            return false;
+                        }
+
                         if (is_string($var->name)) {
                             $var_id = '$' . $var->name;
 
@@ -387,8 +392,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                                     : Type::getMixed();
 
                             $context->vars_possibly_in_scope[$var_id] = true;
-                        } else {
-                            ExpressionChecker::analyze($this, $var, $context);
                         }
                     }
                 }
