@@ -6,6 +6,8 @@
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
     throwExceptionOnError="0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="config.xsd"
 >
     <projectFiles>
         <directory name="src" />

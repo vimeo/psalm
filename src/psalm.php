@@ -208,6 +208,14 @@ if (isset($options['i'])) {
         <directory name="' . $source_dir . '" />
     </projectFiles>', $template);
 
+    if (!\Phar::running(false)) {
+        $template = str_replace(
+            'vendor/vimeo/psalm/config.xsd',
+            __DIR__ . DIRECTORY_SEPARATOR . 'config.xsd',
+            $template
+        );
+    }
+
     if (!file_put_contents('psalm.xml', $template)) {
         die('Could not write to psalm.xml' . PHP_EOL);
     }
