@@ -1,4 +1,5 @@
 {
+    "alias": "psalm.phar",
     "base-path": "build/psalm",
     "main" : "./psalm",
     "output" : "../../build/psalm.phar",
