@@ -21,6 +21,12 @@ php -d memory_limit=-1 `which php-scoper` add-prefix --prefix='PsalmPhar' --outp
 # and optimize the loader
 composer dump-autoload --working-dir=build/psalm --classmap-authoritative --no-dev
 
+chmod 755 build/psalm/psalm
+
+cp bin/phar.psalm.xml build/psalm/psalm.xml
+
+./build/psalm/psalm --config=build/psalm/psalm.xml --root=build/psalm
+
 php -d memory_limit=-1 -d phar.readonly=0 `which box` compile
 
 # clean up build

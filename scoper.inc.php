@@ -58,16 +58,46 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
+            if (strpos($filePath, realpath(__DIR__ . '/src/Psalm')) === 0) {
+                return str_replace(
+                    [' \\Psalm\\', ' \\PhpParser\\'],
+                    [' \\' . $prefix . '\\Psalm\\', ' \\' . $prefix . '\\PhpParser\\'],
+                    $contents
+                );
+            }
+
+            return $contents;
+        },
+        function ($filePath, $prefix, $contents) {
+            if (strpos($filePath, realpath(__DIR__ . '/vendor/openlss')) === 0) {
+                return str_replace(
+                    $prefix . '\\DomDocument',
+                    'DomDocument',
+                    $contents
+                );
+            }
+
+            return $contents;
+        },
+        function ($filePath, $prefix, $contents) {
             if ($filePath === realpath(__DIR__ . '/src/Psalm/PropertyMap.php')
                 || $filePath === realpath(__DIR__ . '/src/Psalm/CallMap.php')
                 || $filePath === realpath(__DIR__ . '/src/Psalm/Stubs/CoreGenericFunctions.php')
                 || $filePath === realpath(__DIR__ . '/src/Psalm/Stubs/CoreGenericClasses.php')
             ) {
-                return str_replace(
+                $contents = str_replace(
                     ['namespace ' . $prefix . ';', $prefix . '\\\\', $prefix . '\\'],
                     '',
                     $contents
                 );
+
+                $contents = str_replace(
+                    ['\'phpparser\\\\', 'PhpParser\\\\'],
+                    ['\'' . strtolower($prefix) . '\\\\phpparser\\\\', $prefix . '\\\\PhpParser\\\\'],
+                    $contents
+                );
+
+                return str_replace('Psalm\\\\', $prefix . '\\\\Psalm\\\\', $contents);
             }
 
             return $contents;
