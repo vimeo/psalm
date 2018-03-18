@@ -283,7 +283,7 @@ class IssueBuffer
         $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
         Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
 
-        $has_error = false;
+        $error_count = 0;
 
         if (self::$issues_data) {
             usort(
@@ -308,7 +308,7 @@ class IssueBuffer
 
             foreach (self::$issues_data as $issue_data) {
                 if ($issue_data['severity'] === Config::REPORT_ERROR) {
-                    $has_error = true;
+                    ++$error_count;
                 }
             }
 
@@ -320,6 +320,18 @@ class IssueBuffer
                 self::getOutput($format, $project_checker->use_color)
             );
         }
+
+        echo PHP_EOL . str_repeat('-', 30) . PHP_EOL;
+
+        if ($error_count) {
+            echo ($project_checker->use_color
+                ? "\e[0;31m" . $error_count . " errors\e[0m"
+                : $error_count . ' errors'
+            ) . ' found' . PHP_EOL;
+        } else {
+            echo 'No errors found!' . PHP_EOL;
+        }
+        echo str_repeat('-', 30) . PHP_EOL . PHP_EOL;
 
         if ($start_time) {
             echo 'Checks took ' . number_format((float)microtime(true) - $start_time, 2) . ' seconds';
@@ -339,7 +351,7 @@ class IssueBuffer
             }
         }
 
-        if ($has_error) {
+        if ($error_count) {
             exit(1);
         }
 
