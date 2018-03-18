@@ -149,19 +149,24 @@ if (array_key_exists('v', $options)) {
 setlocale(LC_CTYPE, 'C');
 
 if (isset($options['i'])) {
-    if (file_exists('psalm.xml')) {
+    if (file_exists($current_dir . 'psalm.xml')) {
         die('A config file already exists in the current directory' . PHP_EOL);
     }
 
     $args = array_values(array_filter(
-        array_slice($argv, 2),
+        array_slice($argv, 1),
         /**
          * @param string $arg
          *
          * @return bool
          */
         function ($arg) {
-            return $arg !== '--ansi' && $arg !== '--no-ansi';
+            return $arg !== '--ansi'
+                && $arg !== '--no-ansi'
+                && $arg !== '--i'
+                && $arg !== '--init'
+                && strpos($arg, '--root=') !== 0
+                && strpos($arg, '--r=') !== 0;
         }
     ));
 
@@ -216,7 +221,7 @@ if (isset($options['i'])) {
         );
     }
 
-    if (!file_put_contents('psalm.xml', $template)) {
+    if (!file_put_contents($current_dir . 'psalm.xml', $template)) {
         die('Could not write to psalm.xml' . PHP_EOL);
     }
 
