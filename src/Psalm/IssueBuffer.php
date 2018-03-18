@@ -56,18 +56,14 @@ class IssueBuffer
             return false;
         }
 
-        if (strpos($issue_type, 'Possibly') === 0) {
-            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
+        $parent_issue_type = self::getParentIssueType($issue_type);
 
-            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
-                $stripped_issue_type = 'Invalid' . $stripped_issue_type;
-            }
-
-            if (in_array($stripped_issue_type, $suppressed_issues, true)) {
+        if ($parent_issue_type) {
+            if (in_array($parent_issue_type, $suppressed_issues, true)) {
                 return false;
             }
 
-            if (!$config->reportIssueInFile($stripped_issue_type, $e->getFilePath())) {
+            if (!$config->reportIssueInFile($parent_issue_type, $e->getFilePath())) {
                 return false;
             }
         }
@@ -79,6 +75,29 @@ class IssueBuffer
         }
 
         return self::add($e);
+    }
+
+    /**
+     * @param  string $issue_type
+     * @return string|null
+     */
+    private static function getParentIssueType($issue_type)
+    {
+        if (strpos($issue_type, 'Possibly') === 0) {
+            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type);
+
+            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
+                $stripped_issue_type = 'Invalid' . $stripped_issue_type;
+            }
+
+            return $stripped_issue_type;
+        }
+
+        if (preg_match('/^(False|Null)[A-Z]/', $issue_type)) {
+            return preg_replace('/^(False|Null)/', 'Invalid', $issue_type);
+        }
+
+        return null;
     }
 
     /**
@@ -104,6 +123,16 @@ class IssueBuffer
         $error_message = $issue_type . ' - ' . $e->getShortLocation() . ' - ' . $e->getMessage();
 
         $reporting_level = $config->getReportingLevelForFile($issue_type, $e->getFilePath());
+
+        $parent_issue_type = self::getParentIssueType($issue_type);
+
+        if ($parent_issue_type && $reporting_level === Config::REPORT_ERROR) {
+            $parent_reporting_level = $config->getReportingLevelForFile($parent_issue_type, $e->getFilePath());
+
+            if ($parent_reporting_level !== $reporting_level) {
+                $reporting_level = $parent_reporting_level;
+            }
+        }
 
         if ($reporting_level === Config::REPORT_SUPPRESS) {
             return false;
