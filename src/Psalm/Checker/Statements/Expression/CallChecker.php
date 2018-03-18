@@ -1575,7 +1575,7 @@ class CallChecker
 
         foreach ($class_arg->inferredType->getTypes() as $type_part) {
             if ($type_part instanceof TNamedObject) {
-                $method_ids[] = $type_part . '::' . $method_name_arg->value;
+                $method_ids[] = $type_part->value . '::' . $method_name_arg->value;
             }
         }
 
