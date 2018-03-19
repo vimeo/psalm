@@ -894,7 +894,11 @@ class AssertionFinder
                 }
             }
 
-            if ($first_var_name !== null && $array_root && !strpos($first_var_name, '->')) {
+            if ($first_var_name !== null
+                && $array_root
+                && !strpos($first_var_name, '->')
+                && !strpos($first_var_name, '[')
+            ) {
                 $if_types[$array_root . '[' . $first_var_name . ']'] = $prefix . 'array-key-exists';
             }
         }
