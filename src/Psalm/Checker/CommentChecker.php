@@ -13,7 +13,7 @@ use Psalm\VarDocblockComment;
 
 class CommentChecker
 {
-    const TYPE_REGEX = '(\??\\\?[A-Za-z][\(\)A-Za-z0-9_\<,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
+    const TYPE_REGEX = '(\??\\\?[A-Za-z][\(\)A-Za-z0-9_&\<,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_\<,\>\|\[\]-\{\}:]+)';
 
     /**
      * @param  string           $comment
