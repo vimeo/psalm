@@ -429,70 +429,88 @@ class FunctionChecker extends FunctionLikeChecker
                 foreach ($mapping_function_ids as $mapping_function_id) {
                     $mapping_function_id = strtolower($mapping_function_id);
 
-                    if (isset($call_map[$mapping_function_id][0])) {
-                        if ($call_map[$mapping_function_id][0]) {
-                            $mapped_function_return = Type::parseString($call_map[$mapping_function_id][0]);
+                    $mapping_function_id_parts = explode('&', $mapping_function_id);
 
-                            if ($mapping_return_type) {
-                                $mapping_return_type = Type::combineUnionTypes(
-                                    $mapping_return_type,
-                                    $mapped_function_return
-                                );
-                            } else {
-                                $mapping_return_type = $mapped_function_return;
-                            }
-                        }
-                    } else {
-                        if (strpos($mapping_function_id, '::') !== false) {
-                            list($callable_fq_class_name) = explode('::', $mapping_function_id);
+                    $part_match_found = false;
 
-                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
-                                $mapping_return_type = Type::getMixed();
-                                continue;
-                            }
+                    foreach ($mapping_function_id_parts as $mapping_function_id_part) {
+                        if (isset($call_map[$mapping_function_id_part][0])) {
+                            if ($call_map[$mapping_function_id_part][0]) {
+                                $mapped_function_return =
+                                    Type::parseString($call_map[$mapping_function_id_part][0]);
 
-                            if (!$codebase->methodExists($mapping_function_id)) {
-                                $mapping_return_type = Type::getMixed();
-                                continue;
-                            }
+                                if ($mapping_return_type) {
+                                    $mapping_return_type = Type::combineUnionTypes(
+                                        $mapping_return_type,
+                                        $mapped_function_return
+                                    );
+                                } else {
+                                    $mapping_return_type = $mapped_function_return;
+                                }
 
-                            $self_class = 'self';
-
-                            $return_type = $codebase->methods->getMethodReturnType(
-                                $mapping_function_id,
-                                $self_class
-                            ) ?: Type::getMixed();
-
-                            if ($mapping_return_type) {
-                                $mapping_return_type = Type::combineUnionTypes(
-                                    $mapping_return_type,
-                                    $return_type
-                                );
-                            } else {
-                                $mapping_return_type = $return_type;
+                                $part_match_found = true;
                             }
                         } else {
-                            if (!$codebase->functions->functionExists($statements_checker, $mapping_function_id)) {
-                                $mapping_return_type = Type::getMixed();
-                                continue;
-                            }
+                            if (strpos($mapping_function_id_part, '::') !== false) {
+                                list($callable_fq_class_name) = explode('::', $mapping_function_id_part);
 
-                            $function_storage = $codebase->functions->getStorage(
-                                $statements_checker,
-                                $mapping_function_id
-                            );
+                                if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
+                                    continue;
+                                }
 
-                            $return_type = $function_storage->return_type ?: Type::getMixed();
+                                if (!$codebase->methodExists($mapping_function_id_part)) {
+                                    continue;
+                                }
 
-                            if ($mapping_return_type) {
-                                $mapping_return_type = Type::combineUnionTypes(
-                                    $mapping_return_type,
-                                    $return_type
-                                );
+                                $part_match_found = true;
+
+                                $self_class = 'self';
+
+                                $return_type = $codebase->methods->getMethodReturnType(
+                                    $mapping_function_id_part,
+                                    $self_class
+                                ) ?: Type::getMixed();
+
+                                if ($mapping_return_type) {
+                                    $mapping_return_type = Type::combineUnionTypes(
+                                        $mapping_return_type,
+                                        $return_type
+                                    );
+                                } else {
+                                    $mapping_return_type = $return_type;
+                                }
                             } else {
-                                $mapping_return_type = $return_type;
+                                if (!$codebase->functions->functionExists(
+                                    $statements_checker,
+                                    $mapping_function_id_part
+                                )) {
+                                    $mapping_return_type = Type::getMixed();
+                                    continue;
+                                }
+
+                                $part_match_found = true;
+
+                                $function_storage = $codebase->functions->getStorage(
+                                    $statements_checker,
+                                    $mapping_function_id_part
+                                );
+
+                                $return_type = $function_storage->return_type ?: Type::getMixed();
+
+                                if ($mapping_return_type) {
+                                    $mapping_return_type = Type::combineUnionTypes(
+                                        $mapping_return_type,
+                                        $return_type
+                                    );
+                                } else {
+                                    $mapping_return_type = $return_type;
+                                }
                             }
                         }
+                    }
+
+                    if ($part_match_found === false) {
+                        $mapping_return_type = Type::getMixed();
                     }
                 }
 

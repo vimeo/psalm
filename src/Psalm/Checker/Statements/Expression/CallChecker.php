@@ -948,43 +948,47 @@ class CallChecker
                 $function_id = strtolower($function_id);
 
                 if (strpos($function_id, '::') !== false) {
-                    list($callable_fq_class_name, $method_name) = explode('::', $function_id);
+                    $function_id_parts = explode('&', $function_id);
 
-                    switch ($callable_fq_class_name) {
-                        case 'self':
-                        case 'static':
-                        case 'parent':
-                            $container_class = $statements_checker->getFQCLN();
+                    foreach ($function_id_parts as $function_id_part) {
+                        list($callable_fq_class_name, $method_name) = explode('::', $function_id_part);
 
-                            if ($callable_fq_class_name === 'parent') {
-                                $container_class = $statements_checker->getParentFQCLN();
-                            }
+                        switch ($callable_fq_class_name) {
+                            case 'self':
+                            case 'static':
+                            case 'parent':
+                                $container_class = $statements_checker->getFQCLN();
 
-                            if (!$container_class) {
-                                continue 2;
-                            }
+                                if ($callable_fq_class_name === 'parent') {
+                                    $container_class = $statements_checker->getParentFQCLN();
+                                }
 
-                            $callable_fq_class_name = $container_class;
+                                if (!$container_class) {
+                                    continue 2;
+                                }
+
+                                $callable_fq_class_name = $container_class;
+                        }
+
+                        if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
+                            return;
+                        }
+
+                        $function_id_part = $callable_fq_class_name . '::' . $method_name;
+
+                        try {
+                            $method_storage = $codebase->methods->getStorage($function_id_part);
+                        } catch (\UnexpectedValueException $e) {
+                            // the method may not exist, but we're suppressing that issue
+                            continue;
+                        }
+
+                        $closure_types[] = new Type\Atomic\Fn(
+                            'Closure',
+                            $method_storage->params,
+                            $method_storage->return_type ?: Type::getMixed()
+                        );
                     }
-
-                    if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
-                        return;
-                    }
-
-                    $function_id = $callable_fq_class_name . '::' . $method_name;
-
-                    try {
-                        $method_storage = $codebase->methods->getStorage($function_id);
-                    } catch (\UnexpectedValueException $e) {
-                        // the method may not exist, but we're suppressing that issue
-                        return;
-                    }
-
-                    $closure_types[] = new Type\Atomic\Fn(
-                        'Closure',
-                        $method_storage->params,
-                        $method_storage->return_type ?: Type::getMixed()
-                    );
                 } else {
                     $function_storage = $codebase->functions->getStorage(
                         $statements_checker,
@@ -1429,49 +1433,64 @@ class CallChecker
 
                     foreach ($function_ids as $function_id) {
                         if (strpos($function_id, '::') !== false) {
-                            list($callable_fq_class_name, $method_name) = explode('::', $function_id);
+                            $function_id_parts = explode('&', $function_id);
 
-                            switch ($callable_fq_class_name) {
-                                case 'self':
-                                case 'static':
-                                case 'parent':
-                                    $container_class = $statements_checker->getFQCLN();
+                            $non_existent_method_ids = [];
+                            $has_valid_method = false;
 
-                                    if ($callable_fq_class_name === 'parent') {
-                                        $container_class = $statements_checker->getParentFQCLN();
-                                    }
+                            foreach ($function_id_parts as $function_id_part) {
+                                list($callable_fq_class_name, $method_name) = explode('::', $function_id_part);
 
-                                    if (!$container_class) {
-                                        continue 2;
-                                    }
+                                switch ($callable_fq_class_name) {
+                                    case 'self':
+                                    case 'static':
+                                    case 'parent':
+                                        $container_class = $statements_checker->getFQCLN();
 
-                                    $callable_fq_class_name = $container_class;
+                                        if ($callable_fq_class_name === 'parent') {
+                                            $container_class = $statements_checker->getParentFQCLN();
+                                        }
+
+                                        if (!$container_class) {
+                                            continue 2;
+                                        }
+
+                                        $callable_fq_class_name = $container_class;
+                                }
+
+                                $function_id_part = $callable_fq_class_name . '::' . $method_name;
+
+                                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                    $statements_checker,
+                                    $callable_fq_class_name,
+                                    $code_location,
+                                    $statements_checker->getSuppressedIssues()
+                                ) === false
+                                ) {
+                                    return false;
+                                }
+
+                                if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
+                                    return;
+                                }
+
+                                if (!$codebase->methodExists($function_id_part)) {
+                                    $non_existent_method_ids[] = $function_id_part;
+                                } else {
+                                    $has_valid_method = true;
+                                }
                             }
 
-                            $function_id = $callable_fq_class_name . '::' . $method_name;
-
-                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $statements_checker,
-                                $callable_fq_class_name,
-                                $code_location,
-                                $statements_checker->getSuppressedIssues()
-                            ) === false
-                            ) {
-                                return false;
-                            }
-
-                            if (!$codebase->classOrInterfaceExists($callable_fq_class_name)) {
-                                return;
-                            }
-
-                            if (MethodChecker::checkMethodExists(
-                                $project_checker,
-                                $function_id,
-                                $code_location,
-                                $statements_checker->getSuppressedIssues()
-                            ) === false
-                            ) {
-                                return false;
+                            if (!$has_valid_method) {
+                                if (MethodChecker::checkMethodExists(
+                                    $project_checker,
+                                    $non_existent_method_ids[0],
+                                    $code_location,
+                                    $statements_checker->getSuppressedIssues()
+                                ) === false
+                                ) {
+                                    return false;
+                                }
                             }
                         } else {
                             if (self::checkFunctionExists(
@@ -1575,7 +1594,15 @@ class CallChecker
 
         foreach ($class_arg->inferredType->getTypes() as $type_part) {
             if ($type_part instanceof TNamedObject) {
-                $method_ids[] = $type_part->value . '::' . $method_name_arg->value;
+                $method_id = $type_part->value . '::' . $method_name_arg->value;
+
+                if ($type_part->extra_types) {
+                    foreach ($type_part->extra_types as $extra_type) {
+                        $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
+                    }
+                }
+
+                $method_ids[] = $method_id;
             }
         }
 
