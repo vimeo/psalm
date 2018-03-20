@@ -14,6 +14,7 @@ use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -27,6 +28,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 
 class Reconciler
@@ -805,6 +807,22 @@ class Reconciler
                         $type_coerced_from_mixed,
                         $atomic_to_string_cast
                     ) || $type_coerced
+                    ) {
+                        $has_local_match = true;
+                        break;
+                    }
+
+                    if ($new_type_part instanceof TCallable &&
+                        (
+                            $existing_var_type_part instanceof TString ||
+                            $existing_var_type_part instanceof TArray ||
+                            $existing_var_type_part instanceof ObjectLike ||
+                            (
+                                $existing_var_type_part instanceof TNamedObject &&
+                                $codebase->classExists($existing_var_type_part->value) &&
+                                $codebase->methodExists($existing_var_type_part->value . '::__invoke')
+                            )
+                        )
                     ) {
                         $has_local_match = true;
                         break;

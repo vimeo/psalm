@@ -540,22 +540,6 @@ class TypeChecker
             return true;
         }
 
-        if ($input_type_part instanceof TCallable &&
-            (
-                $container_type_part instanceof TString ||
-                $container_type_part instanceof TArray ||
-                $container_type_part instanceof ObjectLike ||
-                (
-                    $container_type_part instanceof TNamedObject &&
-                    $codebase->classExists($container_type_part->value) &&
-                    $codebase->methodExists($container_type_part->value . '::__invoke')
-                )
-            )
-        ) {
-            // @todo add value checks if possible here
-            return true;
-        }
-
         if ($input_type_part instanceof TNumeric) {
             if ($container_type_part->isNumericType()) {
                 $has_scalar_match = true;
