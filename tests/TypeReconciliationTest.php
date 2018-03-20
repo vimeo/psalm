@@ -564,6 +564,10 @@ class TypeReconciliationTest extends TestCase
 
                     function takesI(I $i): void {}
                     function takesA(A $a): void {}
+                    /** @param A&I $a */
+                    function takesAandI($a): void {}
+                    /** @param I&A $a */
+                    function takesIandA($a): void {}
 
                     class A {
                         public function foo(): void {
@@ -573,6 +577,8 @@ class TypeReconciliationTest extends TestCase
 
                                 takesA($this);
                                 takesI($this);
+                                takesAandI($this);
+                                takesIandA($this);
                             }
                         }
 
@@ -849,6 +855,26 @@ class TypeReconciliationTest extends TestCase
                         print_field($array);
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'SKIPPED-intersection' => [
+                '<?php
+                    interface I {
+                        public function bat(): void;
+                    }
+
+                    interface C {}
+
+                    /** @param I&C $a */
+                    function takesIandC($a): void {}
+
+                    class A {
+                        public function foo(): void {
+                            if ($this instanceof I) {
+                                takesIandC($this);
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

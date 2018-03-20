@@ -215,6 +215,30 @@ class ClosureTest extends TestCase
 
                     pipe("zzzz", function() : void {});',
             ],
+            'callableWithNonInvokable' => [
+                '<?php
+                    function asd(): void {}
+                    class B {}
+
+                    /**
+                     * @param callable|B $p
+                     */
+                    function passes($p): void {}
+
+                    passes("asd");',
+            ],
+            'SKIPPED-callableWithInvokable' => [
+                '<?php
+                    function asd(): void {}
+                    class A { public function __invoke(): void {} }
+
+                    /**
+                     * @param callable|A $p
+                     */
+                    function fails($p): void {}
+
+                    fails("asd");',
+            ],
         ];
     }
 
