@@ -1481,7 +1481,7 @@ class CallChecker
                                 }
                             }
 
-                            if (!$has_valid_method) {
+                            if (!$has_valid_method && !$param_type->hasString() && !$param_type->hasArray()) {
                                 if (MethodChecker::checkMethodExists(
                                     $project_checker,
                                     $non_existent_method_ids[0],
@@ -1493,7 +1493,7 @@ class CallChecker
                                 }
                             }
                         } else {
-                            if (self::checkFunctionExists(
+                            if (!$param_type->hasString() && !$param_type->hasArray() && self::checkFunctionExists(
                                 $statements_checker,
                                 $function_id,
                                 $code_location,

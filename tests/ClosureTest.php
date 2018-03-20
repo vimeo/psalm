@@ -206,6 +206,15 @@ class ClosureTest extends TestCase
 
                     new A([new A, new A]);',
             ],
+            'possiblyUndefinedFunction' => [
+                '<?php
+                      /**
+                       * @param string|callable $middlewareOrPath
+                       */
+                      function pipe($middlewareOrPath, ?callable $middleware = null): void {  }
+
+                    pipe("zzzz", function() : void {});',
+            ],
         ];
     }
 
