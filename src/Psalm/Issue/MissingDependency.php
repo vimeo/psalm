@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class MissingDependency extends CodeIssue
+class MissingDependency extends ClassIssue
 {
 }

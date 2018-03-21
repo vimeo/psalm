@@ -153,7 +153,8 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     if (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Type ' . $lhs_type_part . ' cannot be called as a class',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            (string)$lhs_type_part
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {

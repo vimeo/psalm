@@ -370,7 +370,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     if (IssueBuffer::accepts(
                         new ReservedWord(
                             'Parameter cannot be void',
-                            $function_param->type_location
+                            $function_param->type_location,
+                            'void'
                         ),
                         $this->suppressed_issues
                     )) {

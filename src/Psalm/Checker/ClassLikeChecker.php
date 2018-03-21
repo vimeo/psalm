@@ -221,7 +221,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if (IssueBuffer::accepts(
                 new UndefinedClass(
                     'Class or interface <empty string> does not exist',
-                    $code_location
+                    $code_location,
+                    'empty string'
                 ),
                 $suppressed_issues
             )) {
@@ -251,7 +252,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if (IssueBuffer::accepts(
                 new ReservedWord(
                     $class_name . ' is a reserved word',
-                    $code_location
+                    $code_location,
+                    $class_name
                 ),
                 $suppressed_issues
             )) {
@@ -268,7 +270,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if (IssueBuffer::accepts(
                 new UndefinedClass(
                     'Class or interface ' . $fq_class_name . ' does not exist',
-                    $code_location
+                    $code_location,
+                    $fq_class_name
                 ),
                 $suppressed_issues
             )) {
@@ -285,7 +288,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 new MissingDependency(
                     $fq_class_name . ' depends on class or interface '
                         . $dependency_class_name . ' that does not exist',
-                    $code_location
+                    $code_location,
+                    $fq_class_name
                 ),
                 $suppressed_issues
             )) {
@@ -307,7 +311,8 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
                 if (IssueBuffer::accepts(
                     new InvalidClass(
                         'Class or interface ' . $fq_class_name . ' has wrong casing',
-                        $code_location
+                        $code_location,
+                        $fq_class_name
                     ),
                     $suppressed_issues
                 )) {

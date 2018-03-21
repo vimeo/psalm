@@ -221,7 +221,8 @@ class PropertyFetchChecker
                 if (IssueBuffer::accepts(
                     new UndefinedClass(
                         'Cannot get properties of undefined class ' . $lhs_type_part->value,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $lhs_type_part->value
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {

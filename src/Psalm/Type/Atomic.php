@@ -195,7 +195,8 @@ abstract class Atomic
             if (IssueBuffer::accepts(
                 new ReservedWord(
                     '\'resource\' is a reserved word',
-                    $code_location
+                    $code_location,
+                    'resource'
                 ),
                 $source->getSuppressedIssues()
             )) {
