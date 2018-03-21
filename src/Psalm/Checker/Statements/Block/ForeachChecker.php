@@ -13,6 +13,8 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
 use Psalm\Issue\NullIterator;
+use Psalm\Issue\PossiblyFalseIterator;
+use Psalm\Issue\PossiblyInvalidIterator;
 use Psalm\Issue\PossiblyNullIterator;
 use Psalm\Issue\RawObjectIteration;
 use Psalm\IssueBuffer;
@@ -87,7 +89,7 @@ class ForeachChecker
                 }
             } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
                 if (IssueBuffer::accepts(
-                    new InvalidIterator(
+                    new PossiblyFalseIterator(
                         'Cannot iterate over falsable var ' . $iterator_type,
                         new CodeLocation($statements_checker->getSource(), $stmt->expr)
                     ),
@@ -97,11 +99,15 @@ class ForeachChecker
                 }
             }
 
+            $has_valid_iterator = false;
+            $invalid_iterator_types = [];
+
             foreach ($iterator_type->getTypes() as $iterator_type) {
                 // if it's an empty array, we cannot iterate over it
                 if ($iterator_type instanceof Type\Atomic\TArray
                     && $iterator_type->type_params[1]->isEmpty()
                 ) {
+                    $has_valid_iterator = true;
                     continue;
                 }
 
@@ -129,27 +135,22 @@ class ForeachChecker
                     } else {
                         $key_type = Type::combineUnionTypes($key_type, $key_type_part);
                     }
+
+                    $has_valid_iterator = true;
                     continue;
                 }
 
                 if ($iterator_type instanceof Type\Atomic\Scalar ||
                     $iterator_type instanceof Type\Atomic\TVoid
                 ) {
-                    if (IssueBuffer::accepts(
-                        new InvalidIterator(
-                            'Cannot iterate over ' . $iterator_type->getKey(),
-                            new CodeLocation($statements_checker->getSource(), $stmt->expr)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
+                    $invalid_iterator_types[] = $iterator_type->getKey();
 
                     $value_type = Type::getMixed();
                 } elseif ($iterator_type instanceof Type\Atomic\TObject ||
                     $iterator_type instanceof Type\Atomic\TMixed ||
                     $iterator_type instanceof Type\Atomic\TEmpty
                 ) {
+                    $has_valid_iterator = true;
                     $value_type = Type::getMixed();
                 } elseif ($iterator_type instanceof Type\Atomic\TNamedObject) {
                     if ($iterator_type->value !== 'Traversable' &&
@@ -164,6 +165,8 @@ class ForeachChecker
                             return false;
                         }
                     }
+
+                    $has_valid_iterator = true;
 
                     if ($iterator_type instanceof Type\Atomic\TGenericObject &&
                         (strtolower($iterator_type->value) === 'iterable' ||
@@ -260,6 +263,30 @@ class ForeachChecker
                         )) {
                             return false;
                         }
+                    }
+                }
+            }
+
+            if ($invalid_iterator_types) {
+                if ($has_valid_iterator) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyInvalidIterator(
+                            'Cannot iterate over ' . $invalid_iterator_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new InvalidIterator(
+                            'Cannot iterate over ' . $invalid_iterator_types[0],
+                            new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
                     }
                 }
             }

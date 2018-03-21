@@ -1150,6 +1150,15 @@ function foo(string $s) : void {
 }
 ```
 
+### PossiblyFalseIterator
+
+Emitted when trying to iterate over a value that may be `false`
+
+```php
+$arr = rand(0, 1) ? [1, 2, 3] : false;
+foreach ($arr as $a) {}
+```
+
 ### PossiblyFalseOperand
 
 Emitted when using a possibly `false` value as part of an operation (e.g. `+`, `.`, `^` etc.`)
@@ -1240,6 +1249,15 @@ Emitted when trying to call a function on a value that may not be callable
 ```php
 $a = rand(0, 1) ? 5 : function() : int { return 5; };
 $b = $a();
+```
+
+### PossiblyInvalidIterator
+
+Emitted when trying to iterate over a value that may be invalid
+
+```php
+$arr = rand(0, 1) ? [1, 2, 3] : "hello";
+foreach ($arr as $a) {}
 ```
 
 ### PossiblyInvalidMethodCall

@@ -190,6 +190,7 @@
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyFalseIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalsePropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseReference" type="IssueHandlerType" minOccurs="0" />
@@ -198,6 +199,7 @@
             <xs:element name="PossiblyInvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyInvalidIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyInvalidPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
