@@ -17,7 +17,6 @@
     ],
     "intercept" : false,
     "compactors" : [],
-    "compression" : "BZ2",
     "chmod" : "0755",
     "shebang" : "#!/usr/bin/env php",
     "stub" : true
