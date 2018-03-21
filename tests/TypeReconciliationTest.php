@@ -838,7 +838,7 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
             ],
-            'SKIPPED-intersection' => [
+            'intersectionIncorrect' => [
                 '<?php
                     interface I {
                         public function bat(): void;
