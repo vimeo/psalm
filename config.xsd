@@ -93,9 +93,9 @@
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="DeprecatedClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedInterface" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="DeprecatedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DeprecatedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateArrayKey" type="IssueHandlerType" minOccurs="0" />
@@ -117,7 +117,7 @@
             <xs:element name="InvalidArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidCatch" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="InvalidClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidClone" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidParamDefault" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidDocblock" type="IssueHandlerType" minOccurs="0" />
@@ -214,10 +214,10 @@
             <xs:element name="PossiblyNullPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullReference" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="PossiblyUndefinedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUndefinedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedGlobalVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedVariable" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="PossiblyUnusedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUnusedProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PropertyNotSetInConstructor" type="IssueHandlerType" minOccurs="0" />
@@ -231,10 +231,10 @@
             <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainNull" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UndefinedClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedConstant" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UndefinedFunction" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UndefinedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedFunction" type="FunctionIssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedThisPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
@@ -252,8 +252,8 @@
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedProperty" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UnusedClass" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="UnusedMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedClass" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />
         </xs:choice>
     </xs:complexType>
 
@@ -264,6 +264,60 @@
                     <xs:choice maxOccurs="unbounded">
                         <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                         <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:choice>
+
+                    <xs:attribute name="type" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="MethodIssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="referencedMethod" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:choice>
+
+                    <xs:attribute name="type" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="FunctionIssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="referencedFunction" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:choice>
+
+                    <xs:attribute name="type" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="ClassIssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="referencedClass" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
                     </xs:choice>
 
                     <xs:attribute name="type" type="xs:string" use="required" />

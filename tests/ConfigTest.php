@@ -55,9 +55,9 @@ class ConfigTest extends TestCase
              */
             function ($issue_name) {
                 return !empty($issue_name)
-                    && $issue_name !== 'CodeError'
-                    && $issue_name !== 'CodeIssue'
-                    && $issue_name !== 'FixableCodeIssue';
+                    && $issue_name !== 'MethodIssue'
+                    && $issue_name !== 'ClassIssue'
+                    && $issue_name !== 'CodeIssue';
             }
         );
     }
@@ -180,6 +180,16 @@ class ConfigTest extends TestCase
                                 <directory name="src/Psalm/Checker" />
                             </errorLevel>
                         </MissingReturnType>
+                        <UndefinedClass>
+                            <errorLevel type="suppress">
+                                <referencedClass name="Psalm\Badger" />
+                            </errorLevel>
+                        </UndefinedClass>
+                        <UndefinedMethod>
+                            <errorLevel type="suppress">
+                                <referencedMethod name="Psalm\Bodger::find1" />
+                            </errorLevel>
+                        </UndefinedMethod>
                     </issueHandlers>
                 </psalm>'
             )
@@ -200,6 +210,38 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForFile(
                 'MissingReturnType',
                 realpath('src/Psalm/Checker/FileChecker.php')
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\Badger'
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\Bodger'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Bodger::find1'
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Bodger::find2'
             )
         );
     }

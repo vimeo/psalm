@@ -112,7 +112,7 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         if (IssueBuffer::accepts(
-            new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location),
+            new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location, $method_id),
             $suppressed_issues
         )) {
             return false;
@@ -144,7 +144,8 @@ class MethodChecker extends FunctionLikeChecker
                 new DeprecatedMethod(
                     'The method ' . $codebase_methods->getCasedMethodId($method_id) .
                         ' has been marked as deprecated',
-                    $code_location
+                    $code_location,
+                    $method_id
                 ),
                 $suppressed_issues
             )) {

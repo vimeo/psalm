@@ -3,7 +3,9 @@ namespace Psalm;
 
 use LSS\Array2XML;
 use Psalm\Checker\ProjectChecker;
+use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\MethodIssue;
 
 class IssueBuffer
 {
@@ -53,6 +55,18 @@ class IssueBuffer
         }
 
         if (!$config->reportIssueInFile($issue_type, $e->getFilePath())) {
+            return false;
+        }
+
+        if ($e instanceof ClassIssue
+            && $config->getReportingLevelForClass($issue_type, $e->fq_classlike_name) === Config::REPORT_SUPPRESS
+        ) {
+            return false;
+        }
+
+        if ($e instanceof MethodIssue
+            && $config->getReportingLevelForMethod($issue_type, $e->method_id) === Config::REPORT_SUPPRESS
+        ) {
             return false;
         }
 

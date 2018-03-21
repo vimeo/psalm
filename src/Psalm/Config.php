@@ -767,6 +767,36 @@ class Config
     }
 
     /**
+     * @param   string $issue_type
+     * @param   string $fq_classlike_name
+     *
+     * @return  string
+     */
+    public function getReportingLevelForClass($issue_type, $fq_classlike_name)
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForClass($fq_classlike_name);
+        }
+
+        return self::REPORT_ERROR;
+    }
+
+    /**
+     * @param   string $issue_type
+     * @param   string $method_id
+     *
+     * @return  string
+     */
+    public function getReportingLevelForMethod($issue_type, $method_id)
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForMethod($method_id);
+        }
+
+        return self::REPORT_ERROR;
+    }
+
+    /**
      * @return array<string>
      */
     public function getProjectDirectories()

@@ -70,9 +70,16 @@
                 <directory name="tests" />
                 <file name="src/Psalm/Type/Atomic/GenericTrait.php" />
                 <file name="src/Psalm/Plugin.php" />
-            </errorLevel>
-            <errorLevel type="info">
-                <file name="src/Psalm/Codebase.php" />
+                <referencedMethod name="Psalm\Codebase::getParentInterfaces" />
+                <referencedMethod name="Psalm\Codebase::getMethodParams" />
+                <referencedMethod name="Psalm\Codebase::getMethodReturnType" />
+                <referencedMethod name="Psalm\Codebase::getMethodReturnTypeLocation" />
+                <referencedMethod name="Psalm\Codebase::getDeclaringMethodId" />
+                <referencedMethod name="Psalm\Codebase::getAppearingMethodId" />
+                <referencedMethod name="Psalm\Codebase::getOverriddenMethodIds" />
+                <referencedMethod name="Psalm\Codebase::getCasedMethodId" />
+                <referencedMethod name="Psalm\Codebase::isVariadic" />
+                <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef" />
             </errorLevel>
         </PossiblyUnusedMethod>
 

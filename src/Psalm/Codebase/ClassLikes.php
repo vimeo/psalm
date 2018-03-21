@@ -736,7 +736,8 @@ class ClassLikes
                         if (IssueBuffer::accepts(
                             new PossiblyUnusedMethod(
                                 'Cannot find public calls to method ' . $method_id,
-                                $method_storage->location
+                                $method_storage->location,
+                                $method_id
                             ),
                             $method_storage->suppressed_issues
                         )) {
@@ -747,7 +748,8 @@ class ClassLikes
                     if (IssueBuffer::accepts(
                         new UnusedMethod(
                             'Method ' . $method_id . ' is never used',
-                            $method_storage->location
+                            $method_storage->location,
+                            $method_id
                         )
                     )) {
                         // fall through

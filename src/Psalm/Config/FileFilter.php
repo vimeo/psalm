@@ -18,6 +18,16 @@ class FileFilter
     /**
      * @var array<string>
      */
+    protected $fq_classlike_names = [];
+
+    /**
+     * @var array<string>
+     */
+    protected $method_ids = [];
+
+    /**
+     * @var array<string>
+     */
     protected $files_lowercase = [];
 
     /**
@@ -99,6 +109,20 @@ class FileFilter
             }
         }
 
+        if ($e->referencedClass) {
+            /** @var \SimpleXMLElement $referenced_class */
+            foreach ($e->referencedClass as $referenced_class) {
+                $filter->fq_classlike_names[] = strtolower((string)$referenced_class['name']);
+            }
+        }
+
+        if ($e->referencedMethod) {
+            /** @var \SimpleXMLElement $referenced_method */
+            foreach ($e->referencedMethod as $referenced_method) {
+                $filter->method_ids[] = strtolower((string)$referenced_method['name']);
+            }
+        }
+
         return $filter;
     }
 
@@ -170,6 +194,26 @@ class FileFilter
         }
 
         return true;
+    }
+
+    /**
+     * @param  string  $fq_classlike_name
+     *
+     * @return bool
+     */
+    public function allowsClass($fq_classlike_name)
+    {
+        return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names);
+    }
+
+    /**
+     * @param  string  $method_id
+     *
+     * @return bool
+     */
+    public function allowsMethod($method_id)
+    {
+        return in_array(strtolower($method_id), $this->method_ids);
     }
 
     /**

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class DeprecatedMethod extends CodeIssue
+class DeprecatedMethod extends MethodIssue
 {
 }

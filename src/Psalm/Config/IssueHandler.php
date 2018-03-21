@@ -70,4 +70,36 @@ class IssueHandler
 
         return $this->error_level;
     }
+
+    /**
+     * @param string $fq_classlike_name
+     *
+     * @return string
+     */
+    public function getReportingLevelForClass($fq_classlike_name)
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsClass($fq_classlike_name)) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return $this->error_level;
+    }
+
+    /**
+     * @param string $method_id
+     *
+     * @return string
+     */
+    public function getReportingLevelForMethod($method_id)
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsMethod($method_id)) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return $this->error_level;
+    }
 }
