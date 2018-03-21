@@ -1045,7 +1045,7 @@ class CallChecker
         $required_param_count = 0;
 
         foreach ($closure_params as $i => $param) {
-            if (!$param->is_optional) {
+            if (!$param->is_optional && !$param->is_variadic) {
                 $required_param_count = $i + 1;
             }
         }

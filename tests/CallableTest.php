@@ -269,6 +269,15 @@ class CallableTest extends TestCase
 
                     callMeMaybe("foo");',
             ],
+            'arrayMapVariadicClosureArg' => [
+                '<?php
+                    $a = array_map(
+                      function(int $type, string ...$args):string {
+                        return "hello";
+                      },
+                      [1, 2, 3]
+                    );',
+            ],
         ];
     }
 
