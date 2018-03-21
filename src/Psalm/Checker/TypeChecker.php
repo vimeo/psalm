@@ -347,14 +347,18 @@ class TypeChecker
                 && ($container_type_part instanceof TArray || $container_type_part instanceof ObjectLike)
             ) {
                 if ($container_type_part instanceof ObjectLike) {
+                    $generic_container_type_part = $container_type_part->getGenericArrayType();
+
                     if (!$input_type_part instanceof ObjectLike
                         && !$input_type_part->type_params[0]->isMixed()
+                        && !($input_type_part->type_params[1]->isEmpty()
+                            && $generic_container_type_part->type_params[1]->possibly_undefined)
                     ) {
                         $all_types_contain = false;
                         $type_coerced = true;
                     }
 
-                    $container_type_part = $container_type_part->getGenericArrayType();
+                    $container_type_part = $generic_container_type_part;
                 }
 
                 if ($input_type_part instanceof ObjectLike) {

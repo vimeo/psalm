@@ -659,7 +659,7 @@ abstract class Type
             $combined_type->failed_reconciliation = true;
         }
 
-        if ($type_1->possibly_undefined || $type_2->possibly_undefined) {
+        if ($type_1->possibly_undefined && $type_2->possibly_undefined) {
             $combined_type->possibly_undefined = true;
         }
 

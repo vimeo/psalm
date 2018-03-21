@@ -731,6 +731,11 @@ class AnnotationTest extends TestCase
                 'annotations' => [],
                 'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
+            'allowOptionalParamsToBeEmptyArray' => [
+                '<?php
+                    /** @param array{b?: int, c?: string} $a */
+                    function foo(array $a = []) : void {}',
+            ],
         ];
     }
 
