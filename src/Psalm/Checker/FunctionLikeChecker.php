@@ -333,8 +333,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     ? $parser_param->default->inferredType
                     : null;
 
-                if ($default_type &&
-                    !TypeChecker::isContainedBy(
+                if ($default_type
+                    && !$default_type->isMixed()
+                    && !TypeChecker::isContainedBy(
                         $codebase,
                         $default_type,
                         $param_type
@@ -342,8 +343,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidParamDefault(
-                            'Default value for argument ' . ($offset + 1) . ' of method ' . $cased_method_id .
-                                ' does not match the given type ' . $param_type,
+                            'Default value type ' . $default_type . ' for argument ' . ($offset + 1)
+                                . ' of method ' . $cased_method_id
+                                . ' does not match the given type ' . $param_type,
                             $function_param->type_location
                         )
                     )) {

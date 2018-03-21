@@ -550,11 +550,11 @@ class PropertyAssignmentChecker
             }
 
             if (!$type_match_found && !$type_coerced) {
-                foreach ($class_property_type->getTypes() as $class_property_type_part) {
+                foreach ($assignment_value_type->getTypes() as $assignment_value_type_part) {
                     if (TypeChecker::isContainedBy(
                         $project_checker->codebase,
-                        $assignment_value_type,
-                        new Type\Union([$class_property_type_part]),
+                        new Type\Union([$assignment_value_type_part]),
+                        $class_property_type,
                         true,
                         true
                     )) {
