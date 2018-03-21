@@ -39,6 +39,16 @@ class ForeachTest extends TestCase
                     'MixedAssignment', 'UndefinedThisPropertyAssignment',
                 ],
             ],
+            'intersectionIterator' => [
+                '<?php
+                    /**
+                     * @param \Traversable<int>&\Countable $object
+                     */
+                    function doSomethingUseful($object) : void {
+                        echo count($object);
+                        foreach ($object as $foo) {}
+                    }'
+            ],
         ];
     }
 
