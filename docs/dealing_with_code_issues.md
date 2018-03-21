@@ -22,6 +22,8 @@ There are two ways to suppress an issue – via the Psalm config or via a functi
 
 You can use the `<issueHandlers>` tag in the config file to influence how issues are treated.
 
+Some issue types allow the use of `referencedMethod` and `referencedClass` to isolate known trouble spots.
+
 ```xml
 <issueHandlers>
   <MissingPropertyType errorLevel="suppress" />
@@ -32,6 +34,17 @@ You can use the `<issueHandlers>` tag in the config file to influence how issues
       <file name="some_bad_file.php" />  <!-- all InvalidReturnType issues in this file are suppressed -->
     </errorLevel>
   </InvalidReturnType>
+  <UndefinedMethod>
+    <errorLevel type="suppress">
+      <referencedMethod name="Bar\Bat::bar" />
+      <file name="some_bad_file.php" />
+    </errorLevel>
+  </UndefinedMethod>
+  <UndefinedClass>
+    <errorLevel type="suppress">
+      <referencedClass name="Bar\Bat\Baz" />
+    </errorLevel>
+  </UndefinedMethod>
 </issueHandlers>
 ```
 
