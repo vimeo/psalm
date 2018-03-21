@@ -42,6 +42,7 @@
         <RedundantCondition errorLevel="info" />
 
         <PossiblyFalseArgument errorLevel="info" />
+        <PossiblyFalseIterator errorLevel="info" />
         <PossiblyFalseOperand errorLevel="info" />
         <PossiblyFalsePropertyAssignmentValue errorLevel="info" />
         <PossiblyFalseReference errorLevel="info" />
@@ -50,6 +51,7 @@
         <PossiblyInvalidArrayAssignment errorLevel="info" />
         <PossiblyInvalidArrayOffset errorLevel="info" />
         <PossiblyInvalidFunctionCall errorLevel="info" />
+        <PossiblyInvalidIterator errorLevel="info" />
         <PossiblyInvalidMethodCall errorLevel="info" />
         <PossiblyInvalidOperand errorLevel="info" />
         <PossiblyInvalidPropertyAssignment errorLevel="info" />
