@@ -721,18 +721,34 @@ class PropertyAssignmentChecker
             $assignment_value_type,
             $class_property_type
         )) {
-            if (IssueBuffer::accepts(
-                new InvalidPropertyAssignment(
-                    $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
-                        $assignment_value_type . '\'',
-                    new CodeLocation(
-                        $statements_checker->getSource(),
-                        $assignment_value ?: $stmt
-                    )
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
+            if (TypeChecker::canBeIdenticalTo($codebase, $assignment_value_type, $class_property_type)) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidPropertyAssignmentValue(
+                        $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
+                            $assignment_value_type . '\'',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidPropertyAssignmentValue(
+                        $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
+                            $assignment_value_type . '\'',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
             }
         }
 

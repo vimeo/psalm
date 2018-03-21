@@ -90,7 +90,7 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     * @psalm-suppress InvalidPropertyAssignment
+     * @psalm-suppress PossiblyInvalidPropertyAssignmentValue
      *
      * @return void
      */
@@ -200,7 +200,7 @@ class FileReferenceProvider
     /**
      * @return bool
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress InvalidPropertyAssignment
+     * @psalm-suppress PossiblyInvalidPropertyAssignmentValue
      */
     public static function loadReferenceCache()
     {
