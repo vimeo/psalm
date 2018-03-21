@@ -1474,7 +1474,9 @@ class CallChecker
                                     return;
                                 }
 
-                                if (!$codebase->methodExists($function_id_part)) {
+                                if (!$codebase->methodExists($function_id_part)
+                                    && !$codebase->methodExists($callable_fq_class_name . '::__call')
+                                ) {
                                     $non_existent_method_ids[] = $function_id_part;
                                 } else {
                                     $has_valid_method = true;
