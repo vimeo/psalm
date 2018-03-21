@@ -292,8 +292,16 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     } elseif ($classlike_source instanceof \Psalm\Checker\TraitChecker
                         && $codebase->methodExists($classlike_source_fqcln . '::' . $method_name_lc)
                     ) {
-                        $method_id = $classlike_source_fqcln . '::' . $method_name_lc;
-                        $fq_class_name = $classlike_source_fqcln;
+                        $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId(
+                            $classlike_source_fqcln . '::' . $method_name_lc
+                        );
+
+                        list($declaring_class) = explode('::', $declaring_method_id);
+
+                        if ($declaring_class === $classlike_source_fqcln) {
+                            $method_id = $classlike_source_fqcln . '::' . $method_name_lc;
+                            $fq_class_name = $classlike_source_fqcln;
+                        }
                     }
                 }
 
