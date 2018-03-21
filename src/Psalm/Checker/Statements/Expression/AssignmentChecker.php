@@ -297,17 +297,26 @@ class AssignmentChecker
                 if ($var instanceof PhpParser\Node\Expr\List_
                     || $var instanceof PhpParser\Node\Expr\Array_
                 ) {
+                    /** @var Type\Atomic\ObjectLike|Type\Atomic\TArray|null */
+                    $array_value_type = isset($assign_value_type->getTypes()['array'])
+                        ? $assign_value_type->getTypes()['array']
+                        : null;
+
+                    if ($array_value_type instanceof Type\Atomic\ObjectLike) {
+                        $array_value_type = $array_value_type->getGenericArrayType();
+                    }
+
                     self::analyze(
                         $statements_checker,
                         $var,
                         null,
-                        Type::getMixed(),
+                        $array_value_type ? clone $array_value_type->type_params[1] : Type::getMixed(),
                         $context,
                         $doc_comment
                     );
                 }
 
-                $list_var_id = ExpressionChecker::getVarId(
+                $list_var_id = ExpressionChecker::getArrayVarId(
                     $var,
                     $statements_checker->getFQCLN(),
                     $statements_checker

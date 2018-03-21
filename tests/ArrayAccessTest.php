@@ -109,6 +109,12 @@ class ArrayAccessTest extends TestCase
                         $len = strlen($key);
                     }',
             ],
+            'listAssignmentKeyOffset' => [
+                '<?php
+                    $a = [];
+                    list($a["foo"]) = explode("+", "a+b");
+                    echo $a["foo"];',
+            ],
         ];
     }
 
