@@ -38,6 +38,7 @@
         <!-- level 4 issues - points to possible deficiencies in logic, higher false-positives -->
 
         <MoreSpecificReturnType errorLevel="info" />
+        <LessSpecificReturnStatement errorLevel="info" />
         <TypeCoercion errorLevel="info" />
         <RedundantCondition errorLevel="info" />
 
@@ -88,7 +89,8 @@
 
         <InvalidNullableReturnType errorLevel="info" />
         <NullableReturnStatement errorLevel="info" />
-        <ImplementedReturnTypeMismatch errorLevel="info" />
+        <InvalidFalsableReturnType errorLevel="info" />
+        <FalsableReturnStatement errorLevel="info" />
 
         <MoreSpecificImplementedParamType errorLevel="info" />
         <MoreSpecificImplementedReturnType errorLevel="info" />

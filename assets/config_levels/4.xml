@@ -38,6 +38,7 @@
         <!-- level 4 issues - points to possible deficiencies in logic, higher false-positives -->
 
         <MoreSpecificReturnType errorLevel="info" />
+        <LessSpecificReturnStatement errorLevel="info" />
         <TypeCoercion errorLevel="info" />
         <RedundantCondition errorLevel="info" />
 
@@ -71,6 +72,5 @@
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
-
     </issueHandlers>
 </psalm>
