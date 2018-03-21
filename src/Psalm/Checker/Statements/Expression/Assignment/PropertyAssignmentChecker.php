@@ -550,6 +550,18 @@ class PropertyAssignmentChecker
             }
 
             if (!$type_match_found && !$type_coerced) {
+                foreach ($class_property_type->getTypes() as $class_property_type_part) {
+                    if (TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $assignment_value_type,
+                        new Type\Union([$class_property_type_part]),
+                        true,
+                        true
+                    )) {
+                        $has_valid_assignment_value_type = true;
+                    }
+                }
+
                 $invalid_assignment_value_types[] = (string) $class_property_type;
             } else {
                 $has_valid_assignment_value_type = true;
