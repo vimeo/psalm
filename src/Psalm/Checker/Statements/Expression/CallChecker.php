@@ -579,6 +579,7 @@ class CallChecker
 
             if ($function_param
                 && $function_param->by_ref
+                && $method_id !== 'extract'
             ) {
                 if ($arg->value instanceof PhpParser\Node\Scalar
                     || $arg->value instanceof PhpParser\Node\Expr\Array_
