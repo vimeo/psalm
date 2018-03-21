@@ -460,23 +460,25 @@ class Populator
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+            $aliased_method_names = [$method_name];
+
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
                 && isset($storage->trait_alias_map[$method_name])
             ) {
-                $aliased_method_name = $storage->trait_alias_map[$method_name];
-            } else {
-                $aliased_method_name = $method_name;
+                $aliased_method_names[] = $storage->trait_alias_map[$method_name];
             }
 
-            if (isset($storage->appearing_method_ids[$aliased_method_name])) {
-                continue;
+            foreach ($aliased_method_names as $aliased_method_name) {
+                if (isset($storage->appearing_method_ids[$aliased_method_name])) {
+                    continue;
+                }
+
+                $implemented_method_id = $fq_class_name . '::' . $aliased_method_name;
+
+                $storage->appearing_method_ids[$aliased_method_name] =
+                    $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
             }
-
-            $implemented_method_id = $fq_class_name . '::' . $aliased_method_name;
-
-            $storage->appearing_method_ids[$aliased_method_name] =
-                $parent_storage->is_trait ? $implemented_method_id : $appearing_method_id;
         }
 
         // register where they're declared
@@ -485,30 +487,32 @@ class Populator
                 $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
             }
 
+            $aliased_method_names = [$method_name];
+
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
                 && isset($storage->trait_alias_map[$method_name])
             ) {
-                $aliased_method_name = $storage->trait_alias_map[$method_name];
-            } else {
-                $aliased_method_name = $method_name;
+                $aliased_method_names[] = $storage->trait_alias_map[$method_name];
             }
 
-            if (isset($storage->declaring_method_ids[$aliased_method_name])) {
-                list($implementing_fq_class_name, $implementing_method_name) = explode(
-                    '::',
-                    $storage->declaring_method_ids[$aliased_method_name]
-                );
+            foreach ($aliased_method_names as $aliased_method_name) {
+                if (isset($storage->declaring_method_ids[$aliased_method_name])) {
+                    list($implementing_fq_class_name, $implementing_method_name) = explode(
+                        '::',
+                        $storage->declaring_method_ids[$aliased_method_name]
+                    );
 
-                $implementing_class_storage = $this->classlike_storage_provider->get($implementing_fq_class_name);
+                    $implementing_class_storage = $this->classlike_storage_provider->get($implementing_fq_class_name);
 
-                if (!$implementing_class_storage->methods[$implementing_method_name]->abstract) {
-                    continue;
+                    if (!$implementing_class_storage->methods[$implementing_method_name]->abstract) {
+                        continue;
+                    }
                 }
-            }
 
-            $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
-            $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
+                $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
+                $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
+            }
         }
     }
 
