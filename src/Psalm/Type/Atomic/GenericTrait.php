@@ -18,7 +18,13 @@ trait GenericTrait
             $s .= $type_param . ', ';
         }
 
-        return $this->value . '<' . substr($s, 0, -2) . '>';
+        $extra_types = '';
+
+        if ($this instanceof TNamedObject && $this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
+        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
     /**
@@ -55,6 +61,23 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
+        $extra_types = '';
+
+        if ($this instanceof TNamedObject && $this->extra_types) {
+            $extra_types = '&' . implode(
+                '&',
+                array_map(
+                    /**
+                     * @return string
+                     */
+                    function (Atomic $extra_type) use ($namespace, $aliased_classes, $this_class) {
+                        return $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
+                    },
+                    $this->extra_types
+                )
+            );
+        }
+
         return $base_value .
                 '<' .
                 implode(
@@ -69,7 +92,7 @@ trait GenericTrait
                         $this->type_params
                     )
                 ) .
-                '>';
+                '>' . $extra_types;
     }
 
     public function __clone()

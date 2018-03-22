@@ -108,6 +108,9 @@ abstract class Atomic
             case 'class-string':
                 return new TClassString();
 
+            case '$this':
+                return new TNamedObject('static');
+
             default:
                 if (strpos($value, '-')) {
                     throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');

@@ -338,6 +338,21 @@ class InterfaceTest extends TestCase
                       }
                     }',
             ],
+            'implementThisReturn' => [
+                '<?php
+                    class A {}
+                    interface I {
+                      /** @return A */
+                      public function foo();
+                    }
+
+                    class B extends A implements I {
+                      /** @return $this */
+                      public function foo() {
+                        return $this;
+                      }
+                    }',
+            ],
             'inheritMultipleInterfacesWithDocblocks' => [
                 '<?php
                     interface I1 {

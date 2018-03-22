@@ -16,6 +16,22 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testThisToStatic()
+    {
+        $this->assertSame('static', (string) Type::parseString('$this'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testThisToStaticUnion()
+    {
+        $this->assertSame('static|A', (string) Type::parseString('$this|A'));
+    }
+
+    /**
+     * @return void
+     */
     public function testIntOrString()
     {
         $this->assertSame('int|string', (string) Type::parseString('int|string'));
@@ -85,6 +101,41 @@ class TypeParseTest extends TestCase
     public function testIntersection()
     {
         $this->assertSame('I1&I2', (string) Type::parseString('I1&I2'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionOrNull()
+    {
+        $this->assertSame('I1&I2|null', (string) Type::parseString('I1&I2|null'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testNullOrIntersection()
+    {
+        $this->assertSame('null|I1&I2', (string) Type::parseString('null|I1&I2'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testInteratorAndTraversable()
+    {
+        $this->assertSame('Iterator<int>&Traversable', (string) Type::parseString('Iterator<int>&Traversable'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testTraversableAndIteratorOrNull()
+    {
+        $this->assertSame(
+            'Traversable&Iterator<int>|null',
+            (string) Type::parseString('Traversable&Iterator<int>|null')
+        );
     }
 
     /**

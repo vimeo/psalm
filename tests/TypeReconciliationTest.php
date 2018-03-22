@@ -570,7 +570,10 @@ class TypeReconciliationTest extends TestCase
                     function takesIandA($a): void {}
 
                     class A {
-                        public function foo(): void {
+                        /**
+                         * @return A&I|null
+                         */
+                        public function foo() {
                             if ($this instanceof I) {
                                 $this->bar();
                                 $this->bat();

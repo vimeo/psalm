@@ -141,6 +141,11 @@ class ParseTree
                         continue;
                     }
 
+                    if ($current_parent && $current_parent instanceof ParseTree\IntersectionTree) {
+                        $current_leaf = $current_parent;
+                        $current_parent = $current_leaf->parent;
+                    }
+
                     $new_parent_leaf = new ParseTree\UnionTree($current_parent);
                     $new_parent_leaf->children = [$current_leaf];
                     $current_leaf->parent = $new_parent_leaf;
@@ -202,6 +207,10 @@ class ParseTree
                             throw new TypeParseTreeException('Cannot process bracket yet');
 
                         default:
+                            if ($type_token === '$this') {
+                                $type_token = 'static';
+                            }
+
                             $new_leaf = new ParseTree\Value(
                                 $type_token,
                                 $new_parent

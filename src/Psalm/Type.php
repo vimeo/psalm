@@ -211,7 +211,7 @@ abstract class Type
 
             $first_type->extra_types = $intersection_types;
 
-            return new Type\Union([$first_type]);
+            return $first_type;
         }
 
         if ($parse_tree instanceof ParseTree\ObjectLikeTree) {
@@ -358,10 +358,6 @@ abstract class Type
                 !isset($template_types[$return_type_token])
             ) {
                 if ($return_type_token[0] === '$') {
-                    if ($return_type === '$this') {
-                        $return_type_token = 'static';
-                    }
-
                     continue;
                 }
 
