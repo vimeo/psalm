@@ -4587,7 +4587,7 @@ return [
 'lchown' => ['bool', 'filename'=>'string', 'user'=>'string|int'],
 'ldap_8859_to_t61' => ['string', 'value'=>'string'],
 'ldap_add' => ['bool', 'link_identifier'=>'resource', 'dn'=>'string', 'entry'=>'array'],
-'ldap_bind' => ['bool', 'link_identifier'=>'resource', 'dn='=>'string', 'password='=>'string'],
+'ldap_bind' => ['bool', 'link_identifier'=>'resource', 'dn='=>'string|null', 'password='=>'string|null'],
 'ldap_compare' => ['bool', 'link_identifier'=>'resource', 'dn'=>'string', 'attr'=>'string', 'value'=>'string'],
 'ldap_connect' => ['resource', 'host='=>'string', 'port='=>'int', 'wallet='=>'string', 'wallet_passwd='=>'string', 'authmode='=>'int'],
 'ldap_control_paged_result' => ['bool', 'link_identifier'=>'resource', 'pagesize'=>'int', 'iscritical'=>'bool', 'cookie'=>'string'],
