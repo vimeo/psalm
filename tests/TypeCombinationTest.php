@@ -241,6 +241,15 @@ class TypeCombinationTest extends TestCase
                     'array<int, array<int, string>>',
                 ],
             ],
+            'combinePossiblyUndefinedKeys' => [
+                'array{a:bool, b?:mixed, d?:mixed}',
+                [
+                    'array{a:false, b:mixed}',
+                    'array{a:false, b:mixed}',
+                    'array{a:true, d:mixed}',
+                    'array{a:true, d:mixed}',
+                ],
+            ],
         ];
     }
 
