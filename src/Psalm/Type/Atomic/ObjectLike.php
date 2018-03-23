@@ -141,8 +141,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public function getGenericValueType()
     {
         $value_type = null;
+        $any_value_defined = false;
 
         foreach ($this->properties as $property) {
+            $any_value_defined = $any_value_defined || !$property->possibly_undefined;
+
             if ($value_type === null) {
                 $value_type = clone $property;
             } else {
@@ -154,7 +157,7 @@ class ObjectLike extends \Psalm\Type\Atomic
             throw new \UnexpectedValueException('$value_type should not be null here');
         }
 
-        $value_type->possibly_undefined = false;
+        $value_type->possibly_undefined = !$any_value_defined;
 
         return $value_type;
     }
@@ -166,6 +169,7 @@ class ObjectLike extends \Psalm\Type\Atomic
     {
         $key_types = [];
         $value_type = null;
+        $any_value_defined = false;
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
@@ -173,6 +177,8 @@ class ObjectLike extends \Psalm\Type\Atomic
             } else {
                 $key_types[] = new Type\Atomic\TString();
             }
+
+            $any_value_defined = $any_value_defined || !$property->possibly_undefined;
 
             if ($value_type === null) {
                 $value_type = clone $property;
@@ -184,6 +190,8 @@ class ObjectLike extends \Psalm\Type\Atomic
         if (!$value_type) {
             throw new \UnexpectedValueException('$value_type should not be null here');
         }
+
+        $value_type->possibly_undefined = !$any_value_defined;
 
         return new TArray([Type::combineTypes($key_types), $value_type]);
     }

@@ -300,6 +300,40 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
+            'addMissingObjectLikeReturnTypeSeparateStatements70' => [
+                '<?php
+                    function foo() {
+                        if (rand(0, 1)) {
+                            return ["a" => "hello", "b" => "hello again"];
+                        }
+
+                        if (rand(0, 1)) {
+                            return ["a" => "hello", "b" => "hello again"];
+                        }
+
+                        return ["a" => "goodbye"];
+                    }',
+                '<?php
+                    /**
+                     * @return string[]
+                     *
+                     * @psalm-return array{a:string, b?:string}
+                     */
+                    function foo(): array {
+                        if (rand(0, 1)) {
+                            return ["a" => "hello", "b" => "hello again"];
+                        }
+
+                        if (rand(0, 1)) {
+                            return ["a" => "hello", "b" => "hello again"];
+                        }
+
+                        return ["a" => "goodbye"];
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                true,
+            ],
             'addMissingStringArrayReturnTypeFromCall71' => [
                 '<?php
                     /** @return string[] */
