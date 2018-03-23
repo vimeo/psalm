@@ -739,6 +739,20 @@ class TypeReconciliationTest extends TestCase
                         print_field($array);
                     }',
             ],
+            'numericOrStringPropertySet' => [
+                '<?php
+                    /**
+                     * @param string|null $b
+                     * @psalm-suppress DocblockTypeContradiction
+                     */
+                    function foo($b = null) : void {
+                        if (is_numeric($b) || is_string($b)) {
+                            takesNullableString($b);
+                        }
+                    }
+
+                    function takesNullableString(?string $s) : void {}',
+            ],
         ];
     }
 

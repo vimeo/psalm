@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
@@ -506,6 +507,16 @@ class TypeChecker
 
         if ($container_type_part instanceof TString && $input_type_part instanceof TClassString) {
             return true;
+        }
+
+        if ($container_type_part instanceof TString && $input_type_part instanceof TNumericString) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TNumericString && $input_type_part instanceof TString) {
+            $type_coerced = true;
+
+            return false;
         }
 
         if ($container_type_part instanceof TClassString && $input_type_part instanceof TString) {
