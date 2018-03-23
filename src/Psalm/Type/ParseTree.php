@@ -75,6 +75,40 @@ class ParseTree
                     ++$i;
                     break;
 
+                case '(':
+                    if ($current_leaf instanceof ParseTree\Value) {
+                        throw new TypeParseTreeException('Unrecognised token (');
+                    }
+
+                    $new_parent = !$current_leaf instanceof ParseTree\Root ? $current_leaf : null;
+
+                    $new_leaf = new ParseTree\EncapsulationTree(
+                        $new_parent
+                    );
+
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        $current_leaf = $parse_tree = $new_leaf;
+                        break;
+                    }
+
+                    if ($new_leaf->parent) {
+                        $new_leaf->parent->children[] = $new_leaf;
+                    }
+
+                    $current_leaf = $new_leaf;
+                    break;
+
+                case ')':
+                    do {
+                        if ($current_leaf->parent === null) {
+                            throw new TypeParseTreeException('Cannot parse generic type');
+                        }
+
+                        $current_leaf = $current_leaf->parent;
+                    } while (!$current_leaf instanceof ParseTree\EncapsulationTree);
+
+                    break;
+
                 case '>':
                     do {
                         if ($current_leaf->parent === null) {
@@ -243,7 +277,7 @@ class ParseTree
 
                     if ($current_leaf instanceof ParseTree\Root) {
                         $current_leaf = $parse_tree = $new_leaf;
-                        continue;
+                        break;
                     }
 
                     if ($new_leaf->parent) {
@@ -251,6 +285,7 @@ class ParseTree
                     }
 
                     $current_leaf = $new_leaf;
+                    break;
             }
         }
 

@@ -40,6 +40,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testBracketedIntOrString()
+    {
+        $this->assertSame('int|string', (string) Type::parseString('(int|string)'));
+    }
+
+    /**
+     * @return void
+     */
     public function testBoolOrIntOrString()
     {
         $this->assertSame('bool|int|string', (string) Type::parseString('bool|int|string'));
@@ -213,6 +221,16 @@ class TypeParseTest extends TestCase
     public function testInvalidType()
     {
         Type::parseString('array(A)');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testBracketedUnionAndIntersection()
+    {
+        Type::parseString('(A|B)&C');
     }
 
     /**

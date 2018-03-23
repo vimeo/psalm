@@ -45,10 +45,6 @@ abstract class Type
         // remove all unacceptable characters
         $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
 
-        if (strpos($type_string, '[') !== false) {
-            $type_string = self::convertSquareBrackets($type_string);
-        }
-
         $type_string = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $type_string);
 
         $type_tokens = self::tokenize($type_string);
@@ -190,8 +186,8 @@ abstract class Type
                     $atomic_type = self::getTypeFromTree($child_tree, false);
 
                     if (!$atomic_type instanceof Atomic) {
-                        throw new \UnexpectedValueException(
-                            'Was expecting an atomic type, got ' . get_class($atomic_type)
+                        throw new TypeParseTreeException(
+                            'Intersection types cannot contain unions'
                         );
                     }
 
@@ -254,6 +250,10 @@ abstract class Type
             }
 
             return new ObjectLike($properties);
+        }
+
+        if ($parse_tree instanceof ParseTree\EncapsulationTree) {
+            return self::getTypeFromTree($parse_tree->children[0], false);
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
@@ -337,14 +337,10 @@ abstract class Type
         Aliases $aliases,
         array $template_types = null
     ) {
-        if (strpos($return_type, '[') !== false) {
-            $return_type = self::convertSquareBrackets($return_type);
-        }
-
         $return_type_tokens = self::tokenize($return_type);
 
         foreach ($return_type_tokens as $i => &$return_type_token) {
-            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':'], true)) {
+            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':', '[', ']', '(', ')'], true)) {
                 continue;
             }
 
@@ -403,35 +399,6 @@ abstract class Type
         $namespace = $aliases->namespace;
 
         return ($namespace ? $namespace . '\\' : '') . $class;
-    }
-
-    /**
-     * @param  string $type
-     *
-     * @return string
-     */
-    public static function convertSquareBrackets($type)
-    {
-        $class_chars = '[a-zA-Z0-9\<\>\\\\_]+';
-
-        return preg_replace_callback(
-            '/(' . $class_chars . '|' . '\((' . $class_chars . '(\|' . $class_chars . ')*' . ')\))((\[\])+)/',
-            /**
-             * @return string
-             */
-            function (array $matches) {
-                $inner_type = str_replace(['(', ')'], '', (string)$matches[1]);
-
-                $dimensionality = strlen((string)$matches[4]) / 2;
-
-                for ($i = 0; $i < $dimensionality; ++$i) {
-                    $inner_type = 'array<mixed,' . $inner_type . '>';
-                }
-
-                return $inner_type;
-            },
-            $type
-        );
     }
 
     /**
