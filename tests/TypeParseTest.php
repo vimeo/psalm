@@ -173,6 +173,17 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testPhpDocObjectLikeArray()
+    {
+        $this->assertSame(
+            'array<mixed, array{b:bool, d:string}>',
+            (string) Type::parseString('array{b:bool,d:string}[]')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testPhpDocUnionOfArrays()
     {
         $this->assertSame('array<mixed, A|B>', (string) Type::parseString('A[]|B[]'));
