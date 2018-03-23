@@ -442,7 +442,10 @@ class TypeChecker
 
             foreach ($container_type_part->properties as $key => $container_property_type) {
                 if (!isset($input_type_part->properties[$key])) {
-                    $all_types_contain = false;
+                    if (!$container_property_type->possibly_undefined) {
+                        $all_types_contain = false;
+                    }
+
                     continue;
                 }
 
