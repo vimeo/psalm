@@ -576,6 +576,128 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
+            'dontAddMissingVoidReturnTypehintForSubclass71' => [
+                '<?php
+                    class A {
+                        public function foo() {}
+                    }
+
+                    class B extends A {
+                        public function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return void
+                         */
+                        public function foo() {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return void
+                         */
+                        public function foo() {}
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
+            'dontAddMissingVoidReturnTypehintForPrivateMethodInSubclass71' => [
+                '<?php
+                    class A {
+                        private function foo() {}
+                    }
+
+                    class B extends A {
+                        private function foo() {}
+                    }',
+                '<?php
+                    class A {
+                        private function foo(): void {}
+                    }
+
+                    class B extends A {
+                        private function foo(): void {}
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
+            'dontAddMissingClassReturnTypehintForSubclass71' => [
+                '<?php
+                    class A {
+                        public function foo() {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        public function foo() {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return self
+                         */
+                        public function foo() {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return self
+                         */
+                        public function foo() {
+                            return $this;
+                        }
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
+            'dontAddMissingClassReturnTypehintForSubSubclass71' => [
+                '<?php
+                    class A {
+                        public function foo() {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {}
+
+                    class C extends B {
+                        public function foo() {
+                            return $this;
+                        }
+                    }',
+                '<?php
+                    class A {
+                        /**
+                         * @return self
+                         */
+                        public function foo() {
+                            return $this;
+                        }
+                    }
+
+                    class B extends A {}
+
+                    class C extends B {
+                        /**
+                         * @return self
+                         */
+                        public function foo() {
+                            return $this;
+                        }
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                true,
+            ],
             'fixInvalidIntReturnType56' => [
                 '<?php
                     /**

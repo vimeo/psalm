@@ -39,6 +39,7 @@ class ReturnTypeChecker
      * @param Type\Union|null     $return_type
      * @param string              $fq_class_name
      * @param CodeLocation|null   $return_type_location
+     * @param string[]            $compatible_method_ids
      *
      * @return  false|null
      */
@@ -48,7 +49,8 @@ class ReturnTypeChecker
         FunctionLikeChecker $function_like_checker,
         Type\Union $return_type = null,
         $fq_class_name = null,
-        CodeLocation $return_type_location = null
+        CodeLocation $return_type_location = null,
+        array $compatible_method_ids = []
     ) {
         $suppressed_issues = $function_like_checker->getSuppressedIssues();
         $project_checker = $source->getFileChecker()->project_checker;
@@ -230,9 +232,10 @@ class ReturnTypeChecker
                     $inferred_return_type,
                     $source,
                     $function_like_checker,
-                    ($project_checker->only_replace_php_types_with_non_docblock_types
-                        || $unsafe_return_type)
-                        && $inferred_return_type->from_docblock
+                    $compatible_method_ids
+                    || (($project_checker->only_replace_php_types_with_non_docblock_types
+                            || $unsafe_return_type)
+                        && $inferred_return_type->from_docblock)
                 );
 
                 return null;
@@ -387,9 +390,10 @@ class ReturnTypeChecker
                         $inferred_return_type,
                         $source,
                         $function_like_checker,
-                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                        $compatible_method_ids
+                        || (($project_checker->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock
+                        && $inferred_return_type->from_docblock)
                     );
 
                     return null;

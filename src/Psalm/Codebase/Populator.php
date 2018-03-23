@@ -514,6 +514,18 @@ class Populator
                 $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
             }
         }
+
+        foreach ($storage->methods as $method_name => $_) {
+            if (isset($storage->overridden_method_ids[$method_name])) {
+                foreach ($storage->overridden_method_ids[$method_name] as $declaring_method_id) {
+                    list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
+                    $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
+
+                    // tell the declaring class it's overridden downstream
+                    $declaring_class_storage->methods[strtolower($declaring_method_name)]->overridden_downstream = true;
+                }
+            }
+        }
     }
 
     /**

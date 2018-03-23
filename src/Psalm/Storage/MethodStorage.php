@@ -34,4 +34,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var array<int, bool>
      */
     public $used_params = [];
+
+    /**
+     * @var bool
+     */
+    public $overridden_downstream = false;
 }
