@@ -765,6 +765,36 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'invalidReturnBrackets' => [
+                '<?php
+                    interface I {
+                        /**
+                         * @return []
+                         */
+                        public static function barBar();
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidPropertyClass' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var 1
+                         */
+                        public $bar;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidPropertyBrackets' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var []
+                         */
+                        public $bar;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidReturnClassWithComma' => [
                 '<?php
                     interface I {

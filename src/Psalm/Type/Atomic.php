@@ -116,6 +116,10 @@ abstract class Atomic
                     throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');
                 }
 
+                if (is_numeric($value[0])) {
+                    throw new \Psalm\Exception\TypeParseTreeException('First character of type cannot be numeric');
+                }
+
                 return new TNamedObject($value);
         }
     }
