@@ -76,6 +76,11 @@ class ProjectChecker
     /**
      * @var bool
      */
+    public $debug_lines = false;
+
+    /**
+     * @var bool
+     */
     public $alter_code = false;
 
     /**

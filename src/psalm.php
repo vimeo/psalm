@@ -15,7 +15,7 @@ ini_set('memory_limit', '2048M');
 $options = getopt(
     'f:mhvc:ir:',
     [
-        'help', 'debug', 'config:', 'monochrome', 'show-info:', 'diff',
+        'help', 'debug', 'debug-by-line', 'config:', 'monochrome', 'show-info:', 'diff',
         'output-format:', 'report:', 'find-dead-code', 'init',
         'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
         'version', 'plugin:', 'stats',
@@ -64,6 +64,9 @@ Options:
 
     --debug
         Debug information
+
+    --debug-by-line
+        Debug information on a line-by-line level
 
     -c, --config=psalm.xml
         Path to a psalm.xml configuration file. Run psalm --init to create one.
@@ -304,9 +307,13 @@ $project_checker = new ProjectChecker(
     $show_info,
     $output_format,
     $threads,
-    array_key_exists('debug', $options),
+    array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options),
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
 );
+
+if (array_key_exists('debug-by-line', $options)) {
+    $project_checker->debug_lines = true;
+}
 
 if ($find_dead_code || $find_references_to !== null) {
     $project_checker->getCodebase()->collectReferences();
