@@ -300,4 +300,89 @@ class TypeParseTest extends TestCase
             (string)Type::parseString('array{a:int, b?:int}')
         );
     }
+
+    /**
+     * @return void
+     */
+    public function testCallable()
+    {
+        $this->assertSame(
+            'callable(int, string) : void',
+            (string)Type::parseString('callable(int, string) : void')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableWithUnionLastType()
+    {
+        $this->assertSame(
+            'callable(int, int|string) : void',
+            (string)Type::parseString('callable(int, int|string) : void')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableWithVariadic()
+    {
+        $this->assertSame(
+            'callable(int, ...string) : void',
+            (string)Type::parseString('callable(int, ...string) : void')
+        );
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testCallableWithBadVariadic()
+    {
+        Type::parseString('callable(int, ..string) : void');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testCallableWithVariadicAndDefault()
+    {
+        Type::parseString('callable(int, ...string=) : void');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testBadVariadic()
+    {
+        Type::parseString('...string');
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableWithDefault()
+    {
+        $this->assertSame(
+            'callable(int, string=) : void',
+            (string)Type::parseString('callable(int, string=) : void')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCallableWithoutReturn()
+    {
+        $this->assertSame(
+            'callable(int, string)',
+            (string)Type::parseString('callable(int, string)')
+        );
+    }
 }

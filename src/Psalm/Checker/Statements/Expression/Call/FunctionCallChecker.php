@@ -146,13 +146,13 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     if ($var_type_part instanceof Type\Atomic\Fn) {
                         $function_params = $var_type_part->params;
 
-                        if (isset($stmt->inferredType)) {
+                        if (isset($stmt->inferredType) && $var_type_part->return_type) {
                             $stmt->inferredType = Type::combineUnionTypes(
                                 $stmt->inferredType,
                                 $var_type_part->return_type
                             );
                         } else {
-                            $stmt->inferredType = $var_type_part->return_type;
+                            $stmt->inferredType = $var_type_part->return_type ?: Type::getMixed();
                         }
 
                         $function_exists = true;

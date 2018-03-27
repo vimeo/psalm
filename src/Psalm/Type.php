@@ -2,10 +2,12 @@
 namespace Psalm;
 
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\FunctionLikeParameter;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
@@ -43,7 +45,7 @@ abstract class Type
     public static function parseString($type_string, $php_compatible = false)
     {
         // remove all unacceptable characters
-        $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}:,\]\[\(\)\$]/', '', trim($type_string));
+        $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}=:\.,\]\[\(\)\$]/', '', trim($type_string));
 
         $type_string = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $type_string);
 
@@ -254,12 +256,66 @@ abstract class Type
             return new ObjectLike($properties);
         }
 
+        if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {
+            $callable_type = self::getTypeFromTree($parse_tree->children[0], false);
+
+            if (!$callable_type instanceof TCallable) {
+                throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
+            }
+
+            $return_type = self::getTypeFromTree($parse_tree->children[1], false);
+
+            $callable_type->return_type = $return_type instanceof Union ? $return_type : new Union([$return_type]);
+
+            return $callable_type;
+        }
+
+        if ($parse_tree instanceof ParseTree\CallableTree) {
+            $params = array_map(
+                /**
+                 * @return FunctionLikeParameter
+                 */
+                function (ParseTree $child_tree) {
+                    $is_variadic = false;
+                    $is_optional = false;
+
+                    if ($child_tree instanceof ParseTree\CallableParamTree) {
+                        $tree_type = self::getTypeFromTree($child_tree->children[0], false);
+                        $is_variadic = $child_tree->variadic;
+                        $is_optional = $child_tree->has_default;
+                    } else {
+                        $tree_type = self::getTypeFromTree($child_tree, false);
+                    }
+
+                    $tree_type = $tree_type instanceof Union ? $tree_type : new Union([$tree_type]);
+
+                    return new FunctionLikeParameter(
+                        '',
+                        false,
+                        $tree_type,
+                        null,
+                        null,
+                        $is_optional,
+                        false,
+                        $is_variadic
+                    );
+                },
+                $parse_tree->children
+            );
+
+            if (in_array($parse_tree->value, ['closure', '\closure'], false)) {
+                return new Type\Atomic\Fn('Closure', $params);
+            }
+
+            return new TCallable($parse_tree->value, $params);
+        }
+
         if ($parse_tree instanceof ParseTree\EncapsulationTree) {
             return self::getTypeFromTree($parse_tree->children[0], false);
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
-            throw new \InvalidArgumentException('Unrecognised parse tree type');
+            throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
 
         $atomic_type = self::fixScalarTerms($parse_tree->value, $php_compatible);
@@ -289,25 +345,29 @@ abstract class Type
         // index of last type token
         $rtc = 0;
 
-        foreach (str_split($return_type) as $char) {
+        $chars = str_split($return_type);
+        for ($i = 0, $c = count($chars); $i < $c; ++$i) {
+            $char = $chars[$i];
+
             if ($was_char) {
                 $return_type_tokens[++$rtc] = '';
             }
 
-            if ($char === '<' ||
-                $char === '>' ||
-                $char === '|' ||
-                $char === '?' ||
-                $char === ',' ||
-                $char === '{' ||
-                $char === '}' ||
-                $char === '[' ||
-                $char === ']' ||
-                $char === '(' ||
-                $char === ')' ||
-                $char === ' ' ||
-                $char === '&' ||
-                $char === ':'
+            if ($char === '<'
+                || $char === '>'
+                || $char === '|'
+                || $char === '?'
+                || $char === ','
+                || $char === '{'
+                || $char === '}'
+                || $char === '['
+                || $char === ']'
+                || $char === '('
+                || $char === ')'
+                || $char === ' '
+                || $char === '&'
+                || $char === ':'
+                || $char === '='
             ) {
                 if ($return_type_tokens[$rtc] === '') {
                     $return_type_tokens[$rtc] = $char;
@@ -316,6 +376,20 @@ abstract class Type
                 }
 
                 $was_char = true;
+            } elseif ($char === '.') {
+                if ($i + 1 > $c || $chars[$i + 1] !== '.' || $chars[$i + 2] !== '.') {
+                    throw new TypeParseTreeException('Unexpected token ' . $char);
+                }
+
+                if ($return_type_tokens[$rtc] === '') {
+                    $return_type_tokens[$rtc] = '...';
+                } else {
+                    $return_type_tokens[++$rtc] = '...';
+                }
+
+                $was_char = true;
+
+                $i += 2;
             } else {
                 $return_type_tokens[$rtc] .= $char;
                 $was_char = false;

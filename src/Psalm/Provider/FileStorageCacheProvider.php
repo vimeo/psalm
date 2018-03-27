@@ -29,6 +29,7 @@ class FileStorageCacheProvider
             $storage_dir . 'FunctionLikeStorage.php',
             $storage_dir . 'ClassLikeStorage.php',
             $storage_dir . 'MethodStorage.php',
+            dirname(__DIR__) . DIRECTORY_SEPARATOR . 'FunctionLikeParameter.php',
         ];
 
         foreach ($dependent_files as $dependent_file_path) {

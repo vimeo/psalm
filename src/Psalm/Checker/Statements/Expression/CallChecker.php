@@ -1008,6 +1008,10 @@ class CallChecker
         }
 
         foreach ($closure_types as $closure_type) {
+            if ($closure_type->params === null) {
+                continue;
+            }
+
             if (self::checkArrayFunctionClosureTypeArgs(
                 $statements_checker,
                 $method_id,
@@ -1042,6 +1046,10 @@ class CallChecker
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $closure_params = $closure_type->params;
+
+        if ($closure_params === null) {
+            throw new \UnexpectedValueException('Closure params should not be null here');
+        }
 
         $required_param_count = 0;
 
