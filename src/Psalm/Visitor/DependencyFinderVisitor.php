@@ -958,13 +958,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($docblock_return_type) {
-                    $fixed_type_string = Type::fixUpLocalType(
-                        $docblock_return_type,
-                        $this->aliases,
-                        $this->function_template_types + $this->class_template_types
-                    );
-
                     try {
+                        $fixed_type_string = Type::fixUpLocalType(
+                            $docblock_return_type,
+                            $this->aliases,
+                            $this->function_template_types + $this->class_template_types
+                        );
+
                         $storage->return_type = Type::parseString($fixed_type_string);
                         $storage->return_type->setFromDocblock();
 
