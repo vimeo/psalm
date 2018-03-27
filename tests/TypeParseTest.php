@@ -375,6 +375,16 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testBadFullStop()
+    {
+        Type::parseString('string.');
+    }
+
+    /**
      * @return void
      */
     public function testCallableWithDefault()

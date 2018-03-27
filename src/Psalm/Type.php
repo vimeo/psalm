@@ -377,7 +377,7 @@ abstract class Type
 
                 $was_char = true;
             } elseif ($char === '.') {
-                if ($i + 1 > $c || $chars[$i + 1] !== '.' || $chars[$i + 2] !== '.') {
+                if ($i + 2 > $c || $chars[$i + 1] !== '.' || $chars[$i + 2] !== '.') {
                     throw new TypeParseTreeException('Unexpected token ' . $char);
                 }
 
