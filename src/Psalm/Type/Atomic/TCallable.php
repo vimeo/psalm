@@ -5,6 +5,11 @@ class TCallable extends \Psalm\Type\Atomic
 {
     use CallableTrait;
 
+    /**
+     * @var string
+     */
+    public $value;
+
     public function __toString()
     {
         $param_string = '';

@@ -17,11 +17,6 @@ trait CallableTrait
     public $return_type;
 
     /**
-     * @var string
-     */
-    public $value;
-
-    /**
      * Constructs a new instance of a generic type
      *
      * @param string                            $value
