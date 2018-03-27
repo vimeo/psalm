@@ -329,8 +329,8 @@ class TypeParseTest extends TestCase
     public function testCallableWithVariadic()
     {
         $this->assertSame(
-            'callable(int, ...string) : void',
-            (string)Type::parseString('callable(int, ...string) : void')
+            'callable(int, string...) : void',
+            (string)Type::parseString('callable(int, string...) : void')
         );
     }
 
@@ -341,7 +341,17 @@ class TypeParseTest extends TestCase
      */
     public function testCallableWithBadVariadic()
     {
-        Type::parseString('callable(int, ..string) : void');
+        Type::parseString('callable(int, ...string) : void');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testCallableWithAnotherBadVariadic()
+    {
+        Type::parseString('callable(int, string..) : void');
     }
 
     /**
@@ -351,7 +361,7 @@ class TypeParseTest extends TestCase
      */
     public function testCallableWithVariadicAndDefault()
     {
-        Type::parseString('callable(int, ...string=) : void');
+        Type::parseString('callable(int, string...=) : void');
     }
 
     /**
@@ -361,7 +371,7 @@ class TypeParseTest extends TestCase
      */
     public function testBadVariadic()
     {
-        Type::parseString('...string');
+        Type::parseString('string...');
     }
 
     /**

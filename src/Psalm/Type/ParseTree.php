@@ -165,16 +165,6 @@ class ParseTree
                     break;
 
                 case '...':
-                    if (!$current_leaf instanceof ParseTree\CallableTree) {
-                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
-                    }
-
-                    $new_leaf = new ParseTree\CallableParamTree($current_leaf);
-                    $new_leaf->variadic = true;
-                    $current_leaf->children[] = $new_leaf;
-                    $current_leaf = $new_leaf;
-                    break;
-
                 case '=':
                     $current_parent = $current_leaf->parent;
 
@@ -195,7 +185,8 @@ class ParseTree
                     }
 
                     $new_leaf = new ParseTree\CallableParamTree($current_parent);
-                    $new_leaf->has_default = true;
+                    $new_leaf->has_default = $type_token === '=';
+                    $new_leaf->variadic = $type_token === '...';
                     $new_leaf->children = [$current_leaf];
 
                     $current_leaf->parent = $new_leaf;

@@ -64,6 +64,21 @@ class CallableTest extends TestCase
                     '$a' => 'int',
                 ],
             ],
+            'varReturnType' => [
+                '<?php
+                    $add_one = function(int $a): int {
+                        return $a + 1;
+                    };
+
+                    /**
+                     * @param  callable(int) : int $c
+                     */
+                    function bar(callable $c) : int {
+                        return $c(1);
+                    }
+
+                    bar($add_one);',
+            ],
             'callableToClosure' => [
                 '<?php
                     /**
@@ -402,6 +417,22 @@ class CallableTest extends TestCase
                         return "foo";
                     }',
                 'error_message' => 'MissingClosureReturnType',
+            ],
+            'wrongCallableReturnType' => [
+                '<?php
+                    $add_one = function(int $a): int {
+                        return $a + 1;
+                    };
+
+                    /**
+                     * @param callable(int) : int $c
+                     */
+                    function bar(callable $c) : string {
+                        return $c(1);
+                    }
+
+                    bar($add_one);',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

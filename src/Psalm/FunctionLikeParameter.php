@@ -86,6 +86,6 @@ class FunctionLikeParameter
 
     public function __toString()
     {
-        return ($this->is_variadic ? '...' : '') . $this->type . ($this->is_optional ? '=' : '');
+        return $this->type . ($this->is_variadic ? '...' : '') . ($this->is_optional ? '=' : '');
     }
 }

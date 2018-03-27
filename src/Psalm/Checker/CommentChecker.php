@@ -411,6 +411,7 @@ class CommentChecker
 
                 if ($next_char === ':') {
                     ++$i;
+                    $type .= ':';
                     $expects_callable_return = true;
                     continue;
                 }
