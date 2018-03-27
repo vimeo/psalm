@@ -480,7 +480,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $foo = array_sum([]) + 1;',
                 'assertions' => [
-                    '$foo' => 'numeric',
+                    '$foo' => 'float|int',
                 ],
             ],
             'arrayMapObjectLikeAndCallable' => [
