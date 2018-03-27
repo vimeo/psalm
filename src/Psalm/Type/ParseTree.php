@@ -101,7 +101,11 @@ class ParseTree
                 case ')':
                     do {
                         if ($current_leaf->parent === null) {
-                            throw new TypeParseTreeException('Cannot parse generic type');
+                            if (!$current_leaf instanceof ParseTree\CallableTree) {
+                                throw new TypeParseTreeException('Cannot parse generic type');
+                            }
+
+                            break;
                         }
 
                         $current_leaf = $current_leaf->parent;
