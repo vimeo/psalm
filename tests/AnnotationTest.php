@@ -1439,6 +1439,12 @@ class AnnotationTest extends TestCase
                 'error_message' => 'UndefinedClass',
                 'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
+            'badStaticVar' => [
+                '<?php
+                    /** @var static */
+                    $a = new stdClass();',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
