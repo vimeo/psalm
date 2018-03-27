@@ -64,7 +64,7 @@ class CallableTest extends TestCase
                     '$a' => 'int',
                 ],
             ],
-            'varReturnType' => [
+            'varCallableParamReturnType' => [
                 '<?php
                     $add_one = function(int $a): int {
                         return $a + 1;

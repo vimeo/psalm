@@ -160,9 +160,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     } elseif ($var_type_part instanceof TMixed) {
                         $has_valid_function_call_type = true;
                     // @todo maybe emit issue here
-                    } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure') ||
-                        $var_type_part instanceof TCallable
-                    ) {
+                    } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')) {
                         // this is fine
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TString
