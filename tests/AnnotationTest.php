@@ -1445,6 +1445,12 @@ class AnnotationTest extends TestCase
                     $a = new stdClass();',
                 'error_message' => 'InvalidDocblock',
             ],
+            'doubleBar' => [
+                '<?php
+                    /** @param PDO||Closure|numeric $a */
+                    function foo($a) : void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

@@ -396,6 +396,16 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
+    public function testDoubleBar()
+    {
+        Type::parseString('PDO||Closure|numeric');
+    }
+
+    /**
      * @return void
      */
     public function testCallableWithDefault()

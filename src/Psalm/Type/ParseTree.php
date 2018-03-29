@@ -250,6 +250,10 @@ class ParseTree
                 case '|':
                     $current_parent = $current_leaf->parent;
 
+                    if ($current_leaf instanceof ParseTree\UnionTree) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
+
                     if ($current_parent && $current_parent instanceof ParseTree\UnionTree) {
                         $current_leaf = $current_parent;
                         continue;
