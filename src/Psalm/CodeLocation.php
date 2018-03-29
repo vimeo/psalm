@@ -257,18 +257,23 @@ class CodeLocation
             }
         }
 
+        $this->snippet = substr($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
+        $this->text = substr($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
+
         // reset preview start to beginning of line
         $this->column_from = $this->selection_start -
             (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
 
-        // reset preview start to beginning of line
-        $this->column_to = $this->selection_end -
-            (int)strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents));
+        $newlines = substr_count($this->text, "\n");
 
-        $this->snippet = substr($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
-        $this->text = substr($file_contents, $this->selection_start, $this->selection_end - $this->selection_start);
+        if ($newlines) {
+            $this->column_to = $this->selection_end -
+                (int)strrpos($file_contents, "\n", $this->selection_end - strlen($file_contents));
+        } else {
+            $this->column_to = $this->column_from + strlen($this->text);
+        }
 
-        $this->end_line_number = $this->line_number + substr_count($this->snippet, "\n");
+        $this->end_line_number = $this->getLineNumber() + $newlines;
     }
 
     /**
