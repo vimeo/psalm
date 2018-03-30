@@ -310,6 +310,40 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'returnNamespacedFunctionCallType' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        namespace Foo;
+
+                        class A{
+                            function doThing() : void {}
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require("file1.php");
+
+                        namespace Bar;
+
+                        use Foo\A;
+
+                        /** @return A */
+                        function getThing() {
+                            return new A;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
+                        require("file2.php");
+
+                        namespace Bat;
+
+                        class C {
+                            function boop() : void {
+                                \Bar\getThing()->doThing();
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
+                ],
+            ],
         ];
     }
 
