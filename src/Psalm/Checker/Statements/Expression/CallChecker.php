@@ -996,8 +996,6 @@ class CallChecker
                         $function_id
                     );
 
-                    $callmap_params = null;
-
                     if (CallMap::inCallMap($function_id)) {
                         $callmap_params_options = CallMap::getParamsFromCallMap($function_id);
 

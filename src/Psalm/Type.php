@@ -30,6 +30,32 @@ use Psalm\Type\Union;
 abstract class Type
 {
     /**
+     * @var array<string, bool>
+     */
+    public static $PSALM_RESERVED_WORDS = [
+        'int' => true,
+        'string' => true,
+        'float' => true,
+        'bool' => true,
+        'false' => true,
+        'object' => true,
+        'empty' => true,
+        'callable' => true,
+        'array' => true,
+        'iterable' => true,
+        'null' => true,
+        'mixed' => true,
+        'numeric-string' => true,
+        'class-string' => true,
+        'boolean' => true,
+        'integer' => true,
+        'double' => true,
+        'real' => true,
+        'resource' => true,
+        'void' => true,
+    ];
+
+    /**
      * @var array<string, array<int, string>>
      */
     private static $memoized_tokens = [];
@@ -426,7 +452,7 @@ abstract class Type
 
             $return_type_token = self::fixScalarTerms($return_type_token);
 
-            if ($return_type_token[0] === strtoupper($return_type_token[0]) &&
+            if (!isset(self::$PSALM_RESERVED_WORDS[$return_type_token]) &&
                 !isset($template_types[$return_type_token])
             ) {
                 if ($return_type_token[0] === '$') {
