@@ -996,11 +996,53 @@ class CallChecker
                         $function_id
                     );
 
-                    $closure_types[] = new Type\Atomic\Fn(
-                        'Closure',
-                        $function_storage->params,
-                        $function_storage->return_type ?: Type::getMixed()
-                    );
+                    $callmap_params = null;
+
+                    if (CallMap::inCallMap($function_id)) {
+                        $callmap_params_options = CallMap::getParamsFromCallMap($function_id);
+
+                        if ($callmap_params_options === null) {
+                            throw new \UnexpectedValueException('This should not happen');
+                        }
+
+                        $passing_callmap_params_options = [];
+
+                        foreach ($callmap_params_options as $callmap_params_option) {
+                            $required_param_count = 0;
+
+                            foreach ($callmap_params_option as $i => $param) {
+                                if (!$param->is_optional && !$param->is_variadic) {
+                                    $required_param_count = $i + 1;
+                                }
+                            }
+
+                            if ($required_param_count <= $max_closure_param_count) {
+                                $passing_callmap_params_options[] = $callmap_params_option;
+                            }
+                        }
+
+                        if ($passing_callmap_params_options) {
+                            foreach ($passing_callmap_params_options as $passing_callmap_params_option) {
+                                $closure_types[] = new Type\Atomic\Fn(
+                                    'Closure',
+                                    $passing_callmap_params_option,
+                                    $function_storage->return_type ?: Type::getMixed()
+                                );
+                            }
+                        } else {
+                            $closure_types[] = new Type\Atomic\Fn(
+                                'Closure',
+                                $callmap_params_options[0],
+                                $function_storage->return_type ?: Type::getMixed()
+                            );
+                        }
+                    } else {
+                        $closure_types[] = new Type\Atomic\Fn(
+                            'Closure',
+                            $function_storage->params,
+                            $function_storage->return_type ?: Type::getMixed()
+                        );
+                    }
                 }
             }
         } else {

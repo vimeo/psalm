@@ -585,7 +585,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = function() use ($argv) : void {};',
             ],
-            'SKIPPED-implodeMultiDimensionalArray' => [
+            'implodeMultiDimensionalArray' => [
                 '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
             ],
