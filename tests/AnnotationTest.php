@@ -736,6 +736,13 @@ class AnnotationTest extends TestCase
                     /** @param array{b?: int, c?: string} $a */
                     function foo(array $a = []) : void {}',
             ],
+            'allowEmptyVarAnnotation' => [
+                '<?php
+                    /**
+                     * @param $x
+                     */
+                    function example(array $x) : void {}',
+            ],
         ];
     }
 

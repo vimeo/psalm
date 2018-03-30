@@ -185,7 +185,7 @@ class CommentChecker
                 }
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
-                    array_unshift($line_parts, 'mixed');
+                    continue;
                 }
 
                 if (count($line_parts) > 1) {
