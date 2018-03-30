@@ -53,6 +53,8 @@ abstract class Type
         'real' => true,
         'resource' => true,
         'void' => true,
+        'self' => true,
+        'static' => true,
     ];
 
     /**
