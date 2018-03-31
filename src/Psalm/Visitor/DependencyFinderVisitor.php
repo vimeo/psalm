@@ -412,19 +412,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $function_like_storage->variadic = true;
                     }
                 }
-            } else {
-                try {
-                    $reflection_function = new \ReflectionFunction($function_id);
-
-                    if ($reflection_function->isUserDefined()) {
-                        /**
-                         * @psalm-suppress PossiblyFalseArgument
-                         */
-                        $this->codebase->scanner->queueFileForScanning($reflection_function->getFileName());
-                    }
-                } catch (\ReflectionException $e) {
-                    // do nothing
-                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->classlike_storages) {
