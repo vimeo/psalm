@@ -177,6 +177,17 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                         || !$codebase->methods->methodExists($var_type_part->value . '::__invoke')
                     ) {
                         $invalid_function_call_types[] = (string)$var_type_part;
+                    } else {
+                        if (self::checkMethodArgs(
+                            $var_type_part->value . '::__invoke',
+                            $stmt->args,
+                            $class_template_params,
+                            $context,
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker
+                        ) === false) {
+                            return false;
+                        }
                     }
                 }
 
