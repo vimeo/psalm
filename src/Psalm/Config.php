@@ -950,20 +950,40 @@ class Config
             throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
         }
 
+        $autoload_files_files = [];
+
         if (isset($composer_json['autoload']['files'])) {
+            /** @var string[] */
+            $composer_autoload_files = $composer_json['autoload']['files'];
+
+            foreach ($composer_autoload_files as $file) {
+                $file_path = realpath($this->base_dir . $file);
+
+                if ($file_path && file_exists($file_path)) {
+                    $autoload_files_files[] = $file_path;
+                }
+            }
+        }
+
+        $vendor_autoload_files_path
+            = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
+                . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
+
+        if (file_exists($vendor_autoload_files_path)) {
+            /**
+             * @var string[]
+             * @psalm-suppress UnresolvableInclude
+             */
+            $vendor_autoload_files = require $vendor_autoload_files_path;
+
+            $autoload_files_files = array_merge($autoload_files_files, $vendor_autoload_files);
+        }
+
+        if ($autoload_files_files) {
             $codebase = $project_checker->codebase;
             $codebase->register_global_functions = true;
 
-            /** @var string[] */
-            $files = $composer_json['autoload']['files'];
-
-            foreach ($files as $file) {
-                $file_path = realpath($this->base_dir . $file);
-
-                if (!$file_path) {
-                    continue;
-                }
-
+            foreach ($autoload_files_files as $file_path) {
                 $file_storage = $codebase->createFileStorageForPath($file_path);
                 $file_to_scan = new \Psalm\Scanner\FileScanner($file_path, $this->shortenFileName($file_path), false);
                 $file_to_scan->scan(

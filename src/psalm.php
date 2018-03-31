@@ -311,6 +311,8 @@ $project_checker = new ProjectChecker(
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null
 );
 
+$config->visitComposerAutoloadFiles($project_checker);
+
 if (array_key_exists('debug-by-line', $options)) {
     $project_checker->debug_lines = true;
 }

@@ -412,6 +412,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $function_like_storage->variadic = true;
                     }
                 }
+            } else {
+                try {
+                    $reflection_function = new \ReflectionFunction($function_id);
+
+                    if ($reflection_function->isUserDefined()) {
+                        /**
+                         * @psalm-suppress PossiblyFalseArgument
+                         */
+                        $this->codebase->scanner->queueFileForScanning($reflection_function->getFileName());
+                    }
+                } catch (\ReflectionException $e) {
+                    // do nothing
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->classlike_storages) {
@@ -1433,11 +1446,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             while (preg_match($reduce_pattern, $path_to_file)) {
                 $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
-            }
-
-            // if the file is already included, we can't check much more
-            if (in_array($path_to_file, get_included_files(), true)) {
-                return;
             }
 
             if ($this->file_path === $path_to_file) {
