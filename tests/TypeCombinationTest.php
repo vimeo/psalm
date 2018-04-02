@@ -245,9 +245,22 @@ class TypeCombinationTest extends TestCase
                 'array{a:bool, b?:mixed, d?:mixed}',
                 [
                     'array{a:false, b:mixed}',
-                    'array{a:false, b:mixed}',
                     'array{a:true, d:mixed}',
                     'array{a:true, d:mixed}',
+                ],
+            ],
+            'combinePossiblyUndefinedKeysAndString' => [
+                'array{a:string, b?:int}|string',
+                [
+                    'array{a:string, b?:int}',
+                    'string',
+                ],
+            ],
+            'combinePossiblyUndefinedKeysInMultipleArrays' => [
+                'array{a?:string, b?:int, c?:string, d?:int}',
+                [
+                    'array{a:string, b?:int}',
+                    'array{c:string, d?:int}',
                 ],
             ],
         ];

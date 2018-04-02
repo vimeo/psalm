@@ -977,7 +977,7 @@ abstract class Type
                     $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;
                     // it's possibly undefined if there are existing objectlike entries
                     $combination->objectlike_entries[$candidate_property_name]->possibly_undefined
-                        = $existing_objectlike_entries;
+                        = $existing_objectlike_entries || $candidate_property_type->possibly_undefined;
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
