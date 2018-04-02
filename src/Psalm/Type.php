@@ -443,7 +443,9 @@ abstract class Type
     ) {
         $return_type_tokens = self::tokenize($return_type);
 
-        foreach ($return_type_tokens as $i => &$return_type_token) {
+        for ($i = 0, $l = count($return_type_tokens); $i < $l; $i++) {
+            $return_type_token = $return_type_tokens[$i];
+
             if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':', '[', ']', '(', ')'], true)) {
                 continue;
             }
@@ -452,20 +454,35 @@ abstract class Type
                 continue;
             }
 
-            $return_type_token = self::fixScalarTerms($return_type_token);
+            $return_type_tokens[$i] = self::fixScalarTerms($return_type_token);
 
-            if (!isset(self::$PSALM_RESERVED_WORDS[$return_type_token]) &&
-                !isset($template_types[$return_type_token])
-            ) {
-                if ($return_type_token[0] === '$') {
+            if (isset(self::$PSALM_RESERVED_WORDS[$return_type_token])) {
+                continue;
+            }
+
+            if (isset($template_types[$return_type_token])) {
+                continue;
+            }
+
+            if (isset($return_type_tokens[$i + 1])) {
+                $next_char = $return_type_tokens[$i + 1];
+                if ($next_char === ':') {
                     continue;
                 }
 
-                $return_type_token = self::getFQCLNFromString(
-                    $return_type_token,
-                    $aliases
-                );
+                if ($next_char === '?' && isset($return_type_tokens[$i + 2]) && $return_type_tokens[$i + 2] === ':') {
+                    continue;
+                }
             }
+
+            if ($return_type_token[0] === '$') {
+                continue;
+            }
+
+            $return_type_tokens[$i] = self::getFQCLNFromString(
+                $return_type_token,
+                $aliases
+            );
         }
 
         return implode('', $return_type_tokens);
