@@ -8664,7 +8664,7 @@ return [
 'posix_times' => ['array'],
 'posix_ttyname' => ['string|false', 'fd'=>'resource|int'],
 'posix_uname' => ['array'],
-'pow' => ['float', 'base'=>'float', 'exponent'=>'float'],
+'pow' => ['float', 'base'=>'int|float', 'exponent'=>'int|float'],
 'preg_filter' => ['mixed', 'regex'=>'mixed', 'replace'=>'mixed', 'subject'=>'mixed', 'limit='=>'int', '&w_count='=>'int'],
 'preg_grep' => ['array', 'regex'=>'string', 'input'=>'array', 'flags='=>'int'],
 'preg_last_error' => ['int'],
