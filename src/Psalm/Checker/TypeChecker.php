@@ -369,6 +369,14 @@ class TypeChecker
                 foreach ($input_type_part->type_params as $i => $input_param) {
                     $container_param = $container_type_part->type_params[$i];
 
+                    if ($i === 0
+                        && $input_param->isMixed()
+                        && $container_param->hasString()
+                        && $container_param->hasInt()
+                    ) {
+                        continue;
+                    }
+
                     if (!$input_param->isEmpty() &&
                         !self::isContainedBy(
                             $codebase,
