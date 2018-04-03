@@ -589,6 +589,13 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
             ],
+            'varExport' => [
+                '<?php
+                    $a = var_export(["a"], true);',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -804,6 +811,11 @@ class FunctionCallTest extends TestCase
 
                     array_map("foo", [1, 2, 3]);',
                 'error_message' => 'TooManyArguments',
+            ],
+            'varExportAssignmentToVoid' => [
+                '<?php
+                    $a = var_export(["a"]);',
+                'error_message' => 'AssignmentToVoid',
             ],
         ];
     }

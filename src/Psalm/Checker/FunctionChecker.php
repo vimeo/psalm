@@ -74,12 +74,27 @@ class FunctionChecker extends FunctionLikeChecker
                 }
             }
 
-            if (in_array($call_map_key, ['pathinfo'], true)) {
+            if ($call_map_key === 'pathinfo') {
                 if (isset($call_args[1])) {
                     return Type::getString();
                 }
 
                 return Type::getArray();
+            }
+
+            if ($call_map_key === 'var_export') {
+                if (isset($call_args[1]->value->inferredType)) {
+                    /** @var Type\Union */
+                    $subject_type = $call_args[1]->value->inferredType;
+
+                    if ((string) $subject_type === 'true') {
+                        return Type::getString();
+                    }
+
+                    return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TNull]);
+                }
+
+                return Type::getVoid();
             }
 
             if (substr($call_map_key, 0, 6) === 'array_') {
