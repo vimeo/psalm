@@ -38,6 +38,7 @@ abstract class Type
         'float' => true,
         'bool' => true,
         'false' => true,
+        'true' => true,
         'object' => true,
         'empty' => true,
         'callable' => true,
@@ -55,6 +56,7 @@ abstract class Type
         'void' => true,
         'self' => true,
         'static' => true,
+        'scalar' => true,
     ];
 
     /**
