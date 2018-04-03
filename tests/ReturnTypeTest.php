@@ -482,6 +482,55 @@ class ReturnTypeTest extends TestCase
                         return ["a" => 2];
                     }',
             ],
+            'badlyCasedReturnType' => [
+                '<?php
+                    namespace MyNS;
+
+                    class Example {
+                        /** @return array<int,example> */
+                        public static function test() : array {
+                            return [new Example()];
+                        }
+
+                        /** @return example */
+                        public static function instance() {
+                            return new Example();
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['InvalidClass'],
+            ],
+            'arrayReturnTypeWithExplicitKeyType' => [
+                '<?php
+                    /** @return array<int|string, mixed> */
+                    function returnsArray(array $arr) : array {
+                        return $arr;
+                    }',
+            ],
+            'namespacedScalarParamAndReturn' => [
+                '<?php
+                    namespace Foo;
+
+                    /**
+                    * @param scalar $scalar
+                    *
+                    * @return scalar
+                    */
+                    function ($scalar) {
+                      switch(random_int(0, 3)) {
+                        case 0:
+                          return true;
+                        case 1:
+                          return "string";
+                        case 2:
+                          return 2;
+                        case 3:
+                          return 3.0;
+                      }
+
+                      return 0;
+                    }'
+            ],
         ];
     }
 

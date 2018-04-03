@@ -137,6 +137,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 break;
             }
 
+            if ($project_checker->debug_lines) {
+                echo $this->getFilePath() . ':' . $stmt->getLine() . PHP_EOL;
+            }
+
             /*
             if (isset($context->vars_in_scope['$tag']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
                 var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$tag']);

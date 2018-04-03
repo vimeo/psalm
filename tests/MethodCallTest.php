@@ -105,6 +105,15 @@ class MethodCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['PossiblyUndefinedMethod'],
             ],
+            'invokeCorrectType' => [
+                '<?php
+                    class A {
+                        public function __invoke(string $p): void {}
+                    }
+
+                    $q = new A;
+                    $q("asda");',
+            ],
         ];
     }
 
@@ -278,6 +287,24 @@ class MethodCallTest extends TestCase
                     $a = 5;
                     new $a();',
                 'error_message' => 'UndefinedClass',
+            ],
+            'invokeTypeMismatch' => [
+                '<?php
+                    class A {
+                        public function __invoke(string $p): void {}
+                    }
+
+                    $q = new A;
+                    $q(1);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'explicitInvokeTypeMismatch' => [
+                '<?php
+                    class A {
+                        public function __invoke(string $p): void {}
+                    }
+                    (new A)->__invoke(1);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

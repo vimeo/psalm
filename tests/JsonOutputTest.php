@@ -131,7 +131,7 @@ echo $a;';
                 [
                     'severity' => 'error',
                     'line_from' => 2,
-                    'line_to' => 4,
+                    'line_to' => 2,
                     'type' => 'MixedInferredReturnType',
                     'message' => 'Could not verify return type \'string|null\' for psalmCanVerify',
                     'file_name' => 'somefile.php',

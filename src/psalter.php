@@ -140,6 +140,8 @@ $project_checker = new ProjectChecker(
     array_key_exists('debug', $options)
 );
 
+$config->visitComposerAutoloadFiles($project_checker);
+
 if (array_key_exists('issues', $options)) {
     if (!is_string($options['issues']) || !$options['issues']) {
         die('Expecting a comma-separated list of issues' . PHP_EOL);

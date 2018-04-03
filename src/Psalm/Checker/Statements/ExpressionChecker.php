@@ -758,7 +758,7 @@ class ExpressionChecker
 
             if ($return_type_lc === 'static' || $return_type_lc === '$this') {
                 if (!$static_class) {
-                    throw new \InvalidArgumentException(
+                    throw new \UnexpectedValueException(
                         'Cannot handle ' . $return_type->value . ' when $static_class is empty'
                     );
                 }
@@ -766,7 +766,7 @@ class ExpressionChecker
                 $return_type->value = $static_class;
             } elseif ($return_type_lc === 'self') {
                 if (!$self_class) {
-                    throw new \InvalidArgumentException(
+                    throw new \UnexpectedValueException(
                         'Cannot handle ' . $return_type->value . ' when $self_class is empty'
                     );
                 }

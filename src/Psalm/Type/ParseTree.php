@@ -101,11 +101,16 @@ class ParseTree
                 case ')':
                     do {
                         if ($current_leaf->parent === null) {
-                            throw new TypeParseTreeException('Cannot parse generic type');
+                            if (!$current_leaf instanceof ParseTree\CallableTree) {
+                                throw new TypeParseTreeException('Cannot parse generic type');
+                            }
+
+                            break;
                         }
 
                         $current_leaf = $current_leaf->parent;
-                    } while (!$current_leaf instanceof ParseTree\EncapsulationTree);
+                    } while (!$current_leaf instanceof ParseTree\EncapsulationTree
+                        && !$current_leaf instanceof ParseTree\CallableTree);
 
                     break;
 
@@ -142,6 +147,7 @@ class ParseTree
 
                     if ($context_node instanceof ParseTree\GenericTree
                         || $context_node instanceof ParseTree\ObjectLikeTree
+                        || $context_node instanceof ParseTree\CallableTree
                     ) {
                         $context_node = $context_node->parent;
                     }
@@ -149,6 +155,7 @@ class ParseTree
                     while ($context_node
                         && !$context_node instanceof ParseTree\GenericTree
                         && !$context_node instanceof ParseTree\ObjectLikeTree
+                        && !$context_node instanceof ParseTree\CallableTree
                     ) {
                         $context_node = $context_node->parent;
                     }
@@ -161,11 +168,61 @@ class ParseTree
 
                     break;
 
+                case '...':
+                case '=':
+                    $current_parent = $current_leaf->parent;
+
+                    while ($current_parent
+                        && !$current_parent instanceof ParseTree\CallableTree
+                        && !$current_parent instanceof ParseTree\CallableParamTree
+                    ) {
+                        $current_leaf = $current_parent;
+                        $current_parent = $current_parent->parent;
+                    }
+
+                    if (!$current_parent || !$current_leaf) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
+
+                    if ($current_parent instanceof ParseTree\CallableParamTree) {
+                        throw new TypeParseTreeException('Cannot have variadic param with a default');
+                    }
+
+                    $new_leaf = new ParseTree\CallableParamTree($current_parent);
+                    $new_leaf->has_default = $type_token === '=';
+                    $new_leaf->variadic = $type_token === '...';
+                    $new_leaf->children = [$current_leaf];
+
+                    $current_leaf->parent = $new_leaf;
+
+                    array_pop($current_parent->children);
+                    $current_parent->children[] = $new_leaf;
+
+                    $current_leaf = $new_leaf;
+
+                    break;
+
                 case ':':
                     $current_parent = $current_leaf->parent;
 
+                    if ($current_leaf instanceof ParseTree\CallableTree) {
+                        $new_parent_leaf = new ParseTree\CallableWithReturnTypeTree($current_parent);
+                        $current_leaf->parent = $new_parent_leaf;
+                        $new_parent_leaf->children = [$current_leaf];
+
+                        if ($current_parent) {
+                            array_pop($current_parent->children);
+                            $current_parent->children[] = $new_parent_leaf;
+                        } else {
+                            $parse_tree = $new_parent_leaf;
+                        }
+
+                        $current_leaf = $new_parent_leaf;
+                        break;
+                    }
+
                     if ($current_parent && $current_parent instanceof ParseTree\ObjectLikePropertyTree) {
-                        continue;
+                        break;
                     }
 
                     if (!$current_parent) {
@@ -192,6 +249,10 @@ class ParseTree
 
                 case '|':
                     $current_parent = $current_leaf->parent;
+
+                    if ($current_leaf instanceof ParseTree\UnionTree) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
 
                     if ($current_parent && $current_parent instanceof ParseTree\UnionTree) {
                         $current_leaf = $current_parent;
@@ -261,7 +322,18 @@ class ParseTree
                             break;
 
                         case '(':
-                            throw new TypeParseTreeException('Cannot process bracket yet');
+                            if (!in_array($type_token, ['closure', 'callable', '\closure'])) {
+                                throw new TypeParseTreeException(
+                                    'Bracket must be preceded by “Closure” or “callable”'
+                                );
+                            }
+
+                            $new_leaf = new ParseTree\CallableTree(
+                                $type_token,
+                                $new_parent
+                            );
+                            ++$i;
+                            break;
 
                         default:
                             if ($type_token === '$this') {

@@ -143,16 +143,16 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 $has_valid_function_call_type = false;
 
                 foreach ($stmt->name->inferredType->getTypes() as $var_type_part) {
-                    if ($var_type_part instanceof Type\Atomic\Fn) {
+                    if ($var_type_part instanceof Type\Atomic\Fn || $var_type_part instanceof Type\Atomic\TCallable) {
                         $function_params = $var_type_part->params;
 
-                        if (isset($stmt->inferredType)) {
+                        if (isset($stmt->inferredType) && $var_type_part->return_type) {
                             $stmt->inferredType = Type::combineUnionTypes(
                                 $stmt->inferredType,
                                 $var_type_part->return_type
                             );
                         } else {
-                            $stmt->inferredType = $var_type_part->return_type;
+                            $stmt->inferredType = $var_type_part->return_type ?: Type::getMixed();
                         }
 
                         $function_exists = true;
@@ -160,9 +160,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     } elseif ($var_type_part instanceof TMixed) {
                         $has_valid_function_call_type = true;
                     // @todo maybe emit issue here
-                    } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure') ||
-                        $var_type_part instanceof TCallable
-                    ) {
+                    } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')) {
                         // this is fine
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TString
@@ -179,6 +177,17 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                         || !$codebase->methods->methodExists($var_type_part->value . '::__invoke')
                     ) {
                         $invalid_function_call_types[] = (string)$var_type_part;
+                    } else {
+                        if (self::checkMethodArgs(
+                            $var_type_part->value . '::__invoke',
+                            $stmt->args,
+                            $class_template_params,
+                            $context,
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker
+                        ) === false) {
+                            return false;
+                        }
                     }
                 }
 

@@ -76,6 +76,11 @@ class ProjectChecker
     /**
      * @var bool
      */
+    public $debug_lines = false;
+
+    /**
+     * @var bool
+     */
     public $alter_code = false;
 
     /**
@@ -228,7 +233,6 @@ class ProjectChecker
         $this->cache_provider->use_igbinary = $config->use_igbinary;
 
         $config->visitStubFiles($this->codebase);
-        $config->visitComposerAutoloadFiles($this);
         $config->initializePlugins($this);
     }
 

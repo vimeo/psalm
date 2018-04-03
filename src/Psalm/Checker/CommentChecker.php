@@ -13,7 +13,7 @@ use Psalm\VarDocblockComment;
 
 class CommentChecker
 {
-    const TYPE_REGEX = '(\??\\\?[A-Za-z][\(\)A-Za-z0-9_&\<,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_&\<,\>\|\[\]-\{\}:]+)';
+    const TYPE_REGEX = '(\??\\\?[A-Za-z][\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
     /**
      * @param  string           $comment
@@ -185,7 +185,7 @@ class CommentChecker
                 }
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
-                    array_unshift($line_parts, 'mixed');
+                    continue;
                 }
 
                 if (count($line_parts) > 1) {
@@ -383,8 +383,13 @@ class CommentChecker
 
         $type = '';
 
-        for ($i = 0; $i < strlen($return_block); ++$i) {
+        $expects_callable_return = false;
+
+        $return_block = preg_replace('/[ \t]+/', ' ', $return_block);
+
+        for ($i = 0, $l = strlen($return_block); $i < $l; ++$i) {
             $char = $return_block[$i];
+            $next_char = $i < $l - 1 ? $return_block[$i + 1] : null;
 
             if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
                 $brackets .= $char;
@@ -404,10 +409,22 @@ class CommentChecker
                     continue;
                 }
 
+                if ($next_char === ':') {
+                    ++$i;
+                    $type .= ':';
+                    $expects_callable_return = true;
+                    continue;
+                }
+
+                if ($expects_callable_return) {
+                    $expects_callable_return = false;
+                    continue;
+                }
+
                 $remaining = trim(substr($return_block, $i + 1));
 
                 if ($remaining) {
-                    return array_merge([$type], preg_split('/[\s\t]+/', $remaining));
+                    return array_merge([$type], explode(' ', $remaining));
                 }
 
                 return [$type];

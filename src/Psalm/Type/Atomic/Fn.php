@@ -9,29 +9,7 @@ use Psalm\Type\Union;
  */
 class Fn extends TNamedObject
 {
-    /**
-     * @var array<int, FunctionLikeParameter>
-     */
-    public $params = [];
-
-    /**
-     * @var Union
-     */
-    public $return_type;
-
-    /**
-     * Constructs a new instance of a generic type
-     *
-     * @param string                            $value
-     * @param array<int, FunctionLikeParameter> $params
-     * @param Union                             $return_type
-     */
-    public function __construct($value, array $params, Union $return_type)
-    {
-        $this->value = 'Closure';
-        $this->params = $params;
-        $this->return_type = $return_type;
-    }
+    use CallableTrait;
 
     /**
      * @return string

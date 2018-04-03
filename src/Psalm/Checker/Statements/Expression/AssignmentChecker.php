@@ -90,21 +90,32 @@ class AssignmentChecker
             }
 
             foreach ($var_comments as $var_comment) {
-                $var_comment_type = ExpressionChecker::fleshOutType(
-                    $statements_checker->getFileChecker()->project_checker,
-                    $var_comment->type,
-                    $context->self,
-                    $context->self
-                );
+                try {
+                    $var_comment_type = ExpressionChecker::fleshOutType(
+                        $statements_checker->getFileChecker()->project_checker,
+                        $var_comment->type,
+                        $context->self,
+                        $context->self
+                    );
 
-                $var_comment_type->setFromDocblock();
+                    $var_comment_type->setFromDocblock();
 
-                if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
-                    $comment_type = $var_comment_type;
-                    continue;
+                    if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
+                        $comment_type = $var_comment_type;
+                        continue;
+                    }
+
+                    $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
+                } catch (\UnexpectedValueException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            (string)$e->getMessage(),
+                            new CodeLocation($statements_checker->getSource(), $assign_var)
+                        )
+                    )) {
+                        // fall through
+                    }
                 }
-
-                $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
             }
         }
 

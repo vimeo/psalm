@@ -68,6 +68,7 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
+                <file name="src/Psalm/Type/Atomic/CallableTrait.php" />
                 <file name="src/Psalm/Type/Atomic/GenericTrait.php" />
                 <file name="src/Psalm/Plugin.php" />
                 <referencedMethod name="Psalm\Codebase::getParentInterfaces" />

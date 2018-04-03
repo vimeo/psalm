@@ -25,8 +25,9 @@ class ClassLikeStorageCacheProvider
         $storage_dir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
         $dependent_files = [
-            $storage_dir . 'ClassLikeStorage.php',
+            $storage_dir . 'FileStorage.php',
             $storage_dir . 'FunctionLikeStorage.php',
+            $storage_dir . 'ClassLikeStorage.php',
             $storage_dir . 'MethodStorage.php',
         ];
 

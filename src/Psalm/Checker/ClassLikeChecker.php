@@ -30,7 +30,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public static $SPECIAL_TYPES = [
         'int' => 'int',
-        'string' => 'stirng',
+        'string' => 'string',
         'float' => 'float',
         'bool' => 'bool',
         'false' => 'false',

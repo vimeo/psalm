@@ -958,13 +958,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($docblock_return_type) {
-                    $fixed_type_string = Type::fixUpLocalType(
-                        $docblock_return_type,
-                        $this->aliases,
-                        $this->function_template_types + $this->class_template_types
-                    );
-
                     try {
+                        $fixed_type_string = Type::fixUpLocalType(
+                            $docblock_return_type,
+                            $this->aliases,
+                            $this->function_template_types + $this->class_template_types
+                        );
+
                         $storage->return_type = Type::parseString($fixed_type_string);
                         $storage->return_type->setFromDocblock();
 
@@ -1433,11 +1433,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             while (preg_match($reduce_pattern, $path_to_file)) {
                 $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
-            }
-
-            // if the file is already included, we can't check much more
-            if (in_array($path_to_file, get_included_files(), true)) {
-                return;
             }
 
             if ($this->file_path === $path_to_file) {
