@@ -743,6 +743,15 @@ class AnnotationTest extends TestCase
                      */
                     function example(array $x) : void {}',
             ],
+            'allowCapitalisedNamespacedString' => [
+                '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param String $x
+                     */
+                    function example(string $x) : void {}',
+            ],
         ];
     }
 

@@ -456,7 +456,7 @@ abstract class Type
                 continue;
             }
 
-            $return_type_tokens[$i] = self::fixScalarTerms($return_type_token);
+            $return_type_tokens[$i] = $return_type_token = self::fixScalarTerms($return_type_token);
 
             if (isset(self::$PSALM_RESERVED_WORDS[$return_type_token])) {
                 continue;
