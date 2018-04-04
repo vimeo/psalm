@@ -256,13 +256,6 @@ class TypeCombinationTest extends TestCase
                     'string',
                 ],
             ],
-            'combinePossiblyUndefinedKeysInMultipleArrays' => [
-                'array{a?:string, b?:int, c?:string, d?:int}',
-                [
-                    'array{a:string, b?:int}',
-                    'array{c:string, d?:int}',
-                ],
-            ],
         ];
     }
 

@@ -234,6 +234,14 @@ class TypeReconciliationTest extends TestCase
 
             'unionContainsWithstring' => ['string', 'string|false'],
             'unionContainsWithFalse' => ['false', 'string|false'],
+            'objectLikeTypeWithPossiblyUndefinedToGeneric' => [
+                'array{0:array{a:string}, 1:array{c:string, e:string}}',
+                'array<int, array<string, string>>'
+            ],
+            'objectLikeTypeWithPossiblyUndefinedToEmpty' => [
+                'array<empty, empty>',
+                'array{a?:string, b?:string}',
+            ],
         ];
     }
 

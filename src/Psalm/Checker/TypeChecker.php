@@ -350,10 +350,23 @@ class TypeChecker
                 if ($container_type_part instanceof ObjectLike) {
                     $generic_container_type_part = $container_type_part->getGenericArrayType();
 
+                    $container_params_can_be_undefined = (bool) array_reduce(
+                        $container_type_part->properties,
+                        /**
+                         * @param bool $carry
+                         *
+                         * @return bool
+                         */
+                        function ($carry, Type\Union $item) {
+                            return $carry || $item->possibly_undefined;
+                        },
+                        false
+                    );
+
                     if (!$input_type_part instanceof ObjectLike
                         && !$input_type_part->type_params[0]->isMixed()
                         && !($input_type_part->type_params[1]->isEmpty()
-                            && $generic_container_type_part->type_params[1]->possibly_undefined)
+                            && $container_params_can_be_undefined)
                     ) {
                         $all_types_contain = false;
                         $type_coerced = true;
