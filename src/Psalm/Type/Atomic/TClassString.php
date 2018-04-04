@@ -3,6 +3,18 @@ namespace Psalm\Type\Atomic;
 
 class TClassString extends TString
 {
+    /**
+     * @var string
+     */
+    public $class_type;
+
+    /**
+     * @param string $class_type string
+     */
+    public function __construct($class_type = 'object') {
+        $this->class_type = $class_type;
+    }
+
     public function __toString()
     {
         return 'class-string';

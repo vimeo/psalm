@@ -117,6 +117,10 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 foreach ($stmt->class->inferredType->getTypes() as $lhs_type_part) {
                     // this is always OK
                     if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                        if (!isset($stmt->inferredType)) {
+                            $stmt->inferredType = Type::parseString($lhs_type_part->class_type);
+                        }
+
                         continue;
                     }
 
@@ -124,6 +128,8 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         if ($config->allow_string_standin_for_class
                             && !$lhs_type_part instanceof Type\Atomic\TNumericString
                         ) {
+                            $stmt->inferredType = Type::getObject();
+
                             continue;
                         }
 
@@ -137,16 +143,22 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             // fall through
                         }
 
+                        $stmt->inferredType = Type::getObject();
+
                         continue;
                     }
 
                     if ($lhs_type_part instanceof Type\Atomic\TMixed) {
+                        $stmt->inferredType = Type::getObject();
+
                         continue;
                     }
 
                     if ($lhs_type_part instanceof Type\Atomic\TNull
                         && $stmt->class->inferredType->ignore_nullable_issues
                     ) {
+                        $stmt->inferredType = Type::getObject();
+
                         continue;
                     }
 
@@ -160,10 +172,10 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     )) {
                         // fall through
                     }
+
+                    $stmt->inferredType = Type::getObject();
                 }
             }
-
-            $stmt->inferredType = Type::getObject();
 
             return null;
         }

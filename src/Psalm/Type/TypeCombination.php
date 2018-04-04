@@ -11,4 +11,7 @@ class TypeCombination
 
     /** @var array<string|int, Union> */
     public $objectlike_entries = [];
+
+    /** @var array<string, string> */
+    public $class_string_types = [];
 }
