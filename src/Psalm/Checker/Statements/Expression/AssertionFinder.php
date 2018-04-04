@@ -814,6 +814,20 @@ class AssertionFinder
             if ($first_var_name) {
                 $first_arg = $expr->args[1]->value;
 
+                $is_a_prefix = '';
+
+                if (isset($expr->args[2]->value)) {
+                    $third_arg = $expr->args[2]->value;
+
+                    if (!$third_arg instanceof PhpParser\Node\Expr\ConstFetch
+                        || !in_array(strtolower($third_arg->name->parts[0]), ['true', 'false'])
+                    ) {
+                        return $if_types;
+                    }
+
+                    $is_a_prefix = strtolower($third_arg->name->parts[0]) === 'true' ? 'isa-' : '';
+                }
+
                 if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
                     $if_types[$first_var_name] = $prefix . $first_arg->value;
                 } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
@@ -824,11 +838,11 @@ class AssertionFinder
                     $class_node = $first_arg->class;
 
                     if ($class_node->parts === ['static'] || $class_node->parts === ['self']) {
-                        $if_types[$first_var_name] = $prefix . $this_class_name;
+                        $if_types[$first_var_name] = $prefix . $is_a_prefix . $this_class_name;
                     } elseif ($class_node->parts === ['parent']) {
                         // do nothing
                     } else {
-                        $if_types[$first_var_name] = $prefix . ClassLikeChecker::getFQCLNFromNameObject(
+                        $if_types[$first_var_name] = $prefix . $is_a_prefix . ClassLikeChecker::getFQCLNFromNameObject(
                             $class_node,
                             $source->getAliases()
                         );
@@ -1125,16 +1139,6 @@ class AssertionFinder
                     && strtolower($second_arg->name) === 'class'
                 )
             ) {
-                if (isset($stmt->args[2]->value)) {
-                    $third_arg = $stmt->args[2]->value;
-
-                    if (!$third_arg instanceof PhpParser\Node\Expr\ConstFetch
-                        || strtolower($third_arg->name->parts[0]) !== 'false'
-                    ) {
-                        return false;
-                    }
-                }
-
                 return true;
             }
         }

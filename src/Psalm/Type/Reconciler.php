@@ -731,7 +731,26 @@ class Reconciler
             return Type::getMixed();
         }
 
-        $new_type = Type::parseString($new_var_type);
+        if (substr($new_var_type, 0, 4) === 'isa-') {
+            if ($existing_var_type->isMixed()) {
+                return Type::getMixed();
+            }
+
+            $new_var_type = substr($new_var_type, 4);
+
+            $existing_has_object = $existing_var_type->hasObjectType();
+            $existing_has_string = $existing_var_type->hasString();
+
+            if ($existing_has_object && !$existing_has_string) {
+                $new_type = Type::parseString($new_var_type);
+            } elseif ($existing_has_string && !$existing_has_object) {
+                $new_type = Type::getClassString($new_var_type);
+            } else {
+                $new_type = Type::getMixed();
+            }
+        } else {
+            $new_type = Type::parseString($new_var_type);
+        }
 
         if ($existing_var_type->isMixed()) {
             return $new_type;

@@ -11,7 +11,8 @@ class TClassString extends TString
     /**
      * @param string $class_type string
      */
-    public function __construct($class_type = 'object') {
+    public function __construct($class_type = 'object')
+    {
         $this->class_type = $class_type;
     }
 
