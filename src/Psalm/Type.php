@@ -57,6 +57,7 @@ abstract class Type
         'self' => true,
         'static' => true,
         'scalar' => true,
+        'numeric' => true,
     ];
 
     /**
