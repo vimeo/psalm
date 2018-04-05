@@ -157,7 +157,11 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     throw $e;
                 }
 
-                $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId($method_id);
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                if (!$declaring_method_id) {
+                    throw $e;
+                }
 
                 // happens for fake constructors
                 $storage = $codebase->methods->getStorage($declaring_method_id);
