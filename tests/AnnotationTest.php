@@ -1467,6 +1467,12 @@ class AnnotationTest extends TestCase
                     function foo($a) : void {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'badStringVar' => [
+                '<?php
+                    /** @var string; */
+                    $a = "hello";',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

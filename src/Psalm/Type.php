@@ -76,9 +76,11 @@ abstract class Type
     public static function parseString($type_string, $php_compatible = false)
     {
         // remove all unacceptable characters
-        $type_string = preg_replace('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}=:\.,\]\[\(\)\$]/', '', trim($type_string));
-
         $type_string = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $type_string);
+
+        if (preg_match('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}=:\.,\]\[\(\)\$]/', trim($type_string))) {
+            throw new TypeParseTreeException('Unrecognised character in type');
+        }
 
         $type_tokens = self::tokenize($type_string);
 

@@ -400,6 +400,16 @@ class TypeParseTest extends TestCase
      *
      * @return void
      */
+    public function testBadSemicolon()
+    {
+        Type::parseString('string;');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
     public function testDoubleBar()
     {
         Type::parseString('PDO||Closure|numeric');
