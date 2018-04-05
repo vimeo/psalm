@@ -598,10 +598,12 @@ class FunctionCallTest extends TestCase
             ],
             'key' => [
                 '<?php
-                    $a = ["a" => 1, "c" => 3];
-                    $b = key($a);',
+                    $a = ["one" => 1, "two" => 3];
+                    $b = key($a);
+                    $c = $a[$b];',
                 'assertions' => [
                     '$b' => 'false|string',
+                    '$c' => 'int',
                 ],
             ],
         ];

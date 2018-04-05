@@ -304,7 +304,8 @@ class ArrayFetchChecker
                             $project_checker->codebase,
                             $offset_type,
                             $type->type_params[0],
-                            true
+                            true,
+                            $offset_type->ignore_falsable_issues
                         )) {
                             $expected_offset_types[] = (string)$type->type_params[0];
                         } else {
@@ -397,7 +398,8 @@ class ArrayFetchChecker
                         $codebase,
                         $offset_type,
                         $type->getGenericKeyType(),
-                        true
+                        true,
+                        $offset_type->ignore_falsable_issues
                     ) || $in_assignment
                     ) {
                         if ($replacement_type) {
