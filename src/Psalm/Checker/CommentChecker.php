@@ -70,11 +70,15 @@ class CommentChecker
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
 
-                    $var_type_string = Type::fixUpLocalType(
-                        $line_parts[0],
-                        $aliases,
-                        $template_types
-                    );
+                    try {
+                        $var_type_string = Type::fixUpLocalType(
+                            $line_parts[0],
+                            $aliases,
+                            $template_types
+                        );
+                    } catch (TypeParseTreeException $e) {
+                        throw new DocblockParseException($line_parts[0] . ' is not a valid type');
+                    }
 
                     $original_type = $line_parts[0];
 
