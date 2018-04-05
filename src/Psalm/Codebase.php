@@ -13,7 +13,7 @@ use Psalm\Storage\FunctionLikeStorage;
 class Codebase
 {
     /**
-     * @var Config;
+     * @var Config
      */
     public $config;
 
