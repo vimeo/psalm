@@ -829,7 +829,7 @@ class AssertionFinder
                 }
 
                 if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
-                    $if_types[$first_var_name] = $prefix . $first_arg->value;
+                    $if_types[$first_var_name] = $prefix . $is_a_prefix . $first_arg->value;
                 } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->class instanceof PhpParser\Node\Name
                     && is_string($first_arg->name)
