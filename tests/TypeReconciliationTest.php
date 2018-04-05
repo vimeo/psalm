@@ -202,11 +202,13 @@ class TypeReconciliationTest extends TestCase
             'nullWithMyObjectPipeNull' => ['null', 'null', 'MyObject|null'],
             'nullWithMixed' => ['null', 'null', 'mixed'],
 
-            'emptyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
-            'emptyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
-            'emptyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
-            'emptyWithMixed' => ['mixed', 'falsy', 'mixed'],
-            'emptyWithBool' => ['false', 'falsy', 'bool'],
+            'falsyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
+            'falsyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
+            'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
+            'falsyWithMixed' => ['mixed', 'falsy', 'mixed'],
+            'falsyWithBool' => ['false', 'falsy', 'bool'],
+            'falsyWithStringOrNull' => ['string|null', 'falsy', 'string|null'],
+            'falsyWithScalarOrNull' => ['scalar', 'falsy', 'scalar'],
 
             'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
             'notMyObjectWithMyObjectPipeNull' => ['null', '!MyObject', 'MyObject|null'],
@@ -760,6 +762,18 @@ class TypeReconciliationTest extends TestCase
                     }
 
                     function takesNullableString(?string $s) : void {}',
+            ],
+            'falsyScalar' => [
+                '<?php
+                    /**
+                     * @param scalar|null $value
+                     */
+                    function Foo($value = null) : bool {
+                      if (!$value) {
+                        return true;
+                      }
+                      return false;
+                    }',
             ],
         ];
     }

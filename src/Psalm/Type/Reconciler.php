@@ -531,7 +531,9 @@ class Reconciler
                 return $existing_var_type;
             }
 
-            $did_remove_type = $existing_var_type->hasString() || $existing_var_type->hasNumericType();
+            $did_remove_type = $existing_var_type->hasString()
+                || $existing_var_type->hasScalar()
+                || $existing_var_type->hasNumericType();
 
             if ($existing_var_type->hasType('bool')) {
                 $did_remove_type = true;

@@ -411,6 +411,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasScalar()
+    {
+        return isset($this->types['scalar']);
+    }
+
+    /**
+     * @return bool
+     */
     public function hasScalarType()
     {
         return isset($this->types['int']) ||
