@@ -165,6 +165,15 @@ function reset(array &$arr) {}
 function end(array &$arr) {}
 
 /**
+ * @template TKey
+ *
+ * @param array<TKey, mixed> $arr
+ * @return TKey|false
+ * @psalm-ignore-falsable-return
+ */
+function key($arr) {}
+
+/**
  * @template T
  *
  * @param mixed           $needle
