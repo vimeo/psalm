@@ -55,8 +55,6 @@ class FunctionChecker extends FunctionLikeChecker
         if ($call_args) {
             if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'], true)) {
                 if (isset($call_args[2]->value->inferredType)) {
-
-                    /** @var Type\Union */
                     $subject_type = $call_args[2]->value->inferredType;
 
                     if (!$subject_type->hasString() && $subject_type->hasArray()) {
@@ -84,7 +82,6 @@ class FunctionChecker extends FunctionLikeChecker
 
             if ($call_map_key === 'var_export') {
                 if (isset($call_args[1]->value->inferredType)) {
-                    /** @var Type\Union */
                     $subject_type = $call_args[1]->value->inferredType;
 
                     if ((string) $subject_type === 'true') {

@@ -700,6 +700,16 @@ class ExpressionChecker
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->name)) {
+            $object_id = self::getArrayVarId($stmt->var, $this_class_name, $source);
+
+            if (!$object_id) {
+                return null;
+            }
+
+            return $object_id . '->' . $stmt->name;
+        }
+
         return self::getVarId($stmt, $this_class_name, $source);
     }
 

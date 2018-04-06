@@ -53,13 +53,13 @@ class PropertyFetchChecker
         $project_checker = $statements_checker->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
-        $stmt_var_id = ExpressionChecker::getVarId(
+        $stmt_var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
             $statements_checker
         );
 
-        $var_id = ExpressionChecker::getVarId(
+        $var_id = ExpressionChecker::getArrayVarId(
             $stmt,
             $statements_checker->getFQCLN(),
             $statements_checker

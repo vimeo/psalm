@@ -254,7 +254,6 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
 
                     if ($fq_class_name === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
-                        /** @var Type\Union */
                         $first_arg_type = $stmt->args[0]->value->inferredType;
 
                         if ($first_arg_type->hasGeneric()) {
