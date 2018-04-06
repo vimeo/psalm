@@ -337,7 +337,7 @@ class ArrayFetchChecker
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
-                            return Type::getMixed();
+                            return Type::getMixed(true);
                         }
 
                         if (!IssueBuffer::isRecording()) {

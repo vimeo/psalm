@@ -704,6 +704,8 @@ class ClassLikes
                 && (substr($method_name, 0, 2) !== '__' || $method_name === '__construct')
                 && $method_storage->location
             ) {
+                $method_location = $method_storage->location;
+
                 $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 
                 if ($method_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
@@ -748,7 +750,7 @@ class ClassLikes
                     if (IssueBuffer::accepts(
                         new UnusedMethod(
                             'Method ' . $method_id . ' is never used',
-                            $method_storage->location,
+                            $method_location,
                             $method_id
                         )
                     )) {

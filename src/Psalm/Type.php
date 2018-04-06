@@ -580,11 +580,13 @@ abstract class Type
     }
 
     /**
+     * @param bool $from_isset
+     *
      * @return Type\Union
      */
-    public static function getMixed()
+    public static function getMixed($from_isset = false)
     {
-        $type = new TMixed;
+        $type = new TMixed($from_isset);
 
         return new Union([$type]);
     }
@@ -707,7 +709,7 @@ abstract class Type
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
-        if ($type_1->isMixed() || $type_2->isMixed()) {
+        if ($type_1->isMixedNotFromIsset() || $type_2->isMixedNotFromIsset()) {
             $combined_type = Type::getMixed();
         } else {
              $both_failed_reconciliation = false;
@@ -795,10 +797,24 @@ abstract class Type
 
         $from_docblock = false;
 
+        $has_null = false;
+        $has_mixed = false;
+        $has_non_mixed = false;
+
         foreach ($types as $type) {
             $from_docblock = $from_docblock || $type->from_docblock;
 
             $result = self::scrapeTypeProperties($type, $combination);
+
+            if ($type instanceof TNull) {
+                $has_null = true;
+            }
+
+            if ($type instanceof TMixed) {
+                $has_mixed = true;
+            } else {
+                $has_non_mixed = true;
+            }
 
             if ($result) {
                 if ($from_docblock) {
@@ -807,6 +823,14 @@ abstract class Type
 
                 return $result;
             }
+        }
+
+        if ($has_null && $has_mixed) {
+            return Type::getMixed();
+        }
+
+        if (!$has_non_mixed) {
+            return Type::getMixed(true);
         }
 
         if (count($combination->value_types) === 1
@@ -946,6 +970,10 @@ abstract class Type
     public static function scrapeTypeProperties(Atomic $type, TypeCombination $combination)
     {
         if ($type instanceof TMixed) {
+            if ($type->from_isset) {
+                return null;
+            }
+
             return Type::getMixed();
         }
 

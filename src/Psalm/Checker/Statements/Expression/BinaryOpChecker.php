@@ -505,7 +505,7 @@ class BinaryOpChecker
             && $context
             && $left_type
             && $right_type
-            && ($left_type->isMixed() || $right_type->isMixed())
+            && ($left_type->isMixedNotFromIsset() || $right_type->isMixedNotFromIsset())
             && ($left_type->hasNumericType() || $right_type->hasNumericType())
         ) {
             $source_checker = $statements_source->getSource();
@@ -660,7 +660,10 @@ class BinaryOpChecker
                             }
                         }
 
-                        $result_type = Type::getMixed();
+                        $from_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_isset)
+                            && (!($right_type_part instanceof TMixed) || $right_type_part->from_isset);
+
+                        $result_type = Type::getMixed($from_isset);
 
                         return;
                     }

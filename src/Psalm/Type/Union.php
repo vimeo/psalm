@@ -442,6 +442,17 @@ class Union
     /**
      * @return bool
      */
+    public function isMixedNotFromIsset()
+    {
+        /**
+         * @psalm-suppress UndefinedPropertyFetch
+         */
+        return isset($this->types['mixed']) && !$this->types['mixed']->from_isset;
+    }
+
+    /**
+     * @return bool
+     */
     public function isNull()
     {
         return count($this->types) === 1 && isset($this->types['null']);

@@ -584,7 +584,6 @@ class AlgebraChecker
             return [new Clause([], true)];
         }
 
-        /** @var array<string, array<string>> */
         $possibilities = [];
 
         if ($left_clauses[0]->wedge && $right_clauses[0]->wedge) {

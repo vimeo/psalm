@@ -256,7 +256,16 @@ class FunctionChecker extends FunctionLikeChecker
 
                                 $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
                             } else {
-                                return Type::getArray();
+                                if ($unpacked_type_part instanceof Type\Atomic\TMixed
+                                    && $unpacked_type_part->from_isset
+                                ) {
+                                    $unpacked_type_part = new Type\Atomic\TArray([
+                                        Type::getMixed(),
+                                        Type::getMixed(true)
+                                    ]);
+                                } else {
+                                    return Type::getArray();
+                                }
                             }
                         } elseif (!$unpacked_type_part->type_params[0]->isEmpty()) {
                             $generic_properties = null;

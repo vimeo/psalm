@@ -3,6 +3,17 @@ namespace Psalm\Type\Atomic;
 
 class TMixed extends \Psalm\Type\Atomic
 {
+    /** @var bool */
+    public $from_isset = false;
+
+    /**
+     * @param bool $from_isset
+     */
+    public function __construct($from_isset = false)
+    {
+        $this->from_isset = $from_isset;
+    }
+
     public function __toString()
     {
         return 'mixed';

@@ -174,11 +174,15 @@ class Reconciler
         $codebase = $project_checker->codebase;
 
         if ($existing_var_type === null) {
-            if ($new_var_type === '^isset' || $new_var_type === '^!empty') {
-                return Type::getMixed();
+            if ($new_var_type === '^isset'
+                || $new_var_type === '^!empty'
+                || $new_var_type === 'isset'
+                || $new_var_type === '!empty'
+            ) {
+                return Type::getMixed(true);
             }
 
-            if ($new_var_type === 'isset' || $new_var_type === '!empty' || $new_var_type === 'array-key-exists') {
+            if ($new_var_type === 'array-key-exists') {
                 return Type::getMixed();
             }
 
@@ -487,6 +491,11 @@ class Reconciler
                 // @todo - I think there's a better way to handle this, but for the moment
                 // mixed will have to do.
                 return Type::getMixed();
+            }
+
+            if ($existing_var_type->hasType('empty')) {
+                $existing_var_type->removeType('empty');
+                $existing_var_type->addType(new TMixed(true));
             }
 
             $existing_var_type->possibly_undefined = false;

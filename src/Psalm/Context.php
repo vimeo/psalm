@@ -567,7 +567,7 @@ class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
-            unset($this->vars_in_scope[$var_id]);
+            unset($this->vars_in_scope[$var_id], $this->vars_possibly_in_scope[$var_id]);
         }
 
         $clauses_to_keep = [];
