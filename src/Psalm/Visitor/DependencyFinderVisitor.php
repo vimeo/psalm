@@ -20,6 +20,7 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
 use Psalm\FunctionLikeParameter;
+use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MisplacedRequiredParam;
@@ -159,6 +160,30 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $fq_classlike_name = ClassChecker::getAnonymousClassName($node, $this->file_path);
             } else {
                 $fq_classlike_name = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name;
+
+                if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
+                    && !$this->codebase->register_global_functions
+                ) {
+                    $other_file_path = null;
+
+                    try {
+                        $other_file_path = $this->codebase->scanner->getClassLikeFilePath($fq_classlike_name);
+                    } catch (\UnexpectedValueException $e) {
+                        // do nothing
+                    }
+
+                    if (IssueBuffer::accepts(
+                        new DuplicateClass(
+                            'Class ' . $fq_classlike_name . ' has already been defined'
+                                . ($other_file_path ? ' in ' . $other_file_path : ''),
+                            new CodeLocation($this->file_scanner, $node, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                }
             }
 
             $fq_classlike_name_lc = strtolower($fq_classlike_name);

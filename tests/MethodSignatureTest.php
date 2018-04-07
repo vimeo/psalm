@@ -265,12 +265,12 @@ class MethodSignatureTest extends TestCase
             ],
             'clashWithCallMapClass' => [
                 '<?php
-                    class Event {}
+                    class HaruDestination {}
                     class AClass
                     {
-                        public function get(): Event
+                        public function get(): HaruDestination
                         {
-                            return new Event;
+                            return new HaruDestination;
                         }
                     }',
             ],
