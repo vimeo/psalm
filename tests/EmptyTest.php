@@ -155,7 +155,7 @@ class EmptyTest extends TestCase
                       }
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
             'emptyObjectLike' => [
                 '<?php

@@ -42,55 +42,6 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
     ) {
         $function = $stmt->name;
 
-        if ($function instanceof PhpParser\Node\Name) {
-            $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
-
-            if ($function->parts === ['method_exists']) {
-                $context->check_methods = false;
-            } elseif ($function->parts === ['class_exists']) {
-                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->addPhantomClass($first_arg->value->value);
-                } else {
-                    $context->check_classes = false;
-                }
-            } elseif ($function->parts === ['extension_loaded']) {
-                $context->check_classes = false;
-            } elseif ($function->parts === ['function_exists']) {
-                $context->check_functions = false;
-            } elseif ($function->parts === ['is_callable']) {
-                $context->check_methods = false;
-                $context->check_functions = false;
-            } elseif ($function->parts === ['defined']) {
-                $context->check_consts = false;
-            } elseif ($function->parts === ['extract']) {
-                $context->check_variables = false;
-            } elseif ($function->parts === ['var_dump'] || $function->parts === ['shell_exec']) {
-                if (IssueBuffer::accepts(
-                    new ForbiddenCode(
-                        'Unsafe ' . implode('', $function->parts),
-                        new CodeLocation($statements_checker->getSource(), $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } elseif ($function->parts === ['define']) {
-                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $second_arg = $stmt->args[1];
-                    ExpressionChecker::analyze($statements_checker, $second_arg->value, $context);
-                    $const_name = $first_arg->value->value;
-
-                    $statements_checker->setConstType(
-                        $const_name,
-                        isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed(),
-                        $context
-                    );
-                } else {
-                    $context->check_consts = false;
-                }
-            }
-        }
-
         $function_id = null;
         $function_params = null;
         $in_call_map = false;
@@ -459,6 +410,55 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 $context,
                 $statements_checker
             );
+        }
+
+        if ($function instanceof PhpParser\Node\Name) {
+            $first_arg = isset($stmt->args[0]) ? $stmt->args[0] : null;
+
+            if ($function->parts === ['method_exists']) {
+                $context->check_methods = false;
+            } elseif ($function->parts === ['class_exists']) {
+                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $context->addPhantomClass($first_arg->value->value);
+                } else {
+                    $context->check_classes = false;
+                }
+            } elseif ($function->parts === ['extension_loaded']) {
+                $context->check_classes = false;
+            } elseif ($function->parts === ['function_exists']) {
+                $context->check_functions = false;
+            } elseif ($function->parts === ['is_callable']) {
+                $context->check_methods = false;
+                $context->check_functions = false;
+            } elseif ($function->parts === ['defined']) {
+                $context->check_consts = false;
+            } elseif ($function->parts === ['extract']) {
+                $context->check_variables = false;
+            } elseif ($function->parts === ['var_dump'] || $function->parts === ['shell_exec']) {
+                if (IssueBuffer::accepts(
+                    new ForbiddenCode(
+                        'Unsafe ' . implode('', $function->parts),
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } elseif ($function->parts === ['define']) {
+                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                    $second_arg = $stmt->args[1];
+                    ExpressionChecker::analyze($statements_checker, $second_arg->value, $context);
+                    $const_name = $first_arg->value->value;
+
+                    $statements_checker->setConstType(
+                        $const_name,
+                        isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed(),
+                        $context
+                    );
+                } else {
+                    $context->check_consts = false;
+                }
+            }
         }
 
         return null;

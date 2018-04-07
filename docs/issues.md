@@ -200,7 +200,7 @@ echo false . 'hello';
 Emitted when Psalm encounters a var_dump, exec or similar expression that may make your code more vulnerable
 
 ```php
-var_dump($foo);
+var_dump("bah");
 ```
 
 ### ImplementedReturnTypeMismatch

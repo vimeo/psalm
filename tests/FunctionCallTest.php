@@ -254,6 +254,7 @@ class FunctionCallTest extends TestCase
                 'error_levels' => [
                     'MixedAssignment',
                     'MixedArrayAccess',
+                    'MixedArgument',
                 ],
             ],
             'arrayMergeObjectLike' => [

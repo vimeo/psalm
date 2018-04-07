@@ -155,7 +155,7 @@ class Reflection
         }
 
         $reflection_methods = $reflected_class->getMethods(
-            \ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED
+            (int) (\ReflectionMethod::IS_PUBLIC | \ReflectionMethod::IS_PROTECTED)
         );
 
         if ($class_name_lower === 'generator') {

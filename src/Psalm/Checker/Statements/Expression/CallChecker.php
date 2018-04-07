@@ -762,6 +762,21 @@ class CallChecker
                         }
                     }
                 }
+            } elseif ($function_param) {
+                $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+
+                if ($function_param->type && !$function_param->type->isMixed()) {
+                    if (IssueBuffer::accepts(
+                        new MixedArgument(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                . ' cannot be mixed, expecting ' . $function_param->type,
+                            new CodeLocation($statements_checker->getSource(), $arg->value)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
             }
         }
 

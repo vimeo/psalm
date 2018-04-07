@@ -69,6 +69,8 @@ class FunctionChecker extends FunctionLikeChecker
                     }
 
                     return $return_type;
+                } else {
+                    return Type::getMixed();
                 }
             }
 
