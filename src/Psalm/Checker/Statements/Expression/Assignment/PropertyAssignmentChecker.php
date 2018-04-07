@@ -15,6 +15,7 @@ use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\LoopInvalidation;
+use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NoInterfaceProperties;
@@ -381,6 +382,18 @@ class PropertyAssignmentChecker
                         $lhs_type_part->value,
                         $lhs_type_part->value
                     );
+
+                    if (!$class_property_type->isMixed() && $assignment_value_type->isMixed()) {
+                        if (IssueBuffer::accepts(
+                            new MixedAssignment(
+                                'Cannot assign ' . $var_id . ' to a mixed type',
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
                 }
 
                 $class_property_types[] = $class_property_type;

@@ -828,6 +828,23 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'allowMixedAssignmetWhenDesired' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var mixed
+                         */
+                        private $mixed;
+
+                        /**
+                         * @param mixed $value
+                         */
+                        public function setMixed($value): void
+                        {
+                            $this->mixed = $value;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1269,6 +1286,24 @@ class PropertyTypeTest extends TestCase
                         public $a = "hello";
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'prohibitMixedAssignmentNormally' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var string
+                         */
+                        private $mixed;
+
+                        /**
+                         * @param mixed $value
+                         */
+                        public function setMixed($value): void
+                        {
+                            $this->mixed = $value;
+                        }
+                    }',
+                'error_message' => 'MixedAssignment',
             ],
         ];
     }

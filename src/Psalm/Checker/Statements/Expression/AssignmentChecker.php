@@ -172,14 +172,16 @@ class AssignmentChecker
         if ($assign_value_type->isMixed()) {
             $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
-            if (IssueBuffer::accepts(
-                new MixedAssignment(
-                    'Cannot assign ' . $var_id . ' to a mixed type',
-                    new CodeLocation($statements_checker->getSource(), $assign_var)
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                // fall through
+            if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+                if (IssueBuffer::accepts(
+                    new MixedAssignment(
+                        'Cannot assign ' . $var_id . ' to a mixed type',
+                        new CodeLocation($statements_checker->getSource(), $assign_var)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         } else {
             $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
