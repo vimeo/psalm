@@ -20,7 +20,9 @@ class TCallable extends \Psalm\Type\Atomic
         }
 
         if ($this->return_type !== null) {
-            $return_type_string = ' : ' . $this->return_type;
+            $return_type_multiple = count($this->return_type->getTypes()) > 1;
+            $return_type_string = ':' . ($return_type_multiple ? '(' : '')
+                . $this->return_type . ($return_type_multiple ? ')' : '');
         }
 
         return 'callable' . $param_string . $return_type_string;

@@ -616,6 +616,17 @@ class FunctionCallTest extends TestCase
     public function providerFileCheckerInvalidCodeParse()
     {
         return [
+            'arrayFilterWithoutTypes' => [
+                '<?php
+                    $e = array_filter(
+                        ["a" => 5, "b" => 12, "c" => null],
+                        function(?int $i) {
+                            return $_GET["a"];
+                        }
+                    );',
+                'error_message' => 'MixedTypeCoercion',
+                'error_levels' => ['MissingClosureParamType', 'MissingClosureReturnType'],
+            ],
             'invalidScalarArgument' => [
                 '<?php
                     function fooFoo(int $a): void {}
