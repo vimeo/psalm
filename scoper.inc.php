@@ -1,34 +1,6 @@
 <?php
 
-use Isolated\Symfony\Component\Finder\Finder;
-
 return [
-    'finders' => [
-        Finder::create()->files()->in('src'),
-        Finder::create()->files()->in('assets'),
-        Finder::create()
-            ->files()
-            ->ignoreVCS(true)
-            ->notName('/LICENSE|.*\\.md|.*\\.dist|Makefile|composer\\.json|composer\\.lock/')
-            ->exclude([
-                'doc',
-                'test',
-                'test_old',
-                'tests',
-                'Tests',
-                'vendor-bin',
-            ])
-            ->in('vendor'),
-        Finder::create()->append([
-            'composer.json',
-            'composer.lock',
-            'config.xsd',
-            'psalm'
-        ]),
-    ],
-    'whitelist' => [
-
-    ],
     'patchers' => [
         function ($filePath, $prefix, $contents) {
             //
