@@ -322,7 +322,7 @@ class ParseTree
                             break;
 
                         case '(':
-                            if (!in_array($type_token, ['closure', 'callable', '\closure'])) {
+                            if (!in_array(strtolower($type_token), ['closure', 'callable', '\closure'])) {
                                 throw new TypeParseTreeException(
                                     'Bracket must be preceded by “Closure” or “callable”'
                                 );

@@ -597,6 +597,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $function_id = strtolower($cased_function_id);
 
             if ($this->codebase->register_global_functions) {
+
                 $storage = new FunctionLikeStorage();
                 $this->codebase->functions->addStubbedFunction($function_id, $storage);
             } else {

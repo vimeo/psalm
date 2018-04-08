@@ -93,4 +93,20 @@ trait CallableTrait
 
         return 'callable' . $param_string . $return_type_string;
     }
+
+    public function getId()
+    {
+        $param_string = '';
+        $return_type_string = '';
+
+        if ($this->params !== null) {
+            $param_string = '(' . implode(', ', $this->params) . ')';
+        }
+
+        if ($this->return_type !== null) {
+            $return_type_string = ' : ' . $this->return_type;
+        }
+
+        return $this->value . $param_string . $return_type_string;
+    }
 }

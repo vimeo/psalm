@@ -292,7 +292,7 @@ abstract class Type
         if ($parse_tree instanceof ParseTree\CallableWithReturnTypeTree) {
             $callable_type = self::getTypeFromTree($parse_tree->children[0], false);
 
-            if (!$callable_type instanceof TCallable) {
+            if (!$callable_type instanceof TCallable && !$callable_type instanceof Type\Atomic\Fn) {
                 throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
             }
 
@@ -336,7 +336,7 @@ abstract class Type
                 $parse_tree->children
             );
 
-            if (in_array($parse_tree->value, ['closure', '\closure'], false)) {
+            if (in_array(strtolower($parse_tree->value), ['closure', '\closure'], true)) {
                 return new Type\Atomic\Fn('Closure', $params);
             }
 
