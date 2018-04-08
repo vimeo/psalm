@@ -298,6 +298,7 @@ class CallableTest extends TestCase
                     /**
                      * @param Closure(int):int $f
                      * @param Closure(int):int $g
+                     *
                      * @return Closure(int):int
                      */
                     function foo(Closure $f, Closure $g) : Closure {
@@ -305,6 +306,112 @@ class CallableTest extends TestCase
                             return $f($g($x));
                         }
                     }'
+            ],
+            'returnsTypedClosureWithClasses' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C):A
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (C $x) use ($f, $g) : A {
+                            return $f($g($x));
+                        }
+                    }
+
+                    $a = foo(
+                        function(B $b) : A { return new A;},
+                        function(C $c) : B { return new B;}
+                    )(new C);',
+                'assertions' => [
+                    '$a' => 'A',
+                ],
+            ],
+            'returnsTypedClosureWithSubclassParam' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class C2 extends C {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C):A
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (C2 $x) use ($f, $g) : A {
+                            return $f($g($x));
+                        }
+                    }
+
+                    $a = foo(
+                        function(B $b) : A { return new A;},
+                        function(C $c) : B { return new B;}
+                    )(new C2);',
+                'assertions' => [
+                    '$a' => 'A',
+                ],
+            ],
+            'returnsTypedClosureWithParentReturn' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class A2 extends A {}
+
+                    /**
+                     * @param Closure(B):A2 $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C):A
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (C $x) use ($f, $g) : A2 {
+                            return $f($g($x));
+                        }
+                    }
+
+                    $a = foo(
+                        function(B $b) : A2 { return new A2;},
+                        function(C $c) : B { return new B;}
+                    )(new C);',
+                'assertions' => [
+                    '$a' => 'A',
+                ],
+            ],
+            'returnsTypedCallableFromClosure' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return callable(C):A
+                     */
+                    function foo(Closure $f, Closure $g) : callable {
+                        return function (C $x) use ($f, $g) : A {
+                            return $f($g($x));
+                        }
+                    }
+
+                    $a = foo(
+                        function(B $b) : A { return new A;},
+                        function(C $c) : B { return new B;}
+                    )(new C);',
+                'assertions' => [
+                    '$a' => 'A',
+                ],
             ],
         ];
     }
@@ -446,6 +553,155 @@ class CallableTest extends TestCase
 
                     bar($add_one);',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'returnsTypedClosureWithBadReturnType' => [
+                '<?php
+                    /**
+                     * @param Closure(int):int $f
+                     * @param Closure(int):int $g
+                     *
+                     * @return Closure(int):string
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (int $x) use ($f, $g) : int {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'returnsTypedCallableWithBadReturnType' => [
+                '<?php
+                    /**
+                     * @param Closure(int):int $f
+                     * @param Closure(int):int $g
+                     *
+                     * @return callable(int):string
+                     */
+                    function foo(Closure $f, Closure $g) : callable {
+                        return function (int $x) use ($f, $g) : int {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'returnsTypedClosureWithBadParamType' => [
+                '<?php
+                    /**
+                     * @param Closure(int):int $f
+                     * @param Closure(int):int $g
+                     *
+                     * @return Closure(string):int
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (int $x) use ($f, $g) : int {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'returnsTypedCallableWithBadParamType' => [
+                '<?php
+                    /**
+                     * @param Closure(int):int $f
+                     * @param Closure(int):int $g
+                     *
+                     * @return callable(string):int
+                     */
+                    function foo(Closure $f, Closure $g) : callable {
+                        return function (int $x) use ($f, $g) : int {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'returnsTypedClosureWithBadCall' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class D {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C):A
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (int $x) use ($f, $g) : int {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'returnsTypedClosureWithSubclassParam' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class C2 extends C {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C2):A
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (C $x) use ($f, $g) : A {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'returnsTypedClosureWithSubclassReturn' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+                    class A2 extends A {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C):A2
+                     */
+                    function foo(Closure $f, Closure $g) : Closure {
+                        return function (C $x) use ($f, $g) : A {
+                            return $f($g($x));
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'returnsTypedClosureFromCallable' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    class C {}
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return callable(C):A
+                     */
+                    function foo(Closure $f, Closure $g) : callable {
+                        return function (C $x) use ($f, $g) : A {
+                            return $f($g($x));
+                        }
+                    }
+
+                    /**
+                     * @param Closure(B):A $f
+                     * @param Closure(C):B $g
+                     *
+                     * @return Closure(C):A
+                     */
+                    function bar(Closure $f, Closure $g) : Closure {
+                        return foo($f, $g);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }
