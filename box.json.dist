@@ -1,23 +1,20 @@
 {
-    "alias": "psalm.phar",
-    "base-path": "build/psalm",
-    "main" : "./psalm",
-    "output" : "../../build/psalm.phar",
+    "main" : "psalm",
+    "output" : "bin/psalm.phar",
     "directories" : [
         "assets",
+        "src",
         "vendor"
     ],
-    "finder": [
-        {
-            "in" : "src"
-        }
-    ],
     "files" : [
+        "composer.json",
+        "composer.lock",
         "config.xsd"
     ],
     "intercept" : false,
-    "compactors" : [],
+    "compactors" : [
+        "KevinGH\\Box\\Compactor\\PhpScoper"
+    ],
     "chmod" : "0755",
-    "shebang" : "#!/usr/bin/env php",
-    "stub" : true
+    "compression": "GZ"
 }
