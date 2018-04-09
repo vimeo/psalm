@@ -1025,6 +1025,7 @@ class ExpressionChecker
         Context $context
     ) {
         self::analyzeIssetVar($statements_checker, $stmt->expr, $context);
+        $stmt->inferredType = Type::getBool();
     }
 
     /**

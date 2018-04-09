@@ -173,6 +173,11 @@ class EmptyTest extends TestCase
                         if (empty($item["hide"]) || $item["hide"] === 3) {}
                     }',
             ],
+            'alwaysBoolResult' => [
+                '<?php
+                    function takesBool(bool $p): void {}
+                    takesBool(empty($q));'
+            ],
         ];
     }
 }
