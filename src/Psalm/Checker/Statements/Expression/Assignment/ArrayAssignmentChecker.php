@@ -240,6 +240,7 @@ class ArrayAssignmentChecker
             }
 
             $new_child_type->removeType('null');
+            $new_child_type->possibly_undefined = false;
 
             if (!$child_stmt->inferredType->hasObjectType()) {
                 $child_stmt->inferredType = $new_child_type;
