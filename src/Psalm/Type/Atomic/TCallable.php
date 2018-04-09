@@ -10,24 +10,6 @@ class TCallable extends \Psalm\Type\Atomic
      */
     public $value;
 
-    public function __toString()
-    {
-        $param_string = '';
-        $return_type_string = '';
-
-        if ($this->params !== null) {
-            $param_string = '(' . implode(', ', $this->params) . ')';
-        }
-
-        if ($this->return_type !== null) {
-            $return_type_multiple = count($this->return_type->getTypes()) > 1;
-            $return_type_string = ':' . ($return_type_multiple ? '(' : '')
-                . $this->return_type . ($return_type_multiple ? ')' : '');
-        }
-
-        return 'callable' . $param_string . $return_type_string;
-    }
-
     /**
      * @return string
      */

@@ -113,4 +113,9 @@ trait CallableTrait
 
         return $this->value . $param_string . $return_type_string;
     }
+
+    public function __toString()
+    {
+        return $this->getId();
+    }
 }
