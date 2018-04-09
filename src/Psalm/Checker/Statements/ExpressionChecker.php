@@ -1096,6 +1096,8 @@ class ExpressionChecker
 
             self::analyzeIssetVar($statements_checker, $isset_var, $context);
         }
+
+        $stmt->inferredType = Type::getBool();
     }
 
     /**
