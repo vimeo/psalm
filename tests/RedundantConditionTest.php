@@ -333,6 +333,18 @@ class RedundantConditionTest extends TestCase
                 'assignments' => [],
                 'error_levels' => ['MixedAssignment', 'MissingReturnType', 'MixedArrayAccess'],
             ],
+            'nullCoalescePossiblyUndefined' => [
+                '<?php
+                    if (rand(0,1)) {
+                        $options = ["option" => true];
+                    }
+
+                    $option = $options["option"] ?? false;
+
+                    if ($option) {}',
+                'assignments' => [],
+                'error_levels' => ['MixedAssignment'],
+            ],
         ];
     }
 

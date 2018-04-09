@@ -179,7 +179,7 @@ class Reconciler
                 || $new_var_type === 'isset'
                 || $new_var_type === '!empty'
             ) {
-                return Type::getMixed(true);
+                return Type::getMixed();
             }
 
             if ($new_var_type === 'array-key-exists') {
