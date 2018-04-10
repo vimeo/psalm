@@ -413,6 +413,24 @@ class CallableTest extends TestCase
                     '$a' => 'A',
                 ],
             ],
+            'inferClosureTypeWithTypehint' => [
+                '<?php
+                    $adder1 = function(int $i) : callable {
+                      return function(int $j) use ($i) : int {
+                        return $i + $j;
+                      };
+                    };
+                    $adder2 = function(int $i) {
+                      return function(int $j) use ($i) : int {
+                        return $i + $j;
+                      };
+                    };',
+                'assertions' => [
+                    '$adder1' => 'Closure(int):Closure(int):int',
+                    '$adder2' => 'Closure(int):Closure(int):int',
+                ],
+                'error_levels' => ['MissingClosureReturnType'],
+            ],
         ];
     }
 

@@ -481,7 +481,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $storage->return_type_location
             );
 
-            if (!$storage->return_type || $storage->return_type->isMixed()) {
+            if ($this->function->inferredType
+                && (!$storage->return_type
+                    || $storage->return_type->isMixed()
+                    || TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $this->function->inferredType,
+                        $storage->return_type
+                    )
+                )
+            ) {
                 $closure_yield_types = [];
                 $closure_return_types = EffectsAnalyser::getReturnTypes(
                     $this->function->stmts,
