@@ -143,6 +143,24 @@ class IfChecker
             $more_cond_assigned_var_ids
         );
 
+        $newish_var_ids = array_map(
+            /**
+             * @param mixed $_
+             *
+             * @return true
+             */
+            function ($_) {
+                return true;
+            },
+            array_diff_key(
+                $if_context->vars_in_scope,
+                $pre_condition_vars_in_scope,
+                $cond_referenced_var_ids,
+                $cond_assigned_var_ids
+            )
+        );
+
+
         // get all the var ids that were referened in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
 
@@ -159,6 +177,8 @@ class IfChecker
             },
             ARRAY_FILTER_USE_KEY
         );
+
+        $cond_referenced_var_ids = array_merge($newish_var_ids, $cond_referenced_var_ids);
 
         $if_context->inside_conditional = false;
 

@@ -84,7 +84,7 @@ class ArrayFetchChecker
         }
 
         if ($keyed_array_var_id
-            && isset($context->vars_in_scope[$keyed_array_var_id])
+            && $context->hasVariable($keyed_array_var_id)
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
         ) {
             $stmt->inferredType = clone $context->vars_in_scope[$keyed_array_var_id];
@@ -159,6 +159,14 @@ class ArrayFetchChecker
                     }
                 }
             }
+        }
+
+        if ($keyed_array_var_id) {
+            $context->vars_in_scope[$keyed_array_var_id] = $stmt->inferredType;
+            $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
+
+            // reference the variable too
+            $context->hasVariable($keyed_array_var_id, $statements_checker);
         }
 
         return null;
