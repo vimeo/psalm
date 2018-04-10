@@ -481,31 +481,35 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $storage->return_type_location
             );
 
-            if ($this->function->inferredType
-                && (!$storage->return_type
+            $closure_yield_types = [];
+
+            $closure_return_types = EffectsAnalyser::getReturnTypes(
+                $this->function->stmts,
+                $closure_yield_types,
+                $ignore_nullable_issues,
+                $ignore_falsable_issues,
+                true
+            );
+
+            if ($closure_return_types) {
+                $closure_return_type = new Type\Union($closure_return_types);
+
+                if (!$storage->return_type
                     || $storage->return_type->isMixed()
                     || TypeChecker::isContainedBy(
                         $project_checker->codebase,
-                        $this->function->inferredType,
+                        $closure_return_type,
                         $storage->return_type
                     )
-                )
-            ) {
-                $closure_yield_types = [];
-                $closure_return_types = EffectsAnalyser::getReturnTypes(
-                    $this->function->stmts,
-                    $closure_yield_types,
-                    $ignore_nullable_issues,
-                    $ignore_falsable_issues,
-                    true
-                );
-
-                if ($closure_return_types && $this->function->inferredType) {
-                    /** @var Type\Atomic\Fn */
-                    $closure_atomic = $this->function->inferredType->getTypes()['Closure'];
-                    $closure_atomic->return_type = new Type\Union($closure_return_types);
+                ) {
+                    if ($this->function->inferredType) {
+                        /** @var Type\Atomic\Fn */
+                        $closure_atomic = $this->function->inferredType->getTypes()['Closure'];
+                        $closure_atomic->return_type = $closure_return_type;
+                    }
                 }
             }
+
         }
 
         if ($context->collect_references
