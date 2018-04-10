@@ -358,6 +358,7 @@ class TypeChecker
                     $container_type_part,
                     $type_coerced,
                     $type_coerced_from_mixed,
+                    $has_scalar_match,
                     $all_types_contain
                 ) === false
                 ) {
@@ -475,6 +476,7 @@ class TypeChecker
                 $container_type_part,
                 $type_coerced,
                 $type_coerced_from_mixed,
+                $has_scalar_match,
                 $all_types_contain
             ) === false
             ) {
@@ -683,6 +685,7 @@ class TypeChecker
      * @param  TCallable|Type\Atomic\Fn   $container_type_part
      * @param  bool   &$type_coerced
      * @param  bool   &$type_coerced_from_mixed
+     * @param  bool   $has_scalar_match
      * @param  bool   &$all_types_contain
      *
      * @return null|false
@@ -695,6 +698,7 @@ class TypeChecker
         $container_type_part,
         &$type_coerced,
         &$type_coerced_from_mixed,
+        &$has_scalar_match,
         &$all_types_contain
     ) {
         if ($container_type_part->params !== null && $input_type_part->params === null) {
@@ -705,8 +709,12 @@ class TypeChecker
         }
 
         if ($container_type_part->params !== null) {
-            foreach ($input_type_part->params as $i => $input_param) {
-                if (!isset($container_type_part->params[$i])) {
+            foreach ($container_type_part->params as $i => $container_param) {
+                if (!isset($input_type_part->params[$i])) {
+                    if ($container_param->is_optional) {
+                        break;
+                    }
+
                     $type_coerced = true;
                     $type_coerced_from_mixed = true;
 
@@ -714,7 +722,7 @@ class TypeChecker
                     break;
                 }
 
-                $container_param = $container_type_part->params[$i];
+                $input_param = $input_type_part->params[$i];
 
                 if (!self::isContainedBy(
                     $codebase,
