@@ -272,16 +272,16 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             // do this here to allow closure param checks
             if ($function_params !== null
                 && self::checkFunctionLikeArgumentsMatch(
-                $statements_checker,
-                $stmt->args,
-                $function_id,
-                $function_params,
-                $function_storage,
-                null,
-                $generic_params,
-                $code_location,
-                $context
-            ) === false) {
+                    $statements_checker,
+                    $stmt->args,
+                    $function_id,
+                    $function_params,
+                    $function_storage,
+                    null,
+                    $generic_params,
+                    $code_location,
+                    $context
+                ) === false) {
                 // fall through
             }
 
