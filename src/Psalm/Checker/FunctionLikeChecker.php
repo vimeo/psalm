@@ -509,7 +509,6 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
                 }
             }
-
         }
 
         if ($context->collect_references
