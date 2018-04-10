@@ -145,11 +145,11 @@ class IfChecker
 
         $newish_var_ids = array_map(
             /**
-             * @param mixed $_
+             * @param Type\Union $_
              *
              * @return true
              */
-            function ($_) {
+            function (Type\Union $_) {
                 return true;
             },
             array_diff_key(

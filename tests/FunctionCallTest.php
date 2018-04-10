@@ -508,6 +508,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [
                     'MissingClosureParamType',
+                    'MixedTypeCoercion',
                 ],
             ],
             'arrayFilterGoodArgs' => [

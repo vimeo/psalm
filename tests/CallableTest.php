@@ -287,10 +287,10 @@ class CallableTest extends TestCase
             'arrayMapVariadicClosureArg' => [
                 '<?php
                     $a = array_map(
-                      function(int $type, string ...$args):string {
-                        return "hello";
-                      },
-                      [1, 2, 3]
+                        function(int $type, string ...$args):string {
+                            return "hello";
+                        },
+                        [1, 2, 3]
                     );',
             ],
             'returnsTypedClosure' => [
@@ -440,12 +440,17 @@ class CallableTest extends TestCase
                     function f(array $ret) : array
                     {
                         return array_map(
-                          function (array $row) {
-                            return [
-                                strval($row[0]),
-                                intval($row[1]),
-                            ];
-                        }, $ret);
+                            /**
+                             * @param array{0:string,1:string} $row
+                             */
+                            function (array $row) {
+                                return [
+                                    strval($row[0]),
+                                    intval($row[1]),
+                                ];
+                            },
+                            $ret
+                        );
                     }',
                 'assertions' => [],
                 'error_levels' => ['MissingClosureReturnType'],
@@ -459,12 +464,17 @@ class CallableTest extends TestCase
                     function f(array $ret): array
                     {
                         return array_map(
-                          function (array $row): array {
-                            return [
-                                strval($row[0]),
-                                intval($row[1]),
-                            ];
-                        }, $ret);
+                            /**
+                             * @param array{0:string,1:string} $row
+                             */
+                            function (array $row): array {
+                                return [
+                                    strval($row[0]),
+                                    intval($row[1]),
+                                ];
+                            },
+                            $ret
+                        );
                     }',
             ],
         ];
