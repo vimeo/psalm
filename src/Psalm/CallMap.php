@@ -11034,7 +11034,7 @@ return [
 'SplFileObject::eof' => ['bool'],
 'SplFileObject::fflush' => ['bool'],
 'SplFileObject::fgetc' => ['string|false'],
-'SplFileObject::fgetcsv' => ['array', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+'SplFileObject::fgetcsv' => ['?array|false', 'delimiter='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
 'SplFileObject::fgets' => ['string'],
 'SplFileObject::fgetss' => ['string', 'allowable_tags='=>'string'],
 'SplFileObject::flock' => ['bool', 'operation'=>'int', '&w_wouldblock='=>'int'],
