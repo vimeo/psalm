@@ -254,7 +254,12 @@ class IfChecker
                     $changed_var_ids,
                     $cond_referenced_var_ids,
                     $statements_checker,
-                    new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
+                    $context->check_variables
+                        ? new CodeLocation(
+                            $statements_checker->getSource(),
+                            $stmt->cond,
+                            $context->include_location
+                        ) : null,
                     $statements_checker->getSuppressedIssues()
                 );
 
@@ -293,7 +298,12 @@ class IfChecker
                 $changed_var_ids,
                 $stmt->else || $stmt->elseifs ? $cond_referenced_var_ids : [],
                 $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt->cond, $context->include_location),
+                $context->check_variables
+                    ? new CodeLocation(
+                        $statements_checker->getSource(),
+                        $stmt->cond,
+                        $context->include_location
+                    ) : null,
                 $statements_checker->getSuppressedIssues()
             );
 
