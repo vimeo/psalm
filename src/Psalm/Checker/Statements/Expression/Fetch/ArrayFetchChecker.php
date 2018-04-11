@@ -161,7 +161,7 @@ class ArrayFetchChecker
             }
         }
 
-        if ($keyed_array_var_id) {
+        if ($keyed_array_var_id && !$context->inside_isset) {
             $context->vars_in_scope[$keyed_array_var_id] = $stmt->inferredType;
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 

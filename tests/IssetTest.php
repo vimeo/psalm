@@ -233,6 +233,40 @@ class IssetTest extends TestCase
 
                     function takesInt(int $i) : void {}',
             ],
+            'returnArrayWithDefinedKeys' => [
+                '<?php
+                    /**
+                     * @param array{bar?: int, foo: int|string} $arr
+                     * @return array{bar: int, foo: string}|null
+                     */
+                    function foo(array $arr) : ?array {
+                        if (!isset($arr["bar"])) {
+                            return null;
+                        }
+
+                        if (is_int($arr["foo"])) {
+                            return null;
+                        }
+
+                        return $arr;
+                    }',
+            ],
+            'arrayAccessAfterTwoIssets' => [
+                '<?php
+                    $arr = [];
+
+                    foreach ([1, 2, 3] as $foo) {
+                        if (!isset($arr["foo"])) {
+                            $arr["foo"] = 0;
+                        }
+
+                        if (!isset($arr["bar"])) {
+                            $arr["bar"] = 0;
+                        }
+
+                        echo $arr["bar"];
+                    }',
+            ],
         ];
     }
 
