@@ -567,22 +567,22 @@ class CommentChecker
      */
     public static function renderDocComment(array $parsed_doc_comment, $left_padding)
     {
-        $doc_comment_text = '/**' . PHP_EOL;
+        $doc_comment_text = '/**' . "\n";
 
         $description_lines = null;
 
         $trimmed_description = trim($parsed_doc_comment['description']);
 
         if (!empty($trimmed_description)) {
-            $description_lines = explode(PHP_EOL, $parsed_doc_comment['description']);
+            $description_lines = explode("\n", $parsed_doc_comment['description']);
 
             foreach ($description_lines as $line) {
-                $doc_comment_text .= $left_padding . ' *' . (trim($line) ? ' ' . $line : '') . PHP_EOL;
+                $doc_comment_text .= $left_padding . ' *' . (trim($line) ? ' ' . $line : '') . "\n";
             }
         }
 
         if ($description_lines && $parsed_doc_comment['specials']) {
-            $doc_comment_text .= $left_padding . ' *' . PHP_EOL;
+            $doc_comment_text .= $left_padding . ' *' . "\n";
         }
 
         if ($parsed_doc_comment['specials']) {
@@ -590,19 +590,19 @@ class CommentChecker
 
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
                 if ($last_type !== null && ($last_type !== 'return' || $last_type !== 'psalm-return')) {
-                    $doc_comment_text .= $left_padding . ' *' . PHP_EOL;
+                    $doc_comment_text .= $left_padding . ' *' . "\n";
                 }
 
                 foreach ($lines as $line) {
                     $doc_comment_text .= $left_padding . ' * @' . $type . ' '
-                        . str_replace("\n", "\n" . $left_padding . ' *', $line) . PHP_EOL;
+                        . str_replace("\n", "\n" . $left_padding . ' *', $line) . "\n";
                 }
 
                 $last_type = $type;
             }
         }
 
-        $doc_comment_text .= $left_padding . ' */' . PHP_EOL . $left_padding;
+        $doc_comment_text .= $left_padding . ' */' . "\n" . $left_padding;
 
         return $doc_comment_text;
     }

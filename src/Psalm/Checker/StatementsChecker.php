@@ -138,7 +138,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($project_checker->debug_lines) {
-                echo $this->getFilePath() . ':' . $stmt->getLine() . PHP_EOL;
+                echo $this->getFilePath() . ':' . $stmt->getLine() . "\n";
             }
 
             /*
@@ -556,7 +556,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $newline_pos = (int)strrpos($file_contents, "\n", $branch_point - strlen($file_contents)) + 1;
                 $indentation = substr($file_contents, $newline_pos, $branch_point - $newline_pos);
                 FileManipulationBuffer::add($this->getFilePath(), [
-                    new FileManipulation($branch_point, $branch_point, $var_id . ' = null;' . PHP_EOL . $indentation),
+                    new FileManipulation($branch_point, $branch_point, $var_id . ' = null;' . "\n" . $indentation),
                 ]);
             }
         }

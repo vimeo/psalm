@@ -271,7 +271,7 @@ class ProjectChecker
         }
 
         if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . PHP_EOL;
+            echo 'Scanning files...' . "\n";
         }
 
         if ($diff_files === null || $deleted_files === null || count($diff_files) > 200) {
@@ -282,7 +282,7 @@ class ProjectChecker
             $this->codebase->scanFiles();
         } else {
             if ($this->debug_output) {
-                echo count($diff_files) . ' changed files' . PHP_EOL;
+                echo count($diff_files) . ' changed files' . "\n";
             }
 
             if ($diff_files) {
@@ -298,7 +298,7 @@ class ProjectChecker
         }
 
         if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . PHP_EOL;
+            echo 'Analyzing files...' . "\n";
         }
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
@@ -308,7 +308,7 @@ class ProjectChecker
         );
 
         if ($this->debug_output && $removed_parser_files) {
-            echo 'Removed ' . $removed_parser_files . ' old parser caches' . PHP_EOL;
+            echo 'Removed ' . $removed_parser_files . ' old parser caches' . "\n";
         }
 
         if ($is_diff) {
@@ -355,14 +355,14 @@ class ProjectChecker
                 $selection_start = $selection_bounds[0] - $snippet_bounds[0];
                 $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
-                echo $location->file_name . ':' . $location->getLineNumber() . PHP_EOL .
+                echo $location->file_name . ':' . $location->getLineNumber() . "\n" .
                     (
                         $this->use_color
                         ? substr($snippet, 0, $selection_start) .
                         "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
                         "\e[0m" . substr($snippet, $selection_length + $selection_start)
                         : $snippet
-                    ) . PHP_EOL . PHP_EOL;
+                    ) . "\n" . "\n";
             }
         }
     }
@@ -379,13 +379,13 @@ class ProjectChecker
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
         if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . PHP_EOL;
+            echo 'Scanning files...' . "\n";
         }
 
         $this->codebase->scanFiles();
 
         if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . PHP_EOL;
+            echo 'Analyzing files...' . "\n";
         }
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
@@ -510,7 +510,7 @@ class ProjectChecker
 
             if (!$config->isInProjectDirs($file_path)) {
                 if ($this->debug_output) {
-                    echo 'skipping ' . $file_path . PHP_EOL;
+                    echo 'skipping ' . $file_path . "\n";
                 }
 
                 continue;
@@ -530,7 +530,7 @@ class ProjectChecker
     public function checkFile($file_path)
     {
         if ($this->debug_output) {
-            echo 'Checking ' . $file_path . PHP_EOL;
+            echo 'Checking ' . $file_path . "\n";
         }
 
         $this->config->hide_external_errors = $this->config->isInProjectDirs($file_path);
@@ -540,13 +540,13 @@ class ProjectChecker
         FileReferenceProvider::loadReferenceCache();
 
         if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Scanning files...' . PHP_EOL;
+            echo 'Scanning files...' . "\n";
         }
 
         $this->codebase->scanFiles();
 
         if ($this->output_format === self::TYPE_CONSOLE) {
-            echo 'Analyzing files...' . PHP_EOL;
+            echo 'Analyzing files...' . "\n";
         }
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);

@@ -224,7 +224,7 @@ class Scanner
                 if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
                     if ($classlikes->doesClassLikeExist($fq_classlike_name_lc)) {
                         if ($this->debug_output) {
-                            echo 'Using reflection to get metadata for ' . $fq_classlike_name . PHP_EOL;
+                            echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
                         }
 
                         $reflected_class = new \ReflectionClass($fq_classlike_name);
@@ -385,7 +385,7 @@ class Scanner
 
         if ($composer_file_path && file_exists($composer_file_path)) {
             if ($this->debug_output) {
-                echo 'Using composer to locate file for ' . $fq_class_name . PHP_EOL;
+                echo 'Using composer to locate file for ' . $fq_class_name . "\n";
             }
 
             $classlikes->addFullyQualifiedClassLikeName(
@@ -404,7 +404,7 @@ class Scanner
 
         try {
             if ($this->debug_output) {
-                echo 'Using reflection to locate file for ' . $fq_class_name . PHP_EOL;
+                echo 'Using reflection to locate file for ' . $fq_class_name . "\n";
             }
 
             $reflected_class = new \ReflectionClass($fq_class_name);

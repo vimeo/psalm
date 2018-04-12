@@ -230,7 +230,7 @@ class ScopeTest extends TestCase
                     }
 
                     echo $b;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src/somefile.php:6 - Possibly undefined global '
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:6 - Possibly undefined global '
                     . 'variable $b, first seen on line 3',
             ],
             'possiblyUndefinedArrayInIf' => [
@@ -240,7 +240,7 @@ class ScopeTest extends TestCase
                     }
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src/somefile.php:3 - Possibly undefined global '
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Possibly undefined global '
                     . 'variable $array, first seen on line 3',
             ],
             'invalidGlobal' => [

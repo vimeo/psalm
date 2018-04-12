@@ -27,7 +27,7 @@ class DocumentationTest extends TestCase
             throw new \UnexpectedValueException('Docs are empty');
         }
 
-        $file_lines = explode(PHP_EOL, $file_contents);
+        $file_lines = explode("\n", $file_contents);
 
         $issue_code = [];
 
@@ -47,7 +47,7 @@ class DocumentationTest extends TestCase
                 ++$i;
 
                 do {
-                    $current_block .= $file_lines[$i] . PHP_EOL;
+                    $current_block .= $file_lines[$i] . "\n";
                     ++$i;
                 } while (substr($file_lines[$i], 0, 3) !== '```' && $i < $j);
 
@@ -94,7 +94,7 @@ class DocumentationTest extends TestCase
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);
 
-        $this->assertSame(implode(PHP_EOL, $all_issues), implode(PHP_EOL, $documented_issues));
+        $this->assertSame(implode("\n", $all_issues), implode("\n", $documented_issues));
     }
 
     /**
@@ -181,7 +181,7 @@ class DocumentationTest extends TestCase
             }
 
             $invalid_code_data[$issue_name] = [
-                '<?php' . PHP_EOL . $blocks[0],
+                '<?php' . "\n" . $blocks[0],
                 $issue_name,
                 $ignored_issues,
                 strpos($issue_name, 'Unused') !== false || strpos($issue_name, 'Unevaluated') !== false,

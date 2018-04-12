@@ -67,7 +67,7 @@ class Populator
     public function populateCodebase()
     {
         if ($this->debug_output) {
-            echo 'ClassLikeStorage is populating' . PHP_EOL;
+            echo 'ClassLikeStorage is populating' . "\n";
         }
 
         foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
@@ -79,11 +79,11 @@ class Populator
         }
 
         if ($this->debug_output) {
-            echo 'ClassLikeStorage is populated' . PHP_EOL;
+            echo 'ClassLikeStorage is populated' . "\n";
         }
 
         if ($this->debug_output) {
-            echo 'FileStorage is populating' . PHP_EOL;
+            echo 'FileStorage is populating' . "\n";
         }
 
         $all_file_storage = $this->file_storage_provider->getAll();
@@ -129,7 +129,7 @@ class Populator
         }
 
         if ($this->debug_output) {
-            echo 'FileStorage is populated' . PHP_EOL;
+            echo 'FileStorage is populated' . "\n";
         }
     }
 
@@ -195,7 +195,7 @@ class Populator
         }
 
         if ($this->debug_output) {
-            echo 'Have populated ' . $storage->name . PHP_EOL;
+            echo 'Have populated ' . $storage->name . "\n";
         }
 
         $storage->populated = true;

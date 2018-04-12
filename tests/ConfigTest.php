@@ -260,7 +260,7 @@ class ConfigTest extends TestCase
                  * @return string
                  */
                 function ($issue_name) {
-                    return '<' . $issue_name . ' errorLevel="suppress" />' . PHP_EOL;
+                    return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
                 },
                 self::getAllIssues()
             )

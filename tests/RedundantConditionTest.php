@@ -505,7 +505,7 @@ class RedundantConditionTest extends TestCase
                     /** @psalm-suppress PossiblyNullArgument */
                     takesA($a);
                     if ($a instanceof A) {}',
-                'error_message' => 'RedundantCondition - src/somefile.php:15',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:15',
             ],
             'replaceFalseType' => [
                 '<?php
@@ -527,7 +527,7 @@ class RedundantConditionTest extends TestCase
 
                       if ($b) {}
                     }',
-                'error_message' => 'TypeDoesNotContainType - src/somefile.php:7',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
         ];
     }

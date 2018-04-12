@@ -64,9 +64,9 @@ class FileScanner implements FileSource
 
         if ($debug_output) {
             if ($this->will_analyze) {
-                echo 'Deep scanning ' . $file_storage->file_path . PHP_EOL;
+                echo 'Deep scanning ' . $file_storage->file_path . "\n";
             } else {
-                echo 'Scanning ' . $file_storage->file_path . PHP_EOL;
+                echo 'Scanning ' . $file_storage->file_path . "\n";
             }
         }
 

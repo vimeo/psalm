@@ -234,7 +234,9 @@ somefile.php:15:6:error - Possibly undefined global variable $a, first seen on l
             IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false)
         );
 
+        ob_start();
         IssueBuffer::finish($this->project_checker, true, 0);
+        ob_end_clean();
         $this->assertFileExists(__DIR__ . '/test-report.json');
         $this->assertSame('[]
 ', file_get_contents(__DIR__ . '/test-report.json'));
