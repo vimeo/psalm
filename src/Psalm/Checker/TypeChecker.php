@@ -746,16 +746,17 @@ class TypeChecker
 
                     $all_types_contain = false;
                 } else {
-                    if (!self::isContainedBy(
-                        $codebase,
-                        $input_type_part->return_type,
-                        $container_type_part->return_type,
-                        false,
-                        false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed
-                    )
+                    if (!$container_type_part->return_type->isVoid()
+                        && !self::isContainedBy(
+                            $codebase,
+                            $input_type_part->return_type,
+                            $container_type_part->return_type,
+                            false,
+                            false,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed
+                        )
                     ) {
                         $all_types_contain = false;
                     }
