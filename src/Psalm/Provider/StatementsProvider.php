@@ -67,7 +67,7 @@ class StatementsProvider
 
         if ($stmts === null) {
             if ($debug_output) {
-                echo 'Parsing ' . $file_path . PHP_EOL;
+                echo 'Parsing ' . $file_path . "\n";
             }
 
             $stmts = self::parseStatementsInFile($file_contents);

@@ -92,7 +92,7 @@ class ListTest extends TestCase
                             return $this->a;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue - src/somefile.php:11',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
         ];
     }

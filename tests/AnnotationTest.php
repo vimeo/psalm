@@ -911,7 +911,7 @@ class AnnotationTest extends TestCase
                     }
 
                     fooBar("hello");',
-                'error_message' => 'TooManyArguments - src/somefile.php:8 - Too many arguments for method fooBar '
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:8 - Too many arguments for method fooBar '
                     . '- expecting 0 but saw 1',
             ],
             'missingParamVar' => [
@@ -921,7 +921,7 @@ class AnnotationTest extends TestCase
                      */
                     function fooBar(): void {
                     }',
-                'error_message' => 'InvalidDocblock - src/somefile.php:5 - Badly-formatted @param',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5 - Badly-formatted @param',
             ],
             'invalidDocblockReturn' => [
                 '<?php
@@ -982,7 +982,7 @@ class AnnotationTest extends TestCase
 
                     $a = new A();
                     $a->foo = new SomeOtherPropertyType();',
-                'error_message' => 'InvalidPropertyAssignmentValue - src/somefile.php:27 - $a->foo with declared type'
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:27 - $a->foo with declared type'
                     . ' \'Bar\PropertyType\' cannot',
             ],
             'propertyWriteDocblockInvalidAssignment' => [
@@ -1095,7 +1095,7 @@ class AnnotationTest extends TestCase
                     function fooFoo($a): void {
                         echo substr($a, 4, 2);
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:2 - Parameter $a has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
                     . ' should be string',
                 'error_levels' => ['MixedArgument'],
             ],
@@ -1104,7 +1104,7 @@ class AnnotationTest extends TestCase
                     function fooFoo($a): void {
                         echo $a . "foo";
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:2 - Parameter $a has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
                     . ' should be string',
                 'error_levels' => ['MixedOperand'],
             ],
@@ -1113,7 +1113,7 @@ class AnnotationTest extends TestCase
                     function fooFoo($a): void {
                         echo $a + 5;
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:2 - Parameter $a has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
                     . ' should be int|float',
                 'error_levels' => ['MixedOperand', 'MixedArgument'],
             ],
@@ -1122,7 +1122,7 @@ class AnnotationTest extends TestCase
                     function fooFoo($a): void {
                         echo $a / 5;
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:2 - Parameter $a has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
                     . ' should be int|float',
                 'error_levels' => ['MixedOperand', 'MixedArgument'],
             ],
@@ -1131,7 +1131,7 @@ class AnnotationTest extends TestCase
                     function fooFoo($a): void {
                         echo "$a";
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:2 - Parameter $a has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
                     . ' should be string',
                 'error_levels' => ['MixedOperand'],
             ],
@@ -1144,7 +1144,7 @@ class AnnotationTest extends TestCase
                             echo substr("hello", $a, 2);
                         }
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:2 - Parameter $a has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
                     . ' should be int|string',
                 'error_levels' => ['MixedArgument'],
             ],
@@ -1167,7 +1167,7 @@ class AnnotationTest extends TestCase
                     function shouldTakeString($s): void {
                       if (is_string($s)) takesString($s);
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:4 - Parameter $s has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4 - Parameter $s has no provided type,'
                     . ' could not infer',
                 'error_levels' => ['MixedArgument'],
             ],
@@ -1182,7 +1182,7 @@ class AnnotationTest extends TestCase
                       $s = returnsMixed();
                       takesString($s);
                     }',
-                'error_message' => 'MissingParamType - src/somefile.php:7 - Parameter $s has no provided type,'
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7 - Parameter $s has no provided type,'
                     . ' could not infer',
                 'error_levels' => ['MixedArgument', 'InvalidReturnType', 'MixedAssignment'],
             ],

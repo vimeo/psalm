@@ -141,7 +141,7 @@ class FunctionDocblockManipulator
             $char = $chars[$i];
 
             switch ($char) {
-                case PHP_EOL:
+                case "\n":
                     $in_single_line_comment = false;
                     continue;
 
@@ -215,7 +215,7 @@ class FunctionDocblockManipulator
             }
         }
 
-        $preceding_newline_pos = strrpos($file_contents, PHP_EOL, $this->docblock_end - strlen($file_contents));
+        $preceding_newline_pos = strrpos($file_contents, "\n", $this->docblock_end - strlen($file_contents));
 
         if ($preceding_newline_pos === false) {
             $this->indentation = '';
