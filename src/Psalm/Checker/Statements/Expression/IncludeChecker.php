@@ -41,7 +41,13 @@ class IncludeChecker
             $include_path = self::resolveIncludePath($path_to_file, dirname($statements_checker->getCheckedFileName()));
             $path_to_file = $include_path ? $include_path : $path_to_file;
 
-            if ($path_to_file[0] !== DIRECTORY_SEPARATOR) {
+            if (DIRECTORY_SEPARATOR === '/') {
+                $is_path_relative = $path_to_file[0] !== DIRECTORY_SEPARATOR;
+            } else {
+                $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $path_to_file);
+            }
+
+            if ($is_path_relative) {
                 $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
@@ -57,7 +63,7 @@ class IncludeChecker
             }
 
             // if the file is already included, we can't check much more
-            if (in_array($path_to_file, get_included_files(), true)) {
+            if (in_array(realpath($path_to_file), get_included_files(), true)) {
                 return null;
             }
 
@@ -119,7 +125,13 @@ class IncludeChecker
      */
     public static function getPathTo(PhpParser\Node\Expr $stmt, $file_name)
     {
-        if ($file_name[0] !== DIRECTORY_SEPARATOR) {
+        if (DIRECTORY_SEPARATOR === '/') {
+            $is_path_relative = $file_name[0] !== DIRECTORY_SEPARATOR;
+        } else {
+            $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $file_name);
+        }
+
+        if ($is_path_relative) {
             $file_name = getcwd() . DIRECTORY_SEPARATOR . $file_name;
         }
 
