@@ -171,11 +171,9 @@ Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.htm
 
 ### Class constants
 
-Psalm supports a special meta-type for `MyClass::class` constants.
+Psalm supports a special meta-type for `MyClass::class` constants, `class-string`, which can be used everywhere `string` can.
 
-Given a function with a `string` parameter `$class_name`, you can use the annotation `@param class-string $class_name` to tell Psalm make sure that the function is always called with a `::class` constant in that position.
-
-So given
+For example, given a function with a `string` parameter `$class_name`, you can use the annotation `@param class-string $class_name` to tell Psalm make sure that the function is always called with a `::class` constant in that position:
 
 ```php
 class A {}
