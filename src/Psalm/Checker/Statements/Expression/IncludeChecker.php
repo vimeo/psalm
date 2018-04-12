@@ -35,7 +35,7 @@ class IncludeChecker
         }
 
         if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
-            $path_to_file = $stmt->expr->value;
+            $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $stmt->expr->value);
 
             // attempts to resolve using get_include_path dirs
             $include_path = self::resolveIncludePath($path_to_file, dirname($statements_checker->getCheckedFileName()));
@@ -49,7 +49,8 @@ class IncludeChecker
         }
 
         if ($path_to_file) {
-            $reduce_pattern = '/\/[^\/]+\/\.\.\//';
+            $slash = preg_quote(DIRECTORY_SEPARATOR, '/');
+            $reduce_pattern = '/' . $slash . '[^' . $slash . ']+' . $slash . '\.\.' . $slash . '/';
 
             while (preg_match($reduce_pattern, $path_to_file)) {
                 $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
