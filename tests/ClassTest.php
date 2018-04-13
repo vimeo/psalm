@@ -153,6 +153,31 @@ class ClassTest extends TestCase
                       return $maybeBaz;
                     }',
             ],
+            'extendsMysqli' => [
+                '<?php
+                    class db extends mysqli
+                    {
+                        public function close()
+                        {
+                            return true;
+                        }
+
+                        public function prepare(string $sql)
+                        {
+                            return false;
+                        }
+
+                        public function commit(?int $flags = null, ?string $name = null)
+                        {
+                            return true;
+                        }
+
+                        public function real_escape_string(string $string)
+                        {
+                            return "escaped";
+                        }
+                    }',
+            ],
         ];
     }
 
