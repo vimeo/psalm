@@ -123,6 +123,10 @@ class LoopChecker
         } else {
             $pre_outer_context = clone $loop_scope->loop_parent_context;
 
+            $analyzer = $statements_checker->getFileChecker()->project_checker->codebase->analyzer;
+
+            $original_mixed_counts = $analyzer->getMixedCountsForFile($statements_checker->getFilePath());
+
             IssueBuffer::startRecording();
 
             if (!$is_do) {
@@ -240,6 +244,7 @@ class LoopChecker
                     unset($inner_context->vars_in_scope[$var_id]);
                 }
 
+                $analyzer->setMixedCountsForFile($statements_checker->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
                 foreach ($pre_conditions as $pre_condition) {

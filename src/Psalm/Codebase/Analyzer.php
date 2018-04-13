@@ -210,6 +210,31 @@ class Analyzer
     /**
      * @param  string $file_path
      *
+     * @return array{0:int, 1:int}
+     */
+    public function getMixedCountsForFile($file_path)
+    {
+        if (!isset($this->mixed_counts[$file_path])) {
+            $this->mixed_counts[$file_path] = [0, 0];
+        }
+
+        return $this->mixed_counts[$file_path];
+    }
+
+    /**
+     * @param  string $file_path
+     * @param  array{0:int, 1:int} $mixed_counts
+     *
+     * @return void
+     */
+    public function setMixedCountsForFile($file_path, array $mixed_counts)
+    {
+        $this->mixed_counts[$file_path] = $mixed_counts;
+    }
+
+    /**
+     * @param  string $file_path
+     *
      * @return void
      */
     public function incrementMixedCount($file_path)
