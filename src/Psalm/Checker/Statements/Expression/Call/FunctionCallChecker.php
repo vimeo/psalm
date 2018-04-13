@@ -382,7 +382,10 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
         }
 
-        if (!$config->remember_property_assignments_after_call && !$context->collect_initializations) {
+        if (!$config->remember_property_assignments_after_call
+            && !$in_call_map
+            && !$context->collect_initializations
+        ) {
             $context->removeAllObjectVars();
         }
 

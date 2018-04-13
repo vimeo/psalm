@@ -27,10 +27,44 @@ class PropertyTypeTest extends TestCase
                     private $x;
 
                     public function getX(): int {
-                        if ($this->x === null) {
-                            $this->x = 0;
-                        }
+                        $this->x = 5;
+
                         $this->modifyX();
+
+                        return $this->x;
+                    }
+
+                    private function modifyX(): void {
+                        $this->x = null;
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return                   void
+     */
+    public function testForgetPropertyAssignmentsInBranchWithThrow()
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class X {
+                    /** @var ?int **/
+                    private $x;
+
+                    public function getX(): int {
+                        $this->x = 5;
+
+                        if (rand(0, 1)) {
+                            $this->modifyX();
+                            throw new \Exception("bad");
+                        }
+
                         return $this->x;
                     }
 
