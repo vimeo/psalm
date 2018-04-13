@@ -514,14 +514,26 @@ class Config
         }
 
         if ($config->autoloader) {
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
+            // do this in a separate method so scope does not leak
+            $config->requireAutoloader($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
         }
 
         $config->collectPredefinedConstants();
         $config->collectPredefinedFunctions();
 
         return $config;
+    }
+
+    /**
+     * @param  string $autoloader_path
+     *
+     * @return void
+     *
+     * @psalm-suppress UnresolvableInclude
+     */
+    private function requireAutoloader($autoloader_path)
+    {
+        require_once($autoloader_path);
     }
 
     /**
