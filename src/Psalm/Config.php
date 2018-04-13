@@ -173,7 +173,7 @@ class Config
      *
      * @var bool
      */
-    public $use_assert_for_type = false;
+    public $use_assert_for_type = true;
 
     /**
      * @var bool

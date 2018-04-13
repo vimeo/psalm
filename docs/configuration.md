@@ -26,7 +26,7 @@ Psalm uses an XML config file. A barebones example looks like this:
 - `requireVoidReturnType=[bool]`<br />
   if `false`, Psalm will not complain when a function with no return types is missing an explicit `@return` annotation. Defaults to `true`.
 - `useAssertForType=[bool]`<br />
-  Some like to use [`assert`](http://php.net/manual/en/function.assert.php) for type checks. If `true`, Psalm will process assertions inside `assert` calls. Defaults to `false`.
+  Some like to use [`assert`](http://php.net/manual/en/function.assert.php) for type checks. If `true`, Psalm will process assertions inside `assert` calls. Defaults to `true`.
 - `rememberPropertyAssignmentsAfterCall=[bool]`<br />
   Setting this to `false` means that any function calls will cause Psalm to forget anything it knew about object properties within the scope of the function it's currently analysing. This duplicates functionality that Hack has. Defaults to `true`.
 - `allowPhpStormGenerics=[bool]`<br />
