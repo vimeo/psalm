@@ -264,6 +264,7 @@ class Config
      * @throws ConfigException if a config path is not found
      *
      * @return Config
+     * @psalm-suppress MixedArgument
      */
     public static function getConfigForPath($path, $base_dir, $output_format)
     {
