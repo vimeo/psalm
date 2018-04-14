@@ -233,7 +233,9 @@ abstract class Atomic
         if ($this instanceof TNamedObject && !isset($phantom_classes[strtolower($this->value)])) {
             $codebase->scanner->queueClassLikeForScanning(
                 $this->value,
-                $file_storage ? $file_storage->file_path : null
+                $file_storage ? $file_storage->file_path : null,
+                false,
+                !$this->from_docblock
             );
             if ($file_storage) {
                 $file_storage->referenced_classlikes[] = $this->value;

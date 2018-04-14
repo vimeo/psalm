@@ -302,15 +302,15 @@ class Scanner
             }
 
             foreach ($file_storage->required_classes as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, $will_analyze);
+                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, $will_analyze, false);
             }
 
             foreach ($file_storage->required_interfaces as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $file_path);
+                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, false, false);
             }
 
             foreach ($file_storage->referenced_classlikes as $fq_classlike_name) {
-                $this->queueClassLikeForScanning($fq_classlike_name, $file_path);
+                $this->queueClassLikeForScanning($fq_classlike_name, $file_path, false, false);
             }
         }
 
