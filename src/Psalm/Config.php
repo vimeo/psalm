@@ -282,7 +282,7 @@ class Config
         do {
             $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
 
-            if (file_exists($maybe_path)) {
+            if (file_exists($maybe_path) || file_exists($maybe_path .= '.dist')) {
                 $config = self::loadFromXMLFile($maybe_path, $base_dir);
 
                 break;
