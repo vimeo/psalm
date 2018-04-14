@@ -1202,6 +1202,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 continue;
             }
 
+            $new_param_type->setFromDocblock();
+
             $new_param_type->queueClassLikesForScanning(
                 $this->codebase,
                 $this->file_storage,
@@ -1218,8 +1220,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             $existing_param_type_nullable = $storage_param->is_nullable;
-
-            $new_param_type->setFromDocblock();
 
             if (!$storage_param->type || $storage_param->type->isMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
