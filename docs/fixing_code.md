@@ -2,19 +2,6 @@
 
 Psalm is good at finding potential issues in large codebases, but once found, it can be something of a gargantuan task to fix all the issues.
 
-- [Safety features](#safety-features)
-- [Plugins](#plugins)
-- [Supported fixes](#supported-fixes)
-  - [MissingReturnType and MissingClosureReturnType](#missingreturntype)
-  - [InvalidReturnType](#invalidreturntype)
-  - [InvalidNullableReturnType](#invalidnullablereturntype)
-  - [InvalidFalsableReturnType](#invalidfalsablereturntype)
-  - [MismatchingDocblockParamType](#mismatchingdocblockparamtype)
-  - [MismatchingDocblockReturnType](#mismatchingdocblockreturntype)
-  - [LessSpecificReturnType](#lessspecificreturntype)
-  - [PossiblyUndefinedVariable](#possiblyundefinedvariable)
-
-
 ## Safety features
 
 Updating code is inherently risky, doing so automatically is even more so. I've added a few features to make it a little more reassuring:
