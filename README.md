@@ -13,7 +13,7 @@ It's able to find a [large number issues](https://github.com/vimeo/psalm/blob/ma
 
 ## Psalm documentation
 
-All the documentation for Psalm is found in the docs folder - [the index is located here](https://github.com/vimeo/psalm/blob/master/docs/index.md), 
+Documentation is available on [Psalm’s website](https://getpsalm.org/docs), generated from the [docs](https://github.com/vimeo/psalm/blob/master/docs) folder. 
 
 ## Quickstart Guide
 
