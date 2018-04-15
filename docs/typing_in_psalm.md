@@ -96,22 +96,25 @@ This tells Psalm to assume that `$a` is a string (though it will still throw an 
 ### Typing arrays
 
 In PHP, the `array` type is commonly used to represent three different data structures:
- - a [List](https://en.wikipedia.org/wiki/List_(abstract_data_type))
 
-   ```php
-   $a = [1, 2, 3, 4, 5];
-   ```
- - an [Associative array](https://en.wikipedia.org/wiki/Associative_array)
+**[List](https://en.wikipedia.org/wiki/List_(abstract_data_type))**:
 
-   ```php
-   $a = [0 => 'hello', 5 => 'goodbye'];
-   $b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
-   ```
- - makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language))
+```php
+$a = [1, 2, 3, 4, 5];
+```
 
-   ```php
-   $a = ['name' => 'Psalm', 'type' => 'tool'];
-   ```
+**[Associative array](https://en.wikipedia.org/wiki/Associative_array)**
+
+```php
+$a = [0 => 'hello', 5 => 'goodbye'];
+$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
+```
+
+**Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language))**
+
+```php
+$a = ['name' => 'Psalm', 'type' => 'tool'];
+```
 
 PHP treats all these arrays the same, essentially (though there are some optimisations under the hood for the first case).
 
