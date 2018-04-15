@@ -1473,6 +1473,14 @@ class AnnotationTest extends TestCase
                     $a = "hello";',
                 'error_message' => 'InvalidDocblock',
             ],
+            'badCallableVar' => [
+                '<?php
+                    /** @return Closure(int): */
+                    function foo() : callable {
+                        return function () : void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

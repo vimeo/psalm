@@ -360,6 +360,16 @@ class TypeParseTest extends TestCase
      *
      * @return void
      */
+    public function testCallableWithTrailingColon()
+    {
+        Type::parseString('callable(int):');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
     public function testCallableWithAnotherBadVariadic()
     {
         Type::parseString('callable(int, string..) : void');

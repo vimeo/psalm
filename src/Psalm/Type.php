@@ -296,6 +296,10 @@ abstract class Type
                 throw new \InvalidArgumentException('Parsing callable tree node should return TCallable');
             }
 
+            if (!isset($parse_tree->children[1])) {
+                throw new \InvalidArgumentException('Invalid return type');
+            }
+
             $return_type = self::getTypeFromTree($parse_tree->children[1], false);
 
             $callable_type->return_type = $return_type instanceof Union ? $return_type : new Union([$return_type]);
