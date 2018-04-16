@@ -50,13 +50,15 @@ class BinaryOperationTest extends TestCase
                     $b = 2 | 3;
                     $c = 4 ^ 3;
                     $d = 1 << 2;
-                    $e = 15 >> 2;',
+                    $e = 15 >> 2;
+                    $f = "a" & "b";',
                 'assertions' => [
                     '$a' => 'int',
                     '$b' => 'int',
                     '$c' => 'int',
                     '$d' => 'int',
                     '$e' => 'int',
+                    '$f' => 'string',
                 ],
             ],
         ];

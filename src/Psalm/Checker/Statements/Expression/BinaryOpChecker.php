@@ -397,16 +397,27 @@ class BinaryOpChecker
 
         // let's do some fun type assignment
         if (isset($stmt->left->inferredType) && isset($stmt->right->inferredType)) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+            if ($stmt->left->inferredType->hasString()
+                && $stmt->right->inferredType->hasString()
+                && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+                )
+            ) {
+                $stmt->inferredType = Type::getString();
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                || (($stmt->left->inferredType->hasInt() || $stmt->right->inferredType->hasInt())
+                    && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+                        || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                        || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+                        || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                        || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+                    )
+                )
             ) {
                 self::analyzeNonDivArithmenticOp(
                     $statements_checker,
