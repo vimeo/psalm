@@ -10125,7 +10125,7 @@ return [
 'Sodium\crypto_sign_ed25519_sk_to_curve25519' => ['string', 'sign_sk'=>'string'],
 'Sodium\crypto_sign_keypair' => ['string'],
 'Sodium\crypto_sign_keypair_from_secretkey_and_publickey' => ['string', 'secretkey'=>'string', 'publickey'=>'string'],
-'Sodium\crypto_sign_open' => ['string', 'signed_message'=>'string', 'publickey'=>'string'],
+'Sodium\crypto_sign_open' => ['string|false', 'signed_message'=>'string', 'publickey'=>'string'],
 'Sodium\crypto_sign_publickey' => ['string', 'keypair'=>'string'],
 'Sodium\crypto_sign_publickey_from_secretkey' => ['string', 'secretkey'=>'string'],
 'Sodium\crypto_sign_secretkey' => ['string', 'keypair'=>'string'],
