@@ -608,6 +608,13 @@ class FunctionCallTest extends TestCase
                     '$c' => 'int',
                 ],
             ],
+            'explodeWithPossiblyFalse' => [
+                '<?php
+                    /** @return array<int, string> */
+                    function exploder(string $s) : array {
+                        return explode(" ", $s);
+                    }',
+            ],
         ];
     }
 
@@ -839,6 +846,13 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = var_export(["a"]);',
                 'error_message' => 'AssignmentToVoid',
+            ],
+            'explodeWithEmptyString' => [
+                '<?php
+                    function exploder(string $s) : array {
+                        return explode("", $s);
+                    }',
+                'error_message' => 'FalsableReturnStatement',
             ],
         ];
     }

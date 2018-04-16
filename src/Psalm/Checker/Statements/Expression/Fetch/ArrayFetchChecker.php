@@ -528,6 +528,10 @@ class ArrayFetchChecker
 
             $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
+            if ($type instanceof Type\Atomic\TFalse && $array_type->ignore_falsable_issues) {
+                continue;
+            }
+
             if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) !== 'simplexmlelement'
                     && $codebase->classExists($type->value)

@@ -110,8 +110,19 @@ class FunctionChecker extends FunctionLikeChecker
                 }
             }
 
-            if ($call_map_key === 'explode' || $call_map_key === 'preg_split') {
-                return Type::parseString('array<int, string>');
+            if ($call_map_key === 'explode'
+                && $call_args[0]->value instanceof PhpParser\Node\Scalar\String_
+            ) {
+                if ($call_args[0]->value->value === '') {
+                    return Type::getFalse();
+                }
+
+                return new Type\Union([
+                    new Type\Atomic\TArray([
+                        Type::getInt(),
+                        Type::getString()
+                    ])
+                ]);
             }
 
             if ($call_map_key === 'abs'

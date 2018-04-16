@@ -244,8 +244,8 @@ class ReturnChecker
                         if (IssueBuffer::accepts(
                             new NullableReturnStatement(
                                 'The declared return type \'' . $local_return_type . '\' for '
-                                    . $cased_method_id . ' is not nullable, but \'' . $inferred_type
-                                    . '\' contains null',
+                                    . $cased_method_id . ' is not nullable, but the function returns \''
+                                        . $inferred_type . '\'',
                                 new CodeLocation($source, $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
@@ -262,8 +262,8 @@ class ReturnChecker
                         if (IssueBuffer::accepts(
                             new FalsableReturnStatement(
                                 'The declared return type \'' . $local_return_type . '\' for '
-                                    . $cased_method_id . ' does not allow false, but \'' . $inferred_type
-                                    . '\' contains false',
+                                    . $cased_method_id . ' does not allow false, but the function returns \''
+                                        . $inferred_type . '\'',
                                 new CodeLocation($source, $stmt)
                             ),
                             $statements_checker->getSuppressedIssues()
