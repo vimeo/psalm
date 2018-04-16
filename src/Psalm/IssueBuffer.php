@@ -297,7 +297,9 @@ class IssueBuffer
         $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
         Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
 
-        echo "\n";
+        if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
+            echo "\n";
+        }
 
         $error_count = 0;
         $info_count = 0;
@@ -341,42 +343,46 @@ class IssueBuffer
             );
         }
 
-        echo str_repeat('-', 30) . "\n";
-
-        if ($error_count) {
-            echo ($project_checker->use_color
-                ? "\e[0;31m" . $error_count . " errors\e[0m"
-                : $error_count . ' errors'
-            ) . ' found' . "\n";
-        } else {
-            echo 'No errors found!' . "\n";
-        }
-
-        if ($info_count) {
+        if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
             echo str_repeat('-', 30) . "\n";
 
-            echo $info_count . ' other issues found.' . "\n"
-                . 'You can hide them with ' .
-                ($project_checker->use_color ? "\e[30;48;5;195m--show-info=false\e[0m" : '--show-info=false') . "\n";
-        }
-
-        echo str_repeat('-', 30) . "\n" . "\n";
-
-        if ($start_time) {
-            echo 'Checks took ' . number_format((float)microtime(true) - $start_time, 2) . ' seconds';
-            echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
-
-            $nonmixed_percentage = $project_checker->codebase->analyzer->getNonMixedPercentage();
-
-            if ($is_full) {
-                echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
-                    . ' of the codebase' . "\n";
+            if ($error_count) {
+                echo ($project_checker->use_color
+                    ? "\e[0;31m" . $error_count . " errors\e[0m"
+                    : $error_count . ' errors'
+                ) . ' found' . "\n";
+            } else {
+                echo 'No errors found!' . "\n";
             }
 
-            if ($add_stats) {
-                echo '-----------------' . "\n";
-                echo $project_checker->codebase->analyzer->getNonMixedStats();
-                echo "\n";
+            if ($info_count) {
+                echo str_repeat('-', 30) . "\n";
+
+                echo $info_count . ' other issues found.' . "\n"
+                    . 'You can hide them with ' .
+                    ($project_checker->use_color
+                        ? "\e[30;48;5;195m--show-info=false\e[0m"
+                        : '--show-info=false') . "\n";
+            }
+
+            echo str_repeat('-', 30) . "\n" . "\n";
+
+            if ($start_time) {
+                echo 'Checks took ' . number_format((float)microtime(true) - $start_time, 2) . ' seconds';
+                echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
+
+                $nonmixed_percentage = $project_checker->codebase->analyzer->getNonMixedPercentage();
+
+                if ($is_full) {
+                    echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
+                        . ' of the codebase' . "\n";
+                }
+
+                if ($add_stats) {
+                    echo '-----------------' . "\n";
+                    echo $project_checker->codebase->analyzer->getNonMixedStats();
+                    echo "\n";
+                }
             }
         }
 
