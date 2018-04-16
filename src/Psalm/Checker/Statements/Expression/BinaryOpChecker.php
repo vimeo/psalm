@@ -401,7 +401,12 @@ class BinaryOpChecker
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mod ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft ||
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
             ) {
                 self::analyzeNonDivArithmenticOp(
                     $statements_checker,
