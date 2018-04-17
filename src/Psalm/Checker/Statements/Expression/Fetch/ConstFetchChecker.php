@@ -83,9 +83,9 @@ class ConstFetchChecker
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
     ) {
-        if ($context->check_consts &&
-            $stmt->class instanceof PhpParser\Node\Name &&
-            is_string($stmt->name)
+        if ($context->check_consts
+            && $stmt->class instanceof PhpParser\Node\Name
+            && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
             $first_part_lc = strtolower($stmt->class->parts[0]);
 
@@ -128,7 +128,7 @@ class ConstFetchChecker
                 }
             }
 
-            if ($stmt->name === 'class') {
+            if ($stmt->name->name === 'class') {
                 $stmt->inferredType = Type::getClassString($fq_class_name);
 
                 return null;
@@ -166,7 +166,7 @@ class ConstFetchChecker
                 $class_visibility
             );
 
-            if (!isset($class_constants[$stmt->name]) && $first_part_lc !== 'static') {
+            if (!isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
                 $all_class_constants = [];
 
                 if ($fq_class_name !== $context->self) {
@@ -176,7 +176,7 @@ class ConstFetchChecker
                     );
                 }
 
-                if ($all_class_constants && isset($all_class_constants[$stmt->name])) {
+                if ($all_class_constants && isset($all_class_constants[$stmt->name->name])) {
                     IssueBuffer::add(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
@@ -194,9 +194,9 @@ class ConstFetchChecker
 
                 return false;
             }
-            $stmt->inferredType = isset($class_constants[$stmt->name])
+            $stmt->inferredType = isset($class_constants[$stmt->name->name])
                 && $first_part_lc !== 'static'
-                ? $class_constants[$stmt->name]
+                ? $class_constants[$stmt->name->name]
                 : Type::getMixed();
 
             return null;
