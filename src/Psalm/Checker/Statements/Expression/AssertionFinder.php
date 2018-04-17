@@ -342,7 +342,7 @@ class AssertionFinder
                     // fall through
                 } else {
                     if ($var_name && $var_type) {
-                        $if_types[$var_name] = $var_type;
+                        $if_types[$var_name] = 'getclass-' . $var_type;
                     }
                 }
 
@@ -614,7 +614,7 @@ class AssertionFinder
                     // fall through
                 } else {
                     if ($var_name && $var_type) {
-                        $if_types[$var_name] = '!' . $var_type;
+                        $if_types[$var_name] = '!getclass-' . $var_type;
                     }
                 }
 

@@ -479,6 +479,8 @@ class Reconciler
             ) {
                 $existing_var_type->removeType('iterable');
                 $existing_var_type->addType(new TNamedObject('Traversable'));
+            } elseif (substr($negated_type, 0, 9) === 'getclass-') {
+                $negated_type = substr($negated_type, 9);
             } else {
                 $existing_var_type->removeType($negated_type);
             }
@@ -795,6 +797,10 @@ class Reconciler
             } else {
                 $new_type = Type::getMixed();
             }
+        } elseif (substr($new_var_type, 0, 9) === 'getclass-') {
+            $new_var_type = substr($new_var_type, 9);
+            $new_type = Type::parseString($new_var_type);
+            $is_strict_equality = true;
         } else {
             $new_type = Type::parseString($new_var_type);
         }
@@ -850,7 +856,10 @@ class Reconciler
         } elseif ($code_location && !$new_type->isMixed()) {
             $has_match = true;
 
-            if ($key && $new_type->getId() === $existing_var_type->getId() && !$is_strict_equality) {
+            if ($key
+                && $new_type->getId() === $existing_var_type->getId()
+                && !$is_strict_equality
+            ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
