@@ -131,9 +131,9 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                strtolower($stmt->name) === strtolower($method_name)
+                strtolower($stmt->name->name) === strtolower($method_name)
             ) {
-                $method_id = $this->fq_class_name . '::' . $stmt->name;
+                $method_id = $this->fq_class_name . '::' . $stmt->name->name;
 
                 if ($project_checker->canCacheCheckers()) {
                     $method_checker = $codebase->methods->getCachedChecker($method_id);
@@ -166,7 +166,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                            strtolower($trait_stmt->name) === strtolower($method_name)
+                            strtolower($trait_stmt->name->name) === strtolower($method_name)
                         ) {
                             $method_checker = new MethodChecker($trait_stmt, $trait_checker);
 
@@ -394,7 +394,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      */
     public function getClassName()
     {
-        return $this->class->name;
+        return $this->class->name ? $this->class->name->name : null;
     }
 
     /**

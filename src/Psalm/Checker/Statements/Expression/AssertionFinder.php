@@ -832,8 +832,8 @@ class AssertionFinder
                     $if_types[$first_var_name] = $prefix . $is_a_prefix . $first_arg->value;
                 } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->class instanceof PhpParser\Node\Name
-                    && is_string($first_arg->name)
-                    && strtolower($first_arg->name) === 'class'
+                    && $first_arg->name instanceof PhpParser\Node\Identifier
+                    && strtolower($first_arg->name->name) === 'class'
                 ) {
                     $class_node = $first_arg->class;
 
@@ -1054,8 +1054,8 @@ class AssertionFinder
                 $conditional->left instanceof PhpParser\Node\Scalar\String_
                 || ($conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $conditional->left->class instanceof PhpParser\Node\Name
-                    && is_string($conditional->left->name)
-                    && strtolower($conditional->left->name) === 'class')
+                    && $conditional->left->name instanceof PhpParser\Node\Identifier
+                    && strtolower($conditional->left->name->name) === 'class')
             )
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
@@ -1068,8 +1068,8 @@ class AssertionFinder
                 $conditional->right instanceof PhpParser\Node\Scalar\String_
                 || ($conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $conditional->right->class instanceof PhpParser\Node\Name
-                    && is_string($conditional->right->name)
-                    && strtolower($conditional->right->name) === 'class')
+                    && $conditional->right->name instanceof PhpParser\Node\Identifier
+                    && strtolower($conditional->right->name->name) === 'class')
             )
         ) {
             return self::ASSIGNMENT_TO_LEFT;
@@ -1135,8 +1135,8 @@ class AssertionFinder
                 || (
                     $second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $second_arg->class instanceof PhpParser\Node\Name
-                    && is_string($second_arg->name)
-                    && strtolower($second_arg->name) === 'class'
+                    && $second_arg->name instanceof PhpParser\Node\Identifier
+                    && strtolower($second_arg->name->name) === 'class'
                 )
             ) {
                 return true;

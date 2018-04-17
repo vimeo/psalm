@@ -493,7 +493,7 @@ class MethodChecker extends FunctionLikeChecker
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
                             . $implementer_method_storage->return_type . '\'',
-                            $implementer_method_storage->location ?: $code_location
+                            $implementer_method_storage->return_type_location ?: $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -506,7 +506,7 @@ class MethodChecker extends FunctionLikeChecker
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
                             . $implementer_method_storage->return_type . '\'',
-                            $implementer_method_storage->location ?: $code_location
+                            $implementer_method_storage->return_type_location ?: $code_location
                         ),
                         $suppressed_issues
                     )) {

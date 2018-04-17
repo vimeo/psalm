@@ -64,10 +64,10 @@ class ReturnTypeChecker
             return null;
         }
 
-        $is_to_string = $function instanceof ClassMethod && strtolower($function->name) === '__tostring';
+        $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
         if ($function instanceof ClassMethod &&
-            substr($function->name, 0, 2) === '__' &&
+            substr($function->name->name, 0, 2) === '__' &&
             !$is_to_string
         ) {
             // do not check __construct, __set, __get, __call etc.
@@ -77,7 +77,10 @@ class ReturnTypeChecker
         $cased_method_id = $function_like_checker->getCorrectlyCasedMethodId();
 
         if (!$return_type_location) {
-            $return_type_location = new CodeLocation($function_like_checker, $function, null, true);
+            $return_type_location = new CodeLocation(
+                $function_like_checker,
+                $function instanceof Closure ? $function : $function->name
+            );
         }
 
         $inferred_yield_types = [];

@@ -134,6 +134,12 @@ class TryChecker
 
             $fq_catch_classes = [];
 
+            $catch_var_name = $catch->var->name;
+
+            if (!is_string($catch_var_name)) {
+                throw new \UnexpectedValueException('Catch var name must be a string');
+            }
+
             foreach ($catch->types as $catch_type) {
                 $fq_catch_class = ClassLikeChecker::getFQCLNFromNameObject(
                     $catch_type,
@@ -174,7 +180,7 @@ class TryChecker
                 $fq_catch_classes[] = $fq_catch_class;
             }
 
-            $catch_var_id = '$' . $catch->var;
+            $catch_var_id = '$' . $catch_var_name;
 
             $catch_context->vars_in_scope[$catch_var_id] = new Union(
                 array_map(
@@ -207,10 +213,8 @@ class TryChecker
             if (!$statements_checker->hasVariable($catch_var_id)) {
                 $location = new CodeLocation(
                     $statements_checker,
-                    $catch,
-                    $context->include_location,
-                    true,
-                    CodeLocation::CATCH_VAR
+                    $catch->var,
+                    $context->include_location
                 );
                 $statements_checker->registerVariable(
                     $catch_var_id,

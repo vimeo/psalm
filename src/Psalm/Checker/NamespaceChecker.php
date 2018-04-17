@@ -69,7 +69,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
                 $this->visitGroupUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
                 foreach ($stmt->consts as $const) {
-                    self::$public_namespace_constants[$this->namespace_name][$const->name] = Type::getMixed();
+                    self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
                 }
 
                 $leftover_stmts[] = $stmt;
@@ -98,7 +98,7 @@ class NamespaceChecker extends SourceChecker implements StatementsSource
             throw new \UnexpectedValueException('Did not expect anonymous class here');
         }
 
-        $fq_class_name = Type::getFQCLNFromString($stmt->name, $this->getAliases());
+        $fq_class_name = Type::getFQCLNFromString($stmt->name->name, $this->getAliases());
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
             $this->source->addNamespacedClassChecker(

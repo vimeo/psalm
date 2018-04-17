@@ -171,12 +171,12 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($method_id);
 
-            if ($this->function->name === '__construct') {
+            if ($this->function->name->name === '__construct') {
                 $context->inside_constructor = true;
             }
 
             if ($overridden_method_ids
-                && $this->function->name !== '__construct'
+                && $this->function->name->name !== '__construct'
                 && !$context->collect_initializations
                 && !$context->collect_mutations
             ) {
@@ -756,7 +756,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         if ($this->function instanceof Function_) {
             $namespace = $this->source->getNamespace();
 
-            return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name);
+            return ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($this->function->name->name);
         }
 
         return $this->getFilePath() . ':' . $this->function->getLine() . ':-:closure';

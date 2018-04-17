@@ -51,13 +51,22 @@ class EffectsAnalyser
                         $return_types[] = new Atomic\TMixed();
                     }
                 }
-            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
+                && ($stmt->expr instanceof PhpParser\Node\Expr\Yield_
+                    || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom)
+            ) {
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
+            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_
+                || $stmt instanceof PhpParser\Node\Expr\YieldFrom
+            ) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
-            } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
+                && $stmt->expr instanceof PhpParser\Node\Expr\Assign
+            ) {
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
-                        [$stmt->expr],
+                        [$stmt->expr->expr],
                         $yield_types,
                         $ignore_nullable_issues,
                         $ignore_falsable_issues
@@ -232,7 +241,7 @@ class EffectsAnalyser
      *
      * @return  array<int, Atomic>
      */
-    protected static function getYieldTypeFromExpression($stmt)
+    protected static function getYieldTypeFromExpression(PhpParser\Node\Expr $stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             $key_type = null;

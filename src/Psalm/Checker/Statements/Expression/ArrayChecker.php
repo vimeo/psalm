@@ -43,6 +43,7 @@ class ArrayChecker
 
         $array_keys = [];
 
+        /** @var int $int_offset */
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
                 continue;
