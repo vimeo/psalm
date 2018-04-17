@@ -141,6 +141,7 @@
             <xs:element name="InvalidStringClass" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidThrow" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LoopInvalidation" type="IssueHandlerType" minOccurs="0" />
@@ -172,7 +173,6 @@
             <xs:element name="MixedTypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MoreSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NonStaticSelfCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="NullableReturnStatement" type="IssueHandlerType" minOccurs="0" />
@@ -216,6 +216,7 @@
             <xs:element name="PossiblyNullPropertyAssignmentValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullPropertyFetch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyNullReference" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="PossiblyUndefinedArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedGlobalVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyUndefinedVariable" type="IssueHandlerType" minOccurs="0" />

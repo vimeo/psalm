@@ -924,7 +924,7 @@ class ArrayAssignmentTest extends TestCase
                     }
 
                     echo $a[0];',
-                'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'mixedStringOffsetAssignment' => [
                 '<?php
@@ -984,7 +984,7 @@ class ArrayAssignmentTest extends TestCase
                     if (array_key_exists("a", $a)) {
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnMissingKey' => [
                 '<?php
@@ -997,7 +997,7 @@ class ArrayAssignmentTest extends TestCase
                     if (array_key_exists("b", $a)) {
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }

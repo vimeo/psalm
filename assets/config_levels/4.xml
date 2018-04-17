@@ -71,6 +71,7 @@
         <PossiblyNullReference errorLevel="info" />
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
+        <PossiblyUndefinedArrayOffset errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
     </issueHandlers>
 </psalm>
