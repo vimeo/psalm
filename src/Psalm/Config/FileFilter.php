@@ -77,8 +77,9 @@ class FileFilter
                     );
                     foreach ($globs as $glob_index => $directory_path) {
                         if (!$directory_path) {
-                            die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                                (string)$directory['name'] . ':' . $glob_index);
+                            echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
+                                (string)$directory['name'] . ':' . $glob_index . PHP_EOL;
+                            exit(1);
                         }
                         $filter->addDirectory($directory_path);
                     }
@@ -87,8 +88,9 @@ class FileFilter
                 $directory_path = realpath($prospective_directory_path);
 
                 if (!$directory_path) {
-                    die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                        (string)$directory['name'] . PHP_EOL);
+                    echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
+                        (string)$directory['name'] . PHP_EOL;
+                    exit(1);
                 }
 
                 $filter->addDirectory($directory_path);
@@ -101,8 +103,9 @@ class FileFilter
                 $file_path = realpath($base_dir . DIRECTORY_SEPARATOR . (string)$file['name']);
 
                 if (!$file_path) {
-                    die('Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
-                        (string)$file['name'] . PHP_EOL);
+                    echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
+                        (string)$file['name'] . PHP_EOL;
+                    exit(1);
                 }
 
                 $filter->addFile($file_path);

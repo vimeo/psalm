@@ -43,7 +43,8 @@ if (isset($options['config'])) {
 }
 
 if (isset($options['c']) && is_array($options['c'])) {
-    die('Too many config files provided' . PHP_EOL);
+    echo 'Too many config files provided' . PHP_EOL;
+    exit(1);
 }
 
 if (array_key_exists('h', $options)) {
@@ -118,7 +119,8 @@ HELP;
 }
 
 if (getcwd() === false) {
-    die('Cannot get current working directory');
+    echo 'Cannot get current working directory' . PHP_EOL;
+    exit(1);
 }
 
 if (isset($options['root'])) {
@@ -131,7 +133,8 @@ if (isset($options['r']) && is_string($options['r'])) {
     $root_path = realpath($options['r']);
 
     if (!$root_path) {
-        die('Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
+        echo 'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL;
+        exit(1);
     }
 
     $current_dir = $root_path . DIRECTORY_SEPARATOR;
@@ -251,7 +254,8 @@ $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($o
 
 if ($path_to_config === false) {
     /** @psalm-suppress InvalidCast */
-    die('Could not resolve path to config ' . (string)$options['c'] . PHP_EOL);
+    echo 'Could not resolve path to config ' . (string)$options['c'] . PHP_EOL;
+    exit(1);
 }
 
 $show_info = isset($options['show-info'])

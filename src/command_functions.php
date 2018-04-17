@@ -53,7 +53,8 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
                     . 'to specify a particular project to run Psalm on.';
             }
 
-            die($error_message . PHP_EOL);
+            echo $error_message . PHP_EOL;
+            exit(1);
         }
     }
 
@@ -170,17 +171,20 @@ function getPathsToCheck($f_paths)
 
         foreach ($filtered_input_paths as $i => $path_to_check) {
             if ($path_to_check[0] === '-') {
-                die('Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
+                echo 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL;
+                exit(1);
             }
 
             if (!file_exists($path_to_check)) {
-                die('Cannot locate ' . $path_to_check . PHP_EOL);
+                echo 'Cannot locate ' . $path_to_check . PHP_EOL;
+                exit(1);
             }
 
             $path_to_check = realpath($path_to_check);
 
             if (!$path_to_check) {
-                die('Error getting realpath for file' . PHP_EOL);
+                echo 'Error getting realpath for file' . PHP_EOL;
+                exit(1);
             }
 
             $paths_to_check[] = $path_to_check;
