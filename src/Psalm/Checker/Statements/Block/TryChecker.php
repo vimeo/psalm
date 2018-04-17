@@ -271,9 +271,9 @@ class TryChecker
 
             if ($catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if ($catch->var !== $var_id &&
-                        $context->hasVariable($var_id) &&
-                        $context->vars_in_scope[$var_id]->getId() !== $type->getId()
+                    if ($catch->var !== $var_id
+                        && $context->hasVariable($var_id)
+                        && $context->vars_in_scope[$var_id]->getId() !== $type->getId()
                     ) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],

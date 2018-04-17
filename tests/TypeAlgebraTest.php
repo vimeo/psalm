@@ -764,6 +764,13 @@ class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition',
             ],
+            'typeDoesntEqualType' => [
+                '<?php
+                    $a = "hello";
+                    $b = 5;
+                    if ($a !== $b) {}',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

@@ -7,6 +7,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
+use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UnevaluatedCode;
@@ -442,6 +443,7 @@ class AssertionFinder
             $true_position = self::hasTrueVariable($conditional);
             $gettype_position = self::hasGetTypeCheck($conditional);
             $getclass_position = self::hasGetClassCheck($conditional);
+            $typed_value_position = self::hasTypedValueComparison($conditional);
 
             if ($null_position !== null) {
                 if ($null_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -615,6 +617,68 @@ class AssertionFinder
                 } else {
                     if ($var_name && $var_type) {
                         $if_types[$var_name] = '!getclass-' . $var_type;
+                    }
+                }
+
+                return $if_types;
+            }
+
+            if ($typed_value_position) {
+                if ($typed_value_position === self::ASSIGNMENT_TO_RIGHT) {
+                    /** @var PhpParser\Node\Expr $conditional->right */
+                    $var_name = ExpressionChecker::getArrayVarId(
+                        $conditional->left,
+                        $this_class_name,
+                        $source
+                    );
+
+                    $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
+                    /** @var PhpParser\Node\Expr $conditional->left */
+                    $var_name = ExpressionChecker::getArrayVarId(
+                        $conditional->right,
+                        $this_class_name,
+                        $source
+                    );
+
+                    $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                } else {
+                    throw new \UnexpectedValueException('$typed_value_position value');
+                }
+
+                if ($var_type) {
+                    if ($var_name) {
+                        $if_types[$var_name] = '!^' . $var_type;
+                    }
+
+                    if ($other_type
+                        && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                        && $source instanceof StatementsSource
+                        && $project_checker
+                    ) {
+                        if (!TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $var_type,
+                            $other_type,
+                            true
+                        ) && !TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $other_type,
+                            $var_type,
+                            true
+                        )) {
+                            if (IssueBuffer::accepts(
+                                new RedundantCondition(
+                                    $var_type . ' can never contain ' . $other_type,
+                                    new CodeLocation($source, $conditional)
+                                ),
+                                $source->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
                     }
                 }
 
