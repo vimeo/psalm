@@ -100,7 +100,9 @@ class ParseTree
 
                 case ')':
                     do {
-                        if ($current_leaf->parent === null) {
+                        if ($current_leaf->parent === null
+                            || $current_leaf->parent instanceof ParseTree\CallableWithReturnTypeTree
+                        ) {
                             if (!$current_leaf instanceof ParseTree\CallableTree) {
                                 throw new TypeParseTreeException('Cannot parse generic type');
                             }
