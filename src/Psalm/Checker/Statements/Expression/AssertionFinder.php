@@ -7,6 +7,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
+use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -378,7 +379,9 @@ class AssertionFinder
                 if ($var_type) {
                     if ($var_name) {
                         $if_types[$var_name] = '^' . $var_type;
-                    } elseif ($other_type
+                    }
+
+                    if ($other_type
                         && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
                         && $source instanceof StatementsSource
                         && $project_checker
@@ -394,14 +397,26 @@ class AssertionFinder
                             $var_type,
                             true
                         )) {
-                            if (IssueBuffer::accepts(
-                                new TypeDoesNotContainType(
-                                    $var_type . ' does not contain ' . $other_type,
-                                    new CodeLocation($source, $conditional)
-                                ),
-                                $source->getSuppressedIssues()
-                            )) {
-                                // fall through
+                            if ($var_type->from_docblock || $other_type->from_docblock) {
+                                if (IssueBuffer::accepts(
+                                    new DocblockTypeContradiction(
+                                        $var_type . ' does not contain ' . $other_type,
+                                        new CodeLocation($source, $conditional)
+                                    ),
+                                    $source->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } else {
+                                if (IssueBuffer::accepts(
+                                    new TypeDoesNotContainType(
+                                        $var_type . ' does not contain ' . $other_type,
+                                        new CodeLocation($source, $conditional)
+                                    ),
+                                    $source->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
                             }
                         }
                     }
@@ -669,14 +684,26 @@ class AssertionFinder
                             $var_type,
                             true
                         )) {
-                            if (IssueBuffer::accepts(
-                                new RedundantCondition(
-                                    $var_type . ' can never contain ' . $other_type,
-                                    new CodeLocation($source, $conditional)
-                                ),
-                                $source->getSuppressedIssues()
-                            )) {
-                                // fall through
+                            if ($var_type->from_docblock || $other_type->from_docblock) {
+                                if (IssueBuffer::accepts(
+                                    new DocblockTypeContradiction(
+                                        $var_type . ' can never contain ' . $other_type,
+                                        new CodeLocation($source, $conditional)
+                                    ),
+                                    $source->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } else {
+                                if (IssueBuffer::accepts(
+                                    new RedundantCondition(
+                                        $var_type . ' can never contain ' . $other_type,
+                                        new CodeLocation($source, $conditional)
+                                    ),
+                                    $source->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
                             }
                         }
                     }
