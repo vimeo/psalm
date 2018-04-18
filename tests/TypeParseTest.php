@@ -356,6 +356,9 @@ class TypeParseTest extends TestCase
         );
     }
 
+    /**
+     * @return void
+     */
     public function testCallableOrInt()
     {
         $this->assertSame(
@@ -469,8 +472,11 @@ class TypeParseTest extends TestCase
     /**
      * @dataProvider providerTestValidCallMapType
      *
-     * @param string $expected
-     * @param array<int|string, string> $arr
+     * @param string $return_type
+     * @param string $param_type_1
+     * @param string $param_type_2
+     * @param string $param_type_3
+     * @param string $param_type_4
      *
      * @return void
      */
@@ -507,7 +513,7 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     * @return void
+     * @return array<string, array<int|string, string>>
      */
     public function providerTestValidCallMapType()
     {
