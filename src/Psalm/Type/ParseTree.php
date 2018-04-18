@@ -252,6 +252,11 @@ class ParseTree
                 case '|':
                     $current_parent = $current_leaf->parent;
 
+                    if ($current_parent instanceof ParseTree\CallableWithReturnTypeTree) {
+                        $current_leaf = $current_parent;
+                        $current_parent = $current_parent->parent;
+                    }
+
                     if ($current_leaf instanceof ParseTree\UnionTree) {
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
