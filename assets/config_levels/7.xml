@@ -71,6 +71,7 @@
         <PossiblyNullReference errorLevel="info" />
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
+        <PossiblyUndefinedArrayOffset errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
 
         <!-- level 5 issues - should be avoided at mosts costs... -->
@@ -102,6 +103,19 @@
         <InvalidArgument errorLevel="info" />
 
         <PossiblyUndefinedMethod errorLevel="info" />
+        <ReservedWord errorLevel="info" />
+
+        <!-- level 7 issues - even worse -->
+
+        <UndefinedThisPropertyAssignment errorLevel="info" />
+        <UndefinedPropertyAssignment errorLevel="info" />
+        <UndefinedThisPropertyFetch errorLevel="info" />
+        <UndefinedPropertyFetch errorLevel="info" />
+
+        <InvalidReturnStatement errorLevel="info" />
+        <InvalidReturnType errorLevel="info" />
+        <InvalidArgument errorLevel="info" />
+
         <ReservedWord errorLevel="info" />
 
     </issueHandlers>
