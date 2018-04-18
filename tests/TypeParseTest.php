@@ -346,6 +346,17 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testCallableThatReturnsACallable()
+    {
+        $this->assertSame(
+            'callable():callable():string',
+            (string)Type::parseString('callable() : callable() : string')
+        );
+    }
+
+    /**
      * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void
