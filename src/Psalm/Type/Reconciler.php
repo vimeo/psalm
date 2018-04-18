@@ -837,7 +837,7 @@ class Reconciler
                     $type_coerced_from_mixed,
                     $atomic_to_string_cast
                 )) {
-                    $acceptable_atomic_types[] = $existing_var_type_part;
+                    $acceptable_atomic_types[] = clone $existing_var_type_part;
                     continue;
                 }
 
@@ -845,6 +845,7 @@ class Reconciler
                     && ($codebase->classExists($existing_var_type_part->value)
                         || $codebase->interfaceExists($existing_var_type_part->value))
                 ) {
+                    $existing_var_type_part = clone $existing_var_type_part;
                     $existing_var_type_part->addIntersectionType($new_type_part);
                     $acceptable_atomic_types[] = $existing_var_type_part;
                 }
