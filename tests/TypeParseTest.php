@@ -356,6 +356,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testCallableOrInt()
+    {
+        $this->assertSame(
+            'callable(string):void|int',
+            (string)Type::parseString('callable(string):void|int')
+        );
+    }
+
     /**
      * @expectedException \Psalm\Exception\TypeParseTreeException
      *
@@ -456,5 +464,53 @@ class TypeParseTest extends TestCase
             'callable(int, string)',
             (string)Type::parseString('callable(int, string)')
         );
+    }
+
+    /**
+     * @dataProvider providerTestValidCallMapType
+     *
+     * @param string $expected
+     * @param array<int|string, string> $arr
+     *
+     * @return void
+     */
+    public function testValidCallMapType(
+        $return_type,
+        $param_type_1 = '',
+        $param_type_2 = '',
+        $param_type_3 = '',
+        $param_type_4 = ''
+    ) {
+        if ($return_type && $return_type !== 'void') {
+            \Psalm\Type::parseString($return_type);
+        }
+
+        if ($param_type_1 && $param_type_1 !== 'mixed') {
+            if (strpos($param_type_1, 'oci-') !== false) {
+                return;
+            }
+
+            \Psalm\Type::parseString($param_type_1);
+        }
+
+        if ($param_type_2 && $param_type_2 !== 'mixed') {
+            \Psalm\Type::parseString($param_type_2);
+        }
+
+        if ($param_type_3 && $param_type_3 !== 'mixed') {
+            \Psalm\Type::parseString($param_type_3);
+        }
+
+        if ($param_type_4 && $param_type_4 !== 'mixed') {
+            \Psalm\Type::parseString($param_type_4);
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function providerTestValidCallMapType()
+    {
+        return \Psalm\Codebase\CallMap::getCallMap();
     }
 }
