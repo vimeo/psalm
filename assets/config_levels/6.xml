@@ -96,7 +96,7 @@
         <FalsableReturnStatement errorLevel="info" />
 
         <MoreSpecificImplementedParamType errorLevel="info" />
-        <LessSpecificImplementedReturnType errorLevel="info" />
+        <MoreSpecificImplementedReturnType errorLevel="info" />
 
         <InvalidReturnStatement errorLevel="info" />
         <InvalidReturnType errorLevel="info" />
