@@ -233,7 +233,7 @@ class ForeachChecker
                                     || $array_atomic_type instanceof Type\Atomic\ObjectLike
                                 ) {
                                     if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                        $array_atomic_type = $array_atomic_type->getGenericValueType();
+                                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
                                     }
 
                                     $key_type_part = $array_atomic_type->type_params[0];
