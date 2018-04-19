@@ -16,6 +16,7 @@
         <DeprecatedMethod errorLevel="info" />
         <DeprecatedProperty errorLevel="info" />
         <DeprecatedClass errorLevel="info" />
+        <DeprecatedInterface errorLevel="info" />
 
         <MissingClosureReturnType errorLevel="info" />
         <MissingReturnType errorLevel="info" />
@@ -79,10 +80,12 @@
         <ImplicitToStringCast errorLevel="info" />
         <InvalidScalarArgument errorLevel="info" />
         <InvalidToString errorLevel="info" />
-        <MethodSignatureMismatch errorLevel="info" />
+        <InvalidOperand errorLevel="info" />
         <NoInterfaceProperties errorLevel="info" />
         <TooManyArguments errorLevel="info" />
         <TypeDoesNotContainType errorLevel="info" />
         <TypeDoesNotContainNull errorLevel="info" />
+        <MissingDocblockType errorLevel="info" />
+        <ImplementedReturnTypeMismatch errorLevel="info" />
     </issueHandlers>
 </psalm>

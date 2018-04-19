@@ -16,6 +16,7 @@
         <DeprecatedMethod errorLevel="info" />
         <DeprecatedProperty errorLevel="info" />
         <DeprecatedClass errorLevel="info" />
+        <DeprecatedInterface errorLevel="info" />
 
         <MissingClosureReturnType errorLevel="info" />
         <MissingReturnType errorLevel="info" />

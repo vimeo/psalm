@@ -61,7 +61,7 @@ Options:
 
     -i, --init [source_dir=src] [level=3]
         Create a psalm config file in the current directory that points to [source_dir]
-        at the required level, from 1, most strict, to 7, most permissive.
+        at the required level, from 1, most strict, to 8, most permissive.
 
     --debug
         Debug information
@@ -185,8 +185,8 @@ if (isset($options['i'])) {
         }
 
         if (isset($args[1])) {
-            if (!preg_match('/^[1-7]$/', $args[1])) {
-                die('Config strictness must be a number between 1 and 7 inclusive' . PHP_EOL);
+            if (!preg_match('/^[1-8]$/', $args[1])) {
+                die('Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
             }
 
             $level = (int)$args[1];
