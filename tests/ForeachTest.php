@@ -49,6 +49,41 @@ class ForeachTest extends TestCase
                         foreach ($object as $foo) {}
                     }'
             ],
+            'arrayIteratorIteration' => [
+                '<?php
+                    class Item {
+                      /**
+                       * @var string
+                       */
+                      public $prop = "var";
+                    }
+
+                    class Collection implements IteratorAggregate {
+                      /**
+                       * @var Item[]
+                       */
+                      private $items = [];
+
+                      public function add(Item $item): void
+                      {
+                          $this->items[] = $item;
+                      }
+
+                      /**
+                        * @return \ArrayIterator<mixed, Item>
+                        */
+                      public function getIterator(): \ArrayIterator
+                      {
+                          return new \ArrayIterator($this->items);
+                      }
+                    }
+
+                    $collection = new Collection();
+                    $collection->add(new Item());
+                    foreach ($collection as $item) {
+                      echo $item->prop;
+                    }'
+            ],
         ];
     }
 
