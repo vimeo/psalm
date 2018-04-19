@@ -322,7 +322,15 @@ class Config
             throw new \InvalidArgumentException('Cannot open ' . $file_path);
         }
 
-        return self::loadFromXML($base_dir, $file_contents);
+        try {
+            $config = self::loadFromXML($base_dir, $file_contents);
+        } catch (ConfigException $e) {
+            throw new ConfigException(
+                'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()
+            );
+        }
+
+        return $config;
     }
 
     /**
@@ -362,7 +370,7 @@ class Config
             foreach ($errors as $error) {
                 if ($error->level === LIBXML_ERR_FATAL || $error->level === LIBXML_ERR_ERROR) {
                     throw new ConfigException(
-                        'Error parsing file ' . $error->file . ' on line ' . $error->line . ': ' . $error->message
+                        'Error on line ' . $error->line . ":\n" . '    ' . $error->message
                     );
                 }
             }

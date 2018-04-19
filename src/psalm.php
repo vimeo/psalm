@@ -277,10 +277,15 @@ $cache_provider = isset($options['no-cache'])
     : new Psalm\Provider\ParserCacheProvider();
 
 // initialise custom config, if passed
-if ($path_to_config) {
-    $config = Config::loadFromXMLFile($path_to_config, $current_dir);
-} else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+try {
+    if ($path_to_config) {
+        $config = Config::loadFromXMLFile($path_to_config, $current_dir);
+    } else {
+        $config = Config::getConfigForPath($current_dir, $current_dir, $output_format);
+    }
+} catch (Psalm\Exception\ConfigException $e) {
+    echo $e->getMessage();
+    exit(1);
 }
 
 $config->setComposerClassLoader($first_autoloader);
