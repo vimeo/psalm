@@ -103,5 +103,28 @@
         <InvalidReturnType errorLevel="info" />
         <UndefinedThisPropertyAssignment errorLevel="info" />
 
+        <!-- level 7 issues - even worse -->
+
+        <UndefinedThisPropertyAssignment errorLevel="info" />
+        <UndefinedPropertyAssignment errorLevel="info" />
+        <UndefinedThisPropertyFetch errorLevel="info" />
+        <UndefinedPropertyFetch errorLevel="info" />
+
+        <InvalidReturnStatement errorLevel="info" />
+        <InvalidReturnType errorLevel="info" />
+        <InvalidArgument errorLevel="info" />
+        <InvalidPropertyAssignmentValue errorLevel="info" />
+        <InvalidArrayOffset errorLevel="info" />
+        <InvalidArrayAssignment errorLevel="info" />
+        <InvalidArrayAccess errorLevel="info" />
+        <InvalidClone errorLevel="info" />
+
+        <!-- level 8 issues - some fatal errors in PHP -->
+
+        <ReservedWord errorLevel="info" />
+        <MethodSignatureMismatch errorLevel="info" />
+        <OverriddenMethodAccess errorLevel="info" />
+        <InaccessibleProperty errorLevel="info" />
+
     </issueHandlers>
 </psalm>

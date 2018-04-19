@@ -16,6 +16,7 @@
         <DeprecatedMethod errorLevel="info" />
         <DeprecatedProperty errorLevel="info" />
         <DeprecatedClass errorLevel="info" />
+        <DeprecatedInterface errorLevel="info" />
 
         <MissingClosureReturnType errorLevel="info" />
         <MissingReturnType errorLevel="info" />
@@ -80,11 +81,13 @@
         <ImplicitToStringCast errorLevel="info" />
         <InvalidScalarArgument errorLevel="info" />
         <InvalidToString errorLevel="info" />
-        <MethodSignatureMismatch errorLevel="info" />
+        <InvalidOperand errorLevel="info" />
         <NoInterfaceProperties errorLevel="info" />
         <TooManyArguments errorLevel="info" />
         <TypeDoesNotContainType errorLevel="info" />
         <TypeDoesNotContainNull errorLevel="info" />
+        <MissingDocblockType errorLevel="info" />
+        <ImplementedReturnTypeMismatch errorLevel="info" />
 
         <!-- level 6 issues - really bad things -->
 
@@ -100,11 +103,6 @@
         <InvalidReturnType errorLevel="info" />
         <UndefinedThisPropertyAssignment errorLevel="info" />
 
-        <InvalidArgument errorLevel="info" />
-
-        <PossiblyUndefinedMethod errorLevel="info" />
-        <ReservedWord errorLevel="info" />
-
         <!-- level 7 issues - even worse -->
 
         <UndefinedThisPropertyAssignment errorLevel="info" />
@@ -115,8 +113,11 @@
         <InvalidReturnStatement errorLevel="info" />
         <InvalidReturnType errorLevel="info" />
         <InvalidArgument errorLevel="info" />
-
-        <ReservedWord errorLevel="info" />
+        <InvalidPropertyAssignmentValue errorLevel="info" />
+        <InvalidArrayOffset errorLevel="info" />
+        <InvalidArrayAssignment errorLevel="info" />
+        <InvalidArrayAccess errorLevel="info" />
+        <InvalidClone errorLevel="info" />
 
     </issueHandlers>
 </psalm>
