@@ -203,6 +203,71 @@ class ForeachChecker
 
                     if ($codebase->classImplements(
                         $iterator_type->value,
+                        'IteratorAggregate'
+                    ) ||
+                        (
+                            $codebase->interfaceExists($iterator_type->value)
+                            && $codebase->interfaceExtends(
+                                $iterator_type->value,
+                                'IteratorAggregate'
+                            )
+                        )
+                    ) {
+                        $iterator_method = $iterator_type->value . '::getIterator';
+                        $self_class = $iterator_type->value;
+                        $iterator_class_type = $codebase->methods->getMethodReturnType(
+                            $iterator_method,
+                            $self_class
+                        );
+
+                        if ($iterator_class_type) {
+                            $array_type = ExpressionChecker::fleshOutType(
+                                $project_checker,
+                                $iterator_class_type,
+                                $self_class,
+                                $self_class
+                            );
+
+                            foreach ($array_type->getTypes() as $array_atomic_type) {
+                                if ($array_atomic_type instanceof Type\Atomic\TArray
+                                    || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                                ) {
+                                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                        $array_atomic_type = $array_atomic_type->getGenericValueType();
+                                    }
+
+                                    $key_type_part = $array_atomic_type->type_params[0];
+                                    $value_type_part = $array_atomic_type->type_params[1];
+                                } elseif ($array_atomic_type instanceof Type\Atomic\TGenericObject) {
+                                    $type_param_count = count($array_atomic_type->type_params);
+
+                                    $value_type_part = $array_atomic_type->type_params[$type_param_count - 1];
+                                    $key_type_part = $type_param_count > 1
+                                        ? $array_atomic_type->type_params[0]
+                                        : Type::getMixed();
+                                } else {
+                                    $key_type = Type::getMixed();
+                                    $value_type = Type::getMixed();
+                                    break;
+                                }
+
+                                if (!$key_type) {
+                                    $key_type = $key_type_part;
+                                } else {
+                                    $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                                }
+
+                                if (!$value_type) {
+                                    $value_type = $value_type_part;
+                                } else {
+                                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                                }
+                            }
+                        } else {
+                            $value_type = Type::getMixed();
+                        }
+                    } elseif ($codebase->classImplements(
+                        $iterator_type->value,
                         'Iterator'
                     ) ||
                         (
