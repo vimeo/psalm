@@ -615,6 +615,10 @@ class FunctionCallTest extends TestCase
                         return explode(" ", $s);
                     }',
             ],
+            'allowPossiblyUndefinedClassInClassExists' => [
+                '<?php
+                    if (class_exists(Foo::class)) {}'
+            ],
         ];
     }
 

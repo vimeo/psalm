@@ -419,8 +419,22 @@ class CallChecker
                         }
                     }
                 } else {
+                    $toggled_class_exists = false;
+
+                    if ($method_id === 'class_exists'
+                        && $argument_offset === 0
+                        && !$context->inside_class_exists
+                    ) {
+                        $context->inside_class_exists = true;
+                        $toggled_class_exists = true;
+                    }
+
                     if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
                         return false;
+                    }
+
+                    if ($toggled_class_exists) {
+                        $context->inside_class_exists = false;
                     }
                 }
             } else {
