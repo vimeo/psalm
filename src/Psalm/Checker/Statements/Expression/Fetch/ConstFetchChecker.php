@@ -117,14 +117,16 @@ class ConstFetchChecker
                     $statements_checker->getAliases()
                 );
 
-                if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                    $statements_checker,
-                    $fq_class_name,
-                    new CodeLocation($statements_checker->getSource(), $stmt->class),
-                    $statements_checker->getSuppressedIssues(),
-                    false
-                ) === false) {
-                    return false;
+                if (!$context->inside_class_exists || $stmt->name->name !== 'class') {
+                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        $statements_checker,
+                        $fq_class_name,
+                        new CodeLocation($statements_checker->getSource(), $stmt->class),
+                        $statements_checker->getSuppressedIssues(),
+                        false
+                    ) === false) {
+                        return false;
+                    }
                 }
             }
 
