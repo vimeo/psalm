@@ -5,7 +5,7 @@ if ! php -r 'extension_loaded("bz2") or exit(1);' ; then
 fi
 
 composer global require 'humbug/php-scoper:^1.0@dev'
-composer global require humbug/box:dev-master
+composer global require 'humbug/box:3.0.0-alpha.0'
 composer install --no-dev
 [ -d build ] || mkdir build
 [ -d build/psalm ] || mkdir build/psalm
