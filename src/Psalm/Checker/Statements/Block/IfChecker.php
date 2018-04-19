@@ -799,7 +799,11 @@ class IfChecker
             $elseif_context->referenced_var_ids
         );
 
-        $new_assigned_var_ids = array_diff_key($elseif_context->assigned_var_ids, $pre_assigned_var_ids);
+        $conditional_assigned_var_ids = $elseif_context->assigned_var_ids;
+
+        $elseif_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $conditional_assigned_var_ids);
+
+        $new_assigned_var_ids = array_diff_key($conditional_assigned_var_ids, $pre_assigned_var_ids);
 
         $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
@@ -819,29 +823,45 @@ class IfChecker
             $statements_checker
         );
 
-        $elseif_clauses = array_values(
-            array_filter(
-                $elseif_clauses,
-                /** @return bool */
-                function (Clause $c) use ($mixed_var_ids) {
-                    $keys = array_keys($c->possibilities);
+        $elseif_clauses = array_map(
+            /**
+             * @return Clause
+             */
+            function (Clause $c) use ($mixed_var_ids) {
+                $keys = array_keys($c->possibilities);
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id) . '(\[|-)/', $key)) {
-                                return false;
-                            }
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                            return new Clause([], true);
                         }
                     }
-
-                    return true;
                 }
-            )
+
+                return $c;
+            },
+            $elseif_clauses
         );
 
-        if (!$elseif_clauses) {
-            $elseif_clauses = [new Clause([], true)];
-        }
+        $entry_clauses = array_map(
+            /**
+             * @return Clause
+             */
+            function (Clause $c) use ($conditional_assigned_var_ids) {
+                $keys = array_keys($c->possibilities);
+
+                foreach ($keys as $key) {
+                    foreach ($conditional_assigned_var_ids as $conditional_assigned_var_id => $_) {
+                        if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
+                            return new Clause([], true);
+                        }
+                    }
+                }
+
+                return $c;
+            },
+            $entry_clauses
+        );
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraChecker::checkForParadox(
