@@ -10,7 +10,7 @@ class TypeParseTest extends TestCase
      */
     public function setUp()
     {
-        //parent::setUp();
+        //pae::setUp();
     }
 
     /**
@@ -466,6 +466,19 @@ class TypeParseTest extends TestCase
         $this->assertSame(
             'callable(int, string)',
             (string)Type::parseString('callable(int, string)')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testVeryLargeType()
+    {
+        $very_large_type = 'array{a:Closure():(array<mixed, mixed>|null), b?:Closure():array<mixed, mixed>, c?:Closure():array<mixed, mixed>, d?:Closure():array<mixed, mixed>, e?:Closure():(array{f:null|string, g:null|string, h:null|string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:array{0:string}}|null), p?:Closure():(array{f:null|string, g:null|string, h:null|string, q:string, i:string, j:mixed, k:mixed, l:mixed, m:mixed, n:bool, o?:array{0:string}}|null), r?:Closure():(array<mixed, mixed>|null), s:array<mixed, mixed>}|null';
+
+        $this->assertSame(
+            $very_large_type,
+            (string) Type::parseString($very_large_type)
         );
     }
 

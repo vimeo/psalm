@@ -99,11 +99,16 @@ class ParseTree
                     break;
 
                 case ')':
+                    if ($last_token === '(' && $current_leaf instanceof ParseTree\CallableTree) {
+                        break;
+                    }
+
                     do {
                         if ($current_leaf->parent === null
                             || $current_leaf->parent instanceof ParseTree\CallableWithReturnTypeTree
                         ) {
                             if (!$current_leaf instanceof ParseTree\CallableTree) {
+                                var_dump($current_leaf);
                                 throw new TypeParseTreeException('Cannot parse generic type');
                             }
 
