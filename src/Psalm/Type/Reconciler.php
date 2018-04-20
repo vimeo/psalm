@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -1184,10 +1185,11 @@ class Reconciler
                     foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
-                        } elseif ($existing_key_type_part instanceof TMixed ||
-                            $existing_key_type_part instanceof TObject ||
-                            ($existing_key_type_part instanceof TNamedObject &&
-                                strtolower($existing_key_type_part->value) === 'stdclass')
+                        } elseif ($existing_key_type_part instanceof TMixed
+                            || $existing_key_type_part instanceof TGenericParam
+                            || $existing_key_type_part instanceof TObject
+                            || ($existing_key_type_part instanceof TNamedObject
+                                && strtolower($existing_key_type_part->value) === 'stdclass')
                         ) {
                             $class_property_type = Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TNamedObject) {

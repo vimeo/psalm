@@ -599,7 +599,7 @@ class Union
     }
 
     /**
-     * @param  array<string, string|Type\Union>     $template_types
+     * @param  array<string, Type\Union>     $template_types
      *
      * @return void
      */
@@ -616,16 +616,12 @@ class Union
                 $keys_to_unset[] = $key;
                 $template_type = $template_types[$key];
 
-                if (is_string($template_type)) {
-                    $new_types[$template_type] = Atomic::create($template_type);
-                } else {
-                    foreach ($template_type->types as $template_type_part) {
-                        if ($template_type_part instanceof Type\Atomic\TMixed) {
-                            $is_mixed = true;
-                        }
-
-                        $new_types[$template_type_part->getKey()] = $template_type_part;
+                foreach ($template_type->types as $template_type_part) {
+                    if ($template_type_part instanceof Type\Atomic\TMixed) {
+                        $is_mixed = true;
                     }
+
+                    $new_types[$template_type_part->getKey()] = $template_type_part;
                 }
             } else {
                 $atomic_type->replaceTemplateTypesWithArgTypes($template_types);

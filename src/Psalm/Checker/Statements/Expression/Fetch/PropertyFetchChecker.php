@@ -71,6 +71,8 @@ class PropertyFetchChecker
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
 
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+
             if ($context->collect_references
                 && isset($stmt->var->inferredType)
                 && $stmt->var->inferredType->hasObjectType()

@@ -162,23 +162,24 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             foreach ($class_type->getTypes() as $class_type_part) {
                 if (!$class_type_part instanceof TNamedObject) {
                     switch (get_class($class_type_part)) {
-                        case 'Psalm\\Type\\Atomic\\TNull':
-                        case 'Psalm\\Type\\Atomic\\TFalse':
+                        case Type\Atomic\TNull::class:
+                        case Type\Atomic\TFalse::class:
                             // handled above
                             break;
 
-                        case 'Psalm\\Type\\Atomic\\TInt':
-                        case 'Psalm\\Type\\Atomic\\TBool':
-                        case 'Psalm\\Type\\Atomic\\TTrue':
-                        case 'Psalm\\Type\\Atomic\\TArray':
-                        case 'Psalm\\Type\\Atomic\\TString':
-                        case 'Psalm\\Type\\Atomic\\TNumericString':
-                        case 'Psalm\\Type\\Atomic\\TClassString':
+                        case Type\Atomic\TInt::class:
+                        case Type\Atomic\TBool::class:
+                        case Type\Atomic\TTrue::class:
+                        case Type\Atomic\TArray::class:
+                        case Type\Atomic\TString::class:
+                        case Type\Atomic\TNumericString::class:
+                        case Type\Atomic\TClassString::class:
                             $invalid_method_call_types[] = (string)$class_type_part;
                             break;
 
-                        case 'Psalm\\Type\\Atomic\\TMixed':
-                        case 'Psalm\\Type\\Atomic\\TObject':
+                        case Type\Atomic\TMixed::class:
+                        case Type\Atomic\TGenericParam::class:
+                        case Type\Atomic\TObject::class:
                             $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                             if (IssueBuffer::accepts(
@@ -355,7 +356,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         }
                     } else {
                         foreach ($class_storage->template_types as $type_name => $_) {
-                            $class_template_params[$type_name] = Type::getMixed();
+                            if (!$stmt->var instanceof PhpParser\Node\Expr\Variable
+                                || $stmt->var->name !== 'this'
+                            ) {
+                                $class_template_params[$type_name] = Type::getMixed();
+                            }
                         }
                     }
                 }

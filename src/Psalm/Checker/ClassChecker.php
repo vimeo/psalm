@@ -349,11 +349,6 @@ class ClassChecker extends ClassLikeChecker
                 ) {
                     $property_type->initialized = false;
                 }
-
-                if ($storage->template_types) {
-                    $generic_types = [];
-                    $property_type->replaceTemplateTypesWithStandins($storage->template_types, $generic_types);
-                }
             } else {
                 $property_type = Type::getMixed();
             }

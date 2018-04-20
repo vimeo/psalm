@@ -30,6 +30,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -497,7 +498,7 @@ class ArrayFetchChecker
                 continue;
             }
 
-            if ($type instanceof TMixed || $type instanceof TEmpty) {
+            if ($type instanceof TMixed || $type instanceof TGenericParam ||  $type instanceof TEmpty) {
                 $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if ($in_assignment) {

@@ -42,6 +42,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -1139,9 +1140,10 @@ class ExpressionChecker
 
         if (isset($stmt->expr->inferredType)) {
             foreach ($stmt->expr->inferredType->getTypes() as $clone_type_part) {
-                if (!$clone_type_part instanceof TNamedObject &&
-                    !$clone_type_part instanceof TObject &&
-                    !$clone_type_part instanceof TMixed
+                if (!$clone_type_part instanceof TNamedObject
+                    && !$clone_type_part instanceof TObject
+                    && !$clone_type_part instanceof TMixed
+                    && !$clone_type_part instanceof TGenericParam
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidClone(
