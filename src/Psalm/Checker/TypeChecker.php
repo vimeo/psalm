@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -288,11 +289,11 @@ class TypeChecker
         &$type_coerced_from_mixed = null,
         &$to_string_cast = null
     ) {
-        if ($container_type_part instanceof TMixed) {
+        if ($container_type_part instanceof TMixed || $container_type_part instanceof TGenericParam) {
             return true;
         }
 
-        if ($input_type_part instanceof TMixed) {
+        if ($input_type_part instanceof TMixed || $input_type_part instanceof TGenericParam) {
             $type_coerced = true;
             $type_coerced_from_mixed = true;
 

@@ -215,6 +215,13 @@ class TemplateTest extends TestCase
                             return $this->obj;
                         }
 
+                        /**
+                         * @return T
+                         */
+                        public function bat() {
+                            return $this->bar();
+                        }
+
                         public function __toString(): string {
                             return "hello " . $this->obj;
                         }
@@ -226,7 +233,7 @@ class TemplateTest extends TestCase
                     '$afoo' => 'Foo<A>',
                     '$afoo_bar' => 'A',
                 ],
-                'error_levels' => ['MixedOperand', 'MixedReturnStatement'],
+                'error_levels' => ['MixedOperand'],
             ],
             'phanTuple' => [
                 '<?php

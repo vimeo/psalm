@@ -148,7 +148,9 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         continue;
                     }
 
-                    if ($lhs_type_part instanceof Type\Atomic\TMixed) {
+                    if ($lhs_type_part instanceof Type\Atomic\TMixed
+                        || $lhs_type_part instanceof Type\Atomic\TGenericParam
+                    ) {
                         $stmt->inferredType = Type::getObject();
 
                         continue;

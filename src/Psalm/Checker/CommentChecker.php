@@ -94,7 +94,7 @@ class CommentChecker
                 }
 
                 try {
-                    $defined_type = Type::parseString($var_type_string);
+                    $defined_type = Type::parseString($var_type_string, false, $template_types ?: []);
                 } catch (TypeParseTreeException $e) {
                     if (is_int($came_from_line_number)) {
                         throw new DocblockParseException(

@@ -989,7 +989,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             $this->function_template_types + $this->class_template_types
                         );
 
-                        $storage->return_type = Type::parseString($fixed_type_string);
+                        $storage->return_type = Type::parseString(
+                            $fixed_type_string,
+                            false,
+                            $this->function_template_types + $this->class_template_types
+                        );
                         $storage->return_type->setFromDocblock();
 
                         if ($storage->signature_return_type) {
@@ -1191,7 +1195,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $docblock_param['type'],
                         $this->aliases,
                         $this->function_template_types + $this->class_template_types
-                    )
+                    ),
+                    false,
+                    $this->function_template_types + $this->class_template_types
                 );
             } catch (TypeParseTreeException $e) {
                 if (IssueBuffer::accepts(

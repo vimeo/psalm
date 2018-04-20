@@ -152,7 +152,7 @@ trait GenericTrait
     }
 
     /**
-     * @param  array<string, string|Union>     $template_types
+     * @param  array<string, Union>     $template_types
      *
      * @return void
      */
