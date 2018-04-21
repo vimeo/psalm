@@ -9,6 +9,7 @@ use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMismatch;
+use Psalm\Issue\MethodSignatureMustOmitReturnType;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\NonStaticSelfCall;
@@ -651,6 +652,37 @@ class MethodChecker extends FunctionLikeChecker
                 new MethodSignatureMismatch(
                     'Method ' . $cased_implementer_method_id . ' has more arguments than parent method ' .
                         $cased_guide_method_id,
+                    $code_location
+                )
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  MethodStorage $method_storage
+     * @param  CodeLocation  $code_location
+     * @return false|null
+     */
+    public static function checkMethodSignatureMustOmitReturnType(
+        MethodStorage $method_storage,
+        CodeLocation $code_location
+    ) {
+        if ($method_storage->signature_return_type === null) {
+            return null;
+        }
+
+        $cased_method_name = $method_storage->cased_name;
+        switch ($cased_method_name) {
+        case '__clone':
+        case '__construct':
+        case '__destruct':
+            if (IssueBuffer::accepts(
+                new MethodSignatureMustOmitReturnType(
+                    'Method ' . $cased_method_name . ' must not declare a return type',
                     $code_location
                 )
             )) {

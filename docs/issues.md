@@ -645,6 +645,16 @@ class B extends A {
 }
 ```
 
+### MethodSignatureMustOmitReturnType
+
+Emmitted when a `__clone`, `__construct`, or `__destruct` method is defined with a return type.
+
+```php
+class A {
+    public function __clone() : void {}
+}
+```
+
 ### MismatchingDocblockParamType
 
 Emitted when an `@param` entry in a function’s docblock doesn’t match the param typehint,
@@ -1918,4 +1928,3 @@ function foo() : void {
     echo $b;
 }
 ```
-

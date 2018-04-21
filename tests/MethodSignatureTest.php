@@ -472,4 +472,26 @@ class MethodSignatureTest extends TestCase
             ],
         ];
     }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MethodSignatureMustOmitReturnType
+     *
+     * @return                   void
+     */
+    public function testMustOmitReturnType()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A
+                {
+                    public function __construct(): void
+                    {
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }
