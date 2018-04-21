@@ -482,5 +482,4 @@ class MethodSignatureTest extends TestCase
             ],
         ];
     }
-
 }
