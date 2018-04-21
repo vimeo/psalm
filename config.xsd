@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<xs:schema
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns="https://getpsalm.org/schema/config"
+        targetNamespace="https://getpsalm.org/schema/config"
+        elementFormDefault="qualified"
+>
     <xs:element name="psalm" type="PsalmType" />
 
     <xs:complexType name="PsalmType">
