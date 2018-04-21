@@ -2,8 +2,8 @@
 <psalm
     totallyTyped="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns="urn:Test.Namespace"
-    xsi:schemaLocation="urn:Test.Namespace vendor/vimeo/psalm/config.xsd"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
 >
     <projectFiles>
         <directory name="src" />
