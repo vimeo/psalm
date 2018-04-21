@@ -470,28 +470,17 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
+            'mustOmitReturnType' => [
+                '<?php
+                    class A
+                    {
+                        public function __construct(): void
+                        {
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMustOmitReturnType',
+            ],
         ];
     }
 
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage MethodSignatureMustOmitReturnType
-     *
-     * @return                   void
-     */
-    public function testMustOmitReturnType()
-    {
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                class A
-                {
-                    public function __construct(): void
-                    {
-                    }
-                }'
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
 }
