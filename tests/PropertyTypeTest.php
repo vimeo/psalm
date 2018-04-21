@@ -943,7 +943,7 @@ class PropertyTypeTest extends TestCase
                     class A {
                         public $foo;
 
-                        public function __construct(): void {
+                        public function __construct() {
                             $this->foo = 5;
                         }
                     }',
@@ -955,7 +955,7 @@ class PropertyTypeTest extends TestCase
                     class A {
                         public $foo;
 
-                        public function __construct(): void {
+                        public function __construct() {
                             $this->foo = 5;
                         }
 
@@ -971,7 +971,7 @@ class PropertyTypeTest extends TestCase
                     class A {
                         public $foo = null;
 
-                        public function __construct(): void {
+                        public function __construct() {
                             $this->foo = 5;
                         }
                     }',
