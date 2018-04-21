@@ -7,7 +7,8 @@
     rememberPropertyAssignmentsAfterCall="true"
     throwExceptionOnError="0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="config.xsd"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
 >
     <projectFiles>
         <directory name="src" />

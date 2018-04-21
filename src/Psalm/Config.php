@@ -362,6 +362,25 @@ class Config
         $dom_document = new \DOMDocument();
         $dom_document->loadXML($file_contents);
 
+        $psalm_nodes = $dom_document->getElementsByTagName('psalm');
+
+        /** @var \DomElement|null */
+        $psalm_node = $psalm_nodes->item(0);
+
+        if (!$psalm_node) {
+            throw new ConfigException(
+                'Missing psalm node'
+            );
+        }
+
+        if (!$psalm_node->hasAttribute('xmlns')) {
+            $psalm_node->setAttribute('xmlns', 'https://getpsalm.org/schema/config');
+
+            $old_dom_document = $dom_document;
+            $dom_document = new \DOMDocument();
+            $dom_document->loadXML($old_dom_document->saveXml());
+        }
+
         // Enable user error handling
         libxml_use_internal_errors(true);
 
