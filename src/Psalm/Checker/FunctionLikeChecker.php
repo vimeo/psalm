@@ -175,6 +175,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 $context->inside_constructor = true;
             }
 
+            $codeLocation = new CodeLocation(
+                $this,
+                $this->function,
+                null,
+                true
+            );
+
             if ($overridden_method_ids
                 && $this->function->name !== '__construct'
                 && !$context->collect_initializations
@@ -193,12 +200,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                         $parent_storage,
                         $storage,
                         $parent_method_storage,
-                        new CodeLocation(
-                            $this,
-                            $this->function,
-                            null,
-                            true
-                        ),
+                        $codeLocation,
                         $storage->suppressed_issues
                     );
 
@@ -209,6 +211,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     }
                 }
             }
+
+            MethodChecker::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
         } elseif ($this->function instanceof Function_) {
             $file_storage = $file_storage_provider->get($this->source->getFilePath());
 
