@@ -222,7 +222,7 @@ if (isset($options['i'])) {
     if (!\Phar::running(false)) {
         $template = str_replace(
             'vendor/vimeo/psalm/config.xsd',
-            __DIR__ . DIRECTORY_SEPARATOR . 'config.xsd',
+            'file://' . realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'config.xsd'),
             $template
         );
     }
