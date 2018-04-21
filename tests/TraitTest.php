@@ -579,7 +579,7 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function __construct(): void {
+                        public function __construct() {
                             $this->foo = 5;
                         }
                     }',
@@ -594,7 +594,7 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function __construct(): void {
+                        public function __construct() {
                             $this->foo = 5;
                         }
 
@@ -613,7 +613,7 @@ class TraitTest extends TestCase
                     class A {
                         use T;
 
-                        public function __construct(): void {
+                        public function __construct() {
                             $this->foo = 5;
                         }
                     }',
