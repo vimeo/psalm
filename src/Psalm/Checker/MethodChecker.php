@@ -663,6 +663,9 @@ class MethodChecker extends FunctionLikeChecker
     }
 
     /**
+     * Check that __clone, __construct, and __destruct do not have a return type
+     * hint in their signature.
+     *
      * @param  MethodStorage $method_storage
      * @param  CodeLocation  $code_location
      * @return false|null
@@ -676,10 +679,8 @@ class MethodChecker extends FunctionLikeChecker
         }
 
         $cased_method_name = $method_storage->cased_name;
-        switch ($cased_method_name) {
-        case '__clone':
-        case '__construct':
-        case '__destruct':
+        $methodsOfInterest = ['__clone', '__construct', '__destruct'];
+        if (in_array($cased_method_name, $methodsOfInterest)) {
             if (IssueBuffer::accepts(
                 new MethodSignatureMustOmitReturnType(
                     'Method ' . $cased_method_name . ' must not declare a return type',
@@ -688,8 +689,8 @@ class MethodChecker extends FunctionLikeChecker
             )) {
                 return false;
             }
-
-            return null;
         }
+
+        return null;
     }
 }
