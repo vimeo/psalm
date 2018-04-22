@@ -265,7 +265,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
                     foreach ($docblock_info->methods as $method) {
-                        $storage->pseudo_methods[strtolower($method->name->name)]
+                        $storage->pseudo_methods[strtolower($method->name)]
                             = $this->registerFunctionLike($method, true);
                     }
                 }
@@ -603,7 +603,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $cased_function_id = '@method ' . $stmt->name;
 
             $storage = new FunctionLikeStorage();
-        }  elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id = ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name;
             $function_id = strtolower($cased_function_id);
 
