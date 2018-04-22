@@ -199,6 +199,11 @@ class Config
     public $allow_string_standin_for_class = true;
 
     /**
+     * @var bool
+     */
+    public $use_phpdoc_method_when_undefined = false;
+
+    /**
      * @var string[]
      */
     private $plugin_paths = [];
@@ -479,6 +484,11 @@ class Config
         if (isset($config_xml['allowStringToStandInForClass'])) {
             $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
             $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['usePhpDocMethodWhenUndefined'])) {
+            $attribute_text = (string) $config_xml['usePhpDocMethodWhenUndefined'];
+            $config->use_phpdoc_method_when_undefined = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {
