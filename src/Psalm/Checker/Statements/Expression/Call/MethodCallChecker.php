@@ -269,13 +269,13 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $statements_checker->getSource()
                         )
                     ) {
-                        $has_valid_method_call_type = true;
-                        $existent_method_ids[] = $method_id;
-
                         if ($var_id !== '$this') {
                             $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                             if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+                                $has_valid_method_call_type = true;
+                                $existent_method_ids[] = $method_id;
+
                                 $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
                                 if (self::checkFunctionArguments(
@@ -315,8 +315,14 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                                     continue;
                                 }
+                            } elseif ($class_storage->sealed_methods) {
+                                $non_existent_method_ids[] = $method_id;
+                                continue;
                             }
                         }
+
+                        $has_valid_method_call_type = true;
+                        $existent_method_ids[] = $method_id;
 
                         $return_type = Type::getMixed();
                         continue;
