@@ -35,7 +35,7 @@
         <xs:attribute name="allowPhpStormGenerics" type="xs:string" />
         <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:string" />
         <xs:attribute name="allowStringToStandInForClass" type="xs:string" />
-        <xs:attribute name="usePhpDocMethodWhenUndefined" type="xs:string" />
+        <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

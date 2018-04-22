@@ -368,7 +368,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 if (!$codebase->methodExists($method_id, $code_location)) {
-                    if ($config->use_phpdoc_method_when_undefined) {
+                    if ($config->use_phpdoc_methods_without_call) {
                         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                         if (isset($class_storage->pseudo_methods[$method_name_lc])) {

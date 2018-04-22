@@ -155,7 +155,7 @@ class Codebase
         $this->analyzer = new Codebase\Analyzer($config, $file_provider, $debug_output);
 
         $this->functions = new Codebase\Functions($file_storage_provider, $this->reflection);
-        $this->methods = new Codebase\Methods($classlike_storage_provider);
+        $this->methods = new Codebase\Methods($config, $classlike_storage_provider);
         $this->properties = new Codebase\Properties($classlike_storage_provider);
         $this->classlikes = new Codebase\ClassLikes(
             $config,
