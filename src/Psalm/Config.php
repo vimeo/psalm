@@ -201,7 +201,7 @@ class Config
     /**
      * @var bool
      */
-    public $use_phpdoc_method_when_undefined = false;
+    public $use_phpdoc_methods_without_call = false;
 
     /**
      * @var string[]
@@ -486,9 +486,9 @@ class Config
             $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['usePhpDocMethodWhenUndefined'])) {
-            $attribute_text = (string) $config_xml['usePhpDocMethodWhenUndefined'];
-            $config->use_phpdoc_method_when_undefined = $attribute_text === 'true' || $attribute_text === '1';
+        if (isset($config_xml['usePhpDocMethodsWithoutMagicCall'])) {
+            $attribute_text = (string) $config_xml['usePhpDocMethodsWithoutMagicCall'];
+            $config->use_phpdoc_methods_without_call = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

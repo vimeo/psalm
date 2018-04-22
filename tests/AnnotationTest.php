@@ -212,7 +212,7 @@ class AnnotationTest extends TestCase
      */
     public function testPhpDocMethodWhenUndefined()
     {
-        Config::getInstance()->use_phpdoc_method_when_undefined = true;
+        Config::getInstance()->use_phpdoc_methods_without_call = true;
 
         $this->addFile(
             'somefile.php',
@@ -239,6 +239,68 @@ class AnnotationTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testCannotOverrideParentRetunTypeWhenIgnoringPhpDocMethod()
+    {
+        Config::getInstance()->use_phpdoc_methods_without_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Parent {
+                    public static function getMe() : self {
+                        return new self();
+                    }
+                }
+
+                /**
+                 * @method getMe() : Child
+                 */
+                class Child extends Parent {}
+
+                $child = Child::getMe();'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('Parent', (string) $context->vars_in_scope['$child']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testOverrideParentRetunType()
+    {
+        Config::getInstance()->use_phpdoc_methods_without_call = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Parent {
+                    public static function getMe() : self {
+                        return new self();
+                    }
+                }
+
+                /**
+                 * @method getMe() : Child
+                 */
+                class Child extends Parent {}
+
+                $child = Child::getMe();'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('Child', (string) $context->vars_in_scope['$child']);
     }
 
     /**

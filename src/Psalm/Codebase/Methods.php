@@ -20,6 +20,11 @@ class Methods
     private $classlike_storage_provider;
 
     /**
+     * @var \Psalm\Config
+     */
+    private $config;
+
+    /**
      * @var array<string, MethodChecker>
      */
     private $method_checkers = [];
@@ -33,9 +38,11 @@ class Methods
      * @param ClassLikeStorageProvider $storage_provider
      */
     public function __construct(
+        \Psalm\Config $config,
         ClassLikeStorageProvider $storage_provider
     ) {
         $this->classlike_storage_provider = $storage_provider;
+        $this->config = $config;
     }
 
     /**
@@ -160,6 +167,16 @@ class Methods
      */
     public function getMethodReturnType($method_id, &$self_class)
     {
+        if ($this->config->use_phpdoc_methods_without_call) {
+            list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
+
+            $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
+
+            if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
+                return $original_class_storage->pseudo_methods[strtolower($original_method_name)]->return_type;
+            }
+        }
+
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
