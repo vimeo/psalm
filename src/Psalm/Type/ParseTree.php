@@ -107,10 +107,6 @@ class ParseTree
                         if ($current_leaf->parent === null
                             || $current_leaf->parent instanceof ParseTree\CallableWithReturnTypeTree
                         ) {
-                            if (!$current_leaf instanceof ParseTree\CallableTree) {
-                                throw new TypeParseTreeException('Cannot parse generic type');
-                            }
-
                             break;
                         }
 

@@ -13,7 +13,7 @@ use Psalm\VarDocblockComment;
 
 class CommentChecker
 {
-    const TYPE_REGEX = '(\??\\\?[A-Za-z][\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
+    const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
     /**
      * @param  string           $comment
@@ -309,6 +309,39 @@ class CommentChecker
             /** @var string $suppress_entry */
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppressed_issues[] = preg_split('/[\s]+/', $suppress_entry)[0];
+            }
+        }
+
+        if (isset($comments['specials']['method'])) {
+            /** @var string $method_entry */
+            foreach ($comments['specials']['method'] as $method_entry) {
+                $method_entry = trim($method_entry);
+
+                $return_docblock = '';
+
+                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
+                    $doc_line_parts = self::splitDocLine($method_entry);
+
+                    $return_docblock = '/** @return ' . array_shift($doc_line_parts) . ' */';
+
+                    $method_entry = implode(' ', $doc_line_parts);
+                }
+
+                $method_entry = trim(preg_replace('/\/\/.*/', '', $method_entry));
+
+                $php_string = '<?php ' . $return_docblock . ' function ' . $method_entry . '{}';
+
+                try {
+                    $statements = \Psalm\Provider\StatementsProvider::parseStatements($php_string);
+                } catch (\Exception $e) {
+                    throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
+                }
+
+                if (!$statements[0] instanceof \PhpParser\Node\Stmt\Function_) {
+                    throw new \UnexpectedValueException('Shouldn’t get here with ' . $php_string);
+                }
+
+                $info->methods[] = $statements[0];
             }
         }
 

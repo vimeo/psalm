@@ -266,6 +266,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->sealed_properties = $docblock_info->sealed_properties;
 
                     $storage->suppressed_issues = $docblock_info->suppressed_issues;
+
+                    foreach ($docblock_info->methods as $method) {
+                        $storage->pseudo_methods[strtolower($method->name->name)]
+                            = $this->registerFunctionLike($method, true);
+                    }
                 }
             }
 
@@ -587,14 +592,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
     /**
      * @param  PhpParser\Node\FunctionLike $stmt
+     * @param  bool $fake_method in the case of @method annotations we do something a little strange
      *
-     * @return void
+     * @return FunctionLikeStorage
      */
-    private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt)
+    private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt, $fake_method = false)
     {
         $class_storage = null;
 
-        if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+        if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\Function_) {
+            $cased_function_id = '@method ' . $stmt->name->name;
+
+            $storage = new FunctionLikeStorage();
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
             $function_id = strtolower($cased_function_id);
@@ -604,7 +614,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $this->codebase->functions->addStubbedFunction($function_id, $storage);
             } else {
                 if (isset($this->file_storage->functions[$function_id])) {
-                    return;
+                    return $this->file_storage->functions[$function_id];
                 }
 
                 $storage = $this->file_storage->functions[$function_id] = new FunctionLikeStorage();
@@ -867,7 +877,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $doc_comment = $stmt->getDocComment();
 
         if (!$doc_comment) {
-            return;
+            return $storage;
         }
 
         try {
@@ -900,7 +910,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         }
 
         if (!$docblock_info) {
-            return;
+            return $storage;
         }
 
         if ($docblock_info->deprecated) {
@@ -922,7 +932,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         $storage->suppressed_issues = $docblock_info->suppress;
 
         if (!$this->config->use_docblock_types) {
-            return;
+            return $storage;
         }
 
         $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
@@ -1051,6 +1061,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $stmt
             );
         }
+
+        return $storage;
     }
 
     /**

@@ -70,7 +70,7 @@ class StatementsProvider
                 echo 'Parsing ' . $file_path . "\n";
             }
 
-            $stmts = self::parseStatementsInFile($file_contents);
+            $stmts = self::parseStatements($file_contents);
             $this->file_storage_cache_provider->removeCacheForFile($file_path);
         } else {
             $from_cache = true;
@@ -90,7 +90,7 @@ class StatementsProvider
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    private static function parseStatementsInFile($file_contents)
+    public static function parseStatements($file_contents)
     {
         if (!self::$parser) {
             $lexer = version_compare(PHP_VERSION, '7.0.0dev', '>=')

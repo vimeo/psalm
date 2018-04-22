@@ -798,6 +798,39 @@ class AnnotationTest extends TestCase
 
                     $arr["a"]()',
             ],
+            'magicMethodAnnotation' => [
+                '<?php
+                    class Parent {
+                        public function __call() {}
+                    }
+
+                    /**
+                     * @method string getString()
+                     * @method  void setInteger(int $integer)
+                     * @method setString(int $integer)
+                     * @method  getBool(string $foo) : bool
+                     * @method (string|int)[] getArray() : array
+                     * @method (callable() : string) getCallable() : callable
+                     */
+                    class Child extends Parent {}
+
+                    $child = new Child();
+
+                    $a = $child->getString();
+                    $child->setInteger();
+                    $b = $child->setString(5);
+                    $c = $child->getBool();
+                    $d = $child->getArray();
+                    $e = $child->getCallable();',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'mixed',
+                    '$c' => 'bool',
+                    '$d' => 'array<mixed, string|int>',
+                    '$e' => 'callable():string',
+                ],
+                'error_levels' => ['MixedAssignment'],
+            ],
         ];
     }
 
@@ -1525,6 +1558,30 @@ class AnnotationTest extends TestCase
                     function foo() : callable {
                         return function () : void {}
                     }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'magicMethodAnnotationWithoutCall' => [
+                '<?php
+                    /**
+                     * @method string getString()
+                     */
+                    class Child {}
+
+                    $child = new Child();
+
+                    $a = $child->getString();',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'magicMethodAnnotationWithBadDocblock' => [
+                '<?php
+                    class Parent {
+                        public function __call() {}
+                    }
+
+                    /**
+                     * @method string getString(\)
+                     */
+                    class Child extends Parent {}',
                 'error_message' => 'InvalidDocblock',
             ],
         ];

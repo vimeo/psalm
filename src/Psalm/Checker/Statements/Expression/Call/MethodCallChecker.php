@@ -272,6 +272,27 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     ) {
                         $has_valid_method_call_type = true;
                         $existent_method_ids[] = $method_id;
+
+                        if ($var_id !== '$this') {
+                            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+                            if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+                                $pseudo_method = $class_storage->pseudo_methods[$method_name_lc];
+
+                                if ($pseudo_method->return_type) {
+                                    $return_type_candidate = clone $pseudo_method->return_type;
+
+                                    if (!$return_type) {
+                                        $return_type = $return_type_candidate;
+                                    } else {
+                                        $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
+                                    }
+
+                                    continue;
+                                }
+                            }
+                        }
+
                         $return_type = Type::getMixed();
                         continue;
                     }
