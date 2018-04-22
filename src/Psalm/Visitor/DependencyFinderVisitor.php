@@ -264,6 +264,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->deprecated = $docblock_info->deprecated;
 
                     $storage->sealed_properties = $docblock_info->sealed_properties;
+                    $storage->sealed_methods = $docblock_info->sealed_methods;
 
                     $storage->suppressed_issues = $docblock_info->suppressed_issues;
 

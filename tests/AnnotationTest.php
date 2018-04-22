@@ -1680,6 +1680,23 @@ class AnnotationTest extends TestCase
                     class Child extends Parent {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'magicMethodAnnotationWithSealed' => [
+                '<?php
+                    class Parent {
+                        public function __call() {}
+                    }
+
+                    /**
+                     * @method string getString()
+                     * @psalm-seal-methods
+                     */
+                    class Child extends Parent {}
+
+                    $child = new Child();
+                    $child->getString();
+                    $child->foo();',
+                'error_message' => 'UndefinedMethod - src/somefile.php:14 - Method Child::foo does not exist',
+            ],
             'magicMethodAnnotationInvalidArg' => [
                 '<?php
                     class Parent {

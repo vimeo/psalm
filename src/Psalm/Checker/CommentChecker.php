@@ -305,6 +305,10 @@ class CommentChecker
             $info->sealed_properties = true;
         }
 
+        if (isset($comments['specials']['psalm-seal-methods'])) {
+            $info->sealed_methods = true;
+        }
+
         if (isset($comments['specials']['psalm-suppress'])) {
             /** @var string $suppress_entry */
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
