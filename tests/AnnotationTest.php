@@ -208,6 +208,40 @@ class AnnotationTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testPhpDocMethodWhenUndefined()
+    {
+        Config::getInstance()->use_phpdoc_method_when_undefined = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method string getString()
+                 * @method  void setInteger(int $integer)
+                 * @method setString(int $integer)
+                 * @method  getBool(string $foo) : bool
+                 * @method (string|int)[] getArray() : array
+                 * @method (callable() : string) getCallable() : callable
+                 */
+                class Child {}
+
+                $child = new Child();
+
+                $a = $child->getString();
+                $child->setInteger(4);
+                /** @psalm-suppress MixedAssignment */
+                $b = $child->setString(5);
+                $c = $child->getBool("hello");
+                $d = $child->getArray();
+                $e = $child->getCallable();'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()
@@ -817,9 +851,9 @@ class AnnotationTest extends TestCase
                     $child = new Child();
 
                     $a = $child->getString();
-                    $child->setInteger();
+                    $child->setInteger(4);
                     $b = $child->setString(5);
-                    $c = $child->getBool();
+                    $c = $child->getBool("hello");
                     $d = $child->getArray();
                     $e = $child->getCallable();',
                 'assertions' => [
@@ -1583,6 +1617,22 @@ class AnnotationTest extends TestCase
                      */
                     class Child extends Parent {}',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'magicMethodAnnotationInvalidArg' => [
+                '<?php
+                    class Parent {
+                        public function __call() {}
+                    }
+
+                    /**
+                     * @method setString(int $integer)
+                     */
+                    class Child extends Parent {}
+
+                    $child = new Child();
+
+                    $child->setString("five");',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

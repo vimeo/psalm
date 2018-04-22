@@ -277,10 +277,36 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                             if (isset($class_storage->pseudo_methods[$method_name_lc])) {
-                                $pseudo_method = $class_storage->pseudo_methods[$method_name_lc];
+                                $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
-                                if ($pseudo_method->return_type) {
-                                    $return_type_candidate = clone $pseudo_method->return_type;
+                                if (self::checkFunctionArguments(
+                                    $statements_checker,
+                                    $stmt->args,
+                                    $pseudo_method_storage->params,
+                                    $method_id,
+                                    $context
+                                ) === false) {
+                                    return false;
+                                }
+
+                                $generic_params = [];
+
+                                if (self::checkFunctionLikeArgumentsMatch(
+                                    $statements_checker,
+                                    $stmt->args,
+                                    null,
+                                    $pseudo_method_storage->params,
+                                    $pseudo_method_storage,
+                                    null,
+                                    $generic_params,
+                                    $code_location,
+                                    $context
+                                ) === false) {
+                                    return false;
+                                }
+
+                                if ($pseudo_method_storage->return_type) {
+                                    $return_type_candidate = clone $pseudo_method_storage->return_type;
 
                                     if (!$return_type) {
                                         $return_type = $return_type_candidate;
@@ -342,6 +368,59 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 if (!$codebase->methodExists($method_id, $code_location)) {
+                    if ($config->use_phpdoc_method_when_undefined) {
+                        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+
+                        if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+                            $has_valid_method_call_type = true;
+                            $existent_method_ids[] = $method_id;
+
+                            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+
+                            if (self::checkFunctionArguments(
+                                $statements_checker,
+                                $stmt->args,
+                                $pseudo_method_storage->params,
+                                $method_id,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
+                            $generic_params = [];
+
+                            if (self::checkFunctionLikeArgumentsMatch(
+                                $statements_checker,
+                                $stmt->args,
+                                null,
+                                $pseudo_method_storage->params,
+                                $pseudo_method_storage,
+                                null,
+                                $generic_params,
+                                $code_location,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
+                            if ($pseudo_method_storage->return_type) {
+                                $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                                if (!$return_type) {
+                                    $return_type = $return_type_candidate;
+                                } else {
+                                    $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
+                                }
+
+                                continue;
+                            }
+
+                            $return_type = Type::getMixed();
+
+                            continue;
+                        }
+                    }
+
                     $non_existent_method_ids[] = $method_id;
                     continue;
                 }
