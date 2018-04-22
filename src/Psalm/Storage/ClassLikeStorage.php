@@ -131,6 +131,11 @@ class ClassLikeStorage
     public $methods = [];
 
     /**
+     * @var array<string, FunctionLikeStorage>
+     */
+    public $pseudo_methods = [];
+
+    /**
      * @var array<string, string>
      */
     public $declaring_method_ids = [];
