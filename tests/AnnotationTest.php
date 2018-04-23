@@ -904,8 +904,9 @@ class AnnotationTest extends TestCase
                      * @method string getString()
                      * @method  void setInteger(int $integer)
                      * @method setString(int $integer)
-                     * @method  getBool(string $foo) : bool
-                     * @method (string|int)[] getArray() : array
+                     * @method  getBool(string $foo)  :   bool
+                     * @method (string|int)[] getArray() : array with some text
+                     * @method void setArray(array $arr = array(), int $foo = 5) with some more text
                      * @method (callable() : string) getCallable() : callable
                      */
                     class Child extends Parent {}
@@ -917,6 +918,7 @@ class AnnotationTest extends TestCase
                     $b = $child->setString(5);
                     $c = $child->getBool("hello");
                     $d = $child->getArray();
+                    $child->setArray(["boo"])
                     $e = $child->getCallable();',
                 'assertions' => [
                     '$a' => 'string',
@@ -1676,6 +1678,18 @@ class AnnotationTest extends TestCase
 
                     /**
                      * @method string getString(\)
+                     */
+                    class Child extends Parent {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'magicMethodAnnotationWithUnionTypeInDocblock' => [
+                '<?php
+                    class Parent {
+                        public function __call() {}
+                    }
+
+                    /**
+                     * @method string getString(string|int $x)
                      */
                     class Child extends Parent {}',
                 'error_message' => 'InvalidDocblock',

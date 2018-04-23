@@ -319,7 +319,7 @@ class CommentChecker
         if (isset($comments['specials']['method'])) {
             /** @var string $method_entry */
             foreach ($comments['specials']['method'] as $method_entry) {
-                $method_entry = trim($method_entry);
+                $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
                 $return_docblock = '';
 
@@ -333,6 +333,12 @@ class CommentChecker
 
                 $method_entry = trim(preg_replace('/\/\/.*/', '', $method_entry));
 
+                $end_of_method_regex = '/(?<!array\()\) ?(\: ?(\??[\\\\a-zA-Z0-9_]+))?/';
+
+                if (preg_match($end_of_method_regex, $method_entry, $matches, PREG_OFFSET_CAPTURE)) {
+                    $method_entry = substr($method_entry, 0, (int) $matches[0][1] + strlen((string) $matches[0][0]));
+                }
+
                 $php_string = '<?php ' . $return_docblock . ' function ' . $method_entry . '{}';
 
                 try {
@@ -342,7 +348,7 @@ class CommentChecker
                 }
 
                 if (!$statements[0] instanceof \PhpParser\Node\Stmt\Function_) {
-                    throw new \UnexpectedValueException('Shouldn’t get here with ' . $php_string);
+                    throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
                 $info->methods[] = $statements[0];
