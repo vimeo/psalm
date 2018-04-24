@@ -77,6 +77,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
     }
 
     define('PSALM_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm'));
+    define('PHP_PARSER_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('nikic/php-parser'));
 
     return $first_autoloader;
 }

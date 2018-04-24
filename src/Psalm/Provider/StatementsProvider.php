@@ -51,7 +51,7 @@ class StatementsProvider
     {
         $from_cache = false;
 
-        $version = 'parsercache' . $this->this_modified_time;
+        $version = (string) PHP_PARSER_VERSION . $this->this_modified_time;
 
         $file_contents = $this->file_provider->getContents($file_path);
         $modified_time = $this->file_provider->getModifiedTime($file_path);
