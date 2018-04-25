@@ -1727,6 +1727,16 @@ class AnnotationTest extends TestCase
                     $child->setString("five");',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'hyphenInType' => [
+                '<?php
+                    /**
+                     * @return - Description
+                     */
+                    function example() {
+                        return "placeholder";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

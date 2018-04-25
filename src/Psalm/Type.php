@@ -86,9 +86,16 @@ abstract class Type
         $type_tokens = self::tokenize($type_string);
 
         if (count($type_tokens) === 1) {
-            $type_tokens[0] = self::fixScalarTerms($type_tokens[0], $php_compatible);
+            $only_token = $type_tokens[0];
 
-            return new Union([Atomic::create($type_tokens[0], $php_compatible, $template_types)]);
+            // Note: valid identifiers can include class names or $this
+            if (!preg_match('@^(\$this$|[a-zA-Z_\x7f-\xff])@', $only_token)) {
+                throw new TypeParseTreeException("Invalid type '$only_token'");
+            }
+
+            $only_token = self::fixScalarTerms($only_token, $php_compatible);
+
+            return new Union([Atomic::create($only_token, $php_compatible, $template_types)]);
         }
 
         try {
