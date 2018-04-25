@@ -150,6 +150,10 @@ class CommentChecker
 
             $return_block = trim((string)reset($return_specials));
 
+            if (!$return_block) {
+                throw new DocblockParseException('Missing @return type');
+            }
+
             try {
                 $line_parts = self::splitDocLine($return_block);
             } catch (DocblockParseException $e) {
