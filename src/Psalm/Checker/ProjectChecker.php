@@ -128,11 +128,6 @@ class ProjectChecker
      */
     public $only_replace_php_types_with_non_docblock_types = false;
 
-    /**
-     * @var array<string, FileChecker>
-     */
-    private $file_checkers = [];
-
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';

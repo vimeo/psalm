@@ -133,8 +133,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name->name) === strtolower($method_name)
             ) {
-                $method_id = $this->fq_class_name . '::' . $stmt->name->name;
-
                 $method_checker = new MethodChecker($stmt, $this);
 
                 $method_checker->analyze($context, null, true);

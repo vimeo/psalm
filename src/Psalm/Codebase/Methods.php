@@ -25,11 +25,6 @@ class Methods
     private $config;
 
     /**
-     * @var array<string, MethodChecker>
-     */
-    private $method_checkers = [];
-
-    /**
      * @var bool
      */
     public $collect_references = false;
@@ -461,38 +456,5 @@ class Methods
         }
 
         return $class_storage->methods[$method_name_lc];
-    }
-
-    /**
-     * @param  string $method_id
-     *
-     * @return MethodChecker|null
-     */
-    public function getCachedChecker($method_id)
-    {
-        if (isset($this->method_checkers[$method_id])) {
-            return $this->method_checkers[$method_id];
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  string        $method_id
-     * @param  MethodChecker $checker
-     *
-     * @return void
-     */
-    public function cacheChecker($method_id, MethodChecker $checker)
-    {
-        $this->method_checkers[$method_id] = $checker;
-    }
-
-    /**
-     * @return void
-     */
-    public function emptyCheckerCache()
-    {
-        $this->method_checkers[] = [];
     }
 }
