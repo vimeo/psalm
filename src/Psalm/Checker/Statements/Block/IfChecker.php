@@ -460,12 +460,23 @@ class IfChecker
         }
 
         if ($if_scope->possibly_redefined_vars) {
-            foreach ($if_scope->possibly_redefined_vars as $var => $type) {
-                if ($context->hasVariable($var) &&
-                    !$type->failed_reconciliation &&
-                    !isset($if_scope->updated_vars[$var])
+            foreach ($if_scope->possibly_redefined_vars as $var_id => $type) {
+                if ($context->hasVariable($var_id)) {
+
+                }
+            }
+
+            foreach ($if_scope->possibly_redefined_vars as $var_id => $type) {
+                if ($context->hasVariable($var_id)
+                    && !$type->failed_reconciliation
+                    && !isset($if_scope->updated_vars[$var_id])
                 ) {
-                    $context->vars_in_scope[$var] = Type::combineUnionTypes($context->vars_in_scope[$var], $type);
+                    $combined_type = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $type
+                    );
+                    $context->removeDescendents($var_id, $combined_type);
+                    $context->vars_in_scope[$var_id] = $combined_type;
                 }
             }
         }
