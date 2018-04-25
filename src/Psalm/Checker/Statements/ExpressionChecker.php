@@ -199,6 +199,13 @@ class ExpressionChecker
 
             if (isset($stmt->var->inferredType)) {
                 $stmt->inferredType = clone $stmt->var->inferredType;
+                $stmt->inferredType->from_calculation = true;
+
+                $var_id = self::getArrayVarId($stmt->var, null);
+
+                if ($var_id && isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = $stmt->inferredType;
+                }
             } else {
                 $stmt->inferredType = Type::getMixed();
             }
