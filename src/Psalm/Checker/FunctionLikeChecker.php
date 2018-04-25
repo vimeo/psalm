@@ -97,6 +97,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
         $function_stmts = $this->function->getStmts() ?: [];
 
         $hash = null;
+        $real_method_id = null;
 
         $cased_method_id = null;
 
@@ -628,7 +629,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                 }
             }
 
-            if ($hash && $this instanceof MethodChecker) {
+            if ($hash && $real_method_id && $this instanceof MethodChecker) {
                 $new_hash = $real_method_id . json_encode([
                     $context->vars_in_scope,
                     $context->vars_possibly_in_scope,
