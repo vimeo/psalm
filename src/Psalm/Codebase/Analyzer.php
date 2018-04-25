@@ -136,8 +136,6 @@ class Analyzer
                 }
 
                 $file_checker->analyze(null);
-
-                echo 'Current memory: ' . number_format(memory_get_usage() / (1024 * 1024), 3) . 'MB' . "\n";
             };
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
