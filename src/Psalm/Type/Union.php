@@ -22,6 +22,13 @@ class Union
     public $from_docblock = false;
 
     /**
+     * Whether the type originated from integer calculation
+     *
+     * @var bool
+     */
+    public $from_calculation = false;
+
+    /**
      * Whether the property that this type has been derived from has been initialized in a constructor
      *
      * @var bool

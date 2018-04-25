@@ -96,6 +96,7 @@ class Reconciler
             $failed_reconciliation = false;
             $from_docblock = $result_type && $result_type->from_docblock;
             $possibly_undefined = $result_type && $result_type->possibly_undefined;
+            $from_calculation = $result_type && $result_type->from_calculation;
 
             foreach ($new_type_parts as $new_type_part) {
                 $new_type_part_parts = explode('|', $new_type_part);
@@ -128,6 +129,7 @@ class Reconciler
             if ($result_type->getId() !== $before_adjustment
                 || $result_type->from_docblock !== $from_docblock
                 || $result_type->possibly_undefined !== $possibly_undefined
+                || $result_type->from_calculation !== $from_calculation
                 || $failed_reconciliation
             ) {
                 $changed_var_ids[] = $key;
@@ -459,10 +461,29 @@ class Reconciler
 
             $negated_type = substr($new_var_type, 1);
 
-            if ($negated_type === 'false' && isset($existing_var_type->getTypes()['bool'])) {
+            $existing_var_atomic_types = $existing_var_type->getTypes();
+
+            if (isset($existing_var_atomic_types['int'])
+                && $existing_var_type->from_calculation
+                && ($negated_type === 'int' || $negated_type === 'float')
+            ) {
+                $existing_var_type->removeType($negated_type);
+
+                if ($negated_type === 'int') {
+                    $existing_var_type->addType(new Type\Atomic\TFloat);
+                } else {
+                    $existing_var_type->addType(new Type\Atomic\TInt);
+                }
+
+                $existing_var_type->from_calculation = false;
+
+                return $existing_var_type;
+            }
+
+            if ($negated_type === 'false' && isset($existing_var_atomic_types['bool'])) {
                 $existing_var_type->removeType('bool');
                 $existing_var_type->addType(new TTrue);
-            } elseif ($negated_type === 'true' && isset($existing_var_type->getTypes()['bool'])) {
+            } elseif ($negated_type === 'true' && isset($existing_var_atomic_types['bool'])) {
                 $existing_var_type->removeType('bool');
                 $existing_var_type->addType(new TFalse);
             } elseif (strtolower($negated_type) === 'traversable'
@@ -781,6 +802,19 @@ class Reconciler
             return Type::getMixed();
         }
 
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
+        if (isset($existing_var_atomic_types['int'])
+            && $existing_var_type->from_calculation
+            && ($new_var_type === 'int' || $new_var_type === 'float')
+        ) {
+            if ($new_var_type === 'int') {
+                return Type::getInt();
+            }
+
+            return Type::getFloat();
+        }
+
         if (substr($new_var_type, 0, 4) === 'isa-') {
             if ($existing_var_type->isMixed()) {
                 return Type::getMixed();
@@ -877,6 +911,14 @@ class Reconciler
                 $has_local_match = false;
 
                 foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
+                    // special workaround because PHP allows floats to contain ints, but we don’t want this
+                    // behaviour here
+                    if ($existing_var_type_part instanceof Type\Atomic\TFloat
+                        && $new_type_part instanceof Type\Atomic\TInt
+                    ) {
+                        continue;
+                    }
+
                     if (TypeChecker::isAtomicContainedBy(
                         $project_checker->codebase,
                         $new_type_part,
