@@ -345,6 +345,40 @@ class RedundantConditionTest extends TestCase
                 'assignments' => [],
                 'error_levels' => ['MixedAssignment'],
             ],
+            'allowIntValueCheckAfterComparisonDueToOverflow' => [
+                '<?php
+                    function foo(int $x) : void {
+                        $x = $x + 1;
+                        if (!is_int($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }
+
+                    function bar(int $x) : void {
+                        $x = $x + 1;
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
+            'allowIntValueCheckAfterComparisonDueToConditionalOverflow' => [
+                '<?php
+                    function foo(int $x) : void {
+                        if (rand(0, 1)) {
+                            $x = $x + 1;
+                        }
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -528,6 +562,31 @@ class RedundantConditionTest extends TestCase
                       if ($b) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
+            ],
+            'allowIntValueCheckAfterComparisonDueToConditionalOverflow' => [
+                '<?php
+                    function foo(int $x) : void {
+                        if (rand(0, 1)) {
+                            $x = 125;
+                        }
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
+            ],
+            'disallowTwoIntValueChecksDueToConditionalOverflow' => [
+                '<?php
+                    function foo(int $x) : void {
+                        $x = $x + 1;
+
+                        if (is_int($x)) {
+                        } elseif (is_int($x)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6',
             ],
         ];
     }

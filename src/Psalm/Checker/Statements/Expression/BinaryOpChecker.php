@@ -768,9 +768,9 @@ class BinaryOpChecker
 
                         if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                             if (!$result_type) {
-                                $result_type = Type::getInt();
+                                $result_type = Type::getInt(true);
                             } else {
-                                $result_type = Type::combineUnionTypes(Type::getInt(), $result_type);
+                                $result_type = Type::combineUnionTypes(Type::getInt(true), $result_type);
                             }
 
                             $has_valid_right_operand = true;

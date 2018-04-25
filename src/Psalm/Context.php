@@ -317,7 +317,8 @@ class Context
                 && !$this_type->isEmpty()
                 && !$new_type->isEmpty()
                 && ($this_type->getId() !== $new_type->getId()
-                    || $this_type->initialized !== $new_type->initialized)
+                    || $this_type->initialized !== $new_type->initialized
+                    || $this_type->from_calculation !== $new_type->from_calculation)
             ) {
                 $redefined_vars[$var_id] = $this_type;
             }

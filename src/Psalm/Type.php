@@ -541,13 +541,16 @@ abstract class Type
     }
 
     /**
+     * @param bool $from_calculation
+     *
      * @return Type\Union
      */
-    public static function getInt()
+    public static function getInt($from_calculation = false)
     {
-        $type = new TInt;
+        $union = new Union([new TInt]);
+        $union->from_calculation = $from_calculation;
 
-        return new Union([$type]);
+        return $union;
     }
 
     /**
@@ -750,6 +753,10 @@ abstract class Type
 
             if ($type_1->from_docblock || $type_2->from_docblock) {
                 $combined_type->from_docblock = true;
+            }
+
+            if ($type_1->from_calculation || $type_2->from_calculation) {
+                $combined_type->from_calculation = true;
             }
 
             if ($type_1->ignore_nullable_issues || $type_2->ignore_nullable_issues) {
