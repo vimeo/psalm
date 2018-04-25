@@ -9,7 +9,7 @@ use Psalm\IssueBuffer;
 error_reporting(-1);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-ini_set('memory_limit', '2048M');
+ini_set('memory_limit', '4096M');
 
 // get options from command line
 $options = getopt(
