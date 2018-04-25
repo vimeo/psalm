@@ -487,4 +487,12 @@ class Methods
     {
         $this->method_checkers[$method_id] = $checker;
     }
+
+    /**
+     * @return void
+     */
+    public function emptyCheckerCache()
+    {
+        $this->method_checkers[] = [];
+    }
 }

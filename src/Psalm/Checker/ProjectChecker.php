@@ -133,11 +133,6 @@ class ProjectChecker
      */
     private $file_checkers = [];
 
-    /**
-     * @var bool
-     */
-    private $cache = false;
-
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';
@@ -660,19 +655,11 @@ class ProjectChecker
 
         $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
 
-        if ($this->cache && isset($this->file_checkers[$file_path])) {
-            return $this->file_checkers[$file_path];
-        }
-
         $file_checker = new FileChecker(
             $this,
             $file_path,
             $this->config->shortenFileName($file_path)
         );
-
-        if ($this->cache) {
-            $this->file_checkers[$file_path] = $file_checker;
-        }
 
         return $file_checker;
     }
@@ -718,29 +705,5 @@ class ProjectChecker
         }
 
         $file_checker->getMethodMutations($appearing_method_id, $this_context);
-    }
-
-    /**
-     * @return void
-     */
-    public function enableCheckerCache()
-    {
-        $this->cache = true;
-    }
-
-    /**
-     * @return void
-     */
-    public function disableCheckerCache()
-    {
-        $this->cache = false;
-    }
-
-    /**
-     * @return bool
-     */
-    public function canCacheCheckers()
-    {
-        return $this->cache;
     }
 }
