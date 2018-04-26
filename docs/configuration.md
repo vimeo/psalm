@@ -21,6 +21,8 @@ Psalm uses an XML config file. A barebones example looks like this:
   whether or not to use types as defined in docblocks. Defaults to `true`.
 - `useDocblockPropertyTypes=[bool]`<br />
   if not using all docblock types, you can still use docblock property types. Defaults to `false` (though only relevant if `useDocblockTypes` is `false`.
+- `usePhpDocMethodsWithoutMagicCall=[bool]`<br />
+  the PHPDoc `@method` annotation normally only applies to classes with a `__call` method. Setting this to `true` allows you to use the `@method` annotation to override inherited method return types. Defaults to `false`.
 - `strictBinaryOperands=[bool]`<br />
   if true we force strict typing on numerical and string operations (see https://github.com/vimeo/psalm/issues/24). Defaults to `false`.
 - `requireVoidReturnType=[bool]`<br />
