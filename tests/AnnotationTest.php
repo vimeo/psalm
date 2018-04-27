@@ -894,7 +894,7 @@ class AnnotationTest extends TestCase
 
                     $arr["a"]()',
             ],
-            'magicMethodAnnotation' => [
+            'magicMethodValidAnnotations' => [
                 '<?php
                     class Parent {
                         public function __call() {}
@@ -915,6 +915,7 @@ class AnnotationTest extends TestCase
 
                     $a = $child->getString();
                     $child->setInteger(4);
+                    /** @psalm-suppress MixedAssignment */
                     $b = $child->setString(5);
                     $c = $child->getBool("hello");
                     $d = $child->getArray();
@@ -927,7 +928,6 @@ class AnnotationTest extends TestCase
                     '$d' => 'array<mixed, string|int>',
                     '$e' => 'callable():string',
                 ],
-                'error_levels' => ['MixedAssignment'],
             ],
         ];
     }
