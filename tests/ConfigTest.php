@@ -19,6 +19,14 @@ class ConfigTest extends TestCase
     public static function setUpBeforeClass()
     {
         self::$config = new TestConfig();
+
+        if (!defined('PSALM_VERSION')) {
+            define('PSALM_VERSION', '2.0.0');
+        }
+
+        if (!defined('PHP_PARSER_VERSION')) {
+            define('PHP_PARSER_VERSION', '4.0.0');
+        }
     }
 
     /**
@@ -432,6 +440,38 @@ class ConfigTest extends TestCase
             $file_path,
             '<?php
                 echo barBar("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testPolyfilledFunction()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/polyfill.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = random_bytes(16);'
         );
 
         $this->analyzeFile($file_path, new Context());

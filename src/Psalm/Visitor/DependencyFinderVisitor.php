@@ -514,6 +514,28 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->file_storage->declaring_constants[$const->name->name] = $this->file_path;
                 }
             }
+        } elseif ($this->codebase->register_global_functions && $node instanceof PhpParser\Node\Stmt\If_) {
+            if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
+                if ($node->cond->expr instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->cond->expr->name instanceof PhpParser\Node\Name
+                ) {
+                    if ($node->cond->expr->name->parts === ['function_exists']
+                        && isset($node->cond->expr->args[0])
+                        && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
+                        && function_exists($node->cond->expr->args[0]->value->value)
+                    ) {
+                        return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                    }
+
+                    if ($node->cond->expr->name->parts === ['class_exists']
+                        && isset($node->cond->expr->args[0])
+                        && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
+                        && class_exists($node->cond->expr->args[0]->value->value, false)
+                    ) {
+                        return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                    }
+                }
+            }
         }
     }
 
