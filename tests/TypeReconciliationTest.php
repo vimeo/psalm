@@ -869,13 +869,8 @@ class TypeReconciliationTest extends TestCase
                         echo $array["field"] . " " . $array["otherField"];
                     }
 
-                    /**
-                     * @param array{field:string} $array
-                     */
-                    function has_mix_of_fields($array) : void {
-                        print_field($array);
-                    }',
-                'error_message' => 'PossiblyInvalidArgument',
+                    print_field(["field" => "name"]);',
+                'error_message' => 'InvalidArgument',
             ],
             'intersectionIncorrect' => [
                 '<?php

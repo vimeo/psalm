@@ -1506,10 +1506,12 @@ class CallChecker
         }
 
         if (!$type_match_found && !$type_coerced) {
-            $types_can_be_identical = TypeChecker::canBeIdenticalTo(
+            $types_can_be_identical = TypeChecker::canBeContainedBy(
                 $codebase,
+                $input_type,
                 $param_type,
-                $input_type
+                true,
+                true
             );
 
             if ($scalar_type_match_found) {
