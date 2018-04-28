@@ -83,6 +83,27 @@ class AssertionFinder
             return $if_types;
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\MethodCall
+            && $conditional->name instanceof PhpParser\Node\Identifier
+            && !$conditional->args
+        ) {
+            $config = \Psalm\Config::getInstance();
+
+            if ($config->memoize_method_calls) {
+                $lhs_var_name = ExpressionChecker::getArrayVarId(
+                    $conditional->var,
+                    $this_class_name,
+                    $source
+                );
+
+                if ($lhs_var_name) {
+                    $method_var_id = $lhs_var_name . '->' . strtolower($conditional->name->name) . '()';
+                    $if_types[$method_var_id] = '!falsy';
+                    return $if_types;
+                }
+            }
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
             $if_types_to_negate = self::getAssertions(
                 $conditional->expr,
