@@ -739,6 +739,47 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testMethodCallMemoize()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm memoizeMethodCallResults="true">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    function getFoo() : ?Foo {
+                        return rand(0, 1) ? new Foo : null;
+                    }
+                }
+                class Foo {
+                    public function bar() : void {}
+                };
+
+                $a = new A();
+
+                if ($a->getFoo()) {
+                    $a->getFoo()->bar();
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testTemplatedFiles()
     {
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {

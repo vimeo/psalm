@@ -394,8 +394,10 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $method_id,
                             $appearing_method_id,
                             $declaring_method_id,
+                            null,
                             $stmt->args,
                             $code_location,
+                            $context,
                             $file_manipulations,
                             $return_type_candidate
                         );
