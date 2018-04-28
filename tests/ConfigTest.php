@@ -450,6 +450,10 @@ class ConfigTest extends TestCase
      */
     public function testPolyfilledFunction()
     {
+        if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
+            $this->markTestSkipped('PHP 7 only');
+        }
+
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
