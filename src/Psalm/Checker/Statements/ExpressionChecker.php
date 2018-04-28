@@ -718,6 +718,27 @@ class ExpressionChecker
             return $object_id . '->' . $stmt->name;
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\MethodCall
+            && is_string($stmt->name)
+            && !$stmt->args
+        ) {
+            $config = \Psalm\Config::getInstance();
+
+            if ($config->memoize_method_calls) {
+                $lhs_var_name = self::getArrayVarId(
+                    $stmt->var,
+                    $this_class_name,
+                    $source
+                );
+
+                if (!$lhs_var_name) {
+                    return null;
+                }
+
+                return $lhs_var_name . '->' . strtolower($stmt->name) . '()';
+            }
+        }
+
         return self::getVarId($stmt, $this_class_name, $source);
     }
 
