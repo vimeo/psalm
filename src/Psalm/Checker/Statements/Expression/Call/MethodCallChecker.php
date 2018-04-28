@@ -582,18 +582,6 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                                 $context->getPhantomClasses()
                             );
                         }
-
-                        if (!$stmt->args && $var_id) {
-                            if ($config->memoize_method_calls) {
-                                $method_var_id = $var_id . '->' . $method_name_lc . '()';
-
-                                if (isset($context->vars_in_scope[$method_var_id])) {
-                                    $return_type_candidate = clone $context->vars_in_scope[$method_var_id];
-                                } else {
-                                    $context->vars_in_scope[$method_var_id] = $return_type_candidate;
-                                }
-                            }
-                        }
                     } else {
                         $returns_by_ref =
                             $returns_by_ref
@@ -610,6 +598,18 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                                 $context,
                                 $statements_checker
                             );
+                        }
+                    }
+                }
+
+                if (!$stmt->args && $var_id) {
+                    if ($config->memoize_method_calls) {
+                        $method_var_id = $var_id . '->' . $method_name_lc . '()';
+
+                        if (isset($context->vars_in_scope[$method_var_id])) {
+                            $return_type_candidate = clone $context->vars_in_scope[$method_var_id];
+                        } elseif ($return_type_candidate) {
+                            $context->vars_in_scope[$method_var_id] = $return_type_candidate;
                         }
                     }
                 }
