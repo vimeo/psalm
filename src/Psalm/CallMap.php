@@ -2439,7 +2439,7 @@ return [
 'Exception::getFile' => ['string'],
 'Exception::getLine' => ['int'],
 'Exception::getMessage' => ['string'],
-'Exception::getPrevious' => ['Throwable|Exception'],
+'Exception::getPrevious' => ['?Throwable|?Exception'],
 'Exception::getTrace' => ['array'],
 'Exception::getTraceAsString' => ['string'],
 'exec' => ['string', 'command'=>'string', '&w_output='=>'array', '&w_return_value='=>'int'],
