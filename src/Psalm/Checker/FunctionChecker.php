@@ -93,10 +93,13 @@ class FunctionChecker extends FunctionLikeChecker
                         return Type::getString();
                     }
 
-                    return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TNull]);
+                    return new Type\Union([
+                        new Type\Atomic\TString,
+                        $call_map_key === 'var_export' ? new Type\Atomic\TNull : new Type\Atomic\TBool
+                    ]);
                 }
 
-                return Type::getVoid();
+                return $call_map_key === 'var_export' ? Type::getVoid() : Type::getBool();
             }
 
             if (substr($call_map_key, 0, 6) === 'array_') {
