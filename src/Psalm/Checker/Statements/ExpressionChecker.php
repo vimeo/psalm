@@ -340,6 +340,7 @@ class ExpressionChecker
 
             if (isset($stmt->expr->inferredType)
                 && !$stmt->expr->inferredType->isMixed()
+                && !isset($stmt->expr->inferredType->getTypes()['resource'])
                 && !TypeChecker::isContainedBy(
                     $statements_checker->getFileChecker()->project_checker->codebase,
                     $stmt->expr->inferredType,

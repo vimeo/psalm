@@ -56,6 +56,12 @@ class ToStringTest extends TestCase
                     fooFoo(new A());
                     barBar(new A());',
             ],
+            'resourceToString' => [
+                '<?php
+                    $a = fopen("php://memory", "r");
+                    if ($a === false) exit;
+                    $b = (string) $a;',
+            ],
         ];
     }
 
@@ -131,6 +137,13 @@ class ToStringTest extends TestCase
                 'error_message' => 'ImplicitToStringCast',
                 [],
                 true
+            ],
+            'resourceCannotBeCoercedToString' => [
+                '<?php
+                    function takesString(string $s) : void {}
+                    $a = fopen("php://memory", "r");
+                    takesString($a);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
