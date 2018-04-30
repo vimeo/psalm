@@ -82,7 +82,10 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::getArray();
             }
 
-            if ($call_map_key === 'var_export') {
+            if ($call_map_key === 'var_export'
+                || $call_map_key === 'highlight_string'
+                || $call_map_key === 'highlight_file'
+            ) {
                 if (isset($call_args[1]->value->inferredType)) {
                     $subject_type = $call_args[1]->value->inferredType;
 
