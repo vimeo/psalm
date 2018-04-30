@@ -490,28 +490,69 @@ class TypeChecker
             return false;
         }
 
-        if ($container_type_part instanceof TNamedObject &&
-            strtolower($container_type_part->value) === 'iterable' &&
-            (
-                $input_type_part instanceof TArray ||
-                $input_type_part instanceof ObjectLike ||
-                (
-                    $input_type_part instanceof TNamedObject &&
-                    (
-                        strtolower($input_type_part->value) === 'traversable'
-                        || $codebase->classExtendsOrImplements(
-                            $input_type_part->value,
-                            'Traversable'
+        if ($container_type_part instanceof TNamedObject
+            && strtolower($container_type_part->value) === 'iterable'
+        ) {
+            if ($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike) {
+                if (!$container_type_part instanceof TGenericObject) {
+                    return true;
+                }
+
+                if ($input_type_part instanceof ObjectLike) {
+                    $input_type_part = $input_type_part->getGenericArrayType();
+                }
+
+                $all_types_contain = true;
+
+                foreach ($input_type_part->type_params as $i => $input_param) {
+                    $container_param = $container_type_part->type_params[$i];
+
+                    if ($i === 0
+                        && $input_param->isMixed()
+                        && $container_param->hasString()
+                        && $container_param->hasInt()
+                    ) {
+                        continue;
+                    }
+
+                    if (!$input_param->isEmpty() &&
+                        !self::isContainedBy(
+                            $codebase,
+                            $input_param,
+                            $container_param,
+                            $input_param->ignore_nullable_issues,
+                            $input_param->ignore_falsable_issues,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed
                         )
-                        || $codebase->interfaceExtends(
-                            $input_type_part->value,
-                            'Traversable'
-                        )
+                    ) {
+                        $all_types_contain = false;
+                    }
+                }
+
+                if ($all_types_contain) {
+                    $to_string_cast = false;
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            if ($input_type_part instanceof TNamedObject
+                && (strtolower($input_type_part->value) === 'traversable'
+                    || $codebase->classExtendsOrImplements(
+                        $input_type_part->value,
+                        'Traversable'
+                    ) || $codebase->interfaceExtends(
+                        $input_type_part->value,
+                        'Traversable'
                     )
                 )
-            )
-        ) {
-            return true;
+            ) {
+                return true;
+            }
         }
 
         if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {

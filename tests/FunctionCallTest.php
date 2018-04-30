@@ -858,6 +858,18 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'FalsableReturnStatement',
             ],
+            'complainAboutArrayToIterable' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    /**
+                     * @param iterable<mixed,A> $p
+                     */
+                    function takesIterableOfA(iterable $p): void {}
+
+                    takesIterableOfA([new B]); // should complain',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
