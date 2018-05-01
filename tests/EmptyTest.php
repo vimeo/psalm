@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 class EmptyTest extends TestCase
 {
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
     use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
@@ -177,6 +178,24 @@ class EmptyTest extends TestCase
                 '<?php
                     function takesBool(bool $p): void {}
                     takesBool(empty($q));'
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerInvalidCodeParse()
+    {
+        return [
+            'preventImpossibleEmpty' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        if (empty($ar)) {
+                            // do something
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }
