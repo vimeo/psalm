@@ -360,8 +360,8 @@ class AssertionFinder
                         $source
                     );
 
-                    $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                    $var_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                    $other_value = $conditional->left->value;
+                    $value = $conditional->right->value;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionChecker::getArrayVarId(
@@ -370,8 +370,8 @@ class AssertionFinder
                         $source
                     );
 
-                    $var_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
-                    $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
+                    $value = $conditional->left->value;
+                    $other_value = $conditional->right->value;
                 } else {
                     throw new \UnexpectedValueException('$typed_value_position value');
                 }

@@ -542,12 +542,13 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
+     * @param array<string, bool>|null $values
      *
      * @return Type\Union
      */
-    public static function getInt($from_calculation = false)
+    public static function getInt($from_calculation = false, array $values = null)
     {
-        $union = new Union([new TInt]);
+        $union = new Union([new TInt($values)]);
         $union->from_calculation = $from_calculation;
 
         return $union;
@@ -564,11 +565,13 @@ abstract class Type
     }
 
     /**
+     * @param array<string, bool>|null $values
+     *
      * @return Type\Union
      */
-    public static function getString()
+    public static function getString(array $values = null)
     {
-        $type = new TString;
+        $type = new TString($values);
 
         return new Union([$type]);
     }
@@ -618,11 +621,13 @@ abstract class Type
     }
 
     /**
+     * @param array<string, bool>|null $values
+     *
      * @return Type\Union
      */
-    public static function getFloat()
+    public static function getFloat(array $values = null)
     {
-        $type = new TFloat;
+        $type = new TFloat($values);
 
         return new Union([$type]);
     }
@@ -966,6 +971,14 @@ abstract class Type
                 || (count($combination->value_types) === 1
                     && !count($new_types))
             ) {
+                if ($type instanceof TString) {
+                    $type->values = $combination->strings;
+                } elseif ($type instanceof TInt) {
+                    $type->values = $combination->ints;
+                } elseif ($type instanceof TFloat) {
+                    $type->values = $combination->floats;
+                }
+
                 $new_types[] = $type;
             }
         }
@@ -1059,6 +1072,26 @@ abstract class Type
                 }
             }
         } else {
+            if ($type instanceof TString && $combination->strings !== null) {
+                if ($type->values === null) {
+                    $combination->strings = null;
+                } else {
+                    $combination->strings = array_merge($combination->strings, $type->values);
+                }
+            } elseif ($type instanceof TInt && $combination->ints !== null) {
+                if ($type->values === null) {
+                    $combination->ints = null;
+                } else {
+                    $combination->ints = array_merge($combination->ints, $type->values);
+                }
+            } elseif ($type instanceof TFloat && $combination->floats !== null) {
+                if ($type->values === null) {
+                    $combination->ints = null;
+                } else {
+                    $combination->ints = array_merge($combination->floats, $type->values);
+                }
+            }
+
             $combination->value_types[$type_key] = $type;
         }
     }

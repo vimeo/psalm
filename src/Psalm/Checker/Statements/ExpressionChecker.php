@@ -108,7 +108,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             ConstFetchChecker::analyze($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            $stmt->inferredType = Type::getString();
+            $stmt->inferredType = Type::getString([$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
@@ -131,9 +131,9 @@ class ExpressionChecker
                     break;
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->inferredType = Type::getInt();
+            $stmt->inferredType = Type::getInt(false, [(string)$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            $stmt->inferredType = Type::getFloat();
+            $stmt->inferredType = Type::getFloat([(string)$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
             $stmt instanceof PhpParser\Node\Expr\UnaryPlus
         ) {
