@@ -2,6 +2,7 @@
 namespace Psalm\Checker\Statements\Expression\Fetch;
 
 use PhpParser;
+use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -157,7 +158,9 @@ class VariableFetchChecker
                             $context->branch_point
                         );
                     }
-                } elseif (!$context->inside_isset) {
+                } elseif (!$context->inside_isset
+                    || $statements_checker->getSource() instanceof FunctionLikeChecker
+                ) {
                     if ($context->is_global) {
                         if (IssueBuffer::accepts(
                             new UndefinedGlobalVariable(

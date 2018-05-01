@@ -1150,6 +1150,7 @@ class ExpressionChecker
         PhpParser\Node\Expr $stmt,
         Context $context
     ) {
+
         $context->inside_isset = true;
 
         if (self::analyze($statements_checker, $stmt, $context) === false) {
