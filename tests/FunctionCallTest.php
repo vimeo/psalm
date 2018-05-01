@@ -870,6 +870,18 @@ class FunctionCallTest extends TestCase
                     takesIterableOfA([new B]); // should complain',
                 'error_message' => 'InvalidArgument',
             ],
+            'complainAboutArrayToIterableSingleParam' => [
+                '<?php
+                    class A {}
+                    class B {}
+                    /**
+                     * @param iterable<A> $p
+                     */
+                    function takesIterableOfA(iterable $p): void {}
+
+                    takesIterableOfA([new B]); // should complain',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

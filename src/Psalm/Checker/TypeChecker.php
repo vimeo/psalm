@@ -505,7 +505,13 @@ class TypeChecker
                 $all_types_contain = true;
 
                 foreach ($input_type_part->type_params as $i => $input_param) {
-                    $container_param = $container_type_part->type_params[$i];
+                    $container_param_offset = $i - (2 - count($container_type_part->type_params));
+
+                    if ($container_param_offset === -1) {
+                        continue;
+                    }
+
+                    $container_param = $container_type_part->type_params[$container_param_offset];
 
                     if ($i === 0
                         && $input_param->isMixed()
