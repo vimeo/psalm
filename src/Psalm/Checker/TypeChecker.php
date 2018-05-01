@@ -195,7 +195,6 @@ class TypeChecker
                 continue;
             }
 
-            $type_match_found = false;
             $scalar_type_match_found = false;
             $atomic_to_string_cast = false;
 
@@ -211,16 +210,12 @@ class TypeChecker
                 );
 
                 if ($is_atomic_contained_by) {
-                    $type_match_found = true;
+                    return true;
                 }
-            }
-
-            if (!$type_match_found) {
-                return false;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
