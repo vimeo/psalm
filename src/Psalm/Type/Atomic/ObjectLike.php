@@ -15,6 +15,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public $properties;
 
     /**
+     * @var bool - whether or not the objectlike has been created from an explicit array
+     */
+    public $sealed = false;
+
+    /**
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
@@ -187,7 +192,10 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        return new TArray([Type::combineTypes($key_types), $value_type]);
+        $array_type = new TArray([Type::combineTypes($key_types), $value_type]);
+        $array_type->count = new TInt([(string) count($this->properties) => true]);
+
+        return $array_type;
     }
 
     public function __clone()

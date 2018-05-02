@@ -360,8 +360,8 @@ class AssertionFinder
                         $source
                     );
 
-                    $other_value = $conditional->left->value;
-                    $value = $conditional->right->value;
+                    $other_type = isset($conditional->left->inferredType) ? $conditional->left->inferredType : null;
+                    $var_type = $conditional->right->inferredType;
                 } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
                     /** @var PhpParser\Node\Expr $conditional->left */
                     $var_name = ExpressionChecker::getArrayVarId(
@@ -370,37 +370,67 @@ class AssertionFinder
                         $source
                     );
 
-                    $value = $conditional->left->value;
-                    $other_value = $conditional->right->value;
+
+                    $var_type = $conditional->left->inferredType;
+                    $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 } else {
                     throw new \UnexpectedValueException('$typed_value_position value');
                 }
 
-                if ($var_type) {
-                    if ($var_name) {
-                        $if_types[$var_name] = '^' . $var_type;
-                    }
+                if ($var_name && $var_type) {
+                    $if_types[$var_name] = '^' . $var_type;
+                }
 
-                    if ($other_type
-                        && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                        && $source instanceof StatementsSource
-                        && $project_checker
-                    ) {
-                        if (!TypeChecker::isContainedBy(
-                            $project_checker->codebase,
-                            $var_type,
-                            $other_type,
-                            true
-                        ) && !TypeChecker::isContainedBy(
-                            $project_checker->codebase,
-                            $other_type,
-                            $var_type,
-                            true
-                        )) {
-                            if ($var_type->from_docblock || $other_type->from_docblock) {
+                if ($other_type
+                    && $var_type
+                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    && $source instanceof StatementsSource
+                    && $project_checker
+                ) {
+                    $incompatible_values = false;
+                    $has_scalar_match = null;
+                    $type_coerced = null;
+                    $type_coerced_from_mixed = null;
+                    $to_string_cast = null;
+
+                    if (!TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $var_type,
+                        $other_type,
+                        true,
+                        true,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $incompatible_values
+                    ) && !TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $other_type,
+                        $var_type,
+                        true,
+                        true,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $incompatible_values
+                    )) {
+                        if ($var_type->from_docblock || $other_type->from_docblock) {
+                            if (IssueBuffer::accepts(
+                                new DocblockTypeContradiction(
+                                    $var_type . ' does not contain ' . $other_type,
+                                    new CodeLocation($source, $conditional)
+                                ),
+                                $source->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        } else {
+                            if ($incompatible_values) {
                                 if (IssueBuffer::accepts(
-                                    new DocblockTypeContradiction(
-                                        $var_type . ' does not contain ' . $other_type,
+                                    new TypeDoesNotContainType(
+                                        'Given values can never be identical',
                                         new CodeLocation($source, $conditional)
                                     ),
                                     $source->getSuppressedIssues()

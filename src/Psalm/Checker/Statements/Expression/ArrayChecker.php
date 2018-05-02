@@ -133,16 +133,23 @@ class ArrayChecker
             && ($item_key_type->hasString() || $item_key_type->hasInt())
             && $can_create_objectlike
         ) {
-            $stmt->inferredType = new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
+            $object_like = new Type\Atomic\ObjectLike($property_types);
+            $object_like->sealed = true;
+
+            $stmt->inferredType = new Type\Union([$object_like]);
 
             return null;
         }
 
+        $array_type = new Type\Atomic\TArray([
+            $item_key_type ?: new Type\Union([new TInt, new TString]),
+            $item_value_type ?: Type::getMixed(),
+        ]);
+
+        $array_type->count = new Type\Atomic\TInt([(string)count($stmt->items) => true]);
+
         $stmt->inferredType = new Type\Union([
-            new Type\Atomic\TArray([
-                $item_key_type ?: new Type\Union([new TInt, new TString]),
-                $item_value_type ?: Type::getMixed(),
-            ]),
+            $array_type,
         ]);
 
         return null;

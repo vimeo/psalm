@@ -291,17 +291,55 @@ class ArrayAssignmentChecker
                 $new_child_type = $root_type; // noop
             }
         } elseif (!$root_is_string) {
+            $array_atomic_type = new TArray([
+                isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
+                $current_type,
+            ]);
+
+            $from_countable_object_like = false;
+
+            if (!$current_dim && !$context->inside_loop) {
+                $atomic_root_types = $root_type->getTypes();
+
+                if (isset($atomic_root_types['array'])) {
+                    if ($atomic_root_types['array'] instanceof TArray) {
+                        $array_atomic_type->count = $atomic_root_types['array']->count;
+                    } elseif ($atomic_root_types['array'] instanceof ObjectLike
+                        && $atomic_root_types['array']->sealed
+                    ) {
+                        $array_atomic_type->count = new Type\Atomic\TInt([
+                            (string)count($atomic_root_types['array']->properties) => true
+                        ]);
+                        $from_countable_object_like = true;
+                    }
+                }
+            }
+
             $array_assignment_type = new Type\Union([
-                new TArray([
-                    isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
-                    $current_type,
-                ]),
+                $array_atomic_type,
             ]);
 
             $new_child_type = Type::combineUnionTypes(
                 $root_type,
                 $array_assignment_type
             );
+
+            if ($from_countable_object_like) {
+                $atomic_root_types = $new_child_type->getTypes();
+
+                if (isset($atomic_root_types['array'])
+                    && $atomic_root_types['array'] instanceof TArray
+                    && isset($atomic_root_types['array']->count->values)
+                ) {
+                    $new_counts = [];
+
+                    foreach ($atomic_root_types['array']->count->values as $count => $_) {
+                        $new_counts[(string)((int)$count + 1)] = true;
+                    }
+
+                    $atomic_root_types['array']->count->values = $new_counts;
+                }
+            }
         } else {
             $new_child_type = $root_type;
         }

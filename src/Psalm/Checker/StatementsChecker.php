@@ -142,8 +142,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             /*
-            if (isset($context->vars_in_scope['$cumulative']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$cumulative']);
+            if (isset($context->vars_in_scope['$array']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
+                var_dump($stmt->getLine(), $context->vars_in_scope['$array']);
             }
             */
 

@@ -9,6 +9,9 @@ class TypeCombination
     /** @var array<string, array<int, Union>> */
     public $type_params = [];
 
+    /** @var array<string, bool>|null */
+    public $array_counts = [];
+
     /** @var array<string|int, Union> */
     public $objectlike_entries = [];
 

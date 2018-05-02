@@ -309,6 +309,16 @@ class ArrayFetchChecker
                         }
                     }
 
+                    if (!$stmt->dim && $type->count && $type->count->values) {
+                        $new_counts = [];
+
+                        foreach ($type->count->values as $count => $_) {
+                            $new_counts[(string)((int)$count + 1)] = true;
+                        }
+
+                        $type->count->values = $new_counts;
+                    }
+
                     if ($in_assignment && $replacement_type) {
                         $type->type_params[1] = Type::combineUnionTypes(
                             $type->type_params[1],
@@ -409,10 +419,17 @@ class ArrayFetchChecker
                                 $offset_type
                             );
 
+                            $property_count = $type->sealed ? count($type->properties) : null;
+
                             $type = new TArray([
                                 $new_key_type,
                                 $generic_params,
                             ]);
+
+                            if (!$stmt->dim && $property_count) {
+                                ++$property_count;
+                                $type->count = new Type\Atomic\TInt([(string)$property_count => true]);
+                            }
 
                             if (!$array_access_type) {
                                 $array_access_type = clone $generic_params;
@@ -485,7 +502,7 @@ class ArrayFetchChecker
                 continue;
             }
 
-            if ($type instanceof TMixed || $type instanceof TGenericParam ||  $type instanceof TEmpty) {
+            if ($type instanceof TMixed || $type instanceof TGenericParam || $type instanceof TEmpty) {
                 $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if ($in_assignment) {

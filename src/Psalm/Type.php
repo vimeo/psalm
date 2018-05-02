@@ -672,13 +672,20 @@ abstract class Type
      */
     public static function getEmptyArray()
     {
+        $array_type = new TArray(
+            [
+                new Type\Union([new TEmpty]),
+                new Type\Union([new TEmpty]),
+            ]
+        );
+
+        /**
+         * @psalm-suppress InvalidScalarArgument because of a bug
+         */
+        $array_type->count = new TInt(['0' => true]);
+
         return new Type\Union([
-            new TArray(
-                [
-                    new Type\Union([new TEmpty]),
-                    new Type\Union([new TEmpty]),
-                ]
-            ),
+            $array_type,
         ]);
     }
 
@@ -960,7 +967,13 @@ abstract class Type
                     );
                 }
 
-                $new_types[] = new TArray($generic_type_params);
+                $array_type = new TArray($generic_type_params);
+
+                if ($combination->array_counts) {
+                    $array_type->count = new TInt($combination->array_counts);
+                }
+
+                $new_types[] = $array_type;
             } elseif (!isset($combination->value_types[$generic_type])) {
                 $new_types[] = new TGenericObject($generic_type, $generic_type_params);
             }
@@ -972,11 +985,11 @@ abstract class Type
                     && !count($new_types))
             ) {
                 if ($type instanceof TString) {
-                    $type->values = $combination->strings;
+                    $type->values = $combination->strings ?: null;
                 } elseif ($type instanceof TInt) {
-                    $type->values = $combination->ints;
+                    $type->values = $combination->ints ?: null;
                 } elseif ($type instanceof TFloat) {
-                    $type->values = $combination->floats;
+                    $type->values = $combination->floats ?: null;
                 }
 
                 $new_types[] = $type;
@@ -1036,6 +1049,14 @@ abstract class Type
                     $combination->type_params[$type_key][$i] = $type_param;
                 }
             }
+
+            if ($type instanceof TArray && $combination->array_counts !== null) {
+                if ($type->count === null || $type->count->values === null) {
+                    $combination->array_counts = null;
+                } else {
+                    $combination->array_counts = $type->count->values + $combination->array_counts;
+                }
+            }
         } elseif ($type instanceof ObjectLike) {
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
@@ -1060,6 +1081,10 @@ abstract class Type
                 unset($possibly_undefined_entries[$candidate_property_name]);
             }
 
+            if ($combination->array_counts !== null) {
+                $combination->array_counts[(string)count($type->properties)] = true;
+            }
+
             foreach ($possibly_undefined_entries as $type) {
                 $type->possibly_undefined = true;
             }
@@ -1076,19 +1101,19 @@ abstract class Type
                 if ($type->values === null) {
                     $combination->strings = null;
                 } else {
-                    $combination->strings = array_merge($combination->strings, $type->values);
+                    $combination->strings = $combination->strings + $type->values;
                 }
             } elseif ($type instanceof TInt && $combination->ints !== null) {
                 if ($type->values === null) {
                     $combination->ints = null;
                 } else {
-                    $combination->ints = array_merge($combination->ints, $type->values);
+                    $combination->ints = $combination->ints + $type->values;
                 }
             } elseif ($type instanceof TFloat && $combination->floats !== null) {
                 if ($type->values === null) {
                     $combination->ints = null;
                 } else {
-                    $combination->ints = array_merge($combination->floats, $type->values);
+                    $combination->ints = $combination->floats + $type->values;
                 }
             }
 
