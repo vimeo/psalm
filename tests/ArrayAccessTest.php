@@ -127,6 +127,14 @@ class ArrayAccessTest extends TestCase
                         echo isset($p["key"]) ? $p["key"] : "";
                     }',
             ],
+            'unsetObjectLikeOffset' => [
+                '<?php
+                    function takesInt(int $i) : void {}
+                    $x = ["a" => "value"];
+                    unset($x["a"]);
+                    $x[] = 5;
+                    takesInt($x[0]);',
+            ],
         ];
     }
 
@@ -213,6 +221,13 @@ class ArrayAccessTest extends TestCase
                     echo $params["fieldName"];',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Cannot access '
                     . 'value on variable $params using offset value of',
+            ],
+            'missingArrayOffsetAfterUnset' => [
+                '<?php
+                    $x = ["a" => "value", "b" => "value"];
+                    unset($x["a"]);
+                    echo $x["a"];',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

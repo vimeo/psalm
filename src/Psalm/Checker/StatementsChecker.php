@@ -212,6 +212,42 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                     if ($var_id) {
                         $context->remove($var_id);
+
+                        if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
+                            && $var->dim
+                            && ($var->dim instanceof PhpParser\Node\Scalar\String_
+                                || $var->dim instanceof PhpParser\Node\Scalar\LNumber
+                            )
+                        ) {
+                            $root_var_id = ExpressionChecker::getArrayVarId(
+                                $var->var,
+                                $this->getFQCLN(),
+                                $this
+                            );
+
+                            if ($root_var_id && isset($context->vars_in_scope[$root_var_id])) {
+                                $root_type = clone $context->vars_in_scope[$root_var_id];
+
+                                foreach ($root_type->getTypes() as $atomic_root_type) {
+                                    if ($atomic_root_type instanceof Type\Atomic\ObjectLike) {
+                                        if (isset($atomic_root_type->properties[$var->dim->value])) {
+                                            unset($atomic_root_type->properties[$var->dim->value]);
+                                        }
+
+                                        if (!$atomic_root_type->properties) {
+                                            $root_type->addType(
+                                                new Type\Atomic\TArray([
+                                                    new Type\Union([new Type\Atomic\TEmpty]),
+                                                    new Type\Union([new Type\Atomic\TEmpty]),
+                                                ])
+                                            );
+                                        }
+                                    }
+                                }
+
+                                $context->vars_in_scope[$root_var_id] = $root_type;
+                            }
+                        }
                     }
                 }
 
