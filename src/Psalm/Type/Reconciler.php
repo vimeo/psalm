@@ -202,6 +202,12 @@ class Reconciler
             if ($new_var_type[0] !== '!' && $new_var_type !== 'falsy' && $new_var_type !== 'empty') {
                 if ($new_var_type[0] === '^') {
                     $new_var_type = substr($new_var_type, 1);
+
+                    $bracket_pos = strpos($new_var_type, '(');
+
+                    if ($bracket_pos) {
+                        $new_var_type = substr($new_var_type, 2, $bracket_pos - 2);
+                    }
                 }
 
                 return Type::parseString($new_var_type);
