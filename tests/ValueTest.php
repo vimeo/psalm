@@ -89,31 +89,35 @@ class ValueTest extends TestCase
         return [
             'neverEqualsType' => [
                 '<?php
-                    if (4 === 5) {
+                    $a = 4;
+                    if ($a === 5) {
                         // do something
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'SKIPPED-alwaysIdenticalType' => [
+            'alwaysIdenticalType' => [
                 '<?php
-                    if (4 === 4) {
+                    $a = 4;
+                    if ($a === 4) {
                         // do something
                     }',
                 'error_message' => 'RedundantCondition',
             ],
             'alwaysNotIdenticalType' => [
                 '<?php
-                    if (4 !== 5) {
+                    $a = 4;
+                    if ($a !== 5) {
                         // do something
                     }',
                 'error_message' => 'RedundantCondition',
             ],
-            'SKIPPED-neverNotIdenticalType' => [
+            'neverNotIdenticalType' => [
                 '<?php
-                    if (4 !== 4) {
+                    $a = 4;
+                    if ($a !== 4) {
                         // do something
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RedundantCondition',
             ],
             'phpstanPostedArrayTest' => [
                 '<?php

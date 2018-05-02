@@ -81,7 +81,7 @@ class Reconciler
                 continue;
             }
 
-            $new_type_parts = explode('&', $new_types[$key]);
+            $new_type_parts = preg_split('/(?<!\')&/', $new_types[$key]);
 
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
@@ -99,7 +99,7 @@ class Reconciler
             $from_calculation = $result_type && $result_type->from_calculation;
 
             foreach ($new_type_parts as $new_type_part) {
-                $new_type_part_parts = explode('|', $new_type_part);
+                $new_type_part_parts = preg_split('/(?<!\')\|/', $new_type_part);
 
                 $orred_type = null;
 
@@ -223,6 +223,91 @@ class Reconciler
         if ($new_var_type[0] === '!') {
             // this is a specific value comparison type that cannot be negated
             if ($new_var_type[1] === '^') {
+                $bracket_pos = strpos($new_var_type, '(');
+
+                if ($bracket_pos) {
+                    $bracketed = substr($new_var_type, $bracket_pos + 1, -1);
+                    $new_var_type = substr($new_var_type, 2, $bracket_pos - 2);
+
+                    $existing_var_atomic_types = $existing_var_type->getTypes();
+
+                    if ($new_var_type === 'int') {
+                        $ints = array_flip(explode(',', $bracketed));
+
+                        if (isset($existing_var_atomic_types['int']->values)) {
+                            $current_count = count($existing_var_atomic_types['int']->values);
+
+                            $existing_var_atomic_types['int']->values = array_diff_key(
+                                $existing_var_atomic_types['int']->values,
+                                $ints
+                            );
+
+                            $new_count = count($existing_var_atomic_types['int']->values);
+
+                            if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                                self::triggerIssueForImpossible(
+                                    $existing_var_type,
+                                    $old_var_type_string,
+                                    $key,
+                                    $new_var_type,
+                                    $new_count === 0,
+                                    $code_location,
+                                    $suppressed_issues
+                                );
+                            }
+                        }
+                    } elseif ($new_var_type === 'string') {
+                        $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
+
+                        if (isset($existing_var_atomic_types['string']->values)) {
+                            $current_count = count($existing_var_atomic_types['string']->values);
+
+                            $existing_var_atomic_types['string']->values = array_diff_key(
+                                $existing_var_atomic_types['string']->values,
+                                $strings
+                            );
+
+                            $new_count = count($existing_var_atomic_types['string']->values);
+
+                            if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                                self::triggerIssueForImpossible(
+                                    $existing_var_type,
+                                    $old_var_type_string,
+                                    $key,
+                                    $new_var_type,
+                                    $new_count === 0,
+                                    $code_location,
+                                    $suppressed_issues
+                                );
+                            }
+                        }
+                    } elseif (substr($new_var_type, 0, 6) === 'float(') {
+                        $floats = array_flip(explode(',', $bracketed));
+
+                        if (isset($existing_var_atomic_types['float']->values)) {
+                            $current_count = count($existing_var_atomic_types['float']->values);
+
+                            $existing_var_atomic_types['float']->values = array_diff_key(
+                                $existing_var_atomic_types['float']->values,
+                                $floats
+                            );
+
+                            $new_count = count($existing_var_atomic_types['float']->values);
+
+                            if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                                self::triggerIssueForImpossible(
+                                    $existing_var_type,
+                                    $old_var_type_string,
+                                    $key,
+                                    $new_var_type,
+                                    $new_count === 0,
+                                    $code_location,
+                                    $suppressed_issues
+                                );
+                            }
+                        }
+                    }
+                }
                 return $existing_var_type;
             }
 
@@ -837,6 +922,90 @@ class Reconciler
             $new_type = Type::parseString($new_var_type);
             $is_strict_equality = true;
         } else {
+            $bracket_pos = strpos($new_var_type, '(');
+
+            if ($bracket_pos) {
+                $bracketed = substr($new_var_type, $bracket_pos + 1, -1);
+                $new_var_type = substr($new_var_type, 0, $bracket_pos);
+
+                if ($new_var_type === 'int') {
+                    $ints = array_flip(explode(',', $bracketed));
+
+                    if (isset($existing_var_atomic_types['int']->values)) {
+                        $current_count = count($existing_var_atomic_types['int']->values);
+
+                        $existing_var_atomic_types['int']->values = array_intersect_key(
+                            $existing_var_atomic_types['int']->values,
+                            $ints
+                        );
+
+                        $new_count = count($existing_var_atomic_types['int']->values);
+
+                        if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                            self::triggerIssueForImpossible(
+                                $existing_var_type,
+                                $old_var_type_string,
+                                $key,
+                                $new_var_type,
+                                $new_count === $current_count,
+                                $code_location,
+                                $suppressed_issues
+                            );
+                        }
+                    }
+                } elseif ($new_var_type === 'string') {
+                    $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
+
+                    if (isset($existing_var_atomic_types['string']->values)) {
+                        $current_count = count($existing_var_atomic_types['string']->values);
+
+                        $existing_var_atomic_types['string']->values = array_intersect_key(
+                            $existing_var_atomic_types['string']->values,
+                            $strings
+                        );
+
+                        $new_count = count($existing_var_atomic_types['string']->values);
+
+                        if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                            self::triggerIssueForImpossible(
+                                $existing_var_type,
+                                $old_var_type_string,
+                                $key,
+                                $new_var_type,
+                                $new_count === $current_count,
+                                $code_location,
+                                $suppressed_issues
+                            );
+                        }
+                    }
+                } elseif (substr($new_var_type, 0, 6) === 'float(') {
+                    $floats = array_flip(explode(',', $bracketed));
+
+                    if (isset($existing_var_atomic_types['float']->values)) {
+                        $current_count = count($existing_var_atomic_types['float']->values);
+
+                        $existing_var_atomic_types['float']->values = array_intersect_key(
+                            $existing_var_atomic_types['float']->values,
+                            $floats
+                        );
+
+                        $new_count = count($existing_var_atomic_types['float']->values);
+
+                        if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                            self::triggerIssueForImpossible(
+                                $existing_var_type,
+                                $old_var_type_string,
+                                $key,
+                                $new_var_type,
+                                $new_count === $current_count,
+                                $code_location,
+                                $suppressed_issues
+                            );
+                        }
+                    }
+                }
+            }
+
             $new_type = Type::parseString($new_var_type);
         }
 

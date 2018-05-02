@@ -370,7 +370,6 @@ class AssertionFinder
                         $source
                     );
 
-
                     $var_type = $conditional->left->inferredType;
                     $other_type = isset($conditional->right->inferredType) ? $conditional->right->inferredType : null;
                 } else {
@@ -378,7 +377,7 @@ class AssertionFinder
                 }
 
                 if ($var_name && $var_type) {
-                    $if_types[$var_name] = '^' . $var_type;
+                    $if_types[$var_name] = '^' . $var_type->getId();
                 }
 
                 if ($other_type
@@ -696,7 +695,7 @@ class AssertionFinder
 
                 if ($var_type) {
                     if ($var_name) {
-                        $if_types[$var_name] = '!^' . $var_type;
+                        $if_types[$var_name] = '!^' . $var_type->getId();
                     }
 
                     if ($other_type

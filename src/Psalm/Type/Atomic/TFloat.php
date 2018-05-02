@@ -32,6 +32,6 @@ class TFloat extends Scalar
      */
     public function getId()
     {
-        return $this->values ? 'float(' . implode('|', array_keys($this->values)) . ')' : 'float';
+        return $this->values ? 'float(' . implode(',', array_keys($this->values)) . ')' : 'float';
     }
 }
