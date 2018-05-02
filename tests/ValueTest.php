@@ -92,6 +92,36 @@ class ValueTest extends TestCase
                         takesInt($i);
                     }',
             ],
+            'getValidIntStringOffset' => [
+                '<?php
+                    $foo = [
+                        "0" => 3,
+                        "1" => 4,
+                        "2" => 5,
+                    ];
+
+                    $a = "2";
+
+                    echo $foo["2"];
+                    echo $foo[$a];',
+            ],
+            'checkStringKeyValueAfterKnownIntStringOffset' => [
+                '<?php
+                    $foo = [
+                        "0" => 3,
+                        "1" => 4,
+                        "2" => 5,
+                    ];
+
+                    $a = "2";
+                    $foo[$a] = 6;
+
+                    function takesInt(int $s) : void {}
+
+                    foreach ($foo as $i => $b) {
+                        takesInt($i);
+                    }',
+            ],
         ];
     }
 
@@ -193,6 +223,19 @@ class ValueTest extends TestCase
                         if ($b === $i) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'invalidIntStringOffset' => [
+                '<?php
+                    $foo = [
+                        "0" => 3,
+                        "1" => 4,
+                        "2" => 5,
+                    ];
+
+                    $a = "3";
+
+                    echo $foo[$a];',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

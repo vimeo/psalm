@@ -132,6 +132,9 @@ class ArrayAssignmentChecker
                 }
 
                 if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+                    if (preg_match('/^(0|[1-9][0-9]*)$/', $child_stmt->dim->value)) {
+                        $var_id_additions[] = '[' . $child_stmt->dim->value . ']';
+                    }
                     $var_id_additions[] = '[\'' . $child_stmt->dim->value . '\']';
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
                     $var_id_additions[] = '[' . $child_stmt->dim->value . ']';
@@ -291,8 +294,21 @@ class ArrayAssignmentChecker
                 $new_child_type = $root_type; // noop
             }
         } elseif (!$root_is_string) {
+            if ($current_dim) {
+                if (isset($current_dim->inferredType)) {
+                    $array_atomic_key_type = ArrayFetchChecker::replaceOffsetTypeWithInts(
+                        $current_dim->inferredType
+                    );
+                } else {
+                    $array_atomic_key_type = Type::getMixed();
+                }
+            } else {
+                // todo: this can be improved I think
+                $array_atomic_key_type = Type::getInt();
+            }
+
             $array_atomic_type = new TArray([
-                isset($current_dim->inferredType) ? $current_dim->inferredType : Type::getInt(),
+                $array_atomic_key_type,
                 $current_type,
             ]);
 
