@@ -51,6 +51,28 @@ class ObjectLike extends \Psalm\Type\Atomic
                 '}';
     }
 
+    public function getId()
+    {
+        return 'array{' .
+                implode(
+                    ', ',
+                    array_map(
+                        /**
+                         * @param  string|int $name
+                         * @param  Union $type
+                         *
+                         * @return string
+                         */
+                        function ($name, Union $type) {
+                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
+                        },
+                        array_keys($this->properties),
+                        $this->properties
+                    )
+                ) .
+                '}';
+    }
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
