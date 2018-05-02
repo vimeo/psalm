@@ -153,9 +153,9 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         foreach ($this->properties as $key => $_) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TInt();
+                $key_types[] = new Type\Atomic\TInt([(string)$key => true]);
             } else {
-                $key_types[] = new Type\Atomic\TString();
+                $key_types[] = new Type\Atomic\TString([$key => true]);
             }
         }
 
@@ -196,9 +196,9 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TInt();
+                $key_types[] = new Type\Atomic\TInt([(string)$key => true]);
             } else {
-                $key_types[] = new Type\Atomic\TString();
+                $key_types[] = new Type\Atomic\TString([$key => true]);
             }
 
             if ($value_type === null) {

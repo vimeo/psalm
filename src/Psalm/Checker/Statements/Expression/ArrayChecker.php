@@ -55,10 +55,18 @@ class ArrayChecker
                 }
 
                 if (isset($item->key->inferredType)) {
+                    $key_type = $item->key->inferredType;
+
+                    if ($item->key instanceof PhpParser\Node\Scalar\String_
+                        && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
+                    ) {
+                        $key_type = Type::getInt(false, [$item->key->value => true]);
+                    }
+
                     if ($item_key_type) {
-                        $item_key_type = Type::combineUnionTypes($item->key->inferredType, $item_key_type);
+                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type);
                     } else {
-                        $item_key_type = $item->key->inferredType;
+                        $item_key_type = $key_type;
                     }
                 }
             } else {
@@ -107,7 +115,7 @@ class ArrayChecker
                 }
 
                 if ($item_value_type) {
-                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type);
+                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, clone $item_value_type);
                 } else {
                     $item_value_type = $item->value->inferredType;
                 }

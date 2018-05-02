@@ -78,6 +78,20 @@ class ValueTest extends TestCase
                         $i++;
                     }'
             ],
+            'checkStringKeyValue' => [
+                '<?php
+                    $foo = [
+                        "0" => 3,
+                        "1" => 4,
+                        "2" => 5,
+                    ];
+
+                    function takesInt(int $s) : void {}
+
+                    foreach ($foo as $i => $b) {
+                        takesInt($i);
+                    }',
+            ],
         ];
     }
 
@@ -138,6 +152,46 @@ class ValueTest extends TestCase
                     $foo = rand(0, 1) ? "bar" : "bat";
 
                     if ($foo === "baz") {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'arrayOffsetImpossibleValue' => [
+                '<?php
+                    $foo = [
+                        "a" => 1,
+                        "b" => 2,
+                    ];
+
+                    if ($foo["a"] === 2) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'impossibleKeyInForeach' => [
+                '<?php
+                    $foo = [
+                        "0" => 3,
+                        "1" => 4,
+                        "2" => 5,
+                    ];
+
+                    function takesInt(int $s) : void {}
+
+                    foreach ($foo as $i => $b) {
+                        if ($i === 3) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'impossibleValueInForeach' => [
+                '<?php
+                    $foo = [
+                        "0" => 3,
+                        "1" => 4,
+                        "2" => 5,
+                    ];
+
+                    function takesInt(int $s) : void {}
+
+                    foreach ($foo as $i => $b) {
+                        if ($b === $i) {}
+                    }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
         ];
