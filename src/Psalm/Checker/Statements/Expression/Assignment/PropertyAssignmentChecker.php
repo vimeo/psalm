@@ -565,16 +565,14 @@ class PropertyAssignmentChecker
             }
 
             if (!$type_match_found && !$type_coerced) {
-                foreach ($assignment_value_type->getTypes() as $assignment_value_type_part) {
-                    if (TypeChecker::isContainedBy(
-                        $project_checker->codebase,
-                        new Type\Union([$assignment_value_type_part]),
-                        $class_property_type,
-                        true,
-                        true
-                    )) {
-                        $has_valid_assignment_value_type = true;
-                    }
+                if (TypeChecker::canBeContainedBy(
+                    $project_checker->codebase,
+                    $assignment_value_type,
+                    $class_property_type,
+                    true,
+                    true
+                )) {
+                    $has_valid_assignment_value_type = true;
                 }
 
                 $invalid_assignment_value_types[] = $class_property_type->getId();
@@ -748,7 +746,7 @@ class PropertyAssignmentChecker
             $assignment_value_type,
             $class_property_type
         )) {
-            if (TypeChecker::canBeIdenticalTo($codebase, $assignment_value_type, $class_property_type)) {
+            if (TypeChecker::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyAssignmentValue(
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .

@@ -21,6 +21,7 @@ use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyFalseReference;
 use Psalm\Issue\PossiblyInvalidMethodCall;
+use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
 use Psalm\Issue\TypeCoercion;
@@ -835,8 +836,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $project_checker->codebase,
                         $second_arg_type,
                         $pseudo_set_type,
-                        false,
-                        false,
+                        $second_arg_type->ignore_nullable_issues,
+                        $second_arg_type->ignore_falsable_issues,
                         $has_scalar_match,
                         $type_coerced,
                         $type_coerced_from_mixed,
@@ -870,16 +871,34 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
 
                     if (!$type_match_found && !$type_coerced_from_mixed) {
-                        if (IssueBuffer::accepts(
-                            new InvalidPropertyAssignmentValue(
-                                $prop_name . ' with declared type \''
-                                . $pseudo_set_type
-                                . '\' cannot be assigned type \'' . $second_arg_type . '\'',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
-                            ),
-                            $statements_checker->getSuppressedIssues()
+                        if (TypeChecker::canBeContainedBy(
+                            $project_checker->codebase,
+                            $second_arg_type,
+                            $pseudo_set_type
                         )) {
-                            return false;
+                            if (IssueBuffer::accepts(
+                                new PossiblyInvalidPropertyAssignmentValue(
+                                    $prop_name . ' with declared type \''
+                                    . $pseudo_set_type
+                                    . '\' cannot be assigned possibly different type \'' . $second_arg_type . '\'',
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+                        } else {
+                            if (IssueBuffer::accepts(
+                                new InvalidPropertyAssignmentValue(
+                                    $prop_name . ' with declared type \''
+                                    . $pseudo_set_type
+                                    . '\' cannot be assigned type \'' . $second_arg_type . '\'',
+                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
                         }
                     }
                 }
