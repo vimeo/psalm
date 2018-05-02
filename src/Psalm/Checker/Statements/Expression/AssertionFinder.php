@@ -430,7 +430,8 @@ class AssertionFinder
                             if ($incompatible_values) {
                                 if (IssueBuffer::accepts(
                                     new TypeDoesNotContainType(
-                                        'Given values can never be identical',
+                                        'Values ' . $var_type->getId() . ' and '
+                                             . $other_type->getId() . ' can never be identical',
                                         new CodeLocation($source, $conditional)
                                     ),
                                     $source->getSuppressedIssues()
@@ -703,16 +704,34 @@ class AssertionFinder
                         && $source instanceof StatementsSource
                         && $project_checker
                     ) {
+                        $incompatible_values = false;
+                        $has_scalar_match = null;
+                        $type_coerced = null;
+                        $type_coerced_from_mixed = null;
+                        $to_string_cast = null;
+
                         if (!TypeChecker::isContainedBy(
                             $project_checker->codebase,
                             $var_type,
                             $other_type,
-                            true
+                            true,
+                            true,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed,
+                            $to_string_cast,
+                            $incompatible_values
                         ) && !TypeChecker::isContainedBy(
                             $project_checker->codebase,
                             $other_type,
                             $var_type,
-                            true
+                            true,
+                            true,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed,
+                            $to_string_cast,
+                            $incompatible_values
                         )) {
                             if ($var_type->from_docblock || $other_type->from_docblock) {
                                 if (IssueBuffer::accepts(
@@ -725,14 +744,27 @@ class AssertionFinder
                                     // fall through
                                 }
                             } else {
-                                if (IssueBuffer::accepts(
-                                    new RedundantCondition(
-                                        $var_type . ' can never contain ' . $other_type,
-                                        new CodeLocation($source, $conditional)
-                                    ),
-                                    $source->getSuppressedIssues()
-                                )) {
-                                    // fall through
+                                if ($incompatible_values) {
+                                    if (IssueBuffer::accepts(
+                                        new RedundantCondition(
+                                            'Values ' . $var_type->getId() . ' and '
+                                                . $other_type->getId() . ' can never be identical',
+                                            new CodeLocation($source, $conditional)
+                                        ),
+                                        $source->getSuppressedIssues()
+                                    )) {
+                                        // fall through
+                                    }
+                                } else {
+                                    if (IssueBuffer::accepts(
+                                        new RedundantCondition(
+                                            $var_type . ' can never contain ' . $other_type,
+                                            new CodeLocation($source, $conditional)
+                                        ),
+                                        $source->getSuppressedIssues()
+                                    )) {
+                                        // fall through
+                                    }
                                 }
                             }
                         }

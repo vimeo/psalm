@@ -201,6 +201,18 @@ class ExpressionChecker
                 $stmt->inferredType = clone $stmt->var->inferredType;
                 $stmt->inferredType->from_calculation = true;
 
+                foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TInt
+                        || $atomic_type instanceof Type\Atomic\TFloat
+                    ) {
+                        if ($context->inside_loop) {
+                            $atomic_type->values = null;
+                        }
+                    }
+                }
+
+                $stmt->inferredType->bustCache();
+
                 $var_id = self::getArrayVarId($stmt->var, null);
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {

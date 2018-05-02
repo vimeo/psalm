@@ -26,4 +26,12 @@ class TFloat extends Scalar
     {
         return 'float';
     }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->values ? 'float(' . implode('|', array_keys($this->values)) . ')' : 'float';
+    }
 }

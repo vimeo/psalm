@@ -23,6 +23,61 @@ class ValueTest extends TestCase
 
                     if (count($array) === 7) {}',
             ],
+            'tryCountCatch' => [
+                '<?php
+                    $errors = [];
+
+                    try {
+                        if (rand(0, 1)) {
+                            throw new Exception("bad");
+                        }
+                    } catch (Exception $e) {
+                        $errors[] = $e;
+                    }
+
+                    if (count($errors) !== 0) {
+                        echo "Errors";
+                    }',
+            ],
+            'ternaryDifferentString' => [
+                '<?php
+                    $foo = rand(0, 1) ? "bar" : "bat";
+
+                    if ($foo === "bar") {}
+
+                    if ($foo !== "bar") {}
+
+                    if (rand(0, 1)) {
+                        $foo = "baz";
+                    }
+
+                    if ($foo === "baz") {}
+
+                    if ($foo !== "bat") {}',
+            ],
+            'ifDifferentString' => [
+                '<?php
+                    $foo = "bar";
+
+                    if (rand(0, 1)) {
+                        $foo = "bat";
+                    } elseif (rand(0, 1)) {
+                        $foo = "baz";
+                    }
+
+                    if ($foo === "bar") {}
+                    if ($foo !== "bar") {}
+                    if ($foo === "baz") {}',
+            ],
+            'whileIncremented' => [
+                '<?php
+                    $i = 1;
+                    $j = 2;
+                    while (rand(0, 1)) {
+                        if ($i === $j) {}
+                        $i++;
+                    }'
+            ],
         ];
     }
 
@@ -72,6 +127,13 @@ class ValueTest extends TestCase
                     if (count($array) === 7) {
 
                     }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'ifImpossibleString' => [
+                '<?php
+                    $foo = rand(0, 1) ? "bar" : "bat";
+
+                    if ($foo === "baz") {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
         ];

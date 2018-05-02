@@ -26,4 +26,12 @@ class TString extends Scalar
     {
         return 'string';
     }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->values ? 'string(\'' . implode('\'|\'', array_keys($this->values)) . '\')' : 'string';
+    }
 }

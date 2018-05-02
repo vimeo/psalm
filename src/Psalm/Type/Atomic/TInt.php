@@ -26,4 +26,12 @@ class TInt extends Scalar
     {
         return 'int';
     }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return $this->values ? 'int(' . implode('|', array_keys($this->values)) . ')' : 'int';
+    }
 }
