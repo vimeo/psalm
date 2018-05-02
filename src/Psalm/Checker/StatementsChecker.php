@@ -772,7 +772,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 && $stmt->name instanceof PhpParser\Node\Identifier
                 && isset($existing_class_constants[$stmt->name->name])
             ) {
-                return $existing_class_constants[$stmt->name->name];
+                return clone $existing_class_constants[$stmt->name->name];
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier && strtolower($stmt->name->name) === 'class') {
