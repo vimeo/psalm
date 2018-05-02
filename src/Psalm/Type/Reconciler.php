@@ -250,7 +250,11 @@ class Reconciler
 
                             $new_count = count($existing_var_atomic_types['int']->values);
 
-                            if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                            if ($key
+                                && $code_location
+                                && count($existing_var_atomic_types) === 1
+                                && ($new_count === 0 || $new_count === $current_count)
+                            ) {
                                 self::triggerIssueForImpossible(
                                     $existing_var_type,
                                     $old_var_type_string,
@@ -275,7 +279,11 @@ class Reconciler
 
                             $new_count = count($existing_var_atomic_types['string']->values);
 
-                            if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                            if ($key
+                                && $code_location
+                                && count($existing_var_atomic_types) === 1
+                                && ($new_count === 0 || $new_count === $current_count)
+                            ) {
                                 self::triggerIssueForImpossible(
                                     $existing_var_type,
                                     $old_var_type_string,
@@ -300,7 +308,11 @@ class Reconciler
 
                             $new_count = count($existing_var_atomic_types['float']->values);
 
-                            if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                            if ($key
+                                && $code_location
+                                && count($existing_var_atomic_types) === 1
+                                && ($new_count === 0 || $new_count === $current_count)
+                            ) {
                                 self::triggerIssueForImpossible(
                                     $existing_var_type,
                                     $old_var_type_string,
@@ -947,7 +959,11 @@ class Reconciler
 
                         $new_count = count($existing_var_atomic_types['int']->values);
 
-                        if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                        if ($key
+                            && $code_location
+                            && count($existing_var_atomic_types) === 1
+                            && ($new_count === 0 || $new_count === $current_count)
+                        ) {
                             self::triggerIssueForImpossible(
                                 $existing_var_type,
                                 $old_var_type_string,
@@ -972,7 +988,11 @@ class Reconciler
 
                         $new_count = count($existing_var_atomic_types['string']->values);
 
-                        if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                        if ($key
+                            && $code_location
+                            && count($existing_var_atomic_types) === 1
+                            && ($new_count === 0 || $new_count === $current_count)
+                        ) {
                             self::triggerIssueForImpossible(
                                 $existing_var_type,
                                 $old_var_type_string,
@@ -997,7 +1017,11 @@ class Reconciler
 
                         $new_count = count($existing_var_atomic_types['float']->values);
 
-                        if ($key && $code_location && ($new_count === 0 || $new_count === $current_count)) {
+                        if ($key
+                            && $code_location
+                            && count($existing_var_atomic_types) === 1
+                            && ($new_count === 0 || $new_count === $current_count)
+                        ) {
                             self::triggerIssueForImpossible(
                                 $existing_var_type,
                                 $old_var_type_string,

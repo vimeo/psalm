@@ -65,9 +65,28 @@ class ValueTest extends TestCase
                         $foo = "baz";
                     }
 
+                    $bar = "bar";
+                    $baz = "baz";
+
                     if ($foo === "bar") {}
                     if ($foo !== "bar") {}
-                    if ($foo === "baz") {}',
+                    if ($foo === "baz") {}
+                    if ($foo === $bar) {}
+                    if ($foo !== $bar) {}
+                    if ($foo === $baz) {}',
+            ],
+            'ifDifferentNullableString' => [
+                '<?php
+                    $foo = null;
+
+                    if (rand(0, 1)) {
+                        $foo = "bar";
+                    }
+
+                    $bar = "bar";
+
+                    if ($foo === "bar") {}
+                    if ($foo !== "bar") {}',
             ],
             'whileIncremented' => [
                 '<?php
