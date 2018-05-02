@@ -206,7 +206,7 @@ class Reconciler
                     $bracket_pos = strpos($new_var_type, '(');
 
                     if ($bracket_pos) {
-                        $new_var_type = substr($new_var_type, 2, $bracket_pos - 2);
+                        $new_var_type = substr($new_var_type, 0, $bracket_pos);
                     }
                 }
 

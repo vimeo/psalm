@@ -259,6 +259,7 @@ class PropertyAssignmentChecker
                         if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
                             $class_property_types[] =
                                 clone $class_storage->pseudo_property_set_types['$' . $prop_name];
+
                             $has_regular_setter = true;
                             $property_exists = true;
                             continue;
@@ -576,7 +577,7 @@ class PropertyAssignmentChecker
                     }
                 }
 
-                $invalid_assignment_value_types[] = (string) $class_property_type;
+                $invalid_assignment_value_types[] = $class_property_type->getId();
             } else {
                 $has_valid_assignment_value_type = true;
             }
@@ -589,7 +590,7 @@ class PropertyAssignmentChecker
                 if (IssueBuffer::accepts(
                     new InvalidPropertyAssignmentValue(
                         $var_id . ' with declared type \'' . $invalid_class_property_type .
-                            '\' cannot be assigned type \'' . $assignment_value_type . '\'',
+                            '\' cannot be assigned type \'' . $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
@@ -605,7 +606,7 @@ class PropertyAssignmentChecker
                     new PossiblyInvalidPropertyAssignmentValue(
                         $var_id . ' with declared type \'' . $invalid_class_property_type .
                             '\' cannot be assigned possibly different type \'' .
-                            $assignment_value_type . '\'',
+                            $assignment_value_type->getId() . '\'',
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,

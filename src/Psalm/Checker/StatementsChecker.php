@@ -783,15 +783,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            return Type::getString();
+            return Type::getString(strlen($stmt->value) < 30 ? [$stmt->value => true] : null);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            return Type::getInt();
+            return Type::getInt([(string)$stmt->value => true]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            return Type::getFloat();
+            return Type::getFloat([(string)$stmt->value => true]);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Array_) {

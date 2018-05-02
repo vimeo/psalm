@@ -108,7 +108,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             ConstFetchChecker::analyze($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            $stmt->inferredType = Type::getString([$stmt->value => true]);
+            $stmt->inferredType = Type::getString(strlen($stmt->value) < 30 ? [$stmt->value => true] : null);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
