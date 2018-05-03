@@ -464,7 +464,11 @@ abstract class Type
         for ($i = 0, $l = count($return_type_tokens); $i < $l; $i++) {
             $return_type_token = $return_type_tokens[$i];
 
-            if (in_array($return_type_token, ['<', '>', '|', '?', ',', '{', '}', ':', '[', ']', '(', ')'], true)) {
+            if (in_array(
+                $return_type_token,
+                ['<', '>', '|', '?', ',', '{', '}', ':', '[', ']', '(', ')', '&'],
+                true
+            )) {
                 continue;
             }
 
