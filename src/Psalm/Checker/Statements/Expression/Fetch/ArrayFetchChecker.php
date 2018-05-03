@@ -674,7 +674,8 @@ class ArrayFetchChecker
     /**
      * @return Type\Union
      */
-    public static function replaceOffsetTypeWithInts(Type\Union $offset_type) {
+    public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
+    {
         $offset_atomic_types = $offset_type->getTypes();
 
         if (isset($offset_atomic_types['string'])

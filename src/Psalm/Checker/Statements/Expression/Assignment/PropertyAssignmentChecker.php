@@ -741,11 +741,70 @@ class PropertyAssignmentChecker
             $fq_class_name
         );
 
-        if (!TypeChecker::isContainedBy(
-            $codebase,
+        $type_match_found = TypeChecker::isContainedBy(
+            $project_checker->codebase,
             $assignment_value_type,
-            $class_property_type
-        )) {
+            $class_property_type,
+            true,
+            true,
+            $has_scalar_match,
+            $type_coerced,
+            $type_coerced_from_mixed,
+            $to_string_cast
+        );
+
+        if ($type_coerced) {
+            if ($type_coerced_from_mixed) {
+                if (IssueBuffer::accepts(
+                    new MixedTypeCoercion(
+                        $var_id . ' expects \'' . $class_property_type . '\', '
+                            . ' parent type `' . $assignment_value_type . '` provided',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt,
+                            $context->include_location
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // keep soldiering on
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new TypeCoercion(
+                        $var_id . ' expects \'' . $class_property_type . '\', '
+                            . ' parent type \'' . $assignment_value_type . '\' provided',
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $assignment_value ?: $stmt,
+                            $context->include_location
+                        )
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // keep soldiering on
+                }
+            }
+        }
+
+        if ($to_string_cast) {
+            if (IssueBuffer::accepts(
+                new ImplicitToStringCast(
+                    $var_id . ' expects \'' . $class_property_type . '\', '
+                        . '\'' . $assignment_value_type . '\' provided with a __toString method',
+                    new CodeLocation(
+                        $statements_checker->getSource(),
+                        $assignment_value ?: $stmt,
+                        $context->include_location
+                    )
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                // fall through
+            }
+        }
+
+        if (!$type_match_found && !$type_coerced) {
             if (TypeChecker::canBeContainedBy($codebase, $assignment_value_type, $class_property_type)) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyAssignmentValue(

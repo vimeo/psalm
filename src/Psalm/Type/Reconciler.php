@@ -240,7 +240,10 @@ class Reconciler
                     if ($new_var_type === 'int') {
                         $ints = array_flip(explode(',', $bracketed));
 
-                        if (isset($existing_var_atomic_types['int']->values)) {
+                        if (isset($existing_var_atomic_types['int'])
+                            && $existing_var_atomic_types['int'] instanceof Type\Atomic\TInt
+                            && $existing_var_atomic_types['int']->values
+                        ) {
                             $current_count = count($existing_var_atomic_types['int']->values);
 
                             $existing_var_atomic_types['int']->values = array_diff_key(
@@ -269,7 +272,10 @@ class Reconciler
                     } elseif ($new_var_type === 'string') {
                         $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
 
-                        if (isset($existing_var_atomic_types['string']->values)) {
+                        if (isset($existing_var_atomic_types['string'])
+                            && $existing_var_atomic_types['string'] instanceof Type\Atomic\TString
+                            && $existing_var_atomic_types['string']->values
+                        ) {
                             $current_count = count($existing_var_atomic_types['string']->values);
 
                             $existing_var_atomic_types['string']->values = array_diff_key(
@@ -298,7 +304,10 @@ class Reconciler
                     } elseif (substr($new_var_type, 0, 6) === 'float(') {
                         $floats = array_flip(explode(',', $bracketed));
 
-                        if (isset($existing_var_atomic_types['float']->values)) {
+                        if (isset($existing_var_atomic_types['float'])
+                            && $existing_var_atomic_types['float'] instanceof Type\Atomic\TFloat
+                            && $existing_var_atomic_types['float']->values
+                        ) {
                             $current_count = count($existing_var_atomic_types['float']->values);
 
                             $existing_var_atomic_types['float']->values = array_diff_key(
@@ -949,7 +958,10 @@ class Reconciler
                 if ($new_var_type === 'int') {
                     $ints = array_flip(explode(',', $bracketed));
 
-                    if (isset($existing_var_atomic_types['int']->values)) {
+                    if (isset($existing_var_atomic_types['int'])
+                        && $existing_var_atomic_types['int'] instanceof Type\Atomic\TInt
+                        && $existing_var_atomic_types['int']->values
+                    ) {
                         $current_count = count($existing_var_atomic_types['int']->values);
 
                         $existing_var_atomic_types['int']->values = array_intersect_key(
@@ -978,7 +990,10 @@ class Reconciler
                 } elseif ($new_var_type === 'string') {
                     $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
 
-                    if (isset($existing_var_atomic_types['string']->values)) {
+                    if (isset($existing_var_atomic_types['string'])
+                        && $existing_var_atomic_types['string'] instanceof Type\Atomic\TString
+                        && $existing_var_atomic_types['string']->values
+                    ) {
                         $current_count = count($existing_var_atomic_types['string']->values);
 
                         $existing_var_atomic_types['string']->values = array_intersect_key(
@@ -1007,7 +1022,10 @@ class Reconciler
                 } elseif (substr($new_var_type, 0, 6) === 'float(') {
                     $floats = array_flip(explode(',', $bracketed));
 
-                    if (isset($existing_var_atomic_types['float']->values)) {
+                    if (isset($existing_var_atomic_types['float'])
+                        && $existing_var_atomic_types['float'] instanceof Type\Atomic\TFloat
+                        && $existing_var_atomic_types['float']->values
+                    ) {
                         $current_count = count($existing_var_atomic_types['float']->values);
 
                         $existing_var_atomic_types['float']->values = array_intersect_key(
