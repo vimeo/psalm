@@ -179,19 +179,25 @@ class ConstFetchChecker
                 }
 
                 if ($all_class_constants && isset($all_class_constants[$stmt->name])) {
-                    IssueBuffer::add(
+                    if (IssueBuffer::accepts(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
                             new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 } else {
-                    IssueBuffer::add(
+                    if (IssueBuffer::accepts(
                         new UndefinedConstant(
                             'Constant ' . $const_id . ' is not defined',
                             new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
 
                 return false;
