@@ -894,6 +894,22 @@ class ArrayAssignmentTest extends TestCase
                     'MixedArgument', 'LessSpecificReturnStatement', 'MoreSpecificReturnType',
                 ],
             ],
+            'accessArrayAfterSuppressingBugs' => [
+                '<?php
+                    $a = [];
+
+                    foreach (["one", "two", "three"] as $key) {
+                      /**
+                       * @psalm-suppress EmptyArrayAccess
+                       * @psalm-suppress MixedOperand
+                       */
+                      $a[$key] += 5;
+                    }
+
+                    $a["four"] = true;
+
+                    if ($a["one"]) {}',
+            ],
         ];
     }
 
