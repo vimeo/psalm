@@ -55,10 +55,18 @@ class ArrayChecker
                 }
 
                 if (isset($item->key->inferredType)) {
+                    $key_type = $item->key->inferredType;
+
+                    if ($item->key instanceof PhpParser\Node\Scalar\String_
+                        && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
+                    ) {
+                        $key_type = Type::getInt(false, [$item->key->value => true]);
+                    }
+
                     if ($item_key_type) {
-                        $item_key_type = Type::combineUnionTypes($item->key->inferredType, $item_key_type);
+                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type);
                     } else {
-                        $item_key_type = $item->key->inferredType;
+                        $item_key_type = $key_type;
                     }
                 }
             } else {
@@ -107,7 +115,7 @@ class ArrayChecker
                 }
 
                 if ($item_value_type) {
-                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, $item_value_type);
+                    $item_value_type = Type::combineUnionTypes($item->value->inferredType, clone $item_value_type);
                 } else {
                     $item_value_type = $item->value->inferredType;
                 }
@@ -133,16 +141,23 @@ class ArrayChecker
             && ($item_key_type->hasString() || $item_key_type->hasInt())
             && $can_create_objectlike
         ) {
-            $stmt->inferredType = new Type\Union([new Type\Atomic\ObjectLike($property_types)]);
+            $object_like = new Type\Atomic\ObjectLike($property_types);
+            $object_like->sealed = true;
+
+            $stmt->inferredType = new Type\Union([$object_like]);
 
             return null;
         }
 
+        $array_type = new Type\Atomic\TArray([
+            $item_key_type ?: new Type\Union([new TInt, new TString]),
+            $item_value_type ?: Type::getMixed(),
+        ]);
+
+        $array_type->count = new Type\Atomic\TInt([count($stmt->items) => true]);
+
         $stmt->inferredType = new Type\Union([
-            new Type\Atomic\TArray([
-                $item_key_type ?: new Type\Union([new TInt, new TString]),
-                $item_value_type ?: Type::getMixed(),
-            ]),
+            $array_type,
         ]);
 
         return null;

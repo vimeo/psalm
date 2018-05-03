@@ -40,6 +40,18 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             }
 
             return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+        } elseif ($node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PostDec
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+        ) {
+            $var_id = ExpressionChecker::getRootVarId($node->var, $this->this_class_name);
+
+            if ($var_id) {
+                $this->assignment_map[$var_id][$var_id] = true;
+            }
+
+            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;

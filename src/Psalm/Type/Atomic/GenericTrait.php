@@ -27,6 +27,22 @@ trait GenericTrait
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
+    public function getId()
+    {
+        $s = '';
+        foreach ($this->type_params as $type_param) {
+            $s .= $type_param->getId() . ', ';
+        }
+
+        $extra_types = '';
+
+        if ($this instanceof TNamedObject && $this->extra_types) {
+            $extra_types = '&' . implode('&', $this->extra_types);
+        }
+
+        return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
+    }
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes

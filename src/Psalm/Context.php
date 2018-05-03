@@ -212,6 +212,11 @@ class Context
     public $inside_case = false;
 
     /**
+     * @var bool
+     */
+    public $inside_loop = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

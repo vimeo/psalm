@@ -546,12 +546,13 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
+     * @param array<string|int, bool>|null $values
      *
      * @return Type\Union
      */
-    public static function getInt($from_calculation = false)
+    public static function getInt($from_calculation = false, array $values = null)
     {
-        $union = new Union([new TInt]);
+        $union = new Union([new TInt($values)]);
         $union->from_calculation = $from_calculation;
 
         return $union;
@@ -568,11 +569,13 @@ abstract class Type
     }
 
     /**
+     * @param array<string|int, bool>|null $values
+     *
      * @return Type\Union
      */
-    public static function getString()
+    public static function getString(array $values = null)
     {
-        $type = new TString;
+        $type = new TString($values);
 
         return new Union([$type]);
     }
@@ -622,11 +625,13 @@ abstract class Type
     }
 
     /**
+     * @param array<string, bool>|null $values
+     *
      * @return Type\Union
      */
-    public static function getFloat()
+    public static function getFloat(array $values = null)
     {
-        $type = new TFloat;
+        $type = new TFloat($values);
 
         return new Union([$type]);
     }
@@ -671,13 +676,20 @@ abstract class Type
      */
     public static function getEmptyArray()
     {
+        $array_type = new TArray(
+            [
+                new Type\Union([new TEmpty]),
+                new Type\Union([new TEmpty]),
+            ]
+        );
+
+        /**
+         * @psalm-suppress InvalidScalarArgument because of a bug
+         */
+        $array_type->count = new TInt([0 => true]);
+
         return new Type\Union([
-            new TArray(
-                [
-                    new Type\Union([new TEmpty]),
-                    new Type\Union([new TEmpty]),
-                ]
-            ),
+            $array_type,
         ]);
     }
 
@@ -959,7 +971,13 @@ abstract class Type
                     );
                 }
 
-                $new_types[] = new TArray($generic_type_params);
+                $array_type = new TArray($generic_type_params);
+
+                if ($combination->array_counts) {
+                    $array_type->count = new TInt($combination->array_counts);
+                }
+
+                $new_types[] = $array_type;
             } elseif (!isset($combination->value_types[$generic_type])) {
                 $new_types[] = new TGenericObject($generic_type, $generic_type_params);
             }
@@ -970,6 +988,14 @@ abstract class Type
                 || (count($combination->value_types) === 1
                     && !count($new_types))
             ) {
+                if ($type instanceof TString) {
+                    $type->values = $combination->strings ?: null;
+                } elseif ($type instanceof TInt) {
+                    $type->values = $combination->ints ?: null;
+                } elseif ($type instanceof TFloat) {
+                    $type->values = $combination->floats ?: null;
+                }
+
                 $new_types[] = $type;
             }
         }
@@ -1027,6 +1053,14 @@ abstract class Type
                     $combination->type_params[$type_key][$i] = $type_param;
                 }
             }
+
+            if ($type instanceof TArray && $combination->array_counts !== null) {
+                if ($type->count === null || $type->count->values === null) {
+                    $combination->array_counts = null;
+                } else {
+                    $combination->array_counts = $type->count->values + $combination->array_counts;
+                }
+            }
         } elseif ($type instanceof ObjectLike) {
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
@@ -1051,6 +1085,10 @@ abstract class Type
                 unset($possibly_undefined_entries[$candidate_property_name]);
             }
 
+            if ($combination->array_counts !== null) {
+                $combination->array_counts[(string)count($type->properties)] = true;
+            }
+
             foreach ($possibly_undefined_entries as $type) {
                 $type->possibly_undefined = true;
             }
@@ -1063,6 +1101,26 @@ abstract class Type
                 }
             }
         } else {
+            if ($type instanceof TString && $combination->strings !== null) {
+                if ($type->values === null) {
+                    $combination->strings = null;
+                } else {
+                    $combination->strings = $combination->strings + $type->values;
+                }
+            } elseif ($type instanceof TInt && $combination->ints !== null) {
+                if ($type->values === null) {
+                    $combination->ints = null;
+                } else {
+                    $combination->ints = $combination->ints + $type->values;
+                }
+            } elseif ($type instanceof TFloat && $combination->floats !== null) {
+                if ($type->values === null) {
+                    $combination->ints = null;
+                } else {
+                    $combination->ints = $combination->floats + $type->values;
+                }
+            }
+
             $combination->value_types[$type_key] = $type;
         }
     }

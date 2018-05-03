@@ -493,6 +493,8 @@ class AlgebraChecker
                         $truths[$var] = array_pop($possible_types);
                     }
                 } elseif (count($clause->possibilities) === 1) {
+                    $with_brackets = 0;
+
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,
@@ -500,15 +502,44 @@ class AlgebraChecker
                          * @param  string $possible_type
                          *
                          * @return bool
+                         *
+                         * @psalm-suppress MixedOperand
                          */
-                        function ($possible_type) {
+                        function ($possible_type) use (&$with_brackets) {
+                            $with_brackets += (int) (strpos($possible_type, '(') > 0);
                             return $possible_type[0] !== '!';
                         }
                     );
 
                     if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
                         $things_that_can_be_said = array_unique($things_that_can_be_said);
-                        $truths[$var] = implode('|', array_unique($things_that_can_be_said));
+
+                        if ($with_brackets > 1) {
+                            $bracket_groups = [];
+
+                            $removed = 0;
+
+                            foreach ($things_that_can_be_said as $i => $t) {
+                                if (preg_match('/^\^(int|string|float)\(/', $t, $matches)) {
+                                    $options = substr($t, strlen((string) $matches[0]), -1);
+
+                                    if (!isset($bracket_groups[(string) $matches[1]])) {
+                                        $bracket_groups[(string) $matches[1]] = $options;
+                                    } else {
+                                        $bracket_groups[(string) $matches[1]] .= ',' . $options;
+                                    }
+
+                                    array_splice($things_that_can_be_said, $i - $removed, 1);
+                                    $removed++;
+                                }
+                            }
+
+                            foreach ($bracket_groups as $type => $options) {
+                                $things_that_can_be_said[] = '^' . $type . '(' . $options . ')';
+                            }
+                        }
+
+                        $truths[$var] = implode('|', $things_that_can_be_said);
                     }
                 }
             }

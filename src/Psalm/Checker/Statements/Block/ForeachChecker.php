@@ -41,6 +41,8 @@ class ForeachChecker
 
         $foreach_context = clone $context;
 
+        $foreach_context->inside_loop = true;
+
         $project_checker = $statements_checker->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 

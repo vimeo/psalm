@@ -108,7 +108,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             ConstFetchChecker::analyze($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            $stmt->inferredType = Type::getString();
+            $stmt->inferredType = Type::getString(strlen($stmt->value) < 30 ? [$stmt->value => true] : null);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
@@ -131,9 +131,9 @@ class ExpressionChecker
                     break;
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->inferredType = Type::getInt();
+            $stmt->inferredType = Type::getInt(false, [$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            $stmt->inferredType = Type::getFloat();
+            $stmt->inferredType = Type::getFloat([(string)$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
             $stmt instanceof PhpParser\Node\Expr\UnaryPlus
         ) {
@@ -200,6 +200,18 @@ class ExpressionChecker
             if (isset($stmt->var->inferredType)) {
                 $stmt->inferredType = clone $stmt->var->inferredType;
                 $stmt->inferredType->from_calculation = true;
+
+                foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TInt
+                        || $atomic_type instanceof Type\Atomic\TFloat
+                    ) {
+                        if ($context->inside_loop) {
+                            $atomic_type->values = null;
+                        }
+                    }
+                }
+
+                $stmt->inferredType->bustCache();
 
                 $var_id = self::getArrayVarId($stmt->var, null);
 

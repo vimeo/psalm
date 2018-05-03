@@ -289,6 +289,8 @@ class ArrayFetchChecker
                     $type = new ObjectLike([$key_value => new Type\Union([new TEmpty])]);
                 }
 
+                $offset_type = self::replaceOffsetTypeWithInts($offset_type);
+
                 if ($type instanceof TArray) {
                     // if we're assigning to an empty array with a key offset, refashion that array
                     if ($in_assignment) {
@@ -307,6 +309,16 @@ class ArrayFetchChecker
                         } else {
                             $has_valid_offset = true;
                         }
+                    }
+
+                    if (!$stmt->dim && $type->count && $type->count->values) {
+                        $new_counts = [];
+
+                        foreach ($type->count->values as $count => $_) {
+                            $new_counts[(string)((int)$count + 1)] = true;
+                        }
+
+                        $type->count->values = $new_counts;
                     }
 
                     if ($in_assignment && $replacement_type) {
@@ -409,10 +421,17 @@ class ArrayFetchChecker
                                 $offset_type
                             );
 
+                            $property_count = $type->sealed ? count($type->properties) : null;
+
                             $type = new TArray([
                                 $new_key_type,
                                 $generic_params,
                             ]);
+
+                            if (!$stmt->dim && $property_count) {
+                                ++$property_count;
+                                $type->count = new Type\Atomic\TInt([$property_count => true]);
+                            }
 
                             if (!$array_access_type) {
                                 $array_access_type = clone $generic_params;
@@ -485,7 +504,7 @@ class ArrayFetchChecker
                 continue;
             }
 
-            if ($type instanceof TMixed || $type instanceof TGenericParam ||  $type instanceof TEmpty) {
+            if ($type instanceof TMixed || $type instanceof TGenericParam || $type instanceof TEmpty) {
                 $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
 
                 if ($in_assignment) {
@@ -650,5 +669,53 @@ class ArrayFetchChecker
         }
 
         return $array_access_type;
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
+    {
+        $offset_atomic_types = $offset_type->getTypes();
+
+        if (isset($offset_atomic_types['string'])
+            && $offset_atomic_types['string'] instanceof Type\Atomic\TString
+            && $offset_atomic_types['string']->values
+        ) {
+            $strings = [];
+            $ints = [];
+
+            foreach ($offset_atomic_types['string']->values as $key => $_) {
+                if (is_int($key)) {
+                    $ints[$key] = true;
+                } else {
+                    $strings[$key] = true;
+                }
+            }
+
+            if ($ints) {
+                $offset_type = clone $offset_type;
+
+                if ($strings) {
+                    $offset_type->addType(new Type\Atomic\TString($strings));
+                } else {
+                    $offset_type->removeType('string');
+                }
+
+                if (isset($offset_atomic_types['int'])
+                    && $offset_atomic_types['int'] instanceof Type\Atomic\TInt
+                ) {
+                    if ($offset_atomic_types['int']->values) {
+                        $offset_type->addType(new Type\Atomic\TInt(
+                            $offset_atomic_types['int']->values + $ints
+                        ));
+                    }
+                } else {
+                    $offset_type->addType(new Type\Atomic\TInt($ints));
+                }
+            }
+        }
+
+        return $offset_type;
     }
 }
