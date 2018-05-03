@@ -430,7 +430,7 @@ class ArrayFetchChecker
 
                             if (!$stmt->dim && $property_count) {
                                 ++$property_count;
-                                $type->count = new Type\Atomic\TInt([(string)$property_count => true]);
+                                $type->count = new Type\Atomic\TInt([$property_count => true]);
                             }
 
                             if (!$array_access_type) {
@@ -686,7 +686,7 @@ class ArrayFetchChecker
             $ints = [];
 
             foreach ($offset_atomic_types['string']->values as $key => $_) {
-                if (preg_match('/^(0|[1-9][0-9]*)$/', $key)) {
+                if (is_int($key)) {
                     $ints[$key] = true;
                 } else {
                     $strings[$key] = true;

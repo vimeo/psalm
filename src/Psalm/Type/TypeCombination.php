@@ -9,7 +9,7 @@ class TypeCombination
     /** @var array<string, array<int, Union>> */
     public $type_params = [];
 
-    /** @var array<string, bool>|null */
+    /** @var array<string|int, bool>|null */
     public $array_counts = [];
 
     /** @var array<string|int, Union> */
@@ -18,10 +18,10 @@ class TypeCombination
     /** @var array<string, string> */
     public $class_string_types = [];
 
-    /** @var array<string, bool>|null */
+    /** @var array<string|int, bool>|null */
     public $strings = [];
 
-    /** @var array<string, bool>|null */
+    /** @var array<string|int, bool>|null */
     public $ints = [];
 
     /** @var array<string, bool>|null */

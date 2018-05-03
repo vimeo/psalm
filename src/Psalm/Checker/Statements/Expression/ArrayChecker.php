@@ -154,7 +154,7 @@ class ArrayChecker
             $item_value_type ?: Type::getMixed(),
         ]);
 
-        $array_type->count = new Type\Atomic\TInt([(string)count($stmt->items) => true]);
+        $array_type->count = new Type\Atomic\TInt([count($stmt->items) => true]);
 
         $stmt->inferredType = new Type\Union([
             $array_type,

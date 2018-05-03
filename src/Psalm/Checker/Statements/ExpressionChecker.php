@@ -131,7 +131,7 @@ class ExpressionChecker
                     break;
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->inferredType = Type::getInt(false, [(string)$stmt->value => true]);
+            $stmt->inferredType = Type::getInt(false, [$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             $stmt->inferredType = Type::getFloat([(string)$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||

@@ -787,7 +787,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            return Type::getInt(false, [(string)$stmt->value => true]);
+            return Type::getInt(false, [$stmt->value => true]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {

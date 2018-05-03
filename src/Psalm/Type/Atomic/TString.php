@@ -3,11 +3,11 @@ namespace Psalm\Type\Atomic;
 
 class TString extends Scalar
 {
-    /** @var array<string, bool>|null */
+    /** @var array<string|int, bool>|null */
     public $values;
 
     /**
-     * @param array<string, bool>|null $values
+     * @param array<string|int, bool>|null $values
      */
     public function __construct(array $values = null)
     {

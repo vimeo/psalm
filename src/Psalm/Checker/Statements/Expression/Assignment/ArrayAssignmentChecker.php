@@ -324,7 +324,7 @@ class ArrayAssignmentChecker
                         && $atomic_root_types['array']->sealed
                     ) {
                         $array_atomic_type->count = new Type\Atomic\TInt([
-                            (string)count($atomic_root_types['array']->properties) => true
+                            count($atomic_root_types['array']->properties) => true
                         ]);
                         $from_countable_object_like = true;
                     }

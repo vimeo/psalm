@@ -542,7 +542,7 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
-     * @param array<string, bool>|null $values
+     * @param array<string|int, bool>|null $values
      *
      * @return Type\Union
      */
@@ -565,7 +565,7 @@ abstract class Type
     }
 
     /**
-     * @param array<string, bool>|null $values
+     * @param array<string|int, bool>|null $values
      *
      * @return Type\Union
      */
@@ -682,7 +682,7 @@ abstract class Type
         /**
          * @psalm-suppress InvalidScalarArgument because of a bug
          */
-        $array_type->count = new TInt(['0' => true]);
+        $array_type->count = new TInt([0 => true]);
 
         return new Type\Union([
             $array_type,

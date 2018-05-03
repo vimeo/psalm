@@ -96,7 +96,7 @@ class FunctionChecker extends FunctionLikeChecker
                         && $atomic_types['array']->sealed
                     ) {
                         return new Type\Union([
-                            new Type\Atomic\TInt([(string)count($atomic_types['array']->properties) => true])
+                            new Type\Atomic\TInt([count($atomic_types['array']->properties) => true])
                         ]);
                     }
                 }
