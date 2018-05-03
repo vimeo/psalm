@@ -350,7 +350,7 @@ class ArrayFetchChecker
                         }
 
                         if (!IssueBuffer::isRecording()) {
-                            $array_access_type = Type::getMixed();
+                            $array_access_type = Type::getMixed(true);
                         }
                     }
                 } else {

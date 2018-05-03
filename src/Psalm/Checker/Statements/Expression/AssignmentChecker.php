@@ -511,7 +511,14 @@ class AssignmentChecker
                 $context
             );
 
-            if ($result_type && $array_var_id) {
+            if ($stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                ArrayAssignmentChecker::analyze(
+                    $statements_checker,
+                    $stmt->var,
+                    $context,
+                    $result_type ?: Type::getMixed()
+                );
+            } elseif ($result_type && $array_var_id) {
                 $context->vars_in_scope[$array_var_id] = $result_type;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div

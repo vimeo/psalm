@@ -681,6 +681,22 @@ class BinaryOpChecker
                             }
                         }
 
+                        if ($left_type_part instanceof TMixed
+                            && $left_type_part->from_isset
+                            && $parent instanceof PhpParser\Node\Expr\AssignOp\Plus
+                            && !$right_type_part instanceof TMixed
+                        ) {
+                            $result_type_member = new Type\Union([$right_type_part]);
+
+                            if (!$result_type) {
+                                $result_type = $result_type_member;
+                            } else {
+                                $result_type = Type::combineUnionTypes($result_type_member, $result_type);
+                            }
+
+                            continue;
+                        }
+
                         $from_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_isset)
                             && (!($right_type_part instanceof TMixed) || $right_type_part->from_isset);
 
