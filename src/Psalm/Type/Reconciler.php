@@ -251,6 +251,8 @@ class Reconciler
                                 $ints
                             );
 
+                            $existing_var_type->bustCache();
+
                             $new_count = count($existing_var_atomic_types['int']->values);
 
                             if ($key
@@ -283,6 +285,8 @@ class Reconciler
                                 $strings
                             );
 
+                            $existing_var_type->bustCache();
+
                             $new_count = count($existing_var_atomic_types['string']->values);
 
                             if ($key
@@ -314,6 +318,8 @@ class Reconciler
                                 $existing_var_atomic_types['float']->values,
                                 $floats
                             );
+
+                            $existing_var_type->bustCache();
 
                             $new_count = count($existing_var_atomic_types['float']->values);
 
@@ -969,6 +975,8 @@ class Reconciler
                             $ints
                         );
 
+                        $existing_var_type->bustCache();
+
                         $new_count = count($existing_var_atomic_types['int']->values);
 
                         if ($key
@@ -1001,6 +1009,8 @@ class Reconciler
                             $strings
                         );
 
+                        $existing_var_type->bustCache();
+
                         $new_count = count($existing_var_atomic_types['string']->values);
 
                         if ($key
@@ -1032,6 +1042,8 @@ class Reconciler
                             $existing_var_atomic_types['float']->values,
                             $floats
                         );
+
+                        $existing_var_type->bustCache();
 
                         $new_count = count($existing_var_atomic_types['float']->values);
 
