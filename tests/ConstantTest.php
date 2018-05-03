@@ -96,6 +96,18 @@ class ConstantTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['UndefinedConstant'],
             ],
+            'suppressUndefinedClassConstant' => [
+                '<?php
+                    class C {}
+
+                    /** @psalm-suppress UndefinedConstant */
+                    $a = POTATO;
+
+                    /** @psalm-suppress UndefinedConstant */
+                    $a = C::POTATO;',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment'],
+            ],
         ];
     }
 
