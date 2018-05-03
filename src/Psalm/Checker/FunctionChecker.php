@@ -82,6 +82,26 @@ class FunctionChecker extends FunctionLikeChecker
                 return Type::getArray();
             }
 
+            if ($call_map_key === 'count' && isset($call_args[0]->value->inferredType)) {
+                $atomic_types = $call_args[0]->value->inferredType->getTypes();
+
+                if (count($atomic_types) === 1 && isset($atomic_types['array'])) {
+                    if ($atomic_types['array'] instanceof Type\Atomic\TArray) {
+                        return new Type\Union([
+                            $atomic_types['array']->count
+                                ? clone $atomic_types['array']->count
+                                : new Type\Atomic\TInt
+                        ]);
+                    } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
+                        && $atomic_types['array']->sealed
+                    ) {
+                        return new Type\Union([
+                            new Type\Atomic\TInt([count($atomic_types['array']->properties) => true])
+                        ]);
+                    }
+                }
+            }
+
             if ($call_map_key === 'var_export'
                 || $call_map_key === 'highlight_string'
                 || $call_map_key === 'highlight_file'

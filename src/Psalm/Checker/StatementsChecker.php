@@ -142,8 +142,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             /*
-            if (isset($context->vars_in_scope['$cumulative']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
-                var_dump($stmt->getLine() . ' ' . $context->vars_in_scope['$cumulative']);
+            if (isset($context->vars_in_scope['$array']) && !$stmt instanceof PhpParser\Node\Stmt\Nop) {
+                var_dump($stmt->getLine(), $context->vars_in_scope['$array']);
             }
             */
 
@@ -768,7 +768,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 && is_string($stmt->name)
                 && isset($existing_class_constants[$stmt->name])
             ) {
-                return $existing_class_constants[$stmt->name];
+                return clone $existing_class_constants[$stmt->name];
             }
 
             if (is_string($stmt->name) && strtolower($stmt->name) === 'class') {
@@ -779,15 +779,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            return Type::getString();
+            return Type::getString(strlen($stmt->value) < 30 ? [$stmt->value => true] : null);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            return Type::getInt();
+            return Type::getInt(false, [$stmt->value => true]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            return Type::getFloat();
+            return Type::getFloat([(string)$stmt->value => true]);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Array_) {

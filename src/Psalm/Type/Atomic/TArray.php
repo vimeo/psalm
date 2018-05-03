@@ -14,6 +14,11 @@ class TArray extends \Psalm\Type\Atomic
     public $value = 'array';
 
     /**
+     * @var TInt|null
+     */
+    public $count;
+
+    /**
      * Constructs a new instance of a generic type
      *
      * @param array<int, \Psalm\Type\Union> $type_params

@@ -32,6 +32,8 @@ class WhileChecker
 
         $while_context = clone $context;
 
+        $while_context->inside_loop = true;
+
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($project_checker->alter_code) {

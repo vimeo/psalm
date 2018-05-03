@@ -15,6 +15,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public $properties;
 
     /**
+     * @var bool - whether or not the objectlike has been created from an explicit array
+     */
+    public $sealed = false;
+
+    /**
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
@@ -38,6 +43,28 @@ class ObjectLike extends \Psalm\Type\Atomic
                          */
                         function ($name, Union $type) {
                             return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type;
+                        },
+                        array_keys($this->properties),
+                        $this->properties
+                    )
+                ) .
+                '}';
+    }
+
+    public function getId()
+    {
+        return 'array{' .
+                implode(
+                    ', ',
+                    array_map(
+                        /**
+                         * @param  string|int $name
+                         * @param  Union $type
+                         *
+                         * @return string
+                         */
+                        function ($name, Union $type) {
+                            return $name . ($type->possibly_undefined ? '?' : '') . ':' . $type->getId();
                         },
                         array_keys($this->properties),
                         $this->properties
@@ -126,9 +153,9 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         foreach ($this->properties as $key => $_) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TInt();
+                $key_types[] = new Type\Atomic\TInt([$key => true]);
             } else {
-                $key_types[] = new Type\Atomic\TString();
+                $key_types[] = new Type\Atomic\TString([$key => true]);
             }
         }
 
@@ -169,9 +196,9 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TInt();
+                $key_types[] = new Type\Atomic\TInt([$key => true]);
             } else {
-                $key_types[] = new Type\Atomic\TString();
+                $key_types[] = new Type\Atomic\TString([$key => true]);
             }
 
             if ($value_type === null) {
@@ -187,7 +214,10 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        return new TArray([Type::combineTypes($key_types), $value_type]);
+        $array_type = new TArray([Type::combineTypes($key_types), $value_type]);
+        $array_type->count = new TInt([count($this->properties) => true]);
+
+        return $array_type;
     }
 
     public function __clone()
