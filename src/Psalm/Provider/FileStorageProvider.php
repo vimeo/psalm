@@ -81,9 +81,7 @@ class FileStorageProvider
     {
         $file_path_lc = strtolower($file_path);
 
-        self::$storage[$file_path_lc] = $storage = new FileStorage();
-
-        $storage->file_path = $file_path;
+        self::$storage[$file_path_lc] = $storage = new FileStorage($file_path);
 
         return $storage;
     }

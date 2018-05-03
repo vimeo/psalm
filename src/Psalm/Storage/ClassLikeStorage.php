@@ -226,4 +226,12 @@ class ClassLikeStorage
      * @var string
      */
     public $hash = '';
+
+    /**
+     * @param string $name
+     */
+    public function __construct($name)
+    {
+        $this->name = $name;
+    }
 }

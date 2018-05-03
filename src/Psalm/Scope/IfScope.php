@@ -54,7 +54,7 @@ class IfScope
     /**
      * @var array<int, Clause>
      */
-    public $negated_clauses;
+    public $negated_clauses = [];
 
     /**
      * @var array<int, Clause>

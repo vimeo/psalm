@@ -60,4 +60,12 @@ class FileStorage
      * @var string
      */
     public $hash = '';
+
+    /**
+     * @param string $file_path
+     */
+    public function __construct($file_path)
+    {
+        $this->file_path = $file_path;
+    }
 }
