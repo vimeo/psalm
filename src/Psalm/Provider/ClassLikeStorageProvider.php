@@ -89,9 +89,7 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        self::$storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage();
-
-        $storage->name = $fq_classlike_name;
+        self::$storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage($fq_classlike_name);
 
         return $storage;
     }

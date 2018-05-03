@@ -24,7 +24,15 @@
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress" />
         <PossiblyNullOperand errorLevel="suppress" />
-        <MissingConstructor errorLevel="suppress" />
+        <MissingConstructor>
+            <errorLevel type="suppress">
+                <file name="src/Psalm/FunctionDocblockComment.php" />
+                <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
+                <file name="src/Psalm/Storage/MethodStorage.php" />
+                <file name="src/Psalm/Storage/PropertyStorage.php" />
+                <file name="src/Psalm/VarDocblockComment.php" />
+            </errorLevel>
+        </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress" />
 
         <LessSpecificReturnType>
