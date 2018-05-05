@@ -61,6 +61,19 @@ class BinaryOperationTest extends TestCase
                     '$f' => 'string',
                 ],
             ],
+            'gmpOperations' => [
+                '<?php
+                    $a = gmp_init(2);
+                    $b = gmp_init(4);
+                    $c = $a + $b;
+                    $d = $c + 3;',
+                'assertions' => [
+                    '$a' => 'GMP',
+                    '$b' => 'GMP',
+                    '$c' => 'GMP',
+                    '$d' => 'GMP',
+                ],
+            ],
         ];
     }
 
@@ -112,6 +125,12 @@ class BinaryOperationTest extends TestCase
                     $b = rand(0, 1) ? [] : "hello";
                     echo $b . "goodbye";',
                 'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'invalidGMPOperation' => [
+                '<?php
+                    $a = gmp_init(2);
+                    $b = "a" + $a;',
+                'error_message' => 'InvalidOperand - src/somefile.php:3 - Cannot add GMP to non-numeric type',
             ],
         ];
     }
