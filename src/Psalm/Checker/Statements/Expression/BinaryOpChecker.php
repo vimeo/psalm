@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
@@ -761,6 +762,43 @@ class BinaryOpChecker
                                 $result_type,
                                 $context
                             );
+                        }
+
+                        continue;
+                    }
+
+                    if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
+                        || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
+                    ) {
+                        if ((($left_type_part instanceof TNamedObject
+                                    && strtolower($left_type_part->value) === 'gmp')
+                                && (($right_type_part instanceof TNamedObject
+                                        && strtolower($right_type_part->value) === 'gmp')
+                                    || ($right_type_part->isNumericType() || $right_type_part instanceof TMixed)))
+                            || (($right_type_part instanceof TNamedObject
+                                    && strtolower($right_type_part->value) === 'gmp')
+                                && (($left_type_part instanceof TNamedObject
+                                        && strtolower($left_type_part->value) === 'gmp')
+                                    || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
+                        ) {
+                            if (!$result_type) {
+                                $result_type = new Type\Union([new TNamedObject('GMP')]);
+                            } else {
+                                $result_type = Type::combineUnionTypes(
+                                    new Type\Union([new TNamedObject('GMP')]),
+                                    $result_type
+                                );
+                            }
+                        } else {
+                            if ($statements_source && IssueBuffer::accepts(
+                                new InvalidOperand(
+                                    'Cannot add GMP to non-numeric type',
+                                    new CodeLocation($statements_source, $parent)
+                                ),
+                                $statements_source->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
                         }
 
                         continue;
