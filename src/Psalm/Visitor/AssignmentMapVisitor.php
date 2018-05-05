@@ -44,6 +44,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             || $node instanceof PhpParser\Node\Expr\PostDec
             || $node instanceof PhpParser\Node\Expr\PreInc
             || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\AssignOp
         ) {
             $var_id = ExpressionChecker::getRootVarId($node->var, $this->this_class_name);
 
