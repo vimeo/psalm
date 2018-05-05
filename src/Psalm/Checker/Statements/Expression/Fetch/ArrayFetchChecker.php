@@ -480,8 +480,10 @@ class ArrayFetchChecker
                         }
 
                         $has_valid_offset = true;
-                    } elseif (!$inside_isset || $type->sealed) {
-                        $expected_offset_types[] = (string)$type->getGenericKeyType()->getId();
+                    } else {
+                        if (!$inside_isset || $type->sealed) {
+                            $expected_offset_types[] = (string)$type->getGenericKeyType()->getId();
+                        }
 
                         $array_access_type = Type::getMixed();
                     }
