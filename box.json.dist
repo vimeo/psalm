@@ -1,16 +1,12 @@
 {
-    "main" : "psalm",
-    "output" : "bin/psalm.phar",
-    "directories" : [
-        "assets",
-        "src",
-        "vendor"
+    "output" : "build/psalm.phar",
+    "files": [
+        "src/command_functions.php",
+        "src/psalm.php",
+        "src/psalter.php"
     ],
-    "files" : [
-        "composer.json",
-        "composer.lock",
-        "config.xsd"
-    ],
+    "files-bin": ["config.xsd"],
+    "directories-bin" : ["assets"],
     "intercept" : false,
     "compactors" : [
         "KevinGH\\Box\\Compactor\\PhpScoper"

@@ -1,4 +1,4 @@
-/bin/psalm.phar
+/build/
 /vendor/
 /.DS_Store
 /.php_cs.cache

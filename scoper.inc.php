@@ -19,6 +19,13 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
+            return str_replace(
+                '\\'.$prefix.'\Composer\Autoload\ClassLoader',
+                '\Composer\Autoload\ClassLoader',
+                $contents
+            );
+        },
+        function ($filePath, $prefix, $contents) {
             if ($filePath === realpath(__DIR__ . '/src/Psalm/Config.php')) {
                 return str_replace(
                     $prefix . '\Composer\Autoload\ClassLoader',
@@ -108,4 +115,7 @@ return [
             return $contents;
         },
     ],
+    'whitelist' => [
+        \Composer\Autoload\ClassLoader::class,
+    ]
 ];
