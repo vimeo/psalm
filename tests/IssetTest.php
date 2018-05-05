@@ -267,6 +267,26 @@ class IssetTest extends TestCase
                         echo $arr["bar"];
                     }',
             ],
+            'issetAdditionalVar' => [
+                '<?php
+                    class Example {
+                        const FOO = "foo";
+                        /**
+                         * @param array{bar:string} $params
+                         */
+                        public function test(array $params) : bool {
+                            if (isset($params[self::FOO])) {
+                                return true;
+                            }
+
+                            if (isset($params["bat"])) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -291,7 +311,23 @@ class IssetTest extends TestCase
                         $b = 1;
                         echo $arr[$b][$c];
                     }',
-                'error_message' => 'PossiblyNullArrayAccess',
+                'error_message' => 'NullArrayAccess',
+            ],
+            'issetAdditionalVarWithSealedObjectLike' => [
+                '<?php
+                    class Example {
+                        const FOO = "foo";
+                        public function test() : bool {
+                            $params = ["bar" => "bat"];
+
+                            if (isset($params[self::FOO])) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

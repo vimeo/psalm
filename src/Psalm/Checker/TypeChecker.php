@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Codebase;
 use Psalm\Type;
+use Psalm\Type\Atomic\LiteralType;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -823,12 +824,8 @@ class TypeChecker
             || ($input_type_part instanceof TInt && $container_type_part instanceof TInt)
             || ($input_type_part instanceof TFloat && $container_type_part instanceof TFloat)
         ) {
-            /**
-             * @psalm-suppress UndefinedPropertyFetch
-             * @psalm-suppress MixedArgument
-             */
-            if ($input_type_part->values !== null && $container_type_part->values !== null) {
-                $all_types_contain = !array_diff_key($input_type_part->values, $container_type_part->values);
+            if ($input_type_part instanceof LiteralType && $container_type_part instanceof LiteralType) {
+                $all_types_contain = !array_diff_key($input_type_part->getValues(), $container_type_part->getValues());
                 $incompatible_values = !$all_types_contain;
             }
         }

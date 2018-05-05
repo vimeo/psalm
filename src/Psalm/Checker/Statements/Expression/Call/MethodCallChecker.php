@@ -169,10 +169,16 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             break;
 
                         case Type\Atomic\TInt::class:
+                        case Type\Atomic\TLiteralInt::class:
+                        case Type\Atomic\TFloat::class:
+                        case Type\Atomic\TLiteralFloat::class:
                         case Type\Atomic\TBool::class:
                         case Type\Atomic\TTrue::class:
                         case Type\Atomic\TArray::class:
+                        case Type\Atomic\TArray::class:
+                        case Type\Atomic\ObjectLike::class:
                         case Type\Atomic\TString::class:
+                        case Type\Atomic\TLiteralString::class:
                         case Type\Atomic\TNumericString::class:
                         case Type\Atomic\TClassString::class:
                             $invalid_method_call_types[] = (string)$class_type_part;
