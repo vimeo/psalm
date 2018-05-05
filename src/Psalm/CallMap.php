@@ -3349,6 +3349,7 @@ return [
 'gmmktime' => ['int', 'hour='=>'int', 'min='=>'int', 'sec='=>'int', 'mon='=>'int', 'day='=>'int', 'year='=>'int'],
 'GMP::__construct' => ['void'],
 'GMP::serialize' => ['string'],
+'GMP::__toString' => ['string'],
 'GMP::unserialize' => ['void', 'serialized'=>'string'],
 'gmp_abs' => ['GMP', 'a'=>'GMP|string|int'],
 'gmp_add' => ['GMP', 'a'=>'GMP|string|int', 'b'=>'GMP|string|int'],

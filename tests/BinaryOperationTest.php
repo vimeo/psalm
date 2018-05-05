@@ -66,7 +66,8 @@ class BinaryOperationTest extends TestCase
                     $a = gmp_init(2);
                     $b = gmp_init(4);
                     $c = $a + $b;
-                    $d = $c + 3;',
+                    $d = $c + 3;
+                    echo $d;',
                 'assertions' => [
                     '$a' => 'GMP',
                     '$b' => 'GMP',
