@@ -14,6 +14,9 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -546,13 +549,18 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
-     * @param array<string|int, bool>|null $values
+     * @param array<int, bool>|null $values
      *
      * @return Type\Union
      */
     public static function getInt($from_calculation = false, array $values = null)
     {
-        $union = new Union([new TInt($values)]);
+        if ($values) {
+            $union = new Union([new TLiteralInt($values)]);
+        } else {
+            $union = new Union([new TInt()]);
+        }
+
         $union->from_calculation = $from_calculation;
 
         return $union;
@@ -575,7 +583,11 @@ abstract class Type
      */
     public static function getString(array $values = null)
     {
-        $type = new TString($values);
+        if ($values) {
+            $type = new TLiteralString($values);
+        } else {
+            $type = new TString();
+        }
 
         return new Union([$type]);
     }
@@ -631,7 +643,11 @@ abstract class Type
      */
     public static function getFloat(array $values = null)
     {
-        $type = new TFloat($values);
+        if ($values) {
+            $type = new TLiteralFloat($values);
+        } else {
+            $type = new TFloat();
+        }
 
         return new Union([$type]);
     }
@@ -686,7 +702,7 @@ abstract class Type
         /**
          * @psalm-suppress InvalidScalarArgument because of a bug
          */
-        $array_type->count = new TInt([0 => true]);
+        $array_type->count = new TLiteralInt([0 => true]);
 
         return new Type\Union([
             $array_type,
@@ -974,7 +990,8 @@ abstract class Type
                 $array_type = new TArray($generic_type_params);
 
                 if ($combination->array_counts) {
-                    $array_type->count = new TInt($combination->array_counts);
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $array_type->count = new TLiteralInt($combination->array_counts);
                 }
 
                 $new_types[] = $array_type;
@@ -989,11 +1006,24 @@ abstract class Type
                     && !count($new_types))
             ) {
                 if ($type instanceof TString) {
-                    $type->values = $combination->strings ?: null;
+                    if ($combination->strings) {
+                        $type = new TLiteralString($combination->strings);
+                    } elseif ($type instanceof TLiteralString) {
+                        $type = new TString();
+                    }
                 } elseif ($type instanceof TInt) {
-                    $type->values = $combination->ints ?: null;
+                    if ($combination->ints) {
+                        /** @psalm-suppress InvalidScalarArgument */
+                        $type = new TLiteralInt($combination->ints);
+                    } elseif ($type instanceof TLiteralInt) {
+                        $type = new TInt();
+                    }
                 } elseif ($type instanceof TFloat) {
-                    $type->values = $combination->floats ?: null;
+                    if ($combination->floats) {
+                        $type = new TLiteralFloat($combination->floats);
+                    } elseif ($type instanceof TLiteralFloat) {
+                        $type = new TFloat();
+                    }
                 }
 
                 $new_types[] = $type;
@@ -1032,11 +1062,11 @@ abstract class Type
             return null;
         }
 
-        if (get_class($type) === 'Psalm\\Type\\Atomic\\TBool' && isset($combination->value_types['false'])) {
+        if (get_class($type) === TBool::class && isset($combination->value_types['false'])) {
             unset($combination->value_types['false']);
         }
 
-        if (get_class($type) === 'Psalm\\Type\\Atomic\\TBool' && isset($combination->value_types['true'])) {
+        if (get_class($type) === TBool::class && isset($combination->value_types['true'])) {
             unset($combination->value_types['true']);
         }
 
@@ -1102,22 +1132,22 @@ abstract class Type
             }
         } else {
             if ($type instanceof TString && $combination->strings !== null) {
-                if ($type->values === null) {
-                    $combination->strings = null;
-                } else {
+                if ($type instanceof TLiteralString) {
                     $combination->strings = $combination->strings + $type->values;
+                } else {
+                    $combination->strings = null;
                 }
             } elseif ($type instanceof TInt && $combination->ints !== null) {
-                if ($type->values === null) {
-                    $combination->ints = null;
-                } else {
+                if ($type instanceof TLiteralInt) {
                     $combination->ints = $combination->ints + $type->values;
+                } else {
+                    $combination->ints = null;
                 }
             } elseif ($type instanceof TFloat && $combination->floats !== null) {
-                if ($type->values === null) {
-                    $combination->ints = null;
+                if ($type instanceof TLiteralFloat) {
+                    $combination->floats = $combination->floats + $type->values;
                 } else {
-                    $combination->ints = $combination->floats + $type->values;
+                    $combination->floats = null;
                 }
             }
 

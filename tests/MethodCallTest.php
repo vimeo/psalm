@@ -176,7 +176,7 @@ class MethodCallTest extends TestCase
                     }
 
                     /** @param A1|string $x */
-                    function example($x, bool $isObject) {
+                    function example($x, bool $isObject) : void {
                         if ($isObject) {
                             $x->methodOfA();
                         }

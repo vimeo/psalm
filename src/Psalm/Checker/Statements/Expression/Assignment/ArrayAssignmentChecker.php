@@ -323,7 +323,7 @@ class ArrayAssignmentChecker
                     } elseif ($atomic_root_types['array'] instanceof ObjectLike
                         && $atomic_root_types['array']->sealed
                     ) {
-                        $array_atomic_type->count = new Type\Atomic\TInt([
+                        $array_atomic_type->count = new Type\Atomic\TLiteralInt([
                             count($atomic_root_types['array']->properties) => true
                         ]);
                         $from_countable_object_like = true;
@@ -350,7 +350,7 @@ class ArrayAssignmentChecker
                     $new_counts = [];
 
                     foreach ($atomic_root_types['array']->count->values as $count => $_) {
-                        $new_counts[(string)((int)$count + 1)] = true;
+                        $new_counts[((int)$count + 1)] = true;
                     }
 
                     $atomic_root_types['array']->count->values = $new_counts;

@@ -241,8 +241,7 @@ class Reconciler
                         $ints = array_flip(explode(',', $bracketed));
 
                         if (isset($existing_var_atomic_types['int'])
-                            && $existing_var_atomic_types['int'] instanceof Type\Atomic\TInt
-                            && $existing_var_atomic_types['int']->values
+                            && $existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt
                         ) {
                             $current_count = count($existing_var_atomic_types['int']->values);
 
@@ -275,8 +274,7 @@ class Reconciler
                         $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
 
                         if (isset($existing_var_atomic_types['string'])
-                            && $existing_var_atomic_types['string'] instanceof Type\Atomic\TString
-                            && $existing_var_atomic_types['string']->values
+                            && $existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString
                         ) {
                             $current_count = count($existing_var_atomic_types['string']->values);
 
@@ -309,8 +307,7 @@ class Reconciler
                         $floats = array_flip(explode(',', $bracketed));
 
                         if (isset($existing_var_atomic_types['float'])
-                            && $existing_var_atomic_types['float'] instanceof Type\Atomic\TFloat
-                            && $existing_var_atomic_types['float']->values
+                            && $existing_var_atomic_types['float'] instanceof Type\Atomic\TLiteralFloat
                         ) {
                             $current_count = count($existing_var_atomic_types['float']->values);
 
@@ -965,8 +962,7 @@ class Reconciler
                     $ints = array_flip(explode(',', $bracketed));
 
                     if (isset($existing_var_atomic_types['int'])
-                        && $existing_var_atomic_types['int'] instanceof Type\Atomic\TInt
-                        && $existing_var_atomic_types['int']->values
+                        && $existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt
                     ) {
                         $current_count = count($existing_var_atomic_types['int']->values);
 
@@ -999,8 +995,7 @@ class Reconciler
                     $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
 
                     if (isset($existing_var_atomic_types['string'])
-                        && $existing_var_atomic_types['string'] instanceof Type\Atomic\TString
-                        && $existing_var_atomic_types['string']->values
+                        && $existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString
                     ) {
                         $current_count = count($existing_var_atomic_types['string']->values);
 
@@ -1033,8 +1028,7 @@ class Reconciler
                     $floats = array_flip(explode(',', $bracketed));
 
                     if (isset($existing_var_atomic_types['float'])
-                        && $existing_var_atomic_types['float'] instanceof Type\Atomic\TFloat
-                        && $existing_var_atomic_types['float']->values
+                        && $existing_var_atomic_types['float'] instanceof Type\Atomic\TLiteralFloat
                     ) {
                         $current_count = count($existing_var_atomic_types['float']->values);
 

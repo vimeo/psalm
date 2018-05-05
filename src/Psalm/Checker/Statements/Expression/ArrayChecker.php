@@ -59,7 +59,7 @@ class ArrayChecker
                     if ($item->key instanceof PhpParser\Node\Scalar\String_
                         && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
                     ) {
-                        $key_type = Type::getInt(false, [$item->key->value => true]);
+                        $key_type = Type::getInt(false, [(int)$item->key->value => true]);
                     }
 
                     if ($item_key_type) {
@@ -153,7 +153,7 @@ class ArrayChecker
             $item_value_type ?: Type::getMixed(),
         ]);
 
-        $array_type->count = new Type\Atomic\TInt([count($stmt->items) => true]);
+        $array_type->count = new Type\Atomic\TLiteralInt([count($stmt->items) => true]);
 
         $stmt->inferredType = new Type\Union([
             $array_type,
