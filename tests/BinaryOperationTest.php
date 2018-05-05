@@ -67,12 +67,44 @@ class BinaryOperationTest extends TestCase
                     $b = gmp_init(4);
                     $c = $a + $b;
                     $d = $c + 3;
-                    echo $d;',
+                    echo $d;
+                    $f = $a / $b;
+                    $g = $a ** $b;
+                    $h = $a % $b;
+
+                    $i = 6 + $b;
+                    $j = 6 - $b;
+                    $k = 6 * $b;
+                    $l = 6 / $b;
+                    $m = 6 ** $b;
+                    $n = 6 % $b;
+
+                    $o = $a + 6;
+                    $p = $a - 6;
+                    $q = $a * 6;
+                    $r = $a / 6;
+                    $s = $a ** 6;
+                    $t = $a % 6;',
                 'assertions' => [
                     '$a' => 'GMP',
                     '$b' => 'GMP',
                     '$c' => 'GMP',
                     '$d' => 'GMP',
+                    '$f' => 'GMP',
+                    '$g' => 'GMP',
+                    '$h' => 'GMP',
+                    '$i' => 'GMP',
+                    '$j' => 'GMP',
+                    '$k' => 'GMP',
+                    '$l' => 'GMP',
+                    '$m' => 'GMP',
+                    '$n' => 'GMP',
+                    '$o' => 'GMP',
+                    '$p' => 'GMP',
+                    '$q' => 'GMP',
+                    '$r' => 'GMP',
+                    '$s' => 'GMP',
+                    '$t' => 'GMP',
                 ],
             ],
         ];

@@ -451,7 +451,22 @@ class BinaryOpChecker
                     }
                 }
 
-                $stmt->inferredType = new Type\Union([new TInt, new TFloat]);
+                self::analyzeNonDivArithmenticOp(
+                    $statements_checker,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
+                    $result_type,
+                    $context
+                );
+
+                if ($result_type) {
+                    if ($result_type->hasInt()) {
+                        $result_type->addType(new TFloat);
+                    }
+
+                    $stmt->inferredType = $result_type;
+                }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 self::analyzeConcatOp(
                     $statements_checker,
