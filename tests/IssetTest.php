@@ -61,9 +61,6 @@ class IssetTest extends TestCase
                     }',
                 'assertions' => [],
                 'error_levels' => ['PossiblyInvalidArrayAccess'],
-                'scope_vars' => [
-                    '$foo' => \Psalm\Type::getArray(),
-                ],
             ],
             'nullCoalesceKeyedOffset' => [
                 '<?php

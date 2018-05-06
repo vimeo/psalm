@@ -237,7 +237,7 @@ class IfChecker
         // define this before we alter local claues after reconciliation
         $if_scope->reasonable_clauses = $if_context->clauses;
 
-        $if_scope->negated_clauses = AlgebraChecker::negateFormula($if_clauses);
+        $if_scope->negated_clauses = AlgebraChecker::simplifyCNF(AlgebraChecker::negateFormula($if_clauses));
 
         $if_scope->negated_types = AlgebraChecker::getTruthsFromFormula(
             AlgebraChecker::simplifyCNF(
@@ -481,11 +481,9 @@ class IfChecker
 
         if ($context->collect_references) {
             foreach ($newly_unreferenced_locations as $var_id => $locations) {
-                if ((
-                    $stmt->else
-                        && (isset($if_scope->assigned_var_ids[$var_id])
-                            || isset($if_scope->new_vars[$var_id]))
-                    ) || (!isset($context->vars_in_scope[$var_id]))
+                if (($stmt->else
+                        && (isset($if_scope->assigned_var_ids[$var_id]) || isset($if_scope->new_vars[$var_id])))
+                    || !isset($context->vars_in_scope[$var_id])
                 ) {
                     $context->unreferenced_vars[$var_id] = array_shift($locations);
                 }

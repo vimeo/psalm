@@ -861,8 +861,8 @@ class BinaryOpChecker
                             continue;
                         }
 
-                        if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt) ||
-                            ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
+                        if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
+                            || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
                         ) {
                             if ($config->strict_binary_operands) {
                                 if ($statements_source && IssueBuffer::accepts(
