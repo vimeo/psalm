@@ -656,276 +656,24 @@ class BinaryOpChecker
 
             foreach ($left_type->getTypes() as $left_type_part) {
                 foreach ($right_type->getTypes() as $right_type_part) {
-                    if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {
-                        // null case is handled above
-                        continue;
-                    }
+                    $candidate_result_type = self::analyzeNonDivOperands(
+                        $statements_source,
+                        $codebase,
+                        $left,
+                        $right,
+                        $parent,
+                        $left_type_part,
+                        $right_type_part,
+                        $invalid_left_messages,
+                        $invalid_right_messages,
+                        $has_valid_left_operand,
+                        $has_valid_right_operand,
+                        $result_type
+                    );
 
-                    if ($left_type_part instanceof TFalse || $right_type_part instanceof TFalse) {
-                        // null case is handled above
-                        continue;
-                    }
-
-                    if ($left_type_part instanceof TMixed
-                        || $right_type_part instanceof TMixed
-                        || $left_type_part instanceof TGenericParam
-                        || $right_type_part instanceof TGenericParam
-                    ) {
-                        if ($statements_source && $codebase) {
-                            $codebase->analyzer->incrementMixedCount($statements_source->getCheckedFilePath());
-                        }
-
-                        if ($left_type_part instanceof TMixed || $left_type_part instanceof TGenericParam) {
-                            if ($statements_source && IssueBuffer::accepts(
-                                new MixedOperand(
-                                    'Left operand cannot be mixed',
-                                    new CodeLocation($statements_source, $left)
-                                ),
-                                $statements_source->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } else {
-                            if ($statements_source && IssueBuffer::accepts(
-                                new MixedOperand(
-                                    'Right operand cannot be mixed',
-                                    new CodeLocation($statements_source, $right)
-                                ),
-                                $statements_source->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
-
-                        if ($left_type_part instanceof TMixed
-                            && $left_type_part->from_isset
-                            && $parent instanceof PhpParser\Node\Expr\AssignOp\Plus
-                            && !$right_type_part instanceof TMixed
-                        ) {
-                            $result_type_member = new Type\Union([$right_type_part]);
-
-                            if (!$result_type) {
-                                $result_type = $result_type_member;
-                            } else {
-                                $result_type = Type::combineUnionTypes($result_type_member, $result_type);
-                            }
-
-                            continue;
-                        }
-
-                        $from_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_isset)
-                            && (!($right_type_part instanceof TMixed) || $right_type_part->from_isset);
-
-                        $result_type = Type::getMixed($from_isset);
-
+                    if ($candidate_result_type) {
+                        $result_type = $candidate_result_type;
                         return;
-                    }
-
-                    if ($statements_source && $codebase) {
-                        $codebase->analyzer->incrementNonMixedCount($statements_source->getCheckedFilePath());
-                    }
-
-                    if ($left_type_part instanceof TArray
-                        || $right_type_part instanceof TArray
-                        || $left_type_part instanceof ObjectLike
-                        || $right_type_part instanceof ObjectLike
-                    ) {
-                        if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike)
-                            || (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)
-                        ) {
-                            if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
-                                $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
-                            } else {
-                                $invalid_right_messages[] = 'Cannot add an array to a non-array ' . $right_type_part;
-                            }
-
-                            if ($left_type_part instanceof TArray || $left_type_part instanceof ObjectLike) {
-                                $has_valid_left_operand = true;
-                            } elseif ($right_type_part instanceof TArray || $right_type_part instanceof ObjectLike) {
-                                $has_valid_right_operand = true;
-                            }
-
-                            $result_type = Type::getArray();
-
-                            continue;
-                        }
-
-                        $has_valid_right_operand = true;
-                        $has_valid_left_operand = true;
-
-                        if ($left_type_part instanceof ObjectLike && $right_type_part instanceof ObjectLike) {
-                            $properties = $left_type_part->properties + $right_type_part->properties;
-
-                            $result_type_member = new Type\Union([new ObjectLike($properties)]);
-                        } else {
-                            $result_type_member = Type::combineTypes([$left_type_part, $right_type_part]);
-                        }
-
-                        if (!$result_type) {
-                            $result_type = $result_type_member;
-                        } else {
-                            $result_type = Type::combineUnionTypes($result_type_member, $result_type);
-                        }
-
-                        if ($left instanceof PhpParser\Node\Expr\ArrayDimFetch
-                            && $context
-                            && $statements_source instanceof StatementsChecker
-                        ) {
-                            ArrayAssignmentChecker::updateArrayType(
-                                $statements_source,
-                                $left,
-                                $result_type,
-                                $context
-                            );
-                        }
-
-                        continue;
-                    }
-
-                    if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
-                        || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
-                    ) {
-                        if ((($left_type_part instanceof TNamedObject
-                                    && strtolower($left_type_part->value) === 'gmp')
-                                && (($right_type_part instanceof TNamedObject
-                                        && strtolower($right_type_part->value) === 'gmp')
-                                    || ($right_type_part->isNumericType() || $right_type_part instanceof TMixed)))
-                            || (($right_type_part instanceof TNamedObject
-                                    && strtolower($right_type_part->value) === 'gmp')
-                                && (($left_type_part instanceof TNamedObject
-                                        && strtolower($left_type_part->value) === 'gmp')
-                                    || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
-                        ) {
-                            if (!$result_type) {
-                                $result_type = new Type\Union([new TNamedObject('GMP')]);
-                            } else {
-                                $result_type = Type::combineUnionTypes(
-                                    new Type\Union([new TNamedObject('GMP')]),
-                                    $result_type
-                                );
-                            }
-                        } else {
-                            if ($statements_source && IssueBuffer::accepts(
-                                new InvalidOperand(
-                                    'Cannot add GMP to non-numeric type',
-                                    new CodeLocation($statements_source, $parent)
-                                ),
-                                $statements_source->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        }
-
-                        continue;
-                    }
-
-                    if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
-                        if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
-                            && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
-                        ) {
-                            if (!$result_type) {
-                                $result_type = Type::getNumeric();
-                            } else {
-                                $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
-                            }
-
-                            $has_valid_right_operand = true;
-                            $has_valid_left_operand = true;
-
-                            continue;
-                        }
-
-                        if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
-                            if (!$result_type) {
-                                $result_type = Type::getInt(true);
-                            } else {
-                                $result_type = Type::combineUnionTypes(Type::getInt(true), $result_type);
-                            }
-
-                            $has_valid_right_operand = true;
-                            $has_valid_left_operand = true;
-
-                            continue;
-                        }
-
-                        if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
-                            if (!$result_type) {
-                                $result_type = Type::getFloat();
-                            } else {
-                                $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
-                            }
-
-                            $has_valid_right_operand = true;
-                            $has_valid_left_operand = true;
-
-                            continue;
-                        }
-
-                        if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
-                            || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
-                        ) {
-                            if ($config->strict_binary_operands) {
-                                if ($statements_source && IssueBuffer::accepts(
-                                    new InvalidOperand(
-                                        'Cannot add ints to floats',
-                                        new CodeLocation($statements_source, $parent)
-                                    ),
-                                    $statements_source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            }
-
-                            if (!$result_type) {
-                                $result_type = Type::getFloat();
-                            } else {
-                                $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
-                            }
-
-                            $has_valid_right_operand = true;
-                            $has_valid_left_operand = true;
-
-                            continue;
-                        }
-
-                        if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
-                            if ($config->strict_binary_operands) {
-                                if ($statements_source && IssueBuffer::accepts(
-                                    new InvalidOperand(
-                                        'Cannot add numeric types together, please cast explicitly',
-                                        new CodeLocation($statements_source, $parent)
-                                    ),
-                                    $statements_source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            }
-
-                            if (!$result_type) {
-                                $result_type = Type::getFloat();
-                            } else {
-                                $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
-                            }
-
-                            $has_valid_right_operand = true;
-                            $has_valid_left_operand = true;
-
-                            continue;
-                        }
-
-                        if (!$left_type_part->isNumericType()) {
-                            $invalid_left_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
-                                . $left_type_part;
-                            $has_valid_right_operand = true;
-                        } else {
-                            $invalid_right_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
-                                . $right_type_part;
-                            $has_valid_left_operand = true;
-                        }
-                    } else {
-                        $invalid_left_messages[] =
-                            'Cannot perform a numeric operation with non-numeric types ' . $left_type_part
-                                . ' and ' . $right_type_part;
                     }
                 }
             }
@@ -981,6 +729,303 @@ class BinaryOpChecker
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * @param  StatementsSource|null $statements_source
+     * @param  \Psalm\Codebase|null  $codebase
+     * @param  string[]        &$invalid_left_messages
+     * @param  string[]        &$invalid_right_messages
+     * @param  bool            &$has_valid_left_operand
+     * @param  bool            &$has_valid_right_operand
+     *
+     * @return Type\Union|null
+     */
+    public static function analyzeNonDivOperands(
+        $statements_source,
+        $codebase,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+        PhpParser\Node $parent,
+        Type\Atomic $left_type_part,
+        Type\Atomic $right_type_part,
+        array &$invalid_left_messages,
+        array &$invalid_right_messages,
+        &$has_valid_left_operand,
+        &$has_valid_right_operand,
+        Type\Union &$result_type = null
+    ) {
+        if ($left_type_part instanceof TNull || $right_type_part instanceof TNull) {
+            // null case is handled above
+            return;
+        }
+
+        if ($left_type_part instanceof TFalse || $right_type_part instanceof TFalse) {
+            // null case is handled above
+            return;
+        }
+
+        if ($left_type_part instanceof TMixed
+            || $right_type_part instanceof TMixed
+            || $left_type_part instanceof TGenericParam
+            || $right_type_part instanceof TGenericParam
+        ) {
+            if ($statements_source && $codebase) {
+                $codebase->analyzer->incrementMixedCount($statements_source->getCheckedFilePath());
+            }
+
+            if ($left_type_part instanceof TMixed || $left_type_part instanceof TGenericParam) {
+                if ($statements_source && IssueBuffer::accepts(
+                    new MixedOperand(
+                        'Left operand cannot be mixed',
+                        new CodeLocation($statements_source, $left)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
+                if ($statements_source && IssueBuffer::accepts(
+                    new MixedOperand(
+                        'Right operand cannot be mixed',
+                        new CodeLocation($statements_source, $right)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            if ($left_type_part instanceof TMixed
+                && $left_type_part->from_isset
+                && $parent instanceof PhpParser\Node\Expr\AssignOp\Plus
+                && !$right_type_part instanceof TMixed
+            ) {
+                $result_type_member = new Type\Union([$right_type_part]);
+
+                if (!$result_type) {
+                    $result_type = $result_type_member;
+                } else {
+                    $result_type = Type::combineUnionTypes($result_type_member, $result_type);
+                }
+
+                return;
+            }
+
+            $from_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_isset)
+                && (!($right_type_part instanceof TMixed) || $right_type_part->from_isset);
+
+            $result_type = Type::getMixed($from_isset);
+
+            return $result_type;
+        }
+
+        if ($statements_source && $codebase) {
+            $codebase->analyzer->incrementNonMixedCount($statements_source->getCheckedFilePath());
+        }
+
+        if ($left_type_part instanceof TArray
+            || $right_type_part instanceof TArray
+            || $left_type_part instanceof ObjectLike
+            || $right_type_part instanceof ObjectLike
+        ) {
+            if ((!$right_type_part instanceof TArray && !$right_type_part instanceof ObjectLike)
+                || (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike)
+            ) {
+                if (!$left_type_part instanceof TArray && !$left_type_part instanceof ObjectLike) {
+                    $invalid_left_messages[] = 'Cannot add an array to a non-array ' . $left_type_part;
+                } else {
+                    $invalid_right_messages[] = 'Cannot add an array to a non-array ' . $right_type_part;
+                }
+
+                if ($left_type_part instanceof TArray || $left_type_part instanceof ObjectLike) {
+                    $has_valid_left_operand = true;
+                } elseif ($right_type_part instanceof TArray || $right_type_part instanceof ObjectLike) {
+                    $has_valid_right_operand = true;
+                }
+
+                $result_type = Type::getArray();
+
+                return;
+            }
+
+            $has_valid_right_operand = true;
+            $has_valid_left_operand = true;
+
+            if ($left_type_part instanceof ObjectLike && $right_type_part instanceof ObjectLike) {
+                $properties = $left_type_part->properties + $right_type_part->properties;
+
+                $result_type_member = new Type\Union([new ObjectLike($properties)]);
+            } else {
+                $result_type_member = Type::combineTypes([$left_type_part, $right_type_part]);
+            }
+
+            if (!$result_type) {
+                $result_type = $result_type_member;
+            } else {
+                $result_type = Type::combineUnionTypes($result_type_member, $result_type);
+            }
+
+            if ($left instanceof PhpParser\Node\Expr\ArrayDimFetch
+                && $context
+                && $statements_source instanceof StatementsChecker
+            ) {
+                ArrayAssignmentChecker::updateArrayType(
+                    $statements_source,
+                    $left,
+                    $result_type,
+                    $context
+                );
+            }
+
+            return;
+        }
+
+        if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
+            || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
+        ) {
+            if ((($left_type_part instanceof TNamedObject
+                        && strtolower($left_type_part->value) === 'gmp')
+                    && (($right_type_part instanceof TNamedObject
+                            && strtolower($right_type_part->value) === 'gmp')
+                        || ($right_type_part->isNumericType() || $right_type_part instanceof TMixed)))
+                || (($right_type_part instanceof TNamedObject
+                        && strtolower($right_type_part->value) === 'gmp')
+                    && (($left_type_part instanceof TNamedObject
+                            && strtolower($left_type_part->value) === 'gmp')
+                        || ($left_type_part->isNumericType() || $left_type_part instanceof TMixed)))
+            ) {
+                if (!$result_type) {
+                    $result_type = new Type\Union([new TNamedObject('GMP')]);
+                } else {
+                    $result_type = Type::combineUnionTypes(
+                        new Type\Union([new TNamedObject('GMP')]),
+                        $result_type
+                    );
+                }
+            } else {
+                if ($statements_source && IssueBuffer::accepts(
+                    new InvalidOperand(
+                        'Cannot add GMP to non-numeric type',
+                        new CodeLocation($statements_source, $parent)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            return;
+        }
+
+        if ($left_type_part->isNumericType() || $right_type_part->isNumericType()) {
+            if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
+                && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
+            ) {
+                if (!$result_type) {
+                    $result_type = Type::getNumeric();
+                } else {
+                    $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
+                }
+
+                $has_valid_right_operand = true;
+                $has_valid_left_operand = true;
+
+                return;
+            }
+
+            if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
+                if (!$result_type) {
+                    $result_type = Type::getInt(true);
+                } else {
+                    $result_type = Type::combineUnionTypes(Type::getInt(true), $result_type);
+                }
+
+                $has_valid_right_operand = true;
+                $has_valid_left_operand = true;
+
+                return;
+            }
+
+            if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
+                if (!$result_type) {
+                    $result_type = Type::getFloat();
+                } else {
+                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                }
+
+                $has_valid_right_operand = true;
+                $has_valid_left_operand = true;
+
+                return;
+            }
+
+            if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
+                || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
+            ) {
+                if ($config->strict_binary_operands) {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot add ints to floats',
+                            new CodeLocation($statements_source, $parent)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if (!$result_type) {
+                    $result_type = Type::getFloat();
+                } else {
+                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                }
+
+                $has_valid_right_operand = true;
+                $has_valid_left_operand = true;
+
+                return;
+            }
+
+            if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
+                if ($config->strict_binary_operands) {
+                    if ($statements_source && IssueBuffer::accepts(
+                        new InvalidOperand(
+                            'Cannot add numeric types together, please cast explicitly',
+                            new CodeLocation($statements_source, $parent)
+                        ),
+                        $statements_source->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if (!$result_type) {
+                    $result_type = Type::getFloat();
+                } else {
+                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
+                }
+
+                $has_valid_right_operand = true;
+                $has_valid_left_operand = true;
+
+                return;
+            }
+
+            if (!$left_type_part->isNumericType()) {
+                $invalid_left_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
+                    . $left_type_part;
+                $has_valid_right_operand = true;
+            } else {
+                $invalid_right_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
+                    . $right_type_part;
+                $has_valid_left_operand = true;
+            }
+        } else {
+            $invalid_left_messages[] =
+                'Cannot perform a numeric operation with non-numeric types ' . $left_type_part
+                    . ' and ' . $right_type_part;
         }
     }
 
