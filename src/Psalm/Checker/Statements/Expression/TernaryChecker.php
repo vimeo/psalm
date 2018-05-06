@@ -49,7 +49,11 @@ class TernaryChecker
 
         $negated_clauses = AlgebraChecker::negateFormula($if_clauses);
 
-        $negated_if_types = AlgebraChecker::getTruthsFromFormula($negated_clauses);
+        $negated_if_types = AlgebraChecker::getTruthsFromFormula(
+            AlgebraChecker::simplifyCNF(
+                array_merge($context->clauses, $negated_clauses)
+            )
+        );
 
         $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
 

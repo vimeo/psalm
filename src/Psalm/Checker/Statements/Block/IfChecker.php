@@ -239,7 +239,11 @@ class IfChecker
 
         $if_scope->negated_clauses = AlgebraChecker::negateFormula($if_clauses);
 
-        $if_scope->negated_types = AlgebraChecker::getTruthsFromFormula($if_scope->negated_clauses);
+        $if_scope->negated_types = AlgebraChecker::getTruthsFromFormula(
+            AlgebraChecker::simplifyCNF(
+                array_merge($context->clauses, $if_scope->negated_clauses)
+            )
+        );
 
         $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($if_context->clauses);
 
@@ -1174,7 +1178,7 @@ class IfChecker
 
         $else_context->clauses = AlgebraChecker::simplifyCNF(
             array_merge(
-                $outer_context->clauses,
+                $else_context->clauses,
                 $if_scope->negated_clauses
             )
         );
