@@ -425,13 +425,21 @@ class AlgebraChecker
 
                     if (count($clause_b->possibilities[$clause_var]) === 0) {
                         unset($clause_b->possibilities[$clause_var]);
+                        $clause_b->impossibilities = null;
                     }
                 }
             }
         }
 
-        $cloned_clauses = array_filter(
-            $cloned_clauses,
+        $deduped_clauses = [];
+
+        // avoid strict duplicates
+        foreach ($cloned_clauses as $clause) {
+            $deduped_clauses[$clause->getHash()] = clone $clause;
+        }
+
+        $deduped_clauses = array_filter(
+            $deduped_clauses,
             /**
              * @return bool
              */
@@ -442,10 +450,10 @@ class AlgebraChecker
 
         $simplified_clauses = [];
 
-        foreach ($cloned_clauses as $clause_a) {
+        foreach ($deduped_clauses as $clause_a) {
             $is_redundant = false;
 
-            foreach ($cloned_clauses as $clause_b) {
+            foreach ($deduped_clauses as $clause_b) {
                 if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
                     continue;
                 }
@@ -561,6 +569,11 @@ class AlgebraChecker
 
         if (!empty($clauses)) {
             $grouped_clauses = self::groupImpossibilities($clauses);
+
+            if (count($grouped_clauses) > 800) {
+                // too many impossibilities
+                return [];
+            }
 
             foreach ($grouped_clauses as $grouped_clause) {
                 if ($clause->impossibilities === null) {
