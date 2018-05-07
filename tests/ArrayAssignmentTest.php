@@ -902,7 +902,7 @@ class ArrayAssignmentTest extends TestCase
                     foreach (["one", "two", "three"] as $key) {
                       /**
                        * @psalm-suppress EmptyArrayAccess
-                       * @psalm-suppress MixedOperand
+                       * @psalm-suppress InvalidOperand
                        */
                       $a[$key] += 5;
                     }

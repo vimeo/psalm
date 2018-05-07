@@ -312,7 +312,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-issetArrayCreation' => [
+            'issetArrayCreation' => [
                 '<?php
                     $arr = [];
 
