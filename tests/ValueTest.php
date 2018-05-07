@@ -153,13 +153,56 @@ class ValueTest extends TestCase
                         takesInt($i);
                     }',
             ],
-            'regularStringComparison' => [
+            'regularComparison1' => [
                 '<?php
-                    function foo(string $s1, string $s2) : string {
+                    function foo(string $s1, string $s2, ?int $i) : string {
                         if ($s1 !== $s2) {
                             return $s1;
                         }
+
                         return $s2;
+                    }',
+            ],
+            'regularComparison2' => [
+                '<?php
+                    function foo(string $s1, string $s2) : string {
+                        if ($s1 !== "hello") {
+                            if ($s1 !== "goodbye") {
+                                return $s1;
+                            }
+                        }
+
+                        return $s2;
+                    }',
+            ],
+            'regularComparison3' => [
+                '<?php
+                    class A {
+                        const B = 1;
+                        const C = 2;
+
+                    }
+                    function foo(string $s1, string $s2, ?int $i) : string {
+                        if ($i !== A::B && $i !== A::C) {}
+
+                        return $s2;
+                    }',
+            ],
+            'regularComparisonOnPossiblyNull' => [
+                '<?php
+                    /** @psalm-ignore-nullable-return */
+                    function generate() : ?string {
+                        return rand(0, 1000) ? "hello" : null;
+                    }
+
+                    function foo() : string {
+                        $str = generate();
+
+                        if ($str[0] === "h") {
+                            return $str;
+                        }
+
+                        return "hello";
                     }',
             ],
         ];

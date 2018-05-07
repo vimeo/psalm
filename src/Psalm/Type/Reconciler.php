@@ -59,8 +59,8 @@ class Reconciler
         CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
-        foreach ($new_types as $nk => $_) {
-            if (strpos($nk, '[')) {
+        foreach ($new_types as $nk => $type) {
+            if (strpos($nk, '[') && ($type === '^isset' || $type === '!^empty')) {
                 $path_parts = self::breakUpPathIntoParts($nk);
 
                 if (count($path_parts) > 1) {
