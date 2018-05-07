@@ -815,8 +815,9 @@ class TypeAlgebraTest extends TestCase
                 '<?php
                     $s = rand(0, 1) ? "a" : "b";
 
-                    if (($s === "a" && rand(0, 1))
-                       || ($s === "b" && rand(0, 1))) {}',
+                    if (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) {}
+
+                    $a = (($s === "a" && rand(0, 1)) || ($s === "b" && rand(0, 1))) ? 1 : 0;',
             ],
         ];
     }
