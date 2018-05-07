@@ -2,6 +2,7 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
+use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\Statements\Expression\Assignment\ArrayAssignmentChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
@@ -55,7 +56,7 @@ class BinaryOpChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
-            $if_clauses = Algebra::getFormula(
+            $left_clauses = Algebra::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker
@@ -92,7 +93,7 @@ class BinaryOpChecker
                 ARRAY_FILTER_USE_KEY
             );
 
-            $simplified_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
+            $simplified_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $left_clauses));
 
             $left_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
 
@@ -179,14 +180,16 @@ class BinaryOpChecker
                 $statements_checker
             );
 
-            $rhs_clauses = Algebra::simplifyCNF(
+            $negated_left_clauses = Algebra::negateFormula($left_clauses);
+
+            $clauses_for_right_analysis = Algebra::simplifyCNF(
                 array_merge(
                     $context->clauses,
-                    Algebra::negateFormula($left_clauses)
+                    $negated_left_clauses
                 )
             );
 
-            $negated_type_assertions = Algebra::getTruthsFromFormula($rhs_clauses);
+            $negated_type_assertions = Algebra::getTruthsFromFormula($clauses_for_right_analysis);
 
             $changed_var_ids = [];
 
@@ -203,7 +206,7 @@ class BinaryOpChecker
             );
 
             $op_context = clone $context;
-            $op_context->clauses = $rhs_clauses;
+            $op_context->clauses = $clauses_for_right_analysis;
             $op_context->vars_in_scope = $op_vars_in_scope;
 
             $op_context->removeReconciledClauses($changed_var_ids);

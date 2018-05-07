@@ -42,16 +42,21 @@ class Clause
     /** @var bool */
     public $reconcilable;
 
+    /** @var bool */
+    public $generated = false;
+
     /**
      * @param array<string, array<string>>  $possibilities
      * @param bool                          $wedge
      * @param bool                          $reconcilable
+     * @param bool                          $generated
      */
-    public function __construct(array $possibilities, $wedge = false, $reconcilable = true)
+    public function __construct(array $possibilities, $wedge = false, $reconcilable = true, $generated = false)
     {
         $this->possibilities = $possibilities;
         $this->wedge = $wedge;
         $this->reconcilable = $reconcilable;
+        $this->generated = $generated;
     }
 
     /**
@@ -109,7 +114,7 @@ class Clause
                  */
                 function ($var_id, $values) {
                     return implode(
-                        ' || ' ,
+                        ' || ',
                         array_map(
                             /**
                              * @param string $value
