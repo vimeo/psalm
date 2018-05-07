@@ -782,7 +782,7 @@ class Reconciler
             );
         }
 
-        if ($new_var_type === 'isset' || $new_var_type === 'array-key-exists') {
+        if (!$is_strict_equality && ($new_var_type === 'isset' || $new_var_type === 'array-key-exists')) {
             return Type::getNull();
         }
 
