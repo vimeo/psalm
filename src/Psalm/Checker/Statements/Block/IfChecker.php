@@ -244,7 +244,10 @@ class IfChecker
             )
         );
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($if_context->clauses);
+        $reconcilable_if_types = Algebra::getTruthsFromFormula(
+            $if_context->clauses,
+            $cond_referenced_var_ids
+        );
 
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
