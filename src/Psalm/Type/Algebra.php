@@ -120,9 +120,9 @@ class Algebra
                     $base_key = array_shift($key_parts);
 
                     if ($type === 'isset') {
-                        $clauses[] = new Clause([$base_key => ['^isset']]);
+                        $clauses[] = new Clause([$base_key => ['^isset']], false, true, true);
                     } else {
-                        $clauses[] = new Clause([$base_key => ['^!empty']]);
+                        $clauses[] = new Clause([$base_key => ['!^empty']], false, true, true);
                     }
 
                     while ($key_parts) {
@@ -145,13 +145,13 @@ class Algebra
                         }
 
                         if ($type === 'isset') {
-                            $clauses[] = new Clause([$base_key => ['^isset']]);
+                            $clauses[] = new Clause([$base_key => ['^isset']], false, true, true);
                         } else {
-                            $clauses[] = new Clause([$base_key => ['^!empty']]);
+                            $clauses[] = new Clause([$base_key => ['!^empty']], false, true, true);
                         }
                     }
                 } else {
-                    $clauses[] = new Clause([$var => [$type]]);
+                    $clauses[] = new Clause([$var => [$type]], false, true, $type[0] === '^' || $type[0] === '^');
                 }
             }
 
@@ -330,10 +330,12 @@ class Algebra
                                 if (preg_match('/^\^(int|string|float)\(/', $t, $matches)) {
                                     $options = substr($t, strlen((string) $matches[0]), -1);
 
-                                    if (!isset($bracket_groups[(string) $matches[1]])) {
-                                        $bracket_groups[(string) $matches[1]] = $options;
+                                    $type = (string) $matches[1];
+
+                                    if (!isset($bracket_groups[$type])) {
+                                        $bracket_groups[$type] = $options;
                                     } else {
-                                        $bracket_groups[(string) $matches[1]] .= ',' . $options;
+                                        $bracket_groups[$type] .= ',' . $options;
                                     }
 
                                     array_splice($things_that_can_be_said, $i - $removed, 1);
@@ -392,9 +394,7 @@ class Algebra
                             $new_clause_possibilities[$var] = [$impossible_type];
                         }
 
-                        $new_clause = new Clause($new_clause_possibilities);
-
-                        //$new_clause->reconcilable = $clause->reconcilable;
+                        $new_clause = new Clause($new_clause_possibilities, false, true, true);
 
                         $new_clauses[] = $new_clause;
                     }
@@ -408,7 +408,7 @@ class Algebra
             foreach ($clause->impossibilities as $var => $impossible_types) {
                 foreach ($impossible_types as $impossible_type) {
                     $new_clause = new Clause([$var => [$impossible_type]]);
-                    //$new_clause->reconcilable = $clause->reconcilable;
+
                     $new_clauses[] = $new_clause;
                 }
             }
@@ -461,7 +461,21 @@ class Algebra
                     }
                 }
 
-                $clauses[] = new Clause($possibilities, false, $can_reconcile);
+                if (count($left_clauses) > 1 || count($right_clauses) > 1) {
+                    foreach ($possibilities as $var => $p) {
+                        $possibilities[$var] = array_unique($p);
+                    }
+                }
+
+                $clauses[] = new Clause(
+                    $possibilities,
+                    false,
+                    $can_reconcile,
+                    $right_clause->generated
+                        || $left_clause->generated
+                        || count($left_clauses) > 1
+                        || count($right_clauses) > 1
+                );
             }
         }
 
@@ -530,6 +544,4 @@ class Algebra
 
         $clause->impossibilities = $impossibilities;
     }
-
-
 }

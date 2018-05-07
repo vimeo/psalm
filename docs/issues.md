@@ -1131,7 +1131,7 @@ class B extends A {
 Emitted when a paradox is encountered in your programs logic that could not be caught by `RedundantCondition`
 
 ```php
-function foo(?string $a) : ?string {
+function foo(?int $a) : ?int {
     if ($a) return $a;
     if ($a) echo "cannot happen";
 }

@@ -38,13 +38,60 @@ class AlgebraChecker
     ) {
         $negated_formula2 = Algebra::negateFormula($formula2);
 
+        $formula1_hashes = [];
+
+        foreach ($formula1 as $formula1_clause) {
+            $formula1_hashes[$formula1_clause->getHash()] = true;
+        }
+
+        $formula2_hashes = [];
+
+        foreach ($formula2 as $formula2_clause) {
+            $hash = $formula2_clause->getHash();
+
+            if (!$formula2_clause->generated
+                && (isset($formula1_hashes[$hash]) || isset($formula2_hashes[$hash]))
+                && !array_intersect_key($new_assigned_var_ids, $formula2_clause->possibilities)
+            ) {
+                if (IssueBuffer::accepts(
+                    new RedundantCondition(
+                        $formula2_clause . ' has already been asserted',
+                        new CodeLocation($statements_checker, $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+
+            foreach ($formula2_clause->possibilities as $key => $values) {
+                if (!$formula2_clause->generated
+                    && count($values) > 1
+                    && !isset($new_assigned_var_ids[$key])
+                    && count(array_unique($values)) < count($values)
+                ) {
+                    if (IssueBuffer::accepts(
+                        new ParadoxicalCondition(
+                            'Found a redundant condition when evaluating assertion (' . $formula2_clause . ')',
+                            new CodeLocation($statements_checker, $stmt)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            $formula2_hashes[$hash] = true;
+        }
+
         // remove impossible types
         foreach ($negated_formula2 as $clause_a) {
             if (count($negated_formula2) === 1) {
                 foreach ($clause_a->possibilities as $key => $values) {
                     if (count($values) > 1
-                        && count(array_unique($values)) < count($values)
                         && !isset($new_assigned_var_ids[$key])
+                        && count(array_unique($values)) < count($values)
                     ) {
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
