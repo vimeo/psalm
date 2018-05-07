@@ -15,6 +15,7 @@ use Psalm\IssueBuffer;
 use Psalm\Scope\IfScope;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
 class IfChecker
@@ -99,8 +100,6 @@ class IfChecker
         if ($project_checker->alter_code) {
             $if_context->branch_point = $if_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
         }
-
-        $if_context->parent_context = $context;
 
         // we need to clone the current context so our ongoing updates to $context don't mess with elseif/else blocks
         $original_context = clone $context;
@@ -190,7 +189,7 @@ class IfChecker
             }
         }
 
-        $if_clauses = AlgebraChecker::getFormula(
+        $if_clauses = Algebra::getFormula(
             $stmt->cond,
             $context->self,
             $statements_checker
@@ -229,23 +228,23 @@ class IfChecker
 
         // if we have assignments in the if, we may have duplicate clauses
         if ($cond_assigned_var_ids) {
-            $if_clauses = AlgebraChecker::simplifyCNF($if_clauses);
+            $if_clauses = Algebra::simplifyCNF($if_clauses);
         }
 
-        $if_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+        $if_context->clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
         // define this before we alter local claues after reconciliation
         $if_scope->reasonable_clauses = $if_context->clauses;
 
-        $if_scope->negated_clauses = AlgebraChecker::simplifyCNF(AlgebraChecker::negateFormula($if_clauses));
+        $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
 
-        $if_scope->negated_types = AlgebraChecker::getTruthsFromFormula(
-            AlgebraChecker::simplifyCNF(
+        $if_scope->negated_types = Algebra::getTruthsFromFormula(
+            Algebra::simplifyCNF(
                 array_merge($context->clauses, $if_scope->negated_clauses)
             )
         );
 
-        $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($if_context->clauses);
+        $reconcilable_if_types = Algebra::getTruthsFromFormula($if_context->clauses);
 
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
@@ -528,6 +527,10 @@ class IfChecker
         $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
         $has_continue_statement = $final_actions === [ScopeChecker::ACTION_CONTINUE];
 
+        if (!$has_ending_statements) {
+            $if_context->parent_context = $outer_context;
+        }
+
         $if_scope->final_actions = $final_actions;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
@@ -664,7 +667,7 @@ class IfChecker
                 $mic_drop = true;
             }
 
-            $outer_context->clauses = AlgebraChecker::simplifyCNF(
+            $outer_context->clauses = Algebra::simplifyCNF(
                 array_merge($outer_context->clauses, $if_scope->negated_clauses)
             );
         }
@@ -754,9 +757,9 @@ class IfChecker
 
         $entry_clauses = array_merge($original_context->clauses, $if_scope->negated_clauses);
 
-        if ($if_scope->negated_types) {
-            $changed_var_ids = [];
+        $changed_var_ids = [];
 
+        if ($if_scope->negated_types) {
             $elseif_vars_reconciled = Reconciler::reconcileKeyedTypes(
                 $if_scope->negated_types,
                 $elseif_context->vars_in_scope,
@@ -824,7 +827,7 @@ class IfChecker
             }
         }
 
-        $elseif_clauses = AlgebraChecker::getFormula(
+        $elseif_clauses = Algebra::getFormula(
             $elseif->cond,
             $statements_checker->getFQCLN(),
             $statements_checker
@@ -879,15 +882,15 @@ class IfChecker
             $new_assigned_var_ids
         );
 
-        $elseif_context->clauses = AlgebraChecker::simplifyCNF(
+        $elseif_context->clauses = Algebra::simplifyCNF(
             array_merge(
                 $entry_clauses,
                 $elseif_clauses
             )
         );
 
-        $reconcilable_elseif_types = AlgebraChecker::getTruthsFromFormula($elseif_context->clauses);
-        $negated_elseif_types = AlgebraChecker::getTruthsFromFormula(AlgebraChecker::negateFormula($elseif_clauses));
+        $reconcilable_elseif_types = Algebra::getTruthsFromFormula($elseif_context->clauses);
+        $negated_elseif_types = Algebra::getTruthsFromFormula(Algebra::negateFormula($elseif_clauses));
 
         $all_negated_vars = array_unique(
             array_merge(
@@ -907,7 +910,7 @@ class IfChecker
             }
         }
 
-        $changed_var_ids = [];
+        $changed_var_ids = $changed_var_ids ?: [];
 
         // if the elseif has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_elseif_types) {
@@ -1051,7 +1054,7 @@ class IfChecker
             }
 
             if ($if_scope->reasonable_clauses && $elseif_clauses) {
-                $if_scope->reasonable_clauses = AlgebraChecker::combineOredClauses(
+                $if_scope->reasonable_clauses = Algebra::combineOredClauses(
                     $if_scope->reasonable_clauses,
                     $elseif_clauses
                 );
@@ -1149,7 +1152,7 @@ class IfChecker
 
         $if_scope->negated_clauses = array_merge(
             $if_scope->negated_clauses,
-            AlgebraChecker::negateFormula($elseif_clauses)
+            Algebra::negateFormula($elseif_clauses)
         );
     }
 
@@ -1174,14 +1177,14 @@ class IfChecker
 
         $original_context = clone $else_context;
 
-        $else_context->clauses = AlgebraChecker::simplifyCNF(
+        $else_context->clauses = Algebra::simplifyCNF(
             array_merge(
                 $else_context->clauses,
                 $if_scope->negated_clauses
             )
         );
 
-        $else_types = AlgebraChecker::getTruthsFromFormula($else_context->clauses);
+        $else_types = Algebra::getTruthsFromFormula($else_context->clauses);
 
         if ($else_types) {
             $changed_var_ids = [];
@@ -1320,7 +1323,7 @@ class IfChecker
                 }
             }
         } elseif ($if_scope->reasonable_clauses) {
-            $outer_context->clauses = AlgebraChecker::simplifyCNF(
+            $outer_context->clauses = Algebra::simplifyCNF(
                 array_merge(
                     $if_scope->reasonable_clauses,
                     $original_context->clauses

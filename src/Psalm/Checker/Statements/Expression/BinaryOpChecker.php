@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
-use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\Statements\Expression\Assignment\ArrayAssignmentChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
@@ -22,6 +21,7 @@ use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
@@ -55,7 +55,7 @@ class BinaryOpChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
         ) {
-            $if_clauses = AlgebraChecker::getFormula(
+            $if_clauses = Algebra::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker
@@ -92,9 +92,9 @@ class BinaryOpChecker
                 ARRAY_FILTER_USE_KEY
             );
 
-            $simplified_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+            $simplified_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-            $left_type_assertions = AlgebraChecker::getTruthsFromFormula($simplified_clauses);
+            $left_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
 
             $changed_var_ids = [];
 
@@ -173,20 +173,20 @@ class BinaryOpChecker
 
             $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
-            $left_clauses = AlgebraChecker::getFormula(
+            $left_clauses = Algebra::getFormula(
                 $stmt->left,
                 $statements_checker->getFQCLN(),
                 $statements_checker
             );
 
-            $rhs_clauses = AlgebraChecker::simplifyCNF(
+            $rhs_clauses = Algebra::simplifyCNF(
                 array_merge(
                     $context->clauses,
-                    AlgebraChecker::negateFormula($left_clauses)
+                    Algebra::negateFormula($left_clauses)
                 )
             );
 
-            $negated_type_assertions = AlgebraChecker::getTruthsFromFormula($rhs_clauses);
+            $negated_type_assertions = Algebra::getTruthsFromFormula($rhs_clauses);
 
             $changed_var_ids = [];
 
@@ -271,19 +271,19 @@ class BinaryOpChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
             $t_if_context = clone $context;
 
-            $if_clauses = AlgebraChecker::getFormula(
+            $if_clauses = Algebra::getFormula(
                 $stmt,
                 $statements_checker->getFQCLN(),
                 $statements_checker
             );
 
-            $ternary_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+            $ternary_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-            $negated_clauses = AlgebraChecker::negateFormula($if_clauses);
+            $negated_clauses = Algebra::negateFormula($if_clauses);
 
-            $negated_if_types = AlgebraChecker::getTruthsFromFormula($negated_clauses);
+            $negated_if_types = Algebra::getTruthsFromFormula($negated_clauses);
 
-            $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
+            $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses);
 
             $changed_var_ids = [];
 
@@ -539,7 +539,7 @@ class BinaryOpChecker
             && $left_type
             && $right_type
             && ($left_type->isMixedNotFromIsset() || $right_type->isMixedNotFromIsset())
-            && ($left_type->hasNumericType() || $right_type->hasNumericType())
+            && ($left_type->hasDefinitelyNumericType() || $right_type->hasDefinitelyNumericType())
         ) {
             $source_checker = $statements_source->getSource();
             if ($source_checker instanceof FunctionLikeChecker
@@ -659,6 +659,8 @@ class BinaryOpChecker
                     $candidate_result_type = self::analyzeNonDivOperands(
                         $statements_source,
                         $codebase,
+                        $config,
+                        $context,
                         $left,
                         $right,
                         $parent,
@@ -735,6 +737,7 @@ class BinaryOpChecker
     /**
      * @param  StatementsSource|null $statements_source
      * @param  \Psalm\Codebase|null  $codebase
+     * @param  Context|null $context
      * @param  string[]        &$invalid_left_messages
      * @param  string[]        &$invalid_right_messages
      * @param  bool            &$has_valid_left_operand
@@ -745,6 +748,8 @@ class BinaryOpChecker
     public static function analyzeNonDivOperands(
         $statements_source,
         $codebase,
+        Config $config,
+        $context,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,

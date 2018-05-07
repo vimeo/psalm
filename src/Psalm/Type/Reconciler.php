@@ -34,6 +34,9 @@ use Psalm\Type\Atomic\TTrue;
 
 class Reconciler
 {
+    /** @var array<string, array<int, string>> */
+    private static $broken_paths = [];
+
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
@@ -135,7 +138,7 @@ class Reconciler
                 $changed_var_ids[] = $key;
 
                 if (substr($key, -1) === ']') {
-                    $key_parts = AlgebraChecker::breakUpPathIntoParts($key);
+                    $key_parts = self::breakUpPathIntoParts($key);
                     self::adjustObjectLikeType(
                         $key_parts,
                         $existing_types,
@@ -345,11 +348,13 @@ class Reconciler
                 return Type::getNull();
             }
 
+            $existing_var_atomic_types = $existing_var_type->getTypes();
+
             if ($new_var_type === '!object' && !$existing_var_type->isMixed()) {
                 $non_object_types = [];
                 $did_remove_type = false;
 
-                foreach ($existing_var_type->getTypes() as $type) {
+                foreach ($existing_var_atomic_types as $type) {
                     if (!$type->isObjectType()) {
                         $non_object_types[] = $type;
                     } else {
@@ -384,7 +389,7 @@ class Reconciler
                 $non_scalar_types = [];
                 $did_remove_type = false;
 
-                foreach ($existing_var_type->getTypes() as $type) {
+                foreach ($existing_var_atomic_types as $type) {
                     if (!($type instanceof Scalar)) {
                         $non_scalar_types[] = $type;
                     } else {
@@ -419,7 +424,7 @@ class Reconciler
                 $non_bool_types = [];
                 $did_remove_type = false;
 
-                foreach ($existing_var_type->getTypes() as $type) {
+                foreach ($existing_var_atomic_types as $type) {
                     if (!$type instanceof TBool) {
                         $non_bool_types[] = $type;
                     } else {
@@ -454,7 +459,7 @@ class Reconciler
                 $non_numeric_types = [];
                 $did_remove_type = $existing_var_type->hasString();
 
-                foreach ($existing_var_type->getTypes() as $type) {
+                foreach ($existing_var_atomic_types as $type) {
                     if (!$type->isNumericType()) {
                         $non_numeric_types[] = $type;
                     } else {
@@ -488,8 +493,7 @@ class Reconciler
             if (($new_var_type === '!falsy' || $new_var_type === '!empty')
                 && !$existing_var_type->isMixed()
             ) {
-                $did_remove_type = $existing_var_type->hasString()
-                    || $existing_var_type->hasNumericType()
+                $did_remove_type = $existing_var_type->hasDefinitelyNumericType()
                     || $existing_var_type->isEmpty()
                     || $existing_var_type->hasType('bool')
                     || $existing_var_type->possibly_undefined;
@@ -508,6 +512,28 @@ class Reconciler
                     $did_remove_type = true;
                     $existing_var_type->removeType('bool');
                     $existing_var_type->addType(new TTrue);
+                }
+
+                if ($existing_var_type->hasType('string')) {
+                    if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString) {
+                        $non_empty_values = [];
+
+                        foreach ($existing_var_atomic_types['string']->values as $string_value => $_) {
+                            if ($string_value) {
+                                $non_empty_values[$string_value] = true;
+                            } else {
+                                $did_remove_type = true;
+                            }
+                        }
+
+                        if (!$non_empty_values) {
+                            $existing_var_type->removeType('string');
+                        } else {
+                            $existing_var_type->addType(new Type\Atomic\TLiteralString($non_empty_values));
+                        }
+                    } else {
+                        $did_remove_type = true;
+                    }
                 }
 
                 if ($existing_var_type->hasType('array')) {
@@ -575,8 +601,6 @@ class Reconciler
             }
 
             $negated_type = substr($new_var_type, 1);
-
-            $existing_var_atomic_types = $existing_var_type->getTypes();
 
             if (isset($existing_var_atomic_types['int'])
                 && $existing_var_type->from_calculation
@@ -700,14 +724,15 @@ class Reconciler
             $is_strict_equality = true;
         }
 
+        $existing_var_atomic_types = $existing_var_type->getTypes();
+
         if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
             if ($existing_var_type->isMixed()) {
                 return $existing_var_type;
             }
 
-            $did_remove_type = $existing_var_type->hasString()
-                || $existing_var_type->hasScalar()
-                || $existing_var_type->hasNumericType();
+            $did_remove_type = $existing_var_type->hasScalar()
+                || $existing_var_type->hasDefinitelyNumericType();
 
             if ($existing_var_type->hasType('bool')) {
                 $did_remove_type = true;
@@ -720,8 +745,31 @@ class Reconciler
                 $existing_var_type->removeType('true');
             }
 
-            if ($existing_var_type->hasType('array')
-                && $existing_var_type->getTypes()['array']->getId() !== 'array<empty, empty>'
+            if ($existing_var_type->hasType('string')) {
+                if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString) {
+                    $empty_values = [];
+
+                    foreach ($existing_var_atomic_types['string']->values as $string_value => $_) {
+                        if (!$string_value) {
+                            $empty_values[$string_value] = true;
+                        } else {
+                            $did_remove_type = true;
+                        }
+                    }
+
+                    if (!$empty_values) {
+                        $existing_var_type->removeType('string');
+                    } else {
+                        $existing_var_type->addType(new Type\Atomic\TLiteralString($empty_values));
+                    }
+                } else {
+                    $did_remove_type = true;
+                    $existing_var_type->addType(new Type\Atomic\TLiteralString(['' => true, 0 => true]));
+                }
+            }
+
+            if (isset($existing_var_atomic_types['array'])
+                && $existing_var_atomic_types['array']->getId() !== 'array<empty, empty>'
             ) {
                 $did_remove_type = true;
                 $existing_var_type->addType(new TArray(
@@ -732,7 +780,7 @@ class Reconciler
                 ));
             }
 
-            foreach ($existing_var_type->getTypes() as $type_key => $type) {
+            foreach ($existing_var_atomic_types as $type_key => $type) {
                 if ($type instanceof TNamedObject
                     || $type instanceof TResource
                     || $type instanceof TCallable
@@ -770,7 +818,7 @@ class Reconciler
             $object_types = [];
             $did_remove_type = false;
 
-            foreach ($existing_var_type->getTypes() as $type) {
+            foreach ($existing_var_atomic_types as $type) {
                 if ($type->isObjectType()) {
                     $object_types[] = $type;
                 } else {
@@ -851,7 +899,7 @@ class Reconciler
             $scalar_types = [];
             $did_remove_type = false;
 
-            foreach ($existing_var_type->getTypes() as $type) {
+            foreach ($existing_var_atomic_types as $type) {
                 if ($type instanceof Scalar) {
                     $scalar_types[] = $type;
                 } else {
@@ -886,7 +934,7 @@ class Reconciler
             $bool_types = [];
             $did_remove_type = false;
 
-            foreach ($existing_var_type->getTypes() as $type) {
+            foreach ($existing_var_atomic_types as $type) {
                 if ($type instanceof TBool) {
                     $bool_types[] = $type;
                 } else {
@@ -916,8 +964,6 @@ class Reconciler
 
             return Type::getMixed();
         }
-
-        $existing_var_atomic_types = $existing_var_type->getTypes();
 
         if (isset($existing_var_atomic_types['int'])
             && $existing_var_type->from_calculation
@@ -1371,6 +1417,83 @@ class Reconciler
     }
 
     /**
+     * @param  string $path
+     *
+     * @return array<int, string>
+     */
+    public static function breakUpPathIntoParts($path)
+    {
+        if (isset(self::$broken_paths[$path])) {
+            return self::$broken_paths[$path];
+        }
+
+        $chars = str_split($path);
+
+        $string_char = null;
+        $escape_char = false;
+
+        $parts = [''];
+        $parts_offset = 0;
+
+        for ($i = 0, $char_count = count($chars); $i < $char_count; ++$i) {
+            $char = $chars[$i];
+
+            if ($string_char) {
+                if ($char === $string_char && !$escape_char) {
+                    $string_char = null;
+                }
+
+                if ($char === '\\') {
+                    $escape_char = !$escape_char;
+                }
+
+                $parts[$parts_offset] .= $char;
+                continue;
+            }
+
+            switch ($char) {
+                case '[':
+                case ']':
+                    $parts_offset++;
+                    $parts[$parts_offset] = $char;
+                    $parts_offset++;
+                    continue;
+
+                case '\'':
+                case '"':
+                    if (!isset($parts[$parts_offset])) {
+                        $parts[$parts_offset] = '';
+                    }
+                    $parts[$parts_offset] .= $char;
+                    $string_char = $char;
+
+                    continue;
+
+                case '-':
+                    if ($i < $char_count - 1 && $chars[$i + 1] === '>') {
+                        ++$i;
+
+                        $parts_offset++;
+                        $parts[$parts_offset] = '->';
+                        $parts_offset++;
+                        continue;
+                    }
+                    // fall through
+
+                default:
+                    if (!isset($parts[$parts_offset])) {
+                        $parts[$parts_offset] = '';
+                    }
+                    $parts[$parts_offset] .= $char;
+            }
+        }
+
+        self::$broken_paths[$path] = $parts;
+
+        return $parts;
+    }
+
+    /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
      * @param  ProjectChecker            $project_checker
@@ -1381,7 +1504,7 @@ class Reconciler
      */
     private static function getValueForKey(ProjectChecker $project_checker, $key, array &$existing_keys)
     {
-        $key_parts = AlgebraChecker::breakUpPathIntoParts($key);
+        $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
             return isset($existing_keys[$key_parts[0]]) ? clone $existing_keys[$key_parts[0]] : null;

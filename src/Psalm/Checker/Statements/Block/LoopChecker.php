@@ -2,7 +2,6 @@
 namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
-use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
@@ -12,6 +11,7 @@ use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
 class LoopChecker
@@ -58,7 +58,7 @@ class LoopChecker
             foreach ($pre_conditions as $pre_condition) {
                 $pre_condition_clauses = array_merge(
                     $pre_condition_clauses,
-                    AlgebraChecker::getFormula(
+                    Algebra::getFormula(
                         $pre_condition,
                         $loop_scope->loop_context->self,
                         $statements_checker
@@ -358,8 +358,8 @@ class LoopChecker
         if ($pre_conditions && $pre_condition_clauses && !ScopeChecker::doesEverBreak($stmts)) {
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
-            $negated_pre_condition_types = AlgebraChecker::getTruthsFromFormula(
-                AlgebraChecker::negateFormula($pre_condition_clauses)
+            $negated_pre_condition_types = Algebra::getTruthsFromFormula(
+                Algebra::negateFormula($pre_condition_clauses)
             );
 
             if ($negated_pre_condition_types) {
@@ -477,11 +477,11 @@ class LoopChecker
 
         $asserted_var_ids = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
-        $loop_context->clauses = AlgebraChecker::simplifyCNF(
+        $loop_context->clauses = Algebra::simplifyCNF(
             array_merge($outer_context->clauses, $pre_condition_clauses)
         );
 
-        $reconcilable_while_types = AlgebraChecker::getTruthsFromFormula($loop_context->clauses);
+        $reconcilable_while_types = Algebra::getTruthsFromFormula($loop_context->clauses);
 
         // if the while has an or as the main component, we cannot safely reason about it
         if ($pre_condition instanceof PhpParser\Node\Expr\BinaryOp &&

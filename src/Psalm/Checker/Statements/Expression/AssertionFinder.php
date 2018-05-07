@@ -59,11 +59,13 @@ class AssertionFinder
             return $if_types;
         }
 
-        if ($var_name = ExpressionChecker::getArrayVarId(
+        $var_name = ExpressionChecker::getArrayVarId(
             $conditional,
             $this_class_name,
             $source
-        )) {
+        );
+
+        if ($var_name) {
             $if_types[$var_name] = '!falsy';
 
             return $if_types;
@@ -90,7 +92,7 @@ class AssertionFinder
                 $source
             );
 
-            return TypeChecker::negateTypes($if_types_to_negate);
+            return \Psalm\Type\Algebra::negateTypes($if_types_to_negate);
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
@@ -253,7 +255,7 @@ class AssertionFinder
                     $notif_types = self::getAssertions($base_conditional, $this_class_name, $source);
 
                     if (count($notif_types) === 1) {
-                        $if_types = TypeChecker::negateTypes($notif_types);
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
                     }
                 }
 

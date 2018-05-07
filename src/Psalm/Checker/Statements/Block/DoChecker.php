@@ -73,7 +73,7 @@ class DoChecker
             }
         }
 
-        $while_clauses = AlgebraChecker::getFormula(
+        $while_clauses = \Psalm\Type\Algebra::getFormula(
             $stmt->cond,
             $context->self,
             $statements_checker
@@ -103,7 +103,7 @@ class DoChecker
             $while_clauses = [new Clause([], true)];
         }
 
-        $reconcilable_while_types = AlgebraChecker::getTruthsFromFormula($while_clauses);
+        $reconcilable_while_types = \Psalm\Type\Algebra::getTruthsFromFormula($while_clauses);
 
         if ($reconcilable_while_types) {
             $changed_var_ids = [];

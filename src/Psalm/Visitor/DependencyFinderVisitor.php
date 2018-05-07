@@ -786,7 +786,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         continue;
                     }
 
-                    $if_clauses = \Psalm\Checker\AlgebraChecker::getFormula(
+                    $if_clauses = \Psalm\Type\Algebra::getFormula(
                         $function_stmt->cond,
                         $this->fq_classlike_names
                             ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1]
@@ -794,9 +794,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $this->file_scanner
                     );
 
-                    $negated_formula = \Psalm\Checker\AlgebraChecker::negateFormula($if_clauses);
+                    $negated_formula = \Psalm\Type\Algebra::negateFormula($if_clauses);
 
-                    $rules = \Psalm\Checker\AlgebraChecker::getTruthsFromFormula($negated_formula);
+                    $rules = \Psalm\Type\Algebra::getTruthsFromFormula($negated_formula);
 
                     foreach ($rules as $var_id => $rule) {
                         if (strpos($rule, '|') !== false) {

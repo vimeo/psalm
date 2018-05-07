@@ -972,46 +972,6 @@ class TypeChecker
     }
 
     /**
-     * @param  array<string, string>  $types
-     *
-     * @return array<string, string>
-     */
-    public static function negateTypes(array $types)
-    {
-        return array_map(
-            /**
-             * @param  string $type
-             *
-             * @return  string
-             */
-            function ($type) {
-                return self::negateType($type);
-            },
-            $types
-        );
-    }
-
-    /**
-     * @param  string $type
-     *
-     * @return  string
-     */
-    public static function negateType($type)
-    {
-        if ($type === 'mixed') {
-            return $type;
-        }
-
-        $type_parts = explode('&', (string)$type);
-
-        foreach ($type_parts as &$type_part) {
-            $type_part = $type_part[0] === '!' ? substr($type_part, 1) : '!' . $type_part;
-        }
-
-        return implode('&', $type_parts);
-    }
-
-    /**
      * @return bool
      */
     public static function hasIdenticalTypes(

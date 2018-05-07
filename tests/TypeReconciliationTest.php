@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\Clause;
 use Psalm\Context;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
 class TypeReconciliationTest extends TestCase
@@ -91,7 +91,7 @@ class TypeReconciliationTest extends TestCase
             new Clause(['$a' => ['!falsy']]),
         ];
 
-        $negated_formula = AlgebraChecker::negateFormula($formula);
+        $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertSame(1, count($negated_formula));
         $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
@@ -100,7 +100,7 @@ class TypeReconciliationTest extends TestCase
             new Clause(['$a' => ['!falsy'], '$b' => ['!falsy']]),
         ];
 
-        $negated_formula = AlgebraChecker::negateFormula($formula);
+        $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertSame(2, count($negated_formula));
         $this->assertSame(['$a' => ['falsy']], $negated_formula[0]->possibilities);
@@ -111,7 +111,7 @@ class TypeReconciliationTest extends TestCase
             new Clause(['$b' => ['!falsy']]),
         ];
 
-        $negated_formula = AlgebraChecker::negateFormula($formula);
+        $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertSame(1, count($negated_formula));
         $this->assertSame(['$a' => ['falsy'], '$b' => ['falsy']], $negated_formula[0]->possibilities);
@@ -120,7 +120,7 @@ class TypeReconciliationTest extends TestCase
             new Clause(['$a' => ['int', 'string'], '$b' => ['!falsy']]),
         ];
 
-        $negated_formula = AlgebraChecker::negateFormula($formula);
+        $negated_formula = Algebra::negateFormula($formula);
 
         $this->assertSame(3, count($negated_formula));
         $this->assertSame(['$a' => ['!int']], $negated_formula[0]->possibilities);
@@ -174,7 +174,7 @@ class TypeReconciliationTest extends TestCase
             new Clause(['$a' => ['falsy'], '$b' => ['falsy']]),
         ];
 
-        $simplified_formula = AlgebraChecker::simplifyCNF($formula);
+        $simplified_formula = Algebra::simplifyCNF($formula);
 
         $this->assertSame(2, count($simplified_formula));
         $this->assertSame(['$a' => ['!falsy']], $simplified_formula[0]->possibilities);

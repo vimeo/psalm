@@ -523,8 +523,8 @@ class AssignmentChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\AssignOp\Div
             && $var_type
             && $expr_type
-            && $var_type->hasNumericType()
-            && $expr_type->hasNumericType()
+            && $var_type->hasDefinitelyNumericType()
+            && $expr_type->hasDefinitelyNumericType()
             && $array_var_id
         ) {
             $context->vars_in_scope[$array_var_id] = Type::combineUnionTypes(Type::getFloat(), Type::getInt());
