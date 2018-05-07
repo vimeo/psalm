@@ -863,7 +863,9 @@ class Reconciler
             $did_remove_type = false;
 
             foreach ($existing_var_atomic_types as $type) {
-                if (!$type instanceof TBool) {
+                if (!$type instanceof TBool
+                    || ($is_strict_equality && get_class($type) === TBool::class)
+                ) {
                     $non_bool_types[] = $type;
                 } else {
                     $did_remove_type = true;
