@@ -55,7 +55,7 @@ class TernaryChecker
             )
         );
 
-        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses);
+        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses, $new_referenced_var_ids);
 
         $changed_var_ids = [];
 
