@@ -280,11 +280,14 @@ class Algebra
      * Look for clauses with only one possible value
      *
      * @param  array<int, Clause>  $clauses
+     * @param  array<string, bool> $cond_referenced_var_ids
      *
      * @return array<string, string>
      */
-    public static function getTruthsFromFormula(array $clauses)
-    {
+    public static function getTruthsFromFormula(
+        array $clauses,
+        array &$cond_referenced_var_ids = []
+    ) {
         $truths = [];
 
         if (empty($clauses)) {
@@ -351,6 +354,10 @@ class Algebra
                             foreach ($bracket_groups as $type => $options) {
                                 $things_that_can_be_said[] = '^' . $type . '(' . $options . ')';
                             }
+                        }
+
+                        if ($clause->generated && count($possible_types) > 1) {
+                            unset($cond_referenced_var_ids[$var]);
                         }
 
                         $truths[$var] = implode('|', $things_that_can_be_said);
