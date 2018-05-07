@@ -2,12 +2,12 @@
 namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
-use Psalm\Checker\AlgebraChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
 class TernaryChecker
@@ -39,23 +39,23 @@ class TernaryChecker
 
         $t_if_context = clone $context;
 
-        $if_clauses = AlgebraChecker::getFormula(
+        $if_clauses = \Psalm\Type\Algebra::getFormula(
             $stmt->cond,
             $statements_checker->getFQCLN(),
             $statements_checker
         );
 
-        $ternary_clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $if_clauses));
+        $ternary_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
-        $negated_clauses = AlgebraChecker::negateFormula($if_clauses);
+        $negated_clauses = Algebra::negateFormula($if_clauses);
 
-        $negated_if_types = AlgebraChecker::getTruthsFromFormula(
-            AlgebraChecker::simplifyCNF(
+        $negated_if_types = Algebra::getTruthsFromFormula(
+            Algebra::simplifyCNF(
                 array_merge($context->clauses, $negated_clauses)
             )
         );
 
-        $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($ternary_clauses);
+        $reconcilable_if_types = Algebra::getTruthsFromFormula($ternary_clauses);
 
         $changed_var_ids = [];
 

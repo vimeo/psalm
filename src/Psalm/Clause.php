@@ -95,4 +95,45 @@ class Clause
         return md5($possibility_string) .
             ($this->wedge || !$this->reconcilable ? spl_object_hash($this) : '');
     }
+
+    public function __toString()
+    {
+        return implode(
+            ' || ',
+            array_map(
+                /**
+                 * @param string $var_id
+                 * @param string[] $values
+                 *
+                 * @return string
+                 */
+                function ($var_id, $values) {
+                    return implode(
+                        ' || ' ,
+                        array_map(
+                            /**
+                             * @param string $value
+                             *
+                             * @return string
+                             */
+                            function ($value) use ($var_id) {
+                                if ($value === 'falsy') {
+                                    return '!' . $var_id;
+                                }
+
+                                if ($value === '!falsy') {
+                                    return $var_id;
+                                }
+
+                                return $var_id . '==' . $value;
+                            },
+                            $values
+                        )
+                    );
+                },
+                array_keys($this->possibilities),
+                array_values($this->possibilities)
+            )
+        );
+    }
 }

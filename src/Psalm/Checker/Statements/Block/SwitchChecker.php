@@ -12,6 +12,7 @@ use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
 class SwitchChecker
@@ -133,7 +134,7 @@ class SwitchChecker
 
                 $fake_equality = new PhpParser\Node\Expr\BinaryOp\Equal($switch_condition, $case->cond);
 
-                $case_clauses = AlgebraChecker::getFormula(
+                $case_clauses = Algebra::getFormula(
                     $fake_equality,
                     $context->self,
                     $statements_checker
@@ -142,9 +143,9 @@ class SwitchChecker
                 // this will see whether any of the clauses in set A conflict with the clauses in set B
                 AlgebraChecker::checkForParadox($context->clauses, $case_clauses, $statements_checker, $stmt->cond, []);
 
-                $case_context->clauses = AlgebraChecker::simplifyCNF(array_merge($context->clauses, $case_clauses));
+                $case_context->clauses = Algebra::simplifyCNF(array_merge($context->clauses, $case_clauses));
 
-                $reconcilable_if_types = AlgebraChecker::getTruthsFromFormula($case_context->clauses);
+                $reconcilable_if_types = Algebra::getTruthsFromFormula($case_context->clauses);
 
                 // if the if has an || in the conditional, we cannot easily reason about it
                 if ($reconcilable_if_types) {

@@ -541,7 +541,7 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'SKIPPED-twoVarLogicNotNestedWithElseifNegatedInIf' => [
+            'twoVarLogicNotNestedWithElseifNegatedInIf' => [
                 '<?php
                     function foo(?string $a, ?string $b): ?string {
                         if ($a) {

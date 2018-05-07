@@ -443,7 +443,7 @@ class Context
         $clauses_to_keep = [];
 
         foreach ($clauses as $clause) {
-            \Psalm\Checker\AlgebraChecker::calculateNegation($clause);
+            \Psalm\Type\Algebra::calculateNegation($clause);
 
             $quoted_remove_var_id = preg_quote($remove_var_id);
 
@@ -468,7 +468,7 @@ class Context
                 foreach ($clause->possibilities[$remove_var_id] as $type) {
                     // empty and !empty are not definitive for arrays and scalar types
                     if (($type === '!falsy' || $type === 'falsy') &&
-                        ($new_type->hasArray() || $new_type->hasNumericType())
+                        ($new_type->hasArray() || $new_type->hasPossiblyNumericType())
                     ) {
                         $type_changed = true;
                         break;

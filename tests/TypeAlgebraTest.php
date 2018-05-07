@@ -126,7 +126,25 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
             ],
-            'threeVarLogicNotNestedWithNoRedefinitions' => [
+            'threeVarLogicNotNestedWithNoRedefinitionsWithClasses' => [
+                '<?php
+                    function foo(?stdClass $a, ?stdClass $b, ?stdClass $c): stdClass {
+                        if ($a) {
+                            // do nothing
+                        } elseif ($b) {
+                            // do nothing here
+                        } elseif ($c) {
+                            // do nothing here
+                        } else {
+                            return new stdClass;
+                        }
+
+                        if (!$a && !$b) return $c;
+                        if (!$a) return $b;
+                        return $a;
+                    }',
+            ],
+            'threeVarLogicNotNestedWithNoRedefinitionsWithStrings' => [
                 '<?php
                     function foo(?string $a, ?string $b, ?string $c): string {
                         if ($a) {
@@ -547,8 +565,7 @@ class TypeAlgebraTest extends TestCase
                     function takesA(A $a): void {}
 
                     function foo(?A $a, ?A $b, ?A $c): void {
-                        if (!$a || ($b && $c)
-                        ) {
+                        if (!$a || ($b && $c)) {
                             return;
                         }
 
@@ -722,6 +739,24 @@ class TypeAlgebraTest extends TestCase
                         return null;
                     }',
             ],
+            'instanceofNoRedundant' => [
+                '<?php
+                    function logic(Bar $a, ?Bar $b) : void {
+                        if ((!$a instanceof Foo || !$b instanceof Foo)
+                            && (!$a instanceof Foo || !$b instanceof Bar)
+                            && (!$a instanceof Bar || !$b instanceof Foo)
+                            && (!$a instanceof Bar || !$b instanceof Bar)
+                        ) {
+
+                        } else {
+                            if ($b instanceof Foo) {}
+                        }
+                    }
+
+                    class Foo {}
+                    class Bar extends Foo {}
+                    class Bat extends Foo {}',
+            ],
         ];
     }
 
@@ -836,7 +871,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'NullableReturnStatement',
+                'error_message' => 'RedundantCondition',
             ],
             'repeatedIfStatements' => [
                 '<?php
