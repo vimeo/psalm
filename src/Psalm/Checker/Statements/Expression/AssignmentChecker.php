@@ -516,7 +516,7 @@ class AssignmentChecker
                     $statements_checker,
                     $stmt->var,
                     $context,
-                    $result_type ?: Type::getMixed()
+                    $result_type ?: Type::getMixed(true)
                 );
             } elseif ($result_type && $array_var_id) {
                 $context->vars_in_scope[$array_var_id] = $result_type;
