@@ -485,6 +485,53 @@ class CallableTest extends TestCase
                     function doSomething($p): void {}
                     doSomething(function(): bool { return false; });',
             ],
+            'callableProperties' => [
+                '<?php
+                    class C {
+                        /** @psalm-var callable():bool */
+                        private $callable;
+
+                        /**
+                         * @psalm-param callable():bool $callable
+                         */
+                        public function __construct(callable $callable) {
+                            $this->callable = $callable;
+                        }
+
+                        public function callTheCallableDirectly(): bool {
+                            return ($this->callable)();
+                        }
+
+                        public function callTheCallableIndirectly(): bool {
+                            $r = $this->callable;
+                            return $r();
+                        }
+                    }',
+            ],
+            'invokableProperties' => [
+                '<?php
+                    class A {
+                        public function __invoke(): bool { return true; }
+                    }
+
+                    class C {
+                        /** @var A $invokable */
+                        private $invokable;
+
+                        public function __construct(A $invokable) {
+                            $this->invokable = $invokable;
+                        }
+
+                        public function callTheInvokableDirectly(): bool {
+                            return ($this->invokable)();
+                        }
+
+                        public function callTheInvokableIndirectly(): bool {
+                            $r = $this->invokable;
+                            return $r();
+                        }
+                    }',
+            ]
         ];
     }
 
