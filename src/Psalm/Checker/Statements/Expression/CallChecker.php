@@ -466,7 +466,16 @@ class CallChecker
                     }
                 }
             } else {
-                if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch && is_string($arg->value->name)) {
+                // if it's a closure, we want to evaluate it anyway
+                if ($arg->value instanceof PhpParser\Node\Expr\Closure) {
+                    if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
+                        return false;
+                    }
+                }
+
+                if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+                    && $arg->value->name instanceof PhpParser\Node\Identifier
+                ) {
                     $var_id = '$' . $arg->value->name;
                 } else {
                     $var_id = ExpressionChecker::getVarId(
