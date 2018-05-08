@@ -466,6 +466,13 @@ class CallChecker
                     }
                 }
             } else {
+                // if it's a closure, we want to evaluate it anyway
+                if ($arg->value instanceof PhpParser\Node\Expr\Closure) {
+                    if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
+                        return false;
+                    }
+                }
+
                 if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
                     && $arg->value->name instanceof PhpParser\Node\Identifier
                 ) {

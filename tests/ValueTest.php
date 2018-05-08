@@ -220,6 +220,18 @@ class ValueTest extends TestCase
                     $a();
                     if ($i === 0) {}',
             ],
+            'incrementMixedCall' => [
+                '<?php
+                    function foo($f) : void {
+                        $i = 0;
+                        $f->add(function() use (&$i) : void {
+                            if (rand(0, 1)) $i++;
+                        });
+                        if ($i === 0) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MissingParamType', 'MixedMethodCall'],
+            ],
         ];
     }
 

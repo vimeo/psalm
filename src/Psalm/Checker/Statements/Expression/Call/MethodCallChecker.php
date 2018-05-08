@@ -200,6 +200,16 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                                 // fall through
                             }
 
+                            if (self::checkFunctionArguments(
+                                $statements_checker,
+                                $stmt->args,
+                                null,
+                                null,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
                             $return_type = Type::getMixed();
                             break;
                     }
