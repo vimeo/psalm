@@ -182,6 +182,10 @@ class PropertyFetchChecker
                 continue;
             }
 
+            if ($lhs_type_part instanceof Type\Atomic\TFalse && $stmt_var_type->ignore_falsable_issues) {
+                continue;
+            }
+
             if (!$lhs_type_part instanceof TNamedObject && !$lhs_type_part instanceof TObject) {
                 $invalid_fetch_types[] = (string)$lhs_type_part;
 
