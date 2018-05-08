@@ -4,4 +4,6 @@ phpunit.xml
 composer.lock
 .php_cs.cache
 .php_cs
+.*.swp
+.*.swo
 /build/logs/
