@@ -6,6 +6,7 @@ use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
 
 class Union
 {
@@ -676,6 +677,42 @@ class Union
         }
 
         return $type->type_params[count($type->type_params) - 1]->isSingle();
+    }
+
+    /**
+     * @return bool true if this is a string literal with only one possible value
+     * TODO: Is there a better place for this?
+     */
+    public function isSingleStringLiteral()
+    {
+        if (count($this->types) !== 1) {
+            return false;
+        }
+        $string_type = $this->types['string'] ?? null;
+        if (!($string_type instanceof TLiteralString)) {
+            return false;
+        }
+        return count($string_type->getValues()) === 1;
+    }
+
+    /**
+     * @return string the only string literal represented by this union type
+     * @throws \InvalidArgumentException if isSingleStringLiteral is false
+     */
+    public function getSingleStringLiteral()
+    {
+        if (count($this->types) !== 1) {
+            throw new \InvalidArgumentException("Not a string literal");
+        }
+        $string_type = $this->types['string'] ?? null;
+        if (!($string_type instanceof TLiteralString)) {
+            throw new \InvalidArgumentException("Not a string literal");
+        }
+        $values = $string_type->getValues();
+        if (count($values) !== 1) {
+            throw new \InvalidArgumentException("Not a string literal");
+        }
+        return (string)key($values);
     }
 
     /**
