@@ -775,6 +775,11 @@ class CallableTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'undefinedVariable' => [
+                '<?php
+                    $a = function() use ($i) {};',
+                'error_message' => 'UndefinedVariable',
+            ],
         ];
     }
 }
