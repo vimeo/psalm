@@ -171,6 +171,10 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['MixedAssignment'];
                     break;
 
+                case 'ParadoxicalCondition':
+                    $ignored_issues = ['MissingParamType'];
+                    break;
+
                 case 'UnusedClass':
                 case 'UnusedMethod':
                     $ignored_issues = ['UnusedVariable'];

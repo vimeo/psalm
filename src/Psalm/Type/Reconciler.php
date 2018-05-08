@@ -8,6 +8,7 @@ use Psalm\Checker\TraitChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainNull;
@@ -277,7 +278,7 @@ class Reconciler
 
         if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
             if ($existing_var_type->isMixed()) {
-                return $existing_var_type;
+                return new Type\Union([new Type\Atomic\TEmptyMixed]);
             }
 
             $did_remove_type = $existing_var_type->hasScalar()
@@ -314,6 +315,29 @@ class Reconciler
                 } else {
                     $did_remove_type = true;
                     $existing_var_type->addType(new Type\Atomic\TLiteralString(['' => true, 0 => true]));
+                }
+            }
+
+            if ($existing_var_type->hasType('int')) {
+                if ($existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt) {
+                    $empty_values = [];
+
+                    foreach ($existing_var_atomic_types['int']->values as $int_value => $_) {
+                        if (!$int_value) {
+                            $empty_values[$int_value] = true;
+                        } else {
+                            $did_remove_type = true;
+                        }
+                    }
+
+                    if (!$empty_values) {
+                        $existing_var_type->removeType('int');
+                    } else {
+                        $existing_var_type->addType(new Type\Atomic\TLiteralInt($empty_values));
+                    }
+                } else {
+                    $did_remove_type = true;
+                    $existing_var_type->addType(new Type\Atomic\TLiteralInt([0 => true]));
                 }
             }
 
@@ -930,9 +954,28 @@ class Reconciler
             return Type::getMixed();
         }
 
-        if (($new_var_type === 'falsy' || $new_var_type === 'empty')
-            && !$existing_var_type->isMixed()
-        ) {
+        if (($new_var_type === 'falsy' || $new_var_type === 'empty')) {
+            if ($existing_var_type->isMixed()) {
+                if ($existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
+                    if ($code_location
+                        && $key
+                        && IssueBuffer::accepts(
+                            new ParadoxicalCondition(
+                                'Found a redundant condition when evaluating ' . $key,
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )
+                    ) {
+                        // fall through
+                    }
+
+                    return Type::getMixed();
+                }
+
+                return $existing_var_type;
+            }
+
             if ($is_strict_equality && $new_var_type === 'empty') {
                 $existing_var_type->removeType('null');
                 $existing_var_type->removeType('false');
