@@ -205,6 +205,21 @@ class ValueTest extends TestCase
                         return "hello";
                     }',
             ],
+            'incrementAndCheck' => [
+                '<?php
+                    $i = 0;
+                    if (rand(0, 1)) $i++;
+                    if ($i === 1) {}'
+            ],
+            'incrementInClosureAndCheck' => [
+                '<?php
+                    $i = 0;
+                    $a = function() use (&$i) : void {
+                      if (rand(0, 1)) $i++;
+                    };
+                    $a();
+                    if ($i === 0) {}',
+            ],
         ];
     }
 

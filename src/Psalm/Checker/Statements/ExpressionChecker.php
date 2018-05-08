@@ -201,13 +201,11 @@ class ExpressionChecker
                 $stmt->inferredType = clone $stmt->var->inferredType;
                 $stmt->inferredType->from_calculation = true;
 
-                if ($context->inside_loop) {
-                    foreach ($stmt->inferredType->getTypes() as $atomic_type) {
-                        if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
-                            $stmt->inferredType->addType(new Type\Atomic\TInt);
-                        } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
-                            $stmt->inferredType->addType(new Type\Atomic\TFloat);
-                        }
+                foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                        $stmt->inferredType->addType(new Type\Atomic\TInt);
+                    } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
+                        $stmt->inferredType->addType(new Type\Atomic\TFloat);
                     }
                 }
 
@@ -864,9 +862,8 @@ class ExpressionChecker
     ) {
         foreach ($stmt->uses as $use) {
             $use_var_id = '$' . $use->var;
-            if (!$context->hasVariable($use_var_id, $statements_checker)
-                && (!$context->is_global || !in_array($use_var_id, ['$argv', '$argc'], true))
-            ) {
+
+            if (!$context->hasVariable($use_var_id, $statements_checker)) {
                 if ($use->byRef) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                     $context->vars_possibly_in_scope[$use_var_id] = true;
@@ -882,7 +879,40 @@ class ExpressionChecker
                     return;
                 }
 
-                if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
+                if ($use_var_id !== '$argv' && $use_var_id !== '$argc') {
+                    if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
+                        if ($context->check_variables) {
+                            if (IssueBuffer::accepts(
+                                new UndefinedVariable(
+                                    'Cannot find referenced variable ' . $use_var_id,
+                                    new CodeLocation($statements_checker->getSource(), $use)
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    $first_appearance = $statements_checker->getFirstAppearance($use_var_id);
+
+                    if ($first_appearance) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyUndefinedVariable(
+                                'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
+                                    $first_appearance->getLineNumber(),
+                                new CodeLocation($statements_checker->getSource(), $use)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        continue;
+                    }
+
                     if ($context->check_variables) {
                         if (IssueBuffer::accepts(
                             new UndefinedVariable(
@@ -894,39 +924,18 @@ class ExpressionChecker
                             return false;
                         }
 
-                        return null;
+                        continue;
                     }
                 }
-
-                $first_appearance = $statements_checker->getFirstAppearance($use_var_id);
-
-                if ($first_appearance) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyUndefinedVariable(
-                            'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
-                                $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_checker->getSource(), $use)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
+            } else {
+                foreach ($context->vars_in_scope[$use_var_id]->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
+                        $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TInt);
+                    } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
+                        $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TFloat);
+                    } elseif ($atomic_type instanceof Type\Atomic\TLiteralString) {
+                        $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TString);
                     }
-
-                    continue;
-                }
-
-                if ($context->check_variables) {
-                    if (IssueBuffer::accepts(
-                        new UndefinedVariable(
-                            'Cannot find referenced variable ' . $use_var_id,
-                            new CodeLocation($statements_checker->getSource(), $use)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    continue;
                 }
             }
         }
