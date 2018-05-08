@@ -179,6 +179,20 @@ class EmptyTest extends TestCase
                     function takesBool(bool $p): void {}
                     takesBool(empty($q));'
             ],
+            'SKIPPED-noRedundantConditionAfterEmptyChecks' => [
+                '<?php
+                    function foo($t) : void {
+                        if (empty($t)) {
+                            foreach ($_GET["u"] as $a) {
+                                if (empty($t)) {
+                                    $t = $a;
+                                }
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+            ],
         ];
     }
 
