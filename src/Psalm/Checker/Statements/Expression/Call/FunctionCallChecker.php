@@ -140,6 +140,20 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                         ) === false) {
                             return false;
                         }
+
+                        $invokable_return_type = $codebase->methods->getMethodReturnType(
+                            $var_type_part->value . '::__invoke',
+                            $var_type_part->value
+                        );
+
+                        if (isset($stmt->inferredType)) {
+                            $stmt->inferredType = Type::combineUnionTypes(
+                                $invokable_return_type ?: Type::getMixed(),
+                                $stmt->inferredType
+                            );
+                        } else {
+                            $stmt->inferredType = $invokable_return_type ?: Type::getMixed();
+                        }
                     }
                 }
 
