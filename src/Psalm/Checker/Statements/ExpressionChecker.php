@@ -864,6 +864,10 @@ class ExpressionChecker
             $use_var_id = '$' . $use->var;
 
             if (!$context->hasVariable($use_var_id, $statements_checker)) {
+                if ($use_var_id === '$argv' || $use_var_id === '$argc') {
+                    continue;
+                }
+
                 if ($use->byRef) {
                     $context->vars_in_scope[$use_var_id] = Type::getMixed();
                     $context->vars_possibly_in_scope[$use_var_id] = true;
@@ -879,40 +883,7 @@ class ExpressionChecker
                     return;
                 }
 
-                if ($use_var_id !== '$argv' && $use_var_id !== '$argc') {
-                    if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
-                        if ($context->check_variables) {
-                            if (IssueBuffer::accepts(
-                                new UndefinedVariable(
-                                    'Cannot find referenced variable ' . $use_var_id,
-                                    new CodeLocation($statements_checker->getSource(), $use)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            return null;
-                        }
-                    }
-
-                    $first_appearance = $statements_checker->getFirstAppearance($use_var_id);
-
-                    if ($first_appearance) {
-                        if (IssueBuffer::accepts(
-                            new PossiblyUndefinedVariable(
-                                'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
-                                    $first_appearance->getLineNumber(),
-                                new CodeLocation($statements_checker->getSource(), $use)
-                            ),
-                            $statements_checker->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-
-                        continue;
-                    }
-
+                if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
                     if ($context->check_variables) {
                         if (IssueBuffer::accepts(
                             new UndefinedVariable(
@@ -924,8 +895,39 @@ class ExpressionChecker
                             return false;
                         }
 
-                        continue;
+                        return null;
                     }
+                }
+
+                $first_appearance = $statements_checker->getFirstAppearance($use_var_id);
+
+                if ($first_appearance) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
+                                $first_appearance->getLineNumber(),
+                            new CodeLocation($statements_checker->getSource(), $use->var)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if ($context->check_variables) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedVariable(
+                            'Cannot find referenced variable ' . $use_var_id,
+                            new CodeLocation($statements_checker->getSource(), $use->var)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+
+                    continue;
                 }
             } else {
                 foreach ($context->vars_in_scope[$use_var_id]->getTypes() as $atomic_type) {
