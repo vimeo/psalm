@@ -1198,100 +1198,109 @@ class Reconciler
         if ($new_var_type === 'int') {
             $ints = array_flip(explode(',', $bracketed));
 
-            if (isset($existing_var_atomic_types['int'])
-                && $existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt
-            ) {
-                $current_count = count($existing_var_atomic_types['int']->values);
+            if (isset($existing_var_atomic_types['int'])) {
+                if ($existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt) {
+                    $current_count = count($existing_var_atomic_types['int']->values);
 
-                $existing_var_atomic_types['int']->values = array_intersect_key(
-                    $existing_var_atomic_types['int']->values,
-                    $ints
-                );
-
-                $existing_var_type->bustCache();
-
-                $new_count = count($existing_var_atomic_types['int']->values);
-
-                if ($key
-                    && $code_location
-                    && count($existing_var_atomic_types) === 1
-                    && ($new_count === 0 || $new_count === $current_count)
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $new_var_type,
-                        $new_count === $current_count,
-                        $code_location,
-                        $suppressed_issues
+                    $existing_var_atomic_types['int']->values = array_intersect_key(
+                        $existing_var_atomic_types['int']->values,
+                        $ints
                     );
+
+                    $existing_var_type->bustCache();
+
+                    $new_count = count($existing_var_atomic_types['int']->values);
+
+                    if ($key
+                        && $code_location
+                        && count($existing_var_atomic_types) === 1
+                        && ($new_count === 0 || $new_count === $current_count)
+                    ) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $old_var_type_string,
+                            $key,
+                            $new_var_type,
+                            $new_count === $current_count,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+                } else {
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $existing_var_type->addType(new Type\Atomic\TLiteralInt($ints));
                 }
             }
         } elseif ($new_var_type === 'string') {
             $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
 
-            if (isset($existing_var_atomic_types['string'])
-                && $existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString
-            ) {
-                $current_count = count($existing_var_atomic_types['string']->values);
+            if (isset($existing_var_atomic_types['string'])) {
+                if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString) {
+                    $current_count = count($existing_var_atomic_types['string']->values);
 
-                $existing_var_atomic_types['string']->values = array_intersect_key(
-                    $existing_var_atomic_types['string']->values,
-                    $strings
-                );
-
-                $existing_var_type->bustCache();
-
-                $new_count = count($existing_var_atomic_types['string']->values);
-
-                if ($key
-                    && $code_location
-                    && count($existing_var_atomic_types) === 1
-                    && ($new_count === 0 || $new_count === $current_count)
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $new_var_type,
-                        $new_count === $current_count,
-                        $code_location,
-                        $suppressed_issues
+                    $existing_var_atomic_types['string']->values = array_intersect_key(
+                        $existing_var_atomic_types['string']->values,
+                        $strings
                     );
+
+                    $existing_var_type->bustCache();
+
+                    $new_count = count($existing_var_atomic_types['string']->values);
+
+                    if ($key
+                        && $code_location
+                        && count($existing_var_atomic_types) === 1
+                        && ($new_count === 0 || $new_count === $current_count)
+                    ) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $old_var_type_string,
+                            $key,
+                            $new_var_type,
+                            $new_count === $current_count,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+                } else {
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $existing_var_type->addType(new Type\Atomic\TLiteralString($strings));
                 }
             }
         } elseif (substr($new_var_type, 0, 6) === 'float(') {
             $floats = array_flip(explode(',', $bracketed));
 
-            if (isset($existing_var_atomic_types['float'])
-                && $existing_var_atomic_types['float'] instanceof Type\Atomic\TLiteralFloat
-            ) {
-                $current_count = count($existing_var_atomic_types['float']->values);
+            if (isset($existing_var_atomic_types['float'])) {
+                if ($existing_var_atomic_types['float'] instanceof Type\Atomic\TLiteralFloat) {
+                    $current_count = count($existing_var_atomic_types['float']->values);
 
-                $existing_var_atomic_types['float']->values = array_intersect_key(
-                    $existing_var_atomic_types['float']->values,
-                    $floats
-                );
-
-                $existing_var_type->bustCache();
-
-                $new_count = count($existing_var_atomic_types['float']->values);
-
-                if ($key
-                    && $code_location
-                    && count($existing_var_atomic_types) === 1
-                    && ($new_count === 0 || $new_count === $current_count)
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $new_var_type,
-                        $new_count === $current_count,
-                        $code_location,
-                        $suppressed_issues
+                    $existing_var_atomic_types['float']->values = array_intersect_key(
+                        $existing_var_atomic_types['float']->values,
+                        $floats
                     );
+
+                    $existing_var_type->bustCache();
+
+                    $new_count = count($existing_var_atomic_types['float']->values);
+
+                    if ($key
+                        && $code_location
+                        && count($existing_var_atomic_types) === 1
+                        && ($new_count === 0 || $new_count === $current_count)
+                    ) {
+                        self::triggerIssueForImpossible(
+                            $existing_var_type,
+                            $old_var_type_string,
+                            $key,
+                            $new_var_type,
+                            $new_count === $current_count,
+                            $code_location,
+                            $suppressed_issues
+                        );
+                    }
+                } else {
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $existing_var_type->addType(new Type\Atomic\TLiteralFloat($floats));
                 }
             }
         }

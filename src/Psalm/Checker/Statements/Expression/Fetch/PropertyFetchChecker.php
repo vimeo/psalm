@@ -50,6 +50,16 @@ class PropertyFetchChecker
             return false;
         }
 
+        if ($stmt->name instanceof PhpParser\Node\Identifier) {
+            $prop_name = $stmt->name->name;
+        } elseif (isset($stmt->name->inferredType)
+            && $stmt->name->inferredType->isSingleStringLiteral()
+        ) {
+            $prop_name = $stmt->name->inferredType->getSingleStringLiteral();
+        } else {
+            $prop_name = null;
+        }
+
         $project_checker = $statements_checker->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
@@ -170,7 +180,7 @@ class PropertyFetchChecker
             $stmt->inferredType = Type::getNull();
         }
 
-        if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+        if (!$prop_name) {
             return null;
         }
 
@@ -238,7 +248,7 @@ class PropertyFetchChecker
                 continue;
             }
 
-            $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
+            $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
             if ($stmt_var_id !== '$this'
                 && $lhs_type_part->value !== $context->self
@@ -257,8 +267,8 @@ class PropertyFetchChecker
             ) {
                 $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
-                if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name->name])) {
-                    $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name->name];
+                if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                    $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
                     continue;
                 }
 
@@ -326,7 +336,7 @@ class PropertyFetchChecker
                 (string)$declaring_property_class
             );
 
-            $property_storage = $declaring_class_storage->properties[$stmt->name->name];
+            $property_storage = $declaring_class_storage->properties[$prop_name];
 
             if ($property_storage->deprecated) {
                 if (IssueBuffer::accepts(
@@ -345,7 +355,7 @@ class PropertyFetchChecker
             if ($class_property_type === false) {
                 if (IssueBuffer::accepts(
                     new MissingPropertyType(
-                        'Property ' . $lhs_type_part->value . '::$' . $stmt->name->name
+                        'Property ' . $lhs_type_part->value . '::$' . $prop_name
                             . ' does not have a declared type',
                         new CodeLocation($statements_checker->getSource(), $stmt)
                     ),
@@ -510,10 +520,20 @@ class PropertyFetchChecker
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
+        if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
+            $prop_name = $stmt->name->name;
+        } elseif (isset($stmt->name->inferredType)
+            && $stmt->name->inferredType->isSingleStringLiteral()
+        ) {
+            $prop_name = $stmt->name->inferredType->getSingleStringLiteral();
+        } else {
+            $prop_name = null;
+        }
+
         if ($fq_class_name &&
             $context->check_classes &&
             $context->check_variables &&
-            $stmt->name instanceof PhpParser\Node\Identifier &&
+            $prop_name &&
             !ExpressionChecker::isMock($fq_class_name)
         ) {
             $var_id = ExpressionChecker::getVarId(
@@ -522,7 +542,7 @@ class PropertyFetchChecker
                 $statements_checker
             );
 
-            $property_id = $fq_class_name . '::$' . $stmt->name->name;
+            $property_id = $fq_class_name . '::$' . $prop_name;
 
             if ($var_id && $context->hasVariable($var_id, $statements_checker)) {
                 // we don't need to check anything
@@ -568,11 +588,11 @@ class PropertyFetchChecker
             }
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $fq_class_name . '::$' . $stmt->name->name
+                $fq_class_name . '::$' . $prop_name
             );
 
             $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
-            $property = $class_storage->properties[$stmt->name->name];
+            $property = $class_storage->properties[$prop_name];
 
             if ($var_id) {
                 $context->vars_in_scope[$var_id] = $property->type
