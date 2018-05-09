@@ -565,6 +565,10 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $self_fq_class_name
                     );
 
+                    if (isset($stmt->inferredType)) {
+                        $return_type_candidate = $stmt->inferredType;
+                    }
+
                     if ($return_type_candidate) {
                         $return_type_candidate = clone $return_type_candidate;
 
@@ -935,6 +939,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 ) {
                     return false;
                 }
+
+                if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                    $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
+                }
+
                 break;
         }
 
