@@ -47,6 +47,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context
     ) {
+        $stmt->inferredType = null;
+
         if (ExpressionChecker::analyze($statements_checker, $stmt->var, $context) === false) {
             return false;
         }
