@@ -240,23 +240,35 @@ class PropertyFetchChecker
 
             $property_id = $lhs_type_part->value . '::$' . $stmt->name;
 
-            if ($codebase->methodExists($lhs_type_part->value . '::__get')) {
-                if ($stmt_var_id !== '$this' || !$codebase->properties->propertyExists($property_id)) {
-                    $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
+            if ($stmt_var_id !== '$this'
+                && $lhs_type_part->value !== $context->self
+                && $codebase->methodExists($lhs_type_part->value . '::__get')
+                && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
+                && (!$codebase->properties->propertyExists($property_id)
+                    || ClassLikeChecker::checkPropertyVisibility(
+                        $property_id,
+                        $context->self,
+                        $statements_checker->getSource(),
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $statements_checker->getSuppressedIssues(),
+                        false
+                    ) !== true
+                )
+            ) {
+                $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
-                    if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
-                        $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
-                        continue;
-                    }
+                if (isset($class_storage->pseudo_property_get_types['$' . $stmt->name])) {
+                    $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $stmt->name];
+                    continue;
+                }
 
-                    $stmt->inferredType = Type::getMixed();
-                    /*
-                     * If we have an explicit list of all allowed magic properties on the class, and we're
-                     * not in that list, fall through
-                     */
-                    if (!$class_storage->sealed_properties) {
-                        continue;
-                    }
+                $stmt->inferredType = Type::getMixed();
+                /*
+                 * If we have an explicit list of all allowed magic properties on the class, and we're
+                 * not in that list, fall through
+                 */
+                if (!$class_storage->sealed_properties) {
+                    continue;
                 }
             }
 
