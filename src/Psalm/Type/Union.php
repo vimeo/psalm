@@ -601,10 +601,26 @@ class Union
                     $generic_params[$key]->setFromDocblock();
                 }
             } else {
+                $matching_atomic_type = null;
+
+                if ($input_type) {
+                    foreach ($input_type->types as $input_key => $atomic_input_type) {
+                        if ($input_key === $key) {
+                            $matching_atomic_type = $atomic_input_type;
+                            break;
+                        }
+
+                        if (strpos($input_key, $key . '&') === 0) {
+                            $matching_atomic_type = $atomic_input_type;
+                            break;
+                        }
+                    }
+                }
+
                 $atomic_type->replaceTemplateTypesWithStandins(
                     $template_types,
                     $generic_params,
-                    isset($input_type->types[$key]) ? $input_type->types[$key] : null
+                    $matching_atomic_type
                 );
             }
         }
