@@ -250,8 +250,22 @@ class PropertyAssignmentChecker
                     return null;
                 }
 
-                if ($lhs_var_id !== '$this' &&
-                    $codebase->methodExists($lhs_type_part->value . '::__set')
+                $property_id = $lhs_type_part->value . '::$' . $prop_name;
+
+                if ($lhs_var_id !== '$this'
+                    && $lhs_type_part->value !== $context->self
+                    && $codebase->methodExists($lhs_type_part->value . '::__set')
+                    && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
+                    && (!$codebase->properties->propertyExists($property_id)
+                        || ClassLikeChecker::checkPropertyVisibility(
+                            $property_id,
+                            $context->self,
+                            $statements_checker->getSource(),
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker->getSuppressedIssues(),
+                            false
+                        ) !== true
+                    )
                 ) {
                     $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
 
@@ -278,8 +292,6 @@ class PropertyAssignmentChecker
                 }
 
                 $has_regular_setter = true;
-
-                $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
                 if (!$codebase->properties->propertyExists($property_id)) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
