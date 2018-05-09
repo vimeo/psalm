@@ -1445,7 +1445,11 @@ class CallChecker
             }
         }
 
-        if ($input_type->isFalsable() && !$param_type->hasBool() && !$input_type->ignore_falsable_issues) {
+        if ($input_type->isFalsable()
+            && !$param_type->hasBool()
+            && !$param_type->hasScalar()
+            && !$input_type->ignore_falsable_issues
+        ) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
