@@ -303,7 +303,7 @@ class PropertyFetchChecker
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 } else {
                     if (IssueBuffer::accepts(
@@ -313,8 +313,14 @@ class PropertyFetchChecker
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
+                }
+
+                $stmt->inferredType = Type::getMixed();
+
+                if ($var_id) {
+                    $context->vars_in_scope[$var_id] = $stmt->inferredType;
                 }
 
                 return;
