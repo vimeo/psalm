@@ -53,7 +53,11 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         if ($call_args) {
-            if (in_array($call_map_key, ['str_replace', 'preg_replace', 'preg_replace_callback'], true)) {
+            if (in_array(
+                $call_map_key,
+                ['str_replace', 'str_ireplace', 'preg_replace', 'preg_replace_callback'],
+                true
+            )) {
                 if (isset($call_args[2]->value->inferredType)) {
                     $subject_type = $call_args[2]->value->inferredType;
 
