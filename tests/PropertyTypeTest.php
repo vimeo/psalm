@@ -167,6 +167,7 @@ class PropertyTypeTest extends TestCase
                 'error_levels' => [
                     'UndefinedThisPropertyFetch',
                     'MixedAssignment',
+                    'MixedArgument',
                     'MixedMethodCall',
                     'MixedPropertyFetch',
                 ],
