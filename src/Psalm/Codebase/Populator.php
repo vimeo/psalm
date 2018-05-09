@@ -256,6 +256,9 @@ class Populator
 
             $storage->public_class_constants += $parent_storage->public_class_constants;
             $storage->protected_class_constants += $parent_storage->protected_class_constants;
+
+            $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
+            $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
         }
     }
 
