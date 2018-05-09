@@ -719,14 +719,20 @@ class ExpressionChecker
             }
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && is_string($stmt->name)) {
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch) {
             $object_id = self::getArrayVarId($stmt->var, $this_class_name, $source);
 
             if (!$object_id) {
                 return null;
             }
 
-            return $object_id . '->' . $stmt->name;
+            if (is_string($stmt->name)) {
+                return $object_id . '->' . $stmt->name;
+            } elseif (isset($stmt->name->inferredType) && $stmt->name->inferredType->isSingleStringLiteral()) {
+                return $object_id . '->' . $stmt->name->inferredType->getSingleStringLiteral();
+            } else {
+                return null;
+            }
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall

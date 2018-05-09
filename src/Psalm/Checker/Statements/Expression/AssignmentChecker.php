@@ -403,20 +403,32 @@ class AssignmentChecker
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if (!is_string($assign_var->name)) {
+                if (ExpressionChecker::analyze($statements_checker, $assign_var->name, $context) === false) {
+                    return false;
+                }
+            }
+
             if (is_string($assign_var->name)) {
+                $prop_name = $assign_var->name;
+            } elseif (isset($assign_var->name->inferredType)
+                && $assign_var->name->inferredType->isSingleStringLiteral()
+            ) {
+                $prop_name = $assign_var->name->inferredType->getSingleStringLiteral();
+            } else {
+                $prop_name = null;
+            }
+
+            if ($prop_name) {
                 PropertyAssignmentChecker::analyzeInstance(
                     $statements_checker,
                     $assign_var,
-                    $assign_var->name,
+                    $prop_name,
                     $assign_value,
                     $assign_value_type,
                     $context
                 );
             } else {
-                if (ExpressionChecker::analyze($statements_checker, $assign_var->name, $context) === false) {
-                    return false;
-                }
-
                 if (ExpressionChecker::analyze($statements_checker, $assign_var->var, $context) === false) {
                     return false;
                 }

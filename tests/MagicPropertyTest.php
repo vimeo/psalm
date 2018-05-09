@@ -188,6 +188,21 @@ class MagicPropertyTest extends TestCase
                 'assertions' => [],
                 'error_level' => ['MixedAssignment', 'MixedTypeCoercion'],
             ],
+            'namedPropertyByVariable' => [
+                '<?php
+                    class A {
+                        /** @var string|null */
+                        public $foo;
+
+                        public function __get(string $var_name) : ?string {
+                            if ($var_name === "foo") {
+                                return $this->$var_name;
+                            }
+
+                            return null;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -456,6 +471,22 @@ class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'MixedTypeCoercion',
                 'error_levels' => ['MixedAssignment'],
+            ],
+            'misnamedPropertyByVariable' => [
+                '<?php
+                    class B {
+                        /** @var string|null */
+                        public $foo;
+
+                        public function __get(string $var_name) : ?string {
+                            if ($var_name === "bar") {
+                                return $this->$var_name;
+                            }
+
+                            return null;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
             ],
             'directFetchForMagicProperty' => [
                 '<?php
