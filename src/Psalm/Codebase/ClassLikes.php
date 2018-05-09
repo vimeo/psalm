@@ -509,6 +509,16 @@ class ClassLikes
     }
 
     /**
+     * @param  string         $fq_trait_name
+     *
+     * @return bool
+     */
+    public function traitExists($fq_trait_name)
+    {
+        return $this->hasFullyQualifiedTraitName($fq_trait_name);
+    }
+
+    /**
      * Determine whether or not a class has the correct casing
      *
      * @param  string $fq_class_name

@@ -253,15 +253,17 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $interface_exists = $codebase->interfaceExists($fq_class_name);
 
         if (!$class_exists && !$interface_exists) {
-            if (IssueBuffer::accepts(
-                new UndefinedClass(
-                    'Class or interface ' . $fq_class_name . ' does not exist',
-                    $code_location,
-                    $fq_class_name
-                ),
-                $suppressed_issues
-            )) {
-                return false;
+            if (!$codebase->classlikes->traitExists($fq_class_name)) {
+                if (IssueBuffer::accepts(
+                    new UndefinedClass(
+                        'Class or interface ' . $fq_class_name . ' does not exist',
+                        $code_location,
+                        $fq_class_name
+                    ),
+                    $suppressed_issues
+                )) {
+                    return false;
+                }
             }
 
             return null;
