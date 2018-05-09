@@ -125,7 +125,7 @@ class Union
             $s .= $type . '|';
         }
 
-        return substr($s, 0, -1);
+        return substr($s, 0, -1) ?: '';
     }
 
     /**
