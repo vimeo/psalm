@@ -775,7 +775,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 return Type::getClassString();
             }
 
-            return null;
+            return Type::getMixed();
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {
