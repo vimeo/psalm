@@ -669,13 +669,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     /**
      * @param   PhpParser\Node\Expr $stmt
      * @param   array<string, Type\Union> $existing_class_constants
+     * @param   string $fq_classlike_name
      *
      * @return  Type\Union|null
      */
     public static function getSimpleType(
         PhpParser\Node\Expr $stmt,
-        StatementsSource $statements_source = null,
-        array $existing_class_constants = []
+        \Psalm\FileSource $file_source,
+        array $existing_class_constants = [],
+        $fq_classlike_name = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -708,13 +710,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
             $stmt->left->inferredType = self::getSimpleType(
                 $stmt->left,
-                $statements_source,
-                $existing_class_constants
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
             );
             $stmt->right->inferredType = self::getSimpleType(
                 $stmt->right,
-                $statements_source,
-                $existing_class_constants
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
             );
 
             if (!$stmt->left->inferredType || !$stmt->right->inferredType) {
@@ -728,7 +732,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
                 BinaryOpChecker::analyzeNonDivArithmenticOp(
-                    $statements_source,
+                    $file_source instanceof StatementsSource ? $file_source : null,
                     $stmt->left,
                     $stmt->right,
                     $stmt,
@@ -764,11 +768,24 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
         if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch) {
             if ($stmt->class instanceof PhpParser\Node\Name
-                && $stmt->class->parts !== ['static']
                 && is_string($stmt->name)
                 && isset($existing_class_constants[$stmt->name])
+                && $fq_classlike_name
+                && $stmt->class->parts !== ['static']
+                && $stmt->class->parts !== ['parent']
             ) {
-                return clone $existing_class_constants[$stmt->name];
+                if ($stmt->class->parts === ['self']) {
+                    return clone $existing_class_constants[$stmt->name];
+                }
+
+                $const_fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
+                    $stmt->class,
+                    $file_source->getAliases()
+                );
+
+                if (strtolower($const_fq_class_name) === strtolower($fq_classlike_name)) {
+                    return clone $existing_class_constants[$stmt->name];
+                }
             }
 
             if (is_string($stmt->name) && strtolower($stmt->name) === 'class') {
@@ -810,8 +827,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 if ($item->key) {
                     $single_item_key_type = self::getSimpleType(
                         $item->key,
-                        $statements_source,
-                        $existing_class_constants
+                        $file_source,
+                        $existing_class_constants,
+                        $fq_classlike_name
                     );
 
                     if ($single_item_key_type) {
@@ -831,8 +849,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 $single_item_value_type = self::getSimpleType(
                     $item->value,
-                    $statements_source,
-                    $existing_class_constants
+                    $file_source,
+                    $existing_class_constants,
+                    $fq_classlike_name
                 );
 
                 if ($single_item_value_type) {
@@ -906,7 +925,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return self::getSimpleType($stmt->expr, $statements_source, $existing_class_constants);
+            return self::getSimpleType($stmt->expr, $file_source, $existing_class_constants, $fq_classlike_name);
         }
 
         return null;
