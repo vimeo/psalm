@@ -111,12 +111,26 @@ class ConstantTest extends TestCase
             'hardToDefineClassConstant' => [
                 '<?php
                     class A {
-                      const C = [
-                        self::B => 4,
-                        "name" => 3
-                      ];
+                        const C = [
+                            self::B => 4,
+                            "name" => 3
+                        ];
 
-                      const B = 4;
+                        const B = 4;
+                    }
+
+                    echo A::C[4];',
+            ],
+            'sameNamedConstInOtherClass' => [
+                '<?php
+                    class B {
+                        const B = 4;
+                    }
+                    class A {
+                        const B = "four";
+                        const C = [
+                            B::B => "one",
+                        ];
                     }
 
                     echo A::C[4];',
