@@ -2,7 +2,6 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
-use Psalm\FunctionLikeParameter;
 use Psalm\Type;
 
 class FunctionLikeStorage

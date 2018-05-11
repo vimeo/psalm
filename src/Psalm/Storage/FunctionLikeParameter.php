@@ -1,5 +1,8 @@
 <?php
-namespace Psalm;
+namespace Psalm\Storage;
+
+use Psalm\CodeLocation;
+use Psalm\Type;
 
 class FunctionLikeParameter
 {

@@ -26,11 +26,11 @@
         <PossiblyNullOperand errorLevel="suppress" />
         <MissingConstructor>
             <errorLevel type="suppress">
-                <file name="src/Psalm/FunctionDocblockComment.php" />
+                <file name="src/Psalm/Scanner/FunctionDocblockComment.php" />
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
                 <file name="src/Psalm/Storage/MethodStorage.php" />
                 <file name="src/Psalm/Storage/PropertyStorage.php" />
-                <file name="src/Psalm/VarDocblockComment.php" />
+                <file name="src/Psalm/Scanner/VarDocblockComment.php" />
             </errorLevel>
         </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress" />

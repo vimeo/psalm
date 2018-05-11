@@ -1,13 +1,14 @@
 <?php
-namespace Psalm;
+namespace Psalm\Checker\FunctionLike;
 
 use PhpParser;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 
 /**
  * A class for analysing a given method call's effects in relation to $this/self and also looking at return types
  */
-class EffectsAnalyser
+class ReturnTypeCollector
 {
     /**
      * Gets the return types from a list of statements

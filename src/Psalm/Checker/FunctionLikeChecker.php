@@ -6,13 +6,12 @@ use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\Checker\FunctionLike\ReturnTypeChecker;
+use Psalm\Checker\FunctionLike\ReturnTypeCollector;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\EffectsAnalyser;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
-use Psalm\FunctionLikeParameter;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
@@ -21,6 +20,7 @@ use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -488,7 +488,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             $closure_yield_types = [];
 
-            $closure_return_types = EffectsAnalyser::getReturnTypes(
+            $closure_return_types = ReturnTypeCollector::getReturnTypes(
                 $this->function->stmts,
                 $closure_yield_types,
                 $ignore_nullable_issues,

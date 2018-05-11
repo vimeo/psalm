@@ -1,5 +1,5 @@
 <?php
-namespace Psalm;
+namespace Psalm\Scanner;
 
 class ClassLikeDocblockComment
 {

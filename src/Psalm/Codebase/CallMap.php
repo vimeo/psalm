@@ -2,7 +2,7 @@
 namespace Psalm\Codebase;
 
 use Psalm\Type;
-use Psalm\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeParameter;
 
 /**
  * @internal
