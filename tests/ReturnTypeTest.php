@@ -531,6 +531,14 @@ class ReturnTypeTest extends TestCase
                       return 0;
                     }'
             ],
+            'stopAfterFirstReturn' => [
+                '<?php
+                    function foo() : bool {
+                        return true;
+
+                        return false;
+                    }',
+            ],
         ];
     }
 
