@@ -64,6 +64,7 @@ class ConfigTest extends TestCase
             function ($issue_name) {
                 return !empty($issue_name)
                     && $issue_name !== 'MethodIssue'
+                    && $issue_name !== 'PropertyIssue'
                     && $issue_name !== 'ClassIssue'
                     && $issue_name !== 'CodeIssue';
             }
@@ -198,6 +199,11 @@ class ConfigTest extends TestCase
                                 <referencedMethod name="Psalm\Bodger::find1" />
                             </errorLevel>
                         </UndefinedMethod>
+                        <UndefinedPropertyFetch>
+                            <errorLevel type="suppress">
+                                <referencedProperty name="Psalm\Bodger::$find3" />
+                            </errorLevel>
+                        </UndefinedPropertyFetch>
                     </issueHandlers>
                 </psalm>'
             )
@@ -247,9 +253,17 @@ class ConfigTest extends TestCase
 
         $this->assertSame(
             'error',
-            $config->getReportingLevelForMethod(
+            $config->getReportingLevelForProperty(
                 'UndefinedMethod',
-                'Psalm\Bodger::find2'
+                'Psalm\Bodger::$find3'
+            )
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForProperty(
+                'UndefinedMethod',
+                'Psalm\Bodger::$find4'
             )
         );
     }

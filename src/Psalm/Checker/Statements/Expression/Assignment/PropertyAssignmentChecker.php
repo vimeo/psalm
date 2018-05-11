@@ -64,12 +64,15 @@ class PropertyAssignmentChecker
 
         $property_exists = false;
 
+        $property_ids = [];
+
         if ($stmt instanceof PropertyProperty) {
             if (!$context->self || !$stmt->default) {
                 return null;
             }
 
             $property_id = $context->self . '::$' . $prop_name;
+            $property_ids[] = $property_id;
 
             if (!$codebase->properties->propertyExists($property_id)) {
                 return null;
@@ -251,6 +254,7 @@ class PropertyAssignmentChecker
                 }
 
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
+                $property_ids[] = $property_id;
 
                 if ($lhs_var_id !== '$this'
                     && $lhs_type_part->value !== $context->self
@@ -303,7 +307,8 @@ class PropertyAssignmentChecker
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $property_id . ' is not defined',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                $property_id
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -313,7 +318,8 @@ class PropertyAssignmentChecker
                         if (IssueBuffer::accepts(
                             new UndefinedPropertyAssignment(
                                 'Instance property ' . $property_id . ' is not defined',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                $property_id
                             ),
                             $statements_checker->getSuppressedIssues()
                         )) {
@@ -361,7 +367,8 @@ class PropertyAssignmentChecker
                     if (IssueBuffer::accepts(
                         new DeprecatedProperty(
                             $property_id . ' is marked deprecated',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -485,7 +492,8 @@ class PropertyAssignmentChecker
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
-                        )
+                        ),
+                        $property_ids[0]
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -505,7 +513,8 @@ class PropertyAssignmentChecker
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
-                        )
+                        ),
+                        $property_ids[0]
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -605,7 +614,8 @@ class PropertyAssignmentChecker
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
-                        )
+                        ),
+                        $property_ids[0]
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -621,7 +631,8 @@ class PropertyAssignmentChecker
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
-                        )
+                        ),
+                        $property_ids[0]
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -673,7 +684,8 @@ class PropertyAssignmentChecker
                 if (IssueBuffer::accepts(
                     new UndefinedThisPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $property_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -683,7 +695,8 @@ class PropertyAssignmentChecker
                 if (IssueBuffer::accepts(
                     new UndefinedPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $property_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -825,7 +838,8 @@ class PropertyAssignmentChecker
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt
-                        )
+                        ),
+                        $property_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -839,7 +853,8 @@ class PropertyAssignmentChecker
                         new CodeLocation(
                             $statements_checker->getSource(),
                             $assignment_value ?: $stmt
-                        )
+                        ),
+                        $property_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {

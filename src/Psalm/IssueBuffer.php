@@ -6,6 +6,7 @@ use Psalm\Checker\ProjectChecker;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\MethodIssue;
+use Psalm\Issue\PropertyIssue;
 
 class IssueBuffer
 {
@@ -66,6 +67,12 @@ class IssueBuffer
 
         if ($e instanceof MethodIssue
             && $config->getReportingLevelForMethod($issue_type, $e->method_id) === Config::REPORT_SUPPRESS
+        ) {
+            return false;
+        }
+
+        if ($e instanceof PropertyIssue
+            && $config->getReportingLevelForProperty($issue_type, $e->property_id) === Config::REPORT_SUPPRESS
         ) {
             return false;
         }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class PossiblyNullPropertyAssignmentValue extends CodeIssue
+class PossiblyNullPropertyAssignmentValue extends PropertyIssue
 {
 }

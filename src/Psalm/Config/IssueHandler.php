@@ -102,4 +102,20 @@ class IssueHandler
 
         return $this->error_level;
     }
+
+    /**
+     * @param string $property_id
+     *
+     * @return string
+     */
+    public function getReportingLevelForProperty($property_id)
+    {
+        foreach ($this->custom_levels as $custom_level) {
+            if ($custom_level->allowsProperty($property_id)) {
+                return $custom_level->getErrorLevel();
+            }
+        }
+
+        return $this->error_level;
+    }
 }
