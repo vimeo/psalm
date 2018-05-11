@@ -610,6 +610,10 @@ class Union
                             break;
                         }
 
+                        if ($input_key === 'Closure' && $key === 'callable') {
+                            $matching_atomic_type = $atomic_input_type;
+                        }
+
                         if (strpos($input_key, $key . '&') === 0) {
                             $matching_atomic_type = $atomic_input_type;
                             break;
