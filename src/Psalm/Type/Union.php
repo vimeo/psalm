@@ -724,7 +724,7 @@ class Union
         if (count($this->types) !== 1) {
             throw new \InvalidArgumentException("Not a string literal");
         }
-        $string_type = $this->types['string'] ?? null;
+        $string_type = isset($this->types['string']) ? $this->types['string'] : null;
         if (!($string_type instanceof TLiteralString)) {
             throw new \InvalidArgumentException("Not a string literal");
         }
