@@ -21,6 +21,7 @@ use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
 class ClassChecker extends ClassLikeChecker
@@ -537,7 +538,7 @@ class ClassChecker extends ClassLikeChecker
 
                         $fake_constructor_params = array_map(
                             /** @return PhpParser\Node\Param */
-                            function (\Psalm\FunctionLikeParameter $param) {
+                            function (FunctionLikeParameter $param) {
                                 $fake_param = (new PhpParser\Builder\Param($param->name));
                                 if ($param->signature_type) {
                                     $fake_param->setTypehint((string)$param->signature_type);
@@ -550,7 +551,7 @@ class ClassChecker extends ClassLikeChecker
 
                         $fake_constructor_stmt_args = array_map(
                             /** @return PhpParser\Node\Arg */
-                            function (\Psalm\FunctionLikeParameter $param) {
+                            function (FunctionLikeParameter $param) {
                                 return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
                             },
                             $constructor_storage->params

@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Union;
 
 /**

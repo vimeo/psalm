@@ -2,7 +2,7 @@
 namespace Psalm;
 
 use Psalm\Exception\TypeParseTreeException;
-use Psalm\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;

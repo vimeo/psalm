@@ -1,5 +1,7 @@
 <?php
-namespace Psalm;
+namespace Psalm\Scanner;
+
+use Psalm\Type;
 
 class VarDocblockComment
 {

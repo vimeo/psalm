@@ -14,7 +14,6 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\EffectsAnalyser;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -85,7 +84,7 @@ class ReturnTypeChecker
         /** @var PhpParser\Node\Stmt[] */
         $function_stmts = $function->getStmts();
 
-        $inferred_return_type_parts = EffectsAnalyser::getReturnTypes(
+        $inferred_return_type_parts = ReturnTypeCollector::getReturnTypes(
             $function_stmts,
             $inferred_yield_types,
             $ignore_nullable_issues,

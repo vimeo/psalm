@@ -132,7 +132,7 @@ class Methods
     /**
      * @param  string $method_id
      *
-     * @return array<int, \Psalm\FunctionLikeParameter>
+     * @return array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public function getMethodParams($method_id)
     {

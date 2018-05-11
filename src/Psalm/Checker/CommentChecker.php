@@ -2,14 +2,14 @@
 namespace Psalm\Checker;
 
 use Psalm\Aliases;
-use Psalm\ClassLikeDocblockComment;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
-use Psalm\FunctionDocblockComment;
+use Psalm\Scanner\ClassLikeDocblockComment;
+use Psalm\Scanner\FunctionDocblockComment;
+use Psalm\Scanner\VarDocblockComment;
 use Psalm\Type;
-use Psalm\VarDocblockComment;
 
 class CommentChecker
 {
