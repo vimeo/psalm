@@ -1,7 +1,7 @@
-Version 2.0.0-dev (2018-04-19)
+Version 2.0.0 (2018-05-11)
 
 - Uses PHP Parser 4 (and thus requires PHP 7)
-- Issue type `MoreSpecifcImplementedReturnType` has been renamed `LessSpecificImplementedReturnType`
+- Issue type `MoreSpecificImplementedReturnType` has been renamed `LessSpecificImplementedReturnType`
 - Issue type `PossiblyUndefinedArrayOffset` is triggered for possibly undefined array keys (previously bucketed into `PossiblyUndefinedVariable`)
     ```php
     $foo = rand(0, 1) ? ['a' => 1, 'b' => 2] : ['a' => 3];
