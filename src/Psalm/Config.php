@@ -857,6 +857,21 @@ class Config
     }
 
     /**
+     * @param   string $issue_type
+     * @param   string $property_id
+     *
+     * @return  string
+     */
+    public function getReportingLevelForProperty($issue_type, $property_id)
+    {
+        if (isset($this->issue_handlers[$issue_type])) {
+            return $this->issue_handlers[$issue_type]->getReportingLevelForProperty($property_id);
+        }
+
+        return self::REPORT_ERROR;
+    }
+
+    /**
      * @return array<string>
      */
     public function getProjectDirectories()

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UndefinedThisPropertyFetch extends UndefinedPropertyFetch
+class UndefinedThisPropertyFetch extends PropertyIssue
 {
 }

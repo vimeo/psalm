@@ -299,7 +299,8 @@ class PropertyFetchChecker
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -309,7 +310,8 @@ class PropertyFetchChecker
                     if (IssueBuffer::accepts(
                         new UndefinedPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -348,7 +350,8 @@ class PropertyFetchChecker
                 if (IssueBuffer::accepts(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $property_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -573,7 +576,8 @@ class PropertyFetchChecker
                 if (IssueBuffer::accepts(
                     new UndefinedPropertyFetch(
                         'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $property_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {

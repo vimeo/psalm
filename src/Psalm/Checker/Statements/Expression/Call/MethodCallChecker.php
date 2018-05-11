@@ -833,7 +833,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     && IssueBuffer::accepts(
                         new UndefinedThisPropertyAssignment(
                             'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_checker->getSuppressedIssues()
                     )
@@ -904,7 +905,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                                     $prop_name . ' with declared type \''
                                     . $pseudo_set_type
                                     . '\' cannot be assigned possibly different type \'' . $second_arg_type . '\'',
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                    new CodeLocation($statements_checker->getSource(), $stmt),
+                                    $property_id
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -916,7 +918,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                                     $prop_name . ' with declared type \''
                                     . $pseudo_set_type
                                     . '\' cannot be assigned type \'' . $second_arg_type . '\'',
-                                    new CodeLocation($statements_checker->getSource(), $stmt)
+                                    new CodeLocation($statements_checker->getSource(), $stmt),
+                                    $property_id
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
@@ -935,7 +938,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     && IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $property_id
                         ),
                         $statements_checker->getSuppressedIssues()
                     )
