@@ -935,7 +935,7 @@ class ExpressionChecker
 
                     continue;
                 }
-            } else {
+            } elseif ($use->byRef) {
                 foreach ($context->vars_in_scope[$use_var_id]->getTypes() as $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
                         $context->vars_in_scope[$use_var_id]->addType(new Type\Atomic\TInt);

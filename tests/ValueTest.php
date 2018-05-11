@@ -347,6 +347,19 @@ class ValueTest extends TestCase
                     echo $foo[$a];',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'noChangeToVariable' => [
+                '<?php
+                    $i = 0;
+
+                    $a = function() use ($i) : void {
+                        $i++;
+                    };
+
+                    $a();
+
+                    if ($i === 0) {}',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }
