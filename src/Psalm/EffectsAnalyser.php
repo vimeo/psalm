@@ -51,6 +51,13 @@ class EffectsAnalyser
                         $return_types[] = new Atomic\TMixed();
                     }
                 }
+
+                break;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_
+                || $stmt instanceof PhpParser\Node\Stmt\Break_
+                || $stmt instanceof PhpParser\Node\Stmt\Continue_
+            ) {
+                break;
             } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
             } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
