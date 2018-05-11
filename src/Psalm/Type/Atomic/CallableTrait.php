@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\FunctionLikeParameter;
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 trait CallableTrait
@@ -117,5 +118,73 @@ trait CallableTrait
     public function __toString()
     {
         return $this->getId();
+    }
+
+    /**
+     * @param  array<string, string>    $template_types
+     * @param  array<string, Union>     $generic_params
+     * @param  Atomic|null              $input_type
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithStandins(
+        array $template_types,
+        array &$generic_params,
+        Atomic $input_type = null
+    ) {
+        if ($this->params) {
+            foreach ($this->params as $offset => $param) {
+                $input_param_type = null;
+
+                if ($input_type instanceof Atomic\Fn
+                    && isset($input_type->params[$offset])
+                ) {
+                    $input_param_type = $input_type->params[$offset]->type;
+                }
+
+                if (!$param->type) {
+                    continue;
+                }
+
+                $param->type->replaceTemplateTypesWithStandins(
+                    $template_types,
+                    $generic_params,
+                    $input_param_type
+                );
+            }
+        }
+
+        if (($input_type instanceof Atomic\TCallable || $input_type instanceof Atomic\Fn)
+            && $this->return_type
+            && $input_type->return_type
+        ) {
+            $this->return_type->replaceTemplateTypesWithStandins(
+                $template_types,
+                $generic_params,
+                $input_type->return_type
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, Union>     $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    {
+        if ($this->params) {
+            foreach ($this->params as $param) {
+                if (!$param->type) {
+                    continue;
+                }
+
+                $param->type->replaceTemplateTypesWithArgTypes($template_types);
+            }
+        }
+
+        if ($this->return_type) {
+            $this->return_type->replaceTemplateTypesWithArgTypes($template_types);
+        }
     }
 }

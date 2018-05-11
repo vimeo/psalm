@@ -500,6 +500,40 @@ class TemplateTest extends TestCase
                     $data = [];
                     takesCollectionOfItems(new Collection($data));',
             ],
+            'templateCallableReturnType' => [
+                '<?php
+                    namespace NS;
+
+                    /**
+                     * @template T
+                     * @psalm-param callable():T $action
+                     * @psalm-return T
+                     */
+                    function retry(int $maxRetries, callable $action) {
+                        return $action();
+                    }
+
+                    function takesInt(int $p): void{};
+
+                    takesInt(retry(1, function(): int { return 1; }));',
+            ],
+            'templateClosureReturnType' => [
+                '<?php
+                    namespace NS;
+
+                    /**
+                     * @template T
+                     * @psalm-param \Closure():T $action
+                     * @psalm-return T
+                     */
+                    function retry(int $maxRetries, callable $action) {
+                        return $action();
+                    }
+
+                    function takesInt(int $p): void{};
+
+                    takesInt(retry(1, function(): int { return 1; }));',
+            ],
         ];
     }
 
