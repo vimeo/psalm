@@ -912,7 +912,7 @@ class ExpressionChecker
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_checker->getSource(), $use->var)
+                            new CodeLocation($statements_checker->getSource(), $use)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -926,7 +926,7 @@ class ExpressionChecker
                     if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
-                            new CodeLocation($statements_checker->getSource(), $use->var)
+                            new CodeLocation($statements_checker->getSource(), $use)
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {

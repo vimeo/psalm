@@ -50,8 +50,8 @@ class PropertyFetchChecker
             return false;
         }
 
-        if ($stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
+        if (is_string($stmt->name)) {
+            $prop_name = $stmt->name;
         } elseif (isset($stmt->name->inferredType)
             && $stmt->name->inferredType->isSingleStringLiteral()
         ) {
@@ -529,8 +529,8 @@ class PropertyFetchChecker
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
-        if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
-            $prop_name = $stmt->name->name;
+        if (is_string($stmt->name)) {
+            $prop_name = $stmt->name;
         } elseif (isset($stmt->name->inferredType)
             && $stmt->name->inferredType->isSingleStringLiteral()
         ) {

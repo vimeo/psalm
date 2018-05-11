@@ -235,7 +235,7 @@ class AssignmentChecker
             }
         }
 
-        if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
+        if ($assign_var instanceof PhpParser\Node\Expr\Variable && $var_id) {
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
             $context->assigned_var_ids[$var_id] = true;

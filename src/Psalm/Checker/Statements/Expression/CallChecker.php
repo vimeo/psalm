@@ -474,7 +474,7 @@ class CallChecker
                 }
 
                 if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
-                    && $arg->value->name instanceof PhpParser\Node\Identifier
+                    && is_string($arg->value->name)
                 ) {
                     $var_id = '$' . $arg->value->name;
                 } else {
