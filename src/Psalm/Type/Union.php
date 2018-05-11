@@ -708,7 +708,7 @@ class Union
         if (count($this->types) !== 1) {
             return false;
         }
-        $string_type = $this->types['string'] ?? null;
+        $string_type = isset($this->types['string']) ? $this->types['string'] : null;
         if (!($string_type instanceof TLiteralString)) {
             return false;
         }
