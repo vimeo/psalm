@@ -506,7 +506,9 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         continue;
                 }
 
-                $call_map_id = strtolower((string)$codebase->methods->getDeclaringMethodId($method_id));
+                $call_map_id = strtolower(
+                    $codebase->methods->getDeclaringMethodId($method_id) ?: $method_id
+                );
 
                 if ($method_name_lc === '__tostring') {
                     $return_type_candidate = Type::getString();
