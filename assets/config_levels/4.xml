@@ -30,6 +30,8 @@
         <MissingClosureParamType errorLevel="info" />
         <MissingParamType errorLevel="info" />
 
+        <RedundantCondition errorLevel="info" />
+
         <DocblockTypeContradiction errorLevel="info" />
         <RedundantConditionGivenDocblockType errorLevel="info" />
 
@@ -42,7 +44,6 @@
         <MoreSpecificReturnType errorLevel="info" />
         <LessSpecificReturnStatement errorLevel="info" />
         <TypeCoercion errorLevel="info" />
-        <RedundantCondition errorLevel="info" />
 
         <PossiblyFalseArgument errorLevel="info" />
         <PossiblyFalseIterator errorLevel="info" />
