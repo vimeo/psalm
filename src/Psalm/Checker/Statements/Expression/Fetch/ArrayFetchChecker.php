@@ -158,7 +158,7 @@ class ArrayFetchChecker
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }
 
-                if ($dim_var_id && !$const_array_key_type->isMixed()) {
+                if ($dim_var_id && !$const_array_key_type->isMixed() && !$stmt->dim->inferredType->isMixed()) {
                     $new_offset_type = clone $stmt->dim->inferredType;
                     $const_array_key_atomic_types = $const_array_key_type->getTypes();
                     $project_checker = $statements_checker->getFileChecker()->project_checker;
@@ -186,7 +186,11 @@ class ArrayFetchChecker
                             )) {
                                 $new_offset_type->removeType($offset_key);
                             }
-                        } else {
+                        } elseif (!TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $const_array_key_type,
+                            new Type\Union([$offset_atomic_type])
+                        )) {
                             $new_offset_type->removeType($offset_key);
                         }
                     }
