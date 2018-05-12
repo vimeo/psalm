@@ -636,7 +636,7 @@ class CommentChecker
             $last_type = null;
 
             foreach ($parsed_doc_comment['specials'] as $type => $lines) {
-                if ($last_type !== null && ($last_type !== 'return' || $last_type !== 'psalm-return')) {
+                if ($last_type !== null && $last_type !== 'psalm-return') {
                     $doc_comment_text .= $left_padding . ' *' . "\n";
                 }
 

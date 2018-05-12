@@ -1199,7 +1199,7 @@ class TypeTest extends TestCase
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
-                            $a = 4;
+                            $a = rand(0, 4);
 
                             if ($one === null) {
                                 switch ($a) {
@@ -1224,7 +1224,7 @@ class TypeTest extends TestCase
                     class B {
                         /** @return void */
                         public function barBar(One $one = null) {
-                            $a = 4;
+                            $a = rand(0, 4);
 
                             if ($one === null) {
                                 switch ($a) {

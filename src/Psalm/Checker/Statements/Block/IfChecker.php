@@ -159,7 +159,6 @@ class IfChecker
             )
         );
 
-
         // get all the var ids that were referened in the conditional, but not assigned in it
         $cond_referenced_var_ids = array_diff_key($cond_referenced_var_ids, $cond_assigned_var_ids);
 
@@ -1391,15 +1390,21 @@ class IfChecker
 
     /**
      * @param  PhpParser\Node\Expr $stmt
+     * @param  bool $inside_and
      *
      * @return PhpParser\Node\Expr|null
      */
-    protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt)
+    protected static function getDefinitelyEvaluatedExpression(PhpParser\Node\Expr $stmt, $inside_and = false)
     {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd ||
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
+            ) {
+                return self::getDefinitelyEvaluatedExpression($stmt->left, true);
+            } elseif (!$inside_and
+                && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
             ) {
                 return self::getDefinitelyEvaluatedExpression($stmt->left);
             }

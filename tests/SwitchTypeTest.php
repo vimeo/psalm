@@ -311,6 +311,48 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchManyStrings' => [
+                '<?php
+                    function foo(string $s) : void {
+                        switch($s) {
+                            case "a":
+                            case "b":
+                            case "c":
+                                echo "goodbye";
+                        }
+                    }',
+            ],
+            'allSwitchesMet' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            $foo = "hello";
+                            break;
+
+                        case "b":
+                            $foo = "goodbye";
+                            break;
+                    }
+
+                    echo $foo;',
+            ],
+            'impossibleCaseDefaultWithThrow' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            throw new \Exception("should never happen");
+                    }',
+            ],
         ];
     }
 
@@ -491,6 +533,50 @@ class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition - src/somefile.php:10',
                 'error_levels' => ['ParadoxicalCondition'],
+            ],
+            'repeatedCaseValue' => [
+                '<?php
+                    $a = rand(0, 1);
+                    switch ($a) {
+                        case 0:
+                            break;
+
+                        case 0:
+                            echo "I never get here";
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'impossibleCaseValue' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        case "c":
+                            echo "impossible";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'impossibleCaseDefault' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+
+                    switch ($a) {
+                        case "a":
+                            break;
+
+                        case "b":
+                            break;
+
+                        default:
+                            echo "impossible";
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
         ];
     }

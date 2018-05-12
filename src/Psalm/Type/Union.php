@@ -700,8 +700,40 @@ class Union
     }
 
     /**
+     * @return bool true if this is an int
+     */
+    public function isInt()
+    {
+        if (count($this->types) !== 1) {
+            return false;
+        }
+        return isset($this->types['float']);
+    }
+
+    /**
+     * @return bool true if this is a float
+     */
+    public function isFloat()
+    {
+        if (count($this->types) !== 1) {
+            return false;
+        }
+        return isset($this->types['float']);
+    }
+
+    /**
+     * @return bool true if this is a string
+     */
+    public function isString()
+    {
+        if (count($this->types) !== 1) {
+            return false;
+        }
+        return isset($this->types['string']);
+    }
+
+    /**
      * @return bool true if this is a string literal with only one possible value
-     * TODO: Is there a better place for this?
      */
     public function isSingleStringLiteral()
     {

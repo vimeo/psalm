@@ -549,7 +549,7 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
-     * @param array<int, bool>|null $values
+     * @param array<string|int, bool>|null $values
      *
      * @return Type\Union
      */
@@ -699,9 +699,6 @@ abstract class Type
             ]
         );
 
-        /**
-         * @psalm-suppress InvalidScalarArgument because of a bug
-         */
         $array_type->count = new TLiteralInt([0 => true]);
 
         return new Type\Union([
@@ -990,7 +987,6 @@ abstract class Type
                 $array_type = new TArray($generic_type_params);
 
                 if ($combination->array_counts) {
-                    /** @psalm-suppress InvalidScalarArgument */
                     $array_type->count = new TLiteralInt($combination->array_counts);
                 }
 
@@ -1013,7 +1009,6 @@ abstract class Type
                     }
                 } elseif ($type instanceof TInt) {
                     if ($combination->ints) {
-                        /** @psalm-suppress InvalidScalarArgument */
                         $type = new TLiteralInt($combination->ints);
                     } elseif ($type instanceof TLiteralInt) {
                         $type = new TInt();

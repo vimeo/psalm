@@ -189,6 +189,8 @@ class Reconciler
         $codebase = $project_checker->codebase;
 
         $is_strict_equality = false;
+        $is_loose_equality = false;
+        $is_equality = false;
         $is_negation = false;
 
         if ($new_var_type[0] === '!') {
@@ -199,6 +201,13 @@ class Reconciler
         if ($new_var_type[0] === '^') {
             $new_var_type = substr($new_var_type, 1);
             $is_strict_equality = true;
+            $is_equality = true;
+        }
+
+        if ($new_var_type[0] === '~') {
+            $new_var_type = substr($new_var_type, 1);
+            $is_loose_equality = true;
+            $is_equality = true;
         }
 
         if ($existing_var_type === null) {
@@ -234,6 +243,7 @@ class Reconciler
                 $statements_checker,
                 $new_var_type,
                 $is_strict_equality,
+                $is_loose_equality,
                 $existing_var_type,
                 $old_var_type_string,
                 $key,
@@ -399,7 +409,7 @@ class Reconciler
                 }
             }
 
-            if ((!$object_types || !$did_remove_type) && !$is_strict_equality) {
+            if ((!$object_types || !$did_remove_type) && !$is_equality) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -445,7 +455,7 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$numeric_types) && !$is_strict_equality) {
+            if ((!$did_remove_type || !$numeric_types) && !$is_equality) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -480,7 +490,7 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$scalar_types) && !$is_strict_equality) {
+            if ((!$did_remove_type || !$scalar_types) && !$is_equality) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -515,7 +525,7 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$bool_types) && !$is_strict_equality) {
+            if ((!$did_remove_type || !$bool_types) && !$is_equality) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -570,6 +580,7 @@ class Reconciler
             $new_var_type = substr($new_var_type, 9);
             $new_type = Type::parseString($new_var_type);
             $is_strict_equality = true;
+            $is_equality = true;
         } else {
             $bracket_pos = strpos($new_var_type, '(');
 
@@ -642,7 +653,7 @@ class Reconciler
 
             if ($key
                 && $new_type->getId() === $existing_var_type->getId()
-                && !$is_strict_equality
+                && !$is_equality
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
@@ -774,6 +785,7 @@ class Reconciler
     /**
      * @param  string     $new_var_type
      * @param  bool       $is_strict_equality
+     * @param  bool       $is_loose_equality
      * @param  string     $old_var_type_string
      * @param  string|null $key
      * @param  CodeLocation|null $code_location
@@ -786,6 +798,7 @@ class Reconciler
         StatementsChecker $statements_checker,
         $new_var_type,
         $is_strict_equality,
+        $is_loose_equality,
         Type\Union $existing_var_type,
         $old_var_type_string,
         $key,
@@ -793,8 +806,10 @@ class Reconciler
         $suppressed_issues,
         &$failed_reconciliation
     ) {
+        $is_equality = $is_strict_equality || $is_loose_equality;
+
         // this is a specific value comparison type that cannot be negated
-        if ($is_strict_equality && $bracket_pos = strpos($new_var_type, '(')) {
+        if ($is_equality && $bracket_pos = strpos($new_var_type, '(')) {
             return self::handleLiteralNegatedEquality(
                 $new_var_type,
                 $bracket_pos,
@@ -806,7 +821,7 @@ class Reconciler
             );
         }
 
-        if (!$is_strict_equality && ($new_var_type === 'isset' || $new_var_type === 'array-key-exists')) {
+        if (!$is_equality && ($new_var_type === 'isset' || $new_var_type === 'array-key-exists')) {
             return Type::getNull();
         }
 
@@ -825,7 +840,7 @@ class Reconciler
             }
 
             if ((!$did_remove_type || !$non_object_types)) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -860,7 +875,7 @@ class Reconciler
             }
 
             if ((!$did_remove_type || !$non_scalar_types)) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -888,7 +903,7 @@ class Reconciler
 
             foreach ($existing_var_atomic_types as $type) {
                 if (!$type instanceof TBool
-                    || ($is_strict_equality && get_class($type) === TBool::class)
+                    || ($is_equality && get_class($type) === TBool::class)
                 ) {
                     $non_bool_types[] = $type;
                 } else {
@@ -897,7 +912,7 @@ class Reconciler
             }
 
             if (!$did_remove_type || !$non_bool_types) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -932,7 +947,7 @@ class Reconciler
             }
 
             if ((!$non_numeric_types || !$did_remove_type)) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -1049,7 +1064,7 @@ class Reconciler
             $existing_var_type->possibly_undefined = false;
 
             if (!$did_remove_type || empty($existing_var_type->getTypes())) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -1080,7 +1095,7 @@ class Reconciler
             }
 
             if (!$did_remove_type || empty($existing_var_type->getTypes())) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -1142,7 +1157,7 @@ class Reconciler
             $existing_var_type->addType(new TNamedObject('Traversable'));
         } elseif (substr($new_var_type, 0, 9) === 'getclass-') {
             $new_var_type = substr($new_var_type, 9);
-        } elseif (!$is_strict_equality) {
+        } elseif (!$is_equality) {
             $existing_var_type->removeType($new_var_type);
         }
 
@@ -1150,7 +1165,7 @@ class Reconciler
             if ($key !== '$this'
                 || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
             ) {
-                if ($key && $code_location && !$is_strict_equality) {
+                if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
                         $old_var_type_string,
@@ -1343,9 +1358,17 @@ class Reconciler
                     $ints
                 );
 
-                $existing_var_type->bustCache();
-
                 $new_count = count($existing_var_atomic_types['int']->values);
+
+                if (!$existing_var_atomic_types['int']->values) {
+                    $existing_var_type->removeType('int');
+
+                    if (count($existing_var_atomic_types) === 1) {
+                        $existing_var_type->addType(new TEmpty);
+                    }
+                } else {
+                    $existing_var_type->bustCache();
+                }
 
                 if ($key
                     && $code_location
@@ -1376,9 +1399,17 @@ class Reconciler
                     $strings
                 );
 
-                $existing_var_type->bustCache();
-
                 $new_count = count($existing_var_atomic_types['string']->values);
+
+                if (!$existing_var_atomic_types['string']->values) {
+                    $existing_var_type->removeType('string');
+
+                    if (count($existing_var_atomic_types) === 1) {
+                        $existing_var_type->addType(new TEmpty);
+                    }
+                } else {
+                    $existing_var_type->bustCache();
+                }
 
                 if ($key
                     && $code_location
@@ -1409,9 +1440,17 @@ class Reconciler
                     $floats
                 );
 
-                $existing_var_type->bustCache();
-
                 $new_count = count($existing_var_atomic_types['float']->values);
+
+                if (!$existing_var_atomic_types['float']->values) {
+                    $existing_var_type->removeType('float');
+
+                    if (count($existing_var_atomic_types) === 1) {
+                        $existing_var_type->addType(new TEmpty);
+                    }
+                } else {
+                    $existing_var_type->bustCache();
+                }
 
                 if ($key
                     && $code_location

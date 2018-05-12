@@ -3,11 +3,11 @@ namespace Psalm\Type\Atomic;
 
 class TLiteralInt extends TInt implements LiteralType
 {
-    /** @var array<int, bool> */
+    /** @var array<string|int, bool> */
     public $values;
 
     /**
-     * @param array<int, bool> $values
+     * @param array<string|int, bool> $values
      */
     public function __construct(array $values)
     {
@@ -23,7 +23,7 @@ class TLiteralInt extends TInt implements LiteralType
     }
 
     /**
-     * @return array<int, bool>
+     * @return array<string|int, bool>
      */
     public function getValues()
     {

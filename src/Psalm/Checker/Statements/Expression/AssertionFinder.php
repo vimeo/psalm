@@ -379,7 +379,19 @@ class AssertionFinder
                 }
 
                 if ($var_name && $var_type) {
-                    $if_types[$var_name] = '^' . $var_type->getId();
+                    $identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                        || ($other_type
+                            && (($var_type->isString() && $other_type->isString())
+                                || ($var_type->isInt() && $other_type->isInt())
+                                || ($var_type->isFloat() && $other_type->isFloat())
+                            )
+                        );
+
+                    if ($identical) {
+                        $if_types[$var_name] = '^' . $var_type->getId();
+                    } else {
+                        $if_types[$var_name] = '~' . $var_type->getId();
+                    }
                 }
 
                 if ($other_type
@@ -697,7 +709,19 @@ class AssertionFinder
 
                 if ($var_type) {
                     if ($var_name) {
-                        $if_types[$var_name] = '!^' . $var_type->getId();
+                        $not_identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                            || ($other_type
+                                && (($var_type->isString() && $other_type->isString())
+                                    || ($var_type->isInt() && $other_type->isInt())
+                                    || ($var_type->isFloat() && $other_type->isFloat())
+                                )
+                            );
+
+                        if ($not_identical) {
+                            $if_types[$var_name] = '!^' . $var_type->getId();
+                        } else {
+                            $if_types[$var_name] = '!~' . $var_type->getId();
+                        }
                     }
 
                     if ($other_type
@@ -1239,10 +1263,6 @@ class AssertionFinder
      */
     protected static function hasTypedValueComparison(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal) {
-            return false;
-        }
-
         if (isset($conditional->right->inferredType)
             && count($conditional->right->inferredType->getTypes()) === 1
         ) {

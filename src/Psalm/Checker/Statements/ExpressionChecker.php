@@ -131,7 +131,10 @@ class ExpressionChecker
                     break;
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->inferredType = Type::getInt(false, [$stmt->value => true]);
+            $stmt->inferredType = Type::getInt(
+                false,
+                [($stmt->value >= 0 ? $stmt->value : (string) $stmt->value) => true]
+            );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
             $stmt->inferredType = Type::getFloat([(string)$stmt->value => true]);
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
@@ -150,6 +153,28 @@ class ExpressionChecker
 
                 foreach ($stmt->expr->inferredType->getTypes() as $type_part) {
                     if ($type_part instanceof TInt || $type_part instanceof TFloat) {
+                        if ($type_part instanceof Type\Atomic\TLiteralInt
+                            && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                        ) {
+                            $inverted_values = [];
+
+                            foreach ($type_part->values as $value => $_) {
+                                $inverted_values[$value > 0 ? (string) (-$value) : (int) (-$value)] = true;
+                            }
+
+                            $type_part->values = $inverted_values;
+                        } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
+                            && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                        ) {
+                            $inverted_values = [];
+
+                            foreach ($type_part->values as $value => $_) {
+                                $inverted_values[(string)(-$value)] = true;
+                            }
+
+                            $type_part->values = $inverted_values;
+                        }
+
                         $acceptable_types[] = $type_part;
                     } elseif ($type_part instanceof TString) {
                         $acceptable_types[] = new TInt;

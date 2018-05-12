@@ -544,7 +544,9 @@ class Algebra
             $impossibility = [];
 
             foreach ($possiblity as $type) {
-                if ($type[0] !== '^' && (!isset($type[1]) || $type[1] !== '^')) {
+                if (($type[0] !== '^' && (!isset($type[1]) || $type[1] !== '^'))
+                    || strpos($type, '(')
+                ) {
                     $impossibility[] = self::negateType($type);
                 }
             }

@@ -804,7 +804,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            return Type::getInt(false, [$stmt->value => true]);
+            return Type::getInt(false, [($stmt->value >= 0 ? $stmt->value : (string) $stmt->value) => true]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
@@ -929,7 +929,42 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\UnaryMinus || $stmt instanceof PhpParser\Node\Expr\UnaryPlus) {
-            return self::getSimpleType($stmt->expr, $file_source, $existing_class_constants, $fq_classlike_name);
+            $type_to_invert = self::getSimpleType(
+                $stmt->expr,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name
+            );
+
+            if (!$type_to_invert) {
+                return null;
+            }
+
+            foreach ($type_to_invert->getTypes() as $type_part) {
+                if ($type_part instanceof Type\Atomic\TLiteralInt
+                    && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                ) {
+                    $inverted_values = [];
+
+                    foreach ($type_part->values as $value => $_) {
+                        $inverted_values[$value > 0 ? (string) (-$value) : (int) (-$value)] = true;
+                    }
+
+                    $type_part->values = $inverted_values;
+                } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
+                    && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
+                ) {
+                    $inverted_values = [];
+
+                    foreach ($type_part->values as $value => $_) {
+                        $inverted_values[(string)(-$value)] = true;
+                    }
+
+                    $type_part->values = $inverted_values;
+                }
+            }
+
+            return $type_to_invert;
         }
 
         return null;
