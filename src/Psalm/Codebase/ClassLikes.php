@@ -454,6 +454,10 @@ class ClassLikes
             return true;
         }
 
+        if ($interface_id === 'arrayaccess' && $fq_class_name === 'domnodelist') {
+            return true;
+        }
+
         if (isset(ClassLikeChecker::$SPECIAL_TYPES[$interface_id])
             || isset(ClassLikeChecker::$SPECIAL_TYPES[$fq_class_name])
         ) {

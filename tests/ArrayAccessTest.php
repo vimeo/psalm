@@ -135,6 +135,12 @@ class ArrayAccessTest extends TestCase
                     $x[] = 5;
                     takesInt($x[0]);',
             ],
+            'domNodeListAccessible' => [
+                '<?php
+                    $doc = new DOMDocument();
+                    $doc->loadXML("<node key=\"value\"/>");
+                    $doc->getElementsByTagName("node")[0];'
+            ],
         ];
     }
 
