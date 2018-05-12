@@ -173,6 +173,7 @@ class ArrayFetchChecker
                                     || ($offset_atomic_type instanceof TLiteralString
                                         && $const_array_key_atomic_types[$offset_key] instanceof TLiteralString)
                                 ) {
+                                    /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
                                     $offset_atomic_type->values = array_intersect_key(
                                         $offset_atomic_type->values,
                                         $const_array_key_atomic_types[$offset_key]->values
