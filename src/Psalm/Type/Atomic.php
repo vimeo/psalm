@@ -110,6 +110,9 @@ abstract class Atomic
             case 'class-string':
                 return new TClassString();
 
+            case 'numeric-string':
+                return new TNumericString();
+
             case '$this':
                 return new TNamedObject('static');
 
