@@ -183,7 +183,7 @@ class MethodChecker extends FunctionLikeChecker
         if (!$declaring_method_id) {
             $method_name = explode('::', $method_id)[1];
 
-            if ($method_name === '__construct') {
+            if ($method_name === '__construct' || $method_id === 'Closure::__invoke') {
                 return null;
             }
 
