@@ -72,20 +72,30 @@ class SwitchChecker
         }
 
         $leftover_statements = [];
+        $leftover_case_equality_expr = null;
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-        for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
+        for ($i = 0, $l = count($stmt->cases); $i < $l; $i++) {
             $case = $stmt->cases[$i];
+
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
+
+            $case_actions = $case_action_map[$i];
+
+            // has a return/throw at end
+            $has_ending_statements = $case_actions === [ScopeChecker::ACTION_END];
+            $has_leaving_statements = $has_ending_statements
+                || (count($case_actions) && !in_array(ScopeChecker::ACTION_NONE, $case_actions, true));
 
             $case_context = clone $original_context;
             if ($project_checker->alter_code) {
                 $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
             }
             $case_context->parent_context = $context;
-            $case_context->inside_case = true;
+
+            $case_equality_expr = null;
 
             if ($case->cond) {
                 if (ExpressionChecker::analyze($statements_checker, $case->cond, $case_context) === false) {
@@ -132,16 +142,92 @@ class SwitchChecker
                     }
                 }
 
-                $fake_equality = new PhpParser\Node\Expr\BinaryOp\Equal($switch_condition, $case->cond);
+                $case_equality_expr = new PhpParser\Node\Expr\BinaryOp\Equal(
+                    $switch_condition,
+                    $case->cond,
+                    $case->cond->getAttributes()
+                );
+            }
 
+            $case_stmts = $case->stmts;
+
+            $case_stmts = array_merge($leftover_statements, $case_stmts);
+
+            if (!$case->cond) {
+                $has_default = true;
+            }
+
+            if (!$has_leaving_statements && $i !== $l - 1) {
+                if (!$case_equality_expr) {
+                    $case_equality_expr = new PhpParser\Node\Expr\FuncCall(
+                        new PhpParser\Node\Name\FullyQualified(['rand']),
+                        [
+                            new PhpParser\Node\Arg(new PhpParser\Node\Scalar\LNumber(0)),
+                            new PhpParser\Node\Arg(new PhpParser\Node\Scalar\LNumber(1)),
+                        ],
+                        $case->getAttributes()
+                    );
+                }
+
+                $leftover_case_equality_expr = $leftover_case_equality_expr
+                    ? new PhpParser\Node\Expr\BinaryOp\BooleanOr(
+                        $leftover_case_equality_expr,
+                        $case_equality_expr,
+                        $case->cond ? $case->cond->getAttributes() : $case->getAttributes()
+                    )
+                    : $case_equality_expr;
+
+                $case_if_stmt = new PhpParser\Node\Stmt\If_(
+                    $leftover_case_equality_expr,
+                    ['stmts' => $case_stmts]
+                );
+
+                $leftover_statements = [$case_if_stmt];
+
+                continue;
+            }
+
+            if ($leftover_case_equality_expr) {
+                $case_or_default_equality_expr = $case_equality_expr;
+
+                if (!$case_or_default_equality_expr) {
+                    $case_or_default_equality_expr = new PhpParser\Node\Expr\FuncCall(
+                        new PhpParser\Node\Name\FullyQualified(['rand']),
+                        [
+                            new PhpParser\Node\Arg(new PhpParser\Node\Scalar\LNumber(0)),
+                            new PhpParser\Node\Arg(new PhpParser\Node\Scalar\LNumber(1)),
+                        ],
+                        $case->getAttributes()
+                    );
+                }
+
+                $case_equality_expr = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
+                    $leftover_case_equality_expr,
+                    $case_or_default_equality_expr,
+                    $case_or_default_equality_expr->getAttributes()
+                );
+            }
+
+            $case_context->inside_case = true;
+
+            $leftover_statements = [];
+            $leftover_case_equality_expr = null;
+
+            if ($case_equality_expr) {
                 $case_clauses = Algebra::getFormula(
-                    $fake_equality,
+                    $case_equality_expr,
                     $context->self,
                     $statements_checker
                 );
 
                 // this will see whether any of the clauses in set A conflict with the clauses in set B
-                AlgebraChecker::checkForParadox($context->clauses, $case_clauses, $statements_checker, $stmt->cond, []);
+                AlgebraChecker::checkForParadox(
+                    $context->clauses,
+                    $case_clauses,
+                    $statements_checker,
+                    $stmt->cond,
+                    []
+                );
 
                 $case_context->clauses = Algebra::simplifyCNF(array_merge($context->clauses, $case_clauses));
 
@@ -171,21 +257,6 @@ class SwitchChecker
                         $case_context->removeReconciledClauses($changed_var_ids);
                     }
                 }
-            }
-
-            $case_stmts = $case->stmts;
-
-            $case_actions = $case_action_map[$i];
-
-            // has a return/throw at end
-            $has_ending_statements = $case_actions === [ScopeChecker::ACTION_END];
-            $has_leaving_statements = $has_ending_statements
-                || (count($case_actions) && !in_array(ScopeChecker::ACTION_NONE, $case_actions, true));
-
-            if (!$case_stmts || (!$has_ending_statements && !$has_leaving_statements)) {
-                $case_stmts = array_merge($case_stmts, $leftover_statements);
-            } else {
-                $leftover_statements = [];
             }
 
             $statements_checker->analyze($case_stmts, $case_context, $loop_scope);
@@ -278,14 +349,6 @@ class SwitchChecker
                         );
                     }
                 }
-            }
-
-            if ($case->stmts) {
-                $leftover_statements = array_merge($leftover_statements, $case->stmts);
-            }
-
-            if (!$case->cond) {
-                $has_default = true;
             }
 
             if ($context->collect_references) {

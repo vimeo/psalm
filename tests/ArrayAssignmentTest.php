@@ -123,7 +123,7 @@ class ArrayAssignmentTest extends TestCase
                             break;
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, int|string>',
+                    '$out' => 'array<int, string|int>',
                 ],
             ],
             'genericArrayCreationWithElementsAddedInSwitchWithNothing' => [
@@ -143,7 +143,7 @@ class ArrayAssignmentTest extends TestCase
                             // do nothing
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, int|string>',
+                    '$out' => 'array<int, string|int>',
                 ],
             ],
             'implicitIntArrayCreation' => [
