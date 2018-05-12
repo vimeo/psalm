@@ -801,8 +801,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $rules = \Psalm\Type\Algebra::getTruthsFromFormula($negated_formula);
 
                     foreach ($rules as $var_id => $rule) {
-                        if (strpos($rule, '|') !== false) {
-                            continue;
+                        foreach ($rule as $rule_part) {
+                            if (count($rule_part) > 1) {
+                                continue 2;
+                            }
                         }
 
                         if (isset($existing_params[$var_id])) {

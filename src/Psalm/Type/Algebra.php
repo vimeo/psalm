@@ -282,7 +282,7 @@ class Algebra
      * @param  array<int, Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      *
-     * @return array<string, string>
+     * @return array<string, array<int, array<int, string>>>
      */
     public static function getTruthsFromFormula(
         array $clauses,
@@ -303,9 +303,9 @@ class Algebra
                 // if there's only one possible type, return it
                 if (count($clause->possibilities) === 1 && count($possible_types) === 1) {
                     if (isset($truths[$var])) {
-                        $truths[$var] .= '&' . array_pop($possible_types);
+                        $truths[$var][] = [array_pop($possible_types)];
                     } else {
-                        $truths[$var] = array_pop($possible_types);
+                        $truths[$var] = [[array_pop($possible_types)]];
                     }
                 } elseif (count($clause->possibilities) === 1) {
                     $with_brackets = 0;
@@ -360,7 +360,8 @@ class Algebra
                             unset($cond_referenced_var_ids[$var]);
                         }
 
-                        $truths[$var] = implode('|', $things_that_can_be_said);
+                        /** @var array<int, string> $things_that_can_be_said */
+                        $truths[$var] = [$things_that_can_be_said];
                     }
                 }
             }

@@ -684,7 +684,7 @@ class FunctionChecker extends FunctionLikeChecker
                             $changed_var_ids = [];
 
                             $reconciled_types = Reconciler::reconcileKeyedTypes(
-                                ['$inner_type' => $assertions['$' . $first_param->var->name]],
+                                ['$inner_type' => [[$assertions['$' . $first_param->var->name]]]],
                                 ['$inner_type' => $inner_type],
                                 $changed_var_ids,
                                 ['$inner_type' => true],

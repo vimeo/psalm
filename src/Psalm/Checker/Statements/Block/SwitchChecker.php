@@ -268,8 +268,6 @@ class SwitchChecker
 
             $reconcilable_if_types = Algebra::getTruthsFromFormula($case_context->clauses);
 
-            $printer = new PhpParser\PrettyPrinter\Standard;
-
             // if the if has an || in the conditional, we cannot easily reason about it
             if ($reconcilable_if_types) {
                 $changed_var_ids = [];

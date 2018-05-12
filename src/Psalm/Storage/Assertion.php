@@ -4,7 +4,7 @@ namespace Psalm\Storage;
 class Assertion
 {
     /**
-     * @var string the rule being asserted
+     * @var array<int, array<int, string>> the rule being asserted
      */
     public $rule;
 
@@ -16,7 +16,7 @@ class Assertion
 
     /**
      * @param string|int $var_id
-     * @param string $rule
+     * @param array<int, array<int, string>> $rule
      */
     public function __construct($var_id, $rule)
     {

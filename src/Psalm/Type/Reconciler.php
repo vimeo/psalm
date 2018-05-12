@@ -41,7 +41,7 @@ class Reconciler
     /**
      * Takes two arrays and consolidates them, removing null values from existing types where applicable
      *
-     * @param  array<string, string>     $new_types
+     * @param  array<string, string[][]> $new_types
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string>             $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
@@ -61,16 +61,17 @@ class Reconciler
         array $suppressed_issues = []
     ) {
         foreach ($new_types as $nk => $type) {
-            if (strpos($nk, '[') && ($type === '^isset' || $type === '!^empty')) {
+            if (strpos($nk, '[') && ($type[0][0] === '^isset' || $type[0][0] === '!^empty')) {
                 $path_parts = self::breakUpPathIntoParts($nk);
 
                 if (count($path_parts) > 1) {
                     $base_key = array_shift($path_parts);
 
                     if (!isset($new_types[$base_key])) {
-                        $new_types[$base_key] = '!^bool&!^int';
+                        $new_types[$base_key] = [['!^bool'],['!^int']];
                     } else {
-                        $new_types[$base_key] .= '&!^bool&!^int';
+                        $new_types[$base_key][] = ['!^bool'];
+                        $new_types[$base_key][] = ['!^int'];
                     }
                 }
             }
@@ -82,9 +83,7 @@ class Reconciler
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-        foreach ($new_types as $key => $new_type_string) {
-            $new_type_parts = preg_split('/(?<!\')&/', $new_type_string);
-
+        foreach ($new_types as $key => $new_type_parts) {
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
                 : self::getValueForKey($project_checker, $key, $existing_types);
@@ -100,9 +99,7 @@ class Reconciler
             $possibly_undefined = $result_type && $result_type->possibly_undefined;
             $from_calculation = $result_type && $result_type->from_calculation;
 
-            foreach ($new_type_parts as $new_type_part) {
-                $new_type_part_parts = preg_split('/(?<!\')\|/', $new_type_part);
-
+            foreach ($new_type_parts as $new_type_part_parts) {
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {

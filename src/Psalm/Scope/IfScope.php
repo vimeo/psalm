@@ -37,7 +37,7 @@ class IfScope
     public $updated_vars = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, array<int, array<int, string>>>
      */
     public $negated_types = [];
 
