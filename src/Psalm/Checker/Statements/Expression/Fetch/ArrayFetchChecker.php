@@ -70,12 +70,21 @@ class ArrayFetchChecker
             return false;
         }
 
+        $dim_var_id = null;
+        $new_offset_type = null;
+
         if ($stmt->dim) {
             if (isset($stmt->dim->inferredType)) {
                 $used_key_type = $stmt->dim->inferredType;
             } else {
                 $used_key_type = Type::getMixed();
             }
+
+            $dim_var_id = ExpressionChecker::getArrayVarId(
+                $stmt->dim,
+                $statements_checker->getFQCLN(),
+                $statements_checker
+            );
         } else {
             $used_key_type = Type::getInt();
         }
@@ -132,6 +141,56 @@ class ArrayFetchChecker
                 null,
                 $context->inside_isset
             );
+
+            if ($context->inside_isset
+                && $stmt->dim
+                && isset($stmt->dim->inferredType)
+                && $stmt->var->inferredType->hasArray()
+                && ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+                    || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
+            ) {
+                /** @var TArray|ObjectLike */
+                $array_type = $stmt->var->inferredType->getTypes()['array'];
+
+                if ($array_type instanceof TArray) {
+                    $const_array_key_type = $array_type->type_params[0];
+                } else {
+                    $const_array_key_type = $array_type->getGenericKeyType();
+                }
+
+                if ($dim_var_id && !$const_array_key_type->isMixed()) {
+                    $new_offset_type = clone $stmt->dim->inferredType;
+                    $const_array_key_atomic_types = $const_array_key_type->getTypes();
+                    $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+                    foreach ($new_offset_type->getTypes() as $offset_key => $offset_atomic_type) {
+                        if ($offset_atomic_type instanceof TString
+                            || $offset_atomic_type instanceof TInt
+                        ) {
+                            if (isset($const_array_key_atomic_types[$offset_key])) {
+                                if (($offset_atomic_type instanceof TLiteralInt
+                                        && $const_array_key_atomic_types[$offset_key] instanceof TLiteralInt)
+                                    || ($offset_atomic_type instanceof TLiteralString
+                                        && $const_array_key_atomic_types[$offset_key] instanceof TLiteralString)
+                                ) {
+                                    $offset_atomic_type->values = array_intersect_key(
+                                        $offset_atomic_type->values,
+                                        $const_array_key_atomic_types[$offset_key]->values
+                                    );
+                                }
+                            } elseif (!TypeChecker::isContainedBy(
+                                $project_checker->codebase,
+                                new Type\Union([$offset_atomic_type]),
+                                $const_array_key_type
+                            )) {
+                                $new_offset_type->removeType($offset_key);
+                            }
+                        } else {
+                            $new_offset_type->removeType($offset_key);
+                        }
+                    }
+                }
+            }
         }
 
         if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id, $statements_checker)) {
@@ -152,6 +211,10 @@ class ArrayFetchChecker
                     return false;
                 }
             }
+        }
+
+        if ($context->inside_isset && $dim_var_id && $new_offset_type) {
+            $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
 
         if ($keyed_array_var_id && !$context->inside_isset) {

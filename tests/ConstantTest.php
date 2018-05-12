@@ -135,6 +135,22 @@ class ConstantTest extends TestCase
 
                     echo A::C[4];',
             ],
+            'onlyMatchingConstantOffset' => [
+                '<?php
+                    class A {
+                        const KEYS = ["one", "two", "three"];
+                        const ARR = [
+                            "one" => 1,
+                            "two" => 2
+                        ];
+                    }
+
+                    foreach (A::KEYS as $key) {
+                        if (isset(A::ARR[$key])) {
+                            echo A::ARR[$key];
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -162,6 +178,28 @@ class ConstantTest extends TestCase
                         public function doSomething(int $howManyTimes = self::DEFAULT_TIMES): void {}
                     }',
                 'error_message' => 'UndefinedConstant',
+            ],
+            'nonMatchingConstantOffset' => [
+                '<?php
+                    class A {
+                        const KEYS = ["one", "two", "three", "four"];
+                        const ARR = [
+                            "one" => 1,
+                            "two" => 2
+                        ];
+
+                        const ARR2 = [
+                            "three" => 3,
+                            "four" => 4
+                        ];
+                    }
+
+                    foreach (A::KEYS as $key) {
+                        if (isset(A::ARR[$key])) {
+                            echo A::ARR2[$key];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

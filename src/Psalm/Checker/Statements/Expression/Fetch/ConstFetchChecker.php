@@ -202,10 +202,12 @@ class ConstFetchChecker
 
                 return false;
             }
-            $stmt->inferredType = isset($class_constants[$stmt->name->name])
-                && $first_part_lc !== 'static'
-                ? clone $class_constants[$stmt->name->name]
-                : Type::getMixed();
+
+            if (isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
+                $stmt->inferredType = clone $class_constants[$stmt->name->name];
+            } else {
+                $stmt->inferredType = Type::getMixed();
+            }
 
             return null;
         }
