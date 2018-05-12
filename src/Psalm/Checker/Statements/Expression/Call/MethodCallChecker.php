@@ -391,8 +391,6 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
                 }
 
-                $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
-
                 if (!$codebase->methodExists($method_id, $code_location)) {
                     if ($config->use_phpdoc_methods_without_call) {
                         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
@@ -509,9 +507,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         continue;
                 }
 
+                $call_map_id = strtolower((string)$codebase->methods->getDeclaringMethodId($method_id));
+
                 if ($method_name_lc === '__tostring') {
                     $return_type_candidate = Type::getString();
-                } elseif (CallMap::inCallMap($cased_method_id)) {
+                } elseif ($call_map_id && CallMap::inCallMap($call_map_id)) {
                     if ($class_template_params
                         && isset($class_storage->methods[$method_name_lc])
                         && ($method_storage = $class_storage->methods[$method_name_lc])
@@ -523,7 +523,14 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $class_template_params
                         );
                     } else {
-                        $return_type_candidate = CallMap::getReturnTypeFromCallMap($method_id);
+                        if ($call_map_id === 'domnode::appendchild'
+                            && isset($stmt->args[0]->value->inferredType)
+                            && $stmt->args[0]->value->inferredType->hasObjectType()
+                        ) {
+                            $return_type_candidate = clone $stmt->args[0]->value->inferredType;
+                        } else {
+                            $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
+                        }
                     }
 
                     $return_type_candidate = ExpressionChecker::fleshOutType(

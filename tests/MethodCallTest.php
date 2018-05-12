@@ -114,6 +114,13 @@ class MethodCallTest extends TestCase
                     $q = new A;
                     $q("asda");',
             ],
+            'domDocumentAppendChild' => [
+                '<?php
+                    $doc = new DOMDocument("1.0");
+                    $node = $doc->createElement("foo");
+                    $newnode = $doc->appendChild($node);
+                    $newnode->setAttribute("bar", "baz");',
+            ],
         ];
     }
 
