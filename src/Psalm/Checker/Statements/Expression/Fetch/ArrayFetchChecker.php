@@ -218,7 +218,7 @@ class ArrayFetchChecker
             }
         }
 
-        if ($context->inside_isset && $dim_var_id && $new_offset_type) {
+        if ($context->inside_isset && $dim_var_id && $new_offset_type && $new_offset_type->getTypes()) {
             $context->vars_in_scope[$dim_var_id] = $new_offset_type;
         }
 
