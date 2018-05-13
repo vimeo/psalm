@@ -364,6 +364,51 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchNullable1' => [
+                '<?php
+                    function foo(?string $s) : void {
+                        switch ($s) {
+                            case "hello":
+                            case "goodbye":
+                                echo "cool";
+                                break;
+                            case "hello again":
+                                echo "cool";
+                                break;
+                        }
+                    }',
+            ],
+            'switchNullable2' => [
+                '<?php
+                    function foo(?string $s) : void {
+                        switch ($s) {
+                            case "hello":
+                                echo "cool";
+                            case "goodbye":
+                                echo "cooler";
+                                break;
+                            case "hello again":
+                                echo "cool";
+                                break;
+                        }
+                    }',
+            ],
+            'switchNullable3' => [
+                '<?php
+                    function foo(?string $s) : void {
+                        switch ($s) {
+                            case "hello":
+                                echo "cool";
+                                break;
+                            case "goodbye":
+                                echo "cool";
+                                break;
+                            case "hello again":
+                                echo "cool";
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 

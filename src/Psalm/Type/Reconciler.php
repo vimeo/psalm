@@ -105,7 +105,7 @@ class Reconciler
                 foreach ($new_type_part_parts as $new_type_part_part) {
                     $result_type_candidate = self::reconcileTypes(
                         $new_type_part_part,
-                        $result_type,
+                        $result_type ? clone $result_type : null,
                         $key,
                         $statements_checker,
                         $code_location && isset($referenced_var_ids[$key]) ? $code_location : null,
