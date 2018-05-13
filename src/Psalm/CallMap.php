@@ -9550,7 +9550,7 @@ return [
 'ReflectionParameter::getClass' => ['ReflectionClass|null'],
 'ReflectionParameter::getDeclaringClass' => ['ReflectionClass|null'],
 'ReflectionParameter::getDeclaringFunction' => ['ReflectionFunctionAbstract'],
-'ReflectionParameter::getDefaultValue' => ['bool'],
+'ReflectionParameter::getDefaultValue' => ['mixed'],
 'ReflectionParameter::getDefaultValueConstantName' => ['string'],
 'ReflectionParameter::getName' => ['string'],
 'ReflectionParameter::getPosition' => ['int'],
