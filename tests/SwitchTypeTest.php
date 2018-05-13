@@ -353,6 +353,17 @@ class SwitchTypeTest extends TestCase
                             throw new \Exception("should never happen");
                     }',
             ],
+            'switchOnUnknownInts' => [
+                '<?php
+                    function foo(int $a, int $b, int $c) : void {
+                        switch ($a) {
+                            case $b:
+                                break;
+                            case $c:
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 
