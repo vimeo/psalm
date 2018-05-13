@@ -619,6 +619,14 @@ class FunctionCallTest extends TestCase
                 '<?php
                     if (class_exists(Foo::class)) {}'
             ],
+            'next' => [
+                '<?php
+                    $arr = ["one", "two", "three"];
+                    $n = next($arr);',
+                'assertions' => [
+                    '$n' => 'false|string',
+                ],
+            ],
         ];
     }
 

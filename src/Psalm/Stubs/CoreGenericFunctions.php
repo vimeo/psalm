@@ -152,6 +152,26 @@ function current(array $arr) {}
  * @return TValue|false
  * @psalm-ignore-falsable-return
  */
+function next(array &$arr) {}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
+function prev(array &$arr) {}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
 function reset(array &$arr) {}
 
 /**
