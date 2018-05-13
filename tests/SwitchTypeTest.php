@@ -409,6 +409,16 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchNullable4' => [
+                '<?php
+                    function foo(?string $s, string $a, string $b) : void {
+                        switch ($s) {
+                            case $a:
+                            case $b:
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 

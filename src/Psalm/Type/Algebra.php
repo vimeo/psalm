@@ -155,7 +155,9 @@ class Algebra
                         [$var => [$type]],
                         false,
                         true,
-                        $type[0] === '^' || (strlen($type) > 1 && $type[1] === '^')
+                        $type[0] === '^'
+                            || $type[0] === '~'
+                            || (strlen($type) > 1 && ($type[1] === '^' || $type[1] === '~'))
                     );
                 }
             }
