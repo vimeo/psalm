@@ -251,13 +251,13 @@ class SwitchChecker
                 $entry_clauses = $original_context->clauses;
             }
 
-            if ($case_clauses) {
+            if ($case_clauses && $case->cond) {
                 // this will see whether any of the clauses in set A conflict with the clauses in set B
                 AlgebraChecker::checkForParadox(
                     $entry_clauses,
                     $case_clauses,
                     $statements_checker,
-                    $case,
+                    $case->cond,
                     []
                 );
 
