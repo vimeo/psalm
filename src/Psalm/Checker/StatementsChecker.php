@@ -865,7 +865,34 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     ) {
                         $property_types[$item->key ? $item->key->value : $int_offset] = $single_item_value_type;
                     } else {
-                        $can_create_objectlike = false;
+                        $dim_type = self::getSimpleType(
+                            $item->key,
+                            $file_source,
+                            $existing_class_constants,
+                            $fq_classlike_name
+                        );
+
+                        if ($dim_type) {
+                            $dim_atomic_types = $dim_type->getTypes();
+
+                            if (count($dim_atomic_types) > 1 || $dim_type->isMixed()) {
+                                $can_create_objectlike = false;
+                            } else {
+                                $atomic_type = array_shift($dim_atomic_types);
+
+                                if (($atomic_type instanceof Type\Atomic\TLiteralInt
+                                        && count($atomic_type->values) === 1)
+                                    || ($atomic_type instanceof Type\Atomic\TLiteralString
+                                        && count($atomic_type->values) === 1)
+                                ) {
+                                    $property_types[array_keys($atomic_type->values)[0]] = $single_item_value_type;
+                                } else {
+                                    $can_create_objectlike = false;
+                                }
+                            }
+                        } else {
+                            $can_create_objectlike = false;
+                        }
                     }
 
                     if ($item_value_type) {
