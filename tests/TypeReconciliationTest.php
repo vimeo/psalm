@@ -819,6 +819,12 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
             ],
+            'allowWeakEqualityScalarType' => [
+                '<?php
+                    function foo(int $i) : void {
+                        if ($i == "5") {}
+                    }',
+            ],
         ];
     }
 
@@ -947,6 +953,13 @@ class TypeReconciliationTest extends TestCase
 
                     if (is_bool($a[0]) && $a[0]) {}',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventWeakEqualityToObject' => [
+                '<?php
+                    function foo(int $i, stdClass $s) : void {
+                        if ($i == $s) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

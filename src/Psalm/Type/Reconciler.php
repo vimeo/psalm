@@ -663,6 +663,8 @@ class Reconciler
                 );
             }
 
+            $any_scalar_type_match_found = false;
+
             foreach ($new_type->getTypes() as $new_type_part) {
                 $has_local_match = false;
 
@@ -689,6 +691,10 @@ class Reconciler
                         break;
                     }
 
+                    if ($scalar_type_match_found) {
+                        $any_scalar_type_match_found = true;
+                    }
+
                     if ($new_type_part instanceof TCallable &&
                         (
                             $existing_var_type_part instanceof TString ||
@@ -712,7 +718,7 @@ class Reconciler
                 }
             }
 
-            if (!$has_match) {
+            if (!$has_match && (!$is_loose_equality || !$any_scalar_type_match_found)) {
                 if ($new_var_type === 'null') {
                     if ($existing_var_type->from_docblock) {
                         if (IssueBuffer::accepts(
