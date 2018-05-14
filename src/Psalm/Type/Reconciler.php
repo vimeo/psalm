@@ -674,6 +674,7 @@ class Reconciler
                     if ($existing_var_type_part instanceof Type\Atomic\TFloat
                         && $new_type_part instanceof Type\Atomic\TInt
                     ) {
+                        $any_scalar_type_match_found = true;
                         continue;
                     }
 

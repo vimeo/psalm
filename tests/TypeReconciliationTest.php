@@ -823,6 +823,9 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     function foo(int $i) : void {
                         if ($i == "5") {}
+                    }
+                    function bar(float $f) : void {
+                      if ($f == 0) {}
                     }',
             ],
         ];
