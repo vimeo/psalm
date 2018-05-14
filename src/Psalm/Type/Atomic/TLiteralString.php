@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+
 class TLiteralString extends TString implements LiteralType
 {
     /** @var array<string|int, bool> */
@@ -28,5 +30,17 @@ class TLiteralString extends TString implements LiteralType
     public function getValues()
     {
         return $this->values;
+    }
+
+    /**
+     * @return bool
+     */
+    public function equals(Atomic $other_type)
+    {
+        if (!$other_type instanceof self) {
+            return false;
+        }
+
+        return $this->values == $other_type->values;
     }
 }

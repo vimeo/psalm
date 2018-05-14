@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 /**
@@ -242,5 +243,31 @@ class ObjectLike extends \Psalm\Type\Atomic
         foreach ($this->properties as $property_type) {
             $property_type->setFromDocblock();
         }
+    }
+
+    /**
+     * @return bool
+     */
+    public function equals(Atomic $other_type)
+    {
+        if (!$other_type instanceof self) {
+            return false;
+        }
+
+        if (count($this->properties) !== count($other_type->properties)) {
+            return false;
+        }
+
+        foreach ($this->properties as $property_name => $property_type) {
+            if (!isset($other_type->properties[$property_name])) {
+                return false;
+            }
+
+            if (!$property_type->equals($other_type->properties[$property_name])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

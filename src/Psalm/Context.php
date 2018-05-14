@@ -321,9 +321,7 @@ class Context
             if (!$this_type->failed_reconciliation
                 && !$this_type->isEmpty()
                 && !$new_type->isEmpty()
-                && ($this_type->getId() !== $new_type->getId()
-                    || $this_type->initialized !== $new_type->initialized
-                    || $this_type->from_calculation !== $new_type->from_calculation)
+                && !$this_type->equals($new_type)
             ) {
                 $redefined_vars[$var_id] = $this_type;
             }
@@ -419,6 +417,7 @@ class Context
             /** @return bool */
             function (Clause $c) use ($changed_var_ids) {
                 return count($c->possibilities) > 1
+                    || $c->wedge
                     || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
             }
         );

@@ -250,7 +250,7 @@ class Algebra
              * @return bool
              */
             function (Clause $clause) {
-                return (bool)count($clause->possibilities);
+                return count($clause->possibilities) || $clause->wedge;
             }
         );
 
@@ -260,7 +260,11 @@ class Algebra
             $is_redundant = false;
 
             foreach ($deduped_clauses as $clause_b) {
-                if ($clause_a === $clause_b || !$clause_b->reconcilable || $clause_b->wedge) {
+                if ($clause_a === $clause_b
+                    || !$clause_b->reconcilable
+                    || $clause_b->wedge
+                    || $clause_a->wedge
+                ) {
                     continue;
                 }
 
@@ -443,14 +447,29 @@ class Algebra
         $clauses = [];
 
         $all_wedges = true;
+        $has_wedge = false;
 
         foreach ($left_clauses as $left_clause) {
             foreach ($right_clauses as $right_clause) {
+                $all_wedges = $all_wedges && ($left_clause->wedge && $right_clause->wedge);
+                $has_wedge = $has_wedge || ($left_clause->wedge && $right_clause->wedge);
+            }
+        }
+
+        if ($all_wedges) {
+            return [new Clause([], true)];
+        }
+
+        foreach ($left_clauses as $left_clause) {
+            foreach ($right_clauses as $right_clause) {
+                if ($left_clause->wedge && $right_clause->wedge) {
+                    // handled below
+                    continue;
+                }
+
                 $possibilities = [];
 
                 $can_reconcile = true;
-
-                $all_wedges = $all_wedges && $left_clause->wedge && $right_clause->wedge;
 
                 if ($left_clause->wedge ||
                     $right_clause->wedge ||
@@ -494,8 +513,8 @@ class Algebra
             }
         }
 
-        if ($all_wedges) {
-            return [new Clause([], true)];
+        if ($has_wedge) {
+            $clauses[] = new Clause([], true);
         }
 
         return $clauses;

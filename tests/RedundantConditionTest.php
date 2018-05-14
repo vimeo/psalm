@@ -610,7 +610,7 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
-            'allowIntValueCheckAfterComparisonDueToConditionalOverflow' => [
+            'disallowFloatCheckAfterSettingToVar' => [
                 '<?php
                     function foo(int $x) : void {
                         if (rand(0, 1)) {

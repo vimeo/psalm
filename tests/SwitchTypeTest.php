@@ -419,6 +419,52 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'removeChangedVarsFromReasonableClauses' => [
+                '<?php
+                    function r() : bool {
+                        return (bool)rand(0, 1);
+                    }
+
+                    function foo(string $s) : void {
+                        if (($s === "a" || $s === "b")
+                            && ($s === "a" || r())
+                            && ($s === "b" || r())
+                            && (r() || r())
+                        ) {
+                            // do something
+                        } else {
+                            return;
+                        }
+
+                        switch ($s) {
+                            case "a":
+                                break;
+                            case "b":
+                                break;
+                        }
+                    }'
+            ],
+            'preventBadClausesFromBleeding' => [
+                '<?php
+                    function foo (string $s) : void {
+                        if ($s === "a" && rand(0, 1)) {
+
+                        } elseif ($s === "b" && rand(0, 1)) {
+
+                        } else {
+                            return;
+                        }
+
+                        switch ($s) {
+                            case "a":
+                                echo "hello";
+                                break;
+                            case "b":
+                                echo "goodbye";
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 

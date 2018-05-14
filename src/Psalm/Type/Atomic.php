@@ -355,4 +355,16 @@ abstract class Atomic
     {
         // do nothing
     }
+
+    /**
+     * @return bool
+     */
+    public function equals(Atomic $other_type)
+    {
+        if (get_class($other_type) !== get_class($this)) {
+            return false;
+        }
+
+        return true;
+    }
 }

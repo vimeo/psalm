@@ -447,9 +447,20 @@ class IfChecker
             }
 
             if ($if_scope->redefined_vars) {
-                foreach ($if_scope->redefined_vars as $var => $type) {
-                    $context->vars_in_scope[$var] = $type;
-                    $if_scope->updated_vars[$var] = true;
+                foreach ($if_scope->redefined_vars as $var_id => $type) {
+                    $context->vars_in_scope[$var_id] = $type;
+                    $if_scope->updated_vars[$var_id] = true;
+
+                    if ($if_scope->reasonable_clauses) {
+                        $if_scope->reasonable_clauses = Context::filterClauses(
+                            $var_id,
+                            $if_scope->reasonable_clauses,
+                            isset($context->vars_in_scope[$var_id])
+                                ? $context->vars_in_scope[$var_id]
+                                : null,
+                            $statements_checker
+                        );
+                    }
                 }
             }
 
@@ -457,6 +468,17 @@ class IfChecker
                 foreach ($if_scope->possible_param_types as $var => $type) {
                     $context->possible_param_types[$var] = $type;
                 }
+            }
+
+            if ($if_scope->reasonable_clauses
+                && (count($if_scope->reasonable_clauses) > 1 || !$if_scope->reasonable_clauses[0]->wedge)
+            ) {
+                $context->clauses = Algebra::simplifyCNF(
+                    array_merge(
+                        $if_scope->reasonable_clauses,
+                        $context->clauses
+                    )
+                );
             }
         } else {
             if ($loop_scope && !in_array(ScopeChecker::ACTION_NONE, $if_scope->final_actions, true)) {
@@ -474,6 +496,11 @@ class IfChecker
                         $context->vars_in_scope[$var_id],
                         $type
                     );
+
+                    if ($combined_type->equals($context->vars_in_scope[$var_id])) {
+                        continue;
+                    }
+
                     $context->removeDescendents($var_id, $combined_type);
                     $context->vars_in_scope[$var_id] = $combined_type;
                 }
@@ -785,6 +812,7 @@ class IfChecker
                     /** @return bool */
                     function (Clause $c) use ($changed_var_ids) {
                         return count($c->possibilities) > 1
+                            || $c->wedge
                             || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
                     }
                 );
@@ -1040,6 +1068,14 @@ class IfChecker
                             $elseif_redefined_vars[$redefined_var],
                             $type
                         );
+
+                        if (isset($outer_context->vars_in_scope[$redefined_var])
+                            && $if_scope->redefined_vars[$redefined_var]->equals(
+                                $outer_context->vars_in_scope[$redefined_var]
+                            )
+                        ) {
+                            unset($if_scope->redefined_vars[$redefined_var]);
+                        }
                     }
                 }
 
@@ -1326,13 +1362,8 @@ class IfChecker
                     }
                 }
             }
-        } elseif ($if_scope->reasonable_clauses) {
-            $outer_context->clauses = Algebra::simplifyCNF(
-                array_merge(
-                    $if_scope->reasonable_clauses,
-                    $original_context->clauses
-                )
-            );
+
+            $if_scope->reasonable_clauses = [];
         }
 
         // update the parent context as necessary

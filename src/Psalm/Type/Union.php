@@ -812,4 +812,44 @@ class Union
             );
         }
     }
+
+    /**
+     * @return bool
+     */
+    public function equals(Union $other_type)
+    {
+        if ($other_type->id && $this->id && $other_type->id !== $this->id) {
+            return false;
+        }
+
+        if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+            return false;
+        }
+
+        if ($this->from_calculation !== $other_type->from_calculation) {
+            return false;
+        }
+
+        if ($this->initialized !== $other_type->initialized) {
+            return false;
+        }
+
+        if (count($this->types) !== count($other_type->types)) {
+            return false;
+        }
+
+        $other_atomic_types = $other_type->types;
+
+        foreach ($this->types as $key => $atomic_type) {
+            if (!isset($other_atomic_types[$key])) {
+                return false;
+            }
+
+            if (!$atomic_type->equals($other_atomic_types[$key])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

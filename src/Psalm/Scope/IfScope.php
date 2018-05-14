@@ -57,6 +57,10 @@ class IfScope
     public $negated_clauses = [];
 
     /**
+     * These are the set of clauses that could be applied after the `if`
+     * statement, if the `if` statement contains branches with leaving statments,
+     * and the else leaves too
+     *
      * @var array<int, Clause>
      */
     public $reasonable_clauses = [];
