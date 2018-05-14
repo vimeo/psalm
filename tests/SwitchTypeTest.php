@@ -610,7 +610,7 @@ class SwitchTypeTest extends TestCase
                         case 0:
                             echo "I never get here";
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'ParadoxicalCondition - src/somefile.php:7',
             ],
             'impossibleCaseValue' => [
                 '<?php
@@ -626,7 +626,7 @@ class SwitchTypeTest extends TestCase
                         case "c":
                             echo "impossible";
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:11',
             ],
             'impossibleCaseDefault' => [
                 '<?php
@@ -642,7 +642,7 @@ class SwitchTypeTest extends TestCase
                         default:
                             echo "impossible";
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'ParadoxicalCondition - src/somefile.php:11',
             ],
         ];
     }

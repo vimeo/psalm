@@ -257,7 +257,7 @@ class SwitchChecker
                     $entry_clauses,
                     $case_clauses,
                     $statements_checker,
-                    $stmt->cond,
+                    $case,
                     []
                 );
 
