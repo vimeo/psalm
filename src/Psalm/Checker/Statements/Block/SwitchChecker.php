@@ -285,7 +285,11 @@ class SwitchChecker
                         $changed_var_ids,
                         $switch_var_id ? [$switch_var_id => true] : [],
                         $statements_checker,
-                        new CodeLocation($statements_checker->getSource(), $case, $context->include_location),
+                        new CodeLocation(
+                            $statements_checker->getSource(),
+                            $case->cond ? $case->cond : $case,
+                            $context->include_location
+                        ),
                         $statements_checker->getSuppressedIssues()
                     );
 
