@@ -177,7 +177,32 @@ class Union
             return '';
         }
         $s = '';
+
+        $printed_int = false;
+        $printed_float = false;
+        $printed_string = false;
+
         foreach ($this->types as $type) {
+            if ($type instanceof TLiteralFloat) {
+                if ($printed_float) {
+                    continue;
+                }
+
+                $printed_float = true;
+            } elseif ($type instanceof TLiteralString) {
+                if ($printed_string) {
+                    continue;
+                }
+
+                $printed_string = true;
+            } elseif ($type instanceof TLiteralInt) {
+                if ($printed_int) {
+                    continue;
+                }
+
+                $printed_int = true;
+            }
+
             $s .= $type . '|';
         }
 

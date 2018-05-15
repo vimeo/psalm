@@ -92,7 +92,7 @@ class Reconciler
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = clone $result_type;
+            $before_adjustment = $result_type ? clone $result_type : null;
 
             $failed_reconciliation = false;
             $from_docblock = $result_type && $result_type->from_docblock;
