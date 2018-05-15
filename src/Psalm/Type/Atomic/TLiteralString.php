@@ -3,17 +3,33 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
-class TLiteralString extends TString implements LiteralType
+class TLiteralString extends TString
 {
-    /** @var array<string|int, bool> */
-    public $values;
+    /** @var string */
+    public $value;
 
     /**
-     * @param array<string|int, bool> $values
+     * @param string $value
      */
-    public function __construct(array $values)
+    public function __construct(string $value)
     {
-        $this->values = $values;
+        $this->value = $value;
+    }
+
+    /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return 'string(' . $this->value . ')';
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return 'string(\'' . $this->value . '\')';
     }
 
     /**
@@ -21,26 +37,6 @@ class TLiteralString extends TString implements LiteralType
      */
     public function getId()
     {
-        return $this->values ? 'string(\'' . implode('\',\'', array_keys($this->values)) . '\')' : 'string';
-    }
-
-    /**
-     * @return array<string|int, bool>
-     */
-    public function getValues()
-    {
-        return $this->values;
-    }
-
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
-    {
-        if (!$other_type instanceof self) {
-            return false;
-        }
-
-        return $this->values == $other_type->values;
+        return 'string(' . $this->value . ')';
     }
 }

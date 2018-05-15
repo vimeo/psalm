@@ -4,7 +4,6 @@ namespace Psalm\Checker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Codebase;
 use Psalm\Type;
-use Psalm\Type\Atomic\LiteralType;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -16,6 +15,9 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -567,11 +569,23 @@ class TypeChecker
             return true;
         }
 
+        if ($container_type_part instanceof TInt && $input_type_part instanceof TLiteralInt) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TFloat && $input_type_part instanceof TLiteralFloat) {
+            return true;
+        }
+
         if ($container_type_part instanceof TString && $input_type_part instanceof TClassString) {
             return true;
         }
 
         if ($container_type_part instanceof TString && $input_type_part instanceof TNumericString) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TString && $input_type_part instanceof TLiteralString) {
             return true;
         }
 
@@ -817,16 +831,6 @@ class TypeChecker
                 ) {
                     $all_types_contain = false;
                 }
-            }
-        }
-
-        if (($input_type_part instanceof TString && $container_type_part instanceof TString)
-            || ($input_type_part instanceof TInt && $container_type_part instanceof TInt)
-            || ($input_type_part instanceof TFloat && $container_type_part instanceof TFloat)
-        ) {
-            if ($input_type_part instanceof LiteralType && $container_type_part instanceof LiteralType) {
-                $all_types_contain = !array_diff_key($input_type_part->getValues(), $container_type_part->getValues());
-                $incompatible_values = !$all_types_contain;
             }
         }
 

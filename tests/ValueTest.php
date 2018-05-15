@@ -315,7 +315,7 @@ class ValueTest extends TestCase
                     if ($a !== 4) {
                         // do something
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'phpstanPostedArrayTest' => [
                 '<?php

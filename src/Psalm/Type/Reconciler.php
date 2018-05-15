@@ -92,7 +92,7 @@ class Reconciler
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
-            $before_adjustment = $result_type ? $result_type->getId() : '';
+            $before_adjustment = clone $result_type;
 
             $failed_reconciliation = false;
             $from_docblock = $result_type && $result_type->from_docblock;
@@ -125,12 +125,9 @@ class Reconciler
                 continue;
             }
 
-            if ($result_type->getId() !== $before_adjustment
-                || $result_type->from_docblock !== $from_docblock
-                || $result_type->possibly_undefined !== $possibly_undefined
-                || $result_type->from_calculation !== $from_calculation
-                || $failed_reconciliation
-            ) {
+            $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
+
+            if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[] = $key;
 
                 if (substr($key, -1) === ']') {
@@ -142,6 +139,28 @@ class Reconciler
                         $result_type
                     );
                 }
+            } elseif (!$type_changed
+                && $code_location
+                && isset($referenced_var_ids[$key])
+            ) {
+                $reconcile_key = implode(
+                    '&',
+                    array_map(
+                        function (array $new_type_part_parts) {
+                            return implode('|', $new_type_part_parts);
+                        },
+                        $new_type_parts
+                    )
+                );
+                self::triggerIssueForImpossible(
+                    $result_type,
+                    $before_adjustment->getId(),
+                    $key,
+                    $reconcile_key,
+                    true,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
 
             if ($failed_reconciliation) {
@@ -302,49 +321,36 @@ class Reconciler
                 $existing_var_type->removeType('true');
             }
 
-            if ($existing_var_type->hasType('string')) {
-                if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString) {
-                    $empty_values = [];
+            if ($existing_var_type->hasString()) {
+                $existing_string_types = $existing_var_type->getLiteralStrings();
 
-                    foreach ($existing_var_atomic_types['string']->values as $string_value => $_) {
-                        if (!$string_value) {
-                            $empty_values[$string_value] = true;
-                        } else {
+                if ($existing_string_types) {
+                    foreach ($existing_string_types as $key => $literal_type) {
+                        if (!$literal_type->value) {
+                            $existing_var_type->removeType($key);
                             $did_remove_type = true;
                         }
                     }
-
-                    if (!$empty_values) {
-                        $existing_var_type->removeType('string');
-                    } else {
-                        $existing_var_type->addType(new Type\Atomic\TLiteralString($empty_values));
-                    }
                 } else {
                     $did_remove_type = true;
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString(['' => true, 0 => true]));
+                    $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
+                    $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
                 }
             }
 
-            if ($existing_var_type->hasType('int')) {
-                if ($existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt) {
-                    $empty_values = [];
+            if ($existing_var_type->hasInt()) {
+                $existing_int_types = $existing_var_type->getLiteralInts();
 
-                    foreach ($existing_var_atomic_types['int']->values as $int_value => $_) {
-                        if (!$int_value) {
-                            $empty_values[$int_value] = true;
-                        } else {
+                if ($existing_int_types) {
+                    foreach ($existing_int_types as $key => $literal_type) {
+                        if (!$literal_type->value) {
+                            $existing_var_type->removeType($key);
                             $did_remove_type = true;
                         }
                     }
-
-                    if (!$empty_values) {
-                        $existing_var_type->removeType('int');
-                    } else {
-                        $existing_var_type->addType(new Type\Atomic\TLiteralInt($empty_values));
-                    }
                 } else {
                     $did_remove_type = true;
-                    $existing_var_type->addType(new Type\Atomic\TLiteralInt([0 => true]));
+                    $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
                 }
             }
 
@@ -582,7 +588,7 @@ class Reconciler
             $bracket_pos = strpos($new_var_type, '(');
 
             if ($bracket_pos) {
-                self::handleLiteralEquality(
+                return self::handleLiteralEquality(
                     $new_var_type,
                     $bracket_pos,
                     $existing_var_type,
@@ -592,8 +598,6 @@ class Reconciler
                     $suppressed_issues
                 );
             }
-
-            $new_type = Type::parseString($new_var_type);
         }
 
         if ($existing_var_type->isMixed()) {
@@ -1044,22 +1048,16 @@ class Reconciler
                 $existing_var_type->addType(new TTrue);
             }
 
-            if ($existing_var_type->hasType('string')) {
-                if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString) {
-                    $non_empty_values = [];
+            if ($existing_var_type->hasString()) {
+                $existing_string_types = $existing_var_type->getLiteralStrings();
 
-                    foreach ($existing_var_atomic_types['string']->values as $string_value => $_) {
-                        if ($string_value) {
-                            $non_empty_values[$string_value] = true;
+                if ($existing_string_types) {
+                    foreach ($existing_string_types as $key => $literal_type) {
+                        if ($literal_type->value) {
+                            $existing_var_type->removeType($key);
                         } else {
                             $did_remove_type = true;
                         }
-                    }
-
-                    if (!$non_empty_values) {
-                        $existing_var_type->removeType('string');
-                    } else {
-                        $existing_var_type->addType(new Type\Atomic\TLiteralString($non_empty_values));
                     }
                 } else {
                     $did_remove_type = true;
@@ -1210,7 +1208,7 @@ class Reconciler
      * @return void
      */
     private static function handleLiteralEquality(
-        &$new_var_type,
+        $new_var_type,
         $bracket_pos,
         Type\Union $existing_var_type,
         $old_var_type_string,
@@ -1218,120 +1216,118 @@ class Reconciler
         $code_location,
         $suppressed_issues
     ) {
-        $bracketed = substr($new_var_type, $bracket_pos + 1, -1);
-        $new_var_type = substr($new_var_type, 0, $bracket_pos);
+        $value = substr($new_var_type, $bracket_pos + 1, -1);
+
+        $scalar_type = substr($new_var_type, 0, $bracket_pos);
 
         $existing_var_atomic_types = $existing_var_type->getTypes();
 
-        if ($new_var_type === 'int') {
-            $ints = array_flip(explode(',', $bracketed));
+        if ($scalar_type === 'int') {
+            $value = (int) $value;
 
-            if (isset($existing_var_atomic_types['int'])) {
-                if ($existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt) {
-                    $current_count = count($existing_var_atomic_types['int']->values);
+            if ($existing_var_type->hasInt()) {
+                $existing_int_types = $existing_var_type->getLiteralInts();
 
-                    $existing_var_atomic_types['int']->values = array_intersect_key(
-                        $existing_var_atomic_types['int']->values,
-                        $ints
-                    );
+                if ($existing_int_types) {
+                    $can_be_equal = false;
 
-                    $existing_var_type->bustCache();
-
-                    $new_count = count($existing_var_atomic_types['int']->values);
+                    foreach ($existing_int_types as $key => $value_type) {
+                        if ($key !== $new_var_type) {
+                            $existing_var_type->removeType($key);
+                        } else {
+                            $can_be_equal = true;
+                        }
+                    }
 
                     if ($key
                         && $code_location
-                        && count($existing_var_atomic_types) === 1
-                        && ($new_count === 0 || $new_count === $current_count)
+                        && (!$can_be_equal || count($existing_int_types) === 1)
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
                             $new_var_type,
-                            $new_count === $current_count,
+                            $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
                     }
                 } else {
-                    /** @psalm-suppress InvalidScalarArgument */
-                    $existing_var_type->addType(new Type\Atomic\TLiteralInt($ints));
+                    $existing_var_type->addType(new Type\Atomic\TLiteralInt($value));
                 }
             }
-        } elseif ($new_var_type === 'string') {
-            $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
+        } elseif ($scalar_type === 'string') {
+            if ($existing_var_type->hasString()) {
+                $existing_string_types = $existing_var_type->getLiteralStrings();
 
-            if (isset($existing_var_atomic_types['string'])) {
-                if ($existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString) {
-                    $current_count = count($existing_var_atomic_types['string']->values);
+                if ($existing_string_types) {
+                    $can_be_equal = false;
 
-                    $existing_var_atomic_types['string']->values = array_intersect_key(
-                        $existing_var_atomic_types['string']->values,
-                        $strings
-                    );
-
-                    $existing_var_type->bustCache();
-
-                    $new_count = count($existing_var_atomic_types['string']->values);
+                    foreach ($existing_string_types as $key => $value_type) {
+                        if ($key !== $new_var_type) {
+                            $existing_var_type->removeType($key);
+                        } else {
+                            $can_be_equal = true;
+                        }
+                    }
 
                     if ($key
                         && $code_location
-                        && count($existing_var_atomic_types) === 1
-                        && ($new_count === 0 || $new_count === $current_count)
+                        && (!$can_be_equal || count($existing_string_types) === 1)
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
                             $new_var_type,
-                            $new_count === $current_count,
+                            $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
                     }
                 } else {
-                    /** @psalm-suppress InvalidScalarArgument */
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString($strings));
+                    $existing_var_type->addType(new Type\Atomic\TLiteralString($value));
                 }
             }
-        } elseif (substr($new_var_type, 0, 6) === 'float(') {
-            $floats = array_flip(explode(',', $bracketed));
+        } elseif ($scalar_type === 'float') {
+            $value = (float) $value;
 
-            if (isset($existing_var_atomic_types['float'])) {
-                if ($existing_var_atomic_types['float'] instanceof Type\Atomic\TLiteralFloat) {
-                    $current_count = count($existing_var_atomic_types['float']->values);
+            if ($existing_var_type->hasInt()) {
+                $existing_float_types = $existing_var_type->getLiteralFloats();
 
-                    $existing_var_atomic_types['float']->values = array_intersect_key(
-                        $existing_var_atomic_types['float']->values,
-                        $floats
-                    );
+                if ($existing_float_types) {
+                    $can_be_equal = false;
 
-                    $existing_var_type->bustCache();
-
-                    $new_count = count($existing_var_atomic_types['float']->values);
+                    foreach ($existing_float_types as $key => $value_type) {
+                        if ($key !== $new_var_type) {
+                            $existing_var_type->removeType($key);
+                        } else {
+                            $can_be_equal = true;
+                        }
+                    }
 
                     if ($key
                         && $code_location
-                        && count($existing_var_atomic_types) === 1
-                        && ($new_count === 0 || $new_count === $current_count)
+                        && (!$can_be_equal || count($existing_float_types) === 1)
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
                             $new_var_type,
-                            $new_count === $current_count,
+                            $can_be_equal,
                             $code_location,
                             $suppressed_issues
                         );
                     }
                 } else {
-                    /** @psalm-suppress InvalidScalarArgument */
-                    $existing_var_type->addType(new Type\Atomic\TLiteralFloat($floats));
+                    $existing_var_type->addType(new Type\Atomic\TLiteralFloat($value));
                 }
             }
         }
+
+        return $existing_var_type;
     }
 
     /**
@@ -1353,134 +1349,59 @@ class Reconciler
         $code_location,
         $suppressed_issues
     ) {
-        $bracketed = substr($new_var_type, $bracket_pos + 1, -1);
-        $new_var_type = substr($new_var_type, 0, $bracket_pos);
+        $scalar_type = substr($new_var_type, 0, $bracket_pos);
 
         $existing_var_atomic_types = $existing_var_type->getTypes();
 
-        if ($new_var_type === 'int') {
-            $ints = array_flip(explode(',', $bracketed));
+        $did_remove_type = false;
+        $did_match_literal_type = false;
 
-            if (isset($existing_var_atomic_types['int'])
-                && $existing_var_atomic_types['int'] instanceof Type\Atomic\TLiteralInt
-            ) {
-                $current_count = count($existing_var_atomic_types['int']->values);
+        if ($scalar_type === 'int') {
+            if ($existing_var_type->hasInt() && $existing_int_types = $existing_var_type->getLiteralInts()) {
+                $did_match_literal_type = true;
 
-                $existing_var_atomic_types['int']->values = array_diff_key(
-                    $existing_var_atomic_types['int']->values,
-                    $ints
-                );
+                if (isset($existing_int_types[$new_var_type])) {
+                    $existing_var_type->removeType($new_var_type);
 
-                $new_count = count($existing_var_atomic_types['int']->values);
-
-                if (!$existing_var_atomic_types['int']->values) {
-                    $existing_var_type->removeType('int');
-
-                    if (count($existing_var_atomic_types) === 1) {
-                        $existing_var_type->addType(new TEmpty);
-                    }
-                } else {
-                    $existing_var_type->bustCache();
-                }
-
-                if ($key
-                    && $code_location
-                    && count($existing_var_atomic_types) === 1
-                    && ($new_count === 0 || $new_count === $current_count)
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $new_var_type,
-                        $new_count === 0,
-                        $code_location,
-                        $suppressed_issues
-                    );
+                    $did_remove_type = true;
                 }
             }
-        } elseif ($new_var_type === 'string') {
-            $strings = array_flip(explode('\',\'', substr($bracketed, 1, -1)));
+        } elseif ($scalar_type === 'string') {
+            if ($existing_var_type->hasString() && $existing_string_types = $existing_var_type->getLiteralStrings()) {
+                $did_match_literal_type = true;
 
-            if (isset($existing_var_atomic_types['string'])
-                && $existing_var_atomic_types['string'] instanceof Type\Atomic\TLiteralString
-            ) {
-                $current_count = count($existing_var_atomic_types['string']->values);
+                if (isset($existing_string_types[$new_var_type])) {
+                    $existing_var_type->removeType($new_var_type);
 
-                $existing_var_atomic_types['string']->values = array_diff_key(
-                    $existing_var_atomic_types['string']->values,
-                    $strings
-                );
-
-                $new_count = count($existing_var_atomic_types['string']->values);
-
-                if (!$existing_var_atomic_types['string']->values) {
-                    $existing_var_type->removeType('string');
-
-                    if (count($existing_var_atomic_types) === 1) {
-                        $existing_var_type->addType(new TEmpty);
-                    }
-                } else {
-                    $existing_var_type->bustCache();
-                }
-
-                if ($key
-                    && $code_location
-                    && count($existing_var_atomic_types) === 1
-                    && ($new_count === 0 || $new_count === $current_count)
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $new_var_type,
-                        $new_count === 0,
-                        $code_location,
-                        $suppressed_issues
-                    );
+                    $did_remove_type = true;
                 }
             }
-        } elseif (substr($new_var_type, 0, 6) === 'float(') {
-            $floats = array_flip(explode(',', $bracketed));
+        } elseif ($scalar_type === 'float') {
+            if ($existing_var_type->hasFloat() && $existing_float_types = $existing_var_type->getLiteralFloats()) {
+                $did_match_literal_type = true;
 
-            if (isset($existing_var_atomic_types['float'])
-                && $existing_var_atomic_types['float'] instanceof Type\Atomic\TLiteralFloat
-            ) {
-                $current_count = count($existing_var_atomic_types['float']->values);
+                if (isset($existing_float_types[$new_var_type])) {
+                    $existing_var_type->removeType($new_var_type);
 
-                $existing_var_atomic_types['float']->values = array_diff_key(
-                    $existing_var_atomic_types['float']->values,
-                    $floats
-                );
-
-                $new_count = count($existing_var_atomic_types['float']->values);
-
-                if (!$existing_var_atomic_types['float']->values) {
-                    $existing_var_type->removeType('float');
-
-                    if (count($existing_var_atomic_types) === 1) {
-                        $existing_var_type->addType(new TEmpty);
-                    }
-                } else {
-                    $existing_var_type->bustCache();
-                }
-
-                if ($key
-                    && $code_location
-                    && count($existing_var_atomic_types) === 1
-                    && ($new_count === 0 || $new_count === $current_count)
-                ) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $new_var_type,
-                        $new_count === 0,
-                        $code_location,
-                        $suppressed_issues
-                    );
+                    $did_remove_type = true;
                 }
             }
+        }
+
+        if ($key
+            && $code_location
+            && $did_match_literal_type
+            && (!$did_remove_type || count($existing_var_atomic_types) === 1)
+        ) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $old_var_type_string,
+                $key,
+                $new_var_type,
+                !$did_remove_type,
+                $code_location,
+                $suppressed_issues
+            );
         }
 
         return $existing_var_type;

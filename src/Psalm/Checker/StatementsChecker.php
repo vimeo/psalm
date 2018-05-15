@@ -800,21 +800,15 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            return Type::getString(
-                strlen($stmt->value) < 30
-                    && strpos($stmt->value, '\'') === false
-                    && strpos($stmt->value, ',') === false
-                    ? [$stmt->value => true]
-                    : null
-            );
+            return Type::getString(strlen($stmt->value) < 30 ? $stmt->value : null);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            return Type::getInt(false, [($stmt->value >= 0 ? $stmt->value : (string) $stmt->value) => true]);
+            return Type::getInt(false, $stmt->value);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            return Type::getFloat([(string)$stmt->value => true]);
+            return Type::getFloat($stmt->value);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Array_) {
@@ -977,23 +971,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 if ($type_part instanceof Type\Atomic\TLiteralInt
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $inverted_values = [];
-
-                    foreach ($type_part->values as $value => $_) {
-                        $inverted_values[$value > 0 ? (string) (-$value) : (int) (-$value)] = true;
-                    }
-
-                    $type_part->values = $inverted_values;
+                    $type_part->value = -$type_part->value;
                 } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
                     && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                 ) {
-                    $inverted_values = [];
-
-                    foreach ($type_part->values as $value => $_) {
-                        $inverted_values[(string)(-$value)] = true;
-                    }
-
-                    $type_part->values = $inverted_values;
+                    $type_part->value = -$type_part->value;
                 }
             }
 

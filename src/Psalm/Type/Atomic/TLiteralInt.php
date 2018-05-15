@@ -3,17 +3,25 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
-class TLiteralInt extends TInt implements LiteralType
+class TLiteralInt extends TInt
 {
-    /** @var array<string|int, bool> */
-    public $values;
+    /** @var int */
+    public $value;
 
     /**
-     * @param array<string|int, bool> $values
+     * @param int $value
      */
-    public function __construct(array $values)
+    public function __construct(int $value)
     {
-        $this->values = $values;
+        $this->value = $value;
+    }
+
+    /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return 'int(' . $this->value . ')';
     }
 
     /**
@@ -21,26 +29,6 @@ class TLiteralInt extends TInt implements LiteralType
      */
     public function getId()
     {
-        return $this->values ? 'int(' . implode(',', array_keys($this->values)) . ')' : 'int';
-    }
-
-    /**
-     * @return array<string|int, bool>
-     */
-    public function getValues()
-    {
-        return $this->values;
-    }
-
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
-    {
-        if (!$other_type instanceof self) {
-            return false;
-        }
-
-        return $this->values == $other_type->values;
+        return 'int(' . $this->value . ')';
     }
 }

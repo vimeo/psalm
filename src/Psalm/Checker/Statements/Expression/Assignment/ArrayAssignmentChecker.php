@@ -323,9 +323,7 @@ class ArrayAssignmentChecker
                     } elseif ($atomic_root_types['array'] instanceof ObjectLike
                         && $atomic_root_types['array']->sealed
                     ) {
-                        $array_atomic_type->count = new Type\Atomic\TLiteralInt([
-                            count($atomic_root_types['array']->properties) => true
-                        ]);
+                        $array_atomic_type->count = count($atomic_root_types['array']->properties);
                         $from_countable_object_like = true;
                     }
                 }

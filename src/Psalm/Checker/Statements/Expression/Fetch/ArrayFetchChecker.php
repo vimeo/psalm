@@ -270,17 +270,15 @@ class ArrayFetchChecker
         } elseif (isset($stmt->dim->inferredType)) {
             foreach ($stmt->dim->inferredType->getTypes() as $possible_value_type) {
                 if ($possible_value_type instanceof TLiteralString
-                    || $possible_value_type instanceof TLiteralFloat
                     || $possible_value_type instanceof TLiteralInt
                 ) {
-                    if (!$key_value && count($possible_value_type->values) === 1) {
-                        $key_value = array_keys($possible_value_type->values)[0];
-                    } else {
+                    if ($key_value !== null) {
                         $key_value = null;
                         break;
                     }
+
+                    $key_value = $possible_value_type->value;
                 } elseif ($possible_value_type instanceof TString
-                    || $possible_value_type instanceof TFloat
                     || $possible_value_type instanceof TInt
                 ) {
                     $key_value = null;
@@ -404,14 +402,8 @@ class ArrayFetchChecker
                         }
                     }
 
-                    if (!$stmt->dim && $type->count && $type->count->values) {
-                        $new_counts = [];
-
-                        foreach ($type->count->values as $count => $_) {
-                            $new_counts[(int)$count + 1] = true;
-                        }
-
-                        $type->count->values = $new_counts;
+                    if (!$stmt->dim && $type->count !== null) {
+                        $type->count++;
                     }
 
                     if ($in_assignment && $replacement_type) {
@@ -525,7 +517,7 @@ class ArrayFetchChecker
 
                             if (!$stmt->dim && $property_count) {
                                 ++$property_count;
-                                $type->count = new Type\Atomic\TLiteralInt([$property_count => true]);
+                                $type->count = $property_count;
                             }
 
                             if (!$array_access_type) {
