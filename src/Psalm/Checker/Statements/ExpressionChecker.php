@@ -211,15 +211,13 @@ class ExpressionChecker
                 $stmt->inferredType = clone $stmt->var->inferredType;
                 $stmt->inferredType->from_calculation = true;
 
-                foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+                foreach ($stmt->inferredType->getTypes() as $key => $atomic_type) {
                     if ($atomic_type instanceof Type\Atomic\TLiteralInt) {
                         $stmt->inferredType->addType(new Type\Atomic\TInt);
                     } elseif ($atomic_type instanceof Type\Atomic\TLiteralFloat) {
                         $stmt->inferredType->addType(new Type\Atomic\TFloat);
                     }
                 }
-
-                $stmt->inferredType->bustCache();
 
                 $var_id = self::getArrayVarId($stmt->var, null);
 

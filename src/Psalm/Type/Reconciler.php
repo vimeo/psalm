@@ -98,11 +98,19 @@ class Reconciler
             $from_docblock = $result_type && $result_type->from_docblock;
             $possibly_undefined = $result_type && $result_type->possibly_undefined;
             $from_calculation = $result_type && $result_type->from_calculation;
+            $has_inequality = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
+                    if ($new_type_part_part[0] === '!') {
+                        if (isset($new_type_part_part[1])
+                            && ($new_type_part_part[1] === '^' || $new_type_part_part[1] === '~')
+                        ) {
+                            $has_inequality = true;
+                        }
+                    }
                     $result_type_candidate = self::reconcileTypes(
                         $new_type_part_part,
                         $result_type ? clone $result_type : null,
@@ -121,8 +129,8 @@ class Reconciler
                 $result_type = $orred_type;
             }
 
-            if ($result_type === null) {
-                continue;
+            if (empty($result_type->getTypes())) {
+                $result_type->addType(new TEmpty);
             }
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
@@ -142,6 +150,7 @@ class Reconciler
             } elseif (!$type_changed
                 && $code_location
                 && isset($referenced_var_ids[$key])
+                && !$has_inequality
             ) {
                 $reconcile_key = implode(
                     '&',
@@ -598,6 +607,8 @@ class Reconciler
                     $suppressed_issues
                 );
             }
+
+            $new_type = Type::parseString($new_var_type);
         }
 
         if ($existing_var_type->isMixed()) {
@@ -1231,7 +1242,7 @@ class Reconciler
                 if ($existing_int_types) {
                     $can_be_equal = false;
 
-                    foreach ($existing_int_types as $key => $value_type) {
+                    foreach ($existing_var_atomic_types as $key => $value_type) {
                         if ($key !== $new_var_type) {
                             $existing_var_type->removeType($key);
                         } else {
@@ -1241,14 +1252,14 @@ class Reconciler
 
                     if ($key
                         && $code_location
-                        && (!$can_be_equal || count($existing_int_types) === 1)
+                        && !$can_be_equal
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
                             $new_var_type,
-                            $can_be_equal,
+                            false,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1264,7 +1275,7 @@ class Reconciler
                 if ($existing_string_types) {
                     $can_be_equal = false;
 
-                    foreach ($existing_string_types as $key => $value_type) {
+                    foreach ($existing_var_atomic_types as $key => $value_type) {
                         if ($key !== $new_var_type) {
                             $existing_var_type->removeType($key);
                         } else {
@@ -1274,14 +1285,14 @@ class Reconciler
 
                     if ($key
                         && $code_location
-                        && (!$can_be_equal || count($existing_string_types) === 1)
+                        && (!$can_be_equal)
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
                             $new_var_type,
-                            $can_be_equal,
+                            false,
                             $code_location,
                             $suppressed_issues
                         );
@@ -1299,7 +1310,7 @@ class Reconciler
                 if ($existing_float_types) {
                     $can_be_equal = false;
 
-                    foreach ($existing_float_types as $key => $value_type) {
+                    foreach ($existing_var_atomic_types as $key => $value_type) {
                         if ($key !== $new_var_type) {
                             $existing_var_type->removeType($key);
                         } else {
@@ -1309,14 +1320,14 @@ class Reconciler
 
                     if ($key
                         && $code_location
-                        && (!$can_be_equal || count($existing_float_types) === 1)
+                        && !$can_be_equal
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
                             $new_var_type,
-                            $can_be_equal,
+                            false,
                             $code_location,
                             $suppressed_issues
                         );

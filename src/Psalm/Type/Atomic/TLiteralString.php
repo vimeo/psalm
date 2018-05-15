@@ -29,7 +29,7 @@ class TLiteralString extends TString
      */
     public function __toString()
     {
-        return 'string(\'' . $this->value . '\')';
+        return 'string';
     }
 
     /**

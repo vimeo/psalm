@@ -168,17 +168,7 @@ class ArrayFetchChecker
                             || $offset_atomic_type instanceof TInt
                         ) {
                             if (isset($const_array_key_atomic_types[$offset_key])) {
-                                if (($offset_atomic_type instanceof TLiteralInt
-                                        && $const_array_key_atomic_types[$offset_key] instanceof TLiteralInt)
-                                    || ($offset_atomic_type instanceof TLiteralString
-                                        && $const_array_key_atomic_types[$offset_key] instanceof TLiteralString)
-                                ) {
-                                    /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
-                                    $offset_atomic_type->values = array_intersect_key(
-                                        $offset_atomic_type->values,
-                                        $const_array_key_atomic_types[$offset_key]->values
-                                    );
-                                }
+
                             } elseif (!TypeChecker::isContainedBy(
                                 $project_checker->codebase,
                                 new Type\Union([$offset_atomic_type]),
@@ -765,42 +755,14 @@ class ArrayFetchChecker
      */
     public static function replaceOffsetTypeWithInts(Type\Union $offset_type)
     {
-        $offset_atomic_types = $offset_type->getTypes();
+        $offset_string_types = $offset_type->getLiteralStrings();
 
-        if (isset($offset_atomic_types['string'])
-            && $offset_atomic_types['string'] instanceof Type\Atomic\TLiteralString
-        ) {
-            $strings = [];
-            $ints = [];
+        $offset_type = clone $offset_type;
 
-            foreach ($offset_atomic_types['string']->values as $key => $_) {
-                if (is_int($key)) {
-                    $ints[$key] = true;
-                } else {
-                    $strings[$key] = true;
-                }
-            }
-
-            if ($ints) {
-                $offset_type = clone $offset_type;
-
-                if ($strings) {
-                    $offset_type->addType(new Type\Atomic\TLiteralString($strings));
-                } else {
-                    $offset_type->removeType('string');
-                }
-
-                if (isset($offset_atomic_types['int'])
-                    && $offset_atomic_types['int'] instanceof Type\Atomic\TInt
-                ) {
-                    if ($offset_atomic_types['int'] instanceof Type\Atomic\TLiteralInt) {
-                        $offset_type->addType(new Type\Atomic\TLiteralInt(
-                            $offset_atomic_types['int']->values + $ints
-                        ));
-                    }
-                } else {
-                    $offset_type->addType(new Type\Atomic\TLiteralInt($ints));
-                }
+        foreach ($offset_string_types as $key => $offset_string_type) {
+            if (preg_match('/^(0|[1-9][0-9]*)$/', $offset_string_type->value)) {
+                $offset_type->addType(new Type\Atomic\TLiteralInt((int) $offset_string_type->value));
+                $offset_type->removeType($key);
             }
         }
 

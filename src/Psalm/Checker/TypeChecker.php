@@ -569,15 +569,15 @@ class TypeChecker
             return true;
         }
 
-        if ($container_type_part instanceof TInt && $input_type_part instanceof TLiteralInt) {
+        if (get_class($container_type_part) === TInt::class && $input_type_part instanceof TLiteralInt) {
             return true;
         }
 
-        if ($container_type_part instanceof TFloat && $input_type_part instanceof TLiteralFloat) {
+        if (get_class($container_type_part) === TFloat::class && $input_type_part instanceof TLiteralFloat) {
             return true;
         }
 
-        if ($container_type_part instanceof TString && $input_type_part instanceof TClassString) {
+        if (get_class($container_type_part) === TString::class && $input_type_part instanceof TClassString) {
             return true;
         }
 

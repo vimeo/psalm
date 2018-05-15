@@ -6,9 +6,12 @@ use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TString;
 
 class Union
 {
@@ -129,6 +132,21 @@ class Union
             $this->literal_int_types[$type->getKey()] = $type;
         } elseif ($type instanceof TLiteralFloat) {
             $this->literal_float_types[$type->getKey()] = $type;
+        } elseif ($type instanceof TString && $this->literal_string_types) {
+            foreach ($this->literal_string_types as $key => $_) {
+                unset($this->literal_string_types[$key]);
+                unset($this->types[$key]);
+            }
+        } elseif ($type instanceof TInt && $this->literal_int_types) {
+            foreach ($this->literal_int_types as $key => $_) {
+                unset($this->literal_int_types[$key]);
+                unset($this->types[$key]);
+            }
+        } elseif ($type instanceof TFloat && $this->literal_float_types) {
+            foreach ($this->literal_float_types as $key => $_) {
+                unset($this->literal_float_types[$key]);
+                unset($this->types[$key]);
+            }
         }
 
         $this->id = null;
@@ -790,7 +808,7 @@ class Union
      */
     public function isSingleStringLiteral()
     {
-        return count($this->types) !== 1 || !$this->literal_string_types || count($this->literal_string_types) !== 1;
+        return count($this->types) === 1 && $this->literal_string_types && count($this->literal_string_types) === 1;
     }
 
     /**
