@@ -665,6 +665,8 @@ class Reconciler
 
             $any_scalar_type_match_found = false;
 
+            $matching_atomic_types = [];
+
             foreach ($new_type->getTypes() as $new_type_part) {
                 $has_local_match = false;
 
@@ -689,6 +691,9 @@ class Reconciler
                     ) || $type_coerced
                     ) {
                         $has_local_match = true;
+                        if ($type_coerced) {
+                            $matching_atomic_types[] = $existing_var_type_part;
+                        }
                         break;
                     }
 
@@ -717,6 +722,10 @@ class Reconciler
                     $has_match = false;
                     break;
                 }
+            }
+
+            if ($matching_atomic_types) {
+                $new_type = new Type\Union($matching_atomic_types);
             }
 
             if (!$has_match && (!$is_loose_equality || !$any_scalar_type_match_found)) {
