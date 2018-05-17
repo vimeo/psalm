@@ -60,8 +60,6 @@ class Reconciler
         CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
-        var_dump($new_types);
-
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') && ($type[0][0] === '^isset' || $type[0][0] === '!^empty')) {
                 $path_parts = self::breakUpPathIntoParts($nk);
@@ -78,10 +76,6 @@ class Reconciler
                 }
             }
         }
-
-        var_dump($new_types);
-
-        var_dump('after');
 
         if (empty($new_types)) {
             return $existing_types;
@@ -103,6 +97,7 @@ class Reconciler
             $failed_reconciliation = false;
             $has_negation = false;
             $has_equality = false;
+            $has_isset = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 $orred_type = null;
@@ -116,6 +111,8 @@ class Reconciler
                         case '~':
                             $has_equality = true;
                     }
+
+                    $has_isset = $has_isset || $new_type_part_part === 'isset';
 
                     $result_type_candidate = self::reconcileTypes(
                         $new_type_part_part,
@@ -161,6 +158,7 @@ class Reconciler
                 && isset($referenced_var_ids[$key])
                 && !$has_negation
                 && !$has_equality
+                && (!$has_isset || substr($key, -1, 1) !== ']')
             ) {
                 $reconcile_key = implode(
                     '&',
@@ -177,7 +175,7 @@ class Reconciler
 
                 self::triggerIssueForImpossible(
                     $result_type,
-                    $before_adjustment->getId(),
+                    $before_adjustment ? $before_adjustment->getId() : '',
                     $key,
                     $reconcile_key,
                     !$type_changed,
