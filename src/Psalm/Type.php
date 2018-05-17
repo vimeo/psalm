@@ -1130,28 +1130,31 @@ abstract class Type
             }
         } else {
             if ($type instanceof TString) {
-                if ($type instanceof TLiteralString) {
-                    if ($combination->strings !== null) {
-                        $combination->strings[] = $type;
-                    }
+                if ($type instanceof TLiteralString
+                    && $combination->strings !== null
+                    && count($combination->strings) < 20
+                ) {
+                    $combination->strings[] = $type;
                 } else {
                     $combination->strings = null;
                     $combination->value_types[$type_key] = $type;
                 }
             } elseif ($type instanceof TInt) {
-                if ($type instanceof TLiteralInt) {
-                    if ($combination->ints !== null) {
-                        $combination->ints[] = $type;
-                    }
+                if ($type instanceof TLiteralInt
+                    && $combination->ints !== null
+                    && count($combination->ints) < 20
+                ) {
+                    $combination->ints[] = $type;
                 } else {
                     $combination->ints = null;
                     $combination->value_types[$type_key] = $type;
                 }
             } elseif ($type instanceof TFloat) {
-                if ($type instanceof TLiteralFloat) {
-                    if ($combination->floats !== null) {
-                        $combination->floats[] = $type;
-                    }
+                if ($type instanceof TLiteralFloat
+                    && $combination->floats !== null
+                    && count($combination->floats) < 20
+                ) {
+                    $combination->floats[] = $type;
                 } else {
                     $combination->floats = null;
                     $combination->value_types[$type_key] = $type;
