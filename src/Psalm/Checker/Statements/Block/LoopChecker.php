@@ -180,15 +180,12 @@ class LoopChecker
                     if (in_array($var_id, $asserted_var_ids, true)) {
                         // set the vars to whatever the while/foreach loop expects them to be
                         if (!isset($pre_loop_context->vars_in_scope[$var_id])
-                            || $type->getId() !== $pre_loop_context->vars_in_scope[$var_id]->getId()
-                            || $type->from_docblock !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
+                            || !$type->equals($pre_loop_context->vars_in_scope[$var_id])
                         ) {
                             $has_changes = true;
                         }
                     } elseif (isset($pre_outer_context->vars_in_scope[$var_id])) {
-                        $str_type = $type->getId();
-
-                        if ($str_type !== $pre_outer_context->vars_in_scope[$var_id]->getId()) {
+                        if (!$type->equals($pre_outer_context->vars_in_scope[$var_id])) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
@@ -201,7 +198,7 @@ class LoopChecker
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
 
-                        if ($str_type !== $loop_scope->loop_context->vars_in_scope[$var_id]->getId()) {
+                        if (!$type->equals($loop_scope->loop_context->vars_in_scope[$var_id])) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type

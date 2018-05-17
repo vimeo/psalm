@@ -47,7 +47,7 @@ class TLiteralString extends TString
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return null
+     * @return string
      */
     public function toPhpString(
         $namespace,

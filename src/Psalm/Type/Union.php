@@ -74,10 +74,19 @@ class Union
      */
     public $possibly_undefined = false;
 
+    /**
+     * @var array<string, TLiteralString>
+     */
     private $literal_string_types = [];
 
+    /**
+     * @var array<string, TLiteralInt>
+     */
     private $literal_int_types = [];
 
+    /**
+     * @var array<string, TLiteralFloat>
+     */
     private $literal_float_types = [];
 
     /**
@@ -97,6 +106,8 @@ class Union
      */
     public function __construct(array $types)
     {
+        $from_docblock = false;
+
         foreach ($types as $type) {
             $key = $type->getKey();
             $this->types[$key] = $type;
@@ -108,7 +119,11 @@ class Union
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
             }
+
+            $from_docblock = $from_docblock || $type->from_docblock;
         }
+
+        $this->from_docblock = $from_docblock;
     }
 
     /**
@@ -566,12 +581,22 @@ class Union
     /**
      * @return bool
      */
+    public function isEmptyMixed()
+    {
+        return isset($this->types['mixed'])
+            && $this->types['mixed'] instanceof Type\Atomic\TEmptyMixed;
+    }
+
+    /**
+     * @return bool
+     */
     public function isMixedNotFromIsset()
     {
         /**
          * @psalm-suppress UndefinedPropertyFetch
          */
-        return isset($this->types['mixed']) && !$this->types['mixed']->from_isset;
+        return isset($this->types['mixed'])
+            && !$this->types['mixed']->from_isset;
     }
 
     /**
@@ -619,7 +644,7 @@ class Union
      */
     public function substitute(Union $old_type, Union $new_type = null)
     {
-        if ($this->isMixed()) {
+        if ($this->isMixed() && !$this->isEmptyMixed()) {
             return;
         }
 
@@ -812,6 +837,9 @@ class Union
         return $type_count === 1;
     }
 
+    /**
+     * @return bool
+     */
     public function isSingleAndMaybeNullable()
     {
         $is_nullable = isset($this->types['null']);
@@ -845,9 +873,10 @@ class Union
      */
     public function isInt()
     {
-        if (count($this->types) !== 1) {
+        if (!$this->isSingle()) {
             return false;
         }
+
         return isset($this->types['float']) || $this->literal_int_types;
     }
 
@@ -856,9 +885,10 @@ class Union
      */
     public function isFloat()
     {
-        if (count($this->types) !== 1) {
+        if (!$this->isSingle()) {
             return false;
         }
+
         return isset($this->types['float']) || $this->literal_float_types;
     }
 
@@ -867,9 +897,10 @@ class Union
      */
     public function isString()
     {
-        if (count($this->types) !== 1) {
+        if (!$this->isSingle()) {
             return false;
         }
+
         return isset($this->types['string']) || $this->literal_string_types;
     }
 
@@ -1005,16 +1036,25 @@ class Union
         return true;
     }
 
+    /**
+     * @return array<string, TLiteralString>
+     */
     public function getLiteralStrings()
     {
         return $this->literal_string_types;
     }
 
+    /**
+     * @return array<string, TLiteralInt>
+     */
     public function getLiteralInts()
     {
         return $this->literal_int_types;
     }
 
+    /**
+     * @return array<string, TLiteralFloat>
+     */
     public function getLiteralFloats()
     {
         return $this->literal_float_types;

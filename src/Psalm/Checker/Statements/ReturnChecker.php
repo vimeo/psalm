@@ -175,7 +175,9 @@ class ReturnChecker
                         true,
                         $has_scalar_match,
                         $type_coerced,
-                        $type_coerced_from_mixed
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $type_coerced_from_scalar
                     )
                     ) {
                         // is the declared return type more specific than the inferred one?

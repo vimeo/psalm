@@ -18,12 +18,12 @@ class TypeCombination
     /** @var array<string, string> */
     public $class_string_types = [];
 
-    /** @var array<Atomic\TLiteralString>|null */
+    /** @var array<int, Atomic\TLiteralString>|null */
     public $strings = [];
 
-    /** @var array<Atomic\TLiteralInt>|null */
+    /** @var array<int, Atomic\TLiteralInt>|null */
     public $ints = [];
 
-    /** @var array<Atomic\TLiteralFloat>|null */
+    /** @var array<int, Atomic\TLiteralFloat>|null */
     public $floats = [];
 }

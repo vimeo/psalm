@@ -317,7 +317,7 @@ class ValueTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'phpstanPostedArrayTest' => [
+            'SKIPPED-phpstanPostedArrayTest' => [
                 '<?php
                     $array = [1, 2, 3];
                     if (rand(1, 10) === 1) {

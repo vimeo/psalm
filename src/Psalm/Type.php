@@ -549,7 +549,7 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
-     * @param string|null $value
+     * @param int|null $value
      *
      * @return Type\Union
      */

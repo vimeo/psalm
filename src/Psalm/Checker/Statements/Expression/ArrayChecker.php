@@ -68,7 +68,7 @@ class ArrayChecker
                     if ($item->key instanceof PhpParser\Node\Scalar\String_
                         && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
                     ) {
-                        $key_type = Type::getInt(false, $item->key->value);
+                        $key_type = Type::getInt(false, (int) $item->key->value);
                     }
 
                     if ($item_key_type) {

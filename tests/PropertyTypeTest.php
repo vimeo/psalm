@@ -205,6 +205,9 @@ class PropertyTypeTest extends TestCase
                     }
 
                     $a = rand(0, 10) ? new A(): new B();
+                    if (rand(0, 1)) {
+                        $a = null;
+                    }
                     $b = null;
 
                     if (rand(0, 10) === 4) {

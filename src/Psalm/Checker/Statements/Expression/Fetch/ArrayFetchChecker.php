@@ -384,8 +384,14 @@ class ArrayFetchChecker
                             $offset_type,
                             $type->type_params[0],
                             true,
-                            $offset_type->ignore_falsable_issues
-                        )) {
+                            $offset_type->ignore_falsable_issues,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed,
+                            $to_string_cast,
+                            $type_coerced_from_scalar
+                        ) && !$type_coerced_from_scalar
+                        ) {
                             $expected_offset_types[] = $type->type_params[0]->getId();
                         } else {
                             $has_valid_offset = true;
@@ -484,8 +490,15 @@ class ArrayFetchChecker
                         $offset_type,
                         $type->getGenericKeyType(),
                         true,
-                        $offset_type->ignore_falsable_issues
-                    ) || $in_assignment
+                        $offset_type->ignore_falsable_issues,
+                        $has_scalar_match,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $type_coerced_from_scalar
+                    )
+                    || $type_coerced_from_scalar
+                    || $in_assignment
                     ) {
                         if ($replacement_type) {
                             $generic_params = Type::combineUnionTypes(

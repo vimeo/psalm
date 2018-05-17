@@ -260,7 +260,7 @@ class ArrayAssignmentChecker
             }
         }
 
-        $root_is_string = array_keys($root_type->getTypes()) === ['string'];
+        $root_is_string = $root_type->isString();
 
         if (($current_dim instanceof PhpParser\Node\Scalar\String_
                 || $current_dim instanceof PhpParser\Node\Scalar\LNumber)
@@ -343,15 +343,9 @@ class ArrayAssignmentChecker
 
                 if (isset($atomic_root_types['array'])
                     && $atomic_root_types['array'] instanceof TArray
-                    && isset($atomic_root_types['array']->count->values)
+                    && $atomic_root_types['array']->count !== null
                 ) {
-                    $new_counts = [];
-
-                    foreach ($atomic_root_types['array']->count->values as $count => $_) {
-                        $new_counts[((int)$count + 1)] = true;
-                    }
-
-                    $atomic_root_types['array']->count->values = $new_counts;
+                    $atomic_root_types['array']->count++;
                 }
             }
         } else {
