@@ -158,6 +158,7 @@ class Reconciler
                 && isset($referenced_var_ids[$key])
                 && !$has_negation
                 && !$has_equality
+                && !$result_type->isMixed()
                 && (!$has_isset || substr($key, -1, 1) !== ']')
             ) {
                 $reconcile_key = implode(
