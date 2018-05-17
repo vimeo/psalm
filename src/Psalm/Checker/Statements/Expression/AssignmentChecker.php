@@ -239,6 +239,7 @@ class AssignmentChecker
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
             $context->assigned_var_ids[$var_id] = true;
+            $context->possibly_assigned_var_ids[$var_id] = true;
 
             $location = new CodeLocation($statements_checker, $assign_var);
 

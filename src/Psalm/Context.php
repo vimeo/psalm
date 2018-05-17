@@ -188,6 +188,13 @@ class Context
     public $assigned_var_ids = [];
 
     /**
+     * A list of vars that have been may have been assigned to
+     *
+     * @var array<string, bool>
+     */
+    public $possibly_assigned_var_ids = [];
+
+    /**
      * @var bool
      */
     public $is_global = false;

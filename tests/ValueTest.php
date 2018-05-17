@@ -281,6 +281,18 @@ class ValueTest extends TestCase
                     $s = rand(0, 1) ? 200 : null;
                     if (!$s) {}'
             ],
+            'redefinedIntInIfAndPossibleComparison' => [
+                '<?php
+                    $s = rand(0, 1) ? 0 : 1;
+
+                    if ($s && rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $s = 2;
+                        }
+                    }
+
+                    if ($s == 2) {}',
+            ],
         ];
     }
 
@@ -408,6 +420,19 @@ class ValueTest extends TestCase
 
                     if ($i === 0) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'redefinedIntInIfAndImpossbleComparison' => [
+                '<?php
+                    $s = rand(0, 1) ? 0 : 1;
+
+                    if ($s && rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $s = 2;
+                        }
+                    }
+
+                    if ($s == 3) {}',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
