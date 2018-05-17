@@ -844,6 +844,18 @@ class TypeReconciliationTest extends TestCase
                         $b_or_d->foo();
                     }',
             ],
+            'SKIPPED-isArrayOnArrayKeyOffset' => [
+                '<?php
+                    /** @var array{s:array<mixed, array<int, string>|string>} */
+                    $doc = [];
+
+                    if (!is_array($doc["s"]["t"])) {
+                        $doc["s"]["t"] = [$doc["s"]["t"]];
+                    }',
+                'assertions' => [
+                    '$doc[\'s\'][\'t\']' => 'array<int, string>',
+                ],
+            ],
         ];
     }
 
