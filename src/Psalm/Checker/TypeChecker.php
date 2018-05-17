@@ -630,7 +630,10 @@ class TypeChecker
             return false;
         }
 
-        if (get_class($container_type_part) === TString::class && $input_type_part instanceof TClassString) {
+        if ($input_type_part instanceof TClassString
+            && (get_class($container_type_part) === TString::class
+                || get_class($container_type_part) === Type\Atomic\GetClassT::class)
+        ) {
             return true;
         }
 

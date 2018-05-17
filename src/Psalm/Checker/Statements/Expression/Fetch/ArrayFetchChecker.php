@@ -167,13 +167,13 @@ class ArrayFetchChecker
                         if ($offset_atomic_type instanceof TString
                             || $offset_atomic_type instanceof TInt
                         ) {
-                            if (isset($const_array_key_atomic_types[$offset_key])) {
-
-                            } elseif (!TypeChecker::isContainedBy(
-                                $project_checker->codebase,
-                                new Type\Union([$offset_atomic_type]),
-                                $const_array_key_type
-                            )) {
+                            if (!isset($const_array_key_atomic_types[$offset_key])
+                                && !TypeChecker::isContainedBy(
+                                    $project_checker->codebase,
+                                    new Type\Union([$offset_atomic_type]),
+                                    $const_array_key_type
+                                )
+                            ) {
                                 $new_offset_type->removeType($offset_key);
                             }
                         } elseif (!TypeChecker::isContainedBy(

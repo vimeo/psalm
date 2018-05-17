@@ -1246,7 +1246,7 @@ class Reconciler
      * @param  string     $new_var_type
      * @param  int        $bracket_pos
      * @param  string     $old_var_type_string
-     * @param  string|null $key
+     * @param  string|null $var_id
      * @param  CodeLocation|null $code_location
      * @param  string[]   $suppressed_issues
      *
@@ -1257,7 +1257,7 @@ class Reconciler
         $bracket_pos,
         Type\Union $existing_var_type,
         $old_var_type_string,
-        $key,
+        $var_id,
         $code_location,
         $suppressed_issues
     ) {
@@ -1277,7 +1277,7 @@ class Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $key => $value_type) {
+                    foreach ($existing_var_atomic_types as $key => $_) {
                         if ($key !== $new_var_type) {
                             $existing_var_type->removeType($key);
                             $did_remove_type = true;
@@ -1286,14 +1286,14 @@ class Reconciler
                         }
                     }
 
-                    if ($key
+                    if ($var_id
                         && $code_location
                         && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
-                            $key,
+                            $var_id,
                             $new_var_type,
                             $can_be_equal,
                             $code_location,
@@ -1312,7 +1312,7 @@ class Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $key => $value_type) {
+                    foreach ($existing_var_atomic_types as $key => $_) {
                         if ($key !== $new_var_type) {
                             $existing_var_type->removeType($key);
                             $did_remove_type = true;
@@ -1321,14 +1321,14 @@ class Reconciler
                         }
                     }
 
-                    if ($key
+                    if ($var_id
                         && $code_location
                         && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
-                            $key,
+                            $var_id,
                             $new_var_type,
                             $can_be_equal,
                             $code_location,
@@ -1349,7 +1349,7 @@ class Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $key => $value_type) {
+                    foreach ($existing_var_atomic_types as $key => $_) {
                         if ($key !== $new_var_type) {
                             $existing_var_type->removeType($key);
                             $did_remove_type = true;
@@ -1358,14 +1358,14 @@ class Reconciler
                         }
                     }
 
-                    if ($key
+                    if ($var_id
                         && $code_location
                         && (!$can_be_equal || (!$did_remove_type && count($existing_var_atomic_types) === 1))
                     ) {
                         self::triggerIssueForImpossible(
                             $existing_var_type,
                             $old_var_type_string,
-                            $key,
+                            $var_id,
                             $new_var_type,
                             $can_be_equal,
                             $code_location,

@@ -672,6 +672,8 @@ class Config
      * @psalm-suppress MixedArrayAccess
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedOperand
+     * @psalm-suppress MixedArrayOffset
+     * @psalm-suppress MixedTypeCoercion
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {

@@ -400,34 +400,18 @@ class AssertionFinder
                     && $source instanceof StatementsSource
                     && $project_checker
                 ) {
-                    $incompatible_values = false;
-                    $has_scalar_match = null;
-                    $type_coerced = null;
-                    $type_coerced_from_mixed = null;
-                    $to_string_cast = null;
-
                     if (!TypeChecker::isContainedBy(
                         $project_checker->codebase,
                         $var_type,
                         $other_type,
                         true,
-                        true,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $incompatible_values
+                        true
                     ) && !TypeChecker::isContainedBy(
                         $project_checker->codebase,
                         $other_type,
                         $var_type,
                         true,
-                        true,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $incompatible_values
+                        true
                     )) {
                         if ($var_type->from_docblock || $other_type->from_docblock) {
                             if (IssueBuffer::accepts(
@@ -440,27 +424,14 @@ class AssertionFinder
                                 // fall through
                             }
                         } else {
-                            if ($incompatible_values) {
-                                if (IssueBuffer::accepts(
-                                    new TypeDoesNotContainType(
-                                        'Values ' . $var_type->getId() . ' and '
-                                             . $other_type->getId() . ' can never be identical',
-                                        new CodeLocation($source, $conditional)
-                                    ),
-                                    $source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
-                            } else {
-                                if (IssueBuffer::accepts(
-                                    new TypeDoesNotContainType(
-                                        $var_type . ' does not contain ' . $other_type,
-                                        new CodeLocation($source, $conditional)
-                                    ),
-                                    $source->getSuppressedIssues()
-                                )) {
-                                    // fall through
-                                }
+                            if (IssueBuffer::accepts(
+                                new TypeDoesNotContainType(
+                                    $var_type->getId() . ' does not contain ' . $other_type->getId(),
+                                    new CodeLocation($source, $conditional)
+                                ),
+                                $source->getSuppressedIssues()
+                            )) {
+                                // fall through
                             }
                         }
                     }
@@ -729,34 +700,18 @@ class AssertionFinder
                         && $source instanceof StatementsSource
                         && $project_checker
                     ) {
-                        $incompatible_values = false;
-                        $has_scalar_match = null;
-                        $type_coerced = null;
-                        $type_coerced_from_mixed = null;
-                        $to_string_cast = null;
-
                         if (!TypeChecker::isContainedBy(
                             $project_checker->codebase,
                             $var_type,
                             $other_type,
                             true,
-                            true,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $incompatible_values
+                            true
                         ) && !TypeChecker::isContainedBy(
                             $project_checker->codebase,
                             $other_type,
                             $var_type,
                             true,
-                            true,
-                            $has_scalar_match,
-                            $type_coerced,
-                            $type_coerced_from_mixed,
-                            $to_string_cast,
-                            $incompatible_values
+                            true
                         )) {
                             if ($var_type->from_docblock || $other_type->from_docblock) {
                                 if (IssueBuffer::accepts(
@@ -769,27 +724,14 @@ class AssertionFinder
                                     // fall through
                                 }
                             } else {
-                                if ($incompatible_values) {
-                                    if (IssueBuffer::accepts(
-                                        new RedundantCondition(
-                                            'Values ' . $var_type->getId() . ' and '
-                                                . $other_type->getId() . ' can never be identical',
-                                            new CodeLocation($source, $conditional)
-                                        ),
-                                        $source->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
-                                } else {
-                                    if (IssueBuffer::accepts(
-                                        new RedundantCondition(
-                                            $var_type . ' can never contain ' . $other_type,
-                                            new CodeLocation($source, $conditional)
-                                        ),
-                                        $source->getSuppressedIssues()
-                                    )) {
-                                        // fall through
-                                    }
+                                if (IssueBuffer::accepts(
+                                    new RedundantCondition(
+                                        $var_type->getId() . ' can never contain ' . $other_type->getId(),
+                                        new CodeLocation($source, $conditional)
+                                    ),
+                                    $source->getSuppressedIssues()
+                                )) {
+                                    // fall through
                                 }
                             }
                         }
