@@ -364,7 +364,7 @@ class Reconciler
 
                 if ($existing_int_types) {
                     foreach ($existing_int_types as $key => $literal_type) {
-                        if (!$literal_type->value) {
+                        if ($literal_type->value) {
                             $existing_var_type->removeType($key);
                             $did_remove_type = true;
                         }
