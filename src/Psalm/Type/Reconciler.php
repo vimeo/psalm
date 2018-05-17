@@ -98,19 +98,22 @@ class Reconciler
             $from_docblock = $result_type && $result_type->from_docblock;
             $possibly_undefined = $result_type && $result_type->possibly_undefined;
             $from_calculation = $result_type && $result_type->from_calculation;
-            $has_inequality = false;
+            $has_negation = false;
+            $has_equality = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 $orred_type = null;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
-                    if ($new_type_part_part[0] === '!') {
-                        if (isset($new_type_part_part[1])
-                            && ($new_type_part_part[1] === '^' || $new_type_part_part[1] === '~')
-                        ) {
-                            $has_inequality = true;
-                        }
+                    switch ($new_type_part_part[0]) {
+                        case '!':
+                            $has_negation = true;
+                            break;
+                        case '^':
+                        case '~':
+                            $has_equality = true;
                     }
+
                     $result_type_candidate = self::reconcileTypes(
                         $new_type_part_part,
                         $result_type ? clone $result_type : null,
@@ -135,6 +138,18 @@ class Reconciler
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
 
+            $reconcile_key = implode(
+                    '&',
+                    array_map(
+                        function (array $new_type_part_parts) {
+                            return implode('|', $new_type_part_parts);
+                        },
+                        $new_type_parts
+                    )
+                );
+
+            //var_dump($key . ': ' . $result_type->getId() . ' ' . $before_adjustment->getId() . ' ' . $reconcile_key);
+
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[] = $key;
 
@@ -147,10 +162,11 @@ class Reconciler
                         $result_type
                     );
                 }
-            } elseif (!$type_changed
+            } elseif ((!$type_changed || $result_type->isEmpty())
                 && $code_location
                 && isset($referenced_var_ids[$key])
-                && !$has_inequality
+                && !$has_negation
+                && !$has_equality
             ) {
                 $reconcile_key = implode(
                     '&',
@@ -166,7 +182,7 @@ class Reconciler
                     $before_adjustment->getId(),
                     $key,
                     $reconcile_key,
-                    true,
+                    !$type_changed,
                     $code_location,
                     $suppressed_issues
                 );
@@ -335,13 +351,14 @@ class Reconciler
 
                 if ($existing_string_types) {
                     foreach ($existing_string_types as $key => $literal_type) {
-                        if (!$literal_type->value) {
+                        if ($literal_type->value) {
                             $existing_var_type->removeType($key);
                             $did_remove_type = true;
                         }
                     }
                 } else {
                     $did_remove_type = true;
+                    $existing_var_type->removeType('string');
                     $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
                     $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
                 }
@@ -359,6 +376,7 @@ class Reconciler
                     }
                 } else {
                     $did_remove_type = true;
+                    $existing_var_type->removeType('int');
                     $existing_var_type->addType(new Type\Atomic\TLiteralInt(0));
                 }
             }
@@ -591,8 +609,6 @@ class Reconciler
         } elseif (substr($new_var_type, 0, 9) === 'getclass-') {
             $new_var_type = substr($new_var_type, 9);
             $new_type = Type::parseString($new_var_type);
-            $is_strict_equality = true;
-            $is_equality = true;
         } else {
             $bracket_pos = strpos($new_var_type, '(');
 
@@ -1064,9 +1080,23 @@ class Reconciler
 
                 if ($existing_string_types) {
                     foreach ($existing_string_types as $key => $literal_type) {
-                        if ($literal_type->value) {
+                        if (!$literal_type->value) {
                             $existing_var_type->removeType($key);
-                        } else {
+                            $did_remove_type = true;
+                        }
+                    }
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ($existing_var_type->hasInt()) {
+                $existing_int_types = $existing_var_type->getLiteralInts();
+
+                if ($existing_int_types) {
+                    foreach ($existing_int_types as $key => $literal_type) {
+                        if (!$literal_type->value) {
+                            $existing_var_type->removeType($key);
                             $did_remove_type = true;
                         }
                     }
@@ -1091,7 +1121,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         !$did_remove_type,
                         $code_location,
                         $suppressed_issues
@@ -1105,7 +1135,7 @@ class Reconciler
 
             $failed_reconciliation = true;
 
-            return Type::getMixed();
+            return Type::getEmpty();
         }
 
         if ($new_var_type === 'null' && !$existing_var_type->isMixed()) {
@@ -1265,7 +1295,7 @@ class Reconciler
                         );
                     }
                 } else {
-                    $existing_var_type->addType(new Type\Atomic\TLiteralInt($value));
+                    $existing_var_type = new Type\Union([new Type\Atomic\TLiteralInt($value)]);
                 }
             }
         } elseif ($scalar_type === 'string') {
@@ -1298,7 +1328,7 @@ class Reconciler
                         );
                     }
                 } else {
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString($value));
+                    $existing_var_type = new Type\Union([new Type\Atomic\TLiteralString($value)]);
                 }
             }
         } elseif ($scalar_type === 'float') {
@@ -1333,7 +1363,7 @@ class Reconciler
                         );
                     }
                 } else {
-                    $existing_var_type->addType(new Type\Atomic\TLiteralFloat($value));
+                    $existing_var_type = new Type\Union([new Type\Atomic\TLiteralFloat($value)]);
                 }
             }
         }

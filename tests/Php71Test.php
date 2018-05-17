@@ -157,8 +157,8 @@ class Php71Test extends TestCase
                         $last_name = $name;
                     }',
                 'assertions' => [
-                    '$last_id' => 'null|int',
-                    '$last_name' => 'null|string',
+                    '$last_id' => 'int|null',
+                    '$last_name' => 'string|null',
                 ],
             ],
             'arrayDestructuringInForeachWithKeys' => [
@@ -177,8 +177,8 @@ class Php71Test extends TestCase
                         $last_name = $name;
                     }',
                 'assertions' => [
-                    '$last_id' => 'null|int',
-                    '$last_name' => 'null|string',
+                    '$last_id' => 'int|null',
+                    '$last_name' => 'string|null',
                 ],
             ],
             'iterableArg' => [

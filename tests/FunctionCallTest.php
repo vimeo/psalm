@@ -23,7 +23,7 @@ class FunctionCallTest extends TestCase
                     );',
                 'assertions' => [
                     '$d' => 'array<string, int>',
-                    '$e' => 'array<string, null|int>',
+                    '$e' => 'array<string, int|null>',
                 ],
             ],
             'arrayFilterAdvanced' => [
@@ -51,8 +51,8 @@ class FunctionCallTest extends TestCase
                         ARRAY_FILTER_USE_KEY
                     );',
                 'assertions' => [
-                    '$f' => 'array<string, null|int>',
-                    '$g' => 'array<string, null|int>',
+                    '$f' => 'array<string, int|null>',
+                    '$g' => 'array<string, int|null>',
                 ],
             ],
             'typedArrayWithDefault' => [
@@ -162,14 +162,14 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $d = array_reverse(["a", "b", 1]);',
                 'assertions' => [
-                    '$d' => 'array<int, int|string>',
+                    '$d' => 'array<int, string|int>',
                 ],
             ],
             'arrayReversePreserveKey' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1], true);',
                 'assertions' => [
-                    '$d' => 'array<int, int|string>',
+                    '$d' => 'array<int, string|int>',
                 ],
             ],
             'arrayDiff' => [

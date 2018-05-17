@@ -629,6 +629,16 @@ abstract class Type
     /**
      * @return Type\Union
      */
+    public static function getEmpty()
+    {
+        $type = new TEmpty();
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
     public static function getBool()
     {
         $type = new TBool;
@@ -885,6 +895,9 @@ abstract class Type
         if (count($combination->value_types) === 1
             && !count($combination->objectlike_entries)
             && !count($combination->type_params)
+            && !$combination->strings
+            && !$combination->ints
+            && !$combination->floats
         ) {
             if (isset($combination->value_types['false'])) {
                 $union_type = Type::getFalse();
@@ -996,15 +1009,6 @@ abstract class Type
             }
         }
 
-        foreach ($combination->value_types as $type) {
-            if (!($type instanceof TEmpty)
-                || (count($combination->value_types) === 1
-                    && !count($new_types))
-            ) {
-                $new_types[] = $type;
-            }
-        }
-
         if ($combination->strings) {
             $new_types = array_merge($new_types, $combination->strings);
         }
@@ -1015,6 +1019,15 @@ abstract class Type
 
         if ($combination->floats) {
             $new_types = array_merge($new_types, $combination->floats);
+        }
+
+        foreach ($combination->value_types as $type) {
+            if (!($type instanceof TEmpty)
+                || (count($combination->value_types) === 1
+                    && !count($new_types))
+            ) {
+                $new_types[] = $type;
+            }
         }
 
         $union_type = new Union($new_types);

@@ -207,7 +207,7 @@ class TypeReconciliationTest extends TestCase
             'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
             'falsyWithMixed' => ['mixed', 'falsy', 'mixed'],
             'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['string|null', 'falsy', 'string|null'],
+            'falsyWithStringOrNull' => ['null|string', 'falsy', 'string|null'],
             'falsyWithScalarOrNull' => ['scalar', 'falsy', 'scalar'],
 
             'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],

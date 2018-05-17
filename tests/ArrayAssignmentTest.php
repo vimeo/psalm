@@ -36,6 +36,15 @@ class ArrayAssignmentTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
+            'genericArrayCreationWithSingleIntValue' => [
+                '<?php
+                    $out = [];
+
+                    $out[] = 4;',
+                'assertions' => [
+                    '$out' => 'array<int, int>',
+                ],
+            ],
             'genericArrayCreationWithInt' => [
                 '<?php
                     $out = [];
@@ -481,9 +490,9 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'array{a:int, 0:int}',
                     '$b' => 'array<string|int, int>',
-                    '$c' => 'array<string|int, int>',
+                    '$c' => 'array<int|string, int>',
                     '$d' => 'array<int|string, int>',
-                    '$e' => 'array<int|string, int>',
+                    '$e' => 'array<string|int, int>',
                 ],
             ],
             'updateStringIntKeyWithIntRootAndNumberOffset' => [
@@ -525,9 +534,9 @@ class ArrayAssignmentTest extends TestCase
                     $e[0][$string] = 5;',
                 'assertions' => [
                     '$b' => 'array{0:array<string|int, int>}',
-                    '$c' => 'array{0:array<string|int, int>}',
+                    '$c' => 'array{0:array<int|string, int>}',
                     '$d' => 'array{0:array<int|string, int>}',
-                    '$e' => 'array{0:array<int|string, int>}',
+                    '$e' => 'array{0:array<string|int, int>}',
                 ],
             ],
             'updateStringIntKeyWithObjectLikeRootAndNumberOffset' => [
@@ -569,9 +578,9 @@ class ArrayAssignmentTest extends TestCase
                     $e["root"][$string] = 5;',
                 'assertions' => [
                     '$b' => 'array{root:array<string|int, int>}',
-                    '$c' => 'array{root:array<string|int, int>}',
+                    '$c' => 'array{root:array<int|string, int>}',
                     '$d' => 'array{root:array<int|string, int>}',
-                    '$e' => 'array{root:array<int|string, int>}',
+                    '$e' => 'array{root:array<string|int, int>}',
                 ],
             ],
             'mixedArrayAssignmentWithStringKeys' => [
@@ -727,7 +736,7 @@ class ArrayAssignmentTest extends TestCase
                     $a_keys = array_keys($a);',
                 'assertions' => [
                     '$a' => 'array{0:string, 1:int}',
-                    '$a_values' => 'array<int, int|string>',
+                    '$a_values' => 'array<int, string|int>',
                     '$a_keys' => 'array<int, int>',
                 ],
             ],

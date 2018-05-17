@@ -12,6 +12,33 @@ class IssetTest extends TestCase
     public function providerFileCheckerValidCodeParse()
     {
         return [
+            'issetWithSimpleAssignment' => [
+                '<?php
+                    $array = [];
+
+                    if (isset($array[$a = 5])) {
+                        print "hello";
+                    }
+
+                    print $a;',
+                'assertions' => [],
+                'error_levels' => ['EmptyArrayAccess'],
+            ],
+            'issetWithMultipleAssignments' => [
+                '<?php
+                    if (rand(0, 4) > 2) {
+                        $arr = [5 => [3 => "hello"]];
+                    }
+
+                    if (isset($arr[$a = 5][$b = 3])) {
+
+                    }
+
+                    echo $a;
+                    echo $b;',
+                'assertions' => [],
+                'error_levels' => ['MixedArrayAccess'],
+            ],
             'isset' => [
                 '<?php
                     $a = isset($b) ? $b : null;',

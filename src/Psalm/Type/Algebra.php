@@ -42,13 +42,7 @@ class Algebra
             return $type;
         }
 
-        $type_parts = explode('&', (string)$type);
-
-        foreach ($type_parts as &$type_part) {
-            $type_part = $type_part[0] === '!' ? substr($type_part, 1) : '!' . $type_part;
-        }
-
-        return implode('&', $type_parts);
+        return $type[0] === '!' ? substr($type, 1) : '!' . $type;
     }
 
     /**
@@ -539,6 +533,7 @@ class Algebra
                 if (($type[0] !== '^' && $type[0] !== '~'
                         && (!isset($type[1]) || ($type[1] !== '^' && $type[1] !== '~')))
                     || strpos($type, '(')
+                    || strpos($type, 'getclass-')
                 ) {
                     $impossibility[] = self::negateType($type);
                 }

@@ -880,12 +880,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             } else {
                                 $atomic_type = array_shift($dim_atomic_types);
 
-                                if (($atomic_type instanceof Type\Atomic\TLiteralInt
-                                        && count($atomic_type->values) === 1)
-                                    || ($atomic_type instanceof Type\Atomic\TLiteralString
-                                        && count($atomic_type->values) === 1)
+                                if ($atomic_type instanceof Type\Atomic\TLiteralInt
+                                    || $atomic_type instanceof Type\Atomic\TLiteralString
                                 ) {
-                                    $property_types[array_keys($atomic_type->values)[0]] = $single_item_value_type;
+                                    $property_types[$atomic_type->value] = $single_item_value_type;
                                 } else {
                                     $can_create_objectlike = false;
                                 }

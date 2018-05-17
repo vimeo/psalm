@@ -964,7 +964,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Property A::$foo does not have a ' .
-                    'declared type - consider null|int',
+                    'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInit' => [
                 '<?php
@@ -992,7 +992,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'MissingPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Property A::$foo does not have a ' .
-                    'declared type - consider null|int',
+                    'declared type - consider int|null',
             ],
             'missingPropertyTypeWithConstructorInitAndNullDefault' => [
                 '<?php

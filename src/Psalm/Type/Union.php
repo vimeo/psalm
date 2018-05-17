@@ -240,18 +240,37 @@ class Union
      */
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
-        return implode(
-            '|',
-            array_map(
-                /**
-                 * @return string
-                 */
-                function (Atomic $type) use ($namespace, $aliased_classes, $this_class, $use_phpdoc_format) {
-                    return $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format);
-                },
-                $this->types
-            )
-        );
+        $printed_int = false;
+        $printed_float = false;
+        $printed_string = false;
+
+        $s = '';
+
+        foreach ($this->types as $type) {
+            if ($type instanceof TLiteralFloat) {
+                if ($printed_float) {
+                    continue;
+                }
+
+                $printed_float = true;
+            } elseif ($type instanceof TLiteralString) {
+                if ($printed_string) {
+                    continue;
+                }
+
+                $printed_string = true;
+            } elseif ($type instanceof TLiteralInt) {
+                if ($printed_int) {
+                    continue;
+                }
+
+                $printed_int = true;
+            }
+
+            $s .= $type->toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format) . '|';
+        }
+
+        return substr($s, 0, -1) ?: '';
     }
 
     /**
@@ -272,13 +291,9 @@ class Union
     ) {
         $nullable = false;
 
-        if (count($this->types) > 2
-            || (
-                count($this->types) === 2
-                && (!isset($this->types['null'])
-                    || $php_major_version < 7
-                    || $php_minor_version < 1)
-            )
+        if (!$this->isSingleAndMaybeNullable()
+            || $php_major_version < 7
+            || (isset($this->types['null']) && $php_minor_version < 1)
         ) {
             return null;
         }
@@ -317,12 +332,7 @@ class Union
      */
     public function canBeFullyExpressedInPhp()
     {
-        if (count($this->types) > 2
-            || (
-                count($this->types) === 2
-                && !isset($this->types['null'])
-            )
-        ) {
+        if (!$this->isSingleAndMaybeNullable()) {
             return false;
         }
 
@@ -782,17 +792,52 @@ class Union
      */
     public function isSingle()
     {
-        if (count($this->types) > 1) {
+        $type_count = count($this->types);
+
+        $int_literal_count = count($this->literal_int_types);
+        $string_literal_count = count($this->literal_string_types);
+        $float_literal_count = count($this->literal_float_types);
+
+        if (($int_literal_count && $string_literal_count)
+            || ($int_literal_count && $float_literal_count)
+            || ($string_literal_count && $float_literal_count)
+        ) {
             return false;
         }
 
-        $type = array_values($this->types)[0];
-
-        if (!$type instanceof Atomic\TArray && !$type instanceof Atomic\TGenericObject) {
-            return true;
+        if ($int_literal_count || $string_literal_count || $float_literal_count) {
+            $type_count -= $int_literal_count + $string_literal_count + $float_literal_count - 1;
         }
 
-        return $type->type_params[count($type->type_params) - 1]->isSingle();
+        return $type_count === 1;
+    }
+
+    public function isSingleAndMaybeNullable()
+    {
+        $is_nullable = isset($this->types['null']);
+
+        $type_count = count($this->types);
+
+        if ($type_count === 1 && $is_nullable) {
+            return false;
+        }
+
+        $int_literal_count = count($this->literal_int_types);
+        $string_literal_count = count($this->literal_string_types);
+        $float_literal_count = count($this->literal_float_types);
+
+        if (($int_literal_count && $string_literal_count)
+            || ($int_literal_count && $float_literal_count)
+            || ($string_literal_count && $float_literal_count)
+        ) {
+            return false;
+        }
+
+        if ($int_literal_count || $string_literal_count || $float_literal_count) {
+            $type_count -= $int_literal_count + $string_literal_count + $float_literal_count - 1;
+        }
+
+        return ($type_count - (int) $is_nullable) === 1;
     }
 
     /**
@@ -833,7 +878,7 @@ class Union
      */
     public function isSingleStringLiteral()
     {
-        return count($this->types) === 1 && $this->literal_string_types && count($this->literal_string_types) === 1;
+        return count($this->types) === 1 && count($this->literal_string_types) === 1;
     }
 
     /**
@@ -842,14 +887,32 @@ class Union
      */
     public function getSingleStringLiteral()
     {
-        if (count($this->types) !== 1
-            || !$this->literal_string_types
-            || count($this->literal_string_types) !== 1
-        ) {
+        if (count($this->types) !== 1 || count($this->literal_string_types) !== 1) {
             throw new \InvalidArgumentException("Not a string literal");
         }
 
-        return key($this->literal_string_types);
+        return reset($this->literal_string_types)->value;
+    }
+
+    /**
+     * @return bool true if this is a int literal with only one possible value
+     */
+    public function isSingleIntLiteral()
+    {
+        return count($this->types) === 1 && count($this->literal_int_types) === 1;
+    }
+
+    /**
+     * @return int the only int literal represented by this union type
+     * @throws \InvalidArgumentException if isSingleIntLiteral is false
+     */
+    public function getSingleIntLiteral()
+    {
+        if (count($this->types) !== 1 || count($this->literal_int_types) !== 1) {
+            throw new \InvalidArgumentException("Not a string literal");
+        }
+
+        return reset($this->literal_int_types)->value;
     }
 
     /**
