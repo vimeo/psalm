@@ -108,13 +108,7 @@ class ExpressionChecker
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             ConstFetchChecker::analyze($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\String_) {
-            $stmt->inferredType = Type::getString(
-                strlen($stmt->value) < 30
-                    && strpos($stmt->value, '\'') === false
-                    && strpos($stmt->value, ',') === false
-                    ? [$stmt->value => true]
-                    : null
-            );
+            $stmt->inferredType = Type::getString(strlen($stmt->value) < 30 ? $stmt->value : null);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
@@ -137,12 +131,9 @@ class ExpressionChecker
                     break;
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
-            $stmt->inferredType = Type::getInt(
-                false,
-                [($stmt->value >= 0 ? $stmt->value : (string) $stmt->value) => true]
-            );
+            $stmt->inferredType = Type::getInt(false, $stmt->value);
         } elseif ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
-            $stmt->inferredType = Type::getFloat([(string)$stmt->value => true]);
+            $stmt->inferredType = Type::getFloat($stmt->value);
         } elseif ($stmt instanceof PhpParser\Node\Expr\UnaryMinus ||
             $stmt instanceof PhpParser\Node\Expr\UnaryPlus
         ) {
@@ -162,23 +153,11 @@ class ExpressionChecker
                         if ($type_part instanceof Type\Atomic\TLiteralInt
                             && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                         ) {
-                            $inverted_values = [];
-
-                            foreach ($type_part->values as $value => $_) {
-                                $inverted_values[$value > 0 ? (string) (-$value) : (int) (-$value)] = true;
-                            }
-
-                            $type_part->values = $inverted_values;
+                            $type_part->value = -$type_part->value;
                         } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
                             && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                         ) {
-                            $inverted_values = [];
-
-                            foreach ($type_part->values as $value => $_) {
-                                $inverted_values[(string)(-$value)] = true;
-                            }
-
-                            $type_part->values = $inverted_values;
+                            $type_part->value = -$type_part->value;
                         }
 
                         $acceptable_types[] = $type_part;
@@ -239,8 +218,6 @@ class ExpressionChecker
                         $stmt->inferredType->addType(new Type\Atomic\TFloat);
                     }
                 }
-
-                $stmt->inferredType->bustCache();
 
                 $var_id = self::getArrayVarId($stmt->var, null);
 

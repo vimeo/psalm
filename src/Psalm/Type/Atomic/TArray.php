@@ -14,7 +14,7 @@ class TArray extends \Psalm\Type\Atomic
     public $value = 'array';
 
     /**
-     * @var TLiteralInt|null
+     * @var int|null
      */
     public $count;
 

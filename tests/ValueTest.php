@@ -243,6 +243,17 @@ class ValueTest extends TestCase
                         if ($s === "a") {}
                     }'
             ],
+            'moreValueReconciliation' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+                    $b = rand(0, 1) ? "a" : "b";
+
+                    $s = rand(0, 1) ? $a : $b;
+                    if (rand(0, 1)) $s = "c";
+
+                    if ($s === $a) {
+                    } elseif ($s === $b) {}',
+            ],
             'negativeInts' => [
                 '<?php
                     class C {
@@ -276,6 +287,24 @@ class ValueTest extends TestCase
                         echo "here";
                     }',
             ],
+            'falsyReconciliation' => [
+                '<?php
+                    $s = rand(0, 1) ? 200 : null;
+                    if (!$s) {}'
+            ],
+            'redefinedIntInIfAndPossibleComparison' => [
+                '<?php
+                    $s = rand(0, 1) ? 0 : 1;
+
+                    if ($s && rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $s = 2;
+                        }
+                    }
+
+                    if ($s == 2) {}',
+            ],
+
         ];
     }
 
@@ -315,9 +344,9 @@ class ValueTest extends TestCase
                     if ($a !== 4) {
                         // do something
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
-            'phpstanPostedArrayTest' => [
+            'SKIPPED-phpstanPostedArrayTest' => [
                 '<?php
                     $array = [1, 2, 3];
                     if (rand(1, 10) === 1) {
@@ -403,6 +432,19 @@ class ValueTest extends TestCase
 
                     if ($i === 0) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'redefinedIntInIfAndImpossbleComparison' => [
+                '<?php
+                    $s = rand(0, 1) ? 0 : 1;
+
+                    if ($s && rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            $s = 2;
+                        }
+                    }
+
+                    if ($s == 3) {}',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

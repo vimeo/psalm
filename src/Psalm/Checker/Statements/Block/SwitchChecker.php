@@ -283,7 +283,7 @@ class SwitchChecker
                         $reconcilable_if_types,
                         $case_context->vars_in_scope,
                         $changed_var_ids,
-                        $switch_var_id ? [$switch_var_id => true] : [],
+                        $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
                         $statements_checker,
                         new CodeLocation(
                             $statements_checker->getSource(),

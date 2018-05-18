@@ -70,7 +70,7 @@ trait GenericTrait
 
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
 
-            if (count($value_type->getTypes()) > 1) {
+            if (!$value_type->isSingle()) {
                 return '(' . $value_type_string . ')[]';
             }
 

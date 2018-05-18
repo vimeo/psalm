@@ -188,6 +188,13 @@ class Context
     public $assigned_var_ids = [];
 
     /**
+     * A list of vars that have been may have been assigned to
+     *
+     * @var array<string, bool>
+     */
+    public $possibly_assigned_var_ids = [];
+
+    /**
      * @var bool
      */
     public $is_global = false;
@@ -283,7 +290,7 @@ class Context
 
                 // if the type changed within the block of statements, process the replacement
                 // also never allow ourselves to remove all types from a union
-                if ((!$new_type || $old_type->getId() !== $new_type->getId())
+                if ((!$new_type || !$old_type->equals($new_type))
                     && ($new_type || count($existing_type->getTypes()) > 1)
                 ) {
                     $existing_type->substitute($old_type, $new_type);
@@ -375,8 +382,7 @@ class Context
 
         foreach ($new_context->vars_in_scope as $var_id => $context_type) {
             if (!isset($original_context->vars_in_scope[$var_id])
-                || $original_context->vars_in_scope[$var_id]->getId() !== $context_type->getId()
-                || $original_context->vars_in_scope[$var_id]->possibly_undefined !== $context_type->possibly_undefined
+                || !$original_context->vars_in_scope[$var_id]->equals($context_type)
             ) {
                 $redefined_var_ids[] = $var_id;
             }

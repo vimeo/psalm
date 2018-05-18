@@ -471,7 +471,7 @@ class LoopScopeTest extends TestCase
                     foreach (["a", "b", "c"] as $tag) {
                     }',
                 'assignments' => [
-                    '$tag' => 'null|string',
+                    '$tag' => 'string|null',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefinedAsNull' => [
@@ -546,7 +546,7 @@ class LoopScopeTest extends TestCase
                       }
                     }',
                 'assignments' => [
-                    '$tag' => 'string|null|int',
+                    '$tag' => 'string|int|null',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefineAndBreak' => [

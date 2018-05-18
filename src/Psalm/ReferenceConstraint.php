@@ -11,6 +11,20 @@ class ReferenceConstraint
      */
     public function __construct(Type\Union $type = null)
     {
-        $this->type = $type;
+        if ($type) {
+            $this->type = clone $type;
+
+            if ($this->type->getLiteralStrings()) {
+                $this->type->addType(new Type\Atomic\TString);
+            }
+
+            if ($this->type->getLiteralInts()) {
+                $this->type->addType(new Type\Atomic\TInt);
+            }
+
+            if ($this->type->getLiteralFloats()) {
+                $this->type->addType(new Type\Atomic\TFloat);
+            }
+        }
     }
 }

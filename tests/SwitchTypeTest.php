@@ -626,7 +626,7 @@ class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
-            'switchManyGetClassWithRepetitionWithProperLineNumber' => [
+            'SKIPPED-switchManyGetClassWithRepetitionWithProperLineNumber' => [
                 '<?php
                     class A {}
                     class B extends A {}

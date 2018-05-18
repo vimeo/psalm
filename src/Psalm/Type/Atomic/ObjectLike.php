@@ -154,9 +154,9 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         foreach ($this->properties as $key => $_) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TLiteralInt([$key => true]);
+                $key_types[] = new Type\Atomic\TLiteralInt($key);
             } else {
-                $key_types[] = new Type\Atomic\TLiteralString([$key => true]);
+                $key_types[] = new Type\Atomic\TLiteralString($key);
             }
         }
 
@@ -197,9 +197,9 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
-                $key_types[] = new Type\Atomic\TLiteralInt([$key => true]);
+                $key_types[] = new Type\Atomic\TLiteralInt($key);
             } else {
-                $key_types[] = new Type\Atomic\TLiteralString([$key => true]);
+                $key_types[] = new Type\Atomic\TLiteralString($key);
             }
 
             if ($value_type === null) {
@@ -216,7 +216,7 @@ class ObjectLike extends \Psalm\Type\Atomic
         $value_type->possibly_undefined = false;
 
         $array_type = new TArray([Type::combineTypes($key_types), $value_type]);
-        $array_type->count = new TLiteralInt([count($this->properties) => true]);
+        $array_type->count = count($this->properties);
 
         return $array_type;
     }

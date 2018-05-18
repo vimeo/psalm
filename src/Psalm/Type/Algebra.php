@@ -42,13 +42,7 @@ class Algebra
             return $type;
         }
 
-        $type_parts = explode('&', (string)$type);
-
-        foreach ($type_parts as &$type_part) {
-            $type_part = $type_part[0] === '!' ? substr($type_part, 1) : '!' . $type_part;
-        }
-
-        return implode('&', $type_parts);
+        return $type[0] === '!' ? substr($type, 1) : '!' . $type;
     }
 
     /**
@@ -314,8 +308,6 @@ class Algebra
                         $truths[$var] = [[array_pop($possible_types)]];
                     }
                 } elseif (count($clause->possibilities) === 1) {
-                    $with_brackets = 0;
-
                     // if there's only one active clause, return all the non-negation clause members ORed together
                     $things_that_can_be_said = array_filter(
                         $possible_types,
@@ -326,41 +318,13 @@ class Algebra
                          *
                          * @psalm-suppress MixedOperand
                          */
-                        function ($possible_type) use (&$with_brackets) {
-                            $with_brackets += (int) (strpos($possible_type, '(') > 0);
+                        function ($possible_type) {
                             return $possible_type[0] !== '!';
                         }
                     );
 
                     if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
                         $things_that_can_be_said = array_unique($things_that_can_be_said);
-
-                        if ($with_brackets > 1) {
-                            $bracket_groups = [];
-
-                            $removed = 0;
-
-                            foreach ($things_that_can_be_said as $i => $t) {
-                                if (preg_match('/^\^(int|string|float)\(/', $t, $matches)) {
-                                    $options = substr($t, strlen((string) $matches[0]), -1);
-
-                                    $type = (string) $matches[1];
-
-                                    if (!isset($bracket_groups[$type])) {
-                                        $bracket_groups[$type] = $options;
-                                    } else {
-                                        $bracket_groups[$type] .= ',' . $options;
-                                    }
-
-                                    array_splice($things_that_can_be_said, $i - $removed, 1);
-                                    $removed++;
-                                }
-                            }
-
-                            foreach ($bracket_groups as $type => $options) {
-                                $things_that_can_be_said[] = '^' . $type . '(' . $options . ')';
-                            }
-                        }
 
                         if ($clause->generated && count($possible_types) > 1) {
                             unset($cond_referenced_var_ids[$var]);
@@ -569,6 +533,7 @@ class Algebra
                 if (($type[0] !== '^' && $type[0] !== '~'
                         && (!isset($type[1]) || ($type[1] !== '^' && $type[1] !== '~')))
                     || strpos($type, '(')
+                    || strpos($type, 'getclass-')
                 ) {
                     $impossibility[] = self::negateType($type);
                 }

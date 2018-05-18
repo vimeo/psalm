@@ -549,14 +549,14 @@ abstract class Type
 
     /**
      * @param bool $from_calculation
-     * @param array<string|int, bool>|null $values
+     * @param int|null $value
      *
      * @return Type\Union
      */
-    public static function getInt($from_calculation = false, array $values = null)
+    public static function getInt($from_calculation = false, int $value = null)
     {
-        if ($values) {
-            $union = new Union([new TLiteralInt($values)]);
+        if ($value !== null) {
+            $union = new Union([new TLiteralInt($value)]);
         } else {
             $union = new Union([new TInt()]);
         }
@@ -577,14 +577,14 @@ abstract class Type
     }
 
     /**
-     * @param array<string|int, bool>|null $values
+     * @param string|null $value
      *
      * @return Type\Union
      */
-    public static function getString(array $values = null)
+    public static function getString(string $value = null)
     {
-        if ($values) {
-            $type = new TLiteralString($values);
+        if ($value !== null) {
+            $type = new TLiteralString($value);
         } else {
             $type = new TString();
         }
@@ -629,6 +629,16 @@ abstract class Type
     /**
      * @return Type\Union
      */
+    public static function getEmpty()
+    {
+        $type = new TEmpty();
+
+        return new Union([$type]);
+    }
+
+    /**
+     * @return Type\Union
+     */
     public static function getBool()
     {
         $type = new TBool;
@@ -637,14 +647,14 @@ abstract class Type
     }
 
     /**
-     * @param array<string, bool>|null $values
+     * @param float|null $value
      *
      * @return Type\Union
      */
-    public static function getFloat(array $values = null)
+    public static function getFloat(float $value = null)
     {
-        if ($values) {
-            $type = new TLiteralFloat($values);
+        if ($value !== null) {
+            $type = new TLiteralFloat($value);
         } else {
             $type = new TFloat();
         }
@@ -699,7 +709,7 @@ abstract class Type
             ]
         );
 
-        $array_type->count = new TLiteralInt([0 => true]);
+        $array_type->count = 0;
 
         return new Type\Union([
             $array_type,
@@ -885,6 +895,9 @@ abstract class Type
         if (count($combination->value_types) === 1
             && !count($combination->objectlike_entries)
             && !count($combination->type_params)
+            && !$combination->strings
+            && !$combination->ints
+            && !$combination->floats
         ) {
             if (isset($combination->value_types['false'])) {
                 $union_type = Type::getFalse();
@@ -986,8 +999,8 @@ abstract class Type
 
                 $array_type = new TArray($generic_type_params);
 
-                if ($combination->array_counts) {
-                    $array_type->count = new TLiteralInt($combination->array_counts);
+                if ($combination->array_counts && count($combination->array_counts) === 1) {
+                    $array_type->count = array_keys($combination->array_counts)[0];
                 }
 
                 $new_types[] = $array_type;
@@ -996,36 +1009,26 @@ abstract class Type
             }
         }
 
+        if ($combination->strings) {
+            $new_types = array_merge($new_types, $combination->strings);
+        }
+
+        if ($combination->ints) {
+            $new_types = array_merge($new_types, $combination->ints);
+        }
+
+        if ($combination->floats) {
+            $new_types = array_merge($new_types, $combination->floats);
+        }
+
         foreach ($combination->value_types as $type) {
             if (!($type instanceof TEmpty)
                 || (count($combination->value_types) === 1
                     && !count($new_types))
             ) {
-                if ($type instanceof TString) {
-                    if ($combination->strings) {
-                        $type = new TLiteralString($combination->strings);
-                    } elseif ($type instanceof TLiteralString) {
-                        $type = new TString();
-                    }
-                } elseif ($type instanceof TInt) {
-                    if ($combination->ints) {
-                        $type = new TLiteralInt($combination->ints);
-                    } elseif ($type instanceof TLiteralInt) {
-                        $type = new TInt();
-                    }
-                } elseif ($type instanceof TFloat) {
-                    if ($combination->floats) {
-                        $type = new TLiteralFloat($combination->floats);
-                    } elseif ($type instanceof TLiteralFloat) {
-                        $type = new TFloat();
-                    }
-                }
-
                 $new_types[] = $type;
             }
         }
-
-        $new_types = array_values($new_types);
 
         $union_type = new Union($new_types);
 
@@ -1080,10 +1083,10 @@ abstract class Type
             }
 
             if ($type instanceof TArray && $combination->array_counts !== null) {
-                if ($type->count === null || $type->count->values === null) {
+                if ($type->count === null) {
                     $combination->array_counts = null;
                 } else {
-                    $combination->array_counts = $type->count->values + $combination->array_counts;
+                    $combination->array_counts[$type->count] = true;
                 }
             }
         } elseif ($type instanceof ObjectLike) {
@@ -1111,7 +1114,7 @@ abstract class Type
             }
 
             if ($combination->array_counts !== null) {
-                $combination->array_counts[(string)count($type->properties)] = true;
+                $combination->array_counts[count($type->properties)] = true;
             }
 
             foreach ($possibly_undefined_entries as $type) {
@@ -1126,27 +1129,45 @@ abstract class Type
                 }
             }
         } else {
-            if ($type instanceof TString && $combination->strings !== null) {
+            if ($type instanceof TString) {
                 if ($type instanceof TLiteralString) {
-                    $combination->strings = $combination->strings + $type->values;
+                    if ($combination->strings !== null && count($combination->strings) < 30) {
+                        $combination->strings[] = $type;
+                    } else {
+                        $combination->strings = null;
+                        $combination->value_types['string'] = new TString();
+                    }
                 } else {
                     $combination->strings = null;
+                    $combination->value_types[$type_key] = $type;
                 }
-            } elseif ($type instanceof TInt && $combination->ints !== null) {
+            } elseif ($type instanceof TInt) {
                 if ($type instanceof TLiteralInt) {
-                    $combination->ints = $combination->ints + $type->values;
+                    if ($combination->ints !== null && count($combination->ints) < 30) {
+                        $combination->ints[] = $type;
+                    } else {
+                        $combination->ints = null;
+                        $combination->value_types['int'] = new TInt();
+                    }
                 } else {
                     $combination->ints = null;
+                    $combination->value_types[$type_key] = $type;
                 }
-            } elseif ($type instanceof TFloat && $combination->floats !== null) {
+            } elseif ($type instanceof TFloat) {
                 if ($type instanceof TLiteralFloat) {
-                    $combination->floats = $combination->floats + $type->values;
+                    if ($combination->floats !== null && count($combination->floats) < 30) {
+                        $combination->floats[] = $type;
+                    } else {
+                        $combination->floats = null;
+                        $combination->value_types['float'] = new TFloat();
+                    }
                 } else {
                     $combination->floats = null;
+                    $combination->value_types[$type_key] = $type;
                 }
+            } else {
+                $combination->value_types[$type_key] = $type;
             }
-
-            $combination->value_types[$type_key] = $type;
         }
     }
 }

@@ -1372,7 +1372,7 @@ class BinaryOpChecker
             $literal = $left_type->getSingleStringLiteral() . $right_type->getSingleStringLiteral();
             if (strlen($literal) <= 10000) {
                 // Limit these to 10000 bytes to avoid extremely large union types from repeated concatenations, etc
-                $result_type = new Union([new TLiteralString([$literal => true])]);
+                $result_type = new Union([new TLiteralString($literal)]);
             }
         }
     }

@@ -207,7 +207,7 @@ class TypeReconciliationTest extends TestCase
             'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
             'falsyWithMixed' => ['mixed', 'falsy', 'mixed'],
             'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['string|null', 'falsy', 'string|null'],
+            'falsyWithStringOrNull' => ['null|string', 'falsy', 'string|null'],
             'falsyWithScalarOrNull' => ['scalar', 'falsy', 'scalar'],
 
             'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
@@ -843,6 +843,18 @@ class TypeReconciliationTest extends TestCase
                     if ($b_or_d instanceof A) {
                         $b_or_d->foo();
                     }',
+            ],
+            'SKIPPED-isArrayOnArrayKeyOffset' => [
+                '<?php
+                    /** @var array{s:array<mixed, array<int, string>|string>} */
+                    $doc = [];
+
+                    if (!is_array($doc["s"]["t"])) {
+                        $doc["s"]["t"] = [$doc["s"]["t"]];
+                    }',
+                'assertions' => [
+                    '$doc[\'s\'][\'t\']' => 'array<int, string>',
+                ],
             ],
         ];
     }

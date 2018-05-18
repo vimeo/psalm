@@ -92,15 +92,15 @@ class FunctionChecker extends FunctionLikeChecker
                 if (count($atomic_types) === 1 && isset($atomic_types['array'])) {
                     if ($atomic_types['array'] instanceof Type\Atomic\TArray) {
                         return new Type\Union([
-                            $atomic_types['array']->count
-                                ? clone $atomic_types['array']->count
+                            $atomic_types['array']->count !== null
+                                ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
                                 : new Type\Atomic\TInt
                         ]);
                     } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
                         && $atomic_types['array']->sealed
                     ) {
                         return new Type\Union([
-                            new Type\Atomic\TLiteralInt([count($atomic_types['array']->properties) => true])
+                            new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
                         ]);
                     }
                 }

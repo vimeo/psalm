@@ -3,17 +3,33 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
 
-class TLiteralString extends TString implements LiteralType
+class TLiteralString extends TString
 {
-    /** @var array<string|int, bool> */
-    public $values;
+    /** @var string */
+    public $value;
 
     /**
-     * @param array<string|int, bool> $values
+     * @param string $value
      */
-    public function __construct(array $values)
+    public function __construct(string $value)
     {
-        $this->values = $values;
+        $this->value = $value;
+    }
+
+    /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return 'string(' . $this->value . ')';
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return 'string';
     }
 
     /**
@@ -21,26 +37,38 @@ class TLiteralString extends TString implements LiteralType
      */
     public function getId()
     {
-        return $this->values ? 'string(\'' . implode('\',\'', array_keys($this->values)) . '\')' : 'string';
+        return 'string(' . $this->value . ')';
     }
 
     /**
-     * @return array<string|int, bool>
+     * @param  string|null   $namespace
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  int           $php_major_version
+     * @param  int           $php_minor_version
+     *
+     * @return string|null
      */
-    public function getValues()
-    {
-        return $this->values;
+    public function toPhpString(
+        $namespace,
+        array $aliased_classes,
+        $this_class,
+        $php_major_version,
+        $php_minor_version
+    ) {
+        return $php_major_version >= 7 ? 'string' : null;
     }
 
     /**
-     * @return bool
+     * @param  string|null   $namespace
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  bool          $use_phpdoc_format
+     *
+     * @return string
      */
-    public function equals(Atomic $other_type)
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
-        if (!$other_type instanceof self) {
-            return false;
-        }
-
-        return $this->values == $other_type->values;
+        return 'string';
     }
 }
