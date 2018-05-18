@@ -31,6 +31,17 @@ trait CallableTrait
         $this->return_type = $return_type;
     }
 
+    public function __clone()
+    {
+        if ($this->params) {
+            foreach ($this->params as &$param) {
+                $param = clone $param;
+            }
+        }
+
+        $this->return_type = $this->return_type ? clone $this->return_type : null;
+    }
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes

@@ -783,7 +783,7 @@ class Union
         foreach ($this->types as $key => $atomic_type) {
             if (isset($template_types[$key])) {
                 $keys_to_unset[] = $key;
-                $template_type = $template_types[$key];
+                $template_type = clone $template_types[$key];
 
                 foreach ($template_type->types as $template_type_part) {
                     if ($template_type_part instanceof Type\Atomic\TMixed) {

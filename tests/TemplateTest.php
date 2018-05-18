@@ -534,6 +534,46 @@ class TemplateTest extends TestCase
 
                     takesInt(retry(1, function(): int { return 1; }));',
             ],
+            'repeatedCall' => [
+                '<?php
+                    namespace NS;
+
+                    use Closure;
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    class ArrayCollection {
+                        /** @var array<TKey,TValue> */
+                        private $data;
+
+                        /** @param array<TKey,TValue> $data */
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @template T
+                         * @param Closure(TValue):T $func
+                         * @return ArrayCollection<TKey,T>
+                         */
+                        public function map(Closure $func) {
+                          return new static(array_map($func, $this->data));
+                        }
+                    }
+
+                    class Item {}
+                    /**
+                     * @param ArrayCollection<mixed,Item> $i
+                     */
+                    function takesCollectionOfItems(ArrayCollection $i): void {}
+
+                    $c = new ArrayCollection([ new Item ]);
+                    takesCollectionOfItems($c);
+                    takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));
+                    takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));'
+            ],
         ];
     }
 
