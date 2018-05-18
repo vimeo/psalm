@@ -627,6 +627,22 @@ class FunctionCallTest extends TestCase
                     '$n' => 'false|string',
                 ],
             ],
+            'iteratorToArray' => [
+                '<?php
+                    /**
+                     * @return Generator<stdClass>
+                     */
+                    function generator(): Generator {
+                        yield new stdClass;
+                    }
+
+                    /**
+                     * @return array<stdClass>
+                     */
+                    function foo(callable $filter): array {
+                        return array_filter(iterator_to_array(generator()), $filter);
+                    }'
+            ],
         ];
     }
 

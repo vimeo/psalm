@@ -155,6 +155,33 @@ class FunctionChecker extends FunctionLikeChecker
                 ]);
             }
 
+            if ($call_map_key === 'iterator_to_array'
+                && isset($call_args[0]->value->inferredType)
+                && $call_args[0]->value->inferredType->hasObjectType()
+            ) {
+                $value_type = null;
+
+                foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
+                    if ($call_arg_atomic_type instanceof Type\Atomic\TGenericObject) {
+                        $type_params = $call_arg_atomic_type->type_params;
+                        $last_param_type = $type_params[count($type_params) - 1];
+
+                        $value_type = $value_type
+                            ? Type::combineUnionTypes($value_type, $last_param_type)
+                            : $last_param_type;
+                    }
+                }
+
+                if ($value_type) {
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getMixed(),
+                            $value_type
+                        ])
+                    ]);
+                }
+            }
+
             if ($call_map_key === 'abs'
                 && isset($call_args[0]->value)
             ) {
