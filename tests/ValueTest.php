@@ -243,6 +243,17 @@ class ValueTest extends TestCase
                         if ($s === "a") {}
                     }'
             ],
+            'moreValueReconciliation' => [
+                '<?php
+                    $a = rand(0, 1) ? "a" : "b";
+                    $b = rand(0, 1) ? "a" : "b";
+
+                    $s = rand(0, 1) ? $a : $b;
+                    if (rand(0, 1)) $s = "c";
+
+                    if ($s === $a) {
+                    } elseif ($s === $b) {}',
+            ],
             'negativeInts' => [
                 '<?php
                     class C {
@@ -293,6 +304,7 @@ class ValueTest extends TestCase
 
                     if ($s == 2) {}',
             ],
+
         ];
     }
 
