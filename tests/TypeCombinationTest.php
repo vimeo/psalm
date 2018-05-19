@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Type;
+use Psalm\Type\TypeCombination;
 
 class TypeCombinationTest extends TestCase
 {
@@ -24,7 +25,7 @@ class TypeCombinationTest extends TestCase
         /** @psalm-suppress InvalidArgument */
         $this->assertSame(
             $expected,
-            (string) Type::combineTypes($types)
+            (string) TypeCombination::combineTypes($types)
         );
     }
 

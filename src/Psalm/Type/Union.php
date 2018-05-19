@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TypeCombination;
 
 class Union
 {
@@ -697,7 +698,7 @@ class Union
                 ) {
                     $this->types[$key] = $new_type_part;
                 } else {
-                    $combined = Type::combineTypes([$new_type_part, $this->types[$key]]);
+                    $combined = TypeCombination::combineTypes([$new_type_part, $this->types[$key]]);
                     $this->types[$key] = array_values($combined->types)[0];
                 }
             }

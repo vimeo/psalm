@@ -3,6 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\TypeCombination;
 use Psalm\Type\Union;
 
 /**
@@ -160,7 +161,7 @@ class ObjectLike extends \Psalm\Type\Atomic
             }
         }
 
-        return Type::combineTypes($key_types);
+        return TypeCombination::combineTypes($key_types);
     }
 
     /**
@@ -215,7 +216,7 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        $array_type = new TArray([Type::combineTypes($key_types), $value_type]);
+        $array_type = new TArray([TypeCombination::combineTypes($key_types), $value_type]);
         $array_type->count = count($this->properties);
 
         return $array_type;

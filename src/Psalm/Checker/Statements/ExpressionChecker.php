@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TypeCombination;
 
 class ExpressionChecker
 {
@@ -413,7 +414,7 @@ class ExpressionChecker
             }
 
             if ($all_permissible) {
-                $stmt->inferredType = Type::combineTypes($permissible_atomic_types);
+                $stmt->inferredType = TypeCombination::combineTypes($permissible_atomic_types);
             } else {
                 $stmt->inferredType = Type::getArray();
             }

@@ -10,6 +10,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\TypeCombination;
 
 class FunctionChecker extends FunctionLikeChecker
 {
@@ -366,8 +367,8 @@ class FunctionChecker extends FunctionLikeChecker
             if ($inner_value_types) {
                 return new Type\Union([
                     new Type\Atomic\TArray([
-                        Type::combineTypes($inner_key_types),
-                        Type::combineTypes($inner_value_types),
+                        TypeCombination::combineTypes($inner_key_types),
+                        TypeCombination::combineTypes($inner_value_types),
                     ]),
                 ]);
             }

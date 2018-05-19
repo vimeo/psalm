@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
+use Psalm\Type\TypeCombination;
 use Psalm\Type\Union;
 
 class BinaryOpChecker
@@ -868,7 +869,7 @@ class BinaryOpChecker
 
                 $result_type_member = new Type\Union([new ObjectLike($properties)]);
             } else {
-                $result_type_member = Type::combineTypes([$left_type_part, $right_type_part]);
+                $result_type_member = TypeCombination::combineTypes([$left_type_part, $right_type_part]);
             }
 
             if (!$result_type) {
