@@ -184,7 +184,11 @@ class AssertionFinder
                 );
 
                 if ($var_name) {
-                    $if_types[$var_name] = '!falsy';
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        $if_types[$var_name] = 'true';
+                    } else {
+                        $if_types[$var_name] = '!falsy';
+                    }
                 } else {
                     return self::getAssertions($base_conditional, $this_class_name, $source);
                 }
