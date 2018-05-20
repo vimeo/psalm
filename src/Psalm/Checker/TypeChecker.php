@@ -630,6 +630,23 @@ class TypeChecker
             return false;
         }
 
+        if ($container_type_part instanceof TClassString && $input_type_part instanceof TClassString) {
+            if ($container_type_part->value === 'object') {
+                return true;
+            }
+
+            if ($input_type_part->value === 'object') {
+                $type_coerced = true;
+
+                return false;
+            }
+
+            $fake_container_object = new TNamedObject($container_type_part->value);
+            $fake_input_object = new TNamedObject($container_type_part->value);
+
+            return self::isObjectContainedByObject($codebase, $fake_input_object, $fake_container_object);
+        }
+
         if ($input_type_part instanceof TClassString
             && (get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === Type\Atomic\GetClassT::class)

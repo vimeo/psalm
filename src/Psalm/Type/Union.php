@@ -500,7 +500,7 @@ class Union
      */
     public function hasString()
     {
-        return isset($this->types['string']) || isset($this->types['class-string']) || $this->literal_string_types;
+        return isset($this->types['string']) || $this->literal_string_types;
     }
 
     /**

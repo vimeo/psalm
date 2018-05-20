@@ -581,7 +581,7 @@ class AnnotationTest extends TestCase
                 'annotations' => [],
                 'error_levels' => ['TypeCoercion'],
             ],
-            'singleClassConstant' => [
+            'singleClassConstantAsConstant' => [
                 '<?php
                     /**
                      * @param class-string $s

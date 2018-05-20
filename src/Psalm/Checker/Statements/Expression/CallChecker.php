@@ -1600,19 +1600,22 @@ class CallChecker
                         return false;
                     }
                 } elseif ($param_type_part instanceof TArray
-                    && isset($param_type_part->type_params[1]->getTypes()['class-string'])
                     && $input_expr instanceof PhpParser\Node\Expr\Array_
                 ) {
-                    foreach ($input_expr->items as $item) {
-                        if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
-                            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                                $statements_checker,
-                                $item->value->value,
-                                $code_location,
-                                $statements_checker->getSuppressedIssues()
-                            ) === false
-                            ) {
-                                return false;
+                    foreach ($param_type_part->type_params[1]->getTypes() as $param_array_type_part) {
+                        if ($param_array_type_part instanceof TClassString) {
+                            foreach ($input_expr->items as $item) {
+                                if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
+                                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                                        $statements_checker,
+                                        $item->value->value,
+                                        $code_location,
+                                        $statements_checker->getSuppressedIssues()
+                                    ) === false
+                                    ) {
+                                        return false;
+                                    }
+                                }
                             }
                         }
                     }

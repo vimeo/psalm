@@ -9,7 +9,6 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -47,9 +46,6 @@ class TypeCombination
 
     /** @var bool */
     public $objectlike_sealed = true;
-
-    /** @var array<string, string> */
-    public $class_string_types = [];
 
     /** @var array<int, Atomic\TLiteralString>|null */
     public $strings = [];
@@ -193,10 +189,6 @@ class TypeCombination
 
             // if we're merging an empty array with an object-like, clobber empty array
             unset($combination->type_params['array']);
-        }
-
-        if ($combination->class_string_types) {
-            $new_types[] = new TClassString(implode('|', $combination->class_string_types));
         }
 
         foreach ($combination->type_params as $generic_type => $generic_type_params) {
@@ -368,14 +360,6 @@ class TypeCombination
 
             foreach ($possibly_undefined_entries as $type) {
                 $type->possibly_undefined = true;
-            }
-        } elseif ($type instanceof TClassString) {
-            if (!isset($combination->class_string_types['object'])) {
-                $class_string_types = explode('|', $type->class_type);
-
-                foreach ($class_string_types as $class_string_type) {
-                    $combination->class_string_types[strtolower($class_string_type)] = $class_string_type;
-                }
             }
         } else {
             if ($type instanceof TString) {

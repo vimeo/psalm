@@ -114,11 +114,20 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             }
 
             if (isset($stmt->class->inferredType)) {
+                $new_type = null;
+
                 foreach ($stmt->class->inferredType->getTypes() as $lhs_type_part) {
                     // this is always OK
                     if ($lhs_type_part instanceof Type\Atomic\TClassString) {
                         if (!isset($stmt->inferredType)) {
-                            $stmt->inferredType = Type::parseString($lhs_type_part->class_type);
+                            if ($new_type) {
+                                $new_type = Type::combineUnionTypes(
+                                    $new_type,
+                                    Type::parseString($lhs_type_part->value)
+                                );
+                            } else {
+                                $new_type = Type::parseString($lhs_type_part->value);
+                            }
                         }
 
                         continue;
@@ -128,12 +137,8 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         if ($config->allow_string_standin_for_class
                             && !$lhs_type_part instanceof Type\Atomic\TNumericString
                         ) {
-                            $stmt->inferredType = Type::getObject();
-
-                            continue;
-                        }
-
-                        if (IssueBuffer::accepts(
+                            // do nothing
+                        } elseif (IssueBuffer::accepts(
                             new InvalidStringClass(
                                 'String cannot be used as a class',
                                 new CodeLocation($statements_checker->getSource(), $stmt)
@@ -142,29 +147,15 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         )) {
                             // fall through
                         }
-
-                        $stmt->inferredType = Type::getObject();
-
-                        continue;
-                    }
-
-                    if ($lhs_type_part instanceof Type\Atomic\TMixed
+                    } elseif ($lhs_type_part instanceof Type\Atomic\TMixed
                         || $lhs_type_part instanceof Type\Atomic\TGenericParam
                     ) {
-                        $stmt->inferredType = Type::getObject();
-
-                        continue;
-                    }
-
-                    if ($lhs_type_part instanceof Type\Atomic\TNull
+                        // do nothing
+                    } elseif ($lhs_type_part instanceof Type\Atomic\TNull
                         && $stmt->class->inferredType->ignore_nullable_issues
                     ) {
-                        $stmt->inferredType = Type::getObject();
-
-                        continue;
-                    }
-
-                    if (IssueBuffer::accepts(
+                        // do nothing
+                    } elseif (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Type ' . $lhs_type_part . ' cannot be called as a class',
                             new CodeLocation($statements_checker->getSource(), $stmt),
@@ -175,7 +166,18 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         // fall through
                     }
 
-                    $stmt->inferredType = Type::getObject();
+                    if ($new_type) {
+                        $new_type = Type::combineUnionTypes(
+                            $new_type,
+                            Type::getObject()
+                        );
+                    } else {
+                        $new_type = Type::getObject();
+                    }
+                }
+
+                if ($new_type) {
+                    $stmt->inferredType = $new_type;
                 }
             }
 
