@@ -1437,53 +1437,6 @@ class CallChecker
 
         $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
 
-        if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
-            if ($input_type->isNull()) {
-                if (IssueBuffer::accepts(
-                    new NullArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
-                            'null value provided',
-                        $code_location
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-
-                return null;
-            }
-
-            if ($input_type->isNullable() && !$input_type->ignore_nullable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyNullArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
-                            'null value provided',
-                        $code_location
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            }
-        }
-
-        if ($input_type->isFalsable()
-            && !$param_type->hasBool()
-            && !$param_type->hasScalar()
-            && !$input_type->ignore_falsable_issues
-        ) {
-            if (IssueBuffer::accepts(
-                new PossiblyFalseArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
-                        'false value provided',
-                    $code_location
-                ),
-                $statements_checker->getSuppressedIssues()
-            )) {
-                return false;
-            }
-        }
-
         $param_type = TypeChecker::simplifyUnionType(
             $project_checker->codebase,
             $param_type
@@ -1701,6 +1654,53 @@ class CallChecker
                         }
                     }
                 }
+            }
+        }
+
+        if (!$param_type->isNullable() && $cased_method_id !== 'echo') {
+            if ($input_type->isNull()) {
+                if (IssueBuffer::accepts(
+                    new NullArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
+                            'null value provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+
+                return null;
+            }
+
+            if ($input_type->isNullable() && !$input_type->ignore_nullable_issues) {
+                if (IssueBuffer::accepts(
+                    new PossiblyNullArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, possibly ' .
+                            'null value provided',
+                        $code_location
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+        }
+
+        if ($input_type->isFalsable()
+            && !$param_type->hasBool()
+            && !$param_type->hasScalar()
+            && !$input_type->ignore_falsable_issues
+        ) {
+            if (IssueBuffer::accepts(
+                new PossiblyFalseArgument(
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be false, possibly ' .
+                        'false value provided',
+                    $code_location
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
             }
         }
 

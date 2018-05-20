@@ -906,6 +906,12 @@ class FunctionCallTest extends TestCase
                     takesIterableOfA([new B]); // should complain',
                 'error_message' => 'InvalidArgument',
             ],
+            'putInvalidTypeMessagesFirst' => [
+                '<?php
+                    $q = rand(0,1) ? new stdClass : false;
+                    strlen($q);',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
