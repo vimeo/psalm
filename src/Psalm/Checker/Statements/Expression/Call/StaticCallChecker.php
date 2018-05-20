@@ -341,7 +341,8 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $return_type_candidate = $codebase->methods->getMethodReturnType(
                     $method_id,
-                    $self_fq_class_name
+                    $self_fq_class_name,
+                    $stmt->args
                 );
 
                 if ($return_type_candidate) {

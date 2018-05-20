@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Codebase;
 
+use PhpParser;
 use Psalm\Checker\MethodChecker;
 use Psalm\CodeLocation;
 use Psalm\Provider\ClassLikeStorageProvider;
@@ -157,10 +158,11 @@ class Methods
     /**
      * @param  string $method_id
      * @param  string $self_class
+     * @param  array<int, PhpParser\Node\Arg>|null $args
      *
      * @return Type\Union|null
      */
-    public function getMethodReturnType($method_id, &$self_class)
+    public function getMethodReturnType($method_id, &$self_class, array $args = null)
     {
         if ($this->config->use_phpdoc_methods_without_call) {
             list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
@@ -189,6 +191,22 @@ class Methods
         $appearing_fq_class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
 
         if (!$appearing_fq_class_storage->user_defined && CallMap::inCallMap($appearing_method_id)) {
+            if ($appearing_method_id === 'Closure::fromcallable'
+                && isset($args[0]->value->inferredType)
+                && $args[0]->value->inferredType->isSingle()
+            ) {
+                foreach ($args[0]->value->inferredType->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof Type\Atomic\TCallable || $atomic_type instanceof Type\Atomic\Fn) {
+                        $callable_type = clone $atomic_type;
+
+                        return new Type\Union([new Type\Atomic\Fn(
+                            'Closure',
+                            $callable_type->params,
+                            $callable_type->return_type
+                        )]);
+                    }
+                }
+            }
             return CallMap::getReturnTypeFromCallMap($appearing_method_id);
         }
 
