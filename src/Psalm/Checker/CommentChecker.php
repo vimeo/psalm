@@ -37,7 +37,7 @@ class CommentChecker
     ) {
         $var_id = null;
 
-        $var_type_string = null;
+        $var_type_tokens = null;
         $original_type = null;
 
         $var_comments = [];
@@ -71,7 +71,7 @@ class CommentChecker
                     }
 
                     try {
-                        $var_type_string = Type::fixUpLocalType(
+                        $var_type_tokens = Type::fixUpLocalType(
                             $line_parts[0],
                             $aliases,
                             $template_types
@@ -89,16 +89,16 @@ class CommentChecker
                     }
                 }
 
-                if (!$var_type_string || !$original_type) {
+                if (!$var_type_tokens || !$original_type) {
                     continue;
                 }
 
                 try {
-                    $defined_type = Type::parseString($var_type_string, false, $template_types ?: []);
+                    $defined_type = Type::parseTokens($var_type_tokens, false, $template_types ?: []);
                 } catch (TypeParseTreeException $e) {
                     if (is_int($came_from_line_number)) {
                         throw new DocblockParseException(
-                            $var_type_string .
+                            implode('', $var_type_tokens) .
                             ' is not a valid type' .
                             ' (from ' .
                             $source->getCheckedFilePath() .
@@ -108,7 +108,7 @@ class CommentChecker
                         );
                     }
 
-                    throw new DocblockParseException($var_type_string . ' is not a valid type');
+                    throw new DocblockParseException(implode('', $var_type_tokens) . ' is not a valid type');
                 }
 
                 $defined_type->setFromDocblock();
@@ -197,12 +197,9 @@ class CommentChecker
                 }
 
                 if (count($line_parts) > 1) {
-                    if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
-                        && !preg_match('/\[[^\]]+\]/', $line_parts[0])
+                    if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
                         && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
-                        && !strpos($line_parts[0], '::')
                         && $line_parts[0][0] !== '{'
-                        && !in_array($line_parts[0], ['null', 'false', 'true'], true)
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
@@ -438,9 +435,44 @@ class CommentChecker
 
         $return_block = preg_replace('/[ \t]+/', ' ', $return_block);
 
+        $quote_char = null;
+        $escaped = false;
+
         for ($i = 0, $l = strlen($return_block); $i < $l; ++$i) {
             $char = $return_block[$i];
             $next_char = $i < $l - 1 ? $return_block[$i + 1] : null;
+
+            if ($quote_char) {
+                if ($char === $quote_char && $i > 1 && !$escaped) {
+                    $quote_char = null;
+
+                    $type .= $char;
+
+                    continue;
+                }
+
+                if ($char === '\\' && !$escaped && ($next_char === $quote_char || $next_char === '\\')) {
+                    $escaped = true;
+
+                    $type .= $char;
+
+                    continue;
+                }
+
+                $escaped = false;
+
+                $type .= $char;
+
+                continue;
+            }
+
+            if ($char === '"' || $char === '\'') {
+                $quote_char = $char;
+
+                $type .= $char;
+
+                continue;
+            }
 
             if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
                 $brackets .= $char;

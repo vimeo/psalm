@@ -243,12 +243,12 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     if ($docblock_info->properties) {
                         foreach ($docblock_info->properties as $property) {
-                            $pseudo_property_type_string = Type::fixUpLocalType(
+                            $pseudo_property_type_tokens = Type::fixUpLocalType(
                                 $property['type'],
                                 $this->aliases
                             );
 
-                            $pseudo_property_type = Type::parseString($pseudo_property_type_string);
+                            $pseudo_property_type = Type::parseTokens($pseudo_property_type_tokens);
                             $pseudo_property_type->setFromDocblock();
 
                             if ($property['tag'] !== 'property-read') {
@@ -1020,14 +1020,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 if ($docblock_return_type) {
                     try {
-                        $fixed_type_string = Type::fixUpLocalType(
+                        $fixed_type_tokens = Type::fixUpLocalType(
                             $docblock_return_type,
                             $this->aliases,
                             $this->function_template_types + $this->class_template_types
                         );
 
-                        $storage->return_type = Type::parseString(
-                            $fixed_type_string,
+                        $storage->return_type = Type::parseTokens(
+                            $fixed_type_tokens,
                             false,
                             $this->function_template_types + $this->class_template_types
                         );
@@ -1229,7 +1229,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $code_location->setCommentLine($docblock_param['line_number']);
 
             try {
-                $new_param_type = Type::parseString(
+                $new_param_type = Type::parseTokens(
                     Type::fixUpLocalType(
                         $docblock_param['type'],
                         $this->aliases,

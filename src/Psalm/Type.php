@@ -79,20 +79,25 @@ abstract class Type
      */
     public static function parseString($type_string, $php_compatible = false, array $template_types = [])
     {
-        // remove all unacceptable characters
-        $type_string = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $type_string);
+        return self::parseTokens(self::tokenize($type_string), $php_compatible, $template_types);
+    }
 
-        if (preg_match('/[^A-Za-z0-9\-_\\\\&|\? \<\>\{\}=:\.,\]\[\(\)\$]/', trim($type_string))) {
-            throw new TypeParseTreeException('Unrecognised character in type');
-        }
-
-        $type_tokens = self::tokenize($type_string);
-
+    /**
+     * Parses a string type representation
+     *
+     * @param  array<int, string> $type_tokens
+     * @param  bool   $php_compatible
+     * @param  array<string, string> $template_types
+     *
+     * @return Union
+     */
+    public static function parseTokens(array $type_tokens, $php_compatible = false, array $template_types = [])
+    {
         if (count($type_tokens) === 1) {
             $only_token = $type_tokens[0];
 
             // Note: valid identifiers can include class names or $this
-            if (!preg_match('@^(\$this$|[a-zA-Z_\x7f-\xff])@', $only_token)) {
+            if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token)) {
                 throw new TypeParseTreeException("Invalid type '$only_token'");
             }
 
@@ -367,39 +372,97 @@ abstract class Type
             throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
 
+        if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
+            return new TLiteralString(substr($parse_tree->value, 1, -1));
+        }
+
+        if (preg_match('/^\-?(0|[1-9][0-9]*)$/', $parse_tree->value)) {
+            return new TLiteralInt((int) $parse_tree->value);
+        }
+
+        if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $parse_tree->value)) {
+            throw new TypeParseTreeException('Invalid type \'' . $parse_tree->value . '\'');
+        }
+
         $atomic_type = self::fixScalarTerms($parse_tree->value, $php_compatible);
 
         return Atomic::create($atomic_type, $php_compatible, $template_types);
     }
 
     /**
-     * @param  string $return_type
+     * @param  string $string_type
      * @param  bool   $ignore_space
      *
      * @return array<int,string>
      */
-    public static function tokenize($return_type, $ignore_space = true)
+    public static function tokenize($string_type, $ignore_space = true)
     {
-        $return_type_tokens = [''];
+        // remove all unacceptable characters
+        $string_type = preg_replace('/\?(?=[a-zA-Z])/', 'null|', $string_type);
+
+        $type_tokens = [''];
         $was_char = false;
+        $quote_char = null;
+        $escaped = false;
 
-        if ($ignore_space) {
-            $return_type = str_replace(' ', '', $return_type);
-        }
-
-        if (isset(self::$memoized_tokens[$return_type])) {
-            return self::$memoized_tokens[$return_type];
+        if (isset(self::$memoized_tokens[$string_type])) {
+            return self::$memoized_tokens[$string_type];
         }
 
         // index of last type token
         $rtc = 0;
 
-        $chars = str_split($return_type);
+        $chars = str_split($string_type);
         for ($i = 0, $c = count($chars); $i < $c; ++$i) {
             $char = $chars[$i];
 
+            if (!$quote_char && $char === ' ' && $ignore_space) {
+                continue;
+            }
+
             if ($was_char) {
-                $return_type_tokens[++$rtc] = '';
+                $type_tokens[++$rtc] = '';
+            }
+
+            if ($quote_char) {
+                if ($char === $quote_char && $i > 1 && !$escaped) {
+                    $quote_char = null;
+
+                    $type_tokens[$rtc] .= $char;
+                    $was_char = true;
+
+                    continue;
+                }
+
+                $was_char = false;
+
+                if ($char === '\\'
+                    && !$escaped
+                    && $i < $c - 1
+                    && ($chars[$i + 1] === $quote_char || $chars[$i + 1] === '\\')
+                ) {
+                    $escaped = true;
+                    continue;
+                }
+
+                $escaped = false;
+
+                $type_tokens[$rtc] .= $char;
+
+                continue;
+            }
+
+            if ($char === '"' || $char === '\'') {
+                if ($type_tokens[$rtc] === '') {
+                    $type_tokens[$rtc] = $char;
+                } else {
+                    $type_tokens[++$rtc] = $char;
+                }
+
+                $quote_char = $char;
+
+                $was_char = false;
+                continue;
             }
 
             if ($char === '<'
@@ -418,99 +481,112 @@ abstract class Type
                 || $char === ':'
                 || $char === '='
             ) {
-                if ($return_type_tokens[$rtc] === '') {
-                    $return_type_tokens[$rtc] = $char;
+                if ($type_tokens[$rtc] === '') {
+                    $type_tokens[$rtc] = $char;
                 } else {
-                    $return_type_tokens[++$rtc] = $char;
+                    $type_tokens[++$rtc] = $char;
                 }
 
                 $was_char = true;
-            } elseif ($char === '.') {
+
+                continue;
+            }
+
+            if ($char === '.') {
                 if ($i + 2 > $c || $chars[$i + 1] !== '.' || $chars[$i + 2] !== '.') {
                     throw new TypeParseTreeException('Unexpected token ' . $char);
                 }
 
-                if ($return_type_tokens[$rtc] === '') {
-                    $return_type_tokens[$rtc] = '...';
+                if ($type_tokens[$rtc] === '') {
+                    $type_tokens[$rtc] = '...';
                 } else {
-                    $return_type_tokens[++$rtc] = '...';
+                    $type_tokens[++$rtc] = '...';
                 }
 
                 $was_char = true;
 
                 $i += 2;
-            } else {
-                $return_type_tokens[$rtc] .= $char;
-                $was_char = false;
+
+                continue;
             }
+
+            $type_tokens[$rtc] .= $char;
+            $was_char = false;
         }
 
-        self::$memoized_tokens[$return_type] = $return_type_tokens;
+        self::$memoized_tokens[$string_type] = $type_tokens;
 
-        return $return_type_tokens;
+        return $type_tokens;
     }
 
     /**
-     * @param  string                       $return_type
+     * @param  string                       $string_type
      * @param  Aliases                      $aliases
      * @param  array<string, string>|null   $template_types
      *
-     * @return string
+     * @return array<int, string>
      */
     public static function fixUpLocalType(
-        $return_type,
+        $string_type,
         Aliases $aliases,
         array $template_types = null
     ) {
-        $return_type_tokens = self::tokenize($return_type);
+        $type_tokens = self::tokenize($string_type);
 
-        for ($i = 0, $l = count($return_type_tokens); $i < $l; $i++) {
-            $return_type_token = $return_type_tokens[$i];
+        for ($i = 0, $l = count($type_tokens); $i < $l; $i++) {
+            $string_type_token = $type_tokens[$i];
 
             if (in_array(
-                $return_type_token,
+                $string_type_token,
                 ['<', '>', '|', '?', ',', '{', '}', ':', '[', ']', '(', ')', '&'],
                 true
             )) {
                 continue;
             }
 
-            if (isset($return_type_tokens[$i + 1]) && $return_type_tokens[$i + 1] === ':') {
+            if ($string_type_token[0] === '"'
+                || $string_type_token[0] === '\''
+                || preg_match('/[1-9]/', $string_type_token[0])
+            ) {
                 continue;
             }
 
-            $return_type_tokens[$i] = $return_type_token = self::fixScalarTerms($return_type_token);
-
-            if (isset(self::$PSALM_RESERVED_WORDS[$return_type_token])) {
+            if (isset($type_tokens[$i + 1]) && $type_tokens[$i + 1] === ':') {
                 continue;
             }
 
-            if (isset($template_types[$return_type_token])) {
+            $type_tokens[$i] = $string_type_token = self::fixScalarTerms($string_type_token);
+
+            if (isset(self::$PSALM_RESERVED_WORDS[$string_type_token])) {
                 continue;
             }
 
-            if (isset($return_type_tokens[$i + 1])) {
-                $next_char = $return_type_tokens[$i + 1];
+            if (isset($template_types[$string_type_token])) {
+                continue;
+            }
+
+            if (isset($type_tokens[$i + 1])) {
+                $next_char = $type_tokens[$i + 1];
                 if ($next_char === ':') {
                     continue;
                 }
 
-                if ($next_char === '?' && isset($return_type_tokens[$i + 2]) && $return_type_tokens[$i + 2] === ':') {
+                if ($next_char === '?' && isset($type_tokens[$i + 2]) && $type_tokens[$i + 2] === ':') {
                     continue;
                 }
             }
 
-            if ($return_type_token[0] === '$') {
+            if ($string_type_token[0] === '$') {
                 continue;
             }
 
-            $return_type_tokens[$i] = self::getFQCLNFromString(
-                $return_type_token,
+            $type_tokens[$i] = self::getFQCLNFromString(
+                $string_type_token,
                 $aliases
             );
         }
 
-        return implode('', $return_type_tokens);
+        return $type_tokens;
     }
 
     /**

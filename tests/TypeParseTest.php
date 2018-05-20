@@ -483,6 +483,27 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testEnum()
+    {
+        $docblock_type = Type::parseString('( \'foo\\\'with\' | "bar\"bar" | "baz" | "bat\\\\" | \'bang bang\' | 1 | 2 | 3)');
+
+        $resolved_type = new Type\Union([
+            new Type\Atomic\TLiteralString('foo\'with'),
+            new Type\Atomic\TLiteralString('bar"bar'),
+            new Type\Atomic\TLiteralString('baz'),
+            new Type\Atomic\TLiteralString('bat\\'),
+            new Type\Atomic\TLiteralString('bang bang'),
+            new Type\Atomic\TLiteralInt(1),
+            new Type\Atomic\TLiteralInt(2),
+            new Type\Atomic\TLiteralInt(3)
+        ]);
+
+        $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+    }
+
+    /**
      * @dataProvider providerTestValidCallMapType
      *
      * @param string $return_type
