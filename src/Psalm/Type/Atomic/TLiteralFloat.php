@@ -11,7 +11,7 @@ class TLiteralFloat extends TFloat
     /**
      * @param float $value
      */
-    public function __construct(float $value)
+    public function __construct($value)
     {
         $this->value = $value;
     }

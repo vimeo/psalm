@@ -11,7 +11,7 @@ class TLiteralString extends TString
     /**
      * @param string $value
      */
-    public function __construct(string $value)
+    public function __construct($value)
     {
         $this->value = $value;
     }

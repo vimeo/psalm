@@ -629,7 +629,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getInt($from_calculation = false, int $value = null)
+    public static function getInt($from_calculation = false, $value = null)
     {
         if ($value !== null) {
             $union = new Union([new TLiteralInt($value)]);
@@ -657,7 +657,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getString(string $value = null)
+    public static function getString($value = null)
     {
         if ($value !== null) {
             $type = new TLiteralString($value);
@@ -727,7 +727,7 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getFloat(float $value = null)
+    public static function getFloat($value = null)
     {
         if ($value !== null) {
             $type = new TLiteralFloat($value);
