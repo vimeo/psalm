@@ -35,6 +35,20 @@ class EnumTest extends TestCase
                     foo(2);
                     foo(3);',
             ],
+            'noRedundantConditionWithSwitch' => [
+                '<?php
+                    /**
+                     * @psalm-param ( "foo" | "bar") $s
+                     */
+                    function foo(string $s) : void {
+                        switch ($s) {
+                          case "foo":
+                            break;
+                          case "bar":
+                            break;
+                        }
+                    }',
+            ],
         ];
     }
 

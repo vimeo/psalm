@@ -278,6 +278,10 @@ class SwitchChecker
                     $statements_checker->addSuppressedIssues(['RedundantCondition']);
                 }
 
+                if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                    $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+                }
+
                 $case_vars_in_scope_reconciled =
                     Reconciler::reconcileKeyedTypes(
                         $reconcilable_if_types,
@@ -295,6 +299,10 @@ class SwitchChecker
 
                 if (!in_array('RedundantCondition', $suppressed_issues, true)) {
                     $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+                }
+
+                if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                    $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
                 }
 
                 $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
