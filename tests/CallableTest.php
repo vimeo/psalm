@@ -532,7 +532,7 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
-            'mirrorCallableParams' => [
+            'PHP71-mirrorCallableParams' => [
                 '<?php
                     namespace NS;
                     use Closure;
