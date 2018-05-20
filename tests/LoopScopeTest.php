@@ -443,8 +443,8 @@ class LoopScopeTest extends TestCase
                 '<?php
                     $a = ["b", "c", "d"];
                     while ($a) {
-                      $letter = array_pop($a);
-                      if (!$a) {}
+                        $letter = array_pop($a);
+                        if (!$a) {}
                     }',
             ],
             'loopWithIfElseNoParadox' => [

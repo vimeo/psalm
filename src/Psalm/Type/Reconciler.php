@@ -1111,10 +1111,16 @@ class Reconciler
             }
 
             if ($existing_var_type->hasType('array')) {
-                $did_remove_type = true;
+                $array_atomic_type = $existing_var_type->getTypes()['array'];
 
-                if ($existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>') {
-                    $existing_var_type->removeType('array');
+                if (($array_atomic_type instanceof Type\Atomic\TArray && !$array_atomic_type->count)
+                    || ($array_atomic_type instanceof Type\Atomic\ObjectLike && !$array_atomic_type->sealed)
+                ) {
+                    $did_remove_type = true;
+
+                    if ($existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>') {
+                        $existing_var_type->removeType('array');
+                    }
                 }
             }
 

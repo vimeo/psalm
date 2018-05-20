@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
 /**
  * Represents an array with generic type parameters.
  */
@@ -58,5 +61,31 @@ class TArray extends \Psalm\Type\Atomic
     public function canBeFullyExpressedInPhp()
     {
         return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
+    }
+
+    /**
+     * @return bool
+     */
+    public function equals(Atomic $other_type)
+    {
+        if (!$other_type instanceof self) {
+            return false;
+        }
+
+        if ($this->count !== $other_type->count) {
+            return false;
+        }
+
+        if (count($this->type_params) !== count($other_type->type_params)) {
+            return false;
+        }
+
+        foreach ($this->type_params as $i => $type_param) {
+            if (!$type_param->equals($other_type->type_params[$i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

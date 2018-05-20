@@ -178,26 +178,4 @@ trait GenericTrait
             $type_param->replaceTemplateTypesWithArgTypes($template_types);
         }
     }
-
-    /**
-     * @return bool
-     */
-    public function equals(Atomic $other_type)
-    {
-        if (!$other_type instanceof self) {
-            return false;
-        }
-
-        if (count($this->type_params) !== count($other_type->type_params)) {
-            return false;
-        }
-
-        foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i])) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }

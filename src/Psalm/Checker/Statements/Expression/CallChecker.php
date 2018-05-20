@@ -398,6 +398,28 @@ class CallChecker
 
                             if ($var_id) {
                                 $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
+
+                                if (isset($context->vars_in_scope[$var_id])) {
+                                    $array_type = clone $context->vars_in_scope[$var_id];
+
+                                    $array_atomic_types = $array_type->getTypes();
+
+                                    foreach ($array_atomic_types as $array_atomic_type) {
+                                        if ($array_atomic_type instanceof ObjectLike) {
+                                            $generic_array_type = $array_atomic_type->getGenericArrayType();
+
+                                            if ($generic_array_type->count) {
+                                                $generic_array_type->count--;
+                                            }
+
+                                            $array_type->addType($generic_array_type);
+                                        } elseif ($array_atomic_type instanceof TArray && $array_atomic_type->count) {
+                                            $array_atomic_type->count--;
+                                        }
+                                    }
+
+                                    $context->vars_in_scope[$var_id] = $array_type;
+                                }
                             }
 
                             continue;

@@ -217,7 +217,10 @@ class ObjectLike extends \Psalm\Type\Atomic
         $value_type->possibly_undefined = false;
 
         $array_type = new TArray([TypeCombination::combineTypes($key_types), $value_type]);
-        $array_type->count = count($this->properties);
+
+        if ($this->sealed) {
+            $array_type->count = count($this->properties);
+        }
 
         return $array_type;
     }
@@ -256,6 +259,10 @@ class ObjectLike extends \Psalm\Type\Atomic
         }
 
         if (count($this->properties) !== count($other_type->properties)) {
+            return false;
+        }
+
+        if ($this->sealed !== $other_type->sealed) {
             return false;
         }
 

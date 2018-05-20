@@ -413,6 +413,16 @@ class RedundantConditionTest extends TestCase
                         $concat .= "($v)";
                     }',
             ],
+            'arrayCanBeEmpty' => [
+                '<?php
+                    $x = ["key" => "value"];
+                    if (rand(0, 1)) {
+                        $x = [];
+                    }
+                    if ($x) {
+                        var_export($x);
+                    }',
+            ],
         ];
     }
 
@@ -634,6 +644,14 @@ class RedundantConditionTest extends TestCase
                         } elseif (is_int($x)) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6',
+            ],
+            'redundantEmptyArray' => [
+                '<?php
+                    $x = ["key" => "value"];
+                    if ($x) {
+                        var_export($x);
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

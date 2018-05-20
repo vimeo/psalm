@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
 class TGenericObject extends TNamedObject
 {
     use GenericTrait;
@@ -43,5 +46,27 @@ class TGenericObject extends TNamedObject
         $php_minor_version
     ) {
         return parent::toNamespacedString($namespace, $aliased_classes, $this_class, false);
+    }
+
+    /**
+     * @return bool
+     */
+    public function equals(Atomic $other_type)
+    {
+        if (!$other_type instanceof self) {
+            return false;
+        }
+
+        if (count($this->type_params) !== count($other_type->type_params)) {
+            return false;
+        }
+
+        foreach ($this->type_params as $i => $type_param) {
+            if (!$type_param->equals($other_type->type_params[$i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

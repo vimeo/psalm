@@ -45,6 +45,9 @@ class TypeCombination
     /** @var array<string|int, Union> */
     public $objectlike_entries = [];
 
+    /** @var bool */
+    public $objectlike_sealed = true;
+
     /** @var array<string, string> */
     public $class_string_types = [];
 
@@ -180,7 +183,13 @@ class TypeCombination
             (!isset($combination->type_params['array'])
                 || $combination->type_params['array'][1]->isEmpty())
         ) {
-            $new_types[] = new ObjectLike($combination->objectlike_entries);
+            $objectlike = new ObjectLike($combination->objectlike_entries);
+
+            if ($combination->objectlike_sealed && !isset($combination->type_params['array'])) {
+                $objectlike->sealed = true;
+            }
+
+            $new_types[] = $objectlike;
 
             // if we're merging an empty array with an object-like, clobber empty array
             unset($combination->type_params['array']);
@@ -331,6 +340,7 @@ class TypeCombination
         } elseif ($type instanceof ObjectLike) {
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
+            $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
 
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
