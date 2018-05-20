@@ -1309,7 +1309,7 @@ class CallChecker
                     if (IssueBuffer::accepts(
                         new MixedTypeCoercion(
                             'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type . ', parent type ' . $input_type . ' provided',
+                                $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_checker->getSource(), $closure_arg)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1320,7 +1320,7 @@ class CallChecker
                     if (IssueBuffer::accepts(
                         new TypeCoercion(
                             'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type . ', parent type ' . $input_type . ' provided',
+                                $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_checker->getSource(), $closure_arg)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1351,8 +1351,9 @@ class CallChecker
                 } elseif ($types_can_be_identical) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArgument(
-                            'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type . ', possibly different type ' . $input_type . ' provided',
+                            'First parameter of closure passed to function ' . $method_id . ' expects '
+                                . $closure_param_type->getId() . ', possibly different type '
+                                . $input_type->getId() . ' provided',
                             new CodeLocation($statements_checker->getSource(), $closure_arg)
                         ),
                         $statements_checker->getSuppressedIssues()
@@ -1362,7 +1363,7 @@ class CallChecker
                 } elseif (IssueBuffer::accepts(
                     new InvalidArgument(
                         'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                            $closure_param_type . ', ' . $input_type . ' provided',
+                            $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
                         new CodeLocation($statements_checker->getSource(), $closure_arg)
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1458,8 +1459,8 @@ class CallChecker
             if ($type_coerced_from_mixed) {
                 if (IssueBuffer::accepts(
                     new MixedTypeCoercion(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                            ', parent type ' . $input_type . ' provided',
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
+                            ', parent type ' . $input_type->getId() . ' provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1469,8 +1470,8 @@ class CallChecker
             } else {
                 if (IssueBuffer::accepts(
                     new TypeCoercion(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                            ', parent type ' . $input_type . ' provided',
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
+                            ', parent type ' . $input_type->getId() . ' provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1518,8 +1519,8 @@ class CallChecker
             } elseif ($types_can_be_identical) {
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidArgument(
-                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                            ', possibly different type ' . $input_type . ' provided',
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
+                            ', possibly different type ' . $input_type->getId() . ' provided',
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
@@ -1528,8 +1529,8 @@ class CallChecker
                 }
             } elseif (IssueBuffer::accepts(
                 new InvalidArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type .
-                        ', ' . $input_type . ' provided',
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
+                        ', ' . $input_type->getId() . ' provided',
                     $code_location
                 ),
                 $statements_checker->getSuppressedIssues()
