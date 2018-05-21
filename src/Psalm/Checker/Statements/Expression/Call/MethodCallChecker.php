@@ -180,6 +180,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         case Type\Atomic\ObjectLike::class:
                         case Type\Atomic\TString::class:
                         case Type\Atomic\TLiteralString::class:
+                        case Type\Atomic\TLiteralClassString::class:
                         case Type\Atomic\TNumericString::class:
                         case Type\Atomic\TClassString::class:
                         case Type\Atomic\TEmptyMixed::class:

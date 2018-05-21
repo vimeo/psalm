@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -707,9 +708,13 @@ abstract class Type
      *
      * @return Type\Union
      */
-    public static function getClassString($class_type = 'object')
+    public static function getClassString($class_type = null)
     {
-        $type = new TClassString($class_type);
+        if (!$class_type) {
+            return new Union([new TClassString()]);
+        }
+
+        $type = new TLiteralClassString($class_type);
 
         return new Union([$type]);
     }

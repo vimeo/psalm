@@ -16,6 +16,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -630,24 +631,26 @@ class TypeChecker
             return false;
         }
 
-        if ($container_type_part instanceof TClassString && $input_type_part instanceof TClassString) {
-            if ($container_type_part->value === 'object') {
+        if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
+            && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
+        ) {
+            if ($container_type_part instanceof TClassString) {
                 return true;
             }
 
-            if ($input_type_part->value === 'object') {
+            if ($input_type_part instanceof TClassString) {
                 $type_coerced = true;
 
                 return false;
             }
 
             $fake_container_object = new TNamedObject($container_type_part->value);
-            $fake_input_object = new TNamedObject($container_type_part->value);
+            $fake_input_object = new TNamedObject($input_type_part->value);
 
             return self::isObjectContainedByObject($codebase, $fake_input_object, $fake_container_object);
         }
 
-        if ($input_type_part instanceof TClassString
+        if (($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === Type\Atomic\GetClassT::class)
         ) {
@@ -664,7 +667,9 @@ class TypeChecker
             return false;
         }
 
-        if ($container_type_part instanceof TClassString && $input_type_part instanceof TString) {
+        if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
+            && $input_type_part instanceof TString
+        ) {
             if (\Psalm\Config::getInstance()->allow_coercion_from_string_to_class_const) {
                 $type_coerced = true;
             }

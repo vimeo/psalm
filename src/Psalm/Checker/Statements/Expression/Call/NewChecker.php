@@ -118,15 +118,21 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 foreach ($stmt->class->inferredType->getTypes() as $lhs_type_part) {
                     // this is always OK
-                    if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                    if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
+                        || $lhs_type_part instanceof Type\Atomic\TClassString
+                    ) {
                         if (!isset($stmt->inferredType)) {
+                            $class_name = $lhs_type_part instanceof Type\Atomic\TClassString
+                                ? 'object'
+                                : $lhs_type_part->value;
+
                             if ($new_type) {
                                 $new_type = Type::combineUnionTypes(
                                     $new_type,
-                                    Type::parseString($lhs_type_part->value)
+                                    Type::parseString($class_name)
                                 );
                             } else {
-                                $new_type = Type::parseString($lhs_type_part->value);
+                                $new_type = Type::parseString($class_name);
                             }
                         }
 

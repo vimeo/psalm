@@ -656,6 +656,17 @@ class AnnotationTest extends TestCase
                 'annotations' => [],
                 'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
+            'ifClassStringEquals' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param class-string $class */
+                    function foo(string $class) : void {
+                        if ($class === A::class) {}
+                        if ($class === A::class || $class === B::class) {}
+                    }',
+            ],
             'allowOptionalParamsToBeEmptyArray' => [
                 '<?php
                     /** @param array{b?: int, c?: string} $a */

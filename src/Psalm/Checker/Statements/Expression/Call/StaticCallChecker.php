@@ -198,6 +198,11 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     continue;
                 }
 
+                // ok for now
+                if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
+                    continue;
+                }
+
                 if ($lhs_type_part instanceof Type\Atomic\TString) {
                     if ($config->allow_string_standin_for_class
                         && !$lhs_type_part instanceof Type\Atomic\TNumericString

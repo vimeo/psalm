@@ -1,24 +1,19 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TClassString extends TString
+class TLiteralClassString extends TLiteralString
 {
+    /**
+     * @param string $value string
+     */
+    public function __construct($value)
+    {
+        $this->value = $value;
+    }
+
     public function __toString()
     {
         return 'class-string';
-    }
-
-    /**
-     * @return string
-     */
-    public function getKey()
-    {
-        return 'class-string';
-    }
-
-    public function getId()
-    {
-        return $this->getKey();
     }
 
     /**
