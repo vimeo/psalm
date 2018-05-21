@@ -769,6 +769,17 @@ class AnnotationTest extends TestCase
                     '$e' => 'callable():string',
                 ],
             ],
+            'slashAfter?' => [
+                '<?php
+                    namespace ns;
+
+                    /** @param ?\stdClass $s */
+                    function foo($s) : void {
+                    }
+
+                    foo(null);
+                    foo(new \stdClass);',
+            ],
         ];
     }
 

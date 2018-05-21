@@ -64,6 +64,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testNullableFullyQualified()
+    {
+        $this->assertSame('null|stdClass', (string) Type::parseString('?\\stdClass'));
+    }
+
+    /**
+     * @return void
+     */
     public function testArray()
     {
         $this->assertSame('array<int, int>', (string) Type::parseString('array<int, int>'));
