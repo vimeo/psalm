@@ -94,7 +94,7 @@ class Clause
 
         $possibility_string = json_encode($this->possibilities);
         if (!$possibility_string) {
-            throw new \LogicException('Error converting possibilities to json');
+            return (string)rand(0, 10000000);
         }
 
         return md5($possibility_string) .

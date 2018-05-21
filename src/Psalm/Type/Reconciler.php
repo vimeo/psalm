@@ -124,6 +124,10 @@ class Reconciler
                         $failed_reconciliation
                     );
 
+                    if (!$result_type_candidate->getTypes()) {
+                        $result_type_candidate->addType(new TEmpty);
+                    }
+
                     $orred_type = $orred_type
                         ? Type::combineUnionTypes($result_type_candidate, $orred_type)
                         : $result_type_candidate;
@@ -134,10 +138,6 @@ class Reconciler
 
             if (!$result_type) {
                 throw new \UnexpectedValueException('$result_type should not be null');
-            }
-
-            if (empty($result_type->getTypes())) {
-                $result_type->addType(new TEmpty);
             }
 
             $type_changed = !$before_adjustment || !$result_type->equals($before_adjustment);
@@ -260,7 +260,7 @@ class Reconciler
             }
 
             if (!$is_negation && $new_var_type !== 'falsy' && $new_var_type !== 'empty') {
-                if ($is_strict_equality) {
+                if ($is_equality) {
                     $bracket_pos = strpos($new_var_type, '(');
 
                     if ($bracket_pos) {
