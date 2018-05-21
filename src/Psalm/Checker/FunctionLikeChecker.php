@@ -267,6 +267,16 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $signature_type = $function_param->signature_type;
 
             if ($function_param->type) {
+                if ($function_param->type_location) {
+                    $function_param->type->check(
+                        $this,
+                        $function_param->type_location,
+                        $storage->suppressed_issues,
+                        [],
+                        false
+                    );
+                }
+
                 $param_type = clone $function_param->type;
 
                 $param_type = ExpressionChecker::fleshOutType(

@@ -504,6 +504,44 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testEnumWithoutSpaces()
+    {
+        $docblock_type = Type::parseString('\'foo\\\'with\'|"bar\"bar"|"baz"|"bat\\\\"|\'bang bang\'|1|2|3');
+
+        $resolved_type = new Type\Union([
+            new Type\Atomic\TLiteralString('foo\'with'),
+            new Type\Atomic\TLiteralString('bar"bar'),
+            new Type\Atomic\TLiteralString('baz'),
+            new Type\Atomic\TLiteralString('bat\\'),
+            new Type\Atomic\TLiteralString('bang bang'),
+            new Type\Atomic\TLiteralInt(1),
+            new Type\Atomic\TLiteralInt(2),
+            new Type\Atomic\TLiteralInt(3)
+        ]);
+
+        $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnumWithClassConstants()
+    {
+        $docblock_type = Type::parseString('("baz" | One2::TWO_THREE | Foo::BAR_BAR | Bat\Bar::BAZ_BAM)');
+
+        $resolved_type = new Type\Union([
+            new Type\Atomic\TLiteralString('baz'),
+            new Type\Atomic\TScalarClassConstant('One2', 'TWO_THREE'),
+            new Type\Atomic\TScalarClassConstant('Foo', 'BAR_BAR'),
+            new Type\Atomic\TScalarClassConstant('Bat\\Bar', 'BAZ_BAM'),
+        ]);
+
+        $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+    }
+
+    /**
      * @dataProvider providerTestValidCallMapType
      *
      * @param string $return_type

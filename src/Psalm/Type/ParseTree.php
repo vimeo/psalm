@@ -342,6 +342,24 @@ class ParseTree
                             ++$i;
                             break;
 
+                        case '::':
+                            $nexter_token = $i + 2 < $c ? $type_tokens[$i + 2] : null;
+
+                            if (!$nexter_token || !preg_match('/^[A-Z_]+$/', $nexter_token)) {
+                                throw new TypeParseTreeException(
+                                    'Invalid class constant ' . $nexter_token
+                                );
+                            }
+
+                            $new_leaf = new ParseTree\Value(
+                                $type_token . '::' . $nexter_token,
+                                $new_parent
+                            );
+
+                            $i += 2;
+
+                            break;
+
                         default:
                             if ($type_token === '$this') {
                                 $type_token = 'static';

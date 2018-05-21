@@ -207,14 +207,14 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return;
         }
 
-        $project_checker = $statements_source->getFileChecker()->project_checker;
-        $codebase = $project_checker->codebase;
-
         $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name);
 
-        if (in_array($fq_class_name, ['callable', 'iterable'], true)) {
+        if (in_array($fq_class_name, ['callable', 'iterable', 'self', 'static', 'parent'], true)) {
             return true;
         }
+
+        $project_checker = $statements_source->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if (preg_match(
             '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',

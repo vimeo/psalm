@@ -845,6 +845,27 @@ class ExpressionChecker
             }
         }
 
+        if ($return_type instanceof Type\Atomic\TScalarClassConstant) {
+            if ($project_checker->codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+                $class_constants = $project_checker->codebase->classlikes->getConstantsForClass(
+                    $return_type->fq_classlike_name,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (isset($class_constants[$return_type->const_name])) {
+                    $const_type = $class_constants[$return_type->const_name];
+
+                    if ($const_type->isSingle()) {
+                        $const_type = clone $const_type;
+
+                        return array_values($const_type->getTypes())[0];
+                    }
+                }
+            }
+
+            return new TMixed();
+        }
+
         if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {
             foreach ($return_type->type_params as &$type_param) {
                 $type_param = self::fleshOutType(

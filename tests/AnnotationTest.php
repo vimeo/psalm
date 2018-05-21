@@ -450,6 +450,7 @@ class AnnotationTest extends TestCase
             'differentDocblockParamClassSuppress' => [
                 '<?php
                     class A {}
+                    class B {}
 
                     /**
                      * @param B $bar

@@ -17,6 +17,8 @@ class EnumTest extends TestCase
         return [
             'enumStringOrEnumIntCorrect' => [
                 '<?php
+                    namespace Ns;
+
                     /** @psalm-param ( "foo\"with" | "bar" | 1 | 2 | 3 ) $s */
                     function foo($s) : void {}
                     foo("foo\"with");
@@ -27,6 +29,8 @@ class EnumTest extends TestCase
             ],
             'enumStringOrEnumIntWithoutSpacesCorrect' => [
                 '<?php
+                    namespace Ns;
+
                     /** @psalm-param "foo\"with"|"bar"|1|2|3 $s */
                     function foo($s) : void {}
                     foo("foo\"with");
@@ -37,6 +41,8 @@ class EnumTest extends TestCase
             ],
             'noRedundantConditionWithSwitch' => [
                 '<?php
+                    namespace Ns;
+
                     /**
                      * @psalm-param ( "foo" | "bar") $s
                      */
@@ -49,6 +55,21 @@ class EnumTest extends TestCase
                         }
                     }',
             ],
+            'classConstantCorrect' => [
+                '<?php
+                    namespace Ns;
+
+                    class C {
+                        const A = "bat";
+                        const B = "baz";
+                    }
+                    /** @psalm-param "foo"|"bar"|C::A|C::B $s */
+                    function foo($s) : void {}
+                    foo("foo");
+                    foo("bar");
+                    foo("bat");
+                    foo("baz");',
+            ],
         ];
     }
 
@@ -60,6 +81,8 @@ class EnumTest extends TestCase
         return [
             'enumStringOrEnumIntIncorrectString' => [
                 '<?php
+                    namespace Ns;
+
                     /** @psalm-param ( "foo" | "bar" | 1 | 2 | 3 ) $s */
                     function foo($s) : void {}
                     foo("bat");',
@@ -67,6 +90,8 @@ class EnumTest extends TestCase
             ],
             'enumStringOrEnumIntIncorrectInt' => [
                 '<?php
+                    namespace Ns;
+
                     /** @psalm-param ( "foo" | "bar" | 1 | 2 | 3 ) $s */
                     function foo($s) : void {}
                     foo(4);',
@@ -74,10 +99,33 @@ class EnumTest extends TestCase
             ],
             'enumStringOrEnumIntWithoutSpacesIncorrect' => [
                 '<?php
+                    namespace Ns;
+
                     /** @psalm-param "foo\"with"|"bar"|1|2|3 $s */
                     function foo($s) : void {}
                     foo(4);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'classConstantIncorrect' => [
+                '<?php
+                    namespace Ns;
+
+                    class C {
+                        const A = "bat";
+                        const B = "baz";
+                    }
+                    /** @psalm-param "foo"|"bar"|C::A|C::B $s */
+                    function foo($s) : void {}
+                    foo("for");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'classConstantCorrect' => [
+                '<?php
+                    namespace Ns;
+
+                    /** @psalm-param "foo"|"bar"|C::A|C::B $s */
+                    function foo($s) : void {}',
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }

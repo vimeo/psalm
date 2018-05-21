@@ -376,6 +376,11 @@ abstract class Type
             return new TLiteralString(substr($parse_tree->value, 1, -1));
         }
 
+        if (strpos($parse_tree->value, '::')) {
+            list($fq_classlike_name, $const_name) = explode('::', $parse_tree->value);
+            return new Atomic\TScalarClassConstant($fq_classlike_name, $const_name);
+        }
+
         if (preg_match('/^\-?(0|[1-9][0-9]*)$/', $parse_tree->value)) {
             return new TLiteralInt((int) $parse_tree->value);
         }
@@ -478,13 +483,38 @@ abstract class Type
                 || $char === ')'
                 || $char === ' '
                 || $char === '&'
-                || $char === ':'
                 || $char === '='
             ) {
                 if ($type_tokens[$rtc] === '') {
                     $type_tokens[$rtc] = $char;
                 } else {
                     $type_tokens[++$rtc] = $char;
+                }
+
+                $was_char = true;
+
+                continue;
+            }
+
+            if ($char === ':') {
+                if ($i + 1 < $c && $chars[$i + 1] === ':') {
+                    if ($type_tokens[$rtc] === '') {
+                        $type_tokens[$rtc] = '::';
+                    } else {
+                        $type_tokens[++$rtc] = '::';
+                    }
+
+                    $was_char = true;
+
+                    $i++;
+
+                    continue;
+                }
+
+                if ($type_tokens[$rtc] === '') {
+                    $type_tokens[$rtc] = ':';
+                } else {
+                    $type_tokens[++$rtc] = ':';
                 }
 
                 $was_char = true;
@@ -538,7 +568,7 @@ abstract class Type
 
             if (in_array(
                 $string_type_token,
-                ['<', '>', '|', '?', ',', '{', '}', ':', '[', ']', '(', ')', '&'],
+                ['<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&'],
                 true
             )) {
                 continue;
@@ -552,6 +582,10 @@ abstract class Type
             }
 
             if (isset($type_tokens[$i + 1]) && $type_tokens[$i + 1] === ':') {
+                continue;
+            }
+
+            if ($i > 0 && $type_tokens[$i - 1] === '::') {
                 continue;
             }
 
