@@ -341,7 +341,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $fq_classlike_name = ClassLikeChecker::getFQCLNFromNameObject($node->class, $this->aliases);
 
             if (!in_array(strtolower($fq_classlike_name), ['self', 'static', 'parent'], true)) {
-                $this->codebase->scanner->queueClassLikeForScanning($fq_classlike_name, $this->file_path);
+                $this->codebase->scanner->queueClassLikeForScanning(
+                    $fq_classlike_name,
+                    $this->file_path,
+                    false,
+                    !($node instanceof PhpParser\Node\Expr\ClassConstFetch)
+                        || !($node->name instanceof PhpParser\Node\Identifier)
+                        || strtolower($node->name->name) !== 'class'
+                );
                 $this->file_storage->referenced_classlikes[strtolower($fq_classlike_name)] = $fq_classlike_name;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
