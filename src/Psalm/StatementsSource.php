@@ -36,6 +36,40 @@ interface StatementsSource extends FileSource
     public function getParentFQCLN();
 
     /**
+     * @param string $file_path
+     * @param string $file_name
+     *
+     * @return void
+     */
+    public function addCheckedFilePath($file_path, $file_name);
+
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    public function removeCheckedFilePath($file_path);
+
+    /**
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    public function hasNestedFilePath($file_path);
+
+    /**
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    public function hasAlreadyIncludedFilePath($file_path);
+
+    /**
+     * @return int
+     */
+    public function getIncludeNesting();
+
+    /**
      * @return bool
      */
     public function isStatic();

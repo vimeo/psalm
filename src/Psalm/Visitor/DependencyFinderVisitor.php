@@ -1533,7 +1533,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($this->codebase->fileExists($path_to_file)) {
-                $this->codebase->scanner->queueFileForScanning($path_to_file);
+                if ($this->scan_deep) {
+                    $this->codebase->scanner->addFileToDeepScan($path_to_file);
+                } else {
+                    $this->codebase->scanner->addFileToShallowScan($path_to_file);
+                }
 
                 $this->file_storage->included_file_paths[strtolower($path_to_file)] = $path_to_file;
 

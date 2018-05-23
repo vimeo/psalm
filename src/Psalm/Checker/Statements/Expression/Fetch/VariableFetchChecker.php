@@ -24,6 +24,7 @@ class VariableFetchChecker
      * @param   bool                            $passed_by_reference
      * @param   Type\Union|null                 $by_ref_type
      * @param   bool                            $array_assignment
+     * @param   bool                            $from_global - when used in a global keyword
      *
      * @return  false|null
      */
@@ -33,7 +34,8 @@ class VariableFetchChecker
         Context $context,
         $passed_by_reference = false,
         Type\Union $by_ref_type = null,
-        $array_assignment = false
+        $array_assignment = false,
+        $from_global = false
     ) {
         if ($stmt->name === 'this') {
             if ($statements_checker->isStatic()) {
@@ -161,7 +163,7 @@ class VariableFetchChecker
                 } elseif (!$context->inside_isset
                     || $statements_checker->getSource() instanceof FunctionLikeChecker
                 ) {
-                    if ($context->is_global) {
+                    if ($context->is_global || $from_global) {
                         if (IssueBuffer::accepts(
                             new UndefinedGlobalVariable(
                                 'Cannot find referenced variable ' . $var_name . ' in global scope',

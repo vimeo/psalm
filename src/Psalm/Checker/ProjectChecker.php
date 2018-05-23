@@ -269,6 +269,10 @@ class ProjectChecker
                 $this->checkDirWithConfig($dir_name, $this->config);
             }
 
+            foreach ($this->config->getProjectFiles() as $file_path) {
+                $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
+            }
+
             $this->codebase->scanFiles();
         } else {
             if ($this->debug_output) {

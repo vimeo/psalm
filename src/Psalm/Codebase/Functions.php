@@ -60,13 +60,9 @@ class Functions
         if (isset($function_checkers[$function_id])) {
             $function_id = $function_checkers[$function_id]->getMethodId();
 
-            if (!isset($file_storage->functions[$function_id])) {
-                throw new \UnexpectedValueException(
-                    'Expecting ' . $function_id . ' to have storage in ' . $file_path
-                );
+            if (isset($file_storage->functions[$function_id])) {
+                return $file_storage->functions[$function_id];
             }
-
-            return $file_storage->functions[$function_id];
         }
 
         // closures can be returned here

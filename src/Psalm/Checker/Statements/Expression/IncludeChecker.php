@@ -20,7 +20,8 @@ class IncludeChecker
     public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr\Include_ $stmt,
-        Context $context
+        Context $context,
+        Context $global_context = null
     ) {
         $config = Config::getInstance();
 
@@ -67,18 +68,42 @@ class IncludeChecker
                 return null;
             }
 
-            if ($statements_checker->getFilePath() === $path_to_file) {
-                return null;
-            }
-
             $current_file_checker = $statements_checker->getFileChecker();
 
             if ($current_file_checker->project_checker->fileExists($path_to_file)) {
-                if (is_subclass_of($current_file_checker, 'Psalm\\Checker\\FileChecker')) {
+                $codebase = $current_file_checker->project_checker->codebase;
+
+                if ($statements_checker->hasNestedFilePath($path_to_file)
+                    || ($statements_checker->hasAlreadyIncludedFilePath($path_to_file)
+                        && !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements)
+                ) {
+                    return null;
+                }
+
+                $file_name = $config->shortenFileName($path_to_file);
+
+                if (is_subclass_of($current_file_checker, \Psalm\Checker\FileChecker::class)
+                    || !$config->hide_external_errors
+                ) {
+                    $statements_checker->addCheckedFilePath($path_to_file, $file_name);
+
+                    if ($current_file_checker->project_checker->debug_output) {
+                        $nesting = $statements_checker->getIncludeNesting() + 1;
+                        echo (str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL);
+                    }
+
+                    // this analysis happens in the same namespace as the base file being checked,
+                    // but required files are almost always done in the root namespace, so it doesn't make much
+                    // of a difference. Still, if anyone uses this for something properly it might break.
+                    // But also, don't use require.
                     $statements_checker->analyze(
                         $current_file_checker->project_checker->codebase->getStatementsForFile($path_to_file),
-                        $context
+                        $context,
+                        null,
+                        $global_context
                     );
+
+                    $statements_checker->removeCheckedFilePath($path_to_file);
                 }
 
                 return null;

@@ -56,6 +56,9 @@ class FileStorage
     /** @var bool */
     public $deep_scan = false;
 
+    /** @var bool */
+    public $has_extra_statements = false;
+
     /**
      * @var string
      */

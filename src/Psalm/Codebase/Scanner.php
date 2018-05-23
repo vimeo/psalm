@@ -126,6 +126,27 @@ class Scanner
     }
 
     /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function addFileToShallowScan($file_path)
+    {
+        $this->files_to_scan[$file_path] = $file_path;
+    }
+
+    /**
+     * @param  string $file_path
+     *
+     * @return void
+     */
+    public function addFileToDeepScan($file_path)
+    {
+        $this->files_to_scan[$file_path] = $file_path;
+        $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    /**
      * @param  string $fq_classlike_name_lc
      * @param  string $file_path
      *
@@ -294,7 +315,7 @@ class Scanner
             $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
         } else {
             foreach ($file_storage->included_file_paths as $include_file_path) {
-                $this->codebase->scanner->queueFileForScanning($include_file_path);
+                $this->addFileToShallowScan($include_file_path);
             }
 
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
@@ -341,16 +362,6 @@ class Scanner
         }
 
         return new FileScanner($file_path, $file_name, $will_analyze);
-    }
-
-    /**
-     * @param  string $file_path
-     *
-     * @return void
-     */
-    public function queueFileForScanning($file_path)
-    {
-        $this->files_to_scan[$file_path] = $file_path;
     }
 
     /**

@@ -10,10 +10,11 @@ class IncludeTest extends TestCase
      *
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
+     * @param bool $hide_external_errors
      *
      * @return void
      */
-    public function testValidInclude(array $files, array $files_to_check)
+    public function testValidInclude(array $files, array $files_to_check, $hide_external_errors = true)
     {
         $codebase = $this->project_checker->getCodebase();
 
@@ -29,6 +30,7 @@ class IncludeTest extends TestCase
         $codebase->scanFiles();
 
         $config = $codebase->config;
+        $config->hide_external_errors = $hide_external_errors;
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
@@ -41,12 +43,17 @@ class IncludeTest extends TestCase
      *
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
-     * @param mixed $error_message
+     * @param string $error_message
+     * @param bool $hide_external_errors
      *
      * @return void
      */
-    public function testInvalidInclude(array $files, array $files_to_check, $error_message)
-    {
+    public function testInvalidInclude(
+        array $files,
+        array $files_to_check,
+        $error_message,
+        $hide_external_errors = true
+    ) {
         $codebase = $this->project_checker->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -64,6 +71,7 @@ class IncludeTest extends TestCase
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $config = $codebase->config;
+        $config->hide_external_errors = $hide_external_errors;
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
@@ -170,7 +178,7 @@ class IncludeTest extends TestCase
 
                         require("file1.php");
 
-                        fooFoo();',
+                        \fooFoo();',
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
@@ -310,6 +318,25 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'globalIncludedVar' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        $a = 5;
+                        require_once("file2.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file3.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
+                        function getGlobal() : void {
+                            global $a;
+
+                            echo $a;
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hide_external_errors' => false
+            ],
             'returnNamespacedFunctionCallType' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
@@ -374,6 +401,44 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'error_message' => 'UndefinedMethod',
+            ],
+            'namespacedRequireFunction' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function fooFoo(): void {
+
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        namespace Foo;
+
+                        require("file1.php");
+
+                        \Foo\fooFoo();',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'UndefinedFunction',
+            ],
+            'globalIncludedVar' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        $a = 5;
+                        require_once("file2.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require_once("file3.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
+                        function getGlobal() : void {
+                            global $b;
+
+                            echo $a;
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'error_message' => 'UndefinedGlobalVariable',
+                'hide_external_errors' => false
             ],
         ];
     }

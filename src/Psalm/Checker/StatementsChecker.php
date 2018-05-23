@@ -138,7 +138,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($project_checker->debug_lines) {
-                echo $this->getFilePath() . ':' . $stmt->getLine() . "\n";
+                echo $this->getCheckedFilePath() . ':' . $stmt->getLine();
             }
 
             /*
@@ -399,7 +399,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression) {
-                if (ExpressionChecker::analyze($this, $stmt->expr, $context) === false) {
+                if (ExpressionChecker::analyze($this, $stmt->expr, $context, false, $global_context) === false) {
                     return false;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\InlineHTML) {
@@ -419,7 +419,17 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
-                        if ($global_context && VariableFetchChecker::analyze($this, $var, $global_context) === false) {
+                        if ($global_context
+                            && VariableFetchChecker::analyze(
+                                $this,
+                                $var,
+                                $global_context,
+                                false,
+                                null,
+                                false,
+                                true
+                            ) === false
+                        ) {
                             return false;
                         }
 

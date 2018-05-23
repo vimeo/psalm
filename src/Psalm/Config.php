@@ -888,6 +888,18 @@ class Config
     /**
      * @return array<string>
      */
+    public function getProjectFiles()
+    {
+        if (!$this->project_files) {
+            return [];
+        }
+
+        return $this->project_files->getFiles();
+    }
+
+    /**
+     * @return array<string>
+     */
     public function getFileExtensions()
     {
         return $this->file_extensions;

@@ -23,14 +23,19 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $file_path;
 
     /**
-     * @var string|null
+     * @var array<int, string>
      */
-    protected $actual_file_name;
+    protected $checked_file_paths = [];
 
     /**
-     * @var string|null
+     * @var array<int, string>
      */
-    protected $actual_file_path;
+    protected $checked_file_names = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $included_file_paths = [];
 
     /**
      * @var array<int, string>
@@ -323,7 +328,9 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function getCheckedFileName()
     {
-        return $this->actual_file_name ?: $this->file_name;
+        return $this->checked_file_names
+            ? $this->checked_file_names[count($this->checked_file_names) - 1]
+            : $this->file_name;
     }
 
     /**
@@ -331,7 +338,67 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function getCheckedFilePath()
     {
-        return $this->actual_file_path ?: $this->file_path;
+        return $this->checked_file_paths
+            ? $this->checked_file_paths[count($this->checked_file_paths) - 1]
+            : $this->file_path;
+    }
+
+    /**
+     * @param string $file_path
+     * @param string $file_name
+     *
+     * @return void
+     */
+    public function addCheckedFilePath($file_path, $file_name)
+    {
+        $this->included_file_paths[$file_path] = true;
+        $this->checked_file_names[] = $file_name;
+        $this->checked_file_paths[] = $file_path;
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    public function removeCheckedFilePath($file_path)
+    {
+        if (!$this->checked_file_paths
+            || $this->checked_file_paths[count($this->checked_file_paths) - 1] !== $file_path
+        ) {
+            throw new \InvalidArgumentException($file_path . ' is not the most recently checked file');
+        }
+
+        array_pop($this->checked_file_paths);
+        array_pop($this->checked_file_names);
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    public function hasNestedFilePath($file_path)
+    {
+        return $this->file_path === $file_path || in_array($file_path, $this->checked_file_paths);
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    public function hasAlreadyIncludedFilePath($file_path)
+    {
+        return isset($this->included_file_paths[$file_path]);
+    }
+
+    /**
+     * @return int
+     */
+    public function getIncludeNesting()
+    {
+        return count($this->checked_file_paths);
     }
 
     /**

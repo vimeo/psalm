@@ -64,7 +64,8 @@ class ExpressionChecker
         StatementsChecker $statements_checker,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        $array_assignment = false
+        $array_assignment = false,
+        Context $global_context = null
     ) {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             if (VariableFetchChecker::analyze(
@@ -460,7 +461,7 @@ class ExpressionChecker
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Include_) {
-            IncludeChecker::analyze($statements_checker, $stmt, $context);
+            IncludeChecker::analyze($statements_checker, $stmt, $context, $global_context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\Eval_) {
             $context->check_classes = false;
             $context->check_variables = false;

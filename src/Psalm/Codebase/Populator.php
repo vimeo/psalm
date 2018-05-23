@@ -385,6 +385,8 @@ class Populator
 
         $dependent_file_paths[$file_path_lc] = true;
 
+        $all_included_file_paths = $storage->included_file_paths;
+
         foreach ($storage->included_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
@@ -393,6 +395,16 @@ class Populator
             }
 
             $this->populateFileStorage($included_file_storage, $dependent_file_paths);
+
+            $all_included_file_paths = $all_included_file_paths + $included_file_storage->included_file_paths;
+        }
+
+        foreach ($all_included_file_paths as $included_file_path => $_) {
+            try {
+                $included_file_storage = $this->file_storage_provider->get($included_file_path);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
 
             $storage->declaring_function_ids = array_merge(
                 $included_file_storage->declaring_function_ids,
@@ -404,6 +416,8 @@ class Populator
                 $storage->declaring_constants
             );
         }
+
+        $storage->included_file_paths = $all_included_file_paths;
 
         $storage->populated = true;
     }

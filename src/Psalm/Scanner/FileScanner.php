@@ -62,6 +62,15 @@ class FileScanner implements FileSource
             $debug_output
         );
 
+        foreach ($stmts as $stmt) {
+            if (!$stmt instanceof PhpParser\Node\Stmt\ClassLike
+                && !$stmt instanceof PhpParser\Node\Stmt\Function_
+            ) {
+                $file_storage->has_extra_statements = true;
+                break;
+            }
+        }
+
         if ($debug_output) {
             if ($this->will_analyze) {
                 echo 'Deep scanning ' . $file_storage->file_path . "\n";

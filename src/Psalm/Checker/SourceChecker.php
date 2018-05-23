@@ -125,6 +125,75 @@ abstract class SourceChecker implements StatementsSource
     }
 
     /**
+     * @param string $file_path
+     * @param string $file_name
+     *
+     * @return void
+     */
+    public function addCheckedFilePath($file_path, $file_name)
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        $this->source->addCheckedFilePath($file_path, $file_name);
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    public function removeCheckedFilePath($file_path)
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        $this->source->removeCheckedFilePath($file_path);
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    public function hasNestedFilePath($file_path)
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->hasNestedFilePath($file_path);
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return bool
+     */
+    public function hasAlreadyIncludedFilePath($file_path)
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->hasAlreadyIncludedFilePath($file_path);
+    }
+
+    /**
+     * @return int
+     */
+    public function getIncludeNesting()
+    {
+        if ($this->source === null) {
+            throw new \UnexpectedValueException('$source cannot be null');
+        }
+
+        return $this->source->getIncludeNesting();
+    }
+
+    /**
      * @return StatementsSource
      */
     public function getSource()

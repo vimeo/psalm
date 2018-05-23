@@ -250,6 +250,14 @@ class FileFilter
     }
 
     /**
+     * @return array<string>
+     */
+    public function getFiles()
+    {
+        return $this->files;
+    }
+
+    /**
      * @param   string $file_name
      *
      * @return  void

@@ -480,48 +480,6 @@ class PropertyAssignmentChecker
                 continue;
             }
 
-            if (!$assignment_value_type->ignore_nullable_issues
-                && $assignment_value_type->isNullable()
-                && !$class_property_type->isNullable()
-            ) {
-                if (IssueBuffer::accepts(
-                    new PossiblyNullPropertyAssignmentValue(
-                        $var_id . ' with non-nullable declared type \'' . $class_property_type .
-                            '\' cannot be assigned nullable type \'' . $assignment_value_type . '\'',
-                        new CodeLocation(
-                            $statements_checker->getSource(),
-                            $assignment_value ?: $stmt,
-                            $context->include_location
-                        ),
-                        $property_ids[0]
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            }
-
-            if (!$assignment_value_type->ignore_falsable_issues
-                && $assignment_value_type->isFalsable()
-                && !$class_property_type->hasBool()
-            ) {
-                if (IssueBuffer::accepts(
-                    new PossiblyFalsePropertyAssignmentValue(
-                        $var_id . ' with non-falsable declared type \'' . $class_property_type .
-                            '\' cannot be assigned possibly false type \'' . $assignment_value_type . '\'',
-                        new CodeLocation(
-                            $statements_checker->getSource(),
-                            $assignment_value ?: $stmt,
-                            $context->include_location
-                        ),
-                        $property_ids[0]
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            }
-
             $type_match_found = TypeChecker::isContainedBy(
                 $project_checker->codebase,
                 $assignment_value_type,
@@ -599,6 +557,50 @@ class PropertyAssignmentChecker
                 $invalid_assignment_value_types[] = $class_property_type->getId();
             } else {
                 $has_valid_assignment_value_type = true;
+            }
+
+            if ($type_match_found) {
+                if (!$assignment_value_type->ignore_nullable_issues
+                    && $assignment_value_type->isNullable()
+                    && !$class_property_type->isNullable()
+                ) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyNullPropertyAssignmentValue(
+                            $var_id . ' with non-nullable declared type \'' . $class_property_type .
+                                '\' cannot be assigned nullable type \'' . $assignment_value_type . '\'',
+                            new CodeLocation(
+                                $statements_checker->getSource(),
+                                $assignment_value ?: $stmt,
+                                $context->include_location
+                            ),
+                            $property_ids[0]
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+
+                if (!$assignment_value_type->ignore_falsable_issues
+                    && $assignment_value_type->isFalsable()
+                    && !$class_property_type->hasBool()
+                ) {
+                    if (IssueBuffer::accepts(
+                        new PossiblyFalsePropertyAssignmentValue(
+                            $var_id . ' with non-falsable declared type \'' . $class_property_type .
+                                '\' cannot be assigned possibly false type \'' . $assignment_value_type . '\'',
+                            new CodeLocation(
+                                $statements_checker->getSource(),
+                                $assignment_value ?: $stmt,
+                                $context->include_location
+                            ),
+                            $property_ids[0]
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
             }
         }
 
