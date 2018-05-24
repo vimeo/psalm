@@ -254,8 +254,8 @@ If the values are in class constants, you can use those too:
 
 ```php
 class A {
-  const FOO;
-  const BAR;
+  const FOO = 'foo';
+  const BAR = 'bar';
 }
 
 /**
