@@ -145,20 +145,10 @@ class FunctionChecker extends FunctionLikeChecker
                     );
 
                 case 'array_merge':
-                    return self::getArrayMergeReturnType(
-                        $statements_checker,
-                        $call_args,
-                        $code_location,
-                        $suppressed_issues
-                    );
+                    return self::getArrayMergeReturnType($call_args);
 
                 case 'array_rand':
-                    return self::getArrayRandReturnType(
-                        $statements_checker,
-                        $call_args,
-                        $code_location,
-                        $suppressed_issues
-                    );
+                    return self::getArrayRandReturnType($call_args);
 
                 case 'explode':
                     if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
@@ -283,20 +273,11 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  CodeLocation                 $code_location
-     * @param  array                        $suppressed_issues
      *
      * @return Type\Union
      */
-    private static function getArrayMergeReturnType(
-        StatementsChecker $statements_checker,
-        $call_args,
-        CodeLocation $code_location,
-        array $suppressed_issues
-    ) {
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
-        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
-
+    private static function getArrayMergeReturnType(array $call_args)
+    {
         $inner_value_types = [];
         $inner_key_types = [];
 
@@ -391,17 +372,11 @@ class FunctionChecker extends FunctionLikeChecker
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  CodeLocation                 $code_location
-     * @param  array                        $suppressed_issues
      *
      * @return Type\Union
      */
-    private static function getArrayRandReturnType(
-        StatementsChecker $statements_checker,
-        $call_args,
-        CodeLocation $code_location,
-        array $suppressed_issues
-    ) {
+    private static function getArrayRandReturnType(array $call_args)
+    {
         $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
         $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
