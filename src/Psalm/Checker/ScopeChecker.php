@@ -168,7 +168,7 @@ class ScopeChecker
                     }
                 }
 
-                if ($has_default_terminator) {
+                if ($has_default_terminator || isset($stmt->allMatched)) {
                     return [self::ACTION_END];
                 }
             }

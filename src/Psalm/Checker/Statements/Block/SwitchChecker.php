@@ -492,6 +492,9 @@ class SwitchChecker
                     }
                 }
             }
+
+            /** @psalm-suppress UndefinedPropertyAssignment */
+            $stmt->allMatched = true;
         } elseif ($possibly_redefined_vars) {
             foreach ($possibly_redefined_vars as $var_id => $type) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
