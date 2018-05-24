@@ -45,187 +45,213 @@ class FunctionChecker extends FunctionLikeChecker
             throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
         }
 
-        if ($call_map_key === 'getenv') {
-            if (!empty($call_args)) {
-                return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
-            }
+        switch ($call_map_key) {
+            case 'getenv':
+                if (!empty($call_args)) {
+                    return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
+                }
 
-            return new Type\Union([new Type\Atomic\TArray([Type::getMixed(), Type::getString()])]);
+                return new Type\Union([new Type\Atomic\TArray([Type::getMixed(), Type::getString()])]);
         }
 
         if ($call_args) {
-            if (in_array(
-                $call_map_key,
-                ['str_replace', 'str_ireplace', 'substr_replace', 'preg_replace', 'preg_replace_callback'],
-                true
-            )) {
-                if (isset($call_args[2]->value->inferredType)) {
-                    $subject_type = $call_args[2]->value->inferredType;
+            switch ($call_map_key) {
+                case 'str_replace':
+                case 'str_ireplace':
+                case 'substr_replace':
+                case 'preg_replace':
+                case 'preg_replace_callback':
+                    if (isset($call_args[2]->value->inferredType)) {
+                        $subject_type = $call_args[2]->value->inferredType;
 
-                    if (!$subject_type->hasString() && $subject_type->hasArray()) {
-                        return Type::getArray();
+                        if (!$subject_type->hasString() && $subject_type->hasArray()) {
+                            return Type::getArray();
+                        }
+
+                        $return_type = Type::getString();
+
+                        if (in_array($call_map_key, ['preg_replace', 'preg_replace_callback'], true)) {
+                            $return_type->addType(new Type\Atomic\TNull());
+                            $return_type->ignore_nullable_issues = true;
+                        }
+
+                        return $return_type;
                     }
 
-                    $return_type = Type::getString();
-
-                    if (in_array($call_map_key, ['preg_replace', 'preg_replace_callback'], true)) {
-                        $return_type->addType(new Type\Atomic\TNull());
-                        $return_type->ignore_nullable_issues = true;
-                    }
-
-                    return $return_type;
-                } else {
                     return Type::getMixed();
-                }
-            }
 
-            if ($call_map_key === 'pathinfo') {
-                if (isset($call_args[1])) {
-                    return Type::getString();
-                }
-
-                return Type::getArray();
-            }
-
-            if ($call_map_key === 'count' && isset($call_args[0]->value->inferredType)) {
-                $atomic_types = $call_args[0]->value->inferredType->getTypes();
-
-                if (count($atomic_types) === 1 && isset($atomic_types['array'])) {
-                    if ($atomic_types['array'] instanceof Type\Atomic\TArray) {
-                        return new Type\Union([
-                            $atomic_types['array']->count !== null
-                                ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
-                                : new Type\Atomic\TInt
-                        ]);
-                    } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
-                        && $atomic_types['array']->sealed
-                    ) {
-                        return new Type\Union([
-                            new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
-                        ]);
-                    }
-                }
-            }
-
-            if ($call_map_key === 'var_export'
-                || $call_map_key === 'highlight_string'
-                || $call_map_key === 'highlight_file'
-            ) {
-                if (isset($call_args[1]->value->inferredType)) {
-                    $subject_type = $call_args[1]->value->inferredType;
-
-                    if ((string) $subject_type === 'true') {
+                case 'pathinfo':
+                    if (isset($call_args[1])) {
                         return Type::getString();
                     }
 
-                    return new Type\Union([
-                        new Type\Atomic\TString,
-                        $call_map_key === 'var_export' ? new Type\Atomic\TNull : new Type\Atomic\TBool
-                    ]);
-                }
+                    return Type::getArray();
 
-                return $call_map_key === 'var_export' ? Type::getVoid() : Type::getBool();
-            }
+                case 'count':
+                    if (isset($call_args[0]->value->inferredType)) {
+                        $atomic_types = $call_args[0]->value->inferredType->getTypes();
 
-            if (substr($call_map_key, 0, 6) === 'array_') {
-                $array_return_type = self::getArrayReturnType(
-                    $statements_checker,
-                    $call_map_key,
-                    $call_args,
-                    $code_location,
-                    $suppressed_issues
-                );
-
-                if ($array_return_type) {
-                    return $array_return_type;
-                }
-            }
-
-            if ($call_map_key === 'explode'
-                && $call_args[0]->value instanceof PhpParser\Node\Scalar\String_
-            ) {
-                if ($call_args[0]->value->value === '') {
-                    return Type::getFalse();
-                }
-
-                return new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getInt(),
-                        Type::getString()
-                    ])
-                ]);
-            }
-
-            if ($call_map_key === 'iterator_to_array'
-                && isset($call_args[0]->value->inferredType)
-                && $call_args[0]->value->inferredType->hasObjectType()
-            ) {
-                $value_type = null;
-
-                foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
-                    if ($call_arg_atomic_type instanceof Type\Atomic\TGenericObject) {
-                        $type_params = $call_arg_atomic_type->type_params;
-                        $last_param_type = $type_params[count($type_params) - 1];
-
-                        $value_type = $value_type
-                            ? Type::combineUnionTypes($value_type, $last_param_type)
-                            : $last_param_type;
-                    }
-                }
-
-                if ($value_type) {
-                    return new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::getMixed(),
-                            $value_type
-                        ])
-                    ]);
-                }
-            }
-
-            if ($call_map_key === 'abs'
-                && isset($call_args[0]->value)
-            ) {
-                $first_arg = $call_args[0]->value;
-
-                if (isset($first_arg->inferredType)) {
-                    $numeric_types = [];
-
-                    foreach ($first_arg->inferredType->getTypes() as $inner_type) {
-                        if ($inner_type->isNumericType()) {
-                            $numeric_types[] = $inner_type;
+                        if (count($atomic_types) === 1 && isset($atomic_types['array'])) {
+                            if ($atomic_types['array'] instanceof Type\Atomic\TArray) {
+                                return new Type\Union([
+                                    $atomic_types['array']->count !== null
+                                        ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)
+                                        : new Type\Atomic\TInt
+                                ]);
+                            } elseif ($atomic_types['array'] instanceof Type\Atomic\ObjectLike
+                                && $atomic_types['array']->sealed
+                            ) {
+                                return new Type\Union([
+                                    new Type\Atomic\TLiteralInt(count($atomic_types['array']->properties))
+                                ]);
+                            }
                         }
                     }
 
-                    if ($numeric_types) {
-                        return new Type\Union($numeric_types);
+                    break;
+
+                case 'var_export':
+                case 'highlight_string':
+                case 'highlight_file':
+                    if (isset($call_args[1]->value->inferredType)) {
+                        $subject_type = $call_args[1]->value->inferredType;
+
+                        if ((string) $subject_type === 'true') {
+                            return Type::getString();
+                        }
+
+                        return new Type\Union([
+                            new Type\Atomic\TString,
+                            $call_map_key === 'var_export' ? new Type\Atomic\TNull : new Type\Atomic\TBool
+                        ]);
                     }
-                }
-            }
 
-            if ($call_map_key === 'min' || $call_map_key === 'max') {
-                if (isset($call_args[0])) {
-                    $first_arg = $call_args[0]->value;
+                    return $call_map_key === 'var_export' ? Type::getVoid() : Type::getBool();
 
-                    if (isset($first_arg->inferredType)) {
-                        if ($first_arg->inferredType->hasArray()) {
-                            $array_type = $first_arg->inferredType->getTypes()['array'];
-                            if ($array_type instanceof Type\Atomic\ObjectLike) {
-                                return $array_type->getGenericValueType();
+                case 'array_map':
+                    return self::getArrayMapReturnType(
+                        $statements_checker,
+                        $call_args,
+                        $code_location,
+                        $suppressed_issues
+                    );
+
+                case 'array_filter':
+                    return self::getArrayFilterReturnType(
+                        $statements_checker,
+                        $call_args,
+                        $code_location,
+                        $suppressed_issues
+                    );
+
+                case 'array_merge':
+                    return self::getArrayMergeReturnType(
+                        $statements_checker,
+                        $call_args,
+                        $code_location,
+                        $suppressed_issues
+                    );
+
+                case 'array_rand':
+                    return self::getArrayRandReturnType(
+                        $statements_checker,
+                        $call_args,
+                        $code_location,
+                        $suppressed_issues
+                    );
+
+                case 'explode':
+                    if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
+                        if ($call_args[0]->value->value === '') {
+                            return Type::getFalse();
+                        }
+
+                        return new Type\Union([
+                            new Type\Atomic\TArray([
+                                Type::getInt(),
+                                Type::getString()
+                            ])
+                        ]);
+                    }
+
+                    break;
+
+                case 'iterator_to_array':
+                    if (isset($call_args[0]->value->inferredType)
+                        && $call_args[0]->value->inferredType->hasObjectType()
+                    ) {
+                        $value_type = null;
+
+                        foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
+                            if ($call_arg_atomic_type instanceof Type\Atomic\TGenericObject) {
+                                $type_params = $call_arg_atomic_type->type_params;
+                                $last_param_type = $type_params[count($type_params) - 1];
+
+                                $value_type = $value_type
+                                    ? Type::combineUnionTypes($value_type, $last_param_type)
+                                    : $last_param_type;
                             }
+                        }
 
-                            if ($array_type instanceof Type\Atomic\TArray) {
-                                return clone $array_type->type_params[1];
-                            }
-                        } elseif ($first_arg->inferredType->hasScalarType() &&
-                            ($second_arg = $call_args[1]->value) &&
-                            isset($second_arg->inferredType) &&
-                            $second_arg->inferredType->hasScalarType()
-                        ) {
-                            return Type::combineUnionTypes($first_arg->inferredType, $second_arg->inferredType);
+                        if ($value_type) {
+                            return new Type\Union([
+                                new Type\Atomic\TArray([
+                                    Type::getMixed(),
+                                    $value_type
+                                ])
+                            ]);
                         }
                     }
-                }
+
+                    break;
+
+                case 'abs':
+                    if (isset($call_args[0]->value)) {
+                        $first_arg = $call_args[0]->value;
+
+                        if (isset($first_arg->inferredType)) {
+                            $numeric_types = [];
+
+                            foreach ($first_arg->inferredType->getTypes() as $inner_type) {
+                                if ($inner_type->isNumericType()) {
+                                    $numeric_types[] = $inner_type;
+                                }
+                            }
+
+                            if ($numeric_types) {
+                                return new Type\Union($numeric_types);
+                            }
+                        }
+                    }
+
+                    break;
+
+                case 'min':
+                case 'max':
+                    if (isset($call_args[0])) {
+                        $first_arg = $call_args[0]->value;
+
+                        if (isset($first_arg->inferredType)) {
+                            if ($first_arg->inferredType->hasArray()) {
+                                $array_type = $first_arg->inferredType->getTypes()['array'];
+                                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                                    return $array_type->getGenericValueType();
+                                }
+
+                                if ($array_type instanceof Type\Atomic\TArray) {
+                                    return clone $array_type->type_params[1];
+                                }
+                            } elseif ($first_arg->inferredType->hasScalarType() &&
+                                ($second_arg = $call_args[1]->value) &&
+                                isset($second_arg->inferredType) &&
+                                $second_arg->inferredType->hasScalarType()
+                            ) {
+                                return Type::combineUnionTypes($first_arg->inferredType, $second_arg->inferredType);
+                            }
+                        }
+                    }
+
+                    break;
             }
         }
 
@@ -235,188 +261,24 @@ class FunctionChecker extends FunctionLikeChecker
 
         $call_map_return_type = Type::parseString($call_map[$call_map_key][0]);
 
-        if (!in_array(
-            $call_map_key,
-            ['mb_strpos', 'mb_strrpos', 'mb_stripos', 'mb_strripos', 'strpos', 'strrpos', 'stripos', 'strripos'],
-            true
-        ) && $call_map_return_type->isFalsable()
-        ) {
-            $call_map_return_type->ignore_falsable_issues = true;
+        switch ($call_map_key) {
+            case 'mb_strpos':
+            case 'mb_strrpos':
+            case 'mb_stripos':
+            case 'mb_strripos':
+            case 'strpos':
+            case 'strrpos':
+            case 'stripos':
+            case 'strripos':
+                break;
+
+            default:
+                if ($call_map_return_type->isFalsable()) {
+                    $call_map_return_type->ignore_falsable_issues = true;
+                }
         }
 
         return $call_map_return_type;
-    }
-
-    /**
-     * @param  string                       $call_map_key
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     * @param  CodeLocation                 $code_location
-     * @param  array                        $suppressed_issues
-     *
-     * @return Type\Union|null
-     */
-    protected static function getArrayReturnType(
-        StatementsChecker $statements_checker,
-        $call_map_key,
-        $call_args,
-        CodeLocation $code_location,
-        array $suppressed_issues
-    ) {
-        if ($call_map_key === 'array_map') {
-            return self::getArrayMapReturnType(
-                $statements_checker,
-                $call_args,
-                $code_location,
-                $suppressed_issues
-            );
-        }
-
-        if ($call_map_key === 'array_filter') {
-            return self::getArrayFilterReturnType(
-                $statements_checker,
-                $call_args,
-                $code_location,
-                $suppressed_issues
-            );
-        }
-
-        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
-        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
-
-        if ($call_map_key === 'array_merge') {
-            $inner_value_types = [];
-            $inner_key_types = [];
-
-            $generic_properties = [];
-
-            foreach ($call_args as $call_arg) {
-                if (!isset($call_arg->value->inferredType)) {
-                    return Type::getArray();
-                }
-
-                foreach ($call_arg->value->inferredType->getTypes() as $type_part) {
-                    if ($call_arg->unpack) {
-                        if (!$type_part instanceof Type\Atomic\TArray) {
-                            if ($type_part instanceof Type\Atomic\ObjectLike) {
-                                $type_part_value_type = $type_part->getGenericValueType();
-                            } else {
-                                return Type::getArray();
-                            }
-                        } else {
-                            $type_part_value_type = $type_part->type_params[1];
-                        }
-
-                        $unpacked_type_parts = [];
-
-                        foreach ($type_part_value_type->getTypes() as $value_type_part) {
-                            $unpacked_type_parts[] = $value_type_part;
-                        }
-                    } else {
-                        $unpacked_type_parts = [$type_part];
-                    }
-
-                    foreach ($unpacked_type_parts as $unpacked_type_part) {
-                        if (!$unpacked_type_part instanceof Type\Atomic\TArray) {
-                            if ($unpacked_type_part instanceof Type\Atomic\ObjectLike) {
-                                if ($generic_properties !== null) {
-                                    $generic_properties = array_merge(
-                                        $generic_properties,
-                                        $unpacked_type_part->properties
-                                    );
-                                }
-
-                                $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
-                            } else {
-                                if ($unpacked_type_part instanceof Type\Atomic\TMixed
-                                    && $unpacked_type_part->from_isset
-                                ) {
-                                    $unpacked_type_part = new Type\Atomic\TArray([
-                                        Type::getMixed(),
-                                        Type::getMixed(true)
-                                    ]);
-                                } else {
-                                    return Type::getArray();
-                                }
-                            }
-                        } elseif (!$unpacked_type_part->type_params[0]->isEmpty()) {
-                            $generic_properties = null;
-                        }
-
-                        if ($unpacked_type_part->type_params[1]->isEmpty()) {
-                            continue;
-                        }
-
-                        $inner_key_types = array_merge(
-                            $inner_key_types,
-                            array_values($unpacked_type_part->type_params[0]->getTypes())
-                        );
-                        $inner_value_types = array_merge(
-                            $inner_value_types,
-                            array_values($unpacked_type_part->type_params[1]->getTypes())
-                        );
-                    }
-                }
-            }
-
-            if ($generic_properties) {
-                return new Type\Union([
-                    new Type\Atomic\ObjectLike($generic_properties),
-                ]);
-            }
-
-            if ($inner_value_types) {
-                return new Type\Union([
-                    new Type\Atomic\TArray([
-                        TypeCombination::combineTypes($inner_key_types),
-                        TypeCombination::combineTypes($inner_value_types),
-                    ]),
-                ]);
-            }
-
-            return Type::getArray();
-        }
-
-        if ($call_map_key === 'array_rand') {
-            $first_arg_array = $first_arg
-                && isset($first_arg->inferredType)
-                && $first_arg->inferredType->hasType('array')
-                && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
-                && ($array_atomic_type instanceof Type\Atomic\TArray ||
-                    $array_atomic_type instanceof Type\Atomic\ObjectLike)
-            ? $array_atomic_type
-            : null;
-
-            if (!$first_arg_array) {
-                return Type::getMixed();
-            }
-
-            if ($first_arg_array instanceof Type\Atomic\TArray) {
-                $key_type = clone $first_arg_array->type_params[0];
-            } else {
-                $key_type = $first_arg_array->getGenericKeyType();
-            }
-
-            if (!$second_arg
-                || ($second_arg instanceof PhpParser\Node\Scalar\LNumber && $second_arg->value === 1)
-            ) {
-                return $key_type;
-            }
-
-            $arr_type = new Type\Union([
-                new Type\Atomic\TArray([
-                    Type::getInt(),
-                    $key_type,
-                ]),
-            ]);
-
-            if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
-                return $arr_type;
-            }
-
-            return Type::combineUnionTypes($key_type, $arr_type);
-        }
-
-        return null;
     }
 
     /**
@@ -426,7 +288,170 @@ class FunctionChecker extends FunctionLikeChecker
      *
      * @return Type\Union
      */
-    protected static function getArrayMapReturnType(
+    private static function getArrayMergeReturnType(
+        StatementsChecker $statements_checker,
+        $call_args,
+        CodeLocation $code_location,
+        array $suppressed_issues
+    ) {
+        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+
+        $inner_value_types = [];
+        $inner_key_types = [];
+
+        $generic_properties = [];
+
+        foreach ($call_args as $call_arg) {
+            if (!isset($call_arg->value->inferredType)) {
+                return Type::getArray();
+            }
+
+            foreach ($call_arg->value->inferredType->getTypes() as $type_part) {
+                if ($call_arg->unpack) {
+                    if (!$type_part instanceof Type\Atomic\TArray) {
+                        if ($type_part instanceof Type\Atomic\ObjectLike) {
+                            $type_part_value_type = $type_part->getGenericValueType();
+                        } else {
+                            return Type::getArray();
+                        }
+                    } else {
+                        $type_part_value_type = $type_part->type_params[1];
+                    }
+
+                    $unpacked_type_parts = [];
+
+                    foreach ($type_part_value_type->getTypes() as $value_type_part) {
+                        $unpacked_type_parts[] = $value_type_part;
+                    }
+                } else {
+                    $unpacked_type_parts = [$type_part];
+                }
+
+                foreach ($unpacked_type_parts as $unpacked_type_part) {
+                    if (!$unpacked_type_part instanceof Type\Atomic\TArray) {
+                        if ($unpacked_type_part instanceof Type\Atomic\ObjectLike) {
+                            if ($generic_properties !== null) {
+                                $generic_properties = array_merge(
+                                    $generic_properties,
+                                    $unpacked_type_part->properties
+                                );
+                            }
+
+                            $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
+                        } else {
+                            if ($unpacked_type_part instanceof Type\Atomic\TMixed
+                                && $unpacked_type_part->from_isset
+                            ) {
+                                $unpacked_type_part = new Type\Atomic\TArray([
+                                    Type::getMixed(),
+                                    Type::getMixed(true)
+                                ]);
+                            } else {
+                                return Type::getArray();
+                            }
+                        }
+                    } elseif (!$unpacked_type_part->type_params[0]->isEmpty()) {
+                        $generic_properties = null;
+                    }
+
+                    if ($unpacked_type_part->type_params[1]->isEmpty()) {
+                        continue;
+                    }
+
+                    $inner_key_types = array_merge(
+                        $inner_key_types,
+                        array_values($unpacked_type_part->type_params[0]->getTypes())
+                    );
+                    $inner_value_types = array_merge(
+                        $inner_value_types,
+                        array_values($unpacked_type_part->type_params[1]->getTypes())
+                    );
+                }
+            }
+        }
+
+        if ($generic_properties) {
+            return new Type\Union([
+                new Type\Atomic\ObjectLike($generic_properties),
+            ]);
+        }
+
+        if ($inner_value_types) {
+            return new Type\Union([
+                new Type\Atomic\TArray([
+                    TypeCombination::combineTypes($inner_key_types),
+                    TypeCombination::combineTypes($inner_value_types),
+                ]),
+            ]);
+        }
+
+        return Type::getArray();
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  CodeLocation                 $code_location
+     * @param  array                        $suppressed_issues
+     *
+     * @return Type\Union
+     */
+    private static function getArrayRandReturnType(
+        StatementsChecker $statements_checker,
+        $call_args,
+        CodeLocation $code_location,
+        array $suppressed_issues
+    ) {
+        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+        $second_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
+
+        $first_arg_array = $first_arg
+            && isset($first_arg->inferredType)
+            && $first_arg->inferredType->hasType('array')
+            && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
+            && ($array_atomic_type instanceof Type\Atomic\TArray ||
+                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+        ? $array_atomic_type
+        : null;
+
+        if (!$first_arg_array) {
+            return Type::getMixed();
+        }
+
+        if ($first_arg_array instanceof Type\Atomic\TArray) {
+            $key_type = clone $first_arg_array->type_params[0];
+        } else {
+            $key_type = $first_arg_array->getGenericKeyType();
+        }
+
+        if (!$second_arg
+            || ($second_arg instanceof PhpParser\Node\Scalar\LNumber && $second_arg->value === 1)
+        ) {
+            return $key_type;
+        }
+
+        $arr_type = new Type\Union([
+            new Type\Atomic\TArray([
+                Type::getInt(),
+                $key_type,
+            ]),
+        ]);
+
+        if ($second_arg instanceof PhpParser\Node\Scalar\LNumber) {
+            return $arr_type;
+        }
+
+        return Type::combineUnionTypes($key_type, $arr_type);
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  CodeLocation                 $code_location
+     * @param  array                        $suppressed_issues
+     *
+     * @return Type\Union
+     */
+    private static function getArrayMapReturnType(
         StatementsChecker $statements_checker,
         $call_args,
         CodeLocation $code_location,
@@ -643,7 +668,7 @@ class FunctionChecker extends FunctionLikeChecker
      *
      * @return Type\Union
      */
-    protected static function getArrayFilterReturnType(
+    private static function getArrayFilterReturnType(
         StatementsChecker $statements_checker,
         $call_args,
         CodeLocation $code_location,
