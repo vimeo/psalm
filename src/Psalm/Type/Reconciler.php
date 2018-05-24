@@ -112,7 +112,9 @@ class Reconciler
                             $has_equality = true;
                     }
 
-                    $has_isset = $has_isset || $new_type_part_part === 'isset';
+                    $has_isset = $has_isset
+                        || $new_type_part_part === 'isset'
+                        || $new_type_part_part === 'array-key-exists';
 
                     $result_type_candidate = self::reconcileTypes(
                         $new_type_part_part,
