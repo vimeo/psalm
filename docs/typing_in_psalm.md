@@ -130,44 +130,144 @@ Psalm uses a syntax [borrowed from Java](https://en.wikipedia.org/wiki/Generics_
 /** @return array<TKey, TValue> */
 ```
 
-### Makeshift Structs
+## Object-like Arrays
 
-Ideally (in the author's opinion), all data would either be encoded as lists, associative arrays, or as well-defined objects. However, PHP arrays are often used as makeshift structs.
+Psalm supports a special format for arrays where the key offsets are known: object-like arrays.
 
-[Hack](http://hacklang.org/) supports this usage by way of the [Shape datastructure](https://docs.hhvm.com/hack/shapes/introduction), but there is no agreed-upon documentation format for such arrays in regular PHP-land.
+Given an array
 
-Psalm solves this by adding another way annotate array types, by using an object-like syntax when describing them.
-
-So, for instance, the method below returns an array of arrays, both of which have the same keys:
 ```php
-/** @return array<int, array<string, string|bool>> */
-function getToolsData() : array {
-  return [
-    ['name' => 'Psalm',     'type' => 'tool', 'active' => true],
-    ['name' => 'PhpParser', 'type' => 'tool', 'active' => true]
-  ];
+["hello", "world", "foo" => new stdClass, 28 => false];
+```
+
+Psalm will type it internally as:
+
+```
+array{0: string, 1: string, foo: stdClass, 28: false}
+```
+
+If you want to be explicit about this, you can use this same format in `@var`, `@param` and `@return` types (or `@psalm-var`, `@psalm-param` and `@psalm-return` if you prefer to keep this special format separate).
+
+```php
+function takesInt(int $i): void {}
+function takesString(string $s): void {}
+
+/**
+ * @param (string|int)[] $arr
+ * @psalm-param array{0: string, 1: int} $arr
+ */
+function foo(array $arr): void {
+    takesString($arr[0]);
+    takesInt($arr[1]);
 }
-```
 
-Using the type annotation for associative arrays, we could evaluate the expression
-```php
-getToolsData()[0]['name']
+foo(["cool", 4]); // passes
+foo([4, "cool"]); // fails
 ```
-and Psalm would know that it was had the type `string|bool`.
-
-However, we can provide a more-specific return type by using a brace annotation:
-```php
-/** @return array<int, array{name: string, type: string, active: bool}> */
-function getToolsData() : array {
-  return [
-    ['name' => 'Psalm',     'type' => 'tool', 'active' => true],
-    ['name' => 'PhpParser', 'type' => 'tool', 'active' => true]
-  ];
-}
-```
-
-This time, Psalm can evaluate `getToolsData()[0]['name']` and it knows that the expression evaluates to a string.
 
 ### Backwards compatibility
 
 Psalm fully supports PHPDoc's array typing syntax, such that any array typed with `TValue[]` will be typed in Psalm as `array<mixed, TValue>`. That also extends to generic type definitions with only one param e.g. `array<TValue>`, which is equivalent to `array<mixed, TValue>`.
+
+Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).
+
+## Class constants
+
+Psalm supports a special meta-type for `MyClass::class` constants, `class-string`, which can be used everywhere `string` can.
+
+For example, given a function with a `string` parameter `$class_name`, you can use the annotation `@param class-string $class_name` to tell Psalm make sure that the function is always called with a `::class` constant in that position:
+
+```php
+class A {}
+
+/**
+ * @param class-string $s
+ */
+function takesClassName(string $s) : void {}
+```
+
+`takesClassName("A");` would trigger a `TypeCoercion` issue (or a `PossiblyInvalidArgument` issue if [`allowCoercionFromStringToClassConst`](configuration.md#coding-style) was set to `false` in your config), whereas `takesClassName(A::class)` is fine.
+
+## Callables and Closures
+
+Psalm supports a special format for `callable`s of the form
+
+```
+callable(Type1, OptionalType2=, ...SpreadType3):ReturnType
+```
+
+Using this annotation you can specify that a given function return a `Closure` e.g.
+
+```php
+/**
+ * @return Closure(bool):int
+ */
+function delayedAdd(int $x, int $y) : Closure {
+  return function(bool $debug) use ($x, $y) {
+    if ($debug) echo "got here" . PHP_EOL;
+    return $x + $y;
+  };
+}
+
+$adder = delayedAdd(3, 4);
+echo $adder(true);
+```
+
+## Specifying string/int options (aka enums)
+
+Psalm allows you to specify a specific set of allowed string/int values for a given function or method.
+
+Whereas this would cause Psalm to [complain that not all paths return a value](https://getpsalm.org/r/9f6f1ceab6):
+
+```php
+function foo(string $s) : string {
+  switch ($s) {
+    case 'a':
+      return 'hello';
+
+    case 'b':
+      return 'goodbye';
+  }
+}
+```
+
+If you specify the param type of `$s` as `'a'|'b'` Psalm will know that all paths return a value:
+
+```php
+/**
+ * @param 'a'|'b' $s
+ */
+function foo(string $s) : string {
+  switch ($s) {
+    case 'a':
+      return 'hello';
+
+    case 'b':
+      return 'goodbye';
+  }
+}
+```
+
+You can also wrap the options in parenthesese - `('a' | 'b')` - if you like to space things out.
+
+If the values are in class constants, you can use those too:
+
+```php
+class A {
+  const FOO;
+  const BAR;
+}
+
+/**
+ * @param (A::FOO | A::BAR) $s
+ */
+function foo(string $s) : string {
+  switch ($s) {
+    case A::FOO:
+      return 'hello';
+
+    case A::BAR:
+      return 'goodbye';
+  }
+}
+```
