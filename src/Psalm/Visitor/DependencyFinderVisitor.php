@@ -715,7 +715,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $storage->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
             }
         } else {
-            $function_id = $cased_function_id = $this->file_path . ':' . $stmt->getLine() . ':-:closure';
+            $function_id = $cased_function_id = $this->file_path
+                . ':' . $stmt->getLine()
+                . ':' . (int) $stmt->getAttribute('startFilePos') . ':-:closure';
 
             $storage = $this->file_storage->functions[$function_id] = new FunctionLikeStorage();
         }

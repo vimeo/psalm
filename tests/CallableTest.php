@@ -541,6 +541,15 @@ class CallableTest extends TestCase
 
                     acceptsIntToBool(Closure::fromCallable(function(int $n): bool { return $n > 0 }));',
             ],
+            'singleLineClosures' => [
+                '<?php
+                    $a = function() : Closure { return function() : string { return "hello"; }};
+                    $b = $a()();',
+                'assertions' => [
+                    '$a' => 'Closure():Closure():string',
+                    '$b' => 'string',
+                ],
+            ],
         ];
     }
 

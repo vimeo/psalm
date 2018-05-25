@@ -59,7 +59,8 @@ class ClassChecker extends ClassLikeChecker
      */
     public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, $file_path)
     {
-        return preg_replace('/[^A-Za-z0-9]/', '_', $file_path . ':' . $class->getLine());
+        return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
+            . ':' . $class->getLine() . ':' . (int)$class->getAttribute('startFilePos');
     }
 
     /**
