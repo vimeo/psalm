@@ -367,8 +367,6 @@ class Reflection
 
             $storage->cased_name = $reflection_function->getName();
 
-            $config = \Psalm\Config::getInstance();
-
             if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
                 && $reflection_return_type = $reflection_function->getReturnType()
             ) {

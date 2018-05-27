@@ -285,7 +285,7 @@ class ClassChecker extends ClassLikeChecker
         }
 
         if (!$storage->abstract) {
-            foreach ($storage->declaring_method_ids as $method_name => $declaring_method_id) {
+            foreach ($storage->declaring_method_ids as $declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
                 list($declaring_class_name, $method_name) = explode('::', $declaring_method_id);
