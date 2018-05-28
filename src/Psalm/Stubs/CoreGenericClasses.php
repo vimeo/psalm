@@ -17,7 +17,7 @@ interface Traversable {
  * @template TKey
  * @template TValue
  *
- * @template-extends Traversable<TKey, TValue>
+ * @template-extends Traversable
  */
 interface IteratorAggregate extends Traversable {
 
@@ -39,7 +39,7 @@ interface IteratorAggregate extends Traversable {
  * @template TKey
  * @template TValue
  *
- * @template-extends Traversable<TKey, TValue>
+ * @template-extends Traversable
  */
 interface Iterator extends Traversable {
 
@@ -83,6 +83,45 @@ interface Iterator extends Traversable {
      * @since 5.0.0
      */
     public function rewind();
+}
+
+/**
+ * @template TKey
+ * @template TValue
+ *
+ * @template-extends Traversable
+ */
+class Generator implements Traversable {
+    /**
+     * @return TValue Can return any type.
+     */
+    public function current() {}
+
+    /**
+     * @return void Any returned value is ignored.
+     */
+    public function next() {}
+
+    /**
+     * @return TKey scalar on success, or null on failure.
+     */
+    public function key() {}
+
+    /**
+     * @return bool The return value will be casted to boolean and then evaluated.
+     */
+    public function valid() {}
+
+    /**
+     * @return void Any returned value is ignored.
+     */
+    public function rewind() {}
+
+    public function getReturn() {}
+
+    public function send($value) {}
+
+    public function throw(Exception $exception) {}
 }
 
 /**
@@ -617,3 +656,4 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      */
     public function seek($position) { }
 }
+

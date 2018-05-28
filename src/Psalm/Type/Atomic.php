@@ -367,6 +367,7 @@ abstract class Atomic
     public function replaceTemplateTypesWithStandins(
         array $template_types,
         array &$generic_params,
+        Codebase $codebase = null,
         Type\Atomic $input_type = null
     ) {
         // do nothing

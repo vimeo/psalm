@@ -328,7 +328,6 @@ class CommentChecker
         $info = new ClassLikeDocblockComment();
 
         if (isset($comments['specials']['template'])) {
-            /** @var string $suppress_entry */
             foreach ($comments['specials']['template'] as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
@@ -337,6 +336,12 @@ class CommentChecker
                 } else {
                     $info->template_types[] = [$template_type[0]];
                 }
+            }
+        }
+
+        if (isset($comments['specials']['template-extends'])) {
+            foreach ($comments['specials']['template-extends'] as $template_line) {
+                $info->template_parents[] = $template_line;
             }
         }
 
@@ -353,14 +358,12 @@ class CommentChecker
         }
 
         if (isset($comments['specials']['psalm-suppress'])) {
-            /** @var string $suppress_entry */
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppressed_issues[] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 
         if (isset($comments['specials']['method'])) {
-            /** @var string $method_entry */
             foreach ($comments['specials']['method'] as $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
 

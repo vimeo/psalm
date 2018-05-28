@@ -11,6 +11,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\TypeCombination;
 
@@ -719,6 +720,7 @@ class Union
     public function replaceTemplateTypesWithStandins(
         array $template_types,
         array &$generic_params,
+        Codebase $codebase = null,
         Type\Union $input_type = null
     ) {
         $keys_to_unset = [];
@@ -735,7 +737,7 @@ class Union
             } else {
                 $matching_atomic_type = null;
 
-                if ($input_type) {
+                if ($input_type && $codebase) {
                     foreach ($input_type->types as $input_key => $atomic_input_type) {
                         if ($input_key === $key) {
                             $matching_atomic_type = $atomic_input_type;
@@ -744,11 +746,28 @@ class Union
 
                         if ($input_key === 'Closure' && $key === 'callable') {
                             $matching_atomic_type = $atomic_input_type;
+                            break;
                         }
 
                         if (strpos($input_key, $key . '&') === 0) {
                             $matching_atomic_type = $atomic_input_type;
                             break;
+                        }
+
+                        if ($atomic_input_type instanceof TNamedObject && $atomic_type instanceof TNamedObject) {
+                            try {
+                                $classlike_storage =
+                                    $codebase->classlike_storage_provider->get($atomic_input_type->value);
+
+                                if ($classlike_storage->template_parents
+                                    && in_array($atomic_type->value, $classlike_storage->template_parents)
+                                ) {
+                                    $matching_atomic_type = $atomic_input_type;
+                                        break;
+                                }
+                            } catch (\InvalidArgumentException $e) {
+                                // do nothing
+                            }
                         }
                     }
                 }
@@ -756,6 +775,7 @@ class Union
                 $atomic_type->replaceTemplateTypesWithStandins(
                     $template_types,
                     $generic_params,
+                    $codebase,
                     $matching_atomic_type
                 );
             }
@@ -764,6 +784,8 @@ class Union
         foreach ($keys_to_unset as $key) {
             unset($this->types[$key]);
         }
+
+        //var_dump($this->types, $generic_params);
 
         $this->id = null;
     }

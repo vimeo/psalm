@@ -574,6 +574,28 @@ class TemplateTest extends TestCase
                     takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));
                     takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));'
             ],
+            'replaceChildType' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @param Traversable<TKey, TValue> $t
+                     * @return array<TKey, TValue>
+                     */
+                    function f(Traversable $t): array {
+                        $ret = [];
+                        foreach ($t as $k => $v) $ret[$k] = $v;
+                        return $ret;
+                    }
+
+                    /** @return Generator<int, stdClass> */
+                    function g():Generator { yield new stdClass; }
+
+                    takesArrayOfStdClass(f(g()));
+
+                    /** @param array<stdClass> $p */
+                    function takesArrayOfStdClass(array $p): void {}',
+            ],
         ];
     }
 
@@ -640,6 +662,28 @@ class TemplateTest extends TestCase
 
                     bar((new A())->foo(4));',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'replaceChildTypeNoHint' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @param Traversable<TKey, TValue> $t
+                     * @return array<TKey, TValue>
+                     */
+                    function f(Traversable $t): array {
+                        $ret = [];
+                        foreach ($t as $k => $v) $ret[$k] = $v;
+                        return $ret;
+                    }
+
+                    function g():Generator { yield new stdClass; }
+
+                    takesArrayOfStdClass(f(g()));
+
+                    /** @param array<stdClass> $p */
+                    function takesArrayOfStdClass(array $p): void {}',
+                'error_message' => 'MixedTypeCoercion',
             ],
         ];
     }

@@ -239,6 +239,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         }
 
                         $this->class_template_types = $storage->template_types;
+
+                        if ($docblock_info->template_parents) {
+                            $storage->template_parents = [];
+
+                            foreach ($docblock_info->template_parents as $template_parent) {
+                                $storage->template_parents[$template_parent] = $template_parent;
+                            }
+                        }
                     }
 
                     if ($docblock_info->properties) {

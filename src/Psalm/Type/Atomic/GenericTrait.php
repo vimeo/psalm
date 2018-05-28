@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Codebase;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -140,6 +141,7 @@ trait GenericTrait
     public function replaceTemplateTypesWithStandins(
         array $template_types,
         array &$generic_params,
+        Codebase $codebase = null,
         Atomic $input_type = null
     ) {
         foreach ($this->type_params as $offset => $type_param) {
@@ -162,6 +164,7 @@ trait GenericTrait
             $type_param->replaceTemplateTypesWithStandins(
                 $template_types,
                 $generic_params,
+                $codebase,
                 $input_type_param
             );
         }

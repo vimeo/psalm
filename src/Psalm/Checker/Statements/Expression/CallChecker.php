@@ -802,6 +802,7 @@ class CallChecker
                             $param_type->replaceTemplateTypesWithStandins(
                                 $template_types,
                                 $generic_params,
+                                $codebase,
                                 $arg->value->inferredType
                             );
                         }
