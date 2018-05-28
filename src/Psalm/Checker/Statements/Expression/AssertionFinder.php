@@ -3,6 +3,7 @@ namespace Psalm\Checker\Statements\Expression;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
@@ -1038,6 +1039,56 @@ class AssertionFinder
                 && !strpos($first_var_name, '[')
             ) {
                 $if_types[$array_root . '[' . $first_var_name . ']'] = $prefix . 'array-key-exists';
+            }
+        } elseif ($source instanceof StatementsChecker
+            && $expr->name instanceof PhpParser\Node\Name
+            && isset($expr->conditionalAssertion)
+        ) {
+            $codebase = $source->getFileChecker()->project_checker->codebase;
+
+            $function_id = ClassLikeChecker::getFQCLNFromNameObject($expr->name, $source->getAliases());
+
+            $function_storage = $codebase->functions->getStorage(
+                $source,
+                strtolower($function_id)
+            );
+
+            foreach ($function_storage->if_true_assertions as $assertion) {
+                if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
+                    if ($assertion->var_id === 0) {
+                        $var_name = $first_var_name;
+                    } else {
+                        $var_name = ExpressionChecker::getArrayVarId(
+                            $expr->args[$assertion->var_id]->value,
+                            $this_class_name,
+                            $source
+                        );
+                    }
+
+                    if ($var_name) {
+                        $if_types[$var_name] = $prefix . $assertion->rule[0][0];
+                    }
+                }
+            }
+
+            $negated_prefix = !$negate ? '!' : '';
+
+            foreach ($function_storage->if_false_assertions as $assertion) {
+                if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
+                    if ($assertion->var_id === 0) {
+                        $var_name = $first_var_name;
+                    } else {
+                        $var_name = ExpressionChecker::getArrayVarId(
+                            $expr->args[$assertion->var_id]->value,
+                            $this_class_name,
+                            $source
+                        );
+                    }
+
+                    if ($var_name) {
+                        $if_types[$var_name] = $negated_prefix . $assertion->rule[0][0];
+                    }
+                }
             }
         }
 

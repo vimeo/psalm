@@ -1003,6 +1003,69 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         }
 
+        if ($docblock_info->assertions) {
+            $storage->assertions = [];
+
+            foreach ($docblock_info->assertions as $assertion) {
+                foreach ($storage->params as $i => $param) {
+                    if ($param->name === $assertion['param_name']) {
+                        $storage->assertions[] = new \Psalm\Storage\Assertion(
+                            $i,
+                            [[$assertion['type']]]
+                        );
+                        continue 2;
+                    }
+                }
+
+                $storage->assertions[] = new \Psalm\Storage\Assertion(
+                    $assertion['param_name'],
+                    [[$assertion['type']]]
+                );
+            }
+        }
+
+        if ($docblock_info->if_true_assertions) {
+            $storage->assertions = [];
+
+            foreach ($docblock_info->if_true_assertions as $assertion) {
+                foreach ($storage->params as $i => $param) {
+                    if ($param->name === $assertion['param_name']) {
+                        $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
+                            $i,
+                            [[$assertion['type']]]
+                        );
+                        continue 2;
+                    }
+                }
+
+                $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
+                    $assertion['param_name'],
+                    [[$assertion['type']]]
+                );
+            }
+        }
+
+        if ($docblock_info->if_false_assertions) {
+            $storage->assertions = [];
+
+            foreach ($docblock_info->if_false_assertions as $assertion) {
+                foreach ($storage->params as $i => $param) {
+                    if ($param->name === $assertion['param_name']) {
+                        $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
+                            $i,
+                            [[$assertion['type']]]
+                        );
+                        continue 2;
+                    }
+                }
+
+                $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
+                    $assertion['param_name'],
+                    [[$assertion['type']]]
+                );
+            }
+        }
+
         if ($docblock_info->return_type) {
             if (!$storage->return_type || $docblock_info->return_type !== $storage->return_type->getId()) {
                 $storage->has_template_return_type =

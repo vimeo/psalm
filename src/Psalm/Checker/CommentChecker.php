@@ -228,14 +228,12 @@ class CommentChecker
         }
 
         if (isset($comments['specials']['psalm-suppress'])) {
-            /** @var string $suppress_entry */
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppress[] = preg_split('/[\s]+/', $suppress_entry)[0];
             }
         }
 
         if (isset($comments['specials']['template'])) {
-            /** @var string $suppress_entry */
             foreach ($comments['specials']['template'] as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
@@ -248,7 +246,6 @@ class CommentChecker
         }
 
         if (isset($comments['specials']['template-typeof'])) {
-            /** @var string $suppress_entry */
             foreach ($comments['specials']['template-typeof'] as $template_typeof) {
                 $typeof_parts = preg_split('/[\s]+/', $template_typeof);
 
@@ -259,6 +256,51 @@ class CommentChecker
                 $info->template_typeofs[] = [
                     'template_type' => $typeof_parts[0],
                     'param_name' => substr($typeof_parts[1], 1),
+                ];
+            }
+        }
+
+        if (isset($comments['specials']['psalm-assert'])) {
+            foreach ($comments['specials']['psalm-assert'] as $assertion) {
+                $assertion_parts = preg_split('/[\s]+/', $assertion);
+
+                if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
+                    throw new IncorrectDocblockException('Misplaced variable');
+                }
+
+                $info->assertions[] = [
+                    'type' => $assertion_parts[0],
+                    'param_name' => substr($assertion_parts[1], 1),
+                ];
+            }
+        }
+
+        if (isset($comments['specials']['psalm-assert-if-true'])) {
+            foreach ($comments['specials']['psalm-assert-if-true'] as $assertion) {
+                $assertion_parts = preg_split('/[\s]+/', $assertion);
+
+                if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
+                    throw new IncorrectDocblockException('Misplaced variable');
+                }
+
+                $info->if_true_assertions[] = [
+                    'type' => $assertion_parts[0],
+                    'param_name' => substr($assertion_parts[1], 1),
+                ];
+            }
+        }
+
+        if (isset($comments['specials']['psalm-assert-if-false'])) {
+            foreach ($comments['specials']['psalm-assert-if-false'] as $assertion) {
+                $assertion_parts = preg_split('/[\s]+/', $assertion);
+
+                if (count($assertion_parts) < 2 || $assertion_parts[1][0] !== '$') {
+                    throw new IncorrectDocblockException('Misplaced variable');
+                }
+
+                $info->if_false_assertions[] = [
+                    'type' => $assertion_parts[0],
+                    'param_name' => substr($assertion_parts[1], 1),
                 ];
             }
         }

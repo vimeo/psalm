@@ -58,4 +58,19 @@ class FunctionDocblockComment
      * @var array<int, array{template_type: string, param_name: string, line_number?: int}>
      */
     public $template_typeofs = [];
+
+    /**
+     * @var array<int, array{type: string, param_name: string}>
+     */
+    public $assertions = [];
+
+    /**
+     * @var array<int, array{type: string, param_name: string}>
+     */
+    public $if_true_assertions = [];
+
+    /**
+     * @var array<int, array{type: string, param_name: string}>
+     */
+    public $if_false_assertions = [];
 }

@@ -419,16 +419,20 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
         }
 
-        if ($function_storage
-            && strpos($function_storage->cased_name, 'assert') === 0
-            && $function_storage->assertions
-        ) {
-            self::applyAssertionsToContext(
-                $function_storage->assertions,
-                $stmt->args,
-                $context,
-                $statements_checker
-            );
+        if ($function_storage) {
+            if ($function_storage->assertions) {
+                self::applyAssertionsToContext(
+                    $function_storage->assertions,
+                    $stmt->args,
+                    $context,
+                    $statements_checker
+                );
+            }
+
+            if ($function_storage->if_true_assertions || $function_storage->if_false_assertions) {
+                /** @psalm-suppress UndefinedPropertyAssignment */
+                $stmt->conditionalAssertion = true;
+            }
         }
 
         if ($function instanceof PhpParser\Node\Name) {

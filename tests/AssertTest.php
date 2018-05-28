@@ -142,6 +142,53 @@ class AssertTest extends TestCase
                         $a->foo();
                     }',
             ],
+            'assertInstanceOfBAnnotation' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                        public function foo(): void {}
+                    }
+
+                    /** @psalm-assert B $var */
+                    function myAssertInstanceOfB(A $var): void {
+                        if (!$var instanceof B) {
+                            throw new \Exception();
+                        }
+                    }
+
+                    function takesA(A $a): void {
+                        myAssertInstanceOfB($a);
+                        $a->foo();
+                    }',
+            ],
+            'assertIfTrueAnnotation' => [
+                '<?php
+                    /** @psalm-assert-if-true string $myVar */
+                    function isValidString(?string $myVar) : bool {
+                        return $myVar !== null && $myVar[0] === "a";
+                    }
+
+                    $myString = rand(0, 1) ? "abacus" : null;
+
+                    if (isValidString($myString)) {
+                        echo "Ma chaine " . $myString;
+                    }'
+            ],
+            'assertIfFalseAnnotation' => [
+                '<?php
+                    /** @psalm-assert-if-false string $myVar */
+                    function isInvalidString(?string $myVar) : bool {
+                        return $myVar === null || $myVar[0] !== "a";
+                    }
+
+                    $myString = rand(0, 1) ? "abacus" : null;
+
+                    if (isInvalidString($myString)) {
+                        // do something
+                    } else {
+                        echo "Ma chaine " . $myString;
+                    }'
+            ],
         ];
     }
 
@@ -179,6 +226,34 @@ class AssertTest extends TestCase
                         $a->foo1();
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'assertIfTrueNoAnnotation' => [
+                '<?php
+                    function isValidString(?string $myVar) : bool {
+                        return $myVar !== null && $myVar[0] === "a";
+                    }
+
+                    $myString = rand(0, 1) ? "abacus" : null;
+
+                    if (isValidString($myString)) {
+                        echo "Ma chaine " . $myString;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'assertIfFalseNoAnnotation' => [
+                '<?php
+                    function isInvalidString(?string $myVar) : bool {
+                        return $myVar === null || $myVar[0] !== "a";
+                    }
+
+                    $myString = rand(0, 1) ? "abacus" : null;
+
+                    if (isInvalidString($myString)) {
+                        // do something
+                    } else {
+                        echo "Ma chaine " . $myString;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
             ],
         ];
     }
