@@ -439,6 +439,14 @@ class BinaryOpChecker
                 if ($result_type) {
                     $stmt->inferredType = $result_type;
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                && ($stmt->left->inferredType->hasBool() || $stmt->right->inferredType->hasBool())
+            ) {
+                $stmt->inferredType = Type::getInt();
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalXor
+                && ($stmt->left->inferredType->hasBool() || $stmt->right->inferredType->hasBool())
+            ) {
+                $stmt->inferredType = Type::getBool();
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                 $project_checker = $statements_checker->getFileChecker()->project_checker;
 
