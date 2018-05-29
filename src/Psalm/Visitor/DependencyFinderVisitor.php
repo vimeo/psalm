@@ -1128,6 +1128,12 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             if ($all_typehint_types_match) {
                                 $storage->return_type->from_docblock = false;
                             }
+
+                            if ($storage->signature_return_type->isNullable()
+                                && !$storage->return_type->isNullable()
+                            ) {
+                                $storage->return_type->addType(new Type\Atomic\TNull());
+                            }
                         }
 
                         $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);

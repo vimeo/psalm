@@ -790,6 +790,18 @@ class AnnotationTest extends TestCase
                     '$g' => 'Generator<int, stdClass>',
                 ],
             ],
+            'returnTypeShouldBeNullable' => [
+                '<?php
+                    /**
+                     * @return stdClass
+                     */
+                    function foo() : ?stdClass {
+                        return rand(0, 1) ? new stdClass : null;
+                    }
+
+                    $f = foo();
+                    if ($f) {}'
+            ],
         ];
     }
 
