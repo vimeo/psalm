@@ -110,6 +110,7 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             $source_file_path = $this->source->getCheckedFilePath();
 
             if (!Config::getInstance()->use_case_sensitive_file_names) {
+                // TODO: Use these variables
                 $storage_file_path = strtolower($storage_file_path);
                 $source_file_path = strtolower($source_file_path);
             }

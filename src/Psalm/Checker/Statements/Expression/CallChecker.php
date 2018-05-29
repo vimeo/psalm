@@ -535,7 +535,7 @@ class CallChecker
                             $statements_checker
                         );
 
-                        foreach ($context->vars_in_scope[$var_id]->getTypes() as $key => &$type) {
+                        foreach ($context->vars_in_scope[$var_id]->getTypes() as $type) {
                             if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
                                 $context->vars_in_scope[$var_id]->removeType('array');
                                 $context->vars_in_scope[$var_id]->addType(
