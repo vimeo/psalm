@@ -110,4 +110,9 @@ class FunctionLikeStorage
      * @var array<int, Assertion>
      */
     public $if_false_assertions = [];
+
+    /**
+     * @var bool
+     */
+    public $has_visitor_issues = false;
 }

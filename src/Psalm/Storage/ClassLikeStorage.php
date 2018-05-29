@@ -233,6 +233,11 @@ class ClassLikeStorage
     public $hash = '';
 
     /**
+     * @var bool
+     */
+    public $has_visitor_issues = false;
+
+    /**
      * @param string $name
      */
     public function __construct($name)

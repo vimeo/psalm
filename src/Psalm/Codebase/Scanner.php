@@ -312,7 +312,9 @@ class Scanner
         );
 
         if (!$from_cache) {
-            $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
+            if (!$file_storage->has_visitor_issues) {
+                $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
+            }
         } else {
             foreach ($file_storage->included_file_paths as $include_file_path) {
                 $this->addFileToShallowScan($include_file_path);

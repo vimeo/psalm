@@ -65,6 +65,11 @@ class FileStorage
     public $hash = '';
 
     /**
+     * @var bool
+     */
+    public $has_visitor_issues = false;
+
+    /**
      * @param string $file_path
      */
     public function __construct($file_path)
