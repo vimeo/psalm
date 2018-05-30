@@ -791,7 +791,25 @@ class Config
         if ($this->hide_external_errors) {
             $codebase = ProjectChecker::getInstance()->codebase;
 
-            if (!$codebase->analyzer->canReportIssues($file_path)) {
+            $dependent_files = [strtolower($file_path) => $file_path];
+
+            try {
+                $file_storage = $codebase->file_storage_provider->get($file_path);
+                $dependent_files += $file_storage->required_by_file_paths;
+            } catch (\InvalidArgumentException $e) {
+                // do nothing
+            }
+
+            $any_file_path_matched = false;
+
+            foreach ($dependent_files as $file_path) {
+                if ($codebase->analyzer->canReportIssues($file_path)) {
+                    $any_file_path_matched = true;
+                    break;
+                }
+            }
+
+            if (!$any_file_path_matched) {
                 return false;
             }
         }

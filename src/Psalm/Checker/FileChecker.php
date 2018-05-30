@@ -35,7 +35,7 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @var array<string, bool>
      */
-    protected $included_file_paths = [];
+    protected $required_file_paths = [];
 
     /**
      * @var array<int, string>
@@ -351,7 +351,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function addCheckedFilePath($file_path, $file_name)
     {
-        $this->included_file_paths[$file_path] = true;
+        $this->required_file_paths[$file_path] = true;
         $this->checked_file_names[] = $file_name;
         $this->checked_file_paths[] = $file_path;
     }
@@ -390,7 +390,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function hasAlreadyIncludedFilePath($file_path)
     {
-        return isset($this->included_file_paths[$file_path]);
+        return isset($this->required_file_paths[$file_path]);
     }
 
     /**

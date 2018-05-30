@@ -1632,7 +1632,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->codebase->scanner->addFileToShallowScan($path_to_file);
                 }
 
-                $this->file_storage->included_file_paths[strtolower($path_to_file)] = $path_to_file;
+                $this->file_storage->required_file_paths[strtolower($path_to_file)] = $path_to_file;
 
                 return;
             }

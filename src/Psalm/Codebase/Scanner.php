@@ -316,8 +316,8 @@ class Scanner
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
             }
         } else {
-            foreach ($file_storage->included_file_paths as $include_file_path) {
-                $this->addFileToShallowScan($include_file_path);
+            foreach ($file_storage->required_file_paths as $required_file_path) {
+                $this->addFileToShallowScan($required_file_path);
             }
 
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {

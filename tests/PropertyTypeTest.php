@@ -460,7 +460,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     class A {
-                      use T;
+                        use T;
                     }',
             ],
             'abstractClassWithNoConstructor' => [

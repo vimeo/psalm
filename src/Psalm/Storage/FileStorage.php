@@ -48,7 +48,10 @@ class FileStorage
     public $declaring_constants = [];
 
     /** @var array<string, string> */
-    public $included_file_paths = [];
+    public $required_file_paths = [];
+
+    /** @var array<string, string> */
+    public $required_by_file_paths = [];
 
     /** @var bool */
     public $populated = false;

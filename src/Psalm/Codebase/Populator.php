@@ -385,9 +385,9 @@ class Populator
 
         $dependent_file_paths[$file_path_lc] = true;
 
-        $all_included_file_paths = $storage->included_file_paths;
+        $all_required_file_paths = $storage->required_file_paths;
 
-        foreach ($storage->included_file_paths as $included_file_path => $_) {
+        foreach ($storage->required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
             } catch (\InvalidArgumentException $e) {
@@ -396,10 +396,10 @@ class Populator
 
             $this->populateFileStorage($included_file_storage, $dependent_file_paths);
 
-            $all_included_file_paths = $all_included_file_paths + $included_file_storage->included_file_paths;
+            $all_required_file_paths = $all_required_file_paths + $included_file_storage->required_file_paths;
         }
 
-        foreach ($all_included_file_paths as $included_file_path => $_) {
+        foreach ($all_required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
             } catch (\InvalidArgumentException $e) {
@@ -417,7 +417,37 @@ class Populator
             );
         }
 
-        $storage->included_file_paths = $all_included_file_paths;
+        $storage->required_file_paths = $all_required_file_paths;
+
+        foreach ($all_required_file_paths as $required_file_path) {
+            try {
+                $required_file_storage = $this->file_storage_provider->get($required_file_path);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $required_file_storage->required_by_file_paths += [$file_path_lc => $storage->file_path];
+        }
+
+        foreach ($storage->required_classes as $required_classlike) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($required_classlike);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            if (!$classlike_storage->location) {
+                continue;
+            }
+
+            try {
+                $required_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $required_file_storage->required_by_file_paths += [$file_path_lc => $storage->file_path];
+        }
 
         $storage->populated = true;
     }

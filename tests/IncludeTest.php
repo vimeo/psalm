@@ -440,6 +440,52 @@ class IncludeTest extends TestCase
                 'error_message' => 'UndefinedGlobalVariable',
                 'hide_external_errors' => false
             ],
+            'invalidTraitFunctionReturnInUncheckedFile' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require("file1.php");
+
+                        class B {
+                            use A;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        trait A{
+                            public function fooFoo(): string {
+                                return 5;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'InvalidReturnType',
+            ],
+            'invalidDoubleNestedTraitFunctionReturnInUncheckedFile' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
+                        require("file2.php");
+
+                        class C {
+                            use B;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require("file1.php");
+
+                        trait B {
+                            use A;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        trait A{
+                            public function fooFoo(): string {
+                                return 5;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
+                ],
+                'error_message' => 'InvalidReturnType',
+            ],
         ];
     }
 }
