@@ -12,5 +12,5 @@
         "KevinGH\\Box\\Compactor\\PhpScoper"
     ],
     "chmod" : "0755",
-    "compression": "GZ"
+    "compression": "NONE"
 }
