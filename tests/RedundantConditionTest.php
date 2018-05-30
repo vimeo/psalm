@@ -343,7 +343,7 @@ class RedundantConditionTest extends TestCase
 
                     if ($option) {}',
                 'assignments' => [],
-                'error_levels' => ['MixedAssignment'],
+                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'allowIntValueCheckAfterComparisonDueToOverflow' => [
                 '<?php

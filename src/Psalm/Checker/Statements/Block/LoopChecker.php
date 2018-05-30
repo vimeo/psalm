@@ -155,6 +155,7 @@ class LoopChecker
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_checker->analyze($stmts, $inner_context, $loop_scope);
+
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
             $inner_context->protected_var_ids = $original_protected_var_ids;

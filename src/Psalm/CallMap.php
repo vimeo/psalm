@@ -423,7 +423,7 @@ return [
 'BadMethodCallException::getPrevious' => ['?Throwable|?BadMethodCallException'],
 'BadMethodCallException::getTrace' => ['array'],
 'BadMethodCallException::getTraceAsString' => ['string'],
-'base64_decode' => ['string', 'str'=>'string', 'strict='=>'bool'],
+'base64_decode' => ['string|false', 'str'=>'string', 'strict='=>'bool'],
 'base64_encode' => ['string', 'str'=>'string'],
 'base_convert' => ['string', 'number'=>'string', 'frombase'=>'int', 'tobase'=>'int'],
 'basename' => ['string', 'path'=>'string', 'suffix='=>'string'],

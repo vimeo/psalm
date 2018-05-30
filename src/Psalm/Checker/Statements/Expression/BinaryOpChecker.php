@@ -283,6 +283,42 @@ class BinaryOpChecker
                 $statements_checker
             );
 
+            $mixed_var_ids = [];
+
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if ($type->isMixed()) {
+                    $mixed_var_ids[] = $var_id;
+                }
+            }
+
+            foreach ($context->vars_possibly_in_scope as $var_id => $_) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $mixed_var_ids[] = $var_id;
+                }
+            }
+
+            $if_clauses = array_values(
+                array_map(
+                    /**
+                     * @return \Psalm\Clause
+                     */
+                    function (\Psalm\Clause $c) use ($mixed_var_ids) {
+                        $keys = array_keys($c->possibilities);
+
+                        foreach ($keys as $key) {
+                            foreach ($mixed_var_ids as $mixed_var_id) {
+                                if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                                    return new \Psalm\Clause([], true);
+                                }
+                            }
+                        }
+
+                        return $c;
+                    },
+                    $if_clauses
+                )
+            );
+
             $ternary_clauses = Algebra::simplifyCNF(array_merge($context->clauses, $if_clauses));
 
             $negated_clauses = Algebra::negateFormula($if_clauses);

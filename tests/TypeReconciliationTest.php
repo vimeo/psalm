@@ -528,7 +528,7 @@ class TypeReconciliationTest extends TestCase
                     if ($a !== null) { }
                     $b = $a;',
                 'assertions' => [
-                    '$b' => 'null|int',
+                    '$b' => 'int|null',
                 ],
             ],
             'ternaryByRefVar' => [
@@ -867,6 +867,19 @@ class TypeReconciliationTest extends TestCase
                     function takesStdClass(stdClass $s) : void {}
                     takesStdClass($a);',
             ],
+            'noReconciliationInElseIf' => [
+                '<?php
+                    class A {}
+                    $a = rand(0, 1) ? new A : null;
+
+                    if (rand(0, 1)) {
+                        // do nothing
+                    } elseif (!$a) {
+                        $a = new A();
+                    }
+
+                    if ($a) {}',
+            ],
         ];
     }
 
@@ -1002,6 +1015,20 @@ class TypeReconciliationTest extends TestCase
                         if ($i == $s) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'properReconciliationInElseIf' => [
+                '<?php
+                    class A {}
+                    $a = rand(0, 1) ? new A : null;
+
+                    if (rand(0, 1)) {
+                        $a = new A();
+                    } elseif (!$a) {
+                        $a = new A();
+                    }
+
+                    if ($a) {}',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

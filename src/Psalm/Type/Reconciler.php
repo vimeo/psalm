@@ -254,11 +254,11 @@ class Reconciler
             if (($new_var_type === 'isset' && !$is_negation)
                 || ($new_var_type === 'empty' && $is_negation)
             ) {
-                return Type::getMixed();
+                return Type::getMixed(true);
             }
 
             if ($new_var_type === 'array-key-exists') {
-                return Type::getMixed();
+                return Type::getMixed(true);
             }
 
             if (!$is_negation && $new_var_type !== 'falsy' && $new_var_type !== 'empty') {
