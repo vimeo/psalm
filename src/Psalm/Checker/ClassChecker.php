@@ -2,6 +2,7 @@
 namespace Psalm\Checker;
 
 use PhpParser;
+use Psalm\Aliases;
 use Psalm\Checker\FunctionLike\ReturnTypeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\CodeLocation;
@@ -399,6 +400,7 @@ class ClassChecker extends ClassLikeChecker
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 if ($this->analyzeTraitUse(
+                    $this->source->getAliases(),
                     $stmt,
                     $project_checker,
                     $storage,
@@ -644,6 +646,7 @@ class ClassChecker extends ClassLikeChecker
      * @return false|null
      */
     private function analyzeTraitUse(
+        Aliases $aliases,
         PhpParser\Node\Stmt\TraitUse $stmt,
         ProjectChecker $project_checker,
         ClassLikeStorage $storage,
@@ -660,7 +663,7 @@ class ClassChecker extends ClassLikeChecker
 
             $fq_trait_name = self::getFQCLNFromNameObject(
                 $trait_name,
-                $this->source->getAliases()
+                $aliases
             );
 
             if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name)) {
@@ -713,6 +716,7 @@ class ClassChecker extends ClassLikeChecker
                         }
                     } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                         if ($this->analyzeTraitUse(
+                            $trait_aliases,
                             $trait_stmt,
                             $project_checker,
                             $storage,

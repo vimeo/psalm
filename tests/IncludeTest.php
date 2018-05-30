@@ -465,16 +465,26 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
                         require("file2.php");
 
+                        namespace Foo;
+
+                        use Bar\B;
+
                         class C {
                             use B;
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
                         require("file1.php");
 
+                        namespace Bar;
+
+                        use Bat\A;
+
                         trait B {
                             use A;
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        namespace Bat;
+
                         trait A{
                             public function fooFoo(): string {
                                 return 5;
