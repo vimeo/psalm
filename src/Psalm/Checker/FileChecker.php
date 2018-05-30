@@ -23,19 +23,24 @@ class FileChecker extends SourceChecker implements StatementsSource
     protected $file_path;
 
     /**
-     * @var array<int, string>
+     * @var string|null
      */
-    protected $checked_file_paths = [];
+    protected $root_file_path;
 
     /**
-     * @var array<int, string>
+     * @var string|null
      */
-    protected $checked_file_names = [];
+    protected $root_file_name;
 
     /**
      * @var array<string, bool>
      */
     protected $required_file_paths = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    protected $parent_file_paths = [];
 
     /**
      * @var array<int, string>
@@ -89,7 +94,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function analyze(Context $file_context = null, $preserve_checkers = false)
+    public function analyze(Context $file_context = null, $preserve_checkers = false, Context $global_context = null)
     {
         $codebase = $this->project_checker->codebase;
 
@@ -119,7 +124,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
-            $statements_checker->analyze($leftover_stmts, $this->context, null, null, true);
+            $statements_checker->analyze($leftover_stmts, $this->context, null, $global_context, true);
         }
 
         // check any leftover interfaces not already evaluated
@@ -326,21 +331,17 @@ class FileChecker extends SourceChecker implements StatementsSource
     /**
      * @return string
      */
-    public function getCheckedFileName()
+    public function getRootFileName()
     {
-        return $this->checked_file_names
-            ? $this->checked_file_names[count($this->checked_file_names) - 1]
-            : $this->file_name;
+        return $this->root_file_name ?: $this->file_name;
     }
 
     /**
      * @return string
      */
-    public function getCheckedFilePath()
+    public function getRootFilePath()
     {
-        return $this->checked_file_paths
-            ? $this->checked_file_paths[count($this->checked_file_paths) - 1]
-            : $this->file_path;
+        return $this->root_file_path ?: $this->file_path;
     }
 
     /**
@@ -349,11 +350,10 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function addCheckedFilePath($file_path, $file_name)
+    public function setRootFilePath($file_path, $file_name)
     {
-        $this->required_file_paths[$file_path] = true;
-        $this->checked_file_names[] = $file_name;
-        $this->checked_file_paths[] = $file_path;
+        $this->root_file_name = $file_name;
+        $this->root_file_path = $file_path;
     }
 
     /**
@@ -361,16 +361,19 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function removeCheckedFilePath($file_path)
+    public function addRequiredFilePath($file_path)
     {
-        if (!$this->checked_file_paths
-            || $this->checked_file_paths[count($this->checked_file_paths) - 1] !== $file_path
-        ) {
-            throw new \InvalidArgumentException($file_path . ' is not the most recently checked file');
-        }
+        $this->required_file_paths[$file_path] = true;
+    }
 
-        array_pop($this->checked_file_paths);
-        array_pop($this->checked_file_names);
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    public function addParentFilePath($file_path)
+    {
+        $this->parent_file_paths[$file_path] = true;
     }
 
     /**
@@ -378,9 +381,9 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return bool
      */
-    public function hasNestedFilePath($file_path)
+    public function hasParentFilePath($file_path)
     {
-        return $this->file_path === $file_path || in_array($file_path, $this->checked_file_paths);
+        return $this->file_path === $file_path || isset($this->parent_file_paths[$file_path]);
     }
 
     /**
@@ -388,17 +391,33 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return bool
      */
-    public function hasAlreadyIncludedFilePath($file_path)
+    public function hasAlreadyRequiredFilePath($file_path)
     {
         return isset($this->required_file_paths[$file_path]);
     }
 
     /**
+     * @return array<int, string>
+     */
+    public function getRequiredFilePaths()
+    {
+        return array_keys($this->required_file_paths);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getParentFilePaths()
+    {
+        return array_keys($this->parent_file_paths);
+    }
+
+    /**
      * @return int
      */
-    public function getIncludeNesting()
+    public function getRequireNesting()
     {
-        return count($this->checked_file_paths);
+        return count($this->parent_file_paths);
     }
 
     /**

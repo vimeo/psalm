@@ -842,7 +842,7 @@ class CallChecker
                                 return false;
                             }
                         } elseif ($arg->value->inferredType->isMixed()) {
-                            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+                            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
                             if (IssueBuffer::accepts(
                                 new MixedArgument(
@@ -885,7 +885,7 @@ class CallChecker
                     }
                 }
             } elseif ($function_param) {
-                $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
                 if ($function_param->type && !$function_param->type->isMixed()) {
                     if (IssueBuffer::accepts(
@@ -1421,7 +1421,7 @@ class CallChecker
         }
 
         if ($input_type->isMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedArgument(
@@ -1437,7 +1437,7 @@ class CallChecker
             return null;
         }
 
-        $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+        $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
         $param_type = TypeChecker::simplifyUnionType(
             $project_checker->codebase,

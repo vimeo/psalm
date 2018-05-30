@@ -190,7 +190,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         case Type\Atomic\TMixed::class:
                         case Type\Atomic\TGenericParam::class:
                         case Type\Atomic\TObject::class:
-                            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+                            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
@@ -219,7 +219,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     continue;
                 }
 
-                $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
                 $has_valid_method_call_type = true;
 

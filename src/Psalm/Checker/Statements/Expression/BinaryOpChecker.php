@@ -791,7 +791,7 @@ class BinaryOpChecker
             || $right_type_part instanceof TGenericParam
         ) {
             if ($statements_source && $codebase) {
-                $codebase->analyzer->incrementMixedCount($statements_source->getCheckedFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
             }
 
             if ($left_type_part instanceof TMixed || $left_type_part instanceof TGenericParam) {
@@ -841,7 +841,7 @@ class BinaryOpChecker
         }
 
         if ($statements_source && $codebase) {
-            $codebase->analyzer->incrementNonMixedCount($statements_source->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
         }
 
         if ($left_type_part instanceof TArray
@@ -1089,7 +1089,7 @@ class BinaryOpChecker
             $result_type = Type::getString();
 
             if ($left_type->isMixed() || $right_type->isMixed()) {
-                $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
                 if ($left_type->isMixed()) {
                     if (IssueBuffer::accepts(
@@ -1116,7 +1116,7 @@ class BinaryOpChecker
                 return;
             }
 
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
             if ($left_type->isNull()) {
                 if (IssueBuffer::accepts(

@@ -52,7 +52,7 @@ class Functions
             throw new \UnexpectedValueException('$statements_checker must not be null here');
         }
 
-        $file_path = $statements_checker->getFilePath();
+        $file_path = $statements_checker->getRootFilePath();
         $file_storage = $this->file_storage_provider->get($file_path);
 
         $function_checkers = $statements_checker->getFunctionCheckers();
@@ -117,7 +117,7 @@ class Functions
      */
     public function functionExists(StatementsChecker $statements_checker, $function_id)
     {
-        $file_storage = $this->file_storage_provider->get($statements_checker->getFilePath());
+        $file_storage = $this->file_storage_provider->get($statements_checker->getRootFilePath());
 
         if (isset($file_storage->declaring_function_ids[$function_id])) {
             return true;

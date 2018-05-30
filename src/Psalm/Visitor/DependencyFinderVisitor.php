@@ -1660,17 +1660,17 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /**
      * @return string
      */
-    public function getCheckedFilePath()
+    public function getRootFilePath()
     {
-        return $this->file_scanner->getCheckedFilePath();
+        return $this->file_scanner->getRootFilePath();
     }
 
     /**
      * @return string
      */
-    public function getCheckedFileName()
+    public function getRootFileName()
     {
-        return $this->file_scanner->getCheckedFileName();
+        return $this->file_scanner->getRootFileName();
     }
 
     /**

@@ -101,7 +101,7 @@ class CommentChecker
                             implode('', $var_type_tokens) .
                             ' is not a valid type' .
                             ' (from ' .
-                            $source->getCheckedFilePath() .
+                            $source->getFilePath() .
                             ':' .
                             $came_from_line_number .
                             ')'

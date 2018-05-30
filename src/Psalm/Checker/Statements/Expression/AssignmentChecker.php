@@ -170,7 +170,7 @@ class AssignmentChecker
         $codebase = $project_checker->codebase;
 
         if ($assign_value_type->isMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
                 if (IssueBuffer::accepts(
@@ -184,7 +184,7 @@ class AssignmentChecker
                 }
             }
         } else {
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
             if ($var_id
                 && isset($context->byref_constraints[$var_id])

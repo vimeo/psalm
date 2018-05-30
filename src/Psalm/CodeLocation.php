@@ -89,8 +89,8 @@ class CodeLocation
     ) {
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
         $this->file_end = (int)$stmt->getAttribute('endFilePos');
-        $this->file_path = $file_source->getCheckedFilePath();
-        $this->file_name = $file_source->getCheckedFileName();
+        $this->file_path = $file_source->getFilePath();
+        $this->file_name = $file_source->getFileName();
         $this->single_line = $single_line;
         $this->regex_type = $regex_type;
         $this->previous_location = $previous_location;

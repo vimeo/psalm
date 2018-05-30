@@ -310,7 +310,7 @@ class IncludeTest extends TestCase
                         require_once("file2.php");
                         variadicArgs(5, 2, "hello");',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        function variadicArgs() {
+                        function variadicArgs() : void {
                             $args = func_get_args();
                         }',
                 ],
@@ -334,8 +334,7 @@ class IncludeTest extends TestCase
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-                ],
-                'hide_external_errors' => false
+                ]
             ],
             'returnNamespacedFunctionCallType' => [
                 'files' => [
@@ -369,6 +368,18 @@ class IncludeTest extends TestCase
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
+                ],
+            ],
+            'functionUsedElsewhere' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");
+                        function foo() : void {}',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        foo();',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
         ];
@@ -420,7 +431,7 @@ class IncludeTest extends TestCase
                 ],
                 'error_message' => 'UndefinedFunction',
             ],
-            'globalIncludedVar' => [
+            'globalIncludedIncorrectVar' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         $a = 5;
@@ -437,8 +448,7 @@ class IncludeTest extends TestCase
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
-                'error_message' => 'UndefinedGlobalVariable',
-                'hide_external_errors' => false
+                'error_message' => 'UndefinedGlobalVariable'
             ],
             'invalidTraitFunctionReturnInUncheckedFile' => [
                 'files' => [

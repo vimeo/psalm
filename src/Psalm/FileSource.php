@@ -16,12 +16,12 @@ interface FileSource
     /**
      * @return string
      */
-    public function getCheckedFileName();
+    public function getRootFileName();
 
     /**
      * @return string
      */
-    public function getCheckedFilePath();
+    public function getRootFilePath();
 
     /**
      * @return Aliases

@@ -41,33 +41,26 @@ interface StatementsSource extends FileSource
      *
      * @return void
      */
-    public function addCheckedFilePath($file_path, $file_name);
-
-    /**
-     * @param string $file_path
-     *
-     * @return void
-     */
-    public function removeCheckedFilePath($file_path);
+    public function setRootFilePath($file_path, $file_name);
 
     /**
      * @param string $file_path
      *
      * @return bool
      */
-    public function hasNestedFilePath($file_path);
+    public function hasParentFilePath($file_path);
 
     /**
      * @param string $file_path
      *
      * @return bool
      */
-    public function hasAlreadyIncludedFilePath($file_path);
+    public function hasAlreadyRequiredFilePath($file_path);
 
     /**
      * @return int
      */
-    public function getIncludeNesting();
+    public function getRequireNesting();
 
     /**
      * @return bool

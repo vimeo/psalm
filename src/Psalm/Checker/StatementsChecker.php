@@ -138,7 +138,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             if ($project_checker->debug_lines) {
-                echo $this->getCheckedFilePath() . ':' . $stmt->getLine();
+                echo $this->getFilePath() . ':' . $stmt->getLine();
             }
 
             /*

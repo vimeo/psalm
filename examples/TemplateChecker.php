@@ -16,7 +16,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
-    public function analyze(Context $context = null, $update_docblocks = false)
+    public function analyze(Context $context = null, $update_docblocks = false, Context $global_context = null)
     {
         $codebase = $this->project_checker->getCodebase();
         $stmts = $codebase->getStatementsForFile($this->file_path);

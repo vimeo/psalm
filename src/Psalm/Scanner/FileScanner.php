@@ -65,6 +65,7 @@ class FileScanner implements FileSource
         foreach ($stmts as $stmt) {
             if (!$stmt instanceof PhpParser\Node\Stmt\ClassLike
                 && !$stmt instanceof PhpParser\Node\Stmt\Function_
+                && !$stmt instanceof PhpParser\Node\Expr\Include_
             ) {
                 $file_storage->has_extra_statements = true;
                 break;
@@ -105,7 +106,7 @@ class FileScanner implements FileSource
     /**
      * @return string
      */
-    public function getCheckedFilePath()
+    public function getRootFilePath()
     {
         return $this->file_path;
     }
@@ -113,7 +114,7 @@ class FileScanner implements FileSource
     /**
      * @return string
      */
-    public function getCheckedFileName()
+    public function getRootFileName()
     {
         return $this->file_name;
     }

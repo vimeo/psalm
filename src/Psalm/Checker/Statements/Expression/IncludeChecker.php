@@ -39,7 +39,7 @@ class IncludeChecker
             $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $stmt->expr->value);
 
             // attempts to resolve using get_include_path dirs
-            $include_path = self::resolveIncludePath($path_to_file, dirname($statements_checker->getCheckedFileName()));
+            $include_path = self::resolveIncludePath($path_to_file, dirname($statements_checker->getFileName()));
             $path_to_file = $include_path ? $include_path : $path_to_file;
 
             if (DIRECTORY_SEPARATOR === '/') {
@@ -52,7 +52,7 @@ class IncludeChecker
                 $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = self::getPathTo($stmt->expr, $statements_checker->getCheckedFileName());
+            $path_to_file = self::getPathTo($stmt->expr, $statements_checker->getFileName());
         }
 
         if ($path_to_file) {
@@ -73,37 +73,52 @@ class IncludeChecker
             if ($current_file_checker->project_checker->fileExists($path_to_file)) {
                 $codebase = $current_file_checker->project_checker->codebase;
 
-                if ($statements_checker->hasNestedFilePath($path_to_file)
-                    || ($statements_checker->hasAlreadyIncludedFilePath($path_to_file)
+                if ($statements_checker->hasParentFilePath($path_to_file)
+                    || ($statements_checker->hasAlreadyRequiredFilePath($path_to_file)
                         && !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements)
                 ) {
                     return null;
                 }
 
+                $current_file_checker->addRequiredFilePath($path_to_file);
+
                 $file_name = $config->shortenFileName($path_to_file);
 
-                if (is_subclass_of($current_file_checker, \Psalm\Checker\FileChecker::class)
-                    || !$config->hide_external_errors
-                ) {
-                    $statements_checker->addCheckedFilePath($path_to_file, $file_name);
+                if ($current_file_checker->project_checker->debug_output) {
+                    $nesting = $statements_checker->getRequireNesting() + 1;
+                    echo (str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL);
+                }
 
-                    if ($current_file_checker->project_checker->debug_output) {
-                        $nesting = $statements_checker->getIncludeNesting() + 1;
-                        echo (str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL);
-                    }
+                $include_file_checker = new \Psalm\Checker\FileChecker(
+                    $current_file_checker->project_checker,
+                    $path_to_file,
+                    $file_name
+                );
 
-                    // this analysis happens in the same namespace as the base file being checked,
-                    // but required files are almost always done in the root namespace, so it doesn't make much
-                    // of a difference. Still, if anyone uses this for something properly it might break.
-                    // But also, don't use require.
-                    $statements_checker->analyze(
-                        $current_file_checker->project_checker->codebase->getStatementsForFile($path_to_file),
-                        $context,
-                        null,
-                        $global_context
-                    );
+                $include_file_checker->setRootFilePath(
+                    $current_file_checker->getRootFilePath(),
+                    $current_file_checker->getRootFileName()
+                );
 
-                    $statements_checker->removeCheckedFilePath($path_to_file);
+                $include_file_checker->addParentFilePath($current_file_checker->getFilePath());
+                $include_file_checker->addRequiredFilePath($current_file_checker->getFilePath());
+
+                foreach ($current_file_checker->getRequiredFilePaths() as $required_file_path) {
+                    $include_file_checker->addRequiredFilePath($required_file_path);
+                }
+
+                foreach ($current_file_checker->getParentFilePaths() as $parent_file_path) {
+                    $include_file_checker->addParentFilePath($parent_file_path);
+                }
+
+                $include_file_checker->analyze(
+                    $context,
+                    false,
+                    $global_context
+                );
+
+                foreach ($include_file_checker->getRequiredFilePaths() as $required_file_path) {
+                    $current_file_checker->addRequiredFilePath($required_file_path);
                 }
 
                 return null;

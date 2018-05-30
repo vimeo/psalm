@@ -81,7 +81,7 @@ class PropertyFetchChecker
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
 
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
             if ($context->collect_references
                 && isset($stmt->var->inferredType)
@@ -147,7 +147,7 @@ class PropertyFetchChecker
         }
 
         if ($stmt_var_type->isMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
@@ -164,7 +164,7 @@ class PropertyFetchChecker
             return null;
         }
 
-        $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+        $codebase->analyzer->incrementNonMixedCount($statements_checker->getRootFilePath());
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues && !$context->inside_isset) {
             if (IssueBuffer::accepts(

@@ -136,7 +136,7 @@ class ReturnChecker
                             }
                         }
 
-                        $codebase->analyzer->incrementMixedCount($statements_checker->getCheckedFilePath());
+                        $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
@@ -151,7 +151,7 @@ class ReturnChecker
                         return null;
                     }
 
-                    $codebase->analyzer->incrementNonMixedCount($statements_checker->getCheckedFilePath());
+                    $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
                     if ($local_return_type->isVoid()) {
                         if (IssueBuffer::accepts(
