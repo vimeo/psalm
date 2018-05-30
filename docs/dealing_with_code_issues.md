@@ -44,7 +44,7 @@ Some issue types allow the use of `referencedMethod` and `referencedClass` to is
     <errorLevel type="suppress">
       <referencedClass name="Bar\Bat\Baz" />
     </errorLevel>
-  </UndefinedMethod>
+  </UndefinedClass>
 </issueHandlers>
 ```
 
