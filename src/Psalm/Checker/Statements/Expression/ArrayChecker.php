@@ -43,6 +43,8 @@ class ArrayChecker
 
         $array_keys = [];
 
+        $int_offset_diff = 0;
+
         /** @var int $int_offset */
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
@@ -54,12 +56,6 @@ class ArrayChecker
             if ($item->key) {
                 if (ExpressionChecker::analyze($statements_checker, $item->key, $context) === false) {
                     return false;
-                }
-
-                if ($item->key instanceof PhpParser\Node\Scalar\String_
-                    || $item->key instanceof PhpParser\Node\Scalar\LNumber
-                ) {
-                    $item_key_value = $item->key->value;
                 }
 
                 if (isset($item->key->inferredType)) {
@@ -77,16 +73,18 @@ class ArrayChecker
                         $item_key_type = $key_type;
                     }
 
-                    if ($item_key_value === null) {
-                        if ($item->key->inferredType->isSingleStringLiteral()) {
-                            $item_key_value = $item->key->inferredType->getSingleStringLiteral();
-                        } elseif ($item->key->inferredType->isSingleIntLiteral()) {
-                            $item_key_value = $item->key->inferredType->getSingleIntLiteral();
+                    if ($item->key->inferredType->isSingleStringLiteral()) {
+                        $item_key_value = $item->key->inferredType->getSingleStringLiteral();
+                    } elseif ($item->key->inferredType->isSingleIntLiteral()) {
+                        $item_key_value = $item->key->inferredType->getSingleIntLiteral();
+
+                        if ($item_key_value > $int_offset + $int_offset_diff) {
+                            $int_offset_diff = $item_key_value - ($int_offset + $int_offset_diff);
                         }
                     }
                 }
             } else {
-                $item_key_value = $int_offset;
+                $item_key_value = $int_offset + $int_offset_diff;
                 $item_key_type = Type::getInt();
             }
 

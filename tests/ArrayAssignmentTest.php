@@ -920,6 +920,11 @@ class ArrayAssignmentTest extends TestCase
 
                     if ($a["one"]) {}',
             ],
+            'noDuplicateImplicitIntArrayKey' => [
+                '<?php
+                    $arr = [1 => 0, 1, 2, 3];
+                    $arr = [1 => "one", 2 => "two", "three")',
+            ],
         ];
     }
 
@@ -1024,6 +1029,36 @@ class ArrayAssignmentTest extends TestCase
                         echo $a[0];
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'duplicateStringArrayKey' => [
+                '<?php
+                    $arr = [
+                        "a" => 1,
+                        "b" => 2,
+                        "c" => 3,
+                        "c" => 4,
+                    ];',
+                'error_message' => 'DuplicateArrayKey',
+            ],
+            'duplicateIntArrayKey' => [
+                '<?php
+                    $arr = [
+                        0 => 1,
+                        1 => 2,
+                        2 => 3,
+                        2 => 4,
+                    ];',
+                'error_message' => 'DuplicateArrayKey',
+            ],
+            'duplicateImplicitIntArrayKey' => [
+                '<?php
+                    $arr = [
+                        1,
+                        2,
+                        3,
+                        2 => 4,
+                    ];',
+                'error_message' => 'DuplicateArrayKey',
             ],
         ];
     }
