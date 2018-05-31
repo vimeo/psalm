@@ -1055,7 +1055,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             return $context->vars_in_scope[$const_name];
         }
 
-        $file_path = $statements_checker->getFilePath();
+        $file_path = $statements_checker->getRootFilePath();
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $file_storage_provider = $project_checker->file_storage_provider;

@@ -334,6 +334,13 @@ class IssetTest extends TestCase
                         if ($arr[$k][0]) {}
                     }',
             ],
+            'mixedArrayIsset' => [
+                '<?php
+                    $a = isset($_GET["a"]) ? $_GET["a"] : "";
+                    if ($a) {}',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
         ];
     }
 
