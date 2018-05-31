@@ -171,7 +171,18 @@ class ReturnTypeChecker
         );
 
         if ($is_to_string) {
-            if (!$inferred_return_type->isMixed() && (string)$inferred_return_type !== 'string') {
+            if (!$inferred_return_type->isMixed() &&
+                !TypeChecker::isContainedBy(
+                    $codebase,
+                    $inferred_return_type,
+                    Type::getString(),
+                    $inferred_return_type->ignore_nullable_issues,
+                    $inferred_return_type->ignore_falsable_issues,
+                    $has_scalar_match,
+                    $type_coerced,
+                    $type_coerced_from_mixed
+                )
+            ) {
                 if (IssueBuffer::accepts(
                     new InvalidToString(
                         '__toString methods must return a string, ' . $inferred_return_type . ' returned',

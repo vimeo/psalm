@@ -61,21 +61,67 @@ class Reconciler
         array $suppressed_issues = []
     ) {
         foreach ($new_types as $nk => $type) {
-            if (strpos($nk, '[') && ($type[0][0] === '^isset' || $type[0][0] === '!^empty')) {
-                $path_parts = self::breakUpPathIntoParts($nk);
+            if ((strpos($nk, '[') || strpos($nk, '->'))
+                && ($type[0][0] === '^isset'
+                    || $type[0][0] === '!^empty'
+                    || $type[0][0] === 'isset'
+                    || $type[0][0] === '!empty')
+            ) {
+                $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '^isset'
+                    ? '^isset'
+                    : '!^empty';
 
-                if (count($path_parts) > 1) {
-                    $base_key = array_shift($path_parts);
+                $key_parts = Reconciler::breakUpPathIntoParts($nk);
+
+                $base_key = array_shift($key_parts);
+
+                if (!isset($new_types[$base_key])) {
+                    $new_types[$base_key] = [['!^bool'], ['!^int'], ['^isset']];
+                } else {
+                    $new_types[$base_key][] = ['!^bool'];
+                    $new_types[$base_key][] = ['!^int'];
+                    $new_types[$base_key][] = ['^isset'];
+                }
+
+                while ($key_parts) {
+                    $divider = array_shift($key_parts);
+
+                    if ($divider === '[') {
+                        $array_key = array_shift($key_parts);
+                        array_shift($key_parts);
+
+                        $new_base_key = $base_key . '[' . $array_key . ']';
+
+                        $base_key = $new_base_key;
+                    } elseif ($divider === '->') {
+                        $property_name = array_shift($key_parts);
+                        $new_base_key = $base_key . '->' . $property_name;
+
+                        $base_key = $new_base_key;
+                    } else {
+                        throw new \InvalidArgumentException('Unexpected divider ' . $divider);
+                    }
+
+                    if (!$key_parts) {
+                        break;
+                    }
 
                     if (!isset($new_types[$base_key])) {
-                        $new_types[$base_key] = [['!^bool'],['!^int']];
+                        $new_types[$base_key] = [['!^bool'], ['!^int'], ['^isset']];
                     } else {
                         $new_types[$base_key][] = ['!^bool'];
                         $new_types[$base_key][] = ['!^int'];
+                        $new_types[$base_key][] = ['^isset'];
                     }
                 }
+
+                // replace with a less specific check
+                $new_types[$nk][0][0] = $isset_or_empty;
             }
         }
+
+        // make sure array keys come after base keys
+        ksort($new_types);
 
         if (empty($new_types)) {
             return $existing_types;
@@ -1051,6 +1097,8 @@ class Reconciler
                 ) {
                     $existing_var_type->removeType('array');
                 }
+
+                $existing_var_type->possibly_undefined = false;
 
                 if ($existing_var_type->getTypes()) {
                     return $existing_var_type;

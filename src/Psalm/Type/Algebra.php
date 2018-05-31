@@ -108,52 +108,14 @@ class Algebra
             $clauses = [];
 
             foreach ($assertions as $var => $type) {
-                if ($type === 'isset' || $type === '!empty') {
-                    $key_parts = Reconciler::breakUpPathIntoParts($var);
-
-                    $base_key = array_shift($key_parts);
-
-                    if ($type === 'isset') {
-                        $clauses[] = new Clause([$base_key => ['^isset']], false, true, true);
-                    } else {
-                        $clauses[] = new Clause([$base_key => ['!^empty']], false, true, true);
-                    }
-
-                    while ($key_parts) {
-                        $divider = array_shift($key_parts);
-
-                        if ($divider === '[') {
-                            $array_key = array_shift($key_parts);
-                            array_shift($key_parts);
-
-                            $new_base_key = $base_key . '[' . $array_key . ']';
-
-                            $base_key = $new_base_key;
-                        } elseif ($divider === '->') {
-                            $property_name = array_shift($key_parts);
-                            $new_base_key = $base_key . '->' . $property_name;
-
-                            $base_key = $new_base_key;
-                        } else {
-                            throw new \InvalidArgumentException('Unexpected divider ' . $divider);
-                        }
-
-                        if ($type === 'isset') {
-                            $clauses[] = new Clause([$base_key => ['^isset']], false, true, true);
-                        } else {
-                            $clauses[] = new Clause([$base_key => ['!^empty']], false, true, true);
-                        }
-                    }
-                } else {
-                    $clauses[] = new Clause(
-                        [$var => [$type]],
-                        false,
-                        true,
-                        $type[0] === '^'
-                            || $type[0] === '~'
-                            || (strlen($type) > 1 && ($type[1] === '^' || $type[1] === '~'))
-                    );
-                }
+                $clauses[] = new Clause(
+                    [$var => [$type]],
+                    false,
+                    true,
+                    $type[0] === '^'
+                        || $type[0] === '~'
+                        || (strlen($type) > 1 && ($type[1] === '^' || $type[1] === '~'))
+                );
             }
 
             return $clauses;

@@ -205,6 +205,16 @@ class EmptyTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
+            'noReconciliationForMixed' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        $a = empty($arr["a"]) ? "" : $arr["a"];
+
+                        if ($a) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+            ],
         ];
     }
 

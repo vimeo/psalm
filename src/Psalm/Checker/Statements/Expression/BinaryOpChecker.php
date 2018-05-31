@@ -340,10 +340,13 @@ class BinaryOpChecker
             );
 
             $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+            $t_if_context->inside_isset = true;
 
             if (ExpressionChecker::analyze($statements_checker, $stmt->left, $t_if_context) === false) {
                 return false;
             }
+
+            $t_if_context->inside_isset = false;
 
             foreach ($t_if_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {

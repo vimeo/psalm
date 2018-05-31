@@ -599,25 +599,27 @@ class ArrayFetchChecker
             if ($type instanceof TMixed || $type instanceof TGenericParam || $type instanceof TEmpty) {
                 $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
 
-                if ($in_assignment) {
-                    if (IssueBuffer::accepts(
-                        new MixedArrayAssignment(
-                            'Cannot access array value on mixed variable ' . $array_var_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new MixedArrayAccess(
-                            'Cannot access array value on mixed variable ' . $array_var_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
-                        ),
-                        $statements_checker->getSuppressedIssues()
-                    )) {
-                        // fall through
+                if (!$inside_isset) {
+                    if ($in_assignment) {
+                        if (IssueBuffer::accepts(
+                            new MixedArrayAssignment(
+                                'Cannot access array value on mixed variable ' . $array_var_id,
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new MixedArrayAccess(
+                                'Cannot access array value on mixed variable ' . $array_var_id,
+                                new CodeLocation($statements_checker->getSource(), $stmt)
+                            ),
+                            $statements_checker->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 

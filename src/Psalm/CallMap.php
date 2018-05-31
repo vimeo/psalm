@@ -7056,7 +7056,7 @@ return [
 'mysqli_ping' => ['bool', 'link'=>'mysqli'],
 'mysqli_poll' => ['int|false', 'read'=>'array', 'error'=>'array', 'reject'=>'array', 'sec'=>'int', 'usec='=>'int'],
 'mysqli_prepare' => ['mysqli_stmt|false', 'link'=>'mysqli', 'query'=>'string'],
-'mysqli_query' => ['bool|mysqli_result', 'link'=>'mysqli', 'query'=>'string', 'resultmode='=>'int'],
+'mysqli_query' => ['false|mysqli_result', 'link'=>'mysqli', 'query'=>'string', 'resultmode='=>'int'],
 'mysqli_real_connect' => ['bool', 'link='=>'mysqli', 'host='=>'string', 'username='=>'string', 'passwd='=>'string', 'dbname='=>'string', 'port='=>'int', 'socket='=>'string', 'flags='=>'int'],
 'mysqli_real_escape_string' => ['string', 'link'=>'mysqli', 'escapestr'=>'string'],
 'mysqli_real_query' => ['bool', 'link'=>'mysqli', 'query'=>'string'],
