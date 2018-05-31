@@ -452,7 +452,7 @@ class IncludeTest extends TestCase
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
-                'error_message' => 'UndefinedGlobalVariable'
+                'error_message' => 'UndefinedVariable'
             ],
             'invalidTraitFunctionReturnInUncheckedFile' => [
                 'files' => [

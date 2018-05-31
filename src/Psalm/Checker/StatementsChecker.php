@@ -422,12 +422,25 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         if (is_string($var->name)) {
                             $var_id = '$' . $var->name;
 
-                            $context->vars_in_scope[$var_id] =
-                                $global_context && $global_context->hasVariable($var_id, $this)
-                                    ? clone $global_context->vars_in_scope[$var_id]
-                                    : Type::getMixed();
+                            if ($var->name === 'argv' || $var->name === 'argc') {
+                                if ($var->name === 'argv') {
+                                    $context->vars_in_scope[$var_id] = new Type\Union([
+                                        new Type\Atomic\TArray([
+                                            Type::getInt(),
+                                            Type::getString(),
+                                        ]),
+                                    ]);
+                                } else {
+                                    $context->vars_in_scope[$var_id] = Type::getInt();
+                                }
+                            } else {
+                                $context->vars_in_scope[$var_id] =
+                                    $global_context && $global_context->hasVariable($var_id, $this)
+                                        ? clone $global_context->vars_in_scope[$var_id]
+                                        : Type::getMixed();
 
-                            $context->vars_possibly_in_scope[$var_id] = true;
+                                $context->vars_possibly_in_scope[$var_id] = true;
+                            }
                         }
                     }
                 }

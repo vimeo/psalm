@@ -384,7 +384,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($function_like_storage) {
                 foreach ($node->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
-                        if (is_string($var->name)) {
+                        if (is_string($var->name) && $var->name !== 'argv' && $var->name !== 'argc') {
                             $var_id = '$' . $var->name;
 
                             $function_like_storage->global_variables[$var_id] = true;
