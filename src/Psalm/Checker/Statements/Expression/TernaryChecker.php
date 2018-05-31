@@ -45,7 +45,7 @@ class TernaryChecker
             $statements_checker
         );
 
-        $mixed_var_ids = ['$_GET', '$_POST'];
+        $mixed_var_ids = ['$_GET', '$_POST', '$_SERVER'];
 
         foreach ($context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed()) {

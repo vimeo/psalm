@@ -180,7 +180,7 @@ class IfChecker
 
         $if_context->inside_conditional = false;
 
-        $mixed_var_ids = ['$_GET', '$_POST'];
+        $mixed_var_ids = ['$_GET', '$_POST', '$_SERVER'];
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed()) {
@@ -871,7 +871,7 @@ class IfChecker
 
         $elseif_context->inside_conditional = false;
 
-        $mixed_var_ids = ['$_GET', '$_POST'];
+        $mixed_var_ids = ['$_GET', '$_POST', '$_SERVER'];
 
         foreach ($elseif_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed()) {
