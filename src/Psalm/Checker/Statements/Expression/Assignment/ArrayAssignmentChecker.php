@@ -54,6 +54,8 @@ class ArrayAssignmentChecker
      * @param  Context                           $context
      *
      * @return false|null
+     *
+     * @psalm-suppress UnusedVariable due to Psalm bug
      */
     public static function updateArrayType(
         StatementsChecker $statements_checker,
@@ -131,13 +133,31 @@ class ArrayAssignmentChecker
                     return null;
                 }
 
-                if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
-                    if (preg_match('/^(0|[1-9][0-9]*)$/', $child_stmt->dim->value)) {
-                        $var_id_additions[] = '[' . $child_stmt->dim->value . ']';
+                if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_
+                    || ($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
+                       && $child_stmt->dim->inferredType->isSingleStringLiteral())
+                ) {
+                    if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
+                        $value = $child_stmt->dim->value;
+                    } else {
+                        $value = $child_stmt->dim->inferredType->getSingleStringLiteral();
                     }
-                    $var_id_additions[] = '[\'' . $child_stmt->dim->value . '\']';
-                } elseif ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
-                    $var_id_additions[] = '[' . $child_stmt->dim->value . ']';
+
+                    if (preg_match('/^(0|[1-9][0-9]*)$/', $value)) {
+                        $var_id_additions[] = '[' . $value . ']';
+                    }
+                    $var_id_additions[] = '[\'' . $value . '\']';
+                } elseif ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+                    || ($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
+                        && $child_stmt->dim->inferredType->isSingleIntLiteral())
+                ) {
+                    if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+                        $value = $child_stmt->dim->value;
+                    } else {
+                        $value = $child_stmt->dim->inferredType->getSingleIntLiteral();
+                    }
+
+                    $var_id_additions[] = '[' . $value . ']';
                 } elseif ($child_stmt->dim instanceof PhpParser\Node\Expr\Variable
                     && is_string($child_stmt->dim->name)
                 ) {
@@ -199,10 +219,24 @@ class ArrayAssignmentChecker
                 throw new \InvalidArgumentException('Should never get here');
             }
 
+            $is_single_string_literal = false;
+
             if ($current_dim instanceof PhpParser\Node\Scalar\String_
                 || $current_dim instanceof PhpParser\Node\Scalar\LNumber
+                || ($current_dim instanceof PhpParser\Node\Expr\ConstFetch
+                    && isset($current_dim->inferredType)
+                    && (($is_single_string_literal = $current_dim->inferredType->isSingleStringLiteral())
+                        || $current_dim->inferredType->isSingleIntLiteral()))
             ) {
-                $key_value = $current_dim->value;
+                if ($current_dim instanceof PhpParser\Node\Scalar\String_
+                    || $current_dim instanceof PhpParser\Node\Scalar\LNumber
+                ) {
+                    $key_value = $current_dim->value;
+                } elseif ($is_single_string_literal) {
+                    $key_value = $current_dim->inferredType->getSingleStringLiteral();
+                } else {
+                    $key_value = $current_dim->inferredType->getSingleIntLiteral();
+                }
 
                 $has_matching_objectlike_property = false;
 
@@ -261,13 +295,26 @@ class ArrayAssignmentChecker
         }
 
         $root_is_string = $root_type->isString();
+        $is_single_string_literal = false;
 
         if (($current_dim instanceof PhpParser\Node\Scalar\String_
-                || $current_dim instanceof PhpParser\Node\Scalar\LNumber)
+                || $current_dim instanceof PhpParser\Node\Scalar\LNumber
+                || ($current_dim instanceof PhpParser\Node\Expr\ConstFetch
+                    && isset($current_dim->inferredType)
+                    && (($is_single_string_literal = $current_dim->inferredType->isSingleStringLiteral())
+                        || $current_dim->inferredType->isSingleIntLiteral())))
             && ($current_dim instanceof PhpParser\Node\Scalar\String_
                 || !$root_is_string)
         ) {
-            $key_value = $current_dim->value;
+            if ($current_dim instanceof PhpParser\Node\Scalar\String_
+                || $current_dim instanceof PhpParser\Node\Scalar\LNumber
+            ) {
+                $key_value = $current_dim->value;
+            } elseif ($is_single_string_literal) {
+                $key_value = $current_dim->inferredType->getSingleStringLiteral();
+            } else {
+                $key_value = $current_dim->inferredType->getSingleIntLiteral();
+            }
 
             $has_matching_objectlike_property = false;
 

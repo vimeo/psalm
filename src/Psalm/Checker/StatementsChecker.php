@@ -1070,7 +1070,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         $predefined_constants = Config::getInstance()->getPredefinedConstants();
 
         if (isset($predefined_constants[$fq_const_name ?: $const_name])) {
-            return ClassLikeChecker::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
+            $type = ClassLikeChecker::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
+            return $type;
         }
 
         $stubbed_const_type = $project_checker->codebase->getStubbedConstantType(

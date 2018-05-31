@@ -925,6 +925,13 @@ class ArrayAssignmentTest extends TestCase
                     $arr = [1 => 0, 1, 2, 3];
                     $arr = [1 => "one", 2 => "two", "three")',
             ],
+            'constArrayAssignment' => [
+                '<?php
+                    const BAR = 2;
+                    $arr = [1 => 2];
+                    $arr[BAR] = [6];
+                    $bar = $arr[BAR][0];',
+            ],
         ];
     }
 

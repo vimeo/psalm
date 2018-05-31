@@ -728,6 +728,8 @@ class ExpressionChecker
                     && is_string($stmt->dim->name)
                 ) {
                     $offset = '$' . $stmt->dim->name;
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ConstFetch) {
+                    $offset = implode('\\', $stmt->dim->name->parts);
                 }
 
                 return $root_var_id && $offset !== null ? $root_var_id . '[' . $offset . ']' : null;

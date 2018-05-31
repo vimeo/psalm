@@ -416,16 +416,20 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
     {
         switch (gettype($value)) {
             case 'boolean':
-                return Type::getBool();
+                if ($value) {
+                    return Type::getTrue();
+                }
+
+                return Type::getFalse();
 
             case 'integer':
-                return Type::getInt();
+                return Type::getInt(false, $value);
 
             case 'double':
-                return Type::getFloat();
+                return Type::getFloat($value);
 
             case 'string':
-                return Type::getString();
+                return Type::getString($value);
 
             case 'array':
                 return Type::getArray();
