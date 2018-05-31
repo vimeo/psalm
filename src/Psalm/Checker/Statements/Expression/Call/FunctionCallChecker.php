@@ -56,6 +56,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
         $codebase_functions = $codebase->functions;
         $config = $codebase->config;
         $defined_constants = [];
+        $global_variables = [];
 
         $function_exists = false;
 
@@ -248,6 +249,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
 
                     if (!$is_predefined) {
                         $defined_constants = $function_storage->defined_constants;
+                        $global_variables = $function_storage->global_variables;
                     }
                 }
 
@@ -356,6 +358,11 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             foreach ($defined_constants as $const_name => $const_type) {
                 $context->constants[$const_name] = clone $const_type;
                 $context->vars_in_scope[$const_name] = clone $const_type;
+            }
+
+            foreach ($global_variables as $var_id => $_) {
+                $context->vars_in_scope[$var_id] = Type::getMixed();
+                $context->vars_possibly_in_scope[$var_id] = true;
             }
 
             if ($config->use_assert_for_type &&

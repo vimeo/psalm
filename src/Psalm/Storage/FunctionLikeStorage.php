@@ -77,6 +77,11 @@ class FunctionLikeStorage
     public $defined_constants = [];
 
     /**
+     * @var array<string, bool>
+     */
+    public $global_variables = [];
+
+    /**
      * @var array<string, string>|null
      */
     public $template_types;

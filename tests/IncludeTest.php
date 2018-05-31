@@ -374,9 +374,13 @@ class IncludeTest extends TestCase
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         require_once("file2.php");
+                        require_once("file3.php");
                         function foo() : void {}',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        foo();',
+                        foo();
+                        array_filter([1, 2, 3, 4], "bar");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
+                        function bar(int $i) : bool { return (bool) rand(0, 1); }'
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',

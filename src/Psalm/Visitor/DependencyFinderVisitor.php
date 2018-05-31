@@ -378,6 +378,20 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (!$this->scan_deep) {
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
+        } elseif ($node instanceof PhpParser\Node\Stmt\Global_) {
+            $function_like_storage = end($this->functionlike_storages);
+
+            if ($function_like_storage) {
+                foreach ($node->vars as $var) {
+                    if ($var instanceof PhpParser\Node\Expr\Variable) {
+                        if (is_string($var->name)) {
+                            $var_id = '$' . $var->name;
+
+                            $function_like_storage->global_variables[$var_id] = true;
+                        }
+                    }
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
             $function_id = implode('\\', $node->name->parts);
             if (CallMap::inCallMap($function_id)) {

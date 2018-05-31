@@ -419,20 +419,6 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
-                        if ($global_context
-                            && VariableFetchChecker::analyze(
-                                $this,
-                                $var,
-                                $global_context,
-                                false,
-                                null,
-                                false,
-                                true
-                            ) === false
-                        ) {
-                            return false;
-                        }
-
                         if (is_string($var->name)) {
                             $var_id = '$' . $var->name;
 
