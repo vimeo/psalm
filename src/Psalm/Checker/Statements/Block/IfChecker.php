@@ -1176,7 +1176,7 @@ class IfChecker
                     array_keys($negated_elseif_types),
                     $if_scope->updated_vars
                 );
-            } elseif ($entry_clauses && (count($entry_clauses) > 1 || !$entry_clauses[0]->wedge)) {
+            } elseif ($entry_clauses && (count($entry_clauses) > 1 || !array_values($entry_clauses)[0]->wedge)) {
                 $outer_context->update(
                     $old_elseif_context,
                     $elseif_context,

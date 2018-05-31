@@ -593,7 +593,7 @@ class CallChecker
                 $is_variadic = $codebase->functions->isVariadic(
                     $project_checker,
                     strtolower($method_id),
-                    $statements_checker->getFilePath()
+                    $statements_checker->getRootFilePath()
                 );
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
