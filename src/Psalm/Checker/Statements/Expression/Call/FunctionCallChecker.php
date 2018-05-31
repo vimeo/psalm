@@ -361,7 +361,10 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
 
             foreach ($global_variables as $var_id => $_) {
-                $context->vars_in_scope[$var_id] = Type::getMixed();
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                }
+
                 $context->vars_possibly_in_scope[$var_id] = true;
             }
 
