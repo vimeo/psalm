@@ -1258,7 +1258,15 @@ class IfChecker
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
-        $original_context = clone $else_context;
+        if (!$else && !$if_scope->negated_clauses && !$else_context->clauses) {
+            $if_scope->final_actions = array_merge([ScopeChecker::ACTION_NONE], $if_scope->final_actions);
+            $if_scope->assigned_var_ids = [];
+            $if_scope->new_vars = [];
+            $if_scope->redefined_vars = [];
+            $if_scope->reasonable_clauses = [];
+
+            return;
+        }
 
         $else_context->clauses = Algebra::simplifyCNF(
             array_merge(
@@ -1268,6 +1276,18 @@ class IfChecker
         );
 
         $else_types = Algebra::getTruthsFromFormula($else_context->clauses);
+
+        if (!$else && !$else_types) {
+            $if_scope->final_actions = array_merge([ScopeChecker::ACTION_NONE], $if_scope->final_actions);
+            $if_scope->assigned_var_ids = [];
+            $if_scope->new_vars = [];
+            $if_scope->redefined_vars = [];
+            $if_scope->reasonable_clauses = [];
+
+            return;
+        }
+
+        $original_context = clone $else_context;
 
         if ($else_types) {
             $changed_var_ids = [];
@@ -1360,9 +1380,9 @@ class IfChecker
 
         // if it doesn't end in a return
         if (!$has_leaving_statements) {
-            if ($if_scope->new_vars === null) {
+            if ($if_scope->new_vars === null && $else) {
                 $if_scope->new_vars = array_diff_key($else_context->vars_in_scope, $outer_context->vars_in_scope);
-            } else {
+            } elseif ($if_scope->new_vars !== null) {
                 foreach ($if_scope->new_vars as $new_var => $type) {
                     if (!$else_context->hasVariable($new_var)) {
                         unset($if_scope->new_vars[$new_var]);
