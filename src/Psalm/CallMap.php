@@ -2753,7 +2753,7 @@ return [
 'fgetss' => ['string|false', 'fp'=>'resource', 'length='=>'int', 'allowable_tags='=>'string'],
 'file' => ['array<int,string>|false', 'filename'=>'string', 'flags='=>'int', 'context='=>'resource'],
 'file_exists' => ['bool', 'filename'=>'string'],
-'file_get_contents' => ['string|false', 'filename'=>'string', 'use_include_path='=>'bool', 'context='=>'resource', 'offset='=>'int', 'maxlen='=>'int'],
+'file_get_contents' => ['string|false', 'filename'=>'string', 'use_include_path='=>'bool', 'context='=>'?resource', 'offset='=>'int', 'maxlen='=>'int'],
 'file_put_contents' => ['int|false', 'file'=>'string', 'data'=>'mixed', 'flags='=>'int', 'context='=>'resource'],
 'fileatime' => ['int|false', 'filename'=>'string'],
 'filectime' => ['int|false', 'filename'=>'string'],
