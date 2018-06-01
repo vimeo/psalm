@@ -179,12 +179,15 @@ class VariableFetchChecker
                         return null;
                     }
 
-                    IssueBuffer::add(
+                    if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
                             new CodeLocation($statements_checker->getSource(), $stmt)
-                        )
-                    );
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
 
                     $stmt->inferredType = Type::getMixed();
 

@@ -36,7 +36,7 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
             $right_var_id = ExpressionChecker::getRootVarId($node->expr, $this->this_class_name);
 
             if ($left_var_id) {
-                $this->assignment_map[$left_var_id][(string)$right_var_id] = true;
+                $this->assignment_map[$left_var_id][$right_var_id ?: 'isset'] = true;
             }
 
             return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;

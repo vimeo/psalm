@@ -212,6 +212,10 @@ class LoopChecker
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
                     } else {
+                        // give an opportunity to redeemed UndefinedVariable issues
+                        if ($recorded_issues) {
+                            $has_changes = true;
+                        }
                         $vars_to_remove[] = $var_id;
                     }
                 }
