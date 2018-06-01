@@ -120,6 +120,11 @@ class BinaryOperationTest extends TestCase
                     '$d' => 'bool',
                 ],
             ],
+            'ternaryAssignment' => [
+                '<?php
+                    rand(0, 1) ? $a = 1 : $a = 2;
+                    echo $a;',
+            ],
         ];
     }
 
