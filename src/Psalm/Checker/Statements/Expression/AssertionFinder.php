@@ -1078,7 +1078,11 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = $prefix . $assertion->rule[0][0];
+                        if ($prefix === $assertion->rule[0][0]) {
+                            $if_types[$var_name] = substr($assertion->rule[0][0], 1);
+                        } else {
+                            $if_types[$var_name] = $prefix . $assertion->rule[0][0];
+                        }
                     }
                 }
             }
@@ -1098,7 +1102,11 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = $negated_prefix . $assertion->rule[0][0];
+                        if ($negated_prefix === $assertion->rule[0][0]) {
+                            $if_types[$var_name] = substr($assertion->rule[0][0], 1);
+                        } else {
+                            $if_types[$var_name] = $negated_prefix . $assertion->rule[0][0];
+                        }
                     }
                 }
             }

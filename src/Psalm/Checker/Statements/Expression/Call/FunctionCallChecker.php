@@ -10,6 +10,7 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -324,6 +325,30 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
 
                             $return_type_location = $function_storage->return_type_location;
 
+                            if ($config->after_function_checks) {
+                                $file_manipulations = [];
+
+                                foreach ($config->after_function_checks as $plugin_fq_class_name) {
+                                    $plugin_fq_class_name::afterFunctionCallCheck(
+                                        $statements_checker,
+                                        $function_id,
+                                        $stmt->args,
+                                        $return_type_location,
+                                        $context,
+                                        $file_manipulations,
+                                        $return_type
+                                    );
+                                }
+
+                                if ($file_manipulations) {
+                                    /** @psalm-suppress MixedTypeCoercion */
+                                    FileManipulationBuffer::add(
+                                        $statements_checker->getFilePath(),
+                                        $file_manipulations
+                                    );
+                                }
+                            }
+
                             $stmt->inferredType = $return_type;
                             $return_type->by_ref = $function_storage->returns_by_ref;
 
@@ -361,10 +386,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             }
 
             foreach ($global_variables as $var_id => $_) {
-                if (!isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
-                }
-
+                $context->vars_in_scope[$var_id] = Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
             }
 

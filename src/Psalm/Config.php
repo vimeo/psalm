@@ -221,6 +221,13 @@ class Config
     public $after_method_checks = [];
 
     /**
+     * Static methods to be called after function checks have completed
+     *
+     * @var string[]
+     */
+    public $after_function_checks = [];
+
+    /**
      * Static methods to be called after expression checks have completed
      *
      * @var string[]
@@ -705,6 +712,10 @@ class Config
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterMethodCallCheck')) {
                 $this->after_method_checks[$fq_class_name] = $fq_class_name;
+            }
+
+            if ($codebase->methods->methodExists($fq_class_name . '::afterFunctionCallCheck')) {
+                $this->after_function_checks[$fq_class_name] = $fq_class_name;
             }
 
             if ($codebase->methods->methodExists($fq_class_name . '::afterExpressionCheck')) {
