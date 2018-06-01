@@ -194,12 +194,11 @@ class FunctionChecker extends FunctionLikeChecker
                     }
 
                     break;
-                case 'array_column':
 
+                case 'array_column':
                     $row_shape = null;
                     // calculate row shape
-                    if (
-                        isset($call_args[0]->value->inferredType)
+                    if (isset($call_args[0]->value->inferredType)
                         && $call_args[0]->value->inferredType->isSingle()
                         && $call_args[0]->value->inferredType->hasArray()
                     ) {
@@ -209,7 +208,7 @@ class FunctionChecker extends FunctionLikeChecker
                             if ($row_type->isSingle() && $row_type->hasArray()) {
                                 $row_shape = $row_type->getTypes()['array'];
                             }
-                        } else if ($input_array instanceof Type\Atomic\TArray) {
+                        } elseif ($input_array instanceof Type\Atomic\TArray) {
                             $row_type = $input_array->type_params[1];
                             if ($row_type->isSingle() && $row_type->hasArray()) {
                                 $row_shape = $row_type->getTypes()['array'];
@@ -223,7 +222,7 @@ class FunctionChecker extends FunctionLikeChecker
                         $value_column_name_arg= $call_args[1]->value->inferredType;
                         if ($value_column_name_arg->isSingleIntLiteral()) {
                             $value_column_name = $value_column_name_arg->getSingleIntLiteral();
-                        } else if ($value_column_name_arg->isSingleStringLiteral()) {
+                        } elseif ($value_column_name_arg->isSingleStringLiteral()) {
                             $value_column_name = $value_column_name_arg->getSingleStringLiteral();
                         }
                     }
@@ -234,7 +233,7 @@ class FunctionChecker extends FunctionLikeChecker
                         $key_column_name_arg = $call_args[2]->value->inferredType;
                         if ($key_column_name_arg->isSingleIntLiteral()) {
                             $key_column_name = $key_column_name_arg->getSingleIntLiteral();
-                        } else if ($key_column_name_arg->isSingleStringLiteral()) {
+                        } elseif ($key_column_name_arg->isSingleStringLiteral()) {
                             $key_column_name = $key_column_name_arg->getSingleStringLiteral();
                         }
                     }
