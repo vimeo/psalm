@@ -643,6 +643,35 @@ class FunctionCallTest extends TestCase
                         return array_filter(iterator_to_array(generator()), $filter);
                     }'
             ],
+            'arrayColumnInference' => [
+                '<?php
+                    function makeMixedArray(): array { return []; }
+                    /** @return array<array<int,bool>> */
+                    function makeGenericArray(): array { return []; }
+                    /** @return array<array{0:string}> */
+                    function makeShapeArray(): array { return []; }
+                    /** @return array<array{0:string}|int> */
+                    function makeUnionArray(): array { return []; }
+                    $a = array_column([[1], [2], [3]], 0);
+                    $b = array_column([["a" => 1], ["a" => 2], ["a" => 3]], "a");
+                    $c = array_column([["k" => "a", "v" => 1], ["k" => "b", "v" => 2]], "v", "k");
+                    $d = array_column([], 0);
+                    $e = array_column(makeMixedArray(), 0);
+                    $f = array_column(makeGenericArray(), 0);
+                    $g = array_column(makeShapeArray(), 0);
+                    $h = array_column(makeUnionArray(), 0);
+                ',
+                'assertions' => [
+                    '$a' => 'array<mixed, int>',
+                    '$b' => 'array<mixed, int>',
+                    '$c' => 'array<string, int>',
+                    '$d' => 'array<mixed, mixed>',
+                    '$e' => 'array<mixed, mixed>',
+                    '$f' => 'array<mixed, mixed>',
+                    '$g' => 'array<mixed, string>',
+                    '$h' => 'array<mixed, mixed>',
+                ],
+            ],
         ];
     }
 
