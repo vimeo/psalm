@@ -963,7 +963,7 @@ class Union
     public function getSingleIntLiteral()
     {
         if (count($this->types) !== 1 || count($this->literal_int_types) !== 1) {
-            throw new \InvalidArgumentException("Not a string literal");
+            throw new \InvalidArgumentException("Not an int literal");
         }
 
         return reset($this->literal_int_types)->value;
