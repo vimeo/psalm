@@ -111,6 +111,34 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         $project_checker = $this->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
+        if ($codebase->config->hoist_constants) {
+            foreach ($stmts as $stmt) {
+                if ($stmt instanceof PhpParser\Node\Stmt\Const_) {
+                    foreach ($stmt->consts as $const) {
+                        $this->setConstType(
+                            $const->name->name,
+                            self::getSimpleType($const->value, $this) ?: Type::getMixed(),
+                            $context
+                        );
+                    }
+                } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
+                    && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                    && $stmt->expr->name instanceof PhpParser\Node\Name
+                    && $stmt->expr->name->parts === ['define']
+                    && isset($stmt->expr->args[1])
+                    && $stmt->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
+                ) {
+                    $const_name = $stmt->expr->args[0]->value->value;
+
+                    $this->setConstType(
+                        $const_name,
+                        self::getSimpleType($stmt->expr->args[1]->value, $this) ?: Type::getMixed(),
+                        $context
+                    );
+                }
+            }
+        }
+
         $original_context = null;
 
         if ($loop_scope) {

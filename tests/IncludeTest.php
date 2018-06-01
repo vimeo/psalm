@@ -10,11 +10,11 @@ class IncludeTest extends TestCase
      *
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
-     * @param bool $hide_external_errors
+     * @param bool $hoist_constants
      *
      * @return void
      */
-    public function testValidInclude(array $files, array $files_to_check, $hide_external_errors = true)
+    public function testValidInclude(array $files, array $files_to_check, $hoist_constants = false)
     {
         $codebase = $this->project_checker->getCodebase();
 
@@ -30,7 +30,7 @@ class IncludeTest extends TestCase
         $codebase->scanFiles();
 
         $config = $codebase->config;
-        $config->hide_external_errors = $hide_external_errors;
+        $config->hoist_constants = $hoist_constants;
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
@@ -44,7 +44,7 @@ class IncludeTest extends TestCase
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
      * @param string $error_message
-     * @param bool $hide_external_errors
+     * @param bool $hoist_constants
      *
      * @return void
      */
@@ -52,7 +52,7 @@ class IncludeTest extends TestCase
         array $files,
         array $files_to_check,
         $error_message,
-        $hide_external_errors = true
+        $hoist_constants = false
     ) {
         $codebase = $this->project_checker->getCodebase();
 
@@ -71,7 +71,7 @@ class IncludeTest extends TestCase
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $config = $codebase->config;
-        $config->hide_external_errors = $hide_external_errors;
+        $config->hoist_constants = $hoist_constants;
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
@@ -386,6 +386,23 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'hoistConstants' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        function bat() : void {
+                            echo FOO . BAR;
+                        }
+
+                        define("FOO", 5);
+                        const BAR = "BAR";',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => true,
+            ],
         ];
     }
 
@@ -509,6 +526,23 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php',
                 ],
                 'error_message' => 'InvalidReturnType',
+            ],
+            'noHoistConstants' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        function bat() : void {
+                            echo FOO . BAR;
+                        }
+
+                        define("FOO", 5);
+                        const BAR = "BAR";',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'error_message' => 'UndefinedConstant',
             ],
         ];
     }

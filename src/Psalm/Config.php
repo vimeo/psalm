@@ -209,6 +209,11 @@ class Config
     public $memoize_method_calls = false;
 
     /**
+     * @var bool
+     */
+    public $hoist_constants = false;
+
+    /**
      * @var string[]
      */
     private $plugin_paths = [];
@@ -514,6 +519,11 @@ class Config
         if (isset($config_xml['memoizeMethodCallResults'])) {
             $attribute_text = (string) $config_xml['memoizeMethodCallResults'];
             $config->memoize_method_calls = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['hoistConstants'])) {
+            $attribute_text = (string) $config_xml['hoistConstants'];
+            $config->hoist_constants = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {
