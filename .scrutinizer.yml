@@ -1,13 +1,13 @@
 build:
+  environment:
+    postgresql: false
+    redis: false
   nodes:
     analysis:
       project_setup:
         override: true
       tests:
         override: [php-scrutinizer-run]
-    php56:
-      environment:
-        php: 5.6
     php70:
       environment:
         php: 7.0
