@@ -426,7 +426,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             ?: Type::getMixed();
                         $const_name = $first_arg_value->value;
 
-                        if ($this->functionlike_storages) {
+                        if ($this->functionlike_storages && !$this->config->hoist_constants) {
                             $functionlike_storage =
                                 $this->functionlike_storages[count($this->functionlike_storages) - 1];
                             $functionlike_storage->defined_constants[$const_name] = $const_type;
