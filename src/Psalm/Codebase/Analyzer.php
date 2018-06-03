@@ -288,7 +288,7 @@ class Analyzer
     }
 
     /**
-     * @return float
+     * @return string
      */
     public function getTypeInferenceSummary()
     {
@@ -321,14 +321,8 @@ class Analyzer
             return 'No files analyzed';
         }
 
-        echo 'Psalm was able to infer types for ' . number_format(100 * $nonmixed_count / $total, 3) . '%'
+        return 'Psalm was able to infer types for ' . number_format(100 * $nonmixed_count / $total, 3) . '%'
             . ' of analyzed code (' . $total_files . ' file' . ($total_files > 1 ? 's' : '') . ')';
-
-        if (!$total) {
-            return 0;
-        }
-
-        return ;
     }
 
     /**
