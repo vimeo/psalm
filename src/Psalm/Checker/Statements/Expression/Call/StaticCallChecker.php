@@ -309,12 +309,40 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 ) {
                     if (MethodChecker::checkStatic(
                         $method_id,
-                        strtolower($stmt->class->parts[0]) === 'self',
+                        strtolower($stmt->class->parts[0]) === 'self' || $context->self === $fq_class_name,
+                        !$statements_checker->isStatic(),
                         $project_checker,
                         new CodeLocation($source, $stmt),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_checker->getSuppressedIssues(),
+                        $is_dynamic_this_method
                     ) === false) {
                         // fall through
+                    }
+
+                    if ($is_dynamic_this_method) {
+                        $fake_method_call_expr = new PhpParser\Node\Expr\MethodCall(
+                            new PhpParser\Node\Expr\Variable(
+                                'this',
+                                $stmt->class->getAttributes()
+                            ),
+                            $stmt->name,
+                            $stmt->args,
+                            $stmt->getAttributes()
+                        );
+
+                        if (MethodCallChecker::analyze(
+                            $statements_checker,
+                            $fake_method_call_expr,
+                            $context
+                        ) === false) {
+                            return false;
+                        }
+
+                        if (isset($fake_method_call_expr->inferredType)) {
+                            $stmt->inferredType = $fake_method_call_expr->inferredType;
+                        }
+
+                        return null;
                     }
                 }
 

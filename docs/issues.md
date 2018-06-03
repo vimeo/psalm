@@ -999,7 +999,7 @@ Emitted when calling a non-static function statically
 class A {
     public function foo(): void {}
 
-    public function bar(): void {
+    public static function bar(): void {
         self::foo();
     }
 }
