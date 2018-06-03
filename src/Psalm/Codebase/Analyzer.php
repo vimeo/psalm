@@ -10,6 +10,7 @@ use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Provider\FileStorageProvider;
 
 /**
  * @internal
@@ -27,6 +28,11 @@ class Analyzer
      * @var FileProvider
      */
     private $file_provider;
+
+    /**
+     * @var FileStorageProvider
+     */
+    private $file_storage_provider;
 
     /**
      * @var bool
@@ -55,10 +61,15 @@ class Analyzer
     /**
      * @param bool $debug_output
      */
-    public function __construct(Config $config, FileProvider $file_provider, $debug_output)
-    {
+    public function __construct(
+        Config $config,
+        FileProvider $file_provider,
+        FileStorageProvider $file_storage_provider,
+        $debug_output
+    ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
+        $this->file_storage_provider = $file_storage_provider;
         $this->debug_output = $debug_output;
     }
 
@@ -279,12 +290,22 @@ class Analyzer
     /**
      * @return float
      */
-    public function getNonMixedPercentage()
+    public function getTypeInferenceSummary()
     {
         $mixed_count = 0;
         $nonmixed_count = 0;
 
+        $all_deep_scanned_files = [];
+
         foreach ($this->files_to_analyze as $file_path => $_) {
+            $all_deep_scanned_files[$file_path] = true;
+
+            foreach ($this->file_storage_provider->get($file_path)->required_file_paths as $required_file_path) {
+                $all_deep_scanned_files[$required_file_path] = true;
+            }
+        }
+
+        foreach ($all_deep_scanned_files as $file_path => $_) {
             if (isset($this->mixed_counts[$file_path])) {
                 list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
                 $mixed_count += $path_mixed_count;
@@ -294,11 +315,20 @@ class Analyzer
 
         $total = $mixed_count + $nonmixed_count;
 
+        $total_files = count($all_deep_scanned_files);
+
+        if (!$total_files) {
+            return 'No files analyzed';
+        }
+
+        echo 'Psalm was able to infer types for ' . number_format(100 * $nonmixed_count / $total, 3) . '%'
+            . ' of analyzed code (' . $total_files . ' file' . ($total_files > 1 ? 's' : '') . ')';
+
         if (!$total) {
             return 0;
         }
 
-        return 100 * $nonmixed_count / $total;
+        return ;
     }
 
     /**
@@ -308,7 +338,17 @@ class Analyzer
     {
         $stats = '';
 
+        $all_deep_scanned_files = [];
+
         foreach ($this->files_to_analyze as $file_path => $_) {
+            $all_deep_scanned_files[$file_path] = true;
+
+            foreach ($this->file_storage_provider->get($file_path)->required_file_paths as $required_file_path) {
+                $all_deep_scanned_files[$required_file_path] = true;
+            }
+        }
+
+        foreach ($all_deep_scanned_files as $file_path => $_) {
             if (isset($this->mixed_counts[$file_path])) {
                 list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
                 $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 0)

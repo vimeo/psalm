@@ -378,11 +378,9 @@ class IssueBuffer
                 echo 'Checks took ' . number_format((float)microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
 
-                $nonmixed_percentage = $project_checker->codebase->analyzer->getNonMixedPercentage();
-
                 if ($is_full) {
-                    echo 'Psalm was able to infer types for ' . number_format($nonmixed_percentage, 3) . '%'
-                        . ' of the codebase' . "\n";
+                    $analysis_summary = $project_checker->codebase->analyzer->getTypeInferenceSummary();
+                    echo $analysis_summary . "\n";
                 }
 
                 if ($add_stats) {
