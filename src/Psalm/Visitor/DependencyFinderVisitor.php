@@ -772,6 +772,21 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         /** @var PhpParser\Node\Param $param */
         foreach ($stmt->getParams() as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Error) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Param' . ((int) $i + 1) . ' of ' . $cased_function_id . ' has invalid syntax',
+                        new CodeLocation($this->file_scanner, $param, null, true)
+                    )
+                )) {
+                    $storage->has_visitor_issues = true;
+
+                    ++$i;
+
+                    continue;
+                }
+            }
+
             $param_array = $this->getTranslatedFunctionParam($param);
 
             if (isset($existing_params['$' . $param_array->name])) {
@@ -782,6 +797,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     )
                 )) {
                     $storage->has_visitor_issues = true;
+
+                    ++$i;
 
                     continue;
                 }
@@ -794,7 +811,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (!$param_array->is_optional) {
                 $required_param_count = $i + 1;
 
-                if (!$param->variadic && $has_optional_param && is_string($param->var->name)) {
+                if (!$param->variadic
+                    && $has_optional_param
+                    && $param->var instanceof PhpParser\Node\Expr\Variable
+                    && is_string($param->var->name)
+                ) {
                     if (IssueBuffer::accepts(
                         new MisplacedRequiredParam(
                             'Required param $' . $param->var->name . ' should come before any optional params in ' .
@@ -1271,7 +1292,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $is_optional = $param->default !== null;
 
-        if (!is_string($param->var->name)) {
+        if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
             throw new \UnexpectedValueException('Not expecting param name to be non-string');
         }
 

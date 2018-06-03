@@ -770,6 +770,7 @@ class FunctionChecker extends FunctionLikeChecker
                     $stmt = $function_call_arg->value->stmts[0];
 
                     if ($first_param->variadic === false
+                        && $first_param->var instanceof PhpParser\Node\Expr\Variable
                         && is_string($first_param->var->name)
                         && $stmt instanceof PhpParser\Node\Stmt\Return_
                         && $stmt->expr
