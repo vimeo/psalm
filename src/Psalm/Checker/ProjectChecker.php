@@ -57,6 +57,13 @@ class ProjectChecker
     public $use_color;
 
     /**
+     * Whether or not to show snippets in error output
+     *
+     * @var bool
+     */
+    public $show_snippet;
+
+    /**
      * Whether or not to show informational messages
      *
      * @var bool
@@ -151,6 +158,7 @@ class ProjectChecker
      * @param int           $threads
      * @param bool          $debug_output
      * @param string        $reports
+     * @param bool          $show_snippet
      */
     public function __construct(
         Config $config,
@@ -163,7 +171,8 @@ class ProjectChecker
         $output_format = self::TYPE_CONSOLE,
         $threads = 1,
         $debug_output = false,
-        $reports = null
+        $reports = null,
+        $show_snippet = true
     ) {
         $this->file_provider = $file_provider;
         $this->cache_provider = $cache_provider;
@@ -172,6 +181,7 @@ class ProjectChecker
         $this->debug_output = $debug_output;
         $this->threads = $threads;
         $this->config = $config;
+        $this->show_snippet = $show_snippet;
 
         $this->file_storage_provider = new FileStorageProvider($file_storage_cache_provider);
         $this->classlike_storage_provider = new ClassLikeStorageProvider($classlike_storage_cache_provider);
