@@ -1531,10 +1531,6 @@ class IfChecker
             return $stmt;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\BooleanNot) {
-            return self::getDefinitelyEvaluatedExpression($stmt->expr);
-        }
-
         return $stmt;
     }
 }
