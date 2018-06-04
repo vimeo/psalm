@@ -73,6 +73,83 @@ function addString(?string $s) {
 }
 ```
 
+### `@psalm-assert`, `@psalm-assert-if-true` and `@psalm-assert-if-false`
+
+These annotations allow you to specify very basic facts about how a class of functions operate.
+
+For example, if you have a class that verified its input is an array of strings, you can make that clear to Psalm:
+
+```php
+/** @psalm-assert string[] $arr */
+function validateStringArray(array $arr) : void {
+    foreach ($arr as $s) {
+        if (!is_string($s)) {
+          throw new UnexpectedValueException('Invalid value ' . gettype($s));
+        }
+    }
+}
+```
+
+This enables you to call the `validateStringArray` function on some data and have Psalm understand that the given data *must* be an array of strings:
+
+```php
+function takesString(string $s) : void {}
+function takesInt(int $s) : void {}
+
+function takesArray(array $arr) : void {
+    takesInt($arr[0]); // this is fine
+
+    validateStringArray($arr);
+
+    takesInt($arr[0]); // this is an error
+  
+    foreach ($arr as $a) {
+        takesString($a); // this is fine
+    }
+}
+```
+
+Similarly, `@psalm-assert-if-true` and `@psalm-assert-if-false` will filter input if the function/method returns `true` and `false` respectively:
+
+```php
+class A {
+    public function isValid() : bool {
+        return (bool) rand(0, 1);
+    }
+}
+class B extends A {
+    public function bar() : void {}
+}
+
+/**
+ * @psalm-assert-if-true B $a
+ */
+function isValidB(A $a) : bool {
+    return $a instanceof B && $a->isValid();
+}
+
+/**
+ * @psalm-assert-if-false B $a
+ */
+function isInvalidB(A $a) : bool {
+    return $a instanceof B || !$a->isValid();
+}
+
+function takesA(A $a) : void {
+    if (isValidB($a)) {
+        $a->bar();
+    }
+
+    if (isInvalidB($a)) {
+        // do something
+    } else {
+        $a->bar();
+    }
+  
+    $a->bar(); //error
+}
+```
+
 ### `@psalm-ignore-nullable-return`
 
 This can be used to tell Psalm not to worry if a function/method returns null. It’s a bit of a hack, but occasionally useful for scenarios where you either have a very high confidence of a non-null value, or some other function guarantees a non-null value for that particular code path.
