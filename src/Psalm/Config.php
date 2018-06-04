@@ -810,6 +810,10 @@ class Config
         }
 
         if ($this->hide_external_errors) {
+            if ($this->mustBeIgnored($file_path)) {
+                return false;
+            }
+
             $codebase = ProjectChecker::getInstance()->codebase;
 
             $dependent_files = [strtolower($file_path) => $file_path];
@@ -823,8 +827,10 @@ class Config
 
             $any_file_path_matched = false;
 
-            foreach ($dependent_files as $file_path) {
-                if ($codebase->analyzer->canReportIssues($file_path)) {
+            foreach ($dependent_files as $dependent_file_path) {
+                if ($codebase->analyzer->canReportIssues($dependent_file_path)
+                    && !$this->mustBeIgnored($dependent_file_path)
+                ) {
                     $any_file_path_matched = true;
                     break;
                 }
@@ -850,6 +856,16 @@ class Config
     public function isInProjectDirs($file_path)
     {
         return $this->project_files && $this->project_files->allows($file_path);
+    }
+
+    /**
+     * @param   string $file_path
+     *
+     * @return  bool
+     */
+    public function mustBeIgnored($file_path)
+    {
+        return $this->project_files && $this->project_files->forbids($file_path);
     }
 
     /**

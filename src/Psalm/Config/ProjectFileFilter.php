@@ -52,4 +52,21 @@ class ProjectFileFilter extends FileFilter
 
         return parent::allows($file_name, $case_sensitive);
     }
+
+    /**
+     * @param  string  $file_name
+     * @param  bool $case_sensitive
+     *
+     * @return bool
+     */
+    public function forbids($file_name, $case_sensitive = false)
+    {
+        if ($this->inclusive && $this->file_filter) {
+            if (!$this->file_filter->allows($file_name, $case_sensitive)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

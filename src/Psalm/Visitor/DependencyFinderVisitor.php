@@ -813,7 +813,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 if (!$param->variadic
                     && $has_optional_param
-                    && $param->var instanceof PhpParser\Node\Expr\Variable
                     && is_string($param->var->name)
                 ) {
                     if (IssueBuffer::accepts(
