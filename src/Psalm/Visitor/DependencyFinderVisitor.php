@@ -780,11 +780,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     )
                 )) {
                     $storage->has_visitor_issues = true;
-
-                    ++$i;
-
-                    continue;
                 }
+
+                ++$i;
+
+                continue;
             }
 
             $param_array = $this->getTranslatedFunctionParam($param);
