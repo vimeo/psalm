@@ -385,6 +385,8 @@ class CommentChecker
                     $method_entry = substr($method_entry, 0, (int) $matches[0][1] + strlen((string) $matches[0][0]));
                 }
 
+                $method_entry = str_replace('|', '__UNIONOR__', $method_entry);
+
                 $php_string = '<?php ' . $return_docblock . ' function ' . $method_entry . '{}';
 
                 try {

@@ -1265,6 +1265,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($param_type_string) {
+                $param_type_string = str_replace('__UNIONOR__', '|', $param_type_string);
                 if ($is_nullable) {
                     $param_type_string .= '|null';
                 }
