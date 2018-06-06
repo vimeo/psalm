@@ -530,6 +530,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             && $stmt->args[0]->value->inferredType->hasObjectType()
                         ) {
                             $return_type_candidate = clone $stmt->args[0]->value->inferredType;
+                        } elseif ($call_map_id === 'simplexmlelement::asxml' && !count($stmt->args)) {
+                            $return_type_candidate = Type::parseString('string|false');
                         } else {
                             $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
                         }

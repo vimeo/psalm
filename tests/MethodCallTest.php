@@ -136,6 +136,16 @@ class MethodCallTest extends TestCase
                     $x = new A11();
                     var_export($x->call());',
             ],
+            'simpleXml' => [
+                '<?php
+                    $xml = new SimpleXMLElement("<a><b></b></a>");
+                    $a = $xml->asXML();
+                    $b = $xml->asXML("foo.xml");',
+                'assertions' => [
+                    '$a' => 'string|false',
+                    '$b' => 'string|bool',
+                ],
+            ],
         ];
     }
 
