@@ -140,6 +140,62 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testIgnoreWildcardProjectDirectory()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <directory name="src/**/Checker" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_checker->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/FileChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/Statements/ReturnChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringChecker.php')));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIgnoreWildcardFiles()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <file name="src/Psalm/Checker/*Checker.php" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_checker->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/FileChecker.php')));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Checker/Statements/ReturnChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringChecker.php')));
+    }
+
+    /**
+     * @return void
+     */
     public function testIssueHandler()
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
