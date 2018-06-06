@@ -178,6 +178,20 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
+            'assignAnonymousClassToArray' => [
+                '<?php
+                    /**
+                     * @param array<string, object> $array
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function foo(array $array, string $key) : void {
+                        foreach ($array as $i => $item) {
+                            $array[$key] = new class() {};
+
+                            if ($array[$i] === $array[$key]) {}
+                        }
+                    }',
+            ],
         ];
     }
 
