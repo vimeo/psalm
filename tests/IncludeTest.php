@@ -386,6 +386,17 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'closureInIncludedFile' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        require_once("file2.php");',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        return function(): string { return "asd"; };',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
             'hoistConstants' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php

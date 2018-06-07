@@ -53,6 +53,7 @@ class Functions
         }
 
         $file_path = $statements_checker->getRootFilePath();
+        $checked_file_path = $statements_checker->getFilePath();
         $file_storage = $this->file_storage_provider->get($file_path);
 
         $function_checkers = $statements_checker->getFunctionCheckers();
@@ -71,6 +72,14 @@ class Functions
         }
 
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
+            if ($checked_file_path !== $file_path) {
+                $file_storage = $this->file_storage_provider->get($checked_file_path);
+
+                if (isset($file_storage->functions[$function_id])) {
+                    return $file_storage->functions[$function_id];
+                }
+            }
+
             throw new \UnexpectedValueException(
                 'Expecting ' . $function_id . ' to have storage in ' . $file_path
             );
