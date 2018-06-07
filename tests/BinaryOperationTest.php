@@ -125,6 +125,11 @@ class BinaryOperationTest extends TestCase
                     rand(0, 1) ? $a = 1 : $a = 2;
                     echo $a;',
             ],
+            'assignmentInRHS' => [
+                '<?php
+                    $name = rand(0, 1) ? "hello" : null
+                    if ($name !== null || ($name = rand(0, 1) ? "hello" : null) !== null) {}',
+            ],
         ];
     }
 
