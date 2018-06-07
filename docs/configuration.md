@@ -57,7 +57,15 @@ Psalm uses an XML config file. A barebones example looks like this:
 ## Project settings
 
 - `<projectFiles>`<br />
-  Contains a list of all the directories that Psalm should inspect
+  Contains a list of all the directories that Psalm should inspect. You can also specify a set of files and folders to ignore with the `<ignoreFiles>` directive, e.g.
+  ```xml
+  <projectFiles>
+        <directory name="src" />
+        <ignoreFiles>
+            <directory name="src/Stubs" />
+        </ignoreFiles>
+   </projectFiles>
+   ```
 - `<fileExtensions>` (optional)<br />
   A list of extensions to search over. See [Checking non-PHP files](checking_non_php_files.md) to understand how to extend this.
 - `<plugins>` (optional)<br />
@@ -68,3 +76,5 @@ Psalm uses an XML config file. A barebones example looks like this:
   Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
 - `<stubs>` (optional)<br />
   If you codebase uses classes and functions that are not visible to Psalm via reflection (e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm), you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and functions without the implementations. You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs). List out each file with `<file name="path/to/file.php" />`.
+  
+  
