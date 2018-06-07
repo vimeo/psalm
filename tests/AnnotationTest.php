@@ -834,6 +834,24 @@ class AnnotationTest extends TestCase
                     '$e' => 'callable():string',
                 ],
             ],
+            'namespacedMagicMethodValidAnnotations' => [
+                '<?php
+                    namespace Foo;
+
+                    class Parent {
+                        public function __call() {}
+                    }
+
+                    /**
+                     * @method setBool(string $foo, string|bool $bar)  :   bool
+                     */
+                    class Child extends Parent {}
+
+                    $child = new Child();
+
+                    $c = $child->setBool("hello", true);
+                    $c = $child->setBool("hello", "true");',
+            ],
             'slashAfter?' => [
                 '<?php
                     namespace ns;
