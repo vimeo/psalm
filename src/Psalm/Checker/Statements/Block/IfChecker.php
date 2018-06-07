@@ -106,41 +106,45 @@ class IfChecker
 
         $if_context->inside_conditional = true;
 
-        $assigned_var_ids = $context->assigned_var_ids;
-        $if_context->assigned_var_ids = [];
+        if ($first_if_cond_expr !== $stmt->cond) {
+            $assigned_var_ids = $context->assigned_var_ids;
+            $if_context->assigned_var_ids = [];
 
-        $referenced_var_ids = $context->referenced_var_ids;
-        $if_context->referenced_var_ids = [];
+            $referenced_var_ids = $context->referenced_var_ids;
+            $if_context->referenced_var_ids = [];
 
-        if ($first_if_cond_expr !== $stmt->cond &&
-            ExpressionChecker::analyze($statements_checker, $stmt->cond, $if_context) === false
-        ) {
-            return false;
+            if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $if_context) === false) {
+                return false;
+            }
+
+            /** @var array<string, bool> */
+            $more_cond_referenced_var_ids = $if_context->referenced_var_ids;
+            $if_context->referenced_var_ids = array_merge(
+                $more_cond_referenced_var_ids,
+                $referenced_var_ids
+            );
+
+            $cond_referenced_var_ids = array_merge(
+                $first_cond_referenced_var_ids,
+                $more_cond_referenced_var_ids
+            );
+
+            /** @var array<string, bool> */
+            $more_cond_assigned_var_ids = $if_context->assigned_var_ids;
+            $if_context->assigned_var_ids = array_merge(
+                $more_cond_assigned_var_ids,
+                $assigned_var_ids
+            );
+
+            $cond_assigned_var_ids = array_merge(
+                $first_cond_assigned_var_ids,
+                $more_cond_assigned_var_ids
+            );
+        } else {
+            $cond_referenced_var_ids = $first_cond_referenced_var_ids;
+
+            $cond_assigned_var_ids = $first_cond_assigned_var_ids;
         }
-
-        /** @var array<string, bool> */
-        $more_cond_referenced_var_ids = $if_context->referenced_var_ids;
-        $if_context->referenced_var_ids = array_merge(
-            $more_cond_referenced_var_ids,
-            $referenced_var_ids
-        );
-
-        $cond_referenced_var_ids = array_merge(
-            $first_cond_referenced_var_ids,
-            $more_cond_referenced_var_ids
-        );
-
-        /** @var array<string, bool> */
-        $more_cond_assigned_var_ids = $if_context->assigned_var_ids;
-        $if_context->assigned_var_ids = array_merge(
-            $more_cond_assigned_var_ids,
-            $assigned_var_ids
-        );
-
-        $cond_assigned_var_ids = array_merge(
-            $first_cond_assigned_var_ids,
-            $more_cond_assigned_var_ids
-        );
 
         $newish_var_ids = array_map(
             /**
