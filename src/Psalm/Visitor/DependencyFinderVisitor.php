@@ -1306,7 +1306,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 : null,
             $is_optional,
             $is_nullable,
-            $param->variadic
+            $param->variadic,
+            $param->default ? StatementsChecker::getSimpleType($param->default, $this) : null
         );
     }
 
@@ -1408,6 +1409,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (!$storage_param->type || $storage_param->type->isMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                     $new_param_type->addType(new Type\Atomic\TNull());
+                }
+
+                if ($this->config->add_param_default_to_docblock_type
+                    && $storage_param->default_type
+                    && !$storage_param->default_type->isMixed()
+                    && (!$storage_param->type || !$storage_param->type->isMixed())
+                ) {
+                    $new_param_type = Type::combineUnionTypes($new_param_type, $storage_param->default_type);
                 }
 
                 $storage_param->type = $new_param_type;

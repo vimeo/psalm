@@ -214,6 +214,11 @@ class Config
     public $hoist_constants = false;
 
     /**
+     * @var bool
+     */
+    public $add_param_default_to_docblock_type = false;
+
+    /**
      * @var string[]
      */
     private $plugin_paths = [];
@@ -524,6 +529,11 @@ class Config
         if (isset($config_xml['hoistConstants'])) {
             $attribute_text = (string) $config_xml['hoistConstants'];
             $config->hoist_constants = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['addParamDefaultToDocblockType'])) {
+            $attribute_text = (string) $config_xml['addParamDefaultToDocblockType'];
+            $config->add_param_default_to_docblock_type = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

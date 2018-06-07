@@ -38,6 +38,7 @@
         <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:string" />
         <xs:attribute name="memoizeMethodCallResults" type="xs:string" />
         <xs:attribute name="hoistConstants" type="xs:string" />
+        <xs:attribute name="addParamDefaultToDocblockType" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
