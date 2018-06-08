@@ -82,6 +82,11 @@ class FunctionLikeStorage
     public $global_variables = [];
 
     /**
+     * @var array<string, Type\Union>
+     */
+    public $global_types = [];
+
+    /**
      * @var array<string, string>|null
      */
     public $template_types;

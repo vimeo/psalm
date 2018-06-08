@@ -14,6 +14,11 @@ class FunctionDocblockComment
     public $params = [];
 
     /**
+     * @var array<int, array{name:string, type:string, line_number: int}>
+     */
+    public $globals = [];
+
+    /**
      * Whether or not the function is deprecated
      *
      * @var bool

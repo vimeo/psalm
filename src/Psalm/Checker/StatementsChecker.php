@@ -445,6 +445,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
 
+                $source = $this->getSource();
+                $function_storage = $source instanceof FunctionLikeChecker
+                    ? $source->getFunctionLikeStorage($this)
+                    : null;
+
                 foreach ($stmt->vars as $var) {
                     if ($var instanceof PhpParser\Node\Expr\Variable) {
                         if (is_string($var->name)) {
@@ -461,6 +466,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                                 } else {
                                     $context->vars_in_scope[$var_id] = Type::getInt();
                                 }
+                            } elseif (isset($function_storage->global_types[$var_id])) {
+                                $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
+                                $context->vars_possibly_in_scope[$var_id] = true;
                             } else {
                                 $context->vars_in_scope[$var_id] =
                                     $global_context && $global_context->hasVariable($var_id, $this)

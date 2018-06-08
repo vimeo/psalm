@@ -146,6 +146,17 @@ class ScopeTest extends TestCase
                         return $foo;
                     }',
             ],
+            'globalReturnWithAnnotation' => [
+                '<?php
+                    /**
+                     * @global string $foo
+                     */
+                    function a(): string {
+                        global $foo;
+
+                        return $foo;
+                    }',
+            ],
             'negateAssertionAndOther' => [
                 '<?php
                     $a = rand(0, 10) ? "hello" : null;

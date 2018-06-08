@@ -365,6 +365,16 @@ class IssetTest extends TestCase
                         }
                     }',
             ],
+            'issetOnArrayAccess' => [
+                '<?php
+                    function foo(ArrayAccess $arr) : void {
+                        $a = isset($arr["a"]) ? $arr["a"] : "a";
+                        takesInt($a);
+                    }
+                    function takesInt(int $i) : void {}',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ]
         ];
     }
 

@@ -1215,6 +1215,29 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         }
 
+        foreach ($docblock_info->globals as $global) {
+            try {
+                $storage->global_types[$global['name']] = Type::parseTokens(
+                    Type::fixUpLocalType(
+                        $global['type'],
+                        $this->aliases
+                    ),
+                    false
+                );
+            } catch (TypeParseTreeException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                        new CodeLocation($this->file_scanner, $stmt, null, true)
+                    )
+                )) {
+                    $storage->has_visitor_issues = true;
+                }
+
+                continue;
+            }
+        }
+
         if ($docblock_info->params) {
             $this->improveParamsFromDocblock(
                 $storage,
