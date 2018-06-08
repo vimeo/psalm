@@ -3,6 +3,7 @@ namespace Psalm\Checker\Statements\Expression\Fetch;
 
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\CodeLocation;
@@ -250,19 +251,23 @@ class PropertyFetchChecker
 
             $property_id = $lhs_type_part->value . '::$' . $prop_name;
 
-            if ($stmt_var_id !== '$this'
-                && $lhs_type_part->value !== $context->self
-                && $codebase->methodExists($lhs_type_part->value . '::__get')
+            $statements_checker_source = $statements_checker->getSource();
+
+            if ($codebase->methodExists($lhs_type_part->value . '::__get')
+                && (!$statements_checker_source instanceof FunctionLikeChecker
+                    || $statements_checker_source->getMethodId() !== $lhs_type_part->value . '::__get')
                 && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
                 && (!$codebase->properties->propertyExists($property_id)
-                    || ClassLikeChecker::checkPropertyVisibility(
-                        $property_id,
-                        $context->self,
-                        $statements_checker->getSource(),
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker->getSuppressedIssues(),
-                        false
-                    ) !== true
+                    || ($stmt_var_id !== '$this'
+                        && $lhs_type_part->value !== $context->self
+                        && ClassLikeChecker::checkPropertyVisibility(
+                            $property_id,
+                            $context->self,
+                            $statements_checker_source,
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $statements_checker->getSuppressedIssues(),
+                            false
+                        ) !== true)
                 )
             ) {
                 $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
