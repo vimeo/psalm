@@ -12,22 +12,42 @@ use Psalm\Type\Algebra;
 class Algebra
 {
     /**
-     * @param  array<string, string>  $types
+     * @param  array<string, array<int, array<int, string>>>  $all_types
      *
-     * @return array<string, string>
+     * @return array<string, array<int, array<int, string>>>
      */
-    public static function negateTypes(array $types)
+    public static function negateTypes(array $all_types)
     {
         return array_map(
             /**
-             * @param  string $type
+             * @param  array<int, array<int, string>> $anded_types
              *
-             * @return  string
+             * @return  array<int, array<int, string>>
              */
-            function ($type) {
-                return self::negateType($type);
+            function (array $anded_types) {
+                if (count($anded_types) > 1) {
+                    $new_anded_types = [];
+
+                    foreach ($anded_types as $orred_types) {
+                        if (count($orred_types) > 1) {
+                            return [];
+                        }
+
+                        $new_anded_types[] = self::negateType($orred_types[0]);
+                    }
+
+                    return [$new_anded_types];
+                }
+
+                $new_orred_types = [];
+
+                foreach ($anded_types[0] as $orred_type) {
+                    $new_orred_types[] = [self::negateType($orred_type)];
+                }
+
+                return $new_orred_types;
             },
-            $types
+            $all_types
         );
     }
 
@@ -107,15 +127,19 @@ class Algebra
         if ($assertions) {
             $clauses = [];
 
-            foreach ($assertions as $var => $type) {
-                $clauses[] = new Clause(
-                    [$var => [$type]],
-                    false,
-                    true,
-                    $type[0] === '^'
-                        || $type[0] === '~'
-                        || (strlen($type) > 1 && ($type[1] === '^' || $type[1] === '~'))
-                );
+            foreach ($assertions as $var => $anded_types) {
+                foreach ($anded_types as $orred_types) {
+                    $clauses[] = new Clause(
+                        [$var => $orred_types],
+                        false,
+                        true,
+                        $orred_types[0][0] === '^'
+                            || $orred_types[0][0] === '~'
+                            || (strlen($orred_types[0][0]) > 1
+                                && ($orred_types[0][0][1] === '^'
+                                    || $orred_types[0][0][1] === '~'))
+                    );
+                }
             }
 
             return $clauses;

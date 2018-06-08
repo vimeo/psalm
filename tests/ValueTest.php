@@ -323,6 +323,52 @@ class ValueTest extends TestCase
                         }
                     }',
             ],
+            'ifOrAssertionWithSwitch' => [
+                '<?php
+                    function foo(string $s) : void {
+                        switch ($s) {
+                            case "a":
+                            case "b":
+                            case "c":
+                                if ($s === "a" || $s === "b") {
+                                    throw new \InvalidArgumentException;
+                                }
+                                break;
+                        }
+                    }',
+            ],
+            'inArrayAssertionProperty' => [
+                '<?php
+                    class Foo
+                    {
+                        /**
+                         * @psalm-var "a"|"b"
+                         */
+                        private $s;
+
+                        public function __construct(string $s)
+                        {
+                            if (!in_array($s, ["a", "b"], true)) {
+                                throw new \InvalidArgumentException;
+                            }
+                            $this->s = $s;
+                        }
+                    }',
+            ],
+            'inArrayAssertionWithSwitch' => [
+                '<?php
+                    function foo(string $s) : void {
+                        switch ($s) {
+                            case "a":
+                            case "b":
+                            case "c":
+                                if (in_array($s, ["a", "b"], true)) {
+                                    throw new \InvalidArgumentException;
+                                }
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -463,6 +509,22 @@ class ValueTest extends TestCase
 
                     if ($s == 3) {}',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'badIfOrAssertionWithSwitch' => [
+                '<?php
+                    function foo(string $s) : void {
+                        switch ($s) {
+                            case "a":
+                            case "b":
+                            case "c":
+                                if ($s === "a" || $s === "b") {
+                                    throw new \InvalidArgumentException;
+                                }
+
+                                if ($s === "c") {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
