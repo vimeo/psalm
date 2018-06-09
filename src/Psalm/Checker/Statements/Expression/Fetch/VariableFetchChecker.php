@@ -61,6 +61,9 @@ class VariableFetchChecker
                     return false;
                 }
 
+                $context->vars_in_scope['$this'] = Type::getMixed();
+                $context->vars_possibly_in_scope['$this'] = true;
+
                 return null;
             }
 

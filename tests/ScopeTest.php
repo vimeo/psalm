@@ -225,6 +225,16 @@ class ScopeTest extends TestCase
                         $bar = 5;
                     }',
             ],
+            'suppressInvalidThis' => [
+                '<?php
+                    /** @psalm-suppress InvalidScope */
+                    if (!isset($this->value)) {
+                        $this->value = ["x", "y"];
+                        echo count($this->value) - 2;
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedPropertyAssignment', 'MixedArgument'],
+            ],
         ];
     }
 
