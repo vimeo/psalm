@@ -475,10 +475,6 @@ class TraitTest extends TestCase
             'aliasedMethodInternalCallWithLocalDefinition' => [
                 '<?php
                     trait T {
-                        public function foo() : int {
-                            return $this->bar();
-                        }
-
                         public function bar() : int {
                             return 3;
                         }
@@ -711,6 +707,23 @@ class TraitTest extends TestCase
                         use B;
                     }',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'replaceTraitMethod' => [
+                '<?php
+                    trait T {
+                        protected function foo() : void {}
+
+                        public function bat() : void {
+                            $this->foo();
+                        }
+                    }
+
+                    class C {
+                        use T;
+
+                        protected function foo(string $s) : void {}
+                    }',
+                'error_message' => 'TooFewArguments',
             ],
         ];
     }

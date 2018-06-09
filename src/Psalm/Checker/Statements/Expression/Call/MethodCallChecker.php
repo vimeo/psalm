@@ -358,26 +358,14 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $classlike_source = $source_source->getSource();
                 $classlike_source_fqcln = $classlike_source ? $classlike_source->getFQCLN() : null;
 
-                if ($var_id === '$this' && $context->self && $classlike_source_fqcln) {
-                    if ($fq_class_name !== $context->self
-                        && $codebase->methodExists($context->self . '::' . $method_name_lc)
-                    ) {
-                        $method_id = $context->self . '::' . $method_name_lc;
-                        $fq_class_name = $context->self;
-                    } elseif ($classlike_source instanceof \Psalm\Checker\TraitChecker
-                        && $codebase->methodExists($classlike_source_fqcln . '::' . $method_name_lc)
-                    ) {
-                        $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId(
-                            $classlike_source_fqcln . '::' . $method_name_lc
-                        );
-
-                        list($declaring_class) = explode('::', $declaring_method_id);
-
-                        if ($declaring_class === $classlike_source_fqcln) {
-                            $method_id = $classlike_source_fqcln . '::' . $method_name_lc;
-                            $fq_class_name = $classlike_source_fqcln;
-                        }
-                    }
+                if ($var_id === '$this'
+                    && $context->self
+                    && $classlike_source_fqcln
+                    && $fq_class_name !== $context->self
+                    && $codebase->methodExists($context->self . '::' . $method_name_lc)
+                ) {
+                    $method_id = $context->self . '::' . $method_name_lc;
+                    $fq_class_name = $context->self;
                 }
 
                 if ($intersection_types && !$codebase->methodExists($method_id)) {
