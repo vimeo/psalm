@@ -645,6 +645,17 @@ class CallChecker
             }
         }
 
+        if ($generic_params) {
+            $existing_generic_params_to_strings = array_map(
+                function(Type\Union $type) {
+                    return (string) $type;
+                },
+                $generic_params
+            );
+        } else {
+            $existing_generic_params_to_strings = [];
+        }
+
         foreach ($args as $argument_offset => $arg) {
             $function_param = count($function_params) > $argument_offset
                 ? $function_params[$argument_offset]
@@ -794,17 +805,29 @@ class CallChecker
                             }
 
                             $generic_params[$template_type] = $offset_value_type ?: Type::getMixed();
-                        } elseif ($template_types) {
-                            if ($generic_params === null) {
-                                $generic_params = [];
+                        } else {
+                            if ($existing_generic_params_to_strings) {
+                                $empty_generic_params = [];
+                                $param_type->replaceTemplateTypesWithStandins(
+                                    $existing_generic_params_to_strings,
+                                    $empty_generic_params,
+                                    $codebase,
+                                    $arg->value->inferredType
+                                );
                             }
 
-                            $param_type->replaceTemplateTypesWithStandins(
-                                $template_types,
-                                $generic_params,
-                                $codebase,
-                                $arg->value->inferredType
-                            );
+                            if ($template_types) {
+                                if ($generic_params === null) {
+                                    $generic_params = [];
+                                }
+
+                                $param_type->replaceTemplateTypesWithStandins(
+                                    $template_types,
+                                    $generic_params,
+                                    $codebase,
+                                    $arg->value->inferredType
+                                );
+                            }
                         }
                     }
 

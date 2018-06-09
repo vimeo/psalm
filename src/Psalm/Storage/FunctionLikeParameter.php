@@ -101,4 +101,11 @@ class FunctionLikeParameter
             . ($this->is_variadic ? '...' : '')
             . ($this->is_optional ? '=' : '');
     }
+
+    public function __clone()
+    {
+        if ($this->type) {
+            $this->type = clone $this->type;
+        }
+    }
 }
