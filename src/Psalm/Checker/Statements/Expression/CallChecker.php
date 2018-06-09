@@ -647,6 +647,9 @@ class CallChecker
 
         if ($generic_params) {
             $existing_generic_params_to_strings = array_map(
+                /**
+                 * @return string
+                 */
                 function(Type\Union $type) {
                     return (string) $type;
                 },
