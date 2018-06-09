@@ -592,13 +592,14 @@ class Union
     /**
      * @return bool
      */
-    public function isMixedNotFromIsset()
+    public function isVanillaMixed()
     {
         /**
          * @psalm-suppress UndefinedPropertyFetch
          */
         return isset($this->types['mixed'])
-            && !$this->types['mixed']->from_isset;
+            && !$this->types['mixed']->from_isset
+            && !$this->types['mixed'] instanceof Type\Atomic\TEmptyMixed;
     }
 
     /**

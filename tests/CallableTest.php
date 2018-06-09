@@ -550,6 +550,11 @@ class CallableTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'nullableReturnTypeShorthand' => [
+                '<?php
+                    /** @param callable(mixed):?A $a */
+                    function foo(callable $a): void {}',
+            ],
         ];
     }
 

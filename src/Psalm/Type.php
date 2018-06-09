@@ -112,8 +112,6 @@ abstract class Type
             $parsed_type = self::getTypeFromTree($parse_tree, $php_compatible, $template_types);
         } catch (TypeParseTreeException $e) {
             throw $e;
-        } catch (\Exception $e) {
-            throw new TypeParseTreeException($e->getMessage());
         }
 
         if (!($parsed_type instanceof Union)) {
@@ -211,25 +209,32 @@ abstract class Type
         }
 
         if ($parse_tree instanceof ParseTree\UnionTree) {
-            $union_types = array_map(
-                /**
-                 * @return Atomic
-                 */
-                function (ParseTree $child_tree) use ($template_types) {
+            $has_null = false;
+
+            $atomic_types = [];
+
+            foreach ($parse_tree->children as $child_tree) {
+                if ($child_tree instanceof ParseTree\NullableTree) {
+                    $atomic_type = self::getTypeFromTree($child_tree->children[0], false, $template_types);
+                    $has_null = true;
+                } else {
                     $atomic_type = self::getTypeFromTree($child_tree, false, $template_types);
+                }
 
-                    if (!$atomic_type instanceof Atomic) {
-                        throw new \UnexpectedValueException(
-                            'Was expecting an atomic type, got ' . get_class($atomic_type)
-                        );
-                    }
+                if (!$atomic_type instanceof Atomic) {
+                    throw new \UnexpectedValueException(
+                        'Was expecting an atomic type, got ' . get_class($atomic_type)
+                    );
+                }
 
-                    return $atomic_type;
-                },
-                $parse_tree->children
-            );
+                $atomic_types[] = $atomic_type;
+            }
 
-            return TypeCombination::combineTypes($union_types);
+            if ($has_null) {
+                $atomic_types[] = new TNull;
+            }
+
+            return TypeCombination::combineTypes($atomic_types);
         }
 
         if ($parse_tree instanceof ParseTree\IntersectionTree) {
@@ -315,7 +320,7 @@ abstract class Type
             }
 
             if (!isset($parse_tree->children[1])) {
-                throw new \InvalidArgumentException('Invalid return type');
+                throw new TypeParseTreeException('Invalid return type');
             }
 
             $return_type = self::getTypeFromTree($parse_tree->children[1], false, $template_types);
@@ -369,6 +374,21 @@ abstract class Type
             return self::getTypeFromTree($parse_tree->children[0], false, $template_types);
         }
 
+        if ($parse_tree instanceof ParseTree\NullableTree) {
+            $atomic_type = self::getTypeFromTree($parse_tree->children[0], false, $template_types);
+
+            if (!$atomic_type instanceof Atomic) {
+                throw new \UnexpectedValueException(
+                    'Was expecting an atomic type, got ' . get_class($atomic_type)
+                );
+            }
+
+            return TypeCombination::combineTypes([
+                new TNull,
+                $atomic_type
+            ]);
+        }
+
         if (!$parse_tree instanceof ParseTree\Value) {
             throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
@@ -403,9 +423,6 @@ abstract class Type
      */
     public static function tokenize($string_type, $ignore_space = true)
     {
-        // remove all unacceptable characters
-        $string_type = preg_replace('/\?(?=[\\\\a-zA-Z])/', 'null|', $string_type);
-
         $type_tokens = [''];
         $was_char = false;
         $quote_char = null;
@@ -879,7 +896,7 @@ abstract class Type
      */
     public static function combineUnionTypes(Union $type_1, Union $type_2)
     {
-        if ($type_1->isMixedNotFromIsset() || $type_2->isMixedNotFromIsset()) {
+        if ($type_1->isVanillaMixed() || $type_2->isVanillaMixed()) {
             $combined_type = Type::getMixed();
         } else {
              $both_failed_reconciliation = false;

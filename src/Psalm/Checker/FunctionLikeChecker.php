@@ -309,16 +309,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
             if ($signature_type) {
                 if (!TypeChecker::isContainedBy(
-                        $codebase,
-                        $param_type,
-                        $signature_type,
-                        false,
-                        false,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed
-                    )
-                    && !$type_coerced_from_mixed
+                    $codebase,
+                    $param_type,
+                    $signature_type,
+                    false,
+                    false,
+                    $has_scalar_match,
+                    $type_coerced,
+                    $type_coerced_from_mixed
+                ) && !$type_coerced_from_mixed
                 ) {
                     if ($project_checker->alter_code
                         && isset($project_checker->getIssuesToFix()['MismatchingDocblockParamType'])

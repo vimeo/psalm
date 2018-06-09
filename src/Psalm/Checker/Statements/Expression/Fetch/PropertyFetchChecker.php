@@ -77,6 +77,7 @@ class PropertyFetchChecker
         );
 
         $stmt_var_type = null;
+        $stmt->inferredType = null;
 
         if ($var_id && $context->hasVariable($var_id, $statements_checker)) {
             // we don't need to check anything

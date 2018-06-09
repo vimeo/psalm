@@ -58,6 +58,10 @@ class ParseTree
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
 
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
+
                     $current_parent = $current_leaf->parent;
 
                     $new_parent_leaf = new ParseTree\GenericTree('array', $current_parent);
@@ -172,6 +176,10 @@ class ParseTree
 
                 case '...':
                 case '=':
+                    if ($last_token === '...' || $last_token === '=') {
+                        throw new TypeParseTreeException('Cannot have duplicate tokens');
+                    }
+
                     $current_parent = $current_leaf->parent;
 
                     while ($current_parent
@@ -247,12 +255,38 @@ class ParseTree
                     break;
 
                 case '?':
+                    if ($next_token !== ':') {
+                        $new_parent = !$current_leaf instanceof ParseTree\Root ? $current_leaf : null;
+
+                        $new_leaf = new ParseTree\NullableTree(
+                            $new_parent
+                        );
+
+                        if ($current_leaf instanceof ParseTree\Root) {
+                            $current_leaf = $parse_tree = $new_leaf;
+                            break;
+                        }
+
+                        if ($new_leaf->parent) {
+                            $new_leaf->parent->children[] = $new_leaf;
+                        }
+
+                        $current_leaf = $new_leaf;
+                    }
+
                     break;
 
                 case '|':
+                    $added_null = false;
+
                     $current_parent = $current_leaf->parent;
 
                     if ($current_parent instanceof ParseTree\CallableWithReturnTypeTree) {
+                        $current_leaf = $current_parent;
+                        $current_parent = $current_parent->parent;
+                    }
+
+                    if ($current_parent instanceof ParseTree\NullableTree) {
                         $current_leaf = $current_parent;
                         $current_parent = $current_parent->parent;
                     }

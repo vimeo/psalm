@@ -1293,7 +1293,7 @@ class Reconciler
 
             $failed_reconciliation = true;
 
-            return Type::getMixed();
+            return new Type\Union([new Type\Atomic\TEmptyMixed]);
         }
 
         return $existing_var_type;

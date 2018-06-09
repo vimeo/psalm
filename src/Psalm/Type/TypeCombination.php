@@ -10,6 +10,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmpty;
+use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -288,7 +289,7 @@ class TypeCombination
     private static function scrapeTypeProperties(Atomic $type, TypeCombination $combination)
     {
         if ($type instanceof TMixed) {
-            if ($type->from_isset) {
+            if ($type->from_isset || $type instanceof TEmptyMixed) {
                 return null;
             }
 
