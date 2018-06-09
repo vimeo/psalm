@@ -885,6 +885,11 @@ class AnnotationTest extends TestCase
                     $f = foo();
                     if ($f) {}'
             ],
+            'spreadOperatorArrayAnnotation' => [
+                '<?php
+                    /** @param string[] $s */
+                    function foo(string ...$s) : void {}',
+            ],
         ];
     }
 
@@ -1066,7 +1071,6 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MismatchingDocblockReturnType',
             ],
-
             'noStringParamType' => [
                 '<?php
                     function fooFoo($a): void {
