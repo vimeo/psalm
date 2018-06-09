@@ -650,7 +650,7 @@ class CallChecker
                 /**
                  * @return string
                  */
-                function(Type\Union $type) {
+                function (Type\Union $type) {
                     return (string) $type;
                 },
                 $generic_params
