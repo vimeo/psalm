@@ -1399,7 +1399,7 @@ class Reconciler
         } elseif ($scalar_type === 'float') {
             $value = (float) $value;
 
-            if ($existing_var_type->hasInt()) {
+            if ($existing_var_type->hasFloat()) {
                 $existing_float_types = $existing_var_type->getLiteralFloats();
 
                 if ($existing_float_types) {

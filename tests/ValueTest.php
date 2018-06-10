@@ -410,6 +410,38 @@ class ValueTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'neverEqualsFloatType' => [
+                '<?php
+                    $a = 4.0;
+                    if ($a === 4.1) {
+                        // do something
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'alwaysIdenticalFloatType' => [
+                '<?php
+                    $a = 4.1;
+                    if ($a === 4.1) {
+                        // do something
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'alwaysNotIdenticalFloatType' => [
+                '<?php
+                    $a = 4.0;
+                    if ($a !== 4.1) {
+                        // do something
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'neverNotIdenticalFloatType' => [
+                '<?php
+                    $a = 4.1;
+                    if ($a !== 4.1) {
+                        // do something
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'SKIPPED-phpstanPostedArrayTest' => [
                 '<?php
                     $array = [1, 2, 3];

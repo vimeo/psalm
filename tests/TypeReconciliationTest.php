@@ -880,6 +880,28 @@ class TypeReconciliationTest extends TestCase
 
                     if ($a) {}',
             ],
+            'removeStringWithIsScalar' => [
+                '<?php
+                    $a = rand(0, 1) ? "hello" : null;
+
+                    if (is_scalar($a)) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$a' => 'null',
+                ],
+            ],
+            'removeNullWithIsScalar' => [
+                '<?php
+                    $a = rand(0, 1) ? "hello" : null;
+
+                    if (!is_scalar($a)) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -1029,6 +1051,24 @@ class TypeReconciliationTest extends TestCase
 
                     if ($a) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'allRemovalOfStringWithIsScalar' => [
+                '<?php
+                    $a = rand(0, 1) ? "hello" : "goodbye";
+
+                    if (is_scalar($a)) {
+                        exit;
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'noRemovalOfStringWithIsScalar' => [
+                '<?php
+                    $a = rand(0, 1) ? "hello" : "goodbye";
+
+                    if (!is_scalar($a)) {
+                        exit;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
