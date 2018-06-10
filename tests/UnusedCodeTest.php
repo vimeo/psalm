@@ -229,7 +229,7 @@ class UnusedCodeTest extends TestCase
                     $m->modifyFoo("value2");
                     echo $m->getFoo();',
             ],
-            'usedTraitMethod' => [
+            'usedTraitMethodWithExplicitCall' => [
                 '<?php
                     class A {
                         public function foo(): void {
@@ -717,6 +717,22 @@ class UnusedCodeTest extends TestCase
                     class A { }
                     new A();',
             ],
+            'usedTraitMethodWithImplicitCall' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+                    trait T {
+                        public function foo() : void {}
+                    }
+                    class B extends A {
+                        use T;
+                    }
+                    function takesA(A $a) : void {
+                        $a->foo();
+                    }
+                    takesA(new B);'
+            ],
         ];
     }
 
@@ -1066,6 +1082,25 @@ class UnusedCodeTest extends TestCase
                         $a = "foo";
                     }',
                 'error_message' => 'UnevaluatedCode',
+            ],
+            'unusedTraitMethodInParent' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+                    trait T {
+                        public function foo() : void {}
+
+                        public function bar() : void {}
+                    }
+                    class B extends A {
+                        use T;
+                    }
+                    function takesA(A $a) : void {
+                        $a->foo();
+                    }
+                    takesA(new B);',
+                'error_message' => 'PossiblyUnusedMethod',
             ],
         ];
     }
