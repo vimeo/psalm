@@ -5,6 +5,7 @@ use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Stmt\PropertyProperty;
 use Psalm\Checker\ClassLikeChecker;
+use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
@@ -256,19 +257,23 @@ class PropertyAssignmentChecker
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
                 $property_ids[] = $property_id;
 
-                if ($lhs_var_id !== '$this'
-                    && $lhs_type_part->value !== $context->self
-                    && $codebase->methodExists($lhs_type_part->value . '::__set')
+                $statements_checker_source = $statements_checker->getSource();
+
+                if ($codebase->methodExists($lhs_type_part->value . '::__set')
+                    && (!$statements_checker_source instanceof FunctionLikeChecker
+                        || $statements_checker_source->getMethodId() !== $lhs_type_part->value . '::__set')
                     && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
                     && (!$codebase->properties->propertyExists($property_id)
-                        || ClassLikeChecker::checkPropertyVisibility(
-                            $property_id,
-                            $context->self,
-                            $statements_checker->getSource(),
-                            new CodeLocation($statements_checker->getSource(), $stmt),
-                            $statements_checker->getSuppressedIssues(),
-                            false
-                        ) !== true
+                        || ($lhs_var_id !== '$this'
+                            && $lhs_type_part->value !== $context->self
+                            && ClassLikeChecker::checkPropertyVisibility(
+                                $property_id,
+                                $context->self,
+                                $statements_checker_source,
+                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                $statements_checker->getSuppressedIssues(),
+                                false
+                            ) !== true)
                     )
                 ) {
                     $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
@@ -455,12 +460,6 @@ class PropertyAssignmentChecker
                 // because we don't want to be assigning for property declarations
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
-        }
-
-        if ($var_id && count($class_property_types) === 1 && isset($class_property_types[0]->getTypes()['stdClass'])) {
-            $context->vars_in_scope[$var_id] = Type::getMixed();
-
-            return null;
         }
 
         if (!$property_exists) {
@@ -682,28 +681,15 @@ class PropertyAssignmentChecker
         $property_id = $fq_class_name . '::$' . $prop_name;
 
         if (!$codebase->properties->propertyExists($property_id)) {
-            if ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'this') {
-                if (IssueBuffer::accepts(
-                    new UndefinedThisPropertyAssignment(
-                        'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $property_id
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } else {
-                if (IssueBuffer::accepts(
-                    new UndefinedPropertyAssignment(
-                        'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $property_id
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
+            if (IssueBuffer::accepts(
+                new UndefinedPropertyAssignment(
+                    'Static property ' . $property_id . ' is not defined',
+                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    $property_id
+                ),
+                $statements_checker->getSuppressedIssues()
+            )) {
+                return false;
             }
 
             return;

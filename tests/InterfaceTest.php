@@ -435,7 +435,7 @@ class InterfaceTest extends TestCase
                     class C2 implements A { }',
                 'error_message' => 'UndefinedClass',
             ],
-            'noInterfaceProperties' => [
+            'noInterfacePropertyFetch' => [
                 '<?php
                     interface A { }
 
@@ -443,6 +443,15 @@ class InterfaceTest extends TestCase
                         if ($a->bar) {
 
                         }
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'noInterfacePropertyAssignment' => [
+                '<?php
+                    interface A { }
+
+                    function fooFoo(A $a): void {
+                        $a->bar = 5;
                     }',
                 'error_message' => 'NoInterfaceProperties',
             ],
