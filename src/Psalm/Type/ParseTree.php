@@ -54,11 +54,11 @@ class ParseTree
                     throw new TypeParseTreeException('Unexpected token ' . $type_token);
 
                 case '[':
-                    if ($next_token !== ']') {
+                    if ($current_leaf instanceof ParseTree\Root) {
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
 
-                    if ($current_leaf instanceof ParseTree\Root) {
+                    if ($next_token !== ']') {
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
 
@@ -143,6 +143,11 @@ class ParseTree
                     break;
 
                 case ',':
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
+
+
                     if (!$current_leaf->parent) {
                         throw new TypeParseTreeException('Cannot parse comma without a parent node');
                     }
@@ -213,6 +218,10 @@ class ParseTree
                     break;
 
                 case ':':
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
+
                     $current_parent = $current_leaf->parent;
 
                     if ($current_leaf instanceof ParseTree\CallableTree) {
@@ -277,6 +286,10 @@ class ParseTree
                     break;
 
                 case '|':
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        throw new TypeParseTreeException('Unexpected token ' . $type_token);
+                    }
+
                     $added_null = false;
 
                     $current_parent = $current_leaf->parent;
@@ -321,6 +334,12 @@ class ParseTree
                     break;
 
                 case '&':
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        throw new TypeParseTreeException(
+                            'Unexpected &'
+                        );
+                    }
+
                     $current_parent = $current_leaf->parent;
 
                     if ($current_parent && $current_parent instanceof ParseTree\IntersectionTree) {

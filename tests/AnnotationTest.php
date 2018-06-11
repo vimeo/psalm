@@ -1426,6 +1426,14 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'badAmpersand' => [
+                '<?php
+                    /** @return &array */
+                    function foo() : array {
+                        return [];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
