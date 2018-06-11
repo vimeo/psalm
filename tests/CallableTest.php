@@ -162,6 +162,14 @@ class CallableTest extends TestCase
                     '$f' => 'array{0:string, 1:string}',
                 ],
             ],
+            'arrayMapClosureVar' => [
+                '<?php
+                    $mirror = function(int $i) : int { return $i; };
+                    $a = array_map($mirror, [1, 2, 3]);',
+                'assertions' => [
+                    '$a' => 'array{0:int, 1:int, 2:int}',
+                ],
+            ],
             'arrayCallableMethod' => [
                 '<?php
                     class A {

@@ -528,9 +528,11 @@ class FunctionChecker extends FunctionLikeChecker
                 $generic_key_type = Type::getInt();
             }
 
-            if ($function_call_arg->value instanceof PhpParser\Node\Expr\Closure
-                && isset($function_call_arg->value->inferredType)
-                && ($closure_atomic_type = $function_call_arg->value->inferredType->getTypes()['Closure'])
+            if (isset($function_call_arg->value->inferredType)
+                && ($first_arg_atomic_types = $function_call_arg->value->inferredType->getTypes())
+                && ($closure_atomic_type = isset($first_arg_atomic_types['Closure'])
+                    ? $first_arg_atomic_types['Closure']
+                    : null)
                 && $closure_atomic_type instanceof Type\Atomic\Fn
             ) {
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
