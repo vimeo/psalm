@@ -563,6 +563,15 @@ class CallableTest extends TestCase
                     /** @param callable(mixed):?A $a */
                     function foo(callable $a): void {}',
             ],
+            'voidReturningArrayMap' => [
+                '<?php
+                    array_map(
+                        function(int $i) : void {
+                            echo $i;
+                        },
+                        [1, 2, 3]
+                    );',
+            ],
         ];
     }
 
@@ -857,6 +866,20 @@ class CallableTest extends TestCase
                 '<?php
                     $a = function() use ($i) {};',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'voidReturningArrayMap' => [
+                '<?php
+                    $arr = array_map(
+                        function(int $i) : void {
+                            echo $i;
+                        },
+                        [1, 2, 3]
+                    );
+
+                    foreach ($arr as $a) {
+                        if ($a) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

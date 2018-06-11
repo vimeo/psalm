@@ -131,9 +131,7 @@ class FunctionChecker extends FunctionLikeChecker
                 case 'array_map':
                     return self::getArrayMapReturnType(
                         $statements_checker,
-                        $call_args,
-                        $code_location,
-                        $suppressed_issues
+                        $call_args
                     );
 
                 case 'array_filter':
@@ -496,9 +494,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     private static function getArrayMapReturnType(
         StatementsChecker $statements_checker,
-        $call_args,
-        CodeLocation $code_location,
-        array $suppressed_issues
+        $call_args
     ) {
         $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
 
@@ -538,15 +534,7 @@ class FunctionChecker extends FunctionLikeChecker
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
                 if ($closure_return_type->isVoid()) {
-                    IssueBuffer::accepts(
-                        new InvalidReturnType(
-                            'No return type could be found in the closure passed to array_map',
-                            $code_location
-                        ),
-                        $suppressed_issues
-                    );
-
-                    return Type::getArray();
+                    $closure_return_type = Type::getNull();
                 }
 
                 $inner_type = clone $closure_return_type;
