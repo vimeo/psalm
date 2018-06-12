@@ -252,6 +252,10 @@ class ParseTree
                         throw new TypeParseTreeException('Unexpected LHS of property');
                     }
 
+                    if (!$current_parent instanceof ParseTree\ObjectLikeTree) {
+                        throw new TypeParseTreeException('Saw : outside of object-like array');
+                    }
+
                     $new_parent_leaf = new ParseTree\ObjectLikePropertyTree($current_leaf->value, $current_parent);
                     $new_parent_leaf->possibly_undefined = $last_token === '?';
                     $current_leaf->parent = $new_parent_leaf;
