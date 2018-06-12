@@ -399,6 +399,21 @@ class Union
             $this->id = null;
 
             return true;
+        } elseif ($type_string === 'string' && $this->literal_string_types) {
+            foreach ($this->literal_string_types as $literal_key => $_) {
+                unset($this->types[$literal_key]);
+            }
+            $this->literal_string_types = [];
+        } elseif ($type_string === 'int' && $this->literal_int_types) {
+            foreach ($this->literal_int_types as $literal_key => $_) {
+                unset($this->types[$literal_key]);
+            }
+            $this->literal_int_types = [];
+        } elseif ($type_string === 'float' && $this->literal_float_types) {
+            foreach ($this->literal_float_types as $literal_key => $_) {
+                unset($this->types[$literal_key]);
+            }
+            $this->literal_float_types = [];
         }
 
         return false;
