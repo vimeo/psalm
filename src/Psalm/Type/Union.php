@@ -743,12 +743,14 @@ class Union
 
         foreach ($this->types as $key => $atomic_type) {
             if (isset($template_types[$key])) {
-                $keys_to_unset[] = $key;
-                $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
+                if ($template_types[$key] !== $key) {
+                    $keys_to_unset[] = $key;
+                    $this->types[$template_types[$key]] = Atomic::create($template_types[$key]);
 
-                if ($input_type) {
-                    $generic_params[$key] = clone $input_type;
-                    $generic_params[$key]->setFromDocblock();
+                    if ($input_type) {
+                        $generic_params[$key] = clone $input_type;
+                        $generic_params[$key]->setFromDocblock();
+                    }
                 }
             } else {
                 $matching_atomic_type = null;
