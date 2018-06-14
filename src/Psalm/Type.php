@@ -594,6 +594,7 @@ abstract class Type
 
             if ($string_type_token[0] === '"'
                 || $string_type_token[0] === '\''
+                || $string_type_token === '0'
                 || preg_match('/[1-9]/', $string_type_token[0])
             ) {
                 continue;
@@ -651,10 +652,6 @@ abstract class Type
     {
         if ($class === '') {
             throw new \InvalidArgumentException('$class cannot be empty');
-        }
-
-        if ($class === '0') {
-            throw new TypeParseTreeException('Unrecognised class 0');
         }
 
         if ($class[0] === '\\') {
