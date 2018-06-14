@@ -649,8 +649,12 @@ abstract class Type
      */
     public static function getFQCLNFromString($class, Aliases $aliases)
     {
-        if (empty($class)) {
+        if ($class === '') {
             throw new \InvalidArgumentException('$class cannot be empty');
+        }
+
+        if ($class === '0') {
+            throw new TypeParseTreeException('Unrecognised class 0');
         }
 
         if ($class[0] === '\\') {
