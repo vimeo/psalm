@@ -666,7 +666,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     {
         $class_storage = null;
 
-        if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\Function_) {
+        if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             $cased_function_id = '@method ' . $stmt->name->name;
 
             $storage = new FunctionLikeStorage();

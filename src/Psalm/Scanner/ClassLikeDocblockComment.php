@@ -26,7 +26,7 @@ class ClassLikeDocblockComment
     public $properties = [];
 
     /**
-     * @var array<int, \PhpParser\Node\Stmt\Function_>
+     * @var array<int, \PhpParser\Node\Stmt\ClassMethod>
      */
     public $methods = [];
 

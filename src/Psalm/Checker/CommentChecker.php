@@ -426,7 +426,7 @@ class CommentChecker
 
                 $method_entry = preg_replace('/[a-zA-Z\\\\0-9_]+(\|[a-zA-Z\\\\0-9_]+)+ \$/', '$', $method_entry);
 
-                $php_string = '<?php ' . $return_docblock . ' function ' . $method_entry . '{}';
+                $php_string = '<?php class A { ' . $return_docblock . ' public function ' . $method_entry . '{} }';
 
                 try {
                     $statements = \Psalm\Provider\StatementsProvider::parseStatements($php_string);
@@ -434,11 +434,16 @@ class CommentChecker
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
-                if (!$statements[0] instanceof \PhpParser\Node\Stmt\Function_) {
+                if (!$statements[0] instanceof \PhpParser\Node\Stmt\Class_
+                    || !isset($statements[0]->stmts[0])
+                    || !$statements[0]->stmts[0] instanceof \PhpParser\Node\Stmt\ClassMethod
+                ) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
-                $info->methods[] = $statements[0];
+
+
+                $info->methods[] = $statements[0]->stmts[0];
             }
         }
 
