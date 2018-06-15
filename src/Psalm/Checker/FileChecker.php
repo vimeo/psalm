@@ -143,9 +143,9 @@ class FileChecker extends SourceChecker implements StatementsSource
     }
 
     /**
-     * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @param  array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>  $stmts
      *
-     * @return array<int, PhpParser\Node\Stmt>
+     * @return array<int, PhpParser\Node\Expr|PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts)
     {
@@ -193,13 +193,13 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-            $class_checker = new ClassChecker($stmt, $this, $stmt->name->name);
+            $class_checker = new ClassChecker($stmt, $this, $stmt->name);
 
             $fq_class_name = $class_checker->getFQCLN();
 
             $this->class_checkers_to_analyze[strtolower($fq_class_name)] = $class_checker;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-            $class_checker = new InterfaceChecker($stmt, $this, $stmt->name->name);
+            $class_checker = new InterfaceChecker($stmt, $this, $stmt->name);
 
             $fq_class_name = $class_checker->getFQCLN();
 

@@ -706,12 +706,8 @@ class PropertyTypeTest extends TestCase
                             $this->stmts = $stmts;
                         }
 
-                        public function getSubNodeNames() : array {
+                        public function getSubNodeNames() {
                             return array("stmts");
-                        }
-
-                        public function getType() : string {
-                            return "Stmt_Finally";
                         }
                     }',
                 'assertions' => [],

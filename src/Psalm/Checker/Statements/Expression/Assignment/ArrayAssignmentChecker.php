@@ -408,11 +408,11 @@ class ArrayAssignmentChecker
         $root_array_expr->inferredType = $root_type;
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
+            if (is_string($root_array_expr->name)) {
                 PropertyAssignmentChecker::analyzeInstance(
                     $statements_checker,
                     $root_array_expr,
-                    $root_array_expr->name->name,
+                    $root_array_expr->name,
                     null,
                     $root_type,
                     $context,

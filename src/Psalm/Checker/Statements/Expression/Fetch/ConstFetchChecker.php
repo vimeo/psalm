@@ -83,9 +83,9 @@ class ConstFetchChecker
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
     ) {
-        if ($context->check_consts
-            && $stmt->class instanceof PhpParser\Node\Name
-            && $stmt->name instanceof PhpParser\Node\Identifier
+        if ($context->check_consts &&
+            $stmt->class instanceof PhpParser\Node\Name &&
+            is_string($stmt->name)
         ) {
             $first_part_lc = strtolower($stmt->class->parts[0]);
 
@@ -117,7 +117,7 @@ class ConstFetchChecker
                     $statements_checker->getAliases()
                 );
 
-                if (!$context->inside_class_exists || $stmt->name->name !== 'class') {
+                if (!$context->inside_class_exists || $stmt->name !== 'class') {
                     if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
                         $statements_checker,
                         $fq_class_name,
@@ -130,7 +130,7 @@ class ConstFetchChecker
                 }
             }
 
-            if ($stmt->name->name === 'class') {
+            if ($stmt->name === 'class') {
                 $stmt->inferredType = Type::getClassString($fq_class_name);
 
                 return null;
@@ -168,7 +168,7 @@ class ConstFetchChecker
                 $class_visibility
             );
 
-            if (!isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
+            if (!isset($class_constants[$stmt->name]) && $first_part_lc !== 'static') {
                 $all_class_constants = [];
 
                 if ($fq_class_name !== $context->self) {
@@ -178,7 +178,7 @@ class ConstFetchChecker
                     );
                 }
 
-                if ($all_class_constants && isset($all_class_constants[$stmt->name->name])) {
+                if ($all_class_constants && isset($all_class_constants[$stmt->name])) {
                     if (IssueBuffer::accepts(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
@@ -203,8 +203,8 @@ class ConstFetchChecker
                 return false;
             }
 
-            if (isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
-                $stmt->inferredType = clone $class_constants[$stmt->name->name];
+            if (isset($class_constants[$stmt->name]) && $first_part_lc !== 'static') {
+                $stmt->inferredType = clone $class_constants[$stmt->name];
             } else {
                 $stmt->inferredType = Type::getMixed();
             }

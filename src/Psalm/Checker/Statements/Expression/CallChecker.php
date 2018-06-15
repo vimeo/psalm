@@ -519,9 +519,9 @@ class CallChecker
                 }
 
                 if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
-                    && $arg->value->name instanceof PhpParser\Node\Identifier
+                    && is_string($arg->value->name)
                 ) {
-                    $var_id = '$' . $arg->value->name->name;
+                    $var_id = '$' . $arg->value->name;
                 } else {
                     $var_id = ExpressionChecker::getVarId(
                         $arg->value,
@@ -772,10 +772,10 @@ class CallChecker
 
                             $offset_value_type = null;
 
-                            if ($arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                                && $arg->value->class instanceof PhpParser\Node\Name
-                                && $arg->value->name instanceof PhpParser\Node\Identifier
-                                && strtolower($arg->value->name->name) === 'class'
+                            if ($arg->value instanceof PhpParser\Node\Expr\ClassConstFetch &&
+                                $arg->value->class instanceof PhpParser\Node\Name &&
+                                is_string($arg->value->name) &&
+                                strtolower($arg->value->name) === 'class'
                             ) {
                                 $offset_value_type = Type::parseString(
                                     ClassLikeChecker::getFQCLNFromNameObject(
@@ -1832,8 +1832,8 @@ class CallChecker
         }
 
         if ($class_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $class_arg->name instanceof PhpParser\Node\Identifier
-            && strtolower($class_arg->name->name) === 'class'
+            && is_string($class_arg->name)
+            && strtolower($class_arg->name) === 'class'
             && $class_arg->class instanceof PhpParser\Node\Name
         ) {
             $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(

@@ -79,8 +79,8 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                     $fq_class_name = $class_storage->name;
 
-                    if ($stmt->name instanceof PhpParser\Node\Identifier && $class_storage->user_defined) {
-                        $method_id = $fq_class_name . '::' . strtolower($stmt->name->name);
+                    if (is_string($stmt->name) && $class_storage->user_defined) {
+                        $method_id = $fq_class_name . '::' . strtolower($stmt->name);
 
                         $old_context_include_location = $context->include_location;
                         $old_self = $context->self;
@@ -268,12 +268,12 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
             $method_id = null;
 
-            if ($stmt->name instanceof PhpParser\Node\Identifier
-                && !$codebase->methodExists($fq_class_name . '::__callStatic')
-                && !$is_mock
+            if (is_string($stmt->name) &&
+                !$codebase->methodExists($fq_class_name . '::__callStatic') &&
+                !$is_mock
             ) {
-                $method_id = $fq_class_name . '::' . strtolower($stmt->name->name);
-                $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
+                $method_id = $fq_class_name . '::' . strtolower($stmt->name);
+                $cased_method_id = $fq_class_name . '::' . $stmt->name;
 
                 $source_method_id = $source instanceof FunctionLikeChecker
                     ? $source->getMethodId()

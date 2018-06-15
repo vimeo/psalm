@@ -235,7 +235,7 @@ class AssignmentChecker
             }
         }
 
-        if ($assign_var instanceof PhpParser\Node\Expr\Variable && is_string($assign_var->name) && $var_id) {
+        if ($assign_var instanceof PhpParser\Node\Expr\Variable && $var_id) {
             $context->vars_in_scope[$var_id] = $assign_value_type;
             $context->vars_possibly_in_scope[$var_id] = true;
             $context->assigned_var_ids[$var_id] = true;
@@ -408,14 +408,14 @@ class AssignmentChecker
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
+            if (!is_string($assign_var->name)) {
                 if (ExpressionChecker::analyze($statements_checker, $assign_var->name, $context) === false) {
                     return false;
                 }
             }
 
-            if ($assign_var->name instanceof PhpParser\Node\Identifier) {
-                $prop_name = $assign_var->name->name;
+            if (is_string($assign_var->name)) {
+                $prop_name = $assign_var->name;
             } elseif (isset($assign_var->name->inferredType)
                 && $assign_var->name->inferredType->isSingleStringLiteral()
             ) {
@@ -443,7 +443,8 @@ class AssignmentChecker
                 $context->vars_possibly_in_scope[$var_id] = true;
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\StaticPropertyFetch &&
-            $assign_var->class instanceof PhpParser\Node\Name
+            $assign_var->class instanceof PhpParser\Node\Name &&
+            is_string($assign_var->name)
         ) {
             if (ExpressionChecker::analyze($statements_checker, $assign_var, $context) === false) {
                 return false;

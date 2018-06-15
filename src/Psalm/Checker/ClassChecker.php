@@ -84,10 +84,11 @@ class ClassChecker extends ClassLikeChecker
 
         $storage = $this->storage;
 
-        if ($class->name && preg_match(
+        if (preg_match(
             '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',
             $fq_class_name
-        )) {
+        )
+        ) {
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
@@ -96,7 +97,7 @@ class ClassChecker extends ClassLikeChecker
                     $class_name . ' is a reserved word',
                     new CodeLocation(
                         $this,
-                        $class->name,
+                        $class,
                         null,
                         true
                     ),
@@ -140,7 +141,7 @@ class ClassChecker extends ClassLikeChecker
                 if ($parent_class_storage->deprecated) {
                     $code_location = new CodeLocation(
                         $this,
-                        $class->extends,
+                        $class,
                         $class_context ? $class_context->include_location : null,
                         true
                     );
@@ -193,7 +194,7 @@ class ClassChecker extends ClassLikeChecker
 
                 $code_location = new CodeLocation(
                     $this,
-                    $class->name ? $class->name : $class,
+                    $class,
                     $class_context ? $class_context->include_location : null,
                     true
                 );
@@ -298,7 +299,7 @@ class ClassChecker extends ClassLikeChecker
                             $this->fq_class_name . ', defined abstract in ' . $declaring_class_name,
                             new CodeLocation(
                                 $this,
-                                $class->name ? $class->name : $class,
+                                $class,
                                 $class_context->include_location,
                                 true
                             )
@@ -395,7 +396,7 @@ class ClassChecker extends ClassLikeChecker
                     $global_context
                 );
 
-                if ($stmt->name->name === '__construct') {
+                if ($stmt->name === '__construct') {
                     $constructor_checker = $method_checker;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
@@ -478,6 +479,7 @@ class ClassChecker extends ClassLikeChecker
                     && isset($storage->declaring_method_ids['__construct'])
                     && $class->extends
                 ) {
+                    $class_parent = $class->extends;
                     list($construct_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
 
                     $constructor_class_storage = $classlike_storage_provider->get($construct_fqcln);
@@ -510,22 +512,20 @@ class ClassChecker extends ClassLikeChecker
                         );
 
                         $fake_constructor_stmts = [
-                            new PhpParser\Node\Stmt\Expression(
-                                new PhpParser\Node\Expr\StaticCall(
-                                    new PhpParser\Node\Name(['parent']),
-                                    new PhpParser\Node\Identifier('__construct'),
-                                    $fake_constructor_stmt_args,
-                                    [
-                                        'line' => $class->extends->getLine(),
-                                        'startFilePos' => $class->extends->getAttribute('startFilePos'),
-                                        'endFilePos' => $class->extends->getAttribute('endFilePos'),
-                                    ]
-                                )
+                            new PhpParser\Node\Expr\StaticCall(
+                                new PhpParser\Node\Name(['parent']),
+                                '__construct',
+                                $fake_constructor_stmt_args,
+                                [
+                                    'line' => $class_parent->getLine(),
+                                    'startFilePos' => $class_parent->getAttribute('startFilePos'),
+                                    'endFilePos' => $class_parent->getAttribute('endFilePos'),
+                                ]
                             ),
                         ];
 
                         $fake_stmt = new PhpParser\Node\Stmt\ClassMethod(
-                            new PhpParser\Node\Identifier('__construct'),
+                            '__construct',
                             [
                                 'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
                                 'params' => $fake_constructor_params,
@@ -713,7 +713,7 @@ class ClassChecker extends ClassLikeChecker
                             $global_context
                         );
 
-                        if ($trait_stmt->name->name === '__construct') {
+                        if ($trait_stmt->name === '__construct') {
                             $constructor_checker = $trait_method_checker;
                         }
                     } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
@@ -750,7 +750,7 @@ class ClassChecker extends ClassLikeChecker
 
         if (!$comment || !$comment->getText()) {
             $fq_class_name = $source->getFQCLN();
-            $property_name = $stmt->props[0]->name->name;
+            $property_name = $stmt->props[0]->name;
 
             $codebase = $project_checker->codebase;
 
@@ -862,7 +862,7 @@ class ClassChecker extends ClassLikeChecker
             $global_context ? clone $global_context : null
         );
 
-        if ($stmt->name->name !== '__construct'
+        if ($stmt->name !== '__construct'
             && $config->reportIssueInFile('InvalidReturnType', $source->getFilePath())
         ) {
             $return_type_location = null;
@@ -882,18 +882,16 @@ class ClassChecker extends ClassLikeChecker
 
                 $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $self_class);
 
-                $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])
-                    ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
+                $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name)])
+                    ? $class_storage->overridden_method_ids[strtolower($stmt->name)]
                     : [];
 
                 if ($actual_method_storage->overridden_downstream) {
                     $overridden_method_ids[] = 'overridden::downstream';
                 }
 
-                if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name->name)])) {
-                    $interface_method_ids = $class_storage->interface_method_ids[strtolower($stmt->name->name)];
-
-                    foreach ($interface_method_ids as $interface_method_id) {
+                if (!$return_type && isset($class_storage->interface_method_ids[strtolower($stmt->name)])) {
+                    foreach ($class_storage->interface_method_ids[strtolower($stmt->name)] as $interface_method_id) {
                         list($interface_class) = explode('::', $interface_method_id);
 
                         $interface_return_type = $codebase->methods->getMethodReturnType(

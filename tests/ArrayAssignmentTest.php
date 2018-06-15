@@ -723,7 +723,7 @@ class ArrayAssignmentTest extends TestCase
                         /**
                          * @psalm-suppress InvalidArrayOffset
                          * @psalm-suppress MixedOperand
-                         * @psalm-suppress PossiblyUndefinedArrayOffset
+                         * @psalm-suppress PossiblyUndefinedGlobalVariable
                          */
                         $a["b"]["d"] += $a["b"][$i];
                     }',
@@ -962,7 +962,7 @@ class ArrayAssignmentTest extends TestCase
                     }
 
                     echo $a[0];',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'mixedStringOffsetAssignment' => [
                 '<?php
@@ -1022,7 +1022,7 @@ class ArrayAssignmentTest extends TestCase
                     if (array_key_exists("a", $a)) {
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'possiblyUndefinedArrayAccessWithArrayKeyExistsOnMissingKey' => [
                 '<?php
@@ -1035,7 +1035,7 @@ class ArrayAssignmentTest extends TestCase
                     if (array_key_exists("b", $a)) {
                         echo $a[0];
                     }',
-                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
             'duplicateStringArrayKey' => [
                 '<?php
