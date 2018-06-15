@@ -13,7 +13,7 @@ class ScopeChecker
     const ACTION_RETURN = 'RETURN';
 
     /**
-     * @param   array<PhpParser\Node\Stmt>   $stmts
+     * @param   array<PhpParser\Node>   $stmts
      *
      * @return  bool
      */
@@ -74,7 +74,7 @@ class ScopeChecker
 
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
                 $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+                $stmt instanceof PhpParser\Node\Expr\Exit_
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
                     return [self::ACTION_RETURN];
@@ -83,14 +83,14 @@ class ScopeChecker
                 return [self::ACTION_END];
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                    && $stmt->expr->name instanceof PhpParser\Node\Name
-                    && $stmt->expr->name->parts === ['trigger_error']
-                    && isset($stmt->expr->args[1])
-                    && $stmt->expr->args[1]->value instanceof PhpParser\Node\Expr\ConstFetch
+            if ($stmt instanceof PhpParser\Node\Expr) {
+                if ($stmt instanceof PhpParser\Node\Expr\FuncCall
+                    && $stmt->name instanceof PhpParser\Node\Name
+                    && $stmt->name->parts === ['trigger_error']
+                    && isset($stmt->args[1])
+                    && $stmt->args[1]->value instanceof PhpParser\Node\Expr\ConstFetch
                     && in_array(
-                        end($stmt->expr->args[1]->value->name->parts),
+                        end($stmt->args[1]->value->name->parts),
                         ['E_ERROR', 'E_PARSE', 'E_CORE_ERROR', 'E_COMPILE_ERROR', 'E_USER_ERROR']
                     )
                 ) {
@@ -98,24 +98,24 @@ class ScopeChecker
                 }
 
                 if ($exit_functions) {
-                    if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                        || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
+                    if ($stmt instanceof PhpParser\Node\Expr\FuncCall
+                        || $stmt instanceof PhpParser\Node\Expr\StaticCall
                     ) {
-                        if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall) {
+                        if ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
                             /** @var string|null */
-                            $resolved_name = $stmt->expr->name->getAttribute('resolvedName');
+                            $resolved_name = $stmt->name->getAttribute('resolvedName');
 
                             if ($resolved_name && isset($exit_functions[strtolower($resolved_name)])) {
                                 return [self::ACTION_END];
                             }
-                        } elseif ($stmt->expr->class instanceof PhpParser\Node\Name
-                            && $stmt->expr->name instanceof PhpParser\Node\Identifier
+                        } elseif ($stmt->class instanceof PhpParser\Node\Name
+                            && is_string($stmt->name)
                         ) {
                             /** @var string|null */
-                            $resolved_class_name = $stmt->expr->class->getAttribute('resolvedName');
+                            $resolved_class_name = $stmt->class->getAttribute('resolvedName');
 
                             if ($resolved_class_name
-                                && isset($exit_functions[strtolower($resolved_class_name . '::' . $stmt->expr->name)])
+                                && isset($exit_functions[strtolower($resolved_class_name . '::' . $stmt->name)])
                             ) {
                                 return [self::ACTION_END];
                             }

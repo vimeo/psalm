@@ -79,7 +79,6 @@
         <PossiblyNullReference errorLevel="info" />
         <PossiblyUndefinedGlobalVariable errorLevel="info" />
         <PossiblyUndefinedVariable errorLevel="info" />
-        <PossiblyUndefinedArrayOffset errorLevel="info" />
         <PossiblyUndefinedMethod errorLevel="info" />
 
         <!-- level 5 issues - should be avoided at mosts costs... -->
@@ -104,7 +103,7 @@
         <FalsableReturnStatement errorLevel="info" />
 
         <MoreSpecificImplementedParamType errorLevel="info" />
-        <LessSpecificImplementedReturnType errorLevel="info" />
+        <MoreSpecificImplementedReturnType errorLevel="info" />
 
         <InvalidReturnStatement errorLevel="info" />
         <InvalidReturnType errorLevel="info" />

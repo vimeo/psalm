@@ -9,6 +9,7 @@
     <!-- This is a vendor file that we don't want to bother linting. -->
     <exclude-pattern>src/Psalm/CallMap.php</exclude-pattern>
     <exclude-pattern>src/Psalm/Visitor/SimpleNameResolver.php</exclude-pattern>
+    <exclude-pattern>src/Psalm/Visitor/NameContext.php</exclude-pattern>
 
     <!-- These are just examples and stub classes/files, so it doesn't really matter if they're PSR-2 compliant. -->
     <exclude-pattern>src/Psalm/Stubs/</exclude-pattern>

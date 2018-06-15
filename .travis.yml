@@ -3,14 +3,12 @@ language: php
 stages:
   - Code style analysis
   - test
-  - Code coverage analysis
   - Phar build
 
 php:
+  - 5.6
   - 7.0
   - 7.1
-  - 7.2
-  - nightly
 
 env:
   matrix:
@@ -46,28 +44,10 @@ script:
 # Base test matrix (php/env)
 matrix:
   fast_finish: true
-  allow_failures:
-    - php: nightly
-  exclude: # covered in Code coverage stage
-    - php: 7.2
-      env: DEPS="high"
 
 # Additional stages
 jobs:
   include:
-    - stage: Code coverage analysis
-      php: 7.2
-      # don't disable xdebug here
-      env: DEPS="high" XDEBUG="true"
-      after_success:
-        - travis_retry php vendor/bin/php-coveralls -v
-
-    - stage: Code style analysis
-      php: 7.2
-      env: DEPS="high"
-      script:
-        - vendor/bin/phpcs
-
       # always build phar, but only deploy on tag builds
     - stage: Phar build
       php: 7.1

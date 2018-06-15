@@ -59,34 +59,23 @@ class ReturnTypeCollector
                 || $stmt instanceof PhpParser\Node\Stmt\Continue_
             ) {
                 break;
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && ($stmt->expr instanceof PhpParser\Node\Expr\Yield_
-                    || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom)
-            ) {
-                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr));
-            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_
-                || $stmt instanceof PhpParser\Node\Expr\YieldFrom
-            ) {
+            } elseif ($stmt instanceof PhpParser\Node\Expr\Yield_ || $stmt instanceof PhpParser\Node\Expr\YieldFrom) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt));
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && $stmt->expr instanceof PhpParser\Node\Expr\Assign
-            ) {
+            } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
-                        [$stmt->expr->expr],
+                        [$stmt->expr],
                         $yield_types,
                         $ignore_nullable_issues,
                         $ignore_falsable_issues
                     )
                 );
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
-                && ($stmt->expr instanceof PhpParser\Node\Expr\MethodCall
-                    || $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                    || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
-                )
+            } elseif ($stmt instanceof PhpParser\Node\Expr\MethodCall
+                || $stmt instanceof PhpParser\Node\Expr\FuncCall
+                || $stmt instanceof PhpParser\Node\Expr\StaticCall
             ) {
-                foreach ($stmt->expr->args as $arg) {
+                foreach ($stmt->args as $arg) {
                     $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($arg->value));
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -268,7 +257,7 @@ class ReturnTypeCollector
      *
      * @return  array<int, Atomic>
      */
-    protected static function getYieldTypeFromExpression(PhpParser\Node\Expr $stmt)
+    protected static function getYieldTypeFromExpression($stmt)
     {
         if ($stmt instanceof PhpParser\Node\Expr\Yield_) {
             $key_type = null;

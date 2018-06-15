@@ -7,7 +7,7 @@ namespace Psalm\Visitor;
 use PhpParser;
 use PhpParser\Error;
 use PhpParser\ErrorHandler;
-use PhpParser\NameContext;
+use Psalm\Visitor\NameContext;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
@@ -110,7 +110,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
         $type |= $use->type;
 
         $this->nameContext->addAlias(
-            $name, (string) $use->getAlias(), $type, $use->getAttributes()
+            $name, $use->alias, $type, $use->getAttributes()
         );
     }
 
@@ -127,7 +127,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
 
     /**
      * @param  PhpParser\Node|string|null $node
-     * @return null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType
+     * @return null|string|PhpParser\Node\Name|PhpParser\Node\NullableType
      * @psalm-suppress MoreSpecificReturnType
      * @psalm-suppress LessSpecificReturnStatement
      */

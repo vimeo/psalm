@@ -41,7 +41,7 @@ class PropertyFetchChecker
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context
     ) {
-        if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+        if (!is_string($stmt->name)) {
             if (ExpressionChecker::analyze($statements_checker, $stmt->name, $context) === false) {
                 return false;
             }
@@ -51,8 +51,8 @@ class PropertyFetchChecker
             return false;
         }
 
-        if ($stmt->name instanceof PhpParser\Node\Identifier) {
-            $prop_name = $stmt->name->name;
+        if (is_string($stmt->name)) {
+            $prop_name = $stmt->name;
         } elseif (isset($stmt->name->inferredType)
             && $stmt->name->inferredType->isSingleStringLiteral()
         ) {
@@ -88,7 +88,7 @@ class PropertyFetchChecker
             if ($context->collect_references
                 && isset($stmt->var->inferredType)
                 && $stmt->var->inferredType->hasObjectType()
-                && $stmt->name instanceof PhpParser\Node\Identifier
+                && is_string($stmt->name)
             ) {
                 // log the appearance
                 foreach ($stmt->var->inferredType->getTypes() as $lhs_type_part) {
@@ -97,7 +97,7 @@ class PropertyFetchChecker
                             continue;
                         }
 
-                        $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
+                        $property_id = $lhs_type_part->value . '::$' . $stmt->name;
 
                         $codebase->properties->propertyExists(
                             $property_id,
@@ -535,8 +535,8 @@ class PropertyFetchChecker
             $stmt->class->inferredType = $fq_class_name ? new Type\Union([new TNamedObject($fq_class_name)]) : null;
         }
 
-        if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
-            $prop_name = $stmt->name->name;
+        if (is_string($stmt->name)) {
+            $prop_name = $stmt->name;
         } elseif (isset($stmt->name->inferredType)
             && $stmt->name->inferredType->isSingleStringLiteral()
         ) {

@@ -191,6 +191,12 @@ class StubTest extends TestCase
      */
     public function testPolyfilledFunction()
     {
+        if (version_compare(PHP_VERSION, '7.1.0', '<')) {
+            $this->markTestSkipped('Test case requires PHP 7.1.');
+
+            return;
+        }
+
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),

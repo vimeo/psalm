@@ -674,7 +674,7 @@ class PropertyAssignmentChecker
 
         $prop_name = $stmt->name;
 
-        if (!$prop_name instanceof PhpParser\Node\Identifier) {
+        if (!is_string($prop_name)) {
             return;
         }
 
@@ -706,12 +706,12 @@ class PropertyAssignmentChecker
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-            $fq_class_name . '::$' . $prop_name->name
+            $fq_class_name . '::$' . $prop_name
         );
 
         $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
 
-        $property_storage = $class_storage->properties[$prop_name->name];
+        $property_storage = $class_storage->properties[$prop_name];
 
         if ($var_id) {
             $context->vars_in_scope[$var_id] = $assignment_value_type;

@@ -93,7 +93,7 @@ class TryCatchTest extends TestCase
                         }
                     }',
             ],
-            'stopAnalysisAfterBadTryIssue' => [
+            'PHP7-stopAnalysisAfterBadTryIssue' => [
                 '<?php
                     $foo = true;
 
