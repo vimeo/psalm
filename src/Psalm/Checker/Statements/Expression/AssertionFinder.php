@@ -973,7 +973,9 @@ class AssertionFinder
                         $class_node = $second_arg->class;
 
                         if ($class_node->parts === ['static'] || $class_node->parts === ['self']) {
-                            $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $this_class_name]];
+                            if ($this_class_name) {
+                                $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $this_class_name]];
+                            }
                         } elseif ($class_node->parts === ['parent']) {
                             // do nothing
                         } else {
