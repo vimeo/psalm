@@ -19,12 +19,12 @@ class LoopChecker
     /**
      * Checks an array of statements in a loop
      *
-     * @param  array<PhpParser\Node\Stmt>   $stmts
-     * @param  PhpParser\Node\Expr[]        $pre_conditions
-     * @param  PhpParser\Node\Expr[]        $post_expressions
-     * @param  Context                      loop_scope->loop_context
-     * @param  Context                      $loop_scope->loop_parent_context
-     * @param  bool                         $is_do
+     * @param  array<PhpParser\Node\Stmt|PhpParser\Node\Expr>   $stmts
+     * @param  PhpParser\Node\Expr[]                            $pre_conditions
+     * @param  PhpParser\Node\Expr[]                            $post_expressions
+     * @param  Context                                          $loop_scope->loop_context
+     * @param  Context                                          $loop_scope->loop_parent_context
+     * @param  bool                                             $is_do
      *
      * @return false|null
      */

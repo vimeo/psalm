@@ -266,7 +266,7 @@ class ClassScopeTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleProperty',
             ],
-            'privateConstructorInheritanceNoCall' => [
+            'privateConstructorInheritance' => [
                 '<?php
                     class A {
                         private function __construct() { }

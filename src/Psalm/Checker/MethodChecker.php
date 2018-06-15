@@ -11,7 +11,7 @@ use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
 use Psalm\Issue\MoreSpecificImplementedParamType;
-use Psalm\Issue\LessSpecificImplementedReturnType;
+use Psalm\Issue\MoreSpecificImplementedReturnType;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\OverriddenMethodAccess;
 use Psalm\Issue\UndefinedMethod;
@@ -502,12 +502,12 @@ class MethodChecker extends FunctionLikeChecker
                 // is the declared return type more specific than the inferred one?
                 if ($type_coerced) {
                     if (IssueBuffer::accepts(
-                        new LessSpecificImplementedReturnType(
+                        new MoreSpecificImplementedReturnType(
                             'The return type \'' . $guide_method_storage->return_type
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
                             . $implementer_method_storage->return_type . '\'',
-                            $implementer_method_storage->return_type_location ?: $code_location
+                            $implementer_method_storage->location ?: $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -520,7 +520,7 @@ class MethodChecker extends FunctionLikeChecker
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
                             . $implementer_method_storage->return_type . '\'',
-                            $implementer_method_storage->return_type_location ?: $code_location
+                            $implementer_method_storage->location ?: $code_location
                         ),
                         $suppressed_issues
                     )) {

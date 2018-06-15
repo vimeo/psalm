@@ -580,25 +580,6 @@ class A {
 }
 ```
 
-### LessSpecificImplementedReturnType
-
-Emitted when a class implements an interface method but its return type is less specific than the interface method return type
-
-```php
-class A {}
-class B extends A {}
-interface I {
-    /** @return B[] */
-    public function foo();
-}
-class D implements I {
-    /** @return A[] */
-    public function foo() {
-        return [new A, new A];
-    }
-}
-```
-
 ### LessSpecificReturnStatement
 
 Emitted when a return statement is more general than the return type given for the function
@@ -973,6 +954,25 @@ class E extends D {
     /** @param B|C $a */
     public function foo(A $a): void {
         $a->bar();
+    }
+}
+```
+
+### MoreSpecificImplementedReturnType
+
+Emitted when a class implements an interface method but its return type is less specific than the interface method return type
+
+```php
+class A {}
+class B extends A {}
+interface I {
+    /** @return B[] */
+    public function foo();
+}
+class D implements I {
+    /** @return A[] */
+    public function foo() {
+        return [new A, new A];
     }
 }
 ```
@@ -1492,21 +1492,6 @@ class A {
 function foo(?A $a) : void {
     $a->bar();
 }
-```
-
-### PossiblyUndefinedArrayOffset
-
-Emitted when trying to access a possibly undefined array offset
-
-```php
-if (rand(0, 1)) {
-    $arr = ["a" => 1, "b" => 2];
-} else {
-    $arr = ["a" => 3];
-}
-
-echo $arr["b"];
-
 ```
 
 ### PossiblyUndefinedGlobalVariable

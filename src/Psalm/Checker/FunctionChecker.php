@@ -1162,13 +1162,13 @@ class FunctionChecker extends FunctionLikeChecker
                     return Type::getArray();
                 }
 
-                if (count($function_call_arg->value->stmts) === 1 && count($function_call_arg->value->params)) {
+                if (count($function_call_arg->value->stmts) === 1
+                    && count($function_call_arg->value->params)
+                ) {
                     $first_param = $function_call_arg->value->params[0];
                     $stmt = $function_call_arg->value->stmts[0];
 
                     if ($first_param->variadic === false
-                        && $first_param->var instanceof PhpParser\Node\Expr\Variable
-                        && is_string($first_param->var->name)
                         && $stmt instanceof PhpParser\Node\Stmt\Return_
                         && $stmt->expr
                     ) {
@@ -1176,11 +1176,11 @@ class FunctionChecker extends FunctionLikeChecker
 
                         $assertions = isset($stmt->expr->assertions) ? $stmt->expr->assertions : null;
 
-                        if (isset($assertions['$' . $first_param->var->name])) {
+                        if (isset($assertions['$' . $first_param->name])) {
                             $changed_var_ids = [];
 
                             $reconciled_types = Reconciler::reconcileKeyedTypes(
-                                ['$inner_type' => $assertions['$' . $first_param->var->name]],
+                                ['$inner_type' => $assertions['$' . $first_param->name]],
                                 ['$inner_type' => $inner_type],
                                 $changed_var_ids,
                                 ['$inner_type' => true],
@@ -1196,13 +1196,6 @@ class FunctionChecker extends FunctionLikeChecker
                     }
                 }
             }
-
-            return new Type\Union([
-                new Type\Atomic\TArray([
-                    $key_type,
-                    $inner_type,
-                ]),
-            ]);
         }
 
         return new Type\Union([
