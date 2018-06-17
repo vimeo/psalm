@@ -456,6 +456,18 @@ class RedundantConditionTest extends TestCase
                         if ($s !== true ) {}
                     }',
             ],
+            'noRedundantConditionNullableBoolIsFalseOrTrue' => [
+                '<?php
+                    function foo(?bool $s) : void {
+                        if ($s === false ) {} elseif ($s === true) {}
+                    }',
+            ],
+            'noRedundantConditionNullableBoolIsTrueOrFalse' => [
+                '<?php
+                    function foo(?bool $s) : void {
+                        if ($s === true ) {} elseif ($s === false) {}
+                    }',
+            ],
         ];
     }
 

@@ -229,6 +229,12 @@ class AssertionFinder
                     } else {
                         $if_types[$var_name] = [['falsy']];
                     }
+                } elseif ($var_type) {
+                    $notif_types = self::getAssertions($base_conditional, $this_class_name, $source);
+
+                    if (count($notif_types) === 1) {
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    }
                 }
 
                 if ($var_type) {
@@ -257,12 +263,6 @@ class AssertionFinder
                                 // fall through
                             }
                         }
-                    }
-
-                    $notif_types = self::getAssertions($base_conditional, $this_class_name, $source);
-
-                    if (count($notif_types) === 1) {
-                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
                     }
                 }
 
