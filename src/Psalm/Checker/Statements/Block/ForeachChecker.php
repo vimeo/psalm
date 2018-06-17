@@ -376,6 +376,11 @@ class ForeachChecker
                     $location,
                     $foreach_context->branch_point
                 );
+            } else {
+                $statements_checker->registerVariableAssignment(
+                    $key_var_id,
+                    $location
+                );
             }
 
             if ($stmt->byRef && $context->collect_references) {
