@@ -229,7 +229,9 @@ class AssertionFinder
                     } else {
                         $if_types[$var_name] = [['falsy']];
                     }
-                } elseif ($var_type) {
+                }
+
+                if ($var_type) {
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
                         && $source instanceof StatementsSource
                         && $project_checker
@@ -521,11 +523,48 @@ class AssertionFinder
                     $source
                 );
 
+                $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+
                 if ($var_name) {
                     if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                         $if_types[$var_name] = [['!false']];
                     } else {
                         $if_types[$var_name] = [['!falsy']];
+                    }
+                } elseif ($var_type) {
+                    $notif_types = self::getAssertions($base_conditional, $this_class_name, $source);
+
+                    if (count($notif_types) === 1) {
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    }
+                }
+
+                if ($var_type) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                        && $source instanceof StatementsSource
+                        && $project_checker
+                    ) {
+                        $false_type = Type::getFalse();
+
+                        if (!TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $var_type,
+                            $false_type
+                        ) && !TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $false_type,
+                            $var_type
+                        )) {
+                            if (IssueBuffer::accepts(
+                                new RedundantCondition(
+                                    $var_type . ' does not contain ' . $false_type,
+                                    new CodeLocation($source, $conditional)
+                                ),
+                                $source->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
                     }
                 }
 
@@ -542,6 +581,8 @@ class AssertionFinder
                             true
                         );
                     }
+
+                    $base_conditional = $conditional->left;
                 } elseif ($true_position === self::ASSIGNMENT_TO_LEFT) {
                     if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall) {
                         return self::processFunctionCall(
@@ -551,11 +592,64 @@ class AssertionFinder
                             true
                         );
                     }
+
+                    $base_conditional = $conditional->right;
                 } else {
                     throw new \UnexpectedValueException('Bad null variable position');
                 }
 
-                return [];
+                $var_name = ExpressionChecker::getArrayVarId(
+                    $base_conditional,
+                    $this_class_name,
+                    $source
+                );
+
+                $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+
+                if ($var_name) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                        $if_types[$var_name] = [['!true']];
+                    } else {
+                        $if_types[$var_name] = [['falsy']];
+                    }
+                } elseif ($var_type) {
+                    $notif_types = self::getAssertions($base_conditional, $this_class_name, $source);
+
+                    if (count($notif_types) === 1) {
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    }
+                }
+
+                if ($var_type) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                        && $source instanceof StatementsSource
+                        && $project_checker
+                    ) {
+                        $true_type = Type::getTrue();
+
+                        if (!TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $var_type,
+                            $true_type
+                        ) && !TypeChecker::isContainedBy(
+                            $project_checker->codebase,
+                            $true_type,
+                            $var_type
+                        )) {
+                            if (IssueBuffer::accepts(
+                                new RedundantCondition(
+                                    $var_type . ' does not contain ' . $true_type,
+                                    new CodeLocation($source, $conditional)
+                                ),
+                                $source->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+                }
+
+                return $if_types;
             }
 
             if ($gettype_position) {
