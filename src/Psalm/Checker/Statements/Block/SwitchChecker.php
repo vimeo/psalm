@@ -562,6 +562,10 @@ class SwitchChecker
             }
         }
 
+        if ($new_assigned_var_ids) {
+            $context->assigned_var_ids += $new_assigned_var_ids;
+        }
+
         if ($context->collect_references) {
             foreach ($new_unreferenced_vars as $var_id => $locations) {
                 if (($all_options_matched && isset($new_assigned_var_ids[$var_id]))
