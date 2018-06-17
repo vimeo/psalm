@@ -225,6 +225,17 @@ class ExpressionChecker
 
                 if ($var_id && isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = $stmt->inferredType;
+
+                    if ($context->collect_references && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
+                        $location = new CodeLocation($statements_checker, $stmt->var);
+                        $context->assigned_var_ids[$var_id] = true;
+                        $context->possibly_assigned_var_ids[$var_id] = true;
+                        $statements_checker->registerVariableAssignment(
+                            $var_id,
+                            $location
+                        );
+                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
+                    }
                 }
             } else {
                 $stmt->inferredType = Type::getMixed();

@@ -483,6 +483,22 @@ class CallChecker
                         return false;
                     }
 
+                    if ($context->collect_references
+                        && ($arg->value instanceof PhpParser\Node\Expr\AssignOp
+                            || $arg->value instanceof PhpParser\Node\Expr\PreInc
+                            || $arg->value instanceof PhpParser\Node\Expr\PreDec)
+                    ) {
+                        $var_id = ExpressionChecker::getVarId(
+                            $arg->value->var,
+                            $statements_checker->getFQCLN(),
+                            $statements_checker
+                        );
+
+                        if ($var_id) {
+                            $context->hasVariable($var_id, $statements_checker);
+                        }
+                    }
+
                     if ($toggled_class_exists) {
                         $context->inside_class_exists = false;
                     }

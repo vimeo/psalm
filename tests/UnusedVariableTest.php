@@ -791,6 +791,22 @@ class UnusedVariableTest extends TestCase
                         }
                     }',
             ],
+            'echoVarWithAdditionOp' => [
+                '<?php
+                    function foo(int $i) : void {
+                        echo $i;
+                    }
+                    $a = 5;
+                    foo($a += 1);',
+            ],
+            'echoVarWithIncrement' => [
+                '<?php
+                    function foo(int $i) : void {
+                        echo $i;
+                    }
+                    $a = 5;
+                    foo(++$a);',
+            ],
         ];
     }
 
@@ -805,6 +821,42 @@ class UnusedVariableTest extends TestCase
                     $a = 5;
                     $b = [];
                     echo $a;',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedVarWithAdditionOp' => [
+                '<?php
+                    $a = 5;
+                    $a += 1;',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedVarWithConditionalAdditionOp' => [
+                '<?php
+                    $a = 5;
+                    if (rand(0, 1)) {
+                        $a += 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedVarWithConditionalAddition' => [
+                '<?php
+                    $a = 5;
+                    if (rand(0, 1)) {
+                        $a = $a + 1;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedVarWithIncrement' => [
+                '<?php
+                    $a = 5;
+                    $a++;',
+                'error_message' => 'UnusedVariable',
+            ],
+            'unusedVarWithConditionalIncrement' => [
+                '<?php
+                    $a = 5;
+                    if (rand(0, 1)) {
+                        $a++;
+                    }',
                 'error_message' => 'UnusedVariable',
             ],
             'ifInBothBranchesWithoutReference' => [
