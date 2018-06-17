@@ -526,7 +526,7 @@ class CallChecker
                                 null
                             );
 
-                            $statements_checker->registerVariableUse($location);
+                            $statements_checker->registerVariableUses([$location->getHash() => $location]);
                         }
                     } else {
                         $context->removeVarFromConflictingClauses(
@@ -811,6 +811,7 @@ class CallChecker
                         } else {
                             if ($existing_generic_params_to_strings) {
                                 $empty_generic_params = [];
+
                                 $param_type->replaceTemplateTypesWithStandins(
                                     $existing_generic_params_to_strings,
                                     $empty_generic_params,

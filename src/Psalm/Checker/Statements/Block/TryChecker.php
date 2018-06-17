@@ -99,11 +99,11 @@ class TryChecker
                     )
                 );
 
-                foreach ($context->unreferenced_vars as $var_id => $location) {
+                foreach ($context->unreferenced_vars as $var_id => $locations) {
                     if (isset($old_unreferenced_vars[$var_id])
-                        && $old_unreferenced_vars[$var_id] !== $location
+                        && $old_unreferenced_vars[$var_id] !== $locations
                     ) {
-                        $reassigned_vars[$var_id] = $location;
+                        $reassigned_vars[$var_id] = $locations;
                     }
                 }
             }
@@ -221,7 +221,7 @@ class TryChecker
                     $location,
                     $try_context->branch_point
                 );
-                $catch_context->unreferenced_vars[$catch_var_id] = $location;
+                $catch_context->unreferenced_vars[$catch_var_id] = [$location->getHash() => $location];
             }
 
             // this registers the variable to avoid unfair deadcode issues
@@ -259,16 +259,16 @@ class TryChecker
                     )
                 );
 
-                foreach ($catch_context->unreferenced_vars as $var_id => $location) {
+                foreach ($catch_context->unreferenced_vars as $var_id => $locations) {
                     if (!isset($old_unreferenced_vars[$var_id])
                         && (isset($context->unreferenced_vars[$var_id])
                             || isset($newly_assigned_var_ids[$var_id]))
                     ) {
-                        $statements_checker->registerVariableUse($location);
+                        $statements_checker->registerVariableUses($locations);
                     } elseif (isset($old_unreferenced_vars[$var_id])
-                        && $old_unreferenced_vars[$var_id] !== $location
+                        && $old_unreferenced_vars[$var_id] !== $locations
                     ) {
-                        $statements_checker->registerVariableUse($location);
+                        $statements_checker->registerVariableUses($locations);
                     }
                 }
             }
@@ -304,9 +304,11 @@ class TryChecker
         }
 
         if ($context->collect_references) {
-            foreach ($old_unreferenced_vars as $var_id => $location) {
-                if (isset($context->unreferenced_vars[$var_id]) && $context->unreferenced_vars[$var_id] !== $location) {
-                    $statements_checker->registerVariableUse($location);
+            foreach ($old_unreferenced_vars as $var_id => $locations) {
+                if (isset($context->unreferenced_vars[$var_id])
+                    && $context->unreferenced_vars[$var_id] !== $locations
+                ) {
+                    $statements_checker->registerVariableUses($locations);
                 }
             }
         }

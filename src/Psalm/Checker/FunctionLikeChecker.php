@@ -293,7 +293,9 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
 
             if ($context->collect_references && $function_param->location) {
-                $context->unreferenced_vars['$' . $function_param->name] = $function_param->location;
+                $context->unreferenced_vars['$' . $function_param->name] = [
+                    $function_param->location->getHash() => $function_param->location
+                ];
             }
 
             if (!$function_param->type_location || !$function_param->location) {

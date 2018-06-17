@@ -367,7 +367,7 @@ class ForeachChecker
             $location = new CodeLocation($statements_checker, $stmt->keyVar);
 
             if ($context->collect_references && !isset($foreach_context->byref_constraints[$key_var_id])) {
-                $foreach_context->unreferenced_vars[$key_var_id] = $location;
+                $foreach_context->unreferenced_vars[$key_var_id] = [$location->getHash() => $location];
             }
 
             if (!$statements_checker->hasVariable($key_var_id)) {
@@ -378,8 +378,8 @@ class ForeachChecker
                 );
             }
 
-            if ($stmt->byRef) {
-                $statements_checker->registerVariableUse($location);
+            if ($stmt->byRef && $context->collect_references) {
+                $statements_checker->registerVariableUses([$location->getHash() => $location]);
             }
         }
 

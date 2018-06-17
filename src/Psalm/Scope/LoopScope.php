@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Scope;
 
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 
@@ -40,6 +41,16 @@ class LoopScope
      * @var array<string, bool>
      */
     public $protected_var_ids = [];
+
+    /**
+     * @var array<string, array<string, CodeLocation>>
+     */
+    public $unreferenced_vars = [];
+
+    /**
+     * @var array<string, array<string, CodeLocation>>
+     */
+    public $possibly_unreferenced_vars = [];
 
     /**
      * @var string[]

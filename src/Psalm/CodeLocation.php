@@ -353,4 +353,12 @@ class CodeLocation
 
         return [$this->preview_start, $this->preview_end];
     }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return (string) $this->file_start;
+    }
 }

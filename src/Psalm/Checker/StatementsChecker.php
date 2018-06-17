@@ -73,6 +73,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
     private $unused_var_locations = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $used_var_locations = [];
+
+    /**
      * @param StatementsSource $source
      */
     public function __construct(StatementsSource $source)
@@ -310,6 +315,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             }
                         }
                     }
+
+                    if ($context->collect_references && (!$context->inside_case || $stmt->num)) {
+                        foreach ($context->unreferenced_vars as $var_id => $locations) {
+                            if (isset($loop_scope->unreferenced_vars[$var_id])) {
+                                $loop_scope->unreferenced_vars[$var_id] += $locations;
+                            } else {
+                                $loop_scope->unreferenced_vars[$var_id] = $locations;
+                            }
+                        }
+                    }
                 }
 
                 $has_returned = true;
@@ -356,6 +371,16 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                             );
                         } else {
                             $loop_scope->possibly_redefined_loop_vars[$var] = $type;
+                        }
+                    }
+
+                    if ($context->collect_references && (!$context->inside_case || $stmt->num)) {
+                        foreach ($context->unreferenced_vars as $var_id => $locations) {
+                            if (isset($loop_scope->possibly_unreferenced_vars[$var_id])) {
+                                $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
+                            } else {
+                                $loop_scope->possibly_unreferenced_vars[$var_id] = $locations;
+                            }
                         }
                     }
                 }
@@ -653,8 +678,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         $source = $this->getSource();
         $function_storage = $source instanceof FunctionLikeChecker ? $source->getFunctionLikeStorage($this) : null;
 
-        foreach ($this->unused_var_locations as list($var_id, $original_location)) {
-            if ($var_id === '$_') {
+        foreach ($this->unused_var_locations as $hash => list($var_id, $original_location)) {
+            if ($var_id === '$_' || isset($this->used_var_locations[$hash])) {
                 continue;
             }
 
@@ -701,7 +726,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 $location = new CodeLocation($this, $stmt);
 
                 if ($context->collect_references) {
-                    $context->unreferenced_vars[$var_id] = $location;
+                    $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
                 }
 
                 $this->registerVariable(
@@ -1174,15 +1199,19 @@ class StatementsChecker extends SourceChecker implements StatementsSource
      */
     public function registerVariableAssignment($var_id, CodeLocation $location)
     {
-        $this->unused_var_locations[spl_object_hash($location)] = [$var_id, $location];
+        $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
     }
 
     /**
+     * @param array<string, CodeLocation> $locations
      * @return void
      */
-    public function registerVariableUse(CodeLocation $location)
+    public function registerVariableUses(array $locations)
     {
-        unset($this->unused_var_locations[spl_object_hash($location)]);
+        foreach ($locations as $hash => $_) {
+            unset($this->unused_var_locations[$hash]);
+            $this->used_var_locations[$hash] = true;
+        }
     }
 
     /**

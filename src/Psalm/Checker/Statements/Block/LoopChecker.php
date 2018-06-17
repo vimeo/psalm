@@ -87,6 +87,8 @@ class LoopChecker
             $inner_context = clone $loop_scope->loop_context;
 
             $inner_context->parent_context = $loop_scope->loop_context;
+            $old_referenced_var_ids = $inner_context->referenced_var_ids;
+            $inner_context->referenced_var_ids = [];
 
             if (!$is_do) {
                 foreach ($pre_conditions as $pre_condition) {
@@ -115,6 +117,9 @@ class LoopChecker
                     return false;
                 }
             }
+
+            $new_referenced_var_ids = $inner_context->referenced_var_ids;
+            $inner_context->referenced_var_ids = $old_referenced_var_ids + $inner_context->referenced_var_ids;
 
             $loop_scope->loop_parent_context->vars_possibly_in_scope = array_merge(
                 $inner_context->vars_possibly_in_scope,
@@ -150,6 +155,9 @@ class LoopChecker
             $inner_context = clone $loop_scope->loop_context;
             $inner_context->parent_context = $loop_scope->loop_context;
 
+            $old_referenced_var_ids = $inner_context->referenced_var_ids;
+            $inner_context->referenced_var_ids = [];
+
             $asserted_var_ids = array_unique($asserted_var_ids);
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
@@ -165,6 +173,12 @@ class LoopChecker
                     return false;
                 }
             }
+
+            /**
+             * @var array<string, bool>
+             */
+            $new_referenced_var_ids = $inner_context->referenced_var_ids;
+            $inner_context->referenced_var_ids = $old_referenced_var_ids + $inner_context->referenced_var_ids;
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
@@ -231,15 +245,30 @@ class LoopChecker
                 }
 
                 if ($inner_context->collect_references) {
-                    foreach ($inner_context->unreferenced_vars as $var_id => $location) {
-                        if (isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
-                            && (!isset($loop_scope->loop_parent_context->unreferenced_vars[$var_id])
-                                || $loop_scope->loop_parent_context->unreferenced_vars[$var_id] !== $location)
-                        ) {
-                            $statements_checker->registerVariableUse($location);
+                    foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
+                        if (isset($inner_context->unreferenced_vars[$var_id])) {
+                            $inner_context->unreferenced_vars[$var_id] += $locations;
+                        } else {
+                            $inner_context->unreferenced_vars[$var_id] = $locations;
                         }
                     }
                 }
+
+                /*if ($inner_context->collect_references) {
+                    foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
+                        if (isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
+                            && !isset($new_referenced_var_ids[$var_id])
+                        ) {
+                            if (!isset($loop_scope->loop_parent_context->unreferenced_vars[$var_id])) {
+                                $loop_scope->loop_parent_context->unreferenced_vars[$var_id] = $locations;
+                            } else {
+                                $loop_scope->loop_parent_context->unreferenced_vars[$var_id] += $locations;
+                            }
+                        } else {
+                            $statements_checker->registerVariableUses($locations);
+                        }
+                    }
+                }*/
 
                 // remove vars that were defined in the foreach
                 foreach ($vars_to_remove as $var_id) {
@@ -395,11 +424,31 @@ class LoopChecker
         );
 
         if ($inner_context->collect_references) {
-            foreach ($inner_context->unreferenced_vars as $var_id => $location) {
+            foreach ($loop_scope->possibly_unreferenced_vars as $var_id => $locations) {
+                if (isset($inner_context->unreferenced_vars[$var_id])) {
+                    $inner_context->unreferenced_vars[$var_id] += $locations;
+                } else {
+                    $inner_context->unreferenced_vars[$var_id] = $locations;
+                }
+            }
+
+            foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
+                if (!isset($new_referenced_var_ids[$var_id]) || $has_break_statement) {
+                    if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
+                        $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
+                    } else {
+                        $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
+                    }
+                } else {
+                    $statements_checker->registerVariableUses($locations);
+                }
+            }
+
+            foreach ($loop_scope->unreferenced_vars as $var_id => $locations) {
                 if (!isset($loop_scope->loop_context->unreferenced_vars[$var_id])) {
-                    $loop_scope->loop_context->unreferenced_vars[$var_id] = $location;
-                } elseif ($loop_scope->loop_context->unreferenced_vars[$var_id] !== $location) {
-                    $statements_checker->registerVariableUse($location);
+                    $loop_scope->loop_context->unreferenced_vars[$var_id] = $locations;
+                } else {
+                    $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
                 }
             }
         }

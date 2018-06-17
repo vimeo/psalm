@@ -104,17 +104,6 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
         $this->fq_class_name = $fq_class_name;
 
         $this->storage = $this->file_checker->project_checker->classlike_storage_provider->get($fq_class_name);
-
-        if ($this->storage->location) {
-            $storage_file_path = $this->storage->location->file_path;
-            $source_file_path = $this->source->getFilePath();
-
-            if (!Config::getInstance()->use_case_sensitive_file_names) {
-                // TODO: Use these variables
-                $storage_file_path = strtolower($storage_file_path);
-                $source_file_path = strtolower($source_file_path);
-            }
-        }
     }
 
     /**

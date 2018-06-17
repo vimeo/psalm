@@ -572,7 +572,7 @@ class ExpressionChecker
                     $statements_checker->registerVariable($var_id, $location, null);
 
                     if ($context->collect_references) {
-                        $context->unreferenced_vars[$var_id] = $location;
+                        $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
                     }
 
                     $context->hasVariable($var_id, $statements_checker);

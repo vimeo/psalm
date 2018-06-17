@@ -255,7 +255,7 @@ class VariableFetchChecker
                     }
                 }
 
-                $statements_checker->registerVariableUse($first_appearance);
+                $statements_checker->registerVariableUses([$first_appearance->getHash() => $first_appearance]);
             }
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];

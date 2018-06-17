@@ -294,8 +294,6 @@ class ParseTree
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
 
-                    $added_null = false;
-
                     $current_parent = $current_leaf->parent;
 
                     if ($current_parent instanceof ParseTree\CallableWithReturnTypeTree) {

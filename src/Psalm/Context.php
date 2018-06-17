@@ -157,7 +157,7 @@ class Context
     /**
      * A list of variables that have never been referenced
      *
-     * @var array<string, CodeLocation>
+     * @var array<string, array<string, CodeLocation>>
      */
     public $unreferenced_vars = [];
 
@@ -673,7 +673,7 @@ class Context
 
             if ($this->collect_references && $statements_checker) {
                 if (isset($this->unreferenced_vars[$var_name])) {
-                    $statements_checker->registerVariableUse($this->unreferenced_vars[$var_name]);
+                    $statements_checker->registerVariableUses($this->unreferenced_vars[$var_name]);
                 }
 
                 unset($this->unreferenced_vars[$var_name]);

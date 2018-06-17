@@ -244,7 +244,7 @@ class AssignmentChecker
             $location = new CodeLocation($statements_checker, $assign_var);
 
             if ($context->collect_references) {
-                $context->unreferenced_vars[$var_id] = $location;
+                $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
             }
 
             if (!$statements_checker->hasVariable($var_id)) {
@@ -261,7 +261,7 @@ class AssignmentChecker
             }
 
             if (isset($context->byref_constraints[$var_id])) {
-                $statements_checker->registerVariableUse($location);
+                $statements_checker->registerVariableUses([$location->getHash() => $location]);
             }
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
@@ -338,12 +338,16 @@ class AssignmentChecker
 
                 if ($list_var_id) {
                     $context->vars_possibly_in_scope[$list_var_id] = true;
+                    $context->assigned_var_ids[$list_var_id] = true;
+                    $context->possibly_assigned_var_ids[$list_var_id] = true;
+
+                    $already_in_scope = isset($context->vars_in_scope[$var_id]);
 
                     if (strpos($list_var_id, '-') === false && strpos($list_var_id, '[') === false) {
-                        $location = new CodeLocation($statements_checker, $assign_var);
+                        $location = new CodeLocation($statements_checker, $var);
 
                         if ($context->collect_references) {
-                            $context->unreferenced_vars[$list_var_id] = $location;
+                            $context->unreferenced_vars[$list_var_id] = [$location->getHash() => $location];
                         }
 
                         if (!$statements_checker->hasVariable($list_var_id)) {
@@ -360,7 +364,7 @@ class AssignmentChecker
                         }
 
                         if (isset($context->byref_constraints[$list_var_id])) {
-                            $statements_checker->registerVariableUse($location);
+                            $statements_checker->registerVariableUses([$location->getHash() => $location]);
                         }
                     }
 
@@ -383,7 +387,7 @@ class AssignmentChecker
                         }
                     }
 
-                    if ($context->hasVariable($list_var_id)) {
+                    if ($already_in_scope) {
                         // removes dependennt vars from $context
                         $context->removeDescendents(
                             $list_var_id,
