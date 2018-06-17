@@ -26,8 +26,7 @@ class TryChecker
     public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\TryCatch $stmt,
-        Context $context,
-        LoopScope $loop_scope = null
+        Context $context
     ) {
         $catch_actions = [];
         $all_catches_leave = true;
@@ -58,7 +57,7 @@ class TryChecker
         $newly_unreferenced_vars = [];
         $reassigned_vars = [];
 
-        if ($statements_checker->analyze($stmt->stmts, $context, $loop_scope) === false) {
+        if ($statements_checker->analyze($stmt->stmts, $context) === false) {
             return false;
         }
 
@@ -109,9 +108,9 @@ class TryChecker
             }
         }
 
-        $try_leaves_loop = $loop_scope
-            && $loop_scope->final_actions
-            && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true);
+        $try_leaves_loop = $context->loop_scope
+            && $context->loop_scope->final_actions
+            && !in_array(ScopeChecker::ACTION_NONE, $context->loop_scope->final_actions, true);
 
         if (!$all_catches_leave) {
             foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
@@ -233,7 +232,7 @@ class TryChecker
                 $statements_checker->addSuppressedIssues(['RedundantCondition']);
             }
 
-            $statements_checker->analyze($catch->stmts, $catch_context, $loop_scope);
+            $statements_checker->analyze($catch->stmts, $catch_context);
 
             if (!in_array('RedundantCondition', $suppressed_issues, true)) {
                 $statements_checker->removeSuppressedIssues(['RedundantCondition']);
@@ -292,15 +291,15 @@ class TryChecker
             }
         }
 
-        if ($loop_scope
+        if ($context->loop_scope
             && !$try_leaves_loop
-            && !in_array(ScopeChecker::ACTION_NONE, $loop_scope->final_actions, true)
+            && !in_array(ScopeChecker::ACTION_NONE, $context->loop_scope->final_actions, true)
         ) {
-            $loop_scope->final_actions[] = ScopeChecker::ACTION_NONE;
+            $context->loop_scope->final_actions[] = ScopeChecker::ACTION_NONE;
         }
 
         if ($stmt->finally) {
-            $statements_checker->analyze($stmt->finally->stmts, $context, $loop_scope);
+            $statements_checker->analyze($stmt->finally->stmts, $context);
         }
 
         if ($context->collect_references) {

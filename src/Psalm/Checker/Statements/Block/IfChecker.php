@@ -50,8 +50,7 @@ class IfChecker
     public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\If_ $stmt,
-        Context $context,
-        LoopScope $loop_scope = null
+        Context $context
     ) {
         // get the first expression in the if, which should be evaluated on its own
         // this allows us to update the context of $matches in
@@ -363,8 +362,7 @@ class IfChecker
             $if_context,
             $old_if_context,
             $context,
-            $pre_assignment_else_redefined_vars,
-            $loop_scope
+            $pre_assignment_else_redefined_vars
         ) === false) {
             return false;
         }
@@ -383,8 +381,7 @@ class IfChecker
                 $elseif,
                 $if_scope,
                 $elseif_context,
-                $context,
-                $loop_scope
+                $context
             ) === false) {
                 return false;
             }
@@ -405,16 +402,15 @@ class IfChecker
             $stmt->else,
             $if_scope,
             $else_context,
-            $context,
-            $loop_scope
+            $context
         ) === false) {
             return false;
         }
 
-        if ($loop_scope) {
-            $loop_scope->final_actions = array_unique(
+        if ($context->loop_scope) {
+            $context->loop_scope->final_actions = array_unique(
                 array_merge(
-                    $loop_scope->final_actions,
+                    $context->loop_scope->final_actions,
                     $if_scope->final_actions
                 )
             );
@@ -538,8 +534,7 @@ class IfChecker
         Context $if_context,
         Context $old_if_context,
         Context $outer_context,
-        array $pre_assignment_else_redefined_vars,
-        LoopScope $loop_scope = null
+        array $pre_assignment_else_redefined_vars
     ) {
         $final_actions = ScopeChecker::getFinalControlActions($stmt->stmts, $outer_context->inside_case);
 
@@ -567,8 +562,7 @@ class IfChecker
 
         if ($statements_checker->analyze(
             $stmt->stmts,
-            $if_context,
-            $loop_scope
+            $if_context
         ) === false
         ) {
             return false;
@@ -757,14 +751,14 @@ class IfChecker
                 $outer_context->vars_possibly_in_scope
             );
 
-            if ($loop_scope) {
+            if ($if_context->loop_scope) {
                 if (!$has_continue_statement && !$has_break_statement) {
                     $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
                 }
 
-                $loop_scope->vars_possibly_in_scope = array_merge(
+                $if_context->loop_scope->vars_possibly_in_scope = array_merge(
                     $vars_possibly_in_scope,
-                    $loop_scope->vars_possibly_in_scope
+                    $if_context->loop_scope->vars_possibly_in_scope
                 );
             } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
@@ -811,8 +805,7 @@ class IfChecker
         PhpParser\Node\Stmt\ElseIf_ $elseif,
         IfScope $if_scope,
         Context $elseif_context,
-        Context $outer_context,
-        LoopScope $loop_scope = null
+        Context $outer_context
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -1012,8 +1005,7 @@ class IfChecker
 
         if ($statements_checker->analyze(
             $elseif->stmts,
-            $elseif_context,
-            $loop_scope
+            $elseif_context
         ) === false
         ) {
             return false;
@@ -1221,7 +1213,7 @@ class IfChecker
 
             $possibly_assigned_var_ids = $new_stmts_possibly_assigned_var_ids;
 
-            if ($has_leaving_statements && $loop_scope) {
+            if ($has_leaving_statements && $elseif_context->loop_scope) {
                 if (!$has_continue_statement && !$has_break_statement) {
                     $if_scope->new_vars_possibly_in_scope = array_merge(
                         $vars_possibly_in_scope,
@@ -1233,9 +1225,9 @@ class IfChecker
                     );
                 }
 
-                $loop_scope->vars_possibly_in_scope = array_merge(
+                $elseif_context->loop_scope->vars_possibly_in_scope = array_merge(
                     $vars_possibly_in_scope,
-                    $loop_scope->vars_possibly_in_scope
+                    $elseif_context->loop_scope->vars_possibly_in_scope
                 );
             } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = array_merge(
@@ -1301,8 +1293,7 @@ class IfChecker
         $else,
         IfScope $if_scope,
         Context $else_context,
-        Context $outer_context,
-        LoopScope $loop_scope = null
+        Context $outer_context
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
@@ -1368,8 +1359,7 @@ class IfChecker
         if ($else) {
             if ($statements_checker->analyze(
                 $else->stmts,
-                $else_context,
-                $loop_scope
+                $else_context
             ) === false
             ) {
                 return false;
@@ -1510,7 +1500,7 @@ class IfChecker
 
             $possibly_assigned_var_ids = $new_possibly_assigned_var_ids;
 
-            if ($has_leaving_statements && $loop_scope) {
+            if ($has_leaving_statements && $else_context->loop_scope) {
                 if (!$has_continue_statement && !$has_break_statement) {
                     $if_scope->new_vars_possibly_in_scope = array_merge(
                         $vars_possibly_in_scope,
@@ -1523,9 +1513,9 @@ class IfChecker
                     );
                 }
 
-                $loop_scope->vars_possibly_in_scope = array_merge(
+                $else_context->loop_scope->vars_possibly_in_scope = array_merge(
                     $vars_possibly_in_scope,
-                    $loop_scope->vars_possibly_in_scope
+                    $else_context->loop_scope->vars_possibly_in_scope
                 );
             } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = array_merge(

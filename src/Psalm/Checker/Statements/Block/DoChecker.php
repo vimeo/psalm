@@ -37,7 +37,7 @@ class DoChecker
             $statements_checker->addSuppressedIssues(['RedundantCondition']);
         }
 
-        $statements_checker->analyze($stmt->stmts, $do_context, $loop_scope);
+        $statements_checker->analyze($stmt->stmts, $do_context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
             $statements_checker->removeSuppressedIssues(['RedundantCondition']);

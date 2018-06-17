@@ -224,6 +224,16 @@ class Context
     public $inside_loop = false;
 
     /**
+     * @var Scope\LoopScope|null
+     */
+    public $loop_scope = null;
+
+    /**
+     * @var Scope\SwitchScope|null
+     */
+    public $switch_scope = null;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

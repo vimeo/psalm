@@ -458,7 +458,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             return false;
         }
 
-        $statements_checker->analyze($function_stmts, $context, null, $global_context, true);
+        $statements_checker->analyze($function_stmts, $context, $global_context, true);
 
         foreach ($storage->params as $offset => $function_param) {
             // only complain if there's no type defined by a parent type

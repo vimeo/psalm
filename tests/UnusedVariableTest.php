@@ -354,6 +354,21 @@ class UnusedVariableTest extends TestCase
                         echo "cool";
                     }',
             ],
+            'switchVarConditionalAssignment' => [
+                '<?php
+                    switch (rand(0, 4)) {
+                        case 0:
+                            if (rand(0, 1)) {
+                                $a = 0;
+                                break;
+                            }
+
+                        default:
+                            $a = 1;
+                    }
+
+                    if ($a) {}'
+            ],
             'throwWithMessageCall' => [
                 '<?php
                     function dangerous(): void {
@@ -1210,6 +1225,20 @@ class UnusedVariableTest extends TestCase
                             $a = 1;
                             break;
                         }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'switchVarConditionalAssignmentWithoutReference' => [
+                '<?php
+                    switch (rand(0, 4)) {
+                        case 0:
+                            if (rand(0, 1)) {
+                                $a = 0;
+                                break;
+                            }
+
+                        default:
+                            $a = 1;
                     }',
                 'error_message' => 'UnusedVariable',
             ],

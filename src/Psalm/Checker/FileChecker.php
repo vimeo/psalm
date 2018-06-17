@@ -124,7 +124,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
-            $statements_checker->analyze($leftover_stmts, $this->context, null, $global_context, true);
+            $statements_checker->analyze($leftover_stmts, $this->context, $global_context, true);
         }
 
         // check any leftover interfaces not already evaluated

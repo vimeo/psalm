@@ -11,7 +11,7 @@ use Psalm\Context;
 use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\IssueBuffer;
-use Psalm\Scope\LoopScope;
+use Psalm\Scope\SwitchScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
@@ -28,8 +28,7 @@ class SwitchChecker
     public static function analyze(
         StatementsChecker $statements_checker,
         PhpParser\Node\Stmt\Switch_ $stmt,
-        Context $context,
-        LoopScope $loop_scope = null
+        Context $context
     ) {
         if (ExpressionChecker::analyze($statements_checker, $stmt->cond, $context) === false) {
             return false;
@@ -106,6 +105,7 @@ class SwitchChecker
                 $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
             }
             $case_context->parent_context = $context;
+            $case_context->switch_scope = new SwitchScope();
 
             $case_equality_expr = null;
 
@@ -332,7 +332,7 @@ class SwitchChecker
             $pre_assigned_var_ids = $case_context->assigned_var_ids;
             $case_context->assigned_var_ids = [];
 
-            $statements_checker->analyze($case_stmts, $case_context, $loop_scope);
+            $statements_checker->analyze($case_stmts, $case_context);
 
             /** @var array<string, bool> */
             $new_case_assigned_var_ids = $case_context->assigned_var_ids;
@@ -371,10 +371,10 @@ class SwitchChecker
 
                 // if we're leaving this block, add vars to outer for loop scope
                 if ($case_exit_type === 'continue') {
-                    if ($loop_scope) {
-                        $loop_scope->vars_possibly_in_scope = array_merge(
+                    if ($context->loop_scope) {
+                        $context->loop_scope->vars_possibly_in_scope = array_merge(
                             $vars,
-                            $loop_scope->vars_possibly_in_scope
+                            $context->loop_scope->vars_possibly_in_scope
                         );
                     } else {
                         if (IssueBuffer::accepts(
@@ -458,6 +458,29 @@ class SwitchChecker
                     }
 
                     foreach ($case_context->unreferenced_vars as $var_id => $locations) {
+                        if (!isset($original_context->unreferenced_vars[$var_id])) {
+                            if (isset($new_unreferenced_vars[$var_id])) {
+                                $new_unreferenced_vars[$var_id] += $locations;
+                            } else {
+                                $new_unreferenced_vars[$var_id] = $locations;
+                            }
+                        } else {
+                            $new_locations = array_diff_key(
+                                $locations,
+                                $original_context->unreferenced_vars[$var_id]
+                            );
+
+                            if ($new_locations) {
+                                if (isset($new_unreferenced_vars[$var_id])) {
+                                    $new_unreferenced_vars[$var_id] += $locations;
+                                } else {
+                                    $new_unreferenced_vars[$var_id] = $locations;
+                                }
+                            }
+                        }
+                    }
+
+                    foreach ($case_context->switch_scope->unreferenced_vars as $var_id => $locations) {
                         if (!isset($original_context->unreferenced_vars[$var_id])) {
                             if (isset($new_unreferenced_vars[$var_id])) {
                                 $new_unreferenced_vars[$var_id] += $locations;

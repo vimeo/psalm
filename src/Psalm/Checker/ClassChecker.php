@@ -421,7 +421,7 @@ class ClassChecker extends ClassLikeChecker
         }
 
         $statements_checker = new StatementsChecker($this);
-        $statements_checker->analyze($property_stmts, $class_context, null, $global_context, true);
+        $statements_checker->analyze($property_stmts, $class_context, $global_context, true);
 
         $config = Config::getInstance();
 

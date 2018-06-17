@@ -85,6 +85,7 @@ class LoopChecker
 
         if ($assignment_depth === 0 || $has_break_statement) {
             $inner_context = clone $loop_scope->loop_context;
+            $inner_context->loop_scope = $loop_scope;
 
             $inner_context->parent_context = $loop_scope->loop_context;
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
@@ -104,7 +105,7 @@ class LoopChecker
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-            $statements_checker->analyze($stmts, $inner_context, $loop_scope);
+            $statements_checker->analyze($stmts, $inner_context);
             self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
 
             foreach ($post_expressions as $post_expression) {
@@ -154,6 +155,7 @@ class LoopChecker
 
             $inner_context = clone $loop_scope->loop_context;
             $inner_context->parent_context = $loop_scope->loop_context;
+            $inner_context->loop_scope = $loop_scope;
 
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = [];
@@ -162,7 +164,7 @@ class LoopChecker
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-            $statements_checker->analyze($stmts, $inner_context, $loop_scope);
+            $statements_checker->analyze($stmts, $inner_context);
 
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
@@ -303,7 +305,7 @@ class LoopChecker
 
                 $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-                $statements_checker->analyze($stmts, $inner_context, $loop_scope);
+                $statements_checker->analyze($stmts, $inner_context);
 
                 self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
