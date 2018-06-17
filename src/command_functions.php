@@ -170,7 +170,7 @@ function getPathsToCheck($f_paths)
             stream_set_blocking(STDIN, $blocked);
         }
 
-        foreach ($filtered_input_paths as $i => $path_to_check) {
+        foreach ($filtered_input_paths as $path_to_check) {
             if ($path_to_check[0] === '-') {
                 echo 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL;
                 exit(1);
