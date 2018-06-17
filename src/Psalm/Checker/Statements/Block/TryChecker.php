@@ -244,7 +244,7 @@ class TryChecker
                 $context->referenced_var_ids
             );
 
-            if ($context->collect_references) {
+            if ($context->collect_references && $catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
                 foreach ($context->unreferenced_vars as $var_id => $_) {
                     if (!isset($catch_context->unreferenced_vars[$var_id])) {
                         unset($context->unreferenced_vars[$var_id]);

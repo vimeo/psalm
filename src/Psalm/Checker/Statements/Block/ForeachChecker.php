@@ -460,7 +460,13 @@ class ForeachChecker
         );
 
         if ($context->collect_references) {
-            $context->unreferenced_vars = $foreach_context->unreferenced_vars;
+            foreach ($foreach_context->unreferenced_vars as $var_id => $locations) {
+                if (isset($context->unreferenced_vars[$var_id])) {
+                    $context->unreferenced_vars[$var_id] += $locations;
+                } else {
+                    $context->unreferenced_vars[$var_id] = $locations;
+                }
+            }
         }
 
         return null;

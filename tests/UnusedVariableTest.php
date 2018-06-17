@@ -176,6 +176,15 @@ class UnusedVariableTest extends TestCase
                     }
                     echo $a[0];',
             ],
+            'foreachVarSetInValue' => [
+                '<?php
+                    /** @param string[] $arr */
+                    function foo(array $arr) : void {
+                        $a = null;
+                        foreach ($arr as $a) { }
+                        if ($a) {}
+                    }',
+            ],
             'definedInSecondBranchOfCondition' => [
                 '<?php
                     if (rand(0, 1) && $a = rand(0, 1)) {
@@ -453,6 +462,30 @@ class UnusedVariableTest extends TestCase
                             if ($t) {
                                 $s = $t;
                             }
+                        }
+
+                        if ($s) {}
+                    }',
+            ],
+            'throwWithReturnInOneCatch' => [
+                '<?php
+                    class E1 extends Exception {}
+
+                    function dangerous(): void {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+                    }
+
+                    function callDangerous(): void {
+                        try {
+                            dangerous();
+                            $s = true;
+                        } catch (E1 $e) {
+                            echo $e->getMessage();
+                            $s = false;
+                        } catch (Exception $e) {
+                            return;
                         }
 
                         if ($s) {}
@@ -993,6 +1026,29 @@ class UnusedVariableTest extends TestCase
                             if ($t) {
                                 $s = $t;
                             }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'throwWithReturnInOneCatchAndNoReference' => [
+                '<?php
+                    class E1 extends Exception {}
+
+                    function dangerous(): void {
+                        if (rand(0, 1)) {
+                            throw new \Exception("bad");
+                        }
+                    }
+
+                    function callDangerous(): void {
+                        try {
+                            dangerous();
+                            $s = true;
+                        } catch (E1 $e) {
+                            echo $e->getMessage();
+                            $s = false;
+                        } catch (Exception $e) {
+                            return;
                         }
                     }',
                 'error_message' => 'UnusedVariable',
