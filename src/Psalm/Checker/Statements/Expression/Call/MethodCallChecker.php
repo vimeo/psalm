@@ -522,6 +522,9 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $return_type_candidate = Type::parseString('string|false');
                         } else {
                             $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
+                            if ($return_type_candidate->isFalsable()) {
+                                $return_type_candidate->ignore_falsable_issues = true;
+                            }
                         }
                     }
 
