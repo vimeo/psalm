@@ -130,6 +130,16 @@ class BinaryOperationTest extends TestCase
                     $name = rand(0, 1) ? "hello" : null
                     if ($name !== null || ($name = rand(0, 1) ? "hello" : null) !== null) {}',
             ],
+            'floatIncrement' => [
+                '<?php
+                    $a = 1.1;
+                    $a++;
+                    $b = 1.1;
+                    $b += 1;',
+                'assertions' => [
+                    '$a' => 'float',
+                ],
+            ],
         ];
     }
 
@@ -187,6 +197,24 @@ class BinaryOperationTest extends TestCase
                     $a = gmp_init(2);
                     $b = "a" + $a;',
                 'error_message' => 'InvalidOperand - src/somefile.php:3 - Cannot add GMP to non-numeric type',
+            ],
+            'stringIncrement' => [
+                '<?php
+                    $a = "hello";
+                    $a++;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'falseIncrement' => [
+                '<?php
+                    $a = false;
+                    $a++;',
+                'error_message' => 'FalseOperand',
+            ],
+            'trueIncrement' => [
+                '<?php
+                    $a = true;
+                    $a++;',
+                'error_message' => 'InvalidOperand',
             ],
         ];
     }

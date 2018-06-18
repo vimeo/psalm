@@ -210,6 +210,20 @@ class ExpressionChecker
             }
 
             if (isset($stmt->var->inferredType)) {
+                $return_type = null;
+
+                $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
+                $fake_right_expr->inferredType = Type::getInt();
+
+                BinaryOpChecker::analyzeNonDivArithmenticOp(
+                    $statements_checker,
+                    $stmt->var,
+                    $fake_right_expr,
+                    $stmt,
+                    $return_type,
+                    $context
+                );
+
                 $stmt->inferredType = clone $stmt->var->inferredType;
                 $stmt->inferredType->from_calculation = true;
 

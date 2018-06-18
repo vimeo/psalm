@@ -219,6 +219,8 @@ class ValueTest extends TestCase
                     };
                     $a();
                     if ($i === 0) {}',
+                'assertions' => [],
+                'error_levels' => ['MixedOperand'],
             ],
             'incrementMixedCall' => [
                 '<?php
@@ -230,7 +232,7 @@ class ValueTest extends TestCase
                         if ($i === 0) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MissingParamType', 'MixedMethodCall'],
+                'error_levels' => ['MissingParamType', 'MixedMethodCall', 'MixedOperand'],
             ],
             'regularValueReconciliation' => [
                 '<?php
