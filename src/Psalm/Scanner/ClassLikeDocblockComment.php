@@ -13,7 +13,7 @@ class ClassLikeDocblockComment
     /**
      * @var array<int, array<int, string>>
      */
-    public $template_types = [];
+    public $template_type_names = [];
 
     /**
      * @var array<int, string>

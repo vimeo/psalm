@@ -138,6 +138,7 @@ class BinaryOperationTest extends TestCase
                     $b += 1;',
                 'assertions' => [
                     '$a' => 'float',
+                    '$b' => 'float',
                 ],
             ],
         ];

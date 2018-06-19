@@ -57,7 +57,7 @@ class FunctionDocblockComment
     /**
      * @var array<int, array<int, string>>
      */
-    public $template_types = [];
+    public $template_type_names = [];
 
     /**
      * @var array<int, array{template_type: string, param_name: string, line_number?: int}>

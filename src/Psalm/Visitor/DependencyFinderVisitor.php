@@ -225,18 +225,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 if ($docblock_info) {
-                    if ($docblock_info->template_types) {
+                    if ($docblock_info->template_type_names) {
                         $storage->template_types = [];
 
-                        foreach ($docblock_info->template_types as $template_type) {
+                        foreach ($docblock_info->template_type_names as $template_type) {
                             if (count($template_type) === 3) {
-                                $as_type_string = Type::getFQCLNFromString(
-                                    $template_type[2],
-                                    $this->aliases
+                                $storage->template_types[$template_type[0]] = Type::parseTokens(
+                                    Type::fixUpLocalType(
+                                        $template_type[2],
+                                        $this->aliases
+                                    )
                                 );
-                                $storage->template_types[$template_type[0]] = $as_type_string;
                             } else {
-                                $storage->template_types[$template_type[0]] = 'mixed';
+                                $storage->template_types[$template_type[0]] = Type::getMixed();
                             }
                         }
 
@@ -1029,15 +1030,19 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
 
-        if ($docblock_info->template_types) {
+        if ($docblock_info->template_type_names) {
             $storage->template_types = [];
 
-            foreach ($docblock_info->template_types as $template_type) {
+            foreach ($docblock_info->template_type_names as $template_type) {
                 if (count($template_type) === 3) {
-                    $as_type_string = Type::getFQCLNFromString($template_type[2], $this->aliases);
-                    $storage->template_types[$template_type[0]] = $as_type_string;
+                    $storage->template_types[$template_type[0]] = Type::parseTokens(
+                        Type::fixUpLocalType(
+                            $template_type[2],
+                            $this->aliases
+                        )
+                    );
                 } else {
-                    $storage->template_types[$template_type[0]] = 'mixed';
+                    $storage->template_types[$template_type[0]] = Type::getMixed();
                 }
             }
 

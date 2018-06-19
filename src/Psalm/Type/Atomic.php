@@ -53,11 +53,11 @@ abstract class Atomic
     /**
      * @param  string $value
      * @param  bool   $php_compatible
-     * @param  array<string, string> $template_types
+     * @param  array<string, string> $template_type_names
      *
      * @return Atomic
      */
-    public static function create($value, $php_compatible = false, array $template_types = [])
+    public static function create($value, $php_compatible = false, array $template_type_names = [])
     {
         switch ($value) {
             case 'int':
@@ -126,7 +126,7 @@ abstract class Atomic
                     throw new \Psalm\Exception\TypeParseTreeException('First character of type cannot be numeric');
                 }
 
-                if (isset($template_types[$value])) {
+                if (isset($template_type_names[$value])) {
                     return new TGenericParam($value);
                 }
 
@@ -358,7 +358,7 @@ abstract class Atomic
     }
 
     /**
-     * @param  array<string, string>     $template_types
+     * @param  array<string, Type\Union> $template_types
      * @param  array<string, Type\Union> $generic_params
      * @param  Type\Atomic|null          $input_type
      *

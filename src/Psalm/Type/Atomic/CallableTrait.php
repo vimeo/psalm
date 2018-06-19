@@ -133,7 +133,7 @@ trait CallableTrait
     }
 
     /**
-     * @param  array<string, string>    $template_types
+     * @param  array<string, Union>     $template_types
      * @param  array<string, Union>     $generic_params
      * @param  Atomic|null              $input_type
      *

@@ -159,7 +159,7 @@ class Reflection
         );
 
         if ($class_name_lower === 'generator') {
-            $storage->template_types = ['TKey' => 'mixed', 'TValue' => 'mixed'];
+            $storage->template_types = ['TKey' => Type::getMixed(), 'TValue' => Type::getMixed()];
         }
 
         $interfaces = $reflected_class->getInterfaces();

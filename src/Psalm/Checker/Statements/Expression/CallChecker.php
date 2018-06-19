@@ -661,19 +661,7 @@ class CallChecker
             }
         }
 
-        if ($generic_params) {
-            $existing_generic_params_to_strings = array_map(
-                /**
-                 * @return string
-                 */
-                function (Type\Union $type) {
-                    return (string) $type;
-                },
-                $generic_params
-            );
-        } else {
-            $existing_generic_params_to_strings = [];
-        }
+        $existing_generic_params_to_strings = $generic_params ?: [];
 
         foreach ($args as $argument_offset => $arg) {
             $function_param = count($function_params) > $argument_offset
