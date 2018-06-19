@@ -384,6 +384,36 @@ class UnusedCodeTest extends TestCase
                     takesA(new B);',
                 'error_message' => 'PossiblyUnusedMethod',
             ],
+            'unusedRecursivelyUsedMethod' => [
+                '<?php
+                    class C {
+                        public function foo() : void {
+                            if (rand(0, 1)) {
+                                $this->foo();
+                            }
+                        }
+
+                        public function bar() : void {}
+                    }
+
+                    (new C)->bar();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedRecursivelyUsedStaticMethod' => [
+                '<?php
+                    class C {
+                        public static function foo() : void {
+                            if (rand(0, 1)) {
+                                self::foo();
+                            }
+                        }
+
+                        public function bar() : void {}
+                    }
+
+                    (new C)->bar();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
         ];
     }
 }

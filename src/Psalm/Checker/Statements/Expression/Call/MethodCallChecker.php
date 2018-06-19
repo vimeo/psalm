@@ -379,7 +379,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
                 }
 
-                if (!$codebase->methodExists($method_id, $code_location)) {
+                $source_method_id = $source instanceof FunctionLikeChecker
+                    ? $source->getMethodId()
+                    : null;
+
+                if (!$codebase->methodExists($method_id, $method_id !== $source_method_id ? $code_location : null)) {
                     if ($config->use_phpdoc_methods_without_call) {
                         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 

@@ -107,6 +107,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string       $method_id
      * @param  CodeLocation $code_location
      * @param  array        $suppressed_issues
+     * @param  string|null  $source_method_id
      *
      * @return bool|null
      */
@@ -114,9 +115,13 @@ class MethodChecker extends FunctionLikeChecker
         ProjectChecker $project_checker,
         $method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
+        $source_method_id = null
     ) {
-        if ($project_checker->codebase->methodExists($method_id, $code_location)) {
+        if ($project_checker->codebase->methodExists(
+            $method_id,
+            $source_method_id !== $method_id ? $code_location : null
+        )) {
             return true;
         }
 
