@@ -4,6 +4,7 @@ require_once('command_functions.php');
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
 use Psalm\IssueBuffer;
+use Psalm\CallGraphNode;
 
 // show all errors
 error_reporting(-1);
@@ -362,7 +363,28 @@ if ($paths_to_check === null) {
 }
 
 if ($find_references_to) {
-    $project_checker->findReferencesTo($find_references_to);
+    if ($find_references_to == "all") {
+        $codebase = $project_checker->codebase;
+        $allClasses = $codebase->classlike_storage_provider->getAll();
+
+        foreach ($allClasses as $class) {
+            // Ignore vendor references
+            if ($class->location !== null && substr($class->location->file_name, 0, 4) === "src/") {
+                foreach ($class->methods as $method) {
+                    $fullMethodName = $class->name . "::" . $method->cased_name;
+                    try {
+                        $refs = $codebase->findReferencesToMethod($fullMethodName);
+                        $node = new CallGraphNode($method->location, $refs);
+                        $node->print();
+                    } catch (\InvalidArgumentException $e) {
+                        // Ignore unreferenced methosd
+                    }
+                }
+            }
+        }
+    } else {
+        $project_checker->findReferencesTo($find_references_to);
+    }
 } elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
     if ($threads > 1) {
         if ($output_format === ProjectChecker::TYPE_CONSOLE) {
