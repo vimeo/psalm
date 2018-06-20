@@ -329,13 +329,13 @@ class Codebase
         $method_name_lc = strtolower($method_name);
 
         if (!isset($class_storage->methods[$method_name_lc])) {
-            die('Method ' . $method_id . ' cannot be found' . PHP_EOL);
+            throw new \InvalidArgumentException('Method ' . $method_id . ' cannot be found' . PHP_EOL);
         }
 
         $method_storage = $class_storage->methods[$method_name_lc];
 
         if ($method_storage->referencing_locations === null) {
-            die('No references found for ' . $method_id . PHP_EOL);
+            throw new \InvalidArgumentException('No references found for ' . $method_id . PHP_EOL);
         }
 
         return $method_storage->referencing_locations;
