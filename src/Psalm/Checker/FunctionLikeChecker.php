@@ -1016,7 +1016,13 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     continue;
                 }
 
-                if (TypeChecker::isContainedBy($project_checker->codebase, $arg->value->inferredType, $param_type)) {
+                if (TypeChecker::isContainedBy(
+                    $project_checker->codebase,
+                    $arg->value->inferredType,
+                    $param_type,
+                    $arg->value->inferredType->ignore_nullable_issues,
+                    $arg->value->inferredType->ignore_falsable_issues
+                )) {
                     continue;
                 }
 

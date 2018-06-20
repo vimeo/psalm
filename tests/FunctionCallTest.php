@@ -694,6 +694,13 @@ class FunctionCallTest extends TestCase
                     '$h' => 'array<mixed, mixed>',
                 ],
             ],
+            'strstrWithPossiblyFalseFirstArg' => [
+                '<?php
+                    strtr(
+                        file_get_contents("foobar.txt"),
+                        ["foo" => "bar"]
+                    );'
+            ],
         ];
     }
 
