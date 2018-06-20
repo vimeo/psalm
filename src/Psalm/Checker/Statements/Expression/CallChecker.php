@@ -829,11 +829,28 @@ class CallChecker
                                     $generic_params = [];
                                 }
 
+                                $arg_type = $arg->value->inferredType;
+
+                                if ($arg->unpack) {
+                                    if ($arg->value->inferredType->hasArray()) {
+                                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                                        $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
+
+                                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                                        }
+
+                                        $arg_type = $array_atomic_type->type_params[1];
+                                    } else {
+                                        $arg_type = Type::getMixed();
+                                    }
+                                }
+
                                 $param_type->replaceTemplateTypesWithStandins(
                                     $template_types,
                                     $generic_params,
                                     $codebase,
-                                    $arg->value->inferredType
+                                    $arg_type
                                 );
                             }
                         }

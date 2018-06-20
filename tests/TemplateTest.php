@@ -684,6 +684,30 @@ class TemplateTest extends TestCase
                       function(Collection $elt): bool { return true; }
                     );',
             ],
+            'splatTemplateParam' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     *
+                     * @param array<TKey, TValue> $arr
+                     * @param array $arr2
+                     * @return array<TKey, TValue>
+                     */
+                    function splat_proof(array $arr, array $arr2) {
+                        return $arr;
+                    }
+
+                    $foo = [
+                        [1, 2, 3],
+                        [1, 2],
+                    ];
+
+                    $a = splat_proof(... $foo);',
+                'assertions' => [
+                    '$a' => 'array<int, int>',
+                ],
+            ],
         ];
     }
 
