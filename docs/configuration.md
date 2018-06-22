@@ -43,6 +43,8 @@ Psalm uses an XML config file. A barebones example looks like this:
   When `true`, constants defined in a function in a file are assumed to be available when requiring that file, and not just when calling that function. Defaults to `false` (i.e. constants defined in functions will *only* be available for use when that function is called)
 - `addParamDefaultToDocblockType=[bool]`<br />
   Occasionally a param default will not match up with the docblock type. By default, Psalm emits an issue. Setting this flag to `true` causes it to expand the param type to include the param default. Defaults to `false`.
+- `checkThrowsDocblock=[bool]`<br />
+  When `true`, Psalm will check that the developer has supplied `@throws` docblocks for every exception thrown in a given function or method. Defaults to `false`.
 
 ### Running Psalm
 

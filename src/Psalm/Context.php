@@ -148,6 +148,13 @@ class Context
     public $collect_references = false;
 
     /**
+     * Whether or not to track exceptions
+     *
+     * @var bool
+     */
+    public $collect_exceptions = false;
+
+    /**
      * A list of variables that have been referenced
      *
      * @var array<string, bool>
@@ -193,6 +200,13 @@ class Context
      * @var array<string, bool>
      */
     public $possibly_assigned_var_ids = [];
+
+    /**
+     * A list of classes or interfaces that may have been thrown
+     *
+     * @var array<string, bool>
+     */
+    public $possibly_thrown_exceptions = [];
 
     /**
      * @var bool

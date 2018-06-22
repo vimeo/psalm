@@ -852,8 +852,11 @@ class ClassChecker extends ClassLikeChecker
             }
         }
 
+        $method_context = clone $class_context;
+        $method_context->collect_exceptions = $config->check_for_throws_docblock;
+
         $method_checker->analyze(
-            clone $class_context,
+            $method_context,
             $global_context ? clone $global_context : null
         );
 

@@ -43,6 +43,12 @@ class ThrowChecker
                 )) {
                     return false;
                 }
+            } elseif ($context->collect_exceptions) {
+                foreach ($throw_type->getTypes() as $throw_atomic_type) {
+                    if ($throw_atomic_type instanceof TNamedObject) {
+                        $context->possibly_thrown_exceptions[$throw_atomic_type->value] = true;
+                    }
+                }
             }
         }
     }

@@ -15,6 +15,7 @@
             <xs:element name="stubs" type="StubsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
 
         <xs:attribute name="name" type="xs:string" />
@@ -39,6 +40,7 @@
         <xs:attribute name="memoizeMethodCallResults" type="xs:string" />
         <xs:attribute name="hoistConstants" type="xs:string" />
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:string" />
+        <xs:attribute name="checkForThrowsDocblock" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -73,6 +75,12 @@
     </xs:complexType>
 
     <xs:complexType name="MockClassesType">
+        <xs:sequence>
+            <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="ExceptionsType">
         <xs:sequence>
             <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
@@ -167,6 +175,7 @@
             <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingThrowsDocblock" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayAssignment" type="IssueHandlerType" minOccurs="0" />

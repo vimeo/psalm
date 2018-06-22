@@ -1024,6 +1024,17 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $storage->suppressed_issues = $docblock_info->suppress;
 
+        if ($this->config->check_for_throws_docblock) {
+            foreach ($docblock_info->throws as $throw_class) {
+                $exception_fqcln = Type::getFQCLNFromString(
+                    $throw_class,
+                    $this->aliases
+                );
+
+                $storage->throws[$exception_fqcln] = true;
+            }
+        }
+
         if (!$this->config->use_docblock_types) {
             return $storage;
         }

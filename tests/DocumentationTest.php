@@ -148,6 +148,9 @@ class DocumentationTest extends TestCase
 
         foreach (self::getCodeBlocksFromDocs() as $issue_name => $blocks) {
             switch ($issue_name) {
+                case 'MissingThrowsDocblock':
+                    continue 2;
+
                 case 'InvalidStringClass':
                     continue 2;
 

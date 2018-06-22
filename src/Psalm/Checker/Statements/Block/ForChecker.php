@@ -108,6 +108,17 @@ class ForChecker
             );
         }
 
+        if ($context->collect_references) {
+            $context->unreferenced_vars = array_intersect_key(
+                $for_context->unreferenced_vars,
+                $context->unreferenced_vars
+            );
+        }
+
+        if ($context->collect_exceptions) {
+            $context->possibly_thrown_exceptions += $for_context->possibly_thrown_exceptions;
+        }
+
         return null;
     }
 }

@@ -162,6 +162,10 @@ class DoChecker
             $context->unreferenced_vars = $do_context->unreferenced_vars;
         }
 
+        if ($context->collect_exceptions) {
+            $context->possibly_thrown_exceptions += $do_context->possibly_thrown_exceptions;
+        }
+
         ExpressionChecker::analyze($statements_checker, $stmt->cond, $inner_loop_context);
     }
 }

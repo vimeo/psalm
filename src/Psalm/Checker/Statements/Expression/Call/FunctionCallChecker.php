@@ -313,6 +313,10 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                         }
                     }
 
+                    if ($function_storage && $context->collect_exceptions) {
+                        $context->possibly_thrown_exceptions += $function_storage->throws;
+                    }
+
                     try {
                         if ($function_storage && $function_storage->return_type) {
                             $return_type = clone $function_storage->return_type;

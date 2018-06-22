@@ -451,10 +451,10 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 if (!$project_checker->codebase->register_global_functions) {
                     $function_id = strtolower($stmt->name->name);
                     $function_context = new Context($context->self);
-                    $function_context->collect_references = $project_checker->codebase->collect_references;
-                    $this->function_checkers[$function_id]->analyze($function_context, $context);
-
                     $config = Config::getInstance();
+                    $function_context->collect_references = $project_checker->codebase->collect_references;
+                    $function_context->collect_exceptions = $config->check_for_throws_docblock;
+                    $this->function_checkers[$function_id]->analyze($function_context, $context);
 
                     if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
                         $method_id = $this->function_checkers[$function_id]->getMethodId();

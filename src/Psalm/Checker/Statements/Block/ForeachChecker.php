@@ -464,6 +464,10 @@ class ForeachChecker
             $context->referenced_var_ids
         );
 
+        if ($context->collect_exceptions) {
+            $context->possibly_thrown_exceptions += $foreach_context->possibly_thrown_exceptions;
+        }
+
         if ($context->collect_references) {
             foreach ($foreach_context->unreferenced_vars as $var_id => $locations) {
                 if (isset($context->unreferenced_vars[$var_id])) {

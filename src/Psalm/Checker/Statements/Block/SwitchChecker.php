@@ -447,6 +447,10 @@ class SwitchChecker
                     }
                 }
 
+                if ($context->collect_exceptions) {
+                    $context->possibly_thrown_exceptions += $case_context->possibly_thrown_exceptions;
+                }
+
                 if ($context->collect_references) {
                     $new_possibly_assigned_var_ids =
                         $new_possibly_assigned_var_ids + $new_case_possibly_assigned_var_ids;

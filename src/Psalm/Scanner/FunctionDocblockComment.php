@@ -51,6 +51,11 @@ class FunctionDocblockComment
      */
     public $suppress = [];
 
+    /**
+     * @var array<int, string>
+     */
+    public $throws = [];
+
     /** @var int */
     public $return_type_line_number;
 

@@ -789,6 +789,10 @@ class IfChecker
                 }
             }
         }
+
+        if ($outer_context->collect_exceptions) {
+            $outer_context->possibly_thrown_exceptions += $if_context->possibly_thrown_exceptions;
+        }
     }
 
     /**
@@ -1273,6 +1277,10 @@ class IfChecker
             );
         }
 
+        if ($outer_context->collect_exceptions) {
+            $outer_context->possibly_thrown_exceptions += $elseif_context->possibly_thrown_exceptions;
+        }
+
         $if_scope->negated_clauses = array_merge(
             $if_scope->negated_clauses,
             Algebra::negateFormula($elseif_clauses)
@@ -1553,6 +1561,10 @@ class IfChecker
                     }
                 }
             }
+        }
+
+        if ($outer_context->collect_exceptions) {
+            $outer_context->possibly_thrown_exceptions += $else_context->possibly_thrown_exceptions;
         }
 
         if ($project_checker->infer_types_from_usage) {

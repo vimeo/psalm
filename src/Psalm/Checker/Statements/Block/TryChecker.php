@@ -40,6 +40,13 @@ class TryChecker
         $project_checker = $statements_checker->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
+        $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
+
+        /**
+         * @var array<string, bool>
+         */
+        $context->possibly_thrown_exceptions = [];
+
         if ($all_catches_leave) {
             $try_context = $context;
         } else {
@@ -179,6 +186,43 @@ class TryChecker
                 $fq_catch_classes[] = $fq_catch_class;
             }
 
+            $potentially_caught_classes = array_flip($fq_catch_classes);
+
+            if ($catch_context->collect_exceptions) {
+                foreach ($fq_catch_classes as $fq_catch_class) {
+                    $fq_catch_class_lower = strtolower($fq_catch_class);
+
+                    foreach ($context->possibly_thrown_exceptions as $exception_fqcln => $_) {
+                        $exception_fqcln_lower = strtolower($exception_fqcln);
+
+                        if ($exception_fqcln_lower === $fq_catch_class_lower) {
+                            unset($context->possibly_thrown_exceptions[$exception_fqcln]);
+                            continue;
+                        }
+
+                        if ($codebase->classExists($exception_fqcln)
+                            && $codebase->classExtendsOrImplements(
+                                $exception_fqcln,
+                                $fq_catch_class
+                            )
+                        ) {
+                            unset($context->possibly_thrown_exceptions[$exception_fqcln]);
+                            continue;
+                        }
+
+                        if ($codebase->interfaceExists($exception_fqcln)
+                            && $codebase->interfaceExtends(
+                                $exception_fqcln,
+                                $fq_catch_class
+                            )
+                        ) {
+                            unset($context->possibly_thrown_exceptions[$exception_fqcln]);
+                            continue;
+                        }
+                    }
+                }
+            }
+
             $catch_var_id = '$' . $catch_var_name;
 
             $catch_context->vars_in_scope[$catch_var_id] = new Union(
@@ -272,6 +316,13 @@ class TryChecker
                 }
             }
 
+            if ($context->collect_exceptions) {
+                $potentially_caught_classes = array_diff_key(
+                    $potentially_caught_classes,
+                    $context->possibly_thrown_exceptions
+                );
+            }
+
             if ($catch_actions[$i] !== [ScopeChecker::ACTION_END]) {
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
                     if ($context->hasVariable($var_id)
@@ -311,6 +362,8 @@ class TryChecker
                 }
             }
         }
+
+        $context->possibly_thrown_exceptions += $existing_thrown_exceptions;
 
         return null;
     }

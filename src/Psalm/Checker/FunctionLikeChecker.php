@@ -16,6 +16,7 @@ use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingParamType;
+use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
@@ -614,6 +615,29 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
                             $parent_method_storage->used_params[$i] = true;
                         }
+                    }
+                }
+            }
+        }
+
+        if ($context->collect_exceptions) {
+            if ($context->possibly_thrown_exceptions) {
+                $undocumented_throws = array_diff_key($context->possibly_thrown_exceptions, $storage->throws);
+
+                foreach ($undocumented_throws as $possibly_thrown_exception => $_) {
+                    if (IssueBuffer::accepts(
+                        new MissingThrowsDocblock(
+                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                                . ' or add a @throws annotation',
+                            new CodeLocation(
+                                $this,
+                                $this->function,
+                                null,
+                                true
+                            )
+                        )
+                    )) {
+                        // fall through
                     }
                 }
             }

@@ -272,6 +272,12 @@ class CommentChecker
             }
         }
 
+        if (isset($comments['specials']['throws'])) {
+            foreach ($comments['specials']['throws'] as $throws_entry) {
+                $info->throws[] = preg_split('/[\s]+/', $throws_entry)[0];
+            }
+        }
+
         if (isset($comments['specials']['template'])) {
             foreach ($comments['specials']['template'] as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
