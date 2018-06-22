@@ -5,6 +5,7 @@
     totallyTyped="true"
     strictBinaryOperands="false"
     rememberPropertyAssignmentsAfterCall="true"
+    checkForThrowsDocblock="true"
     throwExceptionOnError="0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
@@ -20,6 +21,12 @@
             <directory name="tests/stubs" />
         </ignoreFiles>
     </projectFiles>
+
+    <ignoreExceptions>
+        <class name="UnexpectedValueException" />
+        <class name="InvalidArgumentException" />
+        <class name="LogicException" />
+    </ignoreExceptions>
 
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress" />
@@ -73,6 +80,8 @@
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
             </errorLevel>
         </PossiblyUnusedProperty>
+
+        <MissingThrowsDocblock errorLevel="info" />
 
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">

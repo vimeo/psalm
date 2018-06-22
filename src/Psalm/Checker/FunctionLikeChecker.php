@@ -622,9 +622,15 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($context->collect_exceptions) {
             if ($context->possibly_thrown_exceptions) {
+                $ignored_exceptions = array_change_key_case($codebase->config->ignored_exceptions);
+
                 $undocumented_throws = array_diff_key($context->possibly_thrown_exceptions, $storage->throws);
 
                 foreach ($undocumented_throws as $possibly_thrown_exception => $_) {
+                    if (isset($ignored_exceptions[strtolower($possibly_thrown_exception)])) {
+                        continue;
+                    }
+
                     if (IssueBuffer::accepts(
                         new MissingThrowsDocblock(
                             $possibly_thrown_exception . ' is thrown but not caught - please either catch'

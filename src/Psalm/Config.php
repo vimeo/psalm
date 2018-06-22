@@ -217,6 +217,11 @@ class Config
     public $check_for_throws_docblock = false;
 
     /**
+     * @var array<string, bool>
+     */
+    public $ignored_exceptions = [];
+
+    /**
      * @var string[]
      */
     private $plugin_paths = [];
@@ -553,6 +558,13 @@ class Config
             /** @var \SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
                 $config->mock_classes[] = (string)$mock_class['name'];
+            }
+        }
+
+        if (isset($config_xml->ignoreExceptions) && isset($config_xml->ignoreExceptions->class)) {
+            /** @var \SimpleXMLElement $exception_class */
+            foreach ($config_xml->ignoreExceptions->class as $exception_class) {
+                $config->ignored_exceptions[(string)$exception_class ['name']] = true;
             }
         }
 
