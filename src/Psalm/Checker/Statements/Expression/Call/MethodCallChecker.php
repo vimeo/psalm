@@ -94,6 +94,16 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         $source = $statements_checker->getSource();
 
         if (!$context->check_methods || !$context->check_classes) {
+            if (self::checkFunctionArguments(
+                $statements_checker,
+                $stmt->args,
+                null,
+                null,
+                $context
+            ) === false) {
+                return false;
+            }
+
             return null;
         }
 

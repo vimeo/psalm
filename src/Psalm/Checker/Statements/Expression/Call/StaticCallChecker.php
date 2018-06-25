@@ -187,6 +187,16 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         }
 
         if (!$context->check_methods || !$lhs_type) {
+            if (self::checkFunctionArguments(
+                $statements_checker,
+                $stmt->args,
+                null,
+                null,
+                $context
+            ) === false) {
+                return false;
+            }
+
             return null;
         }
 
