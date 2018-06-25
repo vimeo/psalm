@@ -730,6 +730,30 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'impossibleNullEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i !== null;',
+                'error_message' => 'RedundantCondition',
+            ],
+            'impossibleTrueEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i !== true;',
+                'error_message' => 'RedundantCondition',
+            ],
+            'impossibleFalseEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i !== false;',
+                'error_message' => 'RedundantCondition',
+            ],
+            'impossibleNumberEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i !== 3;',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

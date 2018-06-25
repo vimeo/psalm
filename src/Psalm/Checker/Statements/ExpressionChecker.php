@@ -8,6 +8,7 @@ use Psalm\Checker\CommentChecker;
 use Psalm\Checker\FunctionLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\Statements\Expression\ArrayChecker;
+use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\Expression\BinaryOpChecker;
 use Psalm\Checker\Statements\Expression\Call\FunctionCallChecker;
@@ -530,6 +531,22 @@ class ExpressionChecker
             )) {
                 return false;
             }
+        }
+
+        if (!$context->inside_conditional
+            && ($stmt instanceof PhpParser\Node\Expr\BinaryOp
+                || $stmt instanceof PhpParser\Node\Expr\Instanceof_
+                || $stmt instanceof PhpParser\Node\Expr\Assign
+                || $stmt instanceof PhpParser\Node\Expr\BooleanNot
+                || $stmt instanceof PhpParser\Node\Expr\Empty_
+                || $stmt instanceof PhpParser\Node\Expr\Isset_
+                || $stmt instanceof PhpParser\Node\Expr\FuncCall)
+        ) {
+            AssertionFinder::scrapeAssertions(
+                $stmt,
+                $context->self,
+                $statements_checker
+            );
         }
 
         $project_checker = $statements_checker->getFileChecker()->project_checker;

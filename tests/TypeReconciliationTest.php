@@ -1070,6 +1070,30 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'impossibleNullEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i === null;',
+                'error_message' => 'TypeDoesNotContainNull',
+            ],
+            'impossibleTrueEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i === true;',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'impossibleFalseEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i === false;',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'impossibleNumberEquality' => [
+                '<?php
+                    $i = 5;
+                    echo $i === 3;',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
         ];
     }
 }

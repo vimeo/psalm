@@ -118,13 +118,15 @@ class Algebra
             return self::combineOredClauses($left_clauses, $right_clauses);
         }
 
-        $assertions = AssertionFinder::getAssertions(
+        AssertionFinder::scrapeAssertions(
             $conditional,
             $this_class_name,
             $source
         );
 
-        if ($assertions) {
+        if (isset($conditional->assertions) && $conditional->assertions) {
+            $assertions = $conditional->assertions;
+
             $clauses = [];
 
             foreach ($assertions as $var => $anded_types) {

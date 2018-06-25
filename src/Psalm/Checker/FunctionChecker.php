@@ -765,7 +765,9 @@ class FunctionChecker extends FunctionLikeChecker
                         && $stmt instanceof PhpParser\Node\Stmt\Return_
                         && $stmt->expr
                     ) {
-                        $assertions = AssertionFinder::getAssertions($stmt->expr, null, $statements_checker);
+                        AssertionFinder::scrapeAssertions($stmt->expr, null, $statements_checker);
+
+                        $assertions = isset($stmt->expr->assertions) ? $stmt->expr->assertions : null;
 
                         if (isset($assertions['$' . $first_param->var->name])) {
                             $changed_var_ids = [];

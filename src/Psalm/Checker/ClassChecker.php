@@ -418,9 +418,7 @@ class ClassChecker extends ClassLikeChecker
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
-                foreach ($stmt->consts as $consts) {
-                    $member_stmts[] = $stmt;
-                }
+                $member_stmts[] = $stmt;
             }
         }
 

@@ -396,6 +396,7 @@ return [
     ],
     'phpparser\\node\\expr' => [
         'inferredType' => 'Psalm\\Type\\Union|null',
+        'assertions' => 'array<string, array<int, array<int, string>>>|null',
     ],
     'phpparser\\node\\name' => [
         'inferredType' => 'Psalm\\Type\\Union|null',
