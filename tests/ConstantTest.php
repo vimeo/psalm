@@ -256,6 +256,14 @@ class ConstantTest extends TestCase
                     if (C::ARR[C::A] === "two") {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'missingClassConstInArray' => [
+                '<?php
+                    class A {
+                        const B = 1;
+                        const C = [B];
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
         ];
     }
 }
