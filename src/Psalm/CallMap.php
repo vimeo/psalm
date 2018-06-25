@@ -11032,7 +11032,7 @@ return [
 'SplFileObject::setFlags' => ['void', 'flags'=>'int'],
 'SplFileObject::setMaxLineLen' => ['void', 'max_len'=>'int'],
 'SplFileObject::valid' => ['bool'],
-'SplFixedArray::__construct' => ['void', 'size'=>'int'],
+'SplFixedArray::__construct' => ['void', 'size='=>'int'],
 'SplFixedArray::__wakeup' => ['void'],
 'SplFixedArray::count' => ['int'],
 'SplFixedArray::current' => ['mixed'],
