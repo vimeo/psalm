@@ -321,6 +321,11 @@ class Analyzer
             return 'No files analyzed';
         }
 
+        if (!$total) {
+            return 'Psalm was unable to infer types in any of '
+                . $total_files . ' file' . ($total_files > 1 ? 's' : '');
+        }
+
         return 'Psalm was able to infer types for ' . number_format(100 * $nonmixed_count / $total, 3) . '%'
             . ' of analyzed code (' . $total_files . ' file' . ($total_files > 1 ? 's' : '') . ')';
     }
