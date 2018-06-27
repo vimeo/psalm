@@ -458,8 +458,11 @@ class ExpressionChecker
                 return false;
             }
 
-            if ($stmt->class instanceof PhpParser\Node\Name &&
-                !in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+            if ($stmt->class instanceof PhpParser\Node\Expr) {
+                if (self::analyze($statements_checker, $stmt->class, $context) === false) {
+                    return false;
+                }
+            } elseif (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
             ) {
                 if ($context->check_classes) {
                     $fq_class_name = ClassLikeChecker::getFQCLNFromNameObject(
