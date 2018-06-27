@@ -346,9 +346,21 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                                     continue;
                                 }
-                            } elseif ($class_storage->sealed_methods) {
-                                $non_existent_method_ids[] = $method_id;
-                                continue;
+                            } else {
+                                if (self::checkFunctionArguments(
+                                    $statements_checker,
+                                    $stmt->args,
+                                    null,
+                                    null,
+                                    $context
+                                ) === false) {
+                                    return false;
+                                }
+
+                                if ($class_storage->sealed_methods) {
+                                    $non_existent_method_ids[] = $method_id;
+                                    continue;
+                                }
                             }
                         }
 

@@ -347,6 +347,16 @@ class MethodCallTest extends TestCase
                     (new A)->__invoke(1);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'undefinedMethodPassedAsArg' => [
+                '<?php
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    $q = new A;
+                    $q->foo(bar());',
+                'error_message' => 'UndefinedFunction'
+            ],
         ];
     }
 }

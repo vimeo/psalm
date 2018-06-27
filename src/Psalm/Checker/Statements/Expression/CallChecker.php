@@ -366,8 +366,8 @@ class CallChecker
 
                 if ($by_ref
                     && $by_ref_type
-                    && !(
-                        $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                    && !($arg->value instanceof PhpParser\Node\Expr\Closure
+                        || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                         || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                         || $arg->value instanceof PhpParser\Node\Expr\MethodCall
                     )
@@ -509,7 +509,10 @@ class CallChecker
                 }
             } else {
                 // if it's a closure, we want to evaluate it anyway
-                if ($arg->value instanceof PhpParser\Node\Expr\Closure) {
+                if ($arg->value instanceof PhpParser\Node\Expr\Closure
+                    || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall) {
                     if (ExpressionChecker::analyze($statements_checker, $arg->value, $context) === false) {
                         return false;
                     }

@@ -466,6 +466,16 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $stmt->inferredType = $return_type_candidate;
                     }
                 }
+            } else {
+                if (self::checkFunctionArguments(
+                    $statements_checker,
+                    $stmt->args,
+                    null,
+                    null,
+                    $context
+                ) === false) {
+                    return false;
+                }
             }
         }
 
