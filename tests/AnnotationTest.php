@@ -1069,6 +1069,7 @@ class AnnotationTest extends TestCase
                      * @method string getString()
                      * @method  void setInteger(int $integer)
                      * @method setString(int $integer)
+                     * @method setMixed(mixed $foo)
                      * @method  getBool(string $foo)  :   bool
                      * @method setBool(string $foo, string|bool $bar)  :   bool
                      * @method (string|int)[] getArray() : array with some text
@@ -1088,7 +1089,9 @@ class AnnotationTest extends TestCase
                     $c = $child->setBool("hello", "true");
                     $d = $child->getArray();
                     $child->setArray(["boo"])
-                    $e = $child->getCallable();',
+                    $e = $child->getCallable();
+                    $child->setMixed("hello");
+                    $child->setMixed(4);',
                 'assertions' => [
                     '$a' => 'string',
                     '$b' => 'mixed',
