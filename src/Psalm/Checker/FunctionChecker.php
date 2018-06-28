@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Codebase\CallMap;
 use Psalm\CodeLocation;
+use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -140,6 +141,12 @@ class FunctionChecker extends FunctionLikeChecker
                         $call_args,
                         $code_location,
                         $suppressed_issues
+                    );
+
+                case 'array_reduce':
+                    return self::getArrayReduceReturnType(
+                        $statements_checker,
+                        $call_args
                     );
 
                 case 'array_merge':
@@ -692,6 +699,245 @@ class FunctionChecker extends FunctionLikeChecker
         }
 
         return Type::getArray();
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  CodeLocation                 $code_location
+     * @param  array                        $suppressed_issues
+     *
+     * @return Type\Union
+     */
+    private static function getArrayReduceReturnType(
+        StatementsChecker $statements_checker,
+        $call_args
+    ) {
+        if (!isset($call_args[0]) || !isset($call_args[1])) {
+            return Type::getMixed();
+        }
+
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        $array_arg = $call_args[0]->value;
+        $function_call_arg = $call_args[1]->value;
+
+        if (!isset($array_arg->inferredType) || !isset($function_call_arg->inferredType)) {
+            return Type::getMixed();
+        }
+
+        $array_arg_type = null;
+
+        $array_arg_types = $array_arg->inferredType->getTypes();
+
+        if (isset($array_arg_types['array'])
+            && ($array_arg_types['array'] instanceof Type\Atomic\TArray
+                || $array_arg_types['array'] instanceof Type\Atomic\ObjectLike)
+        ) {
+            $array_arg_type = $array_arg_types['array'];
+
+            if ($array_arg_type instanceof Type\Atomic\ObjectLike) {
+                $array_arg_type = $array_arg_type->getGenericArrayType();
+            }
+        }
+
+        if (!isset($call_args[2])) {
+            $reduce_return_type = Type::getNull();
+            $reduce_return_type->ignore_nullable_issues = true;
+        } else {
+            if (!isset($call_args[2]->value->inferredType)) {
+                return Type::getMixed();
+            }
+
+            $reduce_return_type = $call_args[2]->value->inferredType;
+
+            if ($reduce_return_type->isMixed()) {
+                return Type::getMixed();
+            }
+        }
+
+        $initial_type = $reduce_return_type;
+
+        if (($first_arg_atomic_types = $function_call_arg->inferredType->getTypes())
+            && ($closure_atomic_type = isset($first_arg_atomic_types['Closure'])
+                ? $first_arg_atomic_types['Closure']
+                : null)
+            && $closure_atomic_type instanceof Type\Atomic\Fn
+        ) {
+            $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
+
+            if ($closure_return_type->isVoid()) {
+                $closure_return_type = Type::getNull();
+            }
+
+            $reduce_return_type = Type::combineUnionTypes($closure_return_type, $reduce_return_type);
+
+            if ($closure_atomic_type->params !== null) {
+                if (count($closure_atomic_type->params) < 2) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArgument(
+                            'The closure passed to array_reduce needs two params',
+                            new CodeLocation($statements_checker->getSource(), $function_call_arg)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return Type::getMixed();
+                }
+
+                $carry_param = $closure_atomic_type->params[0];
+                $item_param = $closure_atomic_type->params[1];
+
+                if ($carry_param->type
+                    && (!TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $initial_type,
+                        $carry_param->type
+                    ) || (!$reduce_return_type->isMixed()
+                            && !TypeChecker::isContainedBy(
+                                $project_checker->codebase,
+                                $reduce_return_type,
+                                $carry_param->type
+                            )
+                        )
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArgument(
+                            'The first param of the closure passed to array_reduce must take '
+                                . $reduce_return_type . ' but only accepts ' . $carry_param->type,
+                            $carry_param->type_location
+                                ?: new CodeLocation($statements_checker->getSource(), $function_call_arg)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return Type::getMixed();
+                }
+
+                if ($item_param->type
+                    && $array_arg_type
+                    && !$array_arg_type->type_params[1]->isMixed()
+                    && !TypeChecker::isContainedBy(
+                        $project_checker->codebase,
+                        $array_arg_type->type_params[1],
+                        $item_param->type
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidArgument(
+                            'The second param of the closure passed to array_reduce must take '
+                                . $array_arg_type->type_params[1] . ' but only accepts ' . $item_param->type,
+                            $item_param->type_location
+                                ?: new CodeLocation($statements_checker->getSource(), $function_call_arg)
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return Type::getMixed();
+                }
+            }
+
+            return $reduce_return_type;
+        }
+
+        if ($function_call_arg instanceof PhpParser\Node\Scalar\String_
+            || $function_call_arg instanceof PhpParser\Node\Expr\Array_
+        ) {
+            $mapping_function_ids = Statements\Expression\CallChecker::getFunctionIdsFromCallableArg(
+                $statements_checker,
+                $function_call_arg
+            );
+
+            $call_map = CallMap::getCallMap();
+
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+            $codebase = $project_checker->codebase;
+
+            foreach ($mapping_function_ids as $mapping_function_id) {
+                $mapping_function_id = strtolower($mapping_function_id);
+
+                $mapping_function_id_parts = explode('&', $mapping_function_id);
+
+                $part_match_found = false;
+
+                foreach ($mapping_function_id_parts as $mapping_function_id_part) {
+                    if (isset($call_map[$mapping_function_id_part][0])) {
+                        if ($call_map[$mapping_function_id_part][0]) {
+                            $mapped_function_return =
+                                Type::parseString($call_map[$mapping_function_id_part][0]);
+
+                            $reduce_return_type = Type::combineUnionTypes(
+                                $reduce_return_type,
+                                $mapped_function_return
+                            );
+
+                            $part_match_found = true;
+                        }
+                    } else {
+                        if (strpos($mapping_function_id_part, '::') !== false) {
+                            list($callable_fq_class_name) = explode('::', $mapping_function_id_part);
+
+                            if (in_array($callable_fq_class_name, ['self', 'static', 'parent'], true)) {
+                                continue;
+                            }
+
+                            if (!$codebase->methodExists($mapping_function_id_part)) {
+                                continue;
+                            }
+
+                            $part_match_found = true;
+
+                            $self_class = 'self';
+
+                            $return_type = $codebase->methods->getMethodReturnType(
+                                $mapping_function_id_part,
+                                $self_class
+                            ) ?: Type::getMixed();
+
+                            $reduce_return_type = Type::combineUnionTypes(
+                                $reduce_return_type,
+                                $return_type
+                            );
+                        } else {
+                            if (!$codebase->functions->functionExists(
+                                $statements_checker,
+                                $mapping_function_id_part
+                            )) {
+                                return Type::getMixed();
+                            }
+
+                            $part_match_found = true;
+
+                            $function_storage = $codebase->functions->getStorage(
+                                $statements_checker,
+                                $mapping_function_id_part
+                            );
+
+                            $return_type = $function_storage->return_type ?: Type::getMixed();
+
+                            $reduce_return_type = Type::combineUnionTypes(
+                                $reduce_return_type,
+                                $return_type
+                            );
+                        }
+                    }
+                }
+
+                if ($part_match_found === false) {
+                    return Type::getMixed();
+                }
+            }
+
+            return $reduce_return_type;
+        }
+
+        return Type::getMixed();
     }
 
     /**
