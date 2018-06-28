@@ -892,7 +892,8 @@ class CallChecker
                                 new CodeLocation($statements_checker->getSource(), $arg->value),
                                 $arg->value,
                                 $context,
-                                $function_param->by_ref
+                                $function_param->by_ref,
+                                $function_param->is_variadic
                             ) === false) {
                                 return false;
                             }
@@ -901,18 +902,18 @@ class CallChecker
 
                             if (IssueBuffer::accepts(
                                 new MixedArgument(
-                                    'Argument ' . ($argument_offset + 1) . $cased_method_id
+                                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                         . ' cannot be mixed, expecting array',
                                     $code_location
                                 ),
                                 $statements_checker->getSuppressedIssues()
                             )) {
-                                return false;
+                                // fall through
                             }
                         } else {
                             if (IssueBuffer::accepts(
                                 new InvalidArgument(
-                                    'Argument ' . ($argument_offset + 1) . $cased_method_id
+                                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                         . ' expects array, ' . $arg->value->inferredType . ' provided',
                                     $code_location
                                 ),
@@ -934,7 +935,8 @@ class CallChecker
                         new CodeLocation($statements_checker->getSource(), $arg->value),
                         $arg->value,
                         $context,
-                        $function_param->by_ref
+                        $function_param->by_ref,
+                        $function_param->is_variadic
                     ) === false) {
                         return false;
                     }
@@ -1440,6 +1442,7 @@ class CallChecker
      * @param   int                 $argument_offset
      * @param   CodeLocation        $code_location
      * @param   bool                $by_ref
+     * @param   bool                $variadic
      *
      * @return  null|false
      */
@@ -1452,7 +1455,8 @@ class CallChecker
         CodeLocation $code_location,
         PhpParser\Node\Expr $input_expr,
         Context $context,
-        $by_ref = false
+        $by_ref = false,
+        $variadic = false
     ) {
         if ($param_type->isMixed()) {
             return null;
@@ -1486,7 +1490,7 @@ class CallChecker
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
 
             return null;
@@ -1764,6 +1768,7 @@ class CallChecker
         if ($type_match_found
             && !$param_type->isMixed()
             && !$param_type->from_docblock
+            && !$variadic
             && !$by_ref
         ) {
             $var_id = ExpressionChecker::getVarId(

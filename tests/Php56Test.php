@@ -222,6 +222,14 @@ class Php56Test extends TestCase
                         }
                     }',
             ],
+            'argumentUnpackingWithoutChangingRef' => [
+                '<?php
+                    function foo(int ...$is) : void {}
+
+                    $arr = [1, 2, 3, 4];
+                    foo(...$arr);
+                    foo(...$arr);',
+            ],
         ];
     }
 
