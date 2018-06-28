@@ -682,20 +682,33 @@ class Reconciler
             return $new_type;
         }
 
-        $has_interface = false;
+        $new_type_has_interface = false;
 
         if ($new_type->hasObjectType()) {
             foreach ($new_type->getTypes() as $new_type_part) {
                 if ($new_type_part instanceof TNamedObject &&
                     $codebase->interfaceExists($new_type_part->value)
                 ) {
-                    $has_interface = true;
+                    $new_type_has_interface = true;
                     break;
                 }
             }
         }
 
-        if ($has_interface) {
+        $old_type_has_interface = false;
+
+        if ($existing_var_type->hasObjectType()) {
+            foreach ($existing_var_type->getTypes() as $existing_type_part) {
+                if ($existing_type_part instanceof TNamedObject &&
+                    $codebase->interfaceExists($existing_type_part->value)
+                ) {
+                    $old_type_has_interface = true;
+                    break;
+                }
+            }
+        }
+
+        if ($new_type_has_interface || $old_type_has_interface) {
             $new_type_part = new TNamedObject($new_var_type);
 
             $acceptable_atomic_types = [];
