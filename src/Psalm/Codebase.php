@@ -215,7 +215,7 @@ class Codebase
         $has_changes = $this->scanner->scanFiles($this->classlikes);
 
         if ($has_changes) {
-            $this->populator->populateCodebase();
+            $this->populator->populateCodebase($this);
         }
     }
 

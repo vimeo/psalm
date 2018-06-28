@@ -64,7 +64,7 @@ class Populator
     /**
      * @return void
      */
-    public function populateCodebase()
+    public function populateCodebase(\Psalm\Codebase $codebase)
     {
         if ($this->debug_output) {
             echo 'ClassLikeStorage is populating' . "\n";
@@ -92,8 +92,9 @@ class Populator
             $this->populateFileStorage($file_storage);
         }
 
-        if ($this->config->allow_phpstorm_generics) {
-            foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
+
+        foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
+            if ($this->config->allow_phpstorm_generics) {
                 foreach ($class_storage->properties as $property_storage) {
                     if ($property_storage->type) {
                         $this->convertPhpStormGenericToPsalmGeneric($property_storage->type, true);
@@ -113,6 +114,49 @@ class Populator
                 }
             }
 
+            if ($class_storage->aliases) {
+                foreach ($class_storage->public_class_constant_nodes as $const_name => $node) {
+                    $const_type = \Psalm\Checker\StatementsChecker::getSimpleType(
+                        $codebase,
+                        $node,
+                        $class_storage->aliases,
+                        null,
+                        null,
+                        $class_storage->name
+                    );
+
+                    $class_storage->public_class_constants[$const_name] = $const_type ?: Type::getMixed();
+                }
+
+                foreach ($class_storage->protected_class_constant_nodes as $const_name => $node) {
+                    $const_type = \Psalm\Checker\StatementsChecker::getSimpleType(
+                        $codebase,
+                        $node,
+                        $class_storage->aliases,
+                        null,
+                        null,
+                        $class_storage->name
+                    );
+
+                    $class_storage->protected_class_constants[$const_name] = $const_type ?: Type::getMixed();
+                }
+
+                foreach ($class_storage->private_class_constant_nodes as $const_name => $node) {
+                    $const_type = \Psalm\Checker\StatementsChecker::getSimpleType(
+                        $codebase,
+                        $node,
+                        $class_storage->aliases,
+                        null,
+                        null,
+                        $class_storage->name
+                    );
+
+                    $class_storage->private_class_constants[$const_name] = $const_type ?: Type::getMixed();
+                }
+            }
+        }
+
+        if ($this->config->allow_phpstorm_generics) {
             foreach ($all_file_storage as $file_storage) {
                 foreach ($file_storage->functions as $function_storage) {
                     if ($function_storage->return_type) {

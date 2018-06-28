@@ -423,8 +423,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
                     $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
                     if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
-                        $const_type = StatementsChecker::getSimpleType($second_arg_value, $this->file_scanner)
-                            ?: Type::getMixed();
+                        $const_type = StatementsChecker::getSimpleType(
+                            $this->codebase,
+                            $second_arg_value,
+                            $this->aliases
+                        ) ?: Type::getMixed();
                         $const_name = $first_arg_value->value;
 
                         if ($this->functionlike_storages && !$this->config->hoist_constants) {
@@ -538,7 +541,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
             foreach ($node->consts as $const) {
-                $const_type = StatementsChecker::getSimpleType($const->value, $this->file_scanner)
+                $const_type = StatementsChecker::getSimpleType($this->codebase, $const->value, $this->aliases)
                     ?: Type::getMixed();
 
                 if ($this->codebase->register_global_functions) {
@@ -1345,7 +1348,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $is_optional,
             $is_nullable,
             $param->variadic,
-            $param->default ? StatementsChecker::getSimpleType($param->default, $this) : null
+            $param->default ? StatementsChecker::getSimpleType($this->codebase, $param->default, $this->aliases) : null
         );
     }
 
@@ -1574,8 +1577,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if (!$property_group_type) {
                 if ($property->default) {
                     $default_type = StatementsChecker::getSimpleType(
+                        $this->codebase,
                         $property->default,
-                        $this->file_scanner,
+                        $this->aliases,
+                        null,
                         $existing_constants,
                         $fq_classlike_name
                     );
@@ -1649,20 +1654,34 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         foreach ($stmt->consts as $const) {
             $const_type = StatementsChecker::getSimpleType(
+                $this->codebase,
                 $const->value,
-                $this->file_scanner,
+                $this->aliases,
+                null,
                 $existing_constants,
                 $fq_classlike_name
-            ) ?: Type::getMixed();
+            );
 
-            $existing_constants[$const->name->name] = $const_type;
+            if ($const_type) {
+                $existing_constants[$const->name->name] = $const_type;
 
-            if ($stmt->isProtected()) {
-                $storage->protected_class_constants[$const->name->name] = $const_type;
-            } elseif ($stmt->isPrivate()) {
-                $storage->private_class_constants[$const->name->name] = $const_type;
+                if ($stmt->isProtected()) {
+                    $storage->protected_class_constants[$const->name->name] = $const_type;
+                } elseif ($stmt->isPrivate()) {
+                    $storage->private_class_constants[$const->name->name] = $const_type;
+                } else {
+                    $storage->public_class_constants[$const->name->name] = $const_type;
+                }
             } else {
-                $storage->public_class_constants[$const->name->name] = $const_type;
+                if ($stmt->isProtected()) {
+                    $storage->protected_class_constant_nodes[$const->name->name] = $const->value;
+                } elseif ($stmt->isPrivate()) {
+                    $storage->private_class_constant_nodes[$const->name->name] = $const->value;
+                } else {
+                    $storage->public_class_constant_nodes[$const->name->name] = $const->value;
+                }
+
+                $storage->aliases = $this->aliases;
             }
         }
     }

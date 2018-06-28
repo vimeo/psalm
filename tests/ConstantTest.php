@@ -191,6 +191,26 @@ class ConstantTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedArgument', 'MixedArrayOffset', 'MixedAssignment'],
             ],
+            'lateConstantResolution' => [
+                '<?php
+                    class A {
+                        const FOO = "foo";
+                    }
+
+                    class B {
+                        const BAR = [
+                            A::FOO
+                        ];
+                        const BAR2 = A::FOO;
+                    }
+
+                    $a = B::BAR[0];
+                    $b = B::BAR2;',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'string',
+                ],
+            ],
         ];
     }
 

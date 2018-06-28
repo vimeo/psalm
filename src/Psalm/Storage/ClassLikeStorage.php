@@ -28,6 +28,34 @@ class ClassLikeStorage
     public $private_class_constants = [];
 
     /**
+     * A lookup table for nodes of unresolvable public class constants
+     *
+     * @var array<string, \PhpParser\Node\Expr>
+     */
+    public $public_class_constant_nodes = [];
+
+    /**
+     * A lookup table for nodes of unresolvable protected class constants
+     *
+     * @var array<string, \PhpParser\Node\Expr>
+     */
+    public $protected_class_constant_nodes = [];
+
+    /**
+     * A lookup table for nodes of unresolvable private class constants
+     *
+     * @var array<string, \PhpParser\Node\Expr>
+     */
+    public $private_class_constant_nodes = [];
+
+    /**
+     * Aliases to help Psalm understand constant refs
+     *
+     * @var ?\Psalm\Aliases
+     */
+    public $aliases;
+
+    /**
      * @var bool
      */
     public $populated = false;
