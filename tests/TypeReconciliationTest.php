@@ -632,6 +632,12 @@ class TypeReconciliationTest extends TestCase
                     foo(new B);
                     bar(new B);',
             ],
+            'unionOfArrayOrTraversable' => [
+                '<?php
+                    function foo(iterable $iterable) : void {
+                        if (\is_array($iterable) || $iterable instanceof \Traversable) {}
+                    }',
+            ],
             'isTruthy' => [
                 '<?php
                     function f(string $s = null): string {
@@ -1122,6 +1128,13 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     $i = 5;
                     echo $i === 3;',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'SKIPPED-noIntersectionOfArrayOrTraversable' => [
+                '<?php
+                    function foo(iterable $iterable) : void {
+                        if (\is_array($iterable) && $iterable instanceof \Traversable) {}
+                    }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
         ];

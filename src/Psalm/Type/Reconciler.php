@@ -712,13 +712,13 @@ class Reconciler
                 && !TypeChecker::isContainedBy(
                     $codebase,
                     $existing_var_type,
-                    new Union([new TNamedObject($new_var_type)])
+                    $new_type
                 )
             )
             || ($old_type_has_interface
                 && !TypeChecker::isContainedBy(
                     $codebase,
-                    new Union([new TNamedObject($new_var_type)]),
+                    $new_type,
                     $existing_var_type
                 )
             )

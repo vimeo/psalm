@@ -155,6 +155,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
+            $class_location = new CodeLocation($this->file_scanner, $node, null, true);
+
             if ($node->name === null) {
                 if (!$node instanceof PhpParser\Node\Stmt\Class_) {
                     throw new \LogicException('Anonymous classes are always classes');
@@ -180,6 +182,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     if (!$duplicate_class_storage->location
                         || $duplicate_class_storage->location->file_path !== $this->file_path
+                        || $class_location->getHash() !== $duplicate_class_storage->location->getHash()
                     ) {
                         if (IssueBuffer::accepts(
                             new DuplicateClass(
@@ -204,7 +207,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $storage = $this->codebase->createClassLikeStorage($fq_classlike_name);
 
-            $storage->location = new CodeLocation($this->file_scanner, $node, null, true);
+            $storage->location = $class_location;
             $storage->user_defined = !$this->codebase->register_global_functions;
             $storage->stubbed = $this->codebase->register_global_functions;
 
