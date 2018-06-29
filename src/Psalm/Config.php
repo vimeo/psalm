@@ -1148,18 +1148,17 @@ class Config
             $autoload_files_files = array_merge($autoload_files_files, $vendor_autoload_files);
         }
 
+        $autoload_files_files = array_unique($autoload_files_files);
+
         if ($autoload_files_files) {
             $codebase = $project_checker->codebase;
             $codebase->register_global_functions = true;
 
             foreach ($autoload_files_files as $file_path) {
-                $file_storage = $codebase->createFileStorageForPath($file_path);
-                $file_to_scan = new \Psalm\Scanner\FileScanner($file_path, $this->shortenFileName($file_path), false);
-                $file_to_scan->scan(
-                    $codebase,
-                    $file_storage
-                );
+                $codebase->scanner->addFileToShallowScan($file_path);
             }
+
+            $codebase->scanner->scanFiles($codebase->classlikes);
 
             $project_checker->codebase->register_global_functions = false;
         }

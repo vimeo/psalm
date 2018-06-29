@@ -176,17 +176,21 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         // do nothing
                     }
 
-                    if (IssueBuffer::accepts(
-                        new DuplicateClass(
-                            'Class ' . $fq_classlike_name . ' has already been defined'
-                                . ($other_file_path ? ' in ' . $other_file_path : ''),
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                        $this->file_storage->has_visitor_issues = true;
-                    }
+                    $duplicate_class_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name);
 
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    if ($duplicate_class_storage->location->file_path !== $this->file_path) {
+                        if (IssueBuffer::accepts(
+                            new DuplicateClass(
+                                'Class ' . $fq_classlike_name . ' has already been defined'
+                                    . ($other_file_path ? ' in ' . $other_file_path : ''),
+                                new CodeLocation($this->file_scanner, $node, null, true)
+                            )
+                        )) {
+                            $this->file_storage->has_visitor_issues = true;
+                        }
+
+                        return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    }
                 }
             }
 
@@ -546,10 +550,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                 if ($this->codebase->register_global_functions) {
                     $this->codebase->addStubbedConstantType($const->name->name, $const_type);
-                } else {
-                    $this->file_storage->constants[$const->name->name] = $const_type;
-                    $this->file_storage->declaring_constants[$const->name->name] = $this->file_path;
                 }
+
+                $this->file_storage->constants[$const->name->name] = $const_type;
+                $this->file_storage->declaring_constants[$const->name->name] = $this->file_path;
             }
         } elseif ($this->codebase->register_global_functions && $node instanceof PhpParser\Node\Stmt\If_) {
             if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {
@@ -679,17 +683,18 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
             $function_id = strtolower($cased_function_id);
 
-            if ($this->codebase->register_global_functions) {
-                $storage = new FunctionLikeStorage();
-                $this->codebase->functions->addStubbedFunction($function_id, $storage);
-            } else {
-                if (isset($this->file_storage->functions[$function_id])) {
-                    return $this->file_storage->functions[$function_id];
-                }
-
-                $storage = $this->file_storage->functions[$function_id] = new FunctionLikeStorage();
-                $this->file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
+            if (isset($this->file_storage->functions[$function_id])) {
+                return $this->file_storage->functions[$function_id];
             }
+
+            $storage = new FunctionLikeStorage();
+
+            if ($this->codebase->register_global_functions) {
+                $this->codebase->functions->addStubbedFunction($function_id, $storage);
+            }
+
+            $this->file_storage->functions[$function_id] = $storage;
+            $this->file_storage->declaring_function_ids[$function_id] = strtolower($this->file_path);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             if (!$this->fq_classlike_names) {
                 throw new \LogicException('$this->fq_classlike_names should not be null');
@@ -762,8 +767,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         $this->functionlike_storages[] = $storage;
 
-        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod || $stmt instanceof PhpParser\Node\Stmt\Function_) {
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             $storage->cased_name = $stmt->name->name;
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+            $storage->cased_name =
+                ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
         }
 
         $storage->location = new CodeLocation($this->file_scanner, $stmt, null, true);
