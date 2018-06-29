@@ -708,7 +708,21 @@ class Reconciler
             }
         }
 
-        if ($new_type_has_interface || $old_type_has_interface) {
+        if (($new_type_has_interface
+                && !TypeChecker::isContainedBy(
+                    $codebase,
+                    $existing_var_type,
+                    new Union([new TNamedObject($new_var_type)])
+                )
+            )
+            || ($old_type_has_interface
+                && !TypeChecker::isContainedBy(
+                    $codebase,
+                    new Union([new TNamedObject($new_var_type)]),
+                    $existing_var_type
+                )
+            )
+        ) {
             $new_type_part = new TNamedObject($new_var_type);
 
             $acceptable_atomic_types = [];
