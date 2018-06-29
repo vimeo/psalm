@@ -178,7 +178,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     $duplicate_class_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name);
 
-                    if ($duplicate_class_storage->location->file_path !== $this->file_path) {
+                    if (!$duplicate_class_storage->location
+                        || $duplicate_class_storage->location->file_path !== $this->file_path
+                    ) {
                         if (IssueBuffer::accepts(
                             new DuplicateClass(
                                 'Class ' . $fq_classlike_name . ' has already been defined'
