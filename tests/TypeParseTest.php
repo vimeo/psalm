@@ -249,6 +249,9 @@ class TypeParseTest extends TestCase
         Type::parseString('(A|B)&C');
     }
 
+    /**
+     * @return void
+     */
     public function testBracketInUnion()
     {
         Type::parseString('null|(scalar|array|object)');
