@@ -221,6 +221,14 @@ abstract class Type
                     $atomic_type = self::getTypeFromTree($child_tree, false, $template_type_names);
                 }
 
+                if ($atomic_type instanceof Union) {
+                    foreach ($atomic_type->getTypes() as $type) {
+                        $atomic_types[] = $type;
+                    }
+
+                    continue;
+                }
+
                 if (!$atomic_type instanceof Atomic) {
                     throw new \UnexpectedValueException(
                         'Was expecting an atomic type, got ' . get_class($atomic_type)
