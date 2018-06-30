@@ -380,6 +380,14 @@ class TypeChecker
             return false;
         }
 
+        if ($input_type_part instanceof TNull && $container_type_part instanceof TNull) {
+            return true;
+        }
+
+        if ($input_type_part instanceof TNull || $container_type_part instanceof TNull) {
+            return false;
+        }
+
         if ($input_type_part->shallowEquals($container_type_part) ||
             (
                 $input_type_part instanceof TNamedObject

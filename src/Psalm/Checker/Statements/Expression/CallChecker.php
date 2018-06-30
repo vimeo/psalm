@@ -1723,7 +1723,7 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new NullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
-                            'null value provided',
+                            'null value provided to parameter with type ' . $param_type,
                         $code_location
                     ),
                     $statements_checker->getSuppressedIssues()
