@@ -36,11 +36,17 @@ class DoChecker
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
             $statements_checker->addSuppressedIssues(['RedundantCondition']);
         }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
 
         $statements_checker->analyze($stmt->stmts, $do_context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
             $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
         foreach ($context->vars_in_scope as $var => $type) {
@@ -121,6 +127,34 @@ class DoChecker
             $do_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
+        $do_cond_context = clone $do_context;
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_checker->addSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        ExpressionChecker::analyze($statements_checker, $stmt->cond, $do_cond_context);
+
+        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+            $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+        }
+        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+            $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+
+        if ($context->collect_references) {
+            $do_context->unreferenced_vars = $do_cond_context->unreferenced_vars;
+        }
+
+        foreach ($do_cond_context->vars_in_scope as $var_id => $type) {
+            if (isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+            }
+        }
+
         LoopChecker::analyze(
             $statements_checker,
             $stmt->stmts,
@@ -161,7 +195,7 @@ class DoChecker
         ExpressionChecker::analyze($statements_checker, $stmt->cond, $inner_loop_context);
 
         if ($context->collect_references) {
-            $context->unreferenced_vars = $inner_loop_context->unreferenced_vars;
+            $context->unreferenced_vars = $do_context->unreferenced_vars;
         }
 
         if ($context->collect_exceptions) {

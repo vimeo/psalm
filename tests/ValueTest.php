@@ -407,6 +407,18 @@ class ValueTest extends TestCase
                         takesString($f[$i]);
                     }'
             ],
+            'noRedundantConditionAfterWhile' => [
+                '<?php
+                    $i = 5;
+                    while (--$i > 0) {}
+                    echo $i === 0;',
+            ],
+            'noRedundantConditionAfterDoWhile' => [
+                '<?php
+                    $i = 5;
+                    do {} while (--$i > 0);
+                    echo $i === 0;',
+            ],
         ];
     }
 
