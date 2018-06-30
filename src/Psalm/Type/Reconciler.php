@@ -30,6 +30,7 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 
@@ -531,6 +532,9 @@ class Reconciler
                     $numeric_types[] = $type;
                 } elseif ($type->isNumericType()) {
                     $numeric_types[] = $type;
+                } elseif ($type instanceof TScalar) {
+                    $did_remove_type = true;
+                    $numeric_types[] = new TNumeric();
                 } else {
                     $did_remove_type = true;
                 }
