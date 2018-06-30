@@ -1010,11 +1010,13 @@ class Config
     }
 
     /**
+     * @param bool $debug
+     *
      * @return void
      */
-    public function visitStubFiles(Codebase $codebase)
+    public function visitStubFiles(Codebase $codebase, $debug = false)
     {
-        $codebase->register_global_functions = true;
+        $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
         $generic_stubs_path = __DIR__ . '/Stubs/CoreGenericFunctions.php';
@@ -1032,16 +1034,21 @@ class Config
 
         $stub_files = array_merge([$generic_stubs_path, $generic_classes_path], $this->stub_files);
 
-        foreach ($stub_files as $stub_file_path) {
-            $file_storage = $codebase->createFileStorageForPath($stub_file_path);
-            $file_to_scan = new FileScanner($stub_file_path, $this->shortenFileName($stub_file_path), false);
-            $file_to_scan->scan(
-                $codebase,
-                $file_storage
-            );
+        foreach ($stub_files as $file_path) {
+            $codebase->scanner->addFileToShallowScan($file_path);
         }
 
-        $codebase->register_global_functions = false;
+        if ($debug) {
+            echo 'Registering stub files' . "\n";
+        }
+
+        $codebase->scanFiles();
+
+        if ($debug) {
+            echo 'Finished registering stub files' . "\n";
+        }
+
+        $codebase->register_stub_files = false;
     }
 
     /**
@@ -1101,12 +1108,14 @@ class Config
     }
 
     /**
+     * @param bool $debug
+     *
      * @return void
      *
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectChecker $project_checker)
+    public function visitComposerAutoloadFiles(ProjectChecker $project_checker, $debug = false)
     {
         $composer_json_path = $this->base_dir . 'composer.json'; // this should ideally not be hardcoded
 
@@ -1152,15 +1161,23 @@ class Config
 
         if ($autoload_files_files) {
             $codebase = $project_checker->codebase;
-            $codebase->register_global_functions = true;
+            $codebase->register_autoload_files = true;
 
             foreach ($autoload_files_files as $file_path) {
-                $codebase->scanner->addFileToShallowScan($file_path);
+                $codebase->scanner->addFileToDeepScan($file_path);
+            }
+
+            if ($debug) {
+                echo 'Registering autoloaded files' . "\n";
             }
 
             $codebase->scanner->scanFiles($codebase->classlikes);
 
-            $project_checker->codebase->register_global_functions = false;
+            if ($debug) {
+                echo 'Finished registering autoloaded files' . "\n";
+            }
+
+            $project_checker->codebase->register_autoload_files = false;
         }
     }
 

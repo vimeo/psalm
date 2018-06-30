@@ -53,6 +53,7 @@ class FileScanner implements FileSource
         if ((!$this->will_analyze || $file_storage->deep_scan)
             && $storage_from_cache
             && !$file_storage->has_trait
+            && !$codebase->register_stub_files
         ) {
             return;
         }

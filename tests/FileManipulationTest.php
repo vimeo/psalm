@@ -46,10 +46,6 @@ class FileManipulationTest extends TestCase
 
         $config = new TestConfig();
 
-        if (empty($issues_to_fix)) {
-            $config->addPluginPath('examples/ClassUnqualifier.php');
-        }
-
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             $config,
             $this->file_provider,
@@ -57,6 +53,11 @@ class FileManipulationTest extends TestCase
             new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
             new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
         );
+
+        if (empty($issues_to_fix)) {
+            $config->addPluginPath('examples/ClassUnqualifier.php');
+            $config->initializePlugins($this->project_checker);
+        }
 
         $context = new Context();
 

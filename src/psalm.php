@@ -315,6 +315,8 @@ if (isset($options['clear-cache'])) {
     exit;
 }
 
+$debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
+
 $project_checker = new ProjectChecker(
     $config,
     new Psalm\Provider\FileProvider(),
@@ -325,12 +327,12 @@ $project_checker = new ProjectChecker(
     $show_info,
     $output_format,
     $threads,
-    array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options),
+    $debug,
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null,
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
-$config->visitComposerAutoloadFiles($project_checker);
+$config->visitComposerAutoloadFiles($project_checker, $debug);
 
 if (array_key_exists('debug-by-line', $options)) {
     $project_checker->debug_lines = true;

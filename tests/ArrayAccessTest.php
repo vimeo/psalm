@@ -141,6 +141,14 @@ class ArrayAccessTest extends TestCase
                     $doc->loadXML("<node key=\"value\"/>");
                     $doc->getElementsByTagName("node")[0];'
             ],
+            'getOnArrayAcccess' => [
+                '<?php
+                    function foo(ArrayAccess $a) : void {
+                        echo $a[0];
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedArgument'],
+            ],
         ];
     }
 

@@ -450,7 +450,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     }
                 }
 
-                if (!$project_checker->codebase->register_global_functions) {
+                if (!$project_checker->codebase->register_stub_files
+                    && !$project_checker->codebase->register_autoload_files
+                ) {
                     $function_id = strtolower($stmt->name->name);
                     $function_context = new Context($context->self);
                     $config = Config::getInstance();

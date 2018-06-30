@@ -90,6 +90,8 @@ class TestCase extends BaseTestCase
 
         $codebase->scanFiles();
 
+        $codebase->config->visitStubFiles($codebase);
+
         $file_checker = new FileChecker(
             $this->project_checker,
             $file_path,

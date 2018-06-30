@@ -104,7 +104,7 @@ class Functions
      *
      * @return void
      */
-    public function addStubbedFunction($function_id, FunctionLikeStorage $storage)
+    public function addGlobalFunction($function_id, FunctionLikeStorage $storage)
     {
         self::$stubbed_functions[strtolower($function_id)] = $storage;
     }

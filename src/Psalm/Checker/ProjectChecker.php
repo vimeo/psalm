@@ -231,9 +231,6 @@ class ProjectChecker
         self::$instance = $this;
 
         $this->cache_provider->use_igbinary = $config->use_igbinary;
-
-        $config->visitStubFiles($this->codebase);
-        $config->initializePlugins($this);
     }
 
     /**
@@ -283,6 +280,8 @@ class ProjectChecker
                 $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
             }
 
+            $this->config->initializePlugins($this);
+
             $this->codebase->scanFiles();
         } else {
             if ($this->debug_output) {
@@ -297,6 +296,8 @@ class ProjectChecker
 
                 $this->checkDiffFilesWithConfig($this->config, $file_list);
 
+                $this->config->initializePlugins($this);
+
                 $this->codebase->scanFiles();
             }
         }
@@ -304,6 +305,8 @@ class ProjectChecker
         if ($this->output_format === self::TYPE_CONSOLE) {
             echo 'Analyzing files...' . "\n";
         }
+
+        $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
 
@@ -386,7 +389,11 @@ class ProjectChecker
             echo 'Scanning files...' . "\n";
         }
 
+        $this->config->initializePlugins($this);
+
         $this->codebase->scanFiles();
+
+        $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
         if ($this->output_format === self::TYPE_CONSOLE) {
             echo 'Analyzing files...' . "\n";
@@ -547,7 +554,11 @@ class ProjectChecker
             echo 'Scanning files...' . "\n";
         }
 
+        $this->config->initializePlugins($this);
+
         $this->codebase->scanFiles();
+
+        $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
         if ($this->output_format === self::TYPE_CONSOLE) {
             echo 'Analyzing files...' . "\n";

@@ -69,11 +69,18 @@ class Codebase
     private static $stubbed_constants = [];
 
     /**
+     * Whether to register autoloaded information
+     *
+     * @var bool
+     */
+    public $register_autoload_files = false;
+
+    /**
      * Whether to log functions just at the file level or globally (for stubs)
      *
      * @var bool
      */
-    public $register_global_functions = false;
+    public $register_stub_files = false;
 
     /**
      * @var bool
@@ -404,7 +411,7 @@ class Codebase
      *
      * @return  void
      */
-    public function addStubbedConstantType($const_id, $type)
+    public function addGlobalConstantType($const_id, Type\Union $type)
     {
         self::$stubbed_constants[$const_id] = $type;
     }
