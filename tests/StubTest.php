@@ -10,9 +10,6 @@ class StubTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
-
     /**
      * @return void
      */
