@@ -776,6 +776,11 @@ class Config
     {
         $this->plugin_classes[] = $class_name;
     }
+    /** @return string[] */
+    public function getPluginClasses(): array
+    {
+        return $this->plugin_classes;
+    }
 
     /**
      * Initialises all the plugins (done once the config is fully loaded)
