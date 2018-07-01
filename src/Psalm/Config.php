@@ -239,6 +239,11 @@ class Config
     public $plugin_paths = [];
 
     /**
+     * @var string[]
+     */
+    private $plugin_classes = [];
+
+    /**
      * Static methods to be called after method checks have completed
      *
      * @var string[]
@@ -637,19 +642,29 @@ class Config
                     );
                 }
 
-                $config->stub_files[] = $file_path;
+                $config->addStubFile($file_path);
             }
         }
 
         // this plugin loading system borrows heavily from etsy/phan
-        if (isset($config_xml->plugins) && isset($config_xml->plugins->plugin)) {
-            /** @var \SimpleXMLElement $plugin */
-            foreach ($config_xml->plugins->plugin as $plugin) {
-                $plugin_file_name = $plugin['filename'];
+        if (isset($config_xml->plugins) ) {
+            if (isset($config_xml->plugins->plugin)) {
+                /** @var \SimpleXMLElement $plugin */
+                foreach ($config_xml->plugins->plugin as $plugin) {
+                    $plugin_file_name = $plugin['filename'];
 
-                $path = $config->base_dir . $plugin_file_name;
+                    $path = $config->base_dir . $plugin_file_name;
 
-                $config->addPluginPath($path);
+                    $config->addPluginPath($path);
+                }
+            }
+            if (isset($config_xml->plugins->pluginClass)) {
+                /** @var \SimpleXMLElement $plugin */
+                foreach ($config_xml->plugins->pluginClass as $plugin) {
+                    $plugin_class_name = $plugin['class'];
+
+                    $config->addPluginClass($plugin_class_name);
+                }
             }
         }
 
@@ -757,6 +772,11 @@ class Config
         $this->plugin_paths[] = $path;
     }
 
+    public function addPluginClass(string $class_name): void
+    {
+        $this->plugin_classes[] = $class_name;
+    }
+
     /**
      * Initialises all the plugins (done once the config is fully loaded)
      *
@@ -769,6 +789,20 @@ class Config
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {
+        $facade = new PluginFacade($this);
+        // initialize plugin classes earlier to let them hook into subsequent load process
+        foreach ($this->plugin_classes as $plugin_class_name) {
+            try {
+                // todo: support other forms of callables
+                /** @var callable(PluginFacade):void $plugin_object */
+                $plugin_object = new $plugin_class_name;
+                $plugin_object($facade);
+            } catch (\Throwable $e) {
+                // todo: ???
+                throw $e;
+            }
+        }
+
         $codebase = $project_checker->codebase;
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
@@ -1319,5 +1353,10 @@ class Config
     public function setServerMode()
     {
         $this->cache_directory .= '-s';
+    }
+
+    public function addStubFile(string $stub_file): void
+    {
+        $this->stub_files[] = $stub_file;
     }
 }
