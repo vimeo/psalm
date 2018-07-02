@@ -1019,6 +1019,36 @@ class LoopScopeTest extends TestCase
                         }
                     }'
             ],
+            'invalidateBothByRefAssignments' => [
+                '<?php
+                    function foo(?string &$i) : void {}
+                    function bar(?string &$i) : void {}
+
+                    $c = null;
+
+                    while (rand(0, 1)) {
+                        if (!$c) {
+                            foo($c);
+                        } else {
+                            bar($c);
+                        }
+                    }',
+            ],
+            'invalidateBothByRefAssignmentsInDo' => [
+                '<?php
+                    function foo(?string &$i) : void {}
+                    function bar(?string &$i) : void {}
+
+                    $c = null;
+
+                    do {
+                        if (!$c) {
+                            foo($c);
+                        } else {
+                            bar($c);
+                        }
+                    } while (rand(0, 1));',
+            ],
         ];
     }
 
@@ -1203,6 +1233,22 @@ class LoopScopeTest extends TestCase
                       foreach ([1, 2, 3] as $i) {}
                     }',
                 'error_message' => 'LoopInvalidation',
+            ],
+            'invalidateByRefAssignmentWithRedundantCondition' => [
+                '<?php
+                    function foo(?string $i) : void {}
+                    function bar(?string $i) : void {}
+
+                    $c = null;
+
+                    while (rand(0, 1)) {
+                        if (!$c) {
+                            foo($c);
+                        } else {
+                            bar($c);
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

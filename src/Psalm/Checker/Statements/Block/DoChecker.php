@@ -39,6 +39,9 @@ class DoChecker
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
             $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_checker->addSuppressedIssues(['TypeDoesNotContainType']);
+        }
 
         $statements_checker->analyze($stmt->stmts, $do_context);
 
@@ -47,6 +50,9 @@ class DoChecker
         }
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
             $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
+            $statements_checker->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         foreach ($context->vars_in_scope as $var => $type) {
