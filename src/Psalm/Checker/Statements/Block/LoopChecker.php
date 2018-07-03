@@ -256,22 +256,6 @@ class LoopChecker
                     }
                 }
 
-                /*if ($inner_context->collect_references) {
-                    foreach ($inner_context->unreferenced_vars as $var_id => $locations) {
-                        if (isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])
-                            && !isset($new_referenced_var_ids[$var_id])
-                        ) {
-                            if (!isset($loop_scope->loop_parent_context->unreferenced_vars[$var_id])) {
-                                $loop_scope->loop_parent_context->unreferenced_vars[$var_id] = $locations;
-                            } else {
-                                $loop_scope->loop_parent_context->unreferenced_vars[$var_id] += $locations;
-                            }
-                        } else {
-                            $statements_checker->registerVariableUses($locations);
-                        }
-                    }
-                }*/
-
                 // remove vars that were defined in the foreach
                 foreach ($vars_to_remove as $var_id) {
                     unset($inner_context->vars_in_scope[$var_id]);
@@ -536,27 +520,19 @@ class LoopChecker
 
         $reconcilable_while_types = Algebra::getTruthsFromFormula($loop_context->clauses);
 
-        // if the while has an or as the main component, we cannot safely reason about it
-        if ($pre_condition instanceof PhpParser\Node\Expr\BinaryOp &&
-            ($pre_condition instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr ||
-                $pre_condition instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
-        ) {
-            // do nothing
-        } else {
-            $changed_var_ids = [];
+        $changed_var_ids = [];
 
-            $pre_condition_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-                $reconcilable_while_types,
-                $loop_context->vars_in_scope,
-                $changed_var_ids,
-                $new_referenced_var_ids,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $pre_condition),
-                $statements_checker->getSuppressedIssues()
-            );
+        $pre_condition_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+            $reconcilable_while_types,
+            $loop_context->vars_in_scope,
+            $changed_var_ids,
+            $new_referenced_var_ids,
+            $statements_checker,
+            new CodeLocation($statements_checker->getSource(), $pre_condition),
+            $statements_checker->getSuppressedIssues()
+        );
 
-            $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
-        }
+        $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
 
         foreach ($asserted_var_ids as $var_id) {
             $loop_context->clauses = Context::filterClauses(
