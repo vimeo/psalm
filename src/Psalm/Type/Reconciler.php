@@ -793,6 +793,11 @@ class Reconciler
                         continue;
                     }
 
+                    $scalar_type_match_found = false;
+                    $type_coerced = false;
+                    $type_coerced_from_mixed = false;
+                    $atomic_to_string_cast = false;
+
                     if (TypeChecker::isAtomicContainedBy(
                         $project_checker->codebase,
                         $new_type_part,
@@ -807,10 +812,8 @@ class Reconciler
                         if ($type_coerced) {
                             $matching_atomic_types[] = $existing_var_type_part;
                         }
-                        break;
+                        continue;
                     }
-
-                    //echo ($new_type_part->getId() . ' ' . $existing_var_type_part->getId() . PHP_EOL);
 
                     if ($scalar_type_match_found) {
                         $any_scalar_type_match_found = true;
@@ -829,7 +832,7 @@ class Reconciler
                         )
                     ) {
                         $has_local_match = true;
-                        break;
+                        continue;
                     }
                 }
 
