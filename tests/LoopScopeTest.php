@@ -1068,6 +1068,52 @@ class LoopScopeTest extends TestCase
                         }
                     }',
             ],
+            'shouldBeFine' => [
+                '<?php
+                    class Obj {}
+                    class A extends Obj {
+                        /** @var A|null */
+                        public $foo;
+                    }
+                    class B extends Obj {
+                        /** @var A|null */
+                        public $foo;
+                    }
+                    class C extends Obj {
+                        /** @var A|C|null */
+                        public $bar;
+                    }
+
+                    function takesA(A $a) : void {}
+
+                    function foo(Obj $node) : void {
+                        while ($node instanceof A
+                            || $node instanceof B
+                            || ($node instanceof C && $node->bar instanceof A)
+                        ) {
+                            if (!$node instanceof C) {
+                                $node = $node->foo;
+                            } else {
+                                $node = $node->bar;
+                            }
+                        }
+                    }',
+            ],
+            'doParentCall' => [
+                '<?php
+                    class A {
+                        /** @return A|false */
+                        public function getParent() {
+                            return rand(0, 1) ? new A : false;
+                        }
+                    }
+
+                    $a = new A();
+
+                    do {
+                        $a = $a->getParent();
+                    } while ($a !== false);',
+            ],
         ];
     }
 

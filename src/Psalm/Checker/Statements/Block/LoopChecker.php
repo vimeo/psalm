@@ -518,7 +518,10 @@ class LoopChecker
             array_merge($outer_context->clauses, $pre_condition_clauses)
         );
 
-        $reconcilable_while_types = Algebra::getTruthsFromFormula($loop_context->clauses);
+        $reconcilable_while_types = Algebra::getTruthsFromFormula(
+            $loop_context->clauses,
+            $new_referenced_var_ids
+        );
 
         $changed_var_ids = [];
 

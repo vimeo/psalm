@@ -35,6 +35,10 @@ class AssertionFinder
         $this_class_name,
         FileSource $source
     ) {
+        if (isset($conditional->assertions)) {
+            return;
+        }
+
         $if_types = [];
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {

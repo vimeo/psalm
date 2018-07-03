@@ -705,6 +705,13 @@ class ClassChecker extends ClassLikeChecker
 
                 foreach ($trait_node->stmts as $trait_stmt) {
                     if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                        if ($trait_stmt->stmts) {
+                            $traverser = new PhpParser\NodeTraverser;
+
+                            $traverser->addVisitor(new \Psalm\Visitor\NodeCleanerVisitor());
+                            $traverser->traverse($trait_stmt->stmts);
+                        }
+
                         $trait_method_checker = $this->analyzeClassMethod(
                             $trait_stmt,
                             $storage,
