@@ -651,7 +651,7 @@ class BinaryOpChecker
                 return;
             }
 
-            if ($right_type->isNullable() && $right_type->ignore_falsable_issues) {
+            if ($right_type->isNullable() && !$right_type->ignore_nullable_issues) {
                 if ($statements_source && IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Right operand cannot be nullable, got ' . $right_type,

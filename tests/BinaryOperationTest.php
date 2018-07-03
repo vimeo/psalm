@@ -217,6 +217,11 @@ class BinaryOperationTest extends TestCase
                     $a++;',
                 'error_message' => 'InvalidOperand',
             ],
+            'possiblyDivByZero' => [
+                '<?php
+                    $a = 5 / (rand(0, 1) ? 2 : null);',
+                'error_message' => 'PossiblyNullOperand',
+            ],
         ];
     }
 }
