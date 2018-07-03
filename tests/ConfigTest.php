@@ -475,13 +475,20 @@ class ConfigTest extends TestCase
                     }
                 }
                 class Foo {
-                    public function bar() : void {}
+                    function getBar() : ?Bar {
+                        return rand(0, 1) ? new Bar : null;
+                    }
+                }
+                class Bar {
+                    public function bat() : void {}
                 };
 
                 $a = new A();
 
                 if ($a->getFoo()) {
-                    $a->getFoo()->bar();
+                    if ($a->getFoo()->getBar()) {
+                        $a->getFoo()->getBar()->bat();
+                    }
                 }'
         );
 

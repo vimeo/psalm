@@ -75,7 +75,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             }
         }
 
-        $var_id = ExpressionChecker::getVarId(
+        $var_id = ExpressionChecker::getArrayVarId(
             $stmt->var,
             $statements_checker->getFQCLN(),
             $statements_checker
