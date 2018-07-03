@@ -229,12 +229,6 @@ abstract class Type
                     continue;
                 }
 
-                if (!$atomic_type instanceof Atomic) {
-                    throw new \UnexpectedValueException(
-                        'Was expecting an atomic type, got ' . get_class($atomic_type)
-                    );
-                }
-
                 $atomic_types[] = $atomic_type;
             }
 

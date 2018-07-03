@@ -1302,7 +1302,30 @@ class Reconciler
         } elseif (substr($new_var_type, 0, 9) === 'getclass-') {
             $new_var_type = substr($new_var_type, 9);
         } elseif (!$is_equality) {
-            $existing_var_type->removeType($new_var_type);
+            $new_type_part = new TNamedObject($new_var_type);
+
+            $codebase = $statements_checker->getFileChecker()->project_checker->codebase;
+
+            // if there wasn't a direct hit, go deeper, eliminating subtypes
+            if (!$existing_var_type->removeType($new_var_type)) {
+                foreach ($existing_var_type->getTypes() as $part_name => $existing_var_type_part) {
+                    if (!$existing_var_type_part->isObjectType()) {
+                        continue;
+                    }
+
+                    if (TypeChecker::isAtomicContainedBy(
+                        $codebase,
+                        $existing_var_type_part,
+                        $new_type_part,
+                        $scalar_type_match_found,
+                        $type_coerced,
+                        $type_coerced_from_mixed,
+                        $atomic_to_string_cast
+                    )) {
+                        $existing_var_type->removeType($part_name);
+                    }
+                }
+            }
         }
 
         if (empty($existing_var_type->getTypes())) {
