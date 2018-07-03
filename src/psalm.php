@@ -22,7 +22,7 @@ $options = getopt(
 if (!array_key_exists('use-ini-defaults', $options)) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
-    ini_set('memory_limit', '4096M');
+    ini_set('memory_limit', 4 * 1024 * 1024 * 1024);
 }
 
 if (array_key_exists('help', $options)) {
