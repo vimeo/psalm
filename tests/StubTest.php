@@ -42,13 +42,17 @@ class StubTest extends TestCase
      */
     private function getProjectCheckerWithConfig(Config $config)
     {
-        return new \Psalm\Checker\ProjectChecker(
+        $project_checker = new \Psalm\Checker\ProjectChecker(
             $config,
             $this->file_provider,
             new Provider\FakeParserCacheProvider(),
             new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
             new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
         );
+
+        $config->visitComposerAutoloadFiles($project_checker, false);
+
+        return $project_checker;
     }
 
     /**
@@ -204,7 +208,8 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                $a = random_bytes(16);'
+                $a = random_bytes(16);
+                $b = new_random_bytes(16);'
         );
 
         $this->analyzeFile($file_path, new Context());

@@ -603,14 +603,6 @@ class Config
             }
         }
 
-        if ($config->autoloader) {
-            // do this in a separate method so scope does not leak
-            $config->requireAutoloader($base_dir . DIRECTORY_SEPARATOR . $config->autoloader);
-        }
-
-        $config->collectPredefinedConstants();
-        $config->collectPredefinedFunctions();
-
         return $config;
     }
 
@@ -1117,44 +1109,49 @@ class Config
      */
     public function visitComposerAutoloadFiles(ProjectChecker $project_checker, $debug = false)
     {
+        $this->collectPredefinedConstants();
+        $this->collectPredefinedFunctions();
+
         $composer_json_path = $this->base_dir . 'composer.json'; // this should ideally not be hardcoded
-
-        if (!file_exists($composer_json_path)) {
-            return;
-        }
-
-        /** @psalm-suppress PossiblyFalseArgument */
-        if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
-            throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
-        }
 
         $autoload_files_files = [];
 
-        if (isset($composer_json['autoload']['files'])) {
-            /** @var string[] */
-            $composer_autoload_files = $composer_json['autoload']['files'];
-
-            foreach ($composer_autoload_files as $file) {
-                $file_path = realpath($this->base_dir . $file);
-
-                if ($file_path && file_exists($file_path)) {
-                    $autoload_files_files[] = $file_path;
-                }
-            }
+        if ($this->autoloader) {
+            $autoload_files_files[] = $this->autoloader;
         }
 
-        $vendor_autoload_files_path
-            = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
-                . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
+        if (file_exists($composer_json_path)) {
+            /** @psalm-suppress PossiblyFalseArgument */
+            if (!$composer_json = json_decode(file_get_contents($composer_json_path), true)) {
+                throw new \UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
+            }
 
-        if (file_exists($vendor_autoload_files_path)) {
-            /**
-             * @var string[]
-             * @psalm-suppress UnresolvableInclude
-             */
-            $vendor_autoload_files = require $vendor_autoload_files_path;
+            if (isset($composer_json['autoload']['files'])) {
+                /** @var string[] */
+                $composer_autoload_files = $composer_json['autoload']['files'];
 
-            $autoload_files_files = array_merge($autoload_files_files, $vendor_autoload_files);
+                foreach ($composer_autoload_files as $file) {
+                    $file_path = realpath($this->base_dir . $file);
+
+                    if ($file_path && file_exists($file_path)) {
+                        $autoload_files_files[] = $file_path;
+                    }
+                }
+            }
+
+            $vendor_autoload_files_path
+                = $this->base_dir . DIRECTORY_SEPARATOR . 'vendor'
+                    . DIRECTORY_SEPARATOR . 'composer' . DIRECTORY_SEPARATOR . 'autoload_files.php';
+
+            if (file_exists($vendor_autoload_files_path)) {
+                /**
+                 * @var string[]
+                 * @psalm-suppress UnresolvableInclude
+                 */
+                $vendor_autoload_files = require $vendor_autoload_files_path;
+
+                $autoload_files_files = array_merge($autoload_files_files, $vendor_autoload_files);
+            }
         }
 
         $autoload_files_files = array_unique($autoload_files_files);
@@ -1178,6 +1175,14 @@ class Config
             }
 
             $project_checker->codebase->register_autoload_files = false;
+        }
+
+        if ($this->autoloader) {
+            // do this in a separate method so scope does not leak
+            $this->requireAutoloader($this->base_dir . DIRECTORY_SEPARATOR . $this->autoloader);
+
+            $this->collectPredefinedConstants();
+            $this->collectPredefinedFunctions();
         }
     }
 
