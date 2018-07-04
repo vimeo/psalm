@@ -582,12 +582,16 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
                         && class_exists($node->cond->expr->args[0]->value->value, false)
                     ) {
-                        $this->codebase->scanner->queueClassLikeForScanning(
-                            $node->cond->expr->args[0]->value->value,
-                            $this->file_path
-                        );
+                        $reflection_class = new \ReflectionClass($node->cond->expr->args[0]->value->value);
 
-                        return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                        if ($reflection_class->getFileName() !== $this->file_path) {
+                            $this->codebase->scanner->queueClassLikeForScanning(
+                                $node->cond->expr->args[0]->value->value,
+                                $this->file_path
+                            );
+
+                            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                        }
                     }
                 }
             }
