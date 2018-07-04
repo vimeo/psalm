@@ -776,6 +776,7 @@ class Config
     {
         $this->plugin_classes[] = $class_name;
     }
+
     /** @return string[] */
     public function getPluginClasses(): array
     {
@@ -794,6 +795,8 @@ class Config
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {
+        $codebase = $project_checker->getCodebase();
+
         $facade = new PluginFacade($this);
         // initialize plugin classes earlier to let them hook into subsequent load process
         foreach ($this->plugin_classes as $plugin_class_name) {
@@ -807,8 +810,6 @@ class Config
                 throw $e;
             }
         }
-
-        $codebase = $project_checker->codebase;
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
             $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Scanner\\FileScanner');
@@ -829,33 +830,12 @@ class Config
         }
 
         foreach ($this->plugin_paths as $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Plugin');
-
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($path);
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterMethodCallCheck')) {
-                $this->after_method_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterFunctionCallCheck')) {
-                $this->after_function_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterExpressionCheck')) {
-                $this->after_expression_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterStatementCheck')) {
-                $this->after_statement_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterClassLikeExistsCheck')) {
-                $this->after_classlike_exists_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterVisitClassLike')) {
-                $this->after_visit_classlikes[$fq_class_name] = $fq_class_name;
+            try {
+                $plugin_object = new LegacyPlugin($path, $this, $project_checker);
+                $plugin_object($facade);
+            } catch (\Throwable $e) {
+                // todo: ???
+                throw $e;
             }
         }
     }

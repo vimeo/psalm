@@ -1,10 +1,8 @@
 <?php
 namespace Psalm;
+use Psalm\PluginApi\RegistrationInterface;
 
-/**
- * Represents the API available to plugins
- */
-class PluginFacade
+class PluginFacade implements RegistrationInterface
 {
     /**
      * @var Config
