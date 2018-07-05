@@ -160,9 +160,7 @@ class CommentChecker
                 throw $e;
             }
 
-            if (preg_match('/^' . self::TYPE_REGEX . '$/', $line_parts[0])
-                && !preg_match('/\[[^\]]+\]/', $line_parts[0])
-                && !strpos($line_parts[0], '::')
+            if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
                 && $line_parts[0][0] !== '{'
             ) {
                 if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
