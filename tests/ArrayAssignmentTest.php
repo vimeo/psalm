@@ -901,7 +901,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [
                     'MixedArrayAccess', 'MixedAssignment', 'MixedArrayOffset',
-                    'MixedArgument', 'LessSpecificReturnStatement', 'MoreSpecificReturnType',
+                    'MixedArgument', 'MixedTypeCoercion',
                 ],
             ],
             'accessArrayAfterSuppressingBugs' => [

@@ -17,6 +17,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MixedReturnStatement;
+use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -182,15 +183,28 @@ class ReturnChecker
                     ) {
                         // is the declared return type more specific than the inferred one?
                         if ($type_coerced) {
-                            if (IssueBuffer::accepts(
-                                new LessSpecificReturnStatement(
-                                    'The type \'' . $stmt->inferredType . '\' is more general than the declared '
-                                        . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
-                                    new CodeLocation($source, $stmt)
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
+                            if ($type_coerced_from_mixed) {
+                                if (IssueBuffer::accepts(
+                                    new MixedTypeCoercion(
+                                        'The type \'' . $stmt->inferredType . '\' is more general than the declared '
+                                            . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
+                                        new CodeLocation($source, $stmt)
+                                    ),
+                                    $statements_checker->getSuppressedIssues()
+                                )) {
+                                    return false;
+                                }
+                            } else {
+                                if (IssueBuffer::accepts(
+                                    new LessSpecificReturnStatement(
+                                        'The type \'' . $stmt->inferredType . '\' is more general than the declared '
+                                            . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
+                                        new CodeLocation($source, $stmt)
+                                    ),
+                                    $statements_checker->getSuppressedIssues()
+                                )) {
+                                    return false;
+                                }
                             }
 
                             foreach ($local_return_type->getTypes() as $local_type_part) {

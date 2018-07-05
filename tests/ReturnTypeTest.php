@@ -759,23 +759,6 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
-            'moreSpecificDocblockReturnType' => [
-                '<?php
-                    /** @return int[] */
-                    function foo(array $arr) : array {
-                      return $arr;
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
-            ],
-            'moreSpecificGenericReturnType' => [
-                '<?php
-                    /** @return Iterator<int, string> */
-                    function foo(array $a) {
-                        $obj = new ArrayObject($a);
-                        return $obj->getIterator();
-                    }',
-                'error_message' => 'LessSpecificReturnStatement',
-            ],
             'invalidGenericReturnType' => [
                 '<?php
                     /** @return ArrayIterator<int, string> */
@@ -792,6 +775,14 @@ class ReturnTypeTest extends TestCase
                         return rand(0, 1) ? ["a" => 1, "b" => 2] : ["a" => 2];
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'mixedReturnTypeCoercion' => [
+                '<?php
+                    /** @return string[] */
+                    function foo(array $a) : array {
+                        return $a;
+                    }',
+                'error_message' => 'MixedTypeCoercion',
             ],
         ];
     }

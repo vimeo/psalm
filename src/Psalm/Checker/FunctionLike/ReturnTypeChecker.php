@@ -24,6 +24,7 @@ use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
 use Psalm\Issue\MixedInferredReturnType;
+use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -349,15 +350,28 @@ class ReturnTypeChecker
             )) {
                 // is the declared return type more specific than the inferred one?
                 if ($type_coerced) {
-                    if (IssueBuffer::accepts(
-                        new MoreSpecificReturnType(
-                            'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                                ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
-                            $return_type_location
-                        ),
-                        $suppressed_issues
-                    )) {
-                        return false;
+                    if ($type_coerced_from_mixed) {
+                        if (IssueBuffer::accepts(
+                            new MixedTypeCoercion(
+                                'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                                    ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                                $return_type_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new MoreSpecificReturnType(
+                                'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
+                                    ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                                $return_type_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
                     }
                 } else {
                     if ($project_checker->alter_code

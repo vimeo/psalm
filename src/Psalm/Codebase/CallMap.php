@@ -131,8 +131,7 @@ class CallMap
      * @return array<string, array<int|string, string>>
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MoreSpecificReturnType
-     * @psalm-suppress LessSpecificReturnStatement
+     * @psalm-suppress MixedTypeCoercion
      */
     public static function getCallMap()
     {
