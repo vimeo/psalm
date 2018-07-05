@@ -712,23 +712,24 @@ class Reconciler
             }
         }
 
-        if (($new_type_has_interface
-                && !TypeChecker::isContainedBy(
-                    $codebase,
-                    $existing_var_type,
-                    $new_type
-                )
-            )
-            || ($old_type_has_interface
-                && !TypeChecker::isContainedBy(
-                    $codebase,
-                    $new_type,
-                    $existing_var_type
-                )
-            )
-        ) {
-            $new_type_part = new TNamedObject($new_var_type);
+        $new_type_part = Atomic::create($new_var_type);
 
+        if ($new_type_part instanceof TNamedObject
+            && (($new_type_has_interface
+                    && !TypeChecker::isContainedBy(
+                        $codebase,
+                        $existing_var_type,
+                        $new_type
+                    )
+                )
+                || ($old_type_has_interface
+                    && !TypeChecker::isContainedBy(
+                        $codebase,
+                        $new_type,
+                        $existing_var_type
+                    )
+                ))
+        ) {
             $acceptable_atomic_types = [];
 
             foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
