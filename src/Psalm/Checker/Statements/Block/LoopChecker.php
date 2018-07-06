@@ -291,6 +291,11 @@ class LoopChecker
 
                 $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
+                $traverser = new PhpParser\NodeTraverser;
+
+                $traverser->addVisitor(new \Psalm\Visitor\NodeCleanerVisitor());
+                $traverser->traverse($stmts);
+
                 $statements_checker->analyze($stmts, $inner_context);
 
                 self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
