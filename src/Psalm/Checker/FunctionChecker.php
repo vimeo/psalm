@@ -289,6 +289,54 @@ class FunctionChecker extends FunctionLikeChecker
 
                     break;
 
+                case 'version_compare':
+                    if (count($call_args) > 2) {
+                        if (isset($call_args[2]->value->inferredType)) {
+                            $operator_type = $call_args[2]->value->inferredType;
+
+                            if (!$operator_type->isMixed()) {
+                                $project_checker = $statements_checker->getFileChecker()->project_checker;
+                                $codebase = $project_checker->codebase;
+
+                                $acceptable_operator_type = new Type\Union([
+                                    new Type\Atomic\TLiteralString('<'),
+                                    new Type\Atomic\TLiteralString('lt'),
+                                    new Type\Atomic\TLiteralString('<='),
+                                    new Type\Atomic\TLiteralString('le'),
+                                    new Type\Atomic\TLiteralString('>'),
+                                    new Type\Atomic\TLiteralString('gt'),
+                                    new Type\Atomic\TLiteralString('>='),
+                                    new Type\Atomic\TLiteralString('ge'),
+                                    new Type\Atomic\TLiteralString('=='),
+                                    new Type\Atomic\TLiteralString('='),
+                                    new Type\Atomic\TLiteralString('eq'),
+                                    new Type\Atomic\TLiteralString('!='),
+                                    new Type\Atomic\TLiteralString('<>'),
+                                    new Type\Atomic\TLiteralString('ne'),
+                                ]);
+
+                                if (TypeChecker::isContainedBy(
+                                    $codebase,
+                                    $operator_type,
+                                    $acceptable_operator_type
+                                )) {
+                                    return Type::getBool();
+                                }
+                            }
+                        }
+
+                        return new Type\Union([
+                            new Type\Atomic\TBool,
+                            new Type\Atomic\TNull
+                        ]);
+                    }
+
+                    return new Type\Union([
+                        new Type\Atomic\TLiteralInt(-1),
+                        new Type\Atomic\TLiteralInt(0),
+                        new Type\Atomic\TLiteralInt(1)
+                    ]);
+
                 case 'min':
                 case 'max':
                     if (isset($call_args[0])) {

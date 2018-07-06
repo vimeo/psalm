@@ -764,6 +764,22 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MissingClosureReturnType', 'MixedAssignment'],
             ],
+            'versionCompare' => [
+                '<?php
+                    function getString() : string {
+                        return rand(0, 1) ? "===" : "==";
+                    }
+
+                    $a = version_compare("5.0.0", "7.0.0");
+                    $b = version_compare("5.0.0", "7.0.0", "==");
+                    $c = version_compare("5.0.0", "7.0.0", getString());
+                ',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'bool',
+                    '$c' => 'bool|null',
+                ],
+            ],
         ];
     }
 
