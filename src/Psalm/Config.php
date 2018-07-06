@@ -811,7 +811,7 @@ class Config
      */
     public function shortenFileName($file_name)
     {
-        return preg_replace('/^' . preg_quote($this->base_dir, DIRECTORY_SEPARATOR) . '/', '', $file_name);
+        return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $file_name);
     }
 
     /**
