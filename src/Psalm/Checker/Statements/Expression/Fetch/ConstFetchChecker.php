@@ -6,6 +6,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TraitChecker;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InaccessibleClassConstant;
@@ -218,6 +219,79 @@ class ConstFetchChecker
             if (ExpressionChecker::analyze($statements_checker, $stmt->class, $context) === false) {
                 return false;
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  Codebase $codebase
+     * @param  string   $fq_const_name
+     * @param  string   $const_name
+     *
+     * @return Type\Union|null
+     */
+    public static function getGlobalConstType(
+        Codebase $codebase,
+        $fq_const_name,
+        $const_name
+    ) {
+        $predefined_constants = $codebase->config->getPredefinedConstants();
+
+        if (isset($predefined_constants[$fq_const_name ?: $const_name])) {
+            switch ($fq_const_name ?: $const_name) {
+                case 'PHP_VERSION':
+                case 'DIRECTORY_SEPARATOR':
+                case 'PATH_SEPARATOR':
+                case 'PEAR_EXTENSION_DIR':
+                case 'PEAR_INSTALL_DIR':
+                case 'PHP_BINARY':
+                case 'PHP_BINDIR':
+                case 'PHP_CONFIG_FILE_PATH':
+                case 'PHP_CONFIG_FILE_SCAN_DIR':
+                case 'PHP_DATADIR':
+                case 'PHP_EOL':
+                case 'PHP_EXTENSION_DIR':
+                case 'PHP_EXTRA_VERSION':
+                case 'PHP_LIBDIR':
+                case 'PHP_LOCALSTATEDIR':
+                case 'PHP_MANDIR':
+                case 'PHP_OS':
+                case 'PHP_OS_FAMILY':
+                case 'PHP_PREFIX':
+                case 'PHP_SAPI':
+                case 'PHP_SYSCONFDIR':
+                    return Type::getString();
+
+                case 'PHP_MAJOR_VERSION':
+                case 'PHP_MINOR_VERSION':
+                case 'PHP_RELEASE_VERSION':
+                case 'PHP_DEBUG':
+                case 'PHP_FLOAT_DIG':
+                case 'PHP_INT_MAX':
+                case 'PHP_INT_MIN':
+                case 'PHP_INT_SIZE':
+                case 'PHP_MAXPATHLEN':
+                case 'PHP_VERSION_ID':
+                case 'PHP_ZTS':
+                    return Type::getInt();
+
+                case 'PHP_FLOAT_EPSILON':
+                case 'PHP_FLOAT_MAX':
+                case 'PHP_FLOAT_MIN':
+                    return Type::getFloat();
+            }
+
+            $type = ClassLikeChecker::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
+            return $type;
+        }
+
+        $stubbed_const_type = $codebase->getStubbedConstantType(
+            $fq_const_name ?: $const_name
+        );
+
+        if ($stubbed_const_type) {
+            return $stubbed_const_type;
         }
 
         return null;

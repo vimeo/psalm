@@ -211,6 +211,10 @@ class ConstantTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'allowConstCheckForDifferentPlatforms' => [
+                '<?php
+                    if ("phpdbg" === \PHP_SAPI) {}',
+            ],
         ];
     }
 

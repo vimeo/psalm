@@ -12,6 +12,7 @@ use Psalm\Checker\Statements\Block\WhileChecker;
 use Psalm\Checker\Statements\Expression\Assignment\PropertyAssignmentChecker;
 use Psalm\Checker\Statements\Expression\BinaryOpChecker;
 use Psalm\Checker\Statements\Expression\CallChecker;
+use Psalm\Checker\Statements\Expression\Fetch\ConstFetchChecker;
 use Psalm\Checker\Statements\Expression\Fetch\VariableFetchChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\Statements\ReturnChecker;
@@ -1192,22 +1193,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             return $file_storage_provider->get($constant_file_path)->constants[$const_name];
         }
 
-        $predefined_constants = Config::getInstance()->getPredefinedConstants();
-
-        if (isset($predefined_constants[$fq_const_name ?: $const_name])) {
-            $type = ClassLikeChecker::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
-            return $type;
-        }
-
-        $stubbed_const_type = $project_checker->codebase->getStubbedConstantType(
-            $fq_const_name ?: $const_name
-        );
-
-        if ($stubbed_const_type) {
-            return $stubbed_const_type;
-        }
-
-        return null;
+        return ConstFetchChecker::getGlobalConstType($project_checker->codebase, $fq_const_name, $const_name);
     }
 
     /**
