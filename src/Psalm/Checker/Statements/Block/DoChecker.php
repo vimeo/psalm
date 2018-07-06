@@ -43,6 +43,8 @@ class DoChecker
             $statements_checker->addSuppressedIssues(['TypeDoesNotContainType']);
         }
 
+        $do_context->loop_scope = $loop_scope;
+
         $statements_checker->analyze($stmt->stmts, $do_context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {

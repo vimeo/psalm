@@ -1114,6 +1114,14 @@ class LoopScopeTest extends TestCase
                         $a = $a->getParent();
                     } while ($a !== false);',
             ],
+            'doWithContinue' => [
+                '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                    } while (rand(0, 1));',
+            ],
         ];
     }
 

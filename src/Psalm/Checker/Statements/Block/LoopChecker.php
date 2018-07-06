@@ -215,7 +215,9 @@ class LoopChecker
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
 
-                        if (!$type->equals($loop_scope->loop_context->vars_in_scope[$var_id])) {
+                        if (isset($loop_scope->loop_context->vars_in_scope[$var_id])
+                            && !$type->equals($loop_scope->loop_context->vars_in_scope[$var_id])
+                        ) {
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
