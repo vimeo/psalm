@@ -528,16 +528,18 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 if ($method_name_lc === '__tostring') {
                     $return_type_candidate = Type::getString();
                 } elseif ($call_map_id && CallMap::inCallMap($call_map_id)) {
-                    if ($class_template_params
+                    if (($class_template_params || $class_storage->stubbed)
                         && isset($class_storage->methods[$method_name_lc])
                         && ($method_storage = $class_storage->methods[$method_name_lc])
                         && $method_storage->return_type
                     ) {
                         $return_type_candidate = clone $method_storage->return_type;
 
-                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                            $class_template_params
-                        );
+                        if ($class_template_params) {
+                            $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                                $class_template_params
+                            );
+                        }
                     } else {
                         if ($call_map_id === 'domnode::appendchild'
                             && isset($stmt->args[0]->value->inferredType)

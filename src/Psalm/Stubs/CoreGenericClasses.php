@@ -657,3 +657,35 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function seek($position) { }
 }
 
+/**
+ * The DOMElement class
+ * @link http://php.net/manual/en/class.domelement.php
+ */
+class DOMElement extends DOMNode  {
+    /**
+     * @return DOMNodeList<DOMElement>
+     */
+    public function getElementsByTagName ($name) {}
+    /**
+     * @return DOMNodeList<DOMElement>
+     */
+    public function getElementsByTagNameNS ($namespaceURI, $localName) {}
+}
+
+/**
+ * @template TNode as DOMNode
+ */
+class DOMNodeList implements Traversable, Countable {
+    /**
+     * @var int
+     * @since 5.0
+     * The number of nodes in the list. The range of valid child node indices is 0 to length - 1 inclusive.
+     * @link http://php.net/manual/en/class.domnodelist.php#domnodelist.props.length
+     */
+    public $length;
+
+    /**
+     * @return TNode|null
+     */
+    public function item ($index) {}
+}

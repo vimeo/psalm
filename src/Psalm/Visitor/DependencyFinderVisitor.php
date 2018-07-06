@@ -191,9 +191,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                             return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                         }
-                    } elseif ($duplicate_storage->location
-                        && ($duplicate_storage->location->file_path !== $this->file_path
-                            || $class_location->getHash() !== $duplicate_storage->location->getHash())
+                    } elseif (!$duplicate_storage->location
+                        || $duplicate_storage->location->file_path !== $this->file_path
+                        || $class_location->getHash() !== $duplicate_storage->location->getHash()
                     ) {
                         // we're overwriting some methods
                         $storage = $duplicate_storage;
