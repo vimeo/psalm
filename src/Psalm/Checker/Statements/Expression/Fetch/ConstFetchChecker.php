@@ -226,7 +226,7 @@ class ConstFetchChecker
 
     /**
      * @param  Codebase $codebase
-     * @param  string   $fq_const_name
+     * @param  ?string  $fq_const_name
      * @param  string   $const_name
      *
      * @return Type\Union|null
