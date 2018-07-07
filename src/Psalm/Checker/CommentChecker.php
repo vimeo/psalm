@@ -416,12 +416,12 @@ class CommentChecker
             foreach ($comments['specials']['method'] as $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
-                $return_docblock = '';
+                $docblock_lines = [];
 
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     $doc_line_parts = self::splitDocLine($method_entry);
 
-                    $return_docblock = '/** @return ' . array_shift($doc_line_parts) . ' */';
+                    $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
 
                     $method_entry = implode(' ', $doc_line_parts);
                 }
@@ -434,13 +434,55 @@ class CommentChecker
                     $method_entry = substr($method_entry, 0, (int) $matches[0][1] + strlen((string) $matches[0][0]));
                 }
 
-                // replace unions
-                $method_entry = preg_replace('/[a-zA-Z\\\\0-9_]+(\|[a-zA-Z\\\\0-9_]+)+ +\$/', '$', $method_entry);
+                $method_entry = str_replace([', ', '( '], [',', '('], $method_entry);
+                $method_entry = preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
 
-                // replace mixed
-                $method_entry = preg_replace('/mixed +\$/', '$', $method_entry);
+                try {
+                    $method_tree = Type\ParseTree::createFromTokens(Type::tokenize($method_entry, false));
+                } catch (TypeParseTreeException $e) {
+                    throw new DocblockParseException($method_entry . ' is not a valid method');
+                }
 
-                $php_string = '<?php class A { ' . $return_docblock . ' public function ' . $method_entry . '{} }';
+                if (!$method_tree instanceof Type\ParseTree\MethodWithReturnTypeTree
+                    && !$method_tree instanceof Type\ParseTree\MethodTree) {
+                    throw new DocblockParseException($method_entry . ' is not a valid method');
+                }
+
+                if ($method_tree instanceof Type\ParseTree\MethodWithReturnTypeTree) {
+                    $docblock_lines[] = '@return ' . Type::getTypeFromTree($method_tree->children[1]);
+                    $method_tree = $method_tree->children[0];
+                }
+
+                if (!$method_tree instanceof Type\ParseTree\MethodTree) {
+                    throw new DocblockParseException($method_entry . ' is not a valid method');
+                }
+
+                $args = [];
+
+                foreach ($method_tree->children as $method_tree_child) {
+                    if (!$method_tree_child instanceof Type\ParseTree\MethodParamTree) {
+                        throw new DocblockParseException($method_entry . ' is not a valid method');
+                    }
+
+                    $args[] = ($method_tree_child->byref ? '&' : '')
+                        . ($method_tree_child->variadic ? '...' : '')
+                        . $method_tree_child->name
+                        . ($method_tree_child->default ? ' = ' . $method_tree_child->default : '');
+
+
+                    if ($method_tree_child->children) {
+                        $param_type = Type::getTypeFromTree($method_tree_child->children[0]);
+                        $docblock_lines[] = '@param ' . $param_type . ' '
+                            . ($method_tree_child->variadic ? '...' : '')
+                            . $method_tree_child->name;
+                    }
+                }
+
+                $function_string = 'function ' . $method_tree->value . '(' . implode(', ', $args) . ')';
+
+                $function_docblock = $docblock_lines ? "/**\n * " . implode("\n * ", $docblock_lines) . "\n*/\n" : "";
+
+                $php_string = '<?php class A { ' . $function_docblock . ' public ' . $function_string . '{} }';
 
                 try {
                     $statements = \Psalm\Provider\StatementsProvider::parseStatements($php_string);

@@ -31,7 +31,7 @@ class ParseTree
     /**
      * Create a parse tree from a tokenised type
      *
-     * @param  array<string>  $type_tokens
+     * @param  array<int, string>  $type_tokens
      *
      * @return self
      */
@@ -110,13 +110,15 @@ class ParseTree
                     do {
                         if ($current_leaf->parent === null
                             || $current_leaf->parent instanceof ParseTree\CallableWithReturnTypeTree
+                            || $current_leaf->parent instanceof ParseTree\MethodWithReturnTypeTree
                         ) {
                             break;
                         }
 
                         $current_leaf = $current_leaf->parent;
                     } while (!$current_leaf instanceof ParseTree\EncapsulationTree
-                        && !$current_leaf instanceof ParseTree\CallableTree);
+                        && !$current_leaf instanceof ParseTree\CallableTree
+                        && !$current_leaf instanceof ParseTree\MethodTree);
 
                     break;
 
@@ -147,7 +149,6 @@ class ParseTree
                         throw new TypeParseTreeException('Unexpected token ' . $type_token);
                     }
 
-
                     if (!$current_leaf->parent) {
                         throw new TypeParseTreeException('Cannot parse comma without a parent node');
                     }
@@ -159,6 +160,7 @@ class ParseTree
                     if ($context_node instanceof ParseTree\GenericTree
                         || $context_node instanceof ParseTree\ObjectLikeTree
                         || $context_node instanceof ParseTree\CallableTree
+                        || $context_node instanceof ParseTree\MethodTree
                     ) {
                         $context_node = $context_node->parent;
                     }
@@ -167,6 +169,7 @@ class ParseTree
                         && !$context_node instanceof ParseTree\GenericTree
                         && !$context_node instanceof ParseTree\ObjectLikeTree
                         && !$context_node instanceof ParseTree\CallableTree
+                        && !$context_node instanceof ParseTree\MethodTree
                     ) {
                         $context_node = $context_node->parent;
                     }
@@ -186,6 +189,11 @@ class ParseTree
                     }
 
                     $current_parent = $current_leaf->parent;
+
+                    if ($current_leaf instanceof ParseTree\MethodTree && $type_token === '...') {
+                        self::createMethodParam($current_leaf, $current_leaf, $type_tokens, $type_token, $i);
+                        break;
+                    }
 
                     while ($current_parent
                         && !$current_parent instanceof ParseTree\CallableTree
@@ -240,6 +248,22 @@ class ParseTree
                         break;
                     }
 
+                    if ($current_leaf instanceof ParseTree\MethodTree) {
+                        $new_parent_leaf = new ParseTree\MethodWithReturnTypeTree($current_parent);
+                        $current_leaf->parent = $new_parent_leaf;
+                        $new_parent_leaf->children = [$current_leaf];
+
+                        if ($current_parent) {
+                            array_pop($current_parent->children);
+                            $current_parent->children[] = $new_parent_leaf;
+                        } else {
+                            $parse_tree = $new_parent_leaf;
+                        }
+
+                        $current_leaf = $new_parent_leaf;
+                        break;
+                    }
+
                     if ($current_parent && $current_parent instanceof ParseTree\ObjectLikePropertyTree) {
                         break;
                     }
@@ -264,6 +288,28 @@ class ParseTree
                     $current_parent->children[] = $new_parent_leaf;
 
                     $current_leaf = $new_parent_leaf;
+
+                    break;
+
+                case ' ':
+                    if ($current_leaf instanceof ParseTree\Root) {
+                        throw new TypeParseTreeException('Unexpected space');
+                    }
+
+                    $current_parent = $current_leaf->parent;
+
+                    while ($current_parent && !$current_parent instanceof ParseTree\MethodTree) {
+                        $current_leaf = $current_parent;
+                        $current_parent = $current_parent->parent;
+                    }
+
+                    if (!$current_parent instanceof ParseTree\MethodTree || !$next_token) {
+                        throw new TypeParseTreeException('Unexpected space');
+                    }
+
+                    ++$i;
+
+                    self::createMethodParam($current_leaf, $current_parent, $type_tokens, $next_token, $i);
 
                     break;
 
@@ -344,6 +390,11 @@ class ParseTree
 
                     $current_parent = $current_leaf->parent;
 
+                    if ($current_leaf instanceof ParseTree\MethodTree) {
+                        self::createMethodParam($current_leaf, $current_leaf, $type_tokens, $type_token, $i);
+                        break;
+                    }
+
                     if ($current_parent && $current_parent instanceof ParseTree\IntersectionTree) {
                         continue;
                     }
@@ -366,6 +417,11 @@ class ParseTree
                 default:
                     $new_parent = !$current_leaf instanceof ParseTree\Root ? $current_leaf : null;
 
+                    if ($current_leaf instanceof ParseTree\MethodTree && $type_token[0] === '$') {
+                        self::createMethodParam($current_leaf, $current_leaf, $type_tokens, $type_token, $i);
+                        break;
+                    }
+
                     switch ($next_token) {
                         case '<':
                             $new_leaf = new ParseTree\GenericTree(
@@ -384,16 +440,25 @@ class ParseTree
                             break;
 
                         case '(':
-                            if (!in_array(strtolower($type_token), ['closure', 'callable', '\closure'])) {
+                            if (in_array(strtolower($type_token), ['closure', 'callable', '\closure'])) {
+                                $new_leaf = new ParseTree\CallableTree(
+                                    $type_token,
+                                    $new_parent
+                                );
+                            } elseif ($type_token !== 'array'
+                                && $type_token[0] !== '\\'
+                                && $current_leaf instanceof ParseTree\Root
+                            ) {
+                                $new_leaf = new ParseTree\MethodTree(
+                                    $type_token,
+                                    $new_parent
+                                );
+                            } else {
                                 throw new TypeParseTreeException(
-                                    'Bracket must be preceded by “Closure” or “callable”'
+                                    'Bracket must be preceded by “Closure”, “callable” or a valid @method name'
                                 );
                             }
 
-                            $new_leaf = new ParseTree\CallableTree(
-                                $type_token,
-                                $new_parent
-                            );
                             ++$i;
                             break;
 
@@ -442,5 +507,87 @@ class ParseTree
         }
 
         return $parse_tree;
+    }
+
+    /**
+     * @param  ParseTree          &$current_leaf
+     * @param  ParseTree          $current_parent
+     * @param  array<int, string> $type_tokens
+     * @param  string             $current_token
+     * @param  int                &$i
+     *
+     * @return void
+     */
+    private static function createMethodParam(
+        ParseTree &$current_leaf,
+        ParseTree $current_parent,
+        array $type_tokens,
+        $current_token,
+        &$i
+    ) {
+        $byref = false;
+        $variadic = false;
+        $has_default = false;
+        $default = '';
+
+        $c = count($type_tokens);
+
+        if ($current_token === '&') {
+            throw new TypeParseTreeException('Magic args cannot be passed by reference');
+        }
+
+        if ($current_token === '...') {
+            $variadic = true;
+
+            ++$i;
+            $current_token = $i < $c ? $type_tokens[$i] : null;
+        }
+
+        if (!$current_token || $current_token[0] !== '$') {
+            throw new TypeParseTreeException('Unexpected token after space ' . $current_token);
+        }
+
+        $new_parent_leaf = new ParseTree\MethodParamTree(
+            $current_token,
+            $byref,
+            $variadic,
+            $current_parent
+        );
+
+        for ($j = $i + 1; $j < $c; ++$j) {
+            $ahead_type_token = $type_tokens[$j];
+
+            if ($ahead_type_token === ','
+                || ($ahead_type_token === ')' && $type_tokens[$j - 1] !== '(')
+            ) {
+                $i = $j - 1;
+                break;
+            }
+
+            if ($has_default) {
+                $default .= $ahead_type_token;
+            }
+
+            if ($ahead_type_token === '=') {
+                $has_default = true;
+                continue;
+            }
+
+            if ($j === $c - 1) {
+                throw new TypeParseTreeException('Unterminated method');
+            }
+        }
+
+        $new_parent_leaf->default = $default;
+
+        if ($current_leaf !== $current_parent) {
+            $new_parent_leaf->children = [$current_leaf];
+            $current_leaf->parent = $new_parent_leaf;
+            array_pop($current_parent->children);
+        }
+
+        $current_parent->children[] = $new_parent_leaf;
+
+        $current_leaf = $new_parent_leaf;
     }
 }

@@ -172,8 +172,11 @@ abstract class Type
      *
      * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
      */
-    private static function getTypeFromTree(ParseTree $parse_tree, $php_compatible, array $template_type_names)
-    {
+    public static function getTypeFromTree(
+        ParseTree $parse_tree,
+        $php_compatible = false,
+        array $template_type_names = []
+    ) {
         if ($parse_tree instanceof ParseTree\GenericTree) {
             $generic_type = $parse_tree->value;
 
