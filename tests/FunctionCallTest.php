@@ -780,6 +780,17 @@ class FunctionCallTest extends TestCase
                     '$c' => 'bool|null',
                 ],
             ],
+            'getTimeOfDay' => [
+                '<?php
+                    $a = gettimeofday(true) - gettimeofday(true);
+                    $b = gettimeofday();
+                    $c = gettimeofday(false);',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'array<string, int>',
+                    '$c' => 'array<string, int>',
+                ],
+            ],
         ];
     }
 

@@ -46,16 +46,20 @@ class FunctionChecker extends FunctionLikeChecker
             throw new \InvalidArgumentException('Function ' . $function_id . ' was not found in callmap');
         }
 
-        switch ($call_map_key) {
-            case 'getenv':
-                if (!empty($call_args)) {
-                    return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
-                }
+        if (!$call_args) {
+            switch ($call_map_key) {
+                case 'getenv':
+                    return new Type\Union([new Type\Atomic\TArray([Type::getMixed(), Type::getString()])]);
 
-                return new Type\Union([new Type\Atomic\TArray([Type::getMixed(), Type::getString()])]);
-        }
-
-        if ($call_args) {
+                case 'gettimeofday':
+                    return new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getString(),
+                            Type::getInt()
+                        ])
+                    ]);
+            }
+        } else {
             switch ($call_map_key) {
                 case 'str_replace':
                 case 'str_ireplace':
@@ -128,6 +132,29 @@ class FunctionChecker extends FunctionLikeChecker
                     }
 
                     return $call_map_key === 'var_export' ? Type::getVoid() : Type::getBool();
+
+                case 'getenv':
+                    return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
+
+                case 'gettimeofday':
+                    if (isset($call_args[0]->value->inferredType)) {
+                        $subject_type = $call_args[0]->value->inferredType;
+
+                        if ((string) $subject_type === 'true') {
+                            return Type::getFloat();
+                        }
+
+                        if ((string) $subject_type === 'false') {
+                            return new Type\Union([
+                                new Type\Atomic\TArray([
+                                    Type::getString(),
+                                    Type::getInt()
+                                ])
+                            ]);
+                        }
+                    }
+
+                    break;
 
                 case 'array_map':
                     return self::getArrayMapReturnType(
