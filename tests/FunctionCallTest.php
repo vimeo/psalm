@@ -791,6 +791,77 @@ class FunctionCallTest extends TestCase
                     '$c' => 'array<string, int>',
                 ],
             ],
+            'parseUrlArray' => [
+                '<?php
+                    function foo(string $s) : string {
+                        return parse_url($s)["host"] ?? "";
+                    }
+
+                    function bar(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        return $parsed["host"];
+                    }
+
+                    function baz(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        return $parsed["host"];
+                    }
+
+                    function bag(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        if (is_string($parsed["host"] ?? false)) {
+                            return $parsed["host"];
+                        }
+
+                        return "";
+                    }
+
+
+                    function hereisanotherone(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        if (isset($parsed["host"]) && is_string($parsed["host"])) {
+                            return $parsed["host"];
+                        }
+
+                        return "";
+                    }
+
+                    function hereisthelastone(string $s) : string {
+                        $parsed = parse_url($s);
+
+                        if (isset($parsed["host"]) && is_string($parsed["host"])) {
+                            return $parsed["host"];
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'parseUrlComponent' => [
+                '<?php
+                    function foo(string $s) : string {
+                        return parse_url($s, PHP_URL_HOST) ?? "";
+                    }
+
+                    function bar(string $s) : string {
+                        return parse_url($s, PHP_URL_HOST);
+                    }
+
+                    function bag(string $s) : string {
+                        $host = parse_url($s, PHP_URL_HOST);
+
+                        if (is_string($host)) {
+                            return $host;
+                        }
+
+                        return "";
+                    }',
+            ],
         ];
     }
 

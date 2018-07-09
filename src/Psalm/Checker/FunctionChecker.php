@@ -364,6 +364,91 @@ class FunctionChecker extends FunctionLikeChecker
                         new Type\Atomic\TLiteralInt(1)
                     ]);
 
+                case 'parse_url':
+                    if (count($call_args) > 1) {
+                        if (isset($call_args[1]->value->inferredType)) {
+                            $component_type = $call_args[1]->value->inferredType;
+
+                            if (!$component_type->isMixed()) {
+                                $project_checker = $statements_checker->getFileChecker()->project_checker;
+                                $codebase = $project_checker->codebase;
+
+                                $acceptable_string_component_type = new Type\Union([
+                                    new Type\Atomic\TLiteralInt(PHP_URL_SCHEME),
+                                    new Type\Atomic\TLiteralInt(PHP_URL_USER),
+                                    new Type\Atomic\TLiteralInt(PHP_URL_PASS),
+                                    new Type\Atomic\TLiteralInt(PHP_URL_HOST),
+                                    new Type\Atomic\TLiteralInt(PHP_URL_PATH),
+                                    new Type\Atomic\TLiteralInt(PHP_URL_QUERY),
+                                    new Type\Atomic\TLiteralInt(PHP_URL_FRAGMENT),
+                                ]);
+
+                                $acceptable_int_component_type = new Type\Union([
+                                    new Type\Atomic\TLiteralInt(PHP_URL_PORT)
+                                ]);
+
+                                if (TypeChecker::isContainedBy(
+                                    $codebase,
+                                    $component_type,
+                                    $acceptable_string_component_type
+                                )) {
+                                    $nullable_string = new Type\Union([
+                                        new Type\Atomic\TString,
+                                        new Type\Atomic\TNull
+                                    ]);
+
+                                    $nullable_string->ignore_nullable_issues = true;
+
+                                    return $nullable_string;
+                                }
+
+                                if (TypeChecker::isContainedBy(
+                                    $codebase,
+                                    $component_type,
+                                    $acceptable_int_component_type
+                                )) {
+                                    $nullable_int = new Type\Union([
+                                        new Type\Atomic\TInt,
+                                        new Type\Atomic\TNull
+                                    ]);
+
+                                    $nullable_int->ignore_nullable_issues = true;
+
+                                    return $nullable_int;
+                                }
+                            }
+                        }
+
+                        $nullable_string_or_int = new Type\Union([
+                            new Type\Atomic\TString,
+                            new Type\Atomic\TInt,
+                            new Type\Atomic\TNull
+                        ]);
+
+                        $nullable_string_or_int->ignore_nullable_issues = true;
+
+                        return $nullable_string_or_int;
+                    }
+
+                    $component_key_type = new Type\Union([
+                        new Type\Atomic\TLiteralString('scheme'),
+                        new Type\Atomic\TLiteralString('user'),
+                        new Type\Atomic\TLiteralString('pass'),
+                        new Type\Atomic\TLiteralString('host'),
+                        new Type\Atomic\TLiteralString('path'),
+                        new Type\Atomic\TLiteralString('query'),
+                        new Type\Atomic\TLiteralString('fragment'),
+                    ]);
+
+                    $nullable_string_or_int = new Type\Union([
+                        new Type\Atomic\TArray([$component_key_type, Type::getMixed()]),
+                        new Type\Atomic\TFalse
+                    ]);
+
+                    $nullable_string_or_int->ignore_falsable_issues = true;
+
+                    return $nullable_string_or_int;
+
                 case 'min':
                 case 'max':
                     if (isset($call_args[0])) {
