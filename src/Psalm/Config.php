@@ -349,9 +349,8 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException
-     * @return ?string
      */
-    public static function locateConfigFile(string $path)
+    public static function locateConfigFile(string $path): ?string
     {
         $dir_path = realpath($path);
 

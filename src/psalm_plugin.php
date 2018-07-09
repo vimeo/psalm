@@ -58,6 +58,12 @@ if ($mode === 'list') {
         exit(2);
     }
 
+    $config_file_name = Config::locateConfigFile($current_dir);
+    if (!$config_file_name) {
+        fwrite(STDERR, 'Psalm config file not found' . PHP_EOL);
+        exit(3);
+    }
+
     if ($mode === 'enable') {
         if (in_array($plugin_class, $enabled, true)) {
             fwrite(STDERR, 'Plugin already enabled' . PHP_EOL);
@@ -67,12 +73,12 @@ if ($mode === 'list') {
         $ns = 'https://getpsalm.org/schema/config';
 
         // todo: get filename from config to reuse search logic
-        $config_xml = new \SimpleXmlElement(file_get_contents('psalm.xml'));
+        $config_xml = new \SimpleXmlElement(file_get_contents($config_file_name));
         if (!isset($config_xml->plugins)) {
             $config_xml->addChild('plugins', "\n", $ns);
         }
         $config_xml->plugins->addChild('pluginClass', '', $ns)->addAttribute('class', $plugin_class);
-        $config_xml->asXML('psalm.xml');
+        $config_xml->asXML($config_file_name);
     }
 
     if ($mode === 'disable') {
@@ -82,7 +88,7 @@ if ($mode === 'list') {
         }
 
         // todo: get filename from config to reuse search logic
-        $config_xml = new \SimpleXmlElement(file_get_contents('psalm.xml'));
+        $config_xml = new \SimpleXmlElement(file_get_contents($config_file_name));
         foreach ($config_xml->plugins->pluginClass as $entry) {
             if ((string)$entry['class'] === $plugin_class) {
                 unset($entry[0]);
@@ -90,6 +96,6 @@ if ($mode === 'list') {
             }
         }
 
-        $config_xml->asXML('psalm.xml');
+        $config_xml->asXML($config_file_name);
     }
 }
