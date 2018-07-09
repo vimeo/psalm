@@ -3,7 +3,7 @@ require __DIR__ . '/' . 'command_functions.php';
 use Psalm\Config;
 $help = <<<HELP
 Usage:
-    psalm-plugin <mode> [plugin-name]
+    psalm-plugin <mode> [plugin-name] [-c <config file>]
 
 Modes:
     'enable': Enables the specified plugin, requires plugin name
@@ -14,6 +14,11 @@ Plugin names:
     Plugins can be referred to by either fully qualified class names or composer package names:
       > psalm-plugin enable 'Plugin\\Class\\Name'
       > psalm-plugin disable plugin-vendor/plugin-package-name
+
+Arguments:
+    -c <config file>    path to config file. psalm-plugin will search up the directory tree,
+                        starting with the current directory, for 'psalm.xml' or 'psalm.xml.dist'
+
 HELP;
 if (empty($_SERVER['argv'][1])) {
     fwrite(STDERR, $help . PHP_EOL);
@@ -49,8 +54,15 @@ $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
 $vendor_dir = getVendorDir($current_dir);
 requireAutoloaders($current_dir, false, $vendor_dir);
 
+$config_file_name = findConfigFile($_SERVER['argv'], $current_dir);
+if (!$config_file_name || !file_exists($config_file_name)) {
+    fwrite(STDERR, 'Psalm config file not found' . PHP_EOL);
+    exit(3);
+}
+$config = Config::loadFromXMLFile($config_file_name, $current_dir);
+
 // inspect enabled plugins
-$enabled = Config::getConfigForPath($current_dir, $current_dir, '')->getPluginClasses();
+$enabled = $config->getPluginClasses();
 
 if ($mode === 'list') {
     echo "Enabled: " . (join(',', $enabled) ?: 'none') . PHP_EOL;
@@ -66,12 +78,6 @@ if ($mode === 'list') {
     } catch (\InvalidArgumentException $e) {
         fwrite(STDERR, 'Unknown plugin class' . PHP_EOL);
         exit(2);
-    }
-
-    $config_file_name = Config::locateConfigFile($current_dir);
-    if (!$config_file_name) {
-        fwrite(STDERR, 'Psalm config file not found' . PHP_EOL);
-        exit(3);
     }
 
     if ($mode === 'enable') {
@@ -118,4 +124,18 @@ function resolvePluginClass(string $class_or_package, array $plugin_classes): st
         return $class_or_package;
     }
     throw new \InvalidArgumentException('Unknown plugin: ', $class_or_package);
+}
+
+function findConfigFile(array $argv, string $current_dir): string
+{
+    $config_arg_offset = array_search('-c', $argv, true);
+    if (false !== $config_arg_offset) {
+        if (!isset($argv[$config_arg_offset + 1])) {
+            fwrite(STDERR, '-c requires a file path' . PHP_EOL);
+            exit(1);
+        }
+        return $argv[$config_arg_offset + 1];
+    } else {
+        return Config::locateConfigFile($current_dir);
+    }
 }
