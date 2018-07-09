@@ -857,25 +857,13 @@ class FunctionCallTest extends TestCase
                     }
 
                     $port1 = portismaybeint("");
-                    $port2 = portismaybeint("localhost");
-                    $port3 = portismaybeint("localhost:");
-                    $port4 = portismaybeint("localhost:8080");
                     $port5 = portismaybeint("localhost:443");
                     $porta = parse_url("", PHP_URL_PORT);
-                    $portb = parse_url("localhost", PHP_URL_PORT);
-                    $portc = parse_url("localhost:", PHP_URL_PORT);
-                    $portd = parse_url("localhost:8080", PHP_URL_PORT);
                     $porte = parse_url("localhost:443", PHP_URL_PORT);',
                 'assertions' => [
                     '$port1' => 'null',
-                    '$port2' => 'null',
-                    '$port3' => 'null',
-                    '$port4' => 'int',
                     '$port5' => 'int',
                     '$porta' => 'false',
-                    '$portb' => 'false',
-                    '$portc' => 'false',
-                    '$portd' => 'int',
                     '$porte' => 'int',
                 ],
                 'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
