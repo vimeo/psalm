@@ -1355,6 +1355,10 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'callable']];
             }
+        } elseif (self::hasIterableCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[$prefix . 'iterable']];
+            }
         } elseif (self::hasInArrayCheck($expr)) {
             if ($first_var_name && isset($expr->args[1]->value->inferredType)) {
                 foreach ($expr->args[1]->value->inferredType->getTypes() as $atomic_type) {
@@ -1764,6 +1768,20 @@ class AssertionFinder
     protected static function hasNumericCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && $stmt->name->parts === ['is_numeric']) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  bool
+     */
+    protected static function hasIterableCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_iterable') {
             return true;
         }
 
