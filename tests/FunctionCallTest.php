@@ -853,7 +853,7 @@ class FunctionCallTest extends TestCase
                     function portismaybeint(string $s) : ? int {
                         $parsed = parse_url($s);
 
-                        $parsed["port"] ?? null;
+                        return $parsed["port"] ?? null;
                     }
 
                     $port1 = portismaybeint("");
