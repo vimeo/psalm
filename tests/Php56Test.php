@@ -230,6 +230,16 @@ class Php56Test extends TestCase
                     foo(...$arr);
                     foo(...$arr);',
             ],
+            'iterableSplat' => [
+                '<?php
+                    function foo(iterable $args): int {
+                        return intval(...$args);
+                    }
+
+                    function foo(ArrayIterator $args): int {
+                        return intval(...$args);
+                    }',
+            ],
         ];
     }
 

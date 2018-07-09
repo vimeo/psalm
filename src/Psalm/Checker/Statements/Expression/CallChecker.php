@@ -911,15 +911,19 @@ class CallChecker
                                 // fall through
                             }
                         } else {
-                            if (IssueBuffer::accepts(
-                                new InvalidArgument(
-                                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                        . ' expects array, ' . $arg->value->inferredType . ' provided',
-                                    $code_location
-                                ),
-                                $statements_checker->getSuppressedIssues()
-                            )) {
-                                return false;
+                            foreach ($arg->value->inferredType->getTypes() as $atomic_type) {
+                                if (!$atomic_type->isIterable($codebase)) {
+                                    if (IssueBuffer::accepts(
+                                        new InvalidArgument(
+                                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                                . ' expects array, ' . $atomic_type . ' provided',
+                                            $code_location
+                                        ),
+                                        $statements_checker->getSuppressedIssues()
+                                    )) {
+                                        return false;
+                                    }
+                                }
                             }
                         }
 

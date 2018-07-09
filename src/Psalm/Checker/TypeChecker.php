@@ -587,17 +587,7 @@ class TypeChecker
                 return false;
             }
 
-            if ($input_type_part instanceof TNamedObject
-                && (strtolower($input_type_part->value) === 'traversable'
-                    || $codebase->classExtendsOrImplements(
-                        $input_type_part->value,
-                        'Traversable'
-                    ) || $codebase->interfaceExtends(
-                        $input_type_part->value,
-                        'Traversable'
-                    )
-                )
-            ) {
+            if ($input_type_part->isTraversable($codebase)) {
                 return true;
             }
         }

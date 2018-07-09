@@ -159,6 +159,34 @@ abstract class Atomic
     }
 
     /**
+     * @return bool
+     */
+    public function isIterable(Codebase $codebase)
+    {
+        return $this instanceof TNamedObject && (strtolower($this->value) === 'iterable')
+            || $this->isTraversable($codebase)
+            || $this instanceof TArray
+            || $this instanceof ObjectLike;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTraversable(Codebase $codebase)
+    {
+        return $this instanceof TNamedObject
+            && (strtolower($this->value) === 'traversable'
+                || $codebase->classExtendsOrImplements(
+                    $this->value,
+                    'Traversable'
+                ) || $codebase->interfaceExtends(
+                    $this->value,
+                    'Traversable'
+                )
+            );
+    }
+
+    /**
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array<string>    $suppressed_issues
