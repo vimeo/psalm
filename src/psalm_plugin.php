@@ -3,11 +3,17 @@ require __DIR__ . '/' . 'command_functions.php';
 use Psalm\Config;
 $help = <<<HELP
 Usage:
-    psalm-plugin <mode> [Plugin\Class\\Name]
+    psalm-plugin <mode> [plugin-name]
+
 Modes:
-    enable: Enables the specified plugin, requires plugin class name
-    disable: Disables the specified plugin, requires plugin class name
-    list: shows enabled and available plugins
+    'enable': Enables the specified plugin, requires plugin name
+    'disable': Disables the specified plugin, requires plugin name
+    'list': shows enabled and available plugins
+
+Plugin names:
+    Plugins can be referred to by either fully qualified class names or composer package names:
+      > psalm-plugin enable 'Plugin\\Class\\Name'
+      > psalm-plugin disable plugin-vendor/plugin-package-name
 HELP;
 if (empty($_SERVER['argv'][1])) {
     fwrite(STDERR, $help . PHP_EOL);
@@ -22,17 +28,20 @@ if (!in_array($mode, ['enable', 'disable', 'list'], true)) {
 
 // inspect available plugins
 $composer_lock = json_decode(file_get_contents('composer.lock'));
-$plugin_classes = array_map(
-    function(object $package): string {
-        return $package->extra->pluginClass;
-    },
-    array_filter(
-        array_merge($composer_lock->packages, $composer_lock->{"packages-dev"}),
-        function (object $package): bool {
-            return isset($package->type)
-                && $package->type === 'psalm-plugin'
-                && isset($package->extra->pluginClass);
+$plugin_classes = iterator_to_array(
+    (function(array $packages): Generator {
+        foreach ($packages as $package) {
+            yield $package->name => $package->extra->pluginClass;
         }
+    })(
+        array_filter(
+            array_merge($composer_lock->packages, $composer_lock->{"packages-dev"}),
+            function (object $package): bool {
+                return isset($package->type)
+                    && $package->type === 'psalm-plugin'
+                    && isset($package->extra->pluginClass);
+            }
+        )
     )
 );
 
@@ -52,8 +61,9 @@ if ($mode === 'list') {
         fwrite(STDERR, $help . PHP_EOL);
         exit(1);
     }
-    $plugin_class = $_SERVER['argv'][2];
-    if (!in_array($plugin_class, $plugin_classes, true)) {
+    try {
+        $plugin_class = resolvePluginClass($_SERVER['argv'][2], $plugin_classes);
+    } catch (\InvalidArgumentException $e) {
         fwrite(STDERR, 'Unknown plugin class' . PHP_EOL);
         exit(2);
     }
@@ -98,4 +108,14 @@ if ($mode === 'list') {
 
         $config_xml->asXML($config_file_name);
     }
+}
+
+function resolvePluginClass(string $class_or_package, array $plugin_classes): string
+{
+    if (false !== strpos($class_or_package, '/') && isset($plugin_classes[$class_or_package])) {
+        return $plugin_classes[$class_or_package];
+    } else if (in_array($class_or_package, $plugin_classes, true)){
+        return $class_or_package;
+    }
+    throw new \InvalidArgumentException('Unknown plugin: ', $class_or_package);
 }
