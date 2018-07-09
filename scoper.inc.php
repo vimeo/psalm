@@ -114,8 +114,20 @@ return [
 
             return $contents;
         },
+        function ($filePath, $prefix, $contents) {
+            $ret = str_replace(
+                $prefix . '\Psalm\PluginApi',
+                'Psalm\PluginApi',
+                $contents
+            );
+            if (strpos($contents, $prefix . '\Psalm\PluginApi')) {
+                var_dump(compact('filePath', 'contents', 'ret'));
+            }
+            return $ret;
+        },
     ],
     'whitelist' => [
         \Composer\Autoload\ClassLoader::class,
+        'Psalm\PluginApi\*',
     ]
 ];
