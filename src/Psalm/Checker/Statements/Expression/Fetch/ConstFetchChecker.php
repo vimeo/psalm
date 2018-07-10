@@ -236,6 +236,13 @@ class ConstFetchChecker
         $fq_const_name,
         $const_name
     ) {
+        if ($const_name === 'STDERR'
+            || $const_name === 'STDOUT'
+            || $const_name === 'STDIN'
+        ) {
+            return Type::getResource();
+        }
+
         $predefined_constants = $codebase->config->getPredefinedConstants();
 
         if (isset($predefined_constants[$fq_const_name ?: $const_name])) {

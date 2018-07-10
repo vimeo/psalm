@@ -215,6 +215,12 @@ class ConstantTest extends TestCase
                 '<?php
                     if ("phpdbg" === \PHP_SAPI) {}',
             ],
+            'stdinout' => [
+                '<?php
+                    echo fread(STDIN, 100);
+                    fwrite(STDOUT, "asd");
+                    fwrite(STDERR, "zcx");'
+            ],
         ];
     }
 
