@@ -474,10 +474,10 @@ class Context
         foreach ($clauses as $clause) {
             \Psalm\Type\Algebra::calculateNegation($clause);
 
-            $quoted_remove_var_id = preg_quote($remove_var_id);
+            $quoted_remove_var_id = preg_quote($remove_var_id, '/');
 
             foreach ($clause->possibilities as $var_id => $_) {
-                if (preg_match('/' . preg_quote($quoted_remove_var_id, '/') . '[\]\[\-]/', $var_id)) {
+                if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
                     break 2;
                 }
             }
