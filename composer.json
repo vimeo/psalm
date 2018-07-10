@@ -59,5 +59,8 @@
             "dev-master": "2.x-dev",
             "dev-1.x": "1.x-dev"
         }
+    },
+    "provide": {
+        "psalm/psalm": "@self.version"
     }
 }
