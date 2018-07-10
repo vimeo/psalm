@@ -467,7 +467,7 @@ class CommentChecker
                     $args[] = ($method_tree_child->byref ? '&' : '')
                         . ($method_tree_child->variadic ? '...' : '')
                         . $method_tree_child->name
-                        . ($method_tree_child->default ? ' = ' . $method_tree_child->default : '');
+                        . ($method_tree_child->default != '' ? ' = ' . $method_tree_child->default : '');
 
 
                     if ($method_tree_child->children) {
