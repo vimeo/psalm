@@ -1494,6 +1494,23 @@ class PropertyTypeTest extends TestCase
                     if (is_string($a->foo)) {}',
                 'error_message' => 'DocblockTypeContradiction',
             ],
+            'impossiblePropertyCheck' => [
+                '<?php
+                    class Bar {}
+                    class Foo {
+                        /** @var Bar */
+                        private $bar;
+
+                        public function __construct() {
+                            $this->bar = new Bar();
+                        }
+
+                        public function getBar(): void {
+                            if (!$this->bar) {}
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
         ];
     }
 }

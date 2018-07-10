@@ -629,7 +629,6 @@ class ClassLikes
             }
 
             if ($classlike_storage->location
-                && $this->config
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
                 && !$classlike_storage->is_trait
             ) {
