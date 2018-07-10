@@ -856,15 +856,11 @@ class FunctionCallTest extends TestCase
                         return $parsed["port"] ?? null;
                     }
 
-                    $port1 = portismaybeint("");
-                    $port5 = portismaybeint("localhost:443");
                     $porta = parse_url("", PHP_URL_PORT);
                     $porte = parse_url("localhost:443", PHP_URL_PORT);',
                 'assertions' => [
-                    '$port1' => 'null',
-                    '$port5' => 'int',
-                    '$porta' => 'false',
-                    '$porte' => 'int',
+                    '$porta' => 'int|null',
+                    '$porte' => 'int|null',
                 ],
                 'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
