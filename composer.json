@@ -61,6 +61,6 @@
         }
     },
     "provide": {
-        "psalm/psalm": "@self.version"
+        "psalm/psalm": "self.version"
     }
 }
