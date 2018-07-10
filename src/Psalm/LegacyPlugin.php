@@ -4,8 +4,9 @@ namespace Psalm;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Scanner\FileScanner;
+use Psalm\PluginApi;
 
-class LegacyPlugin
+class LegacyPlugin implements PluginApi\PluginEntryPointInterface
 {
     /** @var string */
     private $path;
