@@ -838,8 +838,30 @@ class FunctionCallTest extends TestCase
                         }
 
                         return "";
-                    }',
-                'assertions' => [],
+                    }
+
+                    function portisint(string $s) : int {
+                        $parsed = parse_url($s);
+
+                        if (isset($parsed["port"])) {
+                            return $parsed["port"];
+                        }
+
+                        return 80;
+                    }
+
+                    function portismaybeint(string $s) : ? int {
+                        $parsed = parse_url($s);
+
+                        return $parsed["port"] ?? null;
+                    }
+
+                    $porta = parse_url("", PHP_URL_PORT);
+                    $porte = parse_url("localhost:443", PHP_URL_PORT);',
+                'assertions' => [
+                    '$porta' => 'int|null',
+                    '$porte' => 'int|null',
+                ],
                 'error_levels' => ['MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'parseUrlComponent' => [

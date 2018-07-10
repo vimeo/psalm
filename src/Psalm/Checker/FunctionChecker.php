@@ -435,6 +435,7 @@ class FunctionChecker extends FunctionLikeChecker
                         new Type\Atomic\TLiteralString('user'),
                         new Type\Atomic\TLiteralString('pass'),
                         new Type\Atomic\TLiteralString('host'),
+                        new Type\Atomic\TLiteralString('port'),
                         new Type\Atomic\TLiteralString('path'),
                         new Type\Atomic\TLiteralString('query'),
                         new Type\Atomic\TLiteralString('fragment'),
