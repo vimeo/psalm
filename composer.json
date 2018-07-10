@@ -53,5 +53,11 @@
             "./psalm --find-dead-code",
             "phpunit"
         ]
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.x-dev",
+            "dev-1.x": "1.x-dev"
+        }
     }
 }
