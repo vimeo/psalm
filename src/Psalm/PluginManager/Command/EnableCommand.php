@@ -26,12 +26,20 @@ class EnableCommand extends Command
     {
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
-        $config_file = new ConfigFile($current_dir, $i->getOption('config'));
+        /** @psalm-suppress MixedAssignment */
+        $config_file_path = $i->getOption('config');
+        assert(null === $config_file_path || is_string($config_file_path));
+
+        $config_file = new ConfigFile($current_dir, $config_file_path);
         $composer_lock = new ComposerLock('composer.lock');
         $plugin_list = new PluginList($config_file, $composer_lock);
 
         try {
-            $plugin_class = $plugin_list->resolvePluginClass($i->getArgument('pluginName'));
+            /** @psalm-suppress MixedAssignment */
+            $plugin_name = $i->getArgument('pluginName');
+            assert(is_string($plugin_name));
+
+            $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
         } catch (InvalidArgumentException $e) {
             $o->writeLn('<error>Unknown plugin class</error>');
             return 2;

@@ -3,6 +3,7 @@ namespace Psalm\PluginManager;
 
 use Psalm\Config;
 use SimpleXmlElement;
+use RuntimeException;
 
 class ConfigFile
 {
@@ -22,7 +23,7 @@ class ConfigFile
         } else {
             $path = Config::locateConfigFile($current_dir);
             if (!$path) {
-                // throw
+                throw new RuntimeException('Cannot find Psalm config');
             }
             $this->path = $path;
         }
@@ -33,11 +34,22 @@ class ConfigFile
         return Config::loadFromXMLFile($this->path, $this->current_dir);
     }
 
-
     public function removePlugin(string $plugin_class): void
     {
         $config_xml = $this->readXml();
+        if (!isset($config_xml->plugins)) {
+            // no plugins, nothing to remove
+            return;
+        }
+        assert($config_xml->plugins instanceof SimpleXmlElement);
+        if (!isset($config_xml->plugins->pluginClass)) {
+            // no plugin classes, nothing to remove
+            return;
+        }
+        assert($config_xml->plugins->pluginClass instanceof SimpleXmlElement);
+        /** @psalm-suppress MixedAssignment */
         foreach ($config_xml->plugins->pluginClass as $entry) {
+            assert($entry instanceof SimpleXmlElement);
             if ((string)$entry['class'] === $plugin_class) {
                 unset($entry[0]);
                 break;
@@ -53,6 +65,7 @@ class ConfigFile
         if (!isset($config_xml->plugins)) {
             $config_xml->addChild('plugins', "\n", self::NS);
         }
+        assert($config_xml->plugins instanceof SimpleXmlElement);
         $config_xml->plugins->addChild('pluginClass', '', self::NS)->addAttribute('class', $plugin_class);
         $config_xml->asXML($this->path);
     }
