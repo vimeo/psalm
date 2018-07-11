@@ -12,6 +12,7 @@ use InvalidArgumentException;
 
 class DisableCommand extends Command
 {
+    /** @psalm-suppress UnusedMethod */
     protected function configure(): void
     {
         $this
@@ -22,6 +23,7 @@ class DisableCommand extends Command
             ->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
     }
 
+    /** @psalm-suppress UnusedMethod */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;

@@ -10,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ShowCommand extends Command
 {
+    /** @psalm-suppress UnusedMethod */
     protected function configure(): void
     {
         $this
@@ -18,6 +19,7 @@ class ShowCommand extends Command
             ->addUsage('[-c path/to/psalm.xml]');
     }
 
+    /** @psalm-suppress UnusedMethod */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
