@@ -7,6 +7,7 @@ use Psalm\PluginManager\PluginList;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 class ShowCommand extends Command
 {
@@ -22,6 +23,7 @@ class ShowCommand extends Command
     /** @psalm-suppress UnusedMethod */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
+        $io = new SymfonyStyle($i, $o);
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
         /** @psalm-suppress MixedAssignment */
@@ -32,10 +34,39 @@ class ShowCommand extends Command
         $composer_lock = new ComposerLock('composer.lock');
         $plugin_list = new PluginList($config_file, $composer_lock);
 
-        $available = array_keys($plugin_list->getAvailable());
-        $enabled = array_keys($plugin_list->getEnabled());
+        $enabled = $plugin_list->getEnabled();
+        $available = $plugin_list->getAvailable();
 
-        echo "Enabled: " . (join(',', $enabled) ?: 'none') . PHP_EOL;
-        echo "Available: " . (join(',', $available) ?: 'none') . PHP_EOL;
+        $formatRow = function(string $class, ?string $package): array {
+            return [$package, $class];
+        };
+
+        $io->section('Enabled');
+        if (count($enabled)) {
+            $io->table(
+                ['Package', 'Class'],
+                array_map(
+                    $formatRow,
+                    array_keys($enabled),
+                    array_values($enabled)
+                )
+            );
+        } else {
+            $io->note('No plugins enabled');
+        }
+
+        $io->section('Available');
+        if (count($available)) {
+            $io->table(
+                ['Package', 'Class'],
+                array_map(
+                    $formatRow,
+                    array_keys($available),
+                    array_values($available)
+                )
+            );
+        } else {
+            $io->note('No plugins available');
+        }
     }
 }

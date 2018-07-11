@@ -9,6 +9,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use InvalidArgumentException;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 class DisableCommand extends Command
 {
@@ -30,6 +31,8 @@ class DisableCommand extends Command
     /** @psalm-suppress UnusedMethod */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
+        $io = new SymfonyStyle($i, $o);
+
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
         /** @psalm-suppress MixedAssignment */
@@ -47,15 +50,16 @@ class DisableCommand extends Command
 
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
         } catch (InvalidArgumentException $e) {
-            $o->writeLn('<error>Unknown plugin class</error>');
+            $io->error('Unknown plugin class');
             return 2;
         }
 
         if (!$plugin_list->isEnabled($plugin_class)) {
-            $o->writeLn('<error>Plugin already disabled</error>');
+            $io->note('Plugin already disabled');
             return 3;
         }
 
         $config_file->removePlugin($plugin_class);
+        $io->success('Plugin disabled');
     }
 }
