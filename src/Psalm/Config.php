@@ -646,7 +646,7 @@ class Config
         }
 
         // this plugin loading system borrows heavily from etsy/phan
-        if (isset($config_xml->plugins) ) {
+        if (isset($config_xml->plugins)) {
             if (isset($config_xml->plugins->plugin)) {
                 /** @var \SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->plugin as $plugin) {

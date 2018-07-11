@@ -18,7 +18,11 @@ class DisableCommand extends Command
         $this
             ->setName('disable')
             ->setDescription('Disables a named plugin')
-            ->addArgument('pluginName', InputArgument::REQUIRED, 'Plugin name (fully qualified class name or composer package name)')
+            ->addArgument(
+                'pluginName',
+                InputArgument::REQUIRED,
+                'Plugin name (fully qualified class name or composer package name)'
+            )
             ->addUsage('vendor/plugin-package-name [-c path/to/psalm.xml]')
             ->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
     }

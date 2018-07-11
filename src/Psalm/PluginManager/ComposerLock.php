@@ -1,5 +1,6 @@
 <?php
 namespace Psalm\PluginManager;
+
 use RuntimeException;
 
 class ComposerLock

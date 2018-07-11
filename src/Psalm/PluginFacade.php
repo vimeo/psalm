@@ -1,5 +1,6 @@
 <?php
 namespace Psalm;
+
 use Psalm\PluginApi\RegistrationInterface;
 
 class PluginFacade implements RegistrationInterface
