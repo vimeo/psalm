@@ -465,9 +465,12 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 );
             }
 
-            if ($function_storage->if_true_assertions || $function_storage->if_false_assertions) {
-                /** @psalm-suppress UndefinedPropertyAssignment */
-                $stmt->conditionalAssertion = true;
+            if ($function_storage->if_true_assertions) {
+                $stmt->ifTrueAssertions = $function_storage->if_true_assertions;
+            }
+
+            if ($function_storage->if_false_assertions) {
+                $stmt->ifFalseAssertions = $function_storage->if_false_assertions;
             }
         }
 

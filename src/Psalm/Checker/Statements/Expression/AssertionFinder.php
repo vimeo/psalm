@@ -180,6 +180,11 @@ class AssertionFinder
             return;
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\MethodCall) {
+            $conditional->assertions = self::processCustomAssertion($conditional, $this_class_name, $source, false);
+            return;
+        }
+
         if ($conditional instanceof PhpParser\Node\Expr\Empty_) {
             $var_name = ExpressionChecker::getArrayVarId(
                 $conditional->expr,
@@ -1419,20 +1424,47 @@ class AssertionFinder
             ) {
                 $if_types[$array_root . '[' . $first_var_name . ']'] = [[$prefix . 'array-key-exists']];
             }
-        } elseif ($source instanceof StatementsChecker
-            && $expr->name instanceof PhpParser\Node\Name
-            && isset($expr->conditionalAssertion)
+        } else {
+            $if_types = self::processCustomAssertion($expr, $this_class_name, $source, $negate);
+        }
+
+        return $if_types;
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall      $expr
+     * @param  string|null  $this_class_name
+     * @param  FileSource   $source
+     * @param  bool         $negate
+     *
+     * @return array<string, array<int, array<int, string>>>
+     */
+    protected static function processCustomAssertion(
+        $expr,
+        $this_class_name,
+        FileSource $source,
+        $negate = false
+    ) {
+        if (!$source instanceof StatementsChecker
+            || (!isset($expr->ifTrueAssertions) && !isset($expr->ifFalseAssertions))
         ) {
-            $codebase = $source->getFileChecker()->project_checker->codebase;
+            return [];
+        }
 
-            $function_id = ClassLikeChecker::getFQCLNFromNameObject($expr->name, $source->getAliases());
+        $prefix = $negate ? '!' : '';
 
-            $function_storage = $codebase->functions->getStorage(
-                $source,
-                strtolower($function_id)
-            );
+        $first_var_name = isset($expr->args[0]->value)
+            ? ExpressionChecker::getArrayVarId(
+                $expr->args[0]->value,
+                $this_class_name,
+                $source
+            )
+            : null;
 
-            foreach ($function_storage->if_true_assertions as $assertion) {
+        $if_types = [];
+
+        if (isset($expr->ifTrueAssertions)) {
+            foreach ($expr->ifTrueAssertions as $assertion) {
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;
@@ -1453,10 +1485,12 @@ class AssertionFinder
                     }
                 }
             }
+        }
 
+        if (isset($expr->ifFalseAssertions)) {
             $negated_prefix = !$negate ? '!' : '';
 
-            foreach ($function_storage->if_false_assertions as $assertion) {
+            foreach ($expr->ifFalseAssertions as $assertion) {
                 if (is_int($assertion->var_id) && isset($expr->args[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
                         $var_name = $first_var_name;

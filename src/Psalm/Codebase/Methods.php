@@ -317,32 +317,6 @@ class Methods
     }
 
     /**
-     * @param  string $method_id
-     *
-     * @return array<int, \Psalm\Storage\Assertion>
-     */
-    public function getMethodAssertions($method_id)
-    {
-        $method_id = $this->getDeclaringMethodId($method_id);
-
-        if (!$method_id) {
-            return [];
-        }
-
-        list($fq_class_name) = explode('::', $method_id);
-
-        $fq_class_storage = $this->classlike_storage_provider->get($fq_class_name);
-
-        if (!$fq_class_storage->user_defined && CallMap::inCallMap($method_id)) {
-            return [];
-        }
-
-        $storage = $this->getStorage($method_id);
-
-        return $storage->assertions;
-    }
-
-    /**
      * @param string $method_id
      * @param string $declaring_method_id
      *
@@ -454,6 +428,28 @@ class Methods
         list($fq_class_name) = explode('::', $method_id);
 
         return $fq_class_name . '::' . $storage->cased_name;
+    }
+
+    /**
+     * @param  string $method_id
+     *
+     * @return MethodStorage
+     */
+    public function getUserMethodStorage($method_id)
+    {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        if (!$declaring_method_id) {
+            throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
+        }
+
+        $storage = $this->getStorage($declaring_method_id);
+
+        if (!$storage->location) {
+            throw new \UnexpectedValueException('Storage for ' . $method_id . ' is not user-defined');
+        }
+
+        return $storage;
     }
 
     /**

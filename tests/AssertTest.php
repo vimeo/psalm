@@ -255,6 +255,27 @@ class AssertTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullOperand',
             ],
+            'assertIfTrueMethodCall' => [
+                '<?php
+                    class C {
+                        /**
+                         * @param mixed $p
+                         * @psalm-assert-if-true int $p
+                         */
+                        public function isInt($p): bool {
+                            return is_int($p);
+                        }
+                        /**
+                         * @param mixed $p
+                         */
+                        public function doWork($p): void {
+                            if ($this->isInt($p)) {
+                                strlen($p);
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }
