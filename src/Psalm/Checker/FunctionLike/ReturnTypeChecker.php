@@ -11,6 +11,7 @@ use Psalm\Checker\InterfaceChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Checker\StatementsChecker;
 use Psalm\Checker\TypeChecker;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -29,6 +30,7 @@ use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\TypeCombination;
 
@@ -429,15 +431,34 @@ class ReturnTypeChecker
             } elseif ((!$inferred_return_type->isNullable() && $declared_return_type->isNullable())
                 || (!$inferred_return_type->isFalsable() && $declared_return_type->isFalsable())
             ) {
-                if (IssueBuffer::accepts(
-                    new LessSpecificReturnType(
-                        'The inferred return type \'' . $inferred_return_type . '\' for ' . $cased_method_id .
-                            ' is more specific than the declared return type \'' . $declared_return_type . '\'',
-                        $return_type_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    return false;
+                if ($function instanceof Function_
+                    || $function instanceof Closure
+                    || $function->isPrivate()
+                ) {
+                    $check_for_less_specific_type = true;
+                } elseif ($source instanceof StatementsChecker) {
+                    $method_storage = $function_like_checker->getFunctionLikeStorage($source);
+
+                    if ($method_storage instanceof MethodStorage) {
+                        $check_for_less_specific_type = !$method_storage->overridden_somewhere;
+                    } else {
+                        $check_for_less_specific_type = false;
+                    }
+                } else {
+                    $check_for_less_specific_type = false;
+                }
+
+                if ($check_for_less_specific_type) {
+                    if (IssueBuffer::accepts(
+                        new LessSpecificReturnType(
+                            'The inferred return type \'' . $inferred_return_type . '\' for ' . $cased_method_id .
+                                ' is more specific than the declared return type \'' . $declared_return_type . '\'',
+                            $return_type_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
             }
 

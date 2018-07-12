@@ -39,4 +39,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var bool
      */
     public $overridden_downstream = false;
+
+    /**
+     * @var bool
+     */
+    public $overridden_somewhere = false;
 }
