@@ -284,6 +284,18 @@ class UnusedCodeTest extends TestCase
                     }
                     takesA(new B);'
             ],
+            'suppressPrivateUnusedMethod' => [
+                '<?php
+                    class A {
+                        /**
+                         * @psalm-suppress UnusedMethod
+                         * @return void
+                         */
+                        private function foo() {}
+                    }
+
+                    new A();',
+            ],
         ];
     }
 

@@ -790,7 +790,8 @@ class ClassLikes
                             'Method ' . $method_id . ' is never used',
                             $method_location,
                             $method_id
-                        )
+                        ),
+                        $method_storage->suppressed_issues
                     )) {
                         // fall through
                     }
