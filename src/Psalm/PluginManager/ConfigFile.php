@@ -55,6 +55,10 @@ class ConfigFile
                 break;
             }
         }
+        if (!$config_xml->plugins->children()->count()) {
+            // avoid breaking old psalm binaries, whose schema did not allow empty plugins
+            unset($config_xml->plugins[0]);
+        }
 
         $config_xml->asXML($this->path);
     }
