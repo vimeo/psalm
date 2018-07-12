@@ -418,7 +418,10 @@ class ArrayFetchChecker
                         );
                     }
 
-                    if ($array_access_type->isEmpty() && !$in_assignment) {
+                    if ($array_access_type->isEmpty()
+                        && !$in_assignment
+                        && !$inside_isset
+                    ) {
                         if (IssueBuffer::accepts(
                             new EmptyArrayAccess(
                                 'Cannot access value on empty array variable ' . $array_var_id,
