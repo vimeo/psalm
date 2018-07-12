@@ -1737,7 +1737,7 @@ class Reconciler
                     $parts_offset++;
                     $parts[$parts_offset] = $char;
                     $parts_offset++;
-                    continue;
+                    continue 2;
 
                 case '\'':
                 case '"':
@@ -1747,7 +1747,7 @@ class Reconciler
                     $parts[$parts_offset] .= $char;
                     $string_char = $char;
 
-                    continue;
+                    continue 2;
 
                 case '-':
                     if ($i < $char_count - 1 && $chars[$i + 1] === '>') {
@@ -1756,7 +1756,7 @@ class Reconciler
                         $parts_offset++;
                         $parts[$parts_offset] = '->';
                         $parts_offset++;
-                        continue;
+                        continue 2;
                     }
                     // fall through
 

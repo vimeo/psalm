@@ -520,7 +520,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 switch (strtolower($stmt->name->name)) {
                     case '__tostring':
                         $return_type = Type::getString();
-                        continue;
+                        continue 2;
                 }
 
                 $call_map_id = strtolower(

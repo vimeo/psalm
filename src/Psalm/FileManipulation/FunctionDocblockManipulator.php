@@ -143,20 +143,20 @@ class FunctionDocblockManipulator
             switch ($char) {
                 case "\n":
                     $in_single_line_comment = false;
-                    continue;
+                    continue 2;
 
                 case ':':
                     if ($in_multi_line_comment || $in_single_line_comment) {
-                        continue;
+                        continue 2;
                     }
 
                     $this->return_typehint_colon_start = $i + $end_bracket_position + 1;
 
-                    continue;
+                    continue 2;
 
                 case '/':
                     if ($in_multi_line_comment || $in_single_line_comment) {
-                        continue;
+                        continue 2;
                     }
 
                     if ($chars[$i + 1] === '*') {
@@ -169,11 +169,11 @@ class FunctionDocblockManipulator
                         ++$i;
                     }
 
-                    continue;
+                    continue 2;
 
                 case '*':
                     if ($in_single_line_comment) {
-                        continue;
+                        continue 2;
                     }
 
                     if ($chars[$i + 1] === '/') {
@@ -181,18 +181,18 @@ class FunctionDocblockManipulator
                         ++$i;
                     }
 
-                    continue;
+                    continue 2;
 
                 case '{':
                     if ($in_multi_line_comment || $in_single_line_comment) {
-                        continue;
+                        continue 2;
                     }
 
                     break 2;
 
                 case '?':
                     if ($in_multi_line_comment || $in_single_line_comment) {
-                        continue;
+                        continue 2;
                     }
 
                     $this->return_typehint_start = $i + $end_bracket_position + 1;
