@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/' . 'command_functions.php';
+require_once __DIR__ . '/' . 'command_functions.php';
 use Psalm\Config;
 use Psalm\PluginManager\Command\DisableCommand;
 use Psalm\PluginManager\Command\EnableCommand;
