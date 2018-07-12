@@ -1,14 +1,26 @@
 language: php
 
 matrix:
-  include:
+  exclude:
     - php: 7.0
+      env: DEPS="" COVERALLS=true
     - php: 7.1
+      env: DEPS="" COVERALLS=true
     - php: 7.2
-      env: COVERALLS=true
+      env: DEPS="" COVERALLS=""
     - php: nightly
+      env: DEPS="" COVERALLS=true
   allow_failures:
     - php: nightly
+php:
+  - 7.0
+  - 7.1
+  - 7.2
+
+env:
+  - DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
+  - DEPS="" COVERALLS=""
+  - DEPS="" COVERALLS=true
 
 cache:
   directories:
@@ -22,7 +34,7 @@ before_install:
     - if [[ $COVERALLS = "" ]]; then phpenv config-rm xdebug.ini; fi
 
 install:
-  - composer --prefer-source install
+  - composer --prefer-source $DEPS update
 
 script:
   - vendor/bin/phpunit
