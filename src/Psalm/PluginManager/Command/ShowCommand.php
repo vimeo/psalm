@@ -37,7 +37,7 @@ class ShowCommand extends Command
         $enabled = $plugin_list->getEnabled();
         $available = $plugin_list->getAvailable();
 
-        $formatRow = function(string $class, ?string $package): array {
+        $formatRow = function (string $class, ?string $package): array {
             return [$package, $class];
         };
 
