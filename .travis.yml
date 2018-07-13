@@ -29,10 +29,11 @@ cache:
 
 before_install:
     # determine INI file
-    - export INI=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+    - export INI_DIR=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d
+    - export INI=$INI_DIR/travis.ini
     # disable default memory limit
     - echo memory_limit = 2G >> $INI
-    - if [[ $COVERALLS = "" ]]; then phpenv config-rm xdebug.ini; fi
+    - if [[ $COVERALLS = "" && -f $INI_DIR/xdebug.ini ]]; then phpenv config-rm xdebug.ini; fi
 
 install:
   - composer --prefer-source $DEPS update
