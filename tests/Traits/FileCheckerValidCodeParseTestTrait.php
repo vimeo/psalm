@@ -26,7 +26,7 @@ trait FileCheckerValidCodeParseTestTrait
      */
     public function testValidCode($code, $assertions = [], $error_levels = [], $scope_vars = [])
     {
-        $test_name = $this->getName();
+        $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP7-') !== false) {
             if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.');

@@ -110,7 +110,7 @@ class DocumentationTest extends TestCase
      */
     public function testInvalidCode($code, $error_message, $error_levels = [], $check_references = false)
     {
-        if (strpos($this->getName(), 'SKIPPED-') !== false) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 

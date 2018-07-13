@@ -100,7 +100,7 @@ class TestCase extends BaseTestCase
         );
         $file_checker->analyze($context);
     }
-    public function getName($withDataSet = true): string
+    protected function getTestName(bool $withDataSet = true): string
     {
         $name = parent::getName($withDataSet);
         /** @psalm-suppress DocblockTypeContradiction PHPUnit 7 introduced nullable name */

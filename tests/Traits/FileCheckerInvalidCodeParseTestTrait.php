@@ -24,7 +24,7 @@ trait FileCheckerInvalidCodeParseTestTrait
      */
     public function testInvalidCode($code, $error_message, $error_levels = [], $strict_mode = false)
     {
-        if (strpos($this->getName(), 'SKIPPED-') !== false) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
