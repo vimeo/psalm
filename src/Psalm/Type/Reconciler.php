@@ -361,6 +361,7 @@ class Reconciler
             }
 
             $existing_var_type->possibly_undefined = false;
+            $existing_var_type->possibly_undefined_from_try = false;
 
             return $existing_var_type;
         }
@@ -1134,6 +1135,7 @@ class Reconciler
                 }
 
                 $existing_var_type->possibly_undefined = false;
+                $existing_var_type->possibly_undefined_from_try = false;
 
                 if ($existing_var_type->getTypes()) {
                     return $existing_var_type;
@@ -1147,7 +1149,8 @@ class Reconciler
             $did_remove_type = $existing_var_type->hasDefinitelyNumericType()
                 || $existing_var_type->isEmpty()
                 || $existing_var_type->hasType('bool')
-                || $existing_var_type->possibly_undefined;
+                || $existing_var_type->possibly_undefined
+                || $existing_var_type->possibly_undefined_from_try;
 
             if ($existing_var_type->hasType('null')) {
                 $did_remove_type = true;
@@ -1210,6 +1213,7 @@ class Reconciler
             }
 
             $existing_var_type->possibly_undefined = false;
+            $existing_var_type->possibly_undefined_from_try = false;
 
             if (!$did_remove_type || empty($existing_var_type->getTypes())) {
                 if ($key && $code_location && !$is_equality) {

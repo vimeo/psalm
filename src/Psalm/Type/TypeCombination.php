@@ -34,28 +34,28 @@ use Psalm\Type\Union;
 class TypeCombination
 {
     /** @var array<string, Atomic> */
-    public $value_types = [];
+    private $value_types = [];
 
     /** @var array<string, array<int, Union>> */
-    public $type_params = [];
+    private $type_params = [];
 
     /** @var array<int, bool>|null */
-    public $array_counts = [];
+    private $array_counts = [];
 
     /** @var array<string|int, Union> */
-    public $objectlike_entries = [];
+    private $objectlike_entries = [];
 
     /** @var bool */
-    public $objectlike_sealed = true;
+    private $objectlike_sealed = true;
 
     /** @var array<int, Atomic\TLiteralString>|null */
-    public $strings = [];
+    private $strings = [];
 
     /** @var array<int, Atomic\TLiteralInt>|null */
-    public $ints = [];
+    private $ints = [];
 
     /** @var array<int, Atomic\TLiteralFloat>|null */
-    public $floats = [];
+    private $floats = [];
 
     /**
      * Combines types together

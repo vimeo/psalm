@@ -110,6 +110,40 @@ class TryCatchTest extends TestCase
                     'MixedMethodCall' => \Psalm\Config::REPORT_INFO,
                 ],
             ],
+            'issetAfterTryCatch' => [
+                '<?php
+                    function test(): string {
+                        throw new Exception("bad");
+                    }
+
+                    try {
+                        $a = "foo";
+                        $var = test();
+                    } catch (Exception $e) {
+                        echo "bad";
+                    }
+
+                    if (isset($var)) {}
+
+                    echo $a;',
+            ],
+            'issetAfterTryCatchWithCombinedType' => [
+                '<?php
+                    function test(): string {
+                        throw new Exception("bad");
+                    }
+
+                    try {
+                        $a = "foo";
+                        $var = test();
+                    } catch (Exception $e) {
+                        $var = "bad";
+                    }
+
+                    if (isset($var)) {}
+
+                    echo $a;',
+            ],
         ];
     }
 

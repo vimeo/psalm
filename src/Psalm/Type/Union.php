@@ -77,6 +77,13 @@ class Union
     public $possibly_undefined = false;
 
     /**
+     * Whether or not this variable is possibly undefined
+     *
+     * @var bool
+     */
+    public $possibly_undefined_from_try = false;
+
+    /**
      * @var array<string, TLiteralString>
      */
     private $literal_string_types = [];
@@ -1044,6 +1051,10 @@ class Union
         }
 
         if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+            return false;
+        }
+
+        if ($this->possibly_undefined_from_try !== $other_type->possibly_undefined_from_try) {
             return false;
         }
 
