@@ -16,6 +16,7 @@ php:
   - 7.0
   - 7.1
   - 7.2
+  - nightly
 
 env:
   - DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
