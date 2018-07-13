@@ -84,6 +84,19 @@ class ScopeChecker
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                    && $stmt->expr->name instanceof PhpParser\Node\Name
+                    && $stmt->expr->name->parts === ['trigger_error']
+                    && isset($stmt->expr->args[1])
+                    && $stmt->expr->args[1]->value instanceof PhpParser\Node\Expr\ConstFetch
+                    && in_array(
+                        end($stmt->expr->args[1]->value->name->parts),
+                        ['E_ERROR', 'E_PARSE', 'E_CORE_ERROR', 'E_COMPILE_ERROR', 'E_USER_ERROR']
+                    )
+                ) {
+                    return [self::ACTION_END];
+                }
+
                 if ($exit_functions) {
                     if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                         || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
