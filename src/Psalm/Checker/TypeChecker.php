@@ -797,10 +797,6 @@ class TypeChecker
 
             foreach ($input_type_part->type_params as $i => $input_param) {
                 if (!isset($container_type_part->type_params[$i])) {
-                    $type_coerced = true;
-                    $type_coerced_from_mixed = true;
-
-                    $all_types_contain = false;
                     break;
                 }
 

@@ -1132,8 +1132,22 @@ class ExpressionChecker
         }
 
         if (isset($stmt->expr->inferredType)) {
+            $yield_from_type = null;
+
+            foreach ($stmt->expr->inferredType->getTypes() as $atomic_type) {
+                if ($yield_from_type === null
+                    && $atomic_type instanceof Type\Atomic\TGenericObject
+                    && strtolower($atomic_type->value) === 'generator'
+                    && isset($atomic_type->type_params[3])
+                ) {
+                    $yield_from_type = clone $atomic_type->type_params[3];
+                } else {
+                    $yield_from_type = Type::getMixed();
+                }
+            }
+
             // this should be whatever the generator above returns, but *not* the return type
-            $stmt->inferredType = Type::getMixed();
+            $stmt->inferredType = $yield_from_type ?: Type::getMixed();
         }
 
         return null;

@@ -202,8 +202,7 @@ class Php70Test extends TestCase
             'generatorDelegation' => [
                 '<?php
                     /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return int
+                     * @return Generator<int, int, mixed, int>
                      */
                     function count_to_ten(): Generator {
                         yield 1;
@@ -215,7 +214,7 @@ class Php70Test extends TestCase
                     }
 
                     /**
-                     * @return Generator<int,int>
+                     * @return Generator<int, int>
                      */
                     function seven_eight(): Generator {
                         yield 7;
@@ -230,8 +229,7 @@ class Php70Test extends TestCase
                     }
 
                     /**
-                     * @return Generator<int,int>
-                     * @psalm-generator-return int
+                     * @return Generator<int,int, mixed, int>
                      */
                     function nine_ten(): Generator {
                         yield 9;
@@ -244,8 +242,8 @@ class Php70Test extends TestCase
                     }
                     $gen2 = $gen->getReturn();',
                 'assertions' => [
-                    '$gen' => 'Generator<int, int>',
-                    '$gen2' => 'mixed',
+                    '$gen' => 'Generator<int, int, mixed, int>',
+                    '$gen2' => 'int',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -293,6 +291,36 @@ class Php70Test extends TestCase
                             return;
                         }
                         yield 2;
+                    }',
+            ],
+            'returnType' => [
+                '<?php
+                    function takesInt(int $i) : void {
+                        echo $i;
+                    }
+
+                    function takesString(string $s) : void {
+                        echo $s;
+                    }
+
+                    /**
+                     * @return Generator<int, string, mixed, int>
+                     */
+                    function other_generator() : Generator {
+                        yield "traffic";
+                        return 1;
+                    }
+
+                    /**
+                     * @return Generator<int, string>
+                     */
+                    function foo() : Generator {
+                        $a = yield from other_generator();
+                        takesInt($a);
+                    }
+
+                    foreach (foo() as $s) {
+                        takesString($s);
                     }',
             ],
         ];

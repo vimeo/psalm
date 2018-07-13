@@ -88,6 +88,8 @@ interface Iterator extends Traversable {
 /**
  * @template TKey
  * @template TValue
+ * @template TSend
+ * @template TReturn
  *
  * @template-extends Traversable
  */
@@ -117,8 +119,15 @@ class Generator implements Traversable {
      */
     public function rewind() {}
 
+    /**
+     * @return TReturn Can return any type.
+     */
     public function getReturn() {}
 
+    /**
+     * @param TSend $value
+     * @return TValue Can return any type.
+     */
     public function send($value) {}
 
     public function throw(Exception $exception) {}
