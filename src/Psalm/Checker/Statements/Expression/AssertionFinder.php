@@ -635,6 +635,7 @@ class AssertionFinder
             }
 
             if ($source instanceof StatementsSource
+                && $var_type
                 && ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $source,
                     $var_type,
@@ -1135,6 +1136,7 @@ class AssertionFinder
 
             if ($source instanceof StatementsSource
                 && $project_checker
+                && $var_type
                 && ClassLikeChecker::checkFullyQualifiedClassLikeName(
                     $source,
                     $var_type,
