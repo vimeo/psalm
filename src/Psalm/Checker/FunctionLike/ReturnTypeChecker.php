@@ -100,7 +100,10 @@ class ReturnTypeChecker
         );
 
         if ((!$return_type || $return_type->from_docblock)
-            && ScopeChecker::getFinalControlActions($function_stmts) !== [ScopeChecker::ACTION_END]
+            && ScopeChecker::getFinalControlActions(
+                $function_stmts,
+                $project_checker->config->exit_functions
+            ) !== [ScopeChecker::ACTION_END]
             && !$inferred_yield_types
             && count($inferred_return_type_parts)
         ) {
@@ -119,7 +122,10 @@ class ReturnTypeChecker
             && !$return_type->from_docblock
             && !$return_type->isVoid()
             && !$inferred_yield_types
-            && ScopeChecker::getFinalControlActions($function_stmts) !== [ScopeChecker::ACTION_END]
+            && ScopeChecker::getFinalControlActions(
+                $function_stmts,
+                $project_checker->config->exit_functions
+            ) !== [ScopeChecker::ACTION_END]
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(

@@ -498,6 +498,76 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testExitFunctions()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <exitFunctions>
+                        <function name="leave" />
+                        <function name="Foo\namespacedLeave" />
+                        <function name="Foo\Bar::staticLeave" />
+                    </exitFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace {
+                    function leave() : void {
+                        exit();
+                    }
+
+                    function mightLeave() : string {
+                        if (rand(0, 1)) {
+                            leave();
+                        } else {
+                            return "here";
+                        }
+                    }
+
+                    function mightLeaveWithNamespacedFunction() : string {
+                        if (rand(0, 1)) {
+                            \Foo\namespacedLeave();
+                        } else {
+                            return "here";
+                        }
+                    }
+
+                    function mightLeaveWithStaticMethod() : string {
+                        if (rand(0, 1)) {
+                            Foo\Bar::staticLeave();
+                        } else {
+                            return "here";
+                        }
+                    }
+                }
+
+                namespace Foo {
+                    function namespacedLeave() : void {
+                        exit();
+                    }
+
+                    class Bar {
+                        public static function staticLeave() : void {
+                            exit();
+                        }
+                    }
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testTemplatedFiles()
     {
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {

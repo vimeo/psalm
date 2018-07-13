@@ -7,6 +7,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Clause;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Scope\LoopScope;
@@ -72,7 +73,7 @@ class LoopChecker
             );
         }
 
-        $final_actions = ScopeChecker::getFinalControlActions($stmts);
+        $final_actions = ScopeChecker::getFinalControlActions($stmts, Config::getInstance()->exit_functions);
         $has_break_statement = $final_actions === [ScopeChecker::ACTION_BREAK];
 
         if ($assignment_map) {

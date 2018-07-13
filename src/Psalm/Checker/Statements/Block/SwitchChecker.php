@@ -58,11 +58,17 @@ class SwitchChecker
 
         $case_action_map = [];
 
+        $config = \Psalm\Config::getInstance();
+
         // create a map of case statement -> ultimate exit type
         for ($i = count($stmt->cases) - 1; $i >= 0; --$i) {
             $case = $stmt->cases[$i];
 
-            $case_actions = $case_action_map[$i] = ScopeChecker::getFinalControlActions($case->stmts, true);
+            $case_actions = $case_action_map[$i] = ScopeChecker::getFinalControlActions(
+                $case->stmts,
+                $config->exit_functions,
+                true
+            );
 
             if (!in_array(ScopeChecker::ACTION_NONE, $case_actions, true)) {
                 if ($case_actions === [ScopeChecker::ACTION_END]) {

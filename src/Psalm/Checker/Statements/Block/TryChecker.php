@@ -31,14 +31,14 @@ class TryChecker
         $catch_actions = [];
         $all_catches_leave = true;
 
-        /** @var int $i */
-        foreach ($stmt->catches as $i => $catch) {
-            $catch_actions[$i] = ScopeChecker::getFinalControlActions($catch->stmts);
-            $all_catches_leave = $all_catches_leave && !in_array(ScopeChecker::ACTION_NONE, $catch_actions[$i], true);
-        }
-
         $project_checker = $statements_checker->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
+
+        /** @var int $i */
+        foreach ($stmt->catches as $i => $catch) {
+            $catch_actions[$i] = ScopeChecker::getFinalControlActions($catch->stmts, $codebase->config->exit_functions);
+            $all_catches_leave = $all_catches_leave && !in_array(ScopeChecker::ACTION_NONE, $catch_actions[$i], true);
+        }
 
         $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
 

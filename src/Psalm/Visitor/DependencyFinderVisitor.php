@@ -891,6 +891,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
                     $final_actions = \Psalm\Checker\ScopeChecker::getFinalControlActions(
                         $function_stmt->stmts,
+                        $this->config->exit_functions,
                         false,
                         false
                     );

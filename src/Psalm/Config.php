@@ -277,6 +277,13 @@ class Config
     /** @var ClassLoader|null */
     private $composer_class_loader;
 
+    /**
+     * Custom functions that always exit
+     *
+     * @var array<string, bool>
+     */
+    public $exit_functions = [];
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -564,7 +571,14 @@ class Config
         if (isset($config_xml->ignoreExceptions) && isset($config_xml->ignoreExceptions->class)) {
             /** @var \SimpleXMLElement $exception_class */
             foreach ($config_xml->ignoreExceptions->class as $exception_class) {
-                $config->ignored_exceptions[(string)$exception_class ['name']] = true;
+                $config->ignored_exceptions[(string) $exception_class['name']] = true;
+            }
+        }
+
+        if (isset($config_xml->exitFunctions) && isset($config_xml->exitFunctions->function)) {
+            /** @var \SimpleXMLElement $exit_function */
+            foreach ($config_xml->exitFunctions->function as $exit_function) {
+                $config->exit_functions[strtolower((string) $exit_function['name'])] = true;
             }
         }
 

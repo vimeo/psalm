@@ -536,7 +536,13 @@ class IfChecker
         Context $outer_context,
         array $pre_assignment_else_redefined_vars
     ) {
-        $final_actions = ScopeChecker::getFinalControlActions($stmt->stmts, $outer_context->inside_case);
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        $final_actions = ScopeChecker::getFinalControlActions(
+            $stmt->stmts,
+            $project_checker->config->exit_functions,
+            $outer_context->inside_case
+        );
 
         $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
 
@@ -552,8 +558,6 @@ class IfChecker
         }
 
         $if_scope->final_actions = $final_actions;
-
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         $assigned_var_ids = $if_context->assigned_var_ids;
         $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
@@ -1051,7 +1055,11 @@ class IfChecker
             }
         }
 
-        $final_actions = ScopeChecker::getFinalControlActions($elseif->stmts, $outer_context->inside_case);
+        $final_actions = ScopeChecker::getFinalControlActions(
+            $elseif->stmts,
+            $project_checker->config->exit_functions,
+            $outer_context->inside_case
+        );
         // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
         $has_leaving_statements = $has_ending_statements
@@ -1419,7 +1427,11 @@ class IfChecker
         }
 
         $final_actions = $else
-            ? ScopeChecker::getFinalControlActions($else->stmts, $outer_context->inside_case)
+            ? ScopeChecker::getFinalControlActions(
+                $else->stmts,
+                $project_checker->config->exit_functions,
+                $outer_context->inside_case
+            )
             : [ScopeChecker::ACTION_NONE];
         // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeChecker::ACTION_END];
