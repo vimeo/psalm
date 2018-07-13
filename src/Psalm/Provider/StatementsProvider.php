@@ -76,6 +76,13 @@ class StatementsProvider
             $from_cache = true;
         }
 
+        $nameResolver = new \Psalm\Visitor\SimpleNameResolver;
+        $nodeTraverser = new PhpParser\NodeTraverser;
+        $nodeTraverser->addVisitor($nameResolver);
+
+        /** @var array<int, \PhpParser\Node\Stmt> */
+        $stmts = $nodeTraverser->traverse($stmts);
+
         $this->cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
 
         if (!$stmts) {

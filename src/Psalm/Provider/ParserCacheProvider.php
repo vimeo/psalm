@@ -262,6 +262,6 @@ class ParserCacheProvider
      */
     public static function getParserCacheKey($file_name, $use_igbinary)
     {
-        return md5($file_name) . ($use_igbinary ? '-igbinary' : '');
+        return md5($file_name) . ($use_igbinary ? '-igbinary' : '') . '-r';
     }
 }
