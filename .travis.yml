@@ -12,6 +12,8 @@ matrix:
       env: DEPS="" COVERALLS=true
   allow_failures:
     - php: nightly
+    - php: 7.0
+      env: DEPS="" COVERALLS=""
 php:
   - 7.0
   - 7.1
