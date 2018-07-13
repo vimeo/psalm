@@ -3,5 +3,6 @@ namespace Psalm\PluginApi;
 
 interface PluginEntryPointInterface
 {
-    public function __invoke(RegistrationInterface $api): void;
+    /** @return void */
+    public function __invoke(RegistrationInterface $api);
 }

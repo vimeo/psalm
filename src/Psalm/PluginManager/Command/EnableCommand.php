@@ -13,8 +13,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class EnableCommand extends Command
 {
-    /** @psalm-suppress UnusedMethod */
-    protected function configure(): void
+    /**
+     * @psalm-suppress UnusedMethod
+     * @return void
+     */
+    protected function configure()
     {
         $this
             ->setName('enable')
@@ -28,7 +31,10 @@ class EnableCommand extends Command
         $this->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
     }
 
-    /** @psalm-suppress UnusedMethod */
+    /**
+     * @psalm-suppress UnusedMethod
+     * @return null|int
+     */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
         $io = new SymfonyStyle($i, $o);

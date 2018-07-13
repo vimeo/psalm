@@ -14,7 +14,8 @@ class ConfigFile
     /** @var string */
     private $current_dir;
 
-    public function __construct(string $current_dir, ?string $explicit_path)
+    /** @param null|string $explicit_path */
+    public function __construct(string $current_dir, $explicit_path)
     {
         $this->current_dir = $current_dir;
 
@@ -34,7 +35,8 @@ class ConfigFile
         return Config::loadFromXMLFile($this->path, $this->current_dir);
     }
 
-    public function removePlugin(string $plugin_class): void
+    /** @return void */
+    public function removePlugin(string $plugin_class)
     {
         $config_xml = $this->readXml();
         if (!isset($config_xml->plugins)) {
@@ -63,7 +65,8 @@ class ConfigFile
         $config_xml->asXML($this->path);
     }
 
-    public function addPlugin(string $plugin_class): void
+    /** @return void */
+    public function addPlugin(string $plugin_class)
     {
         $config_xml = $this->readXml();
         if (!isset($config_xml->plugins)) {

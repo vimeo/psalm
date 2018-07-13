@@ -18,7 +18,8 @@ class PluginFacade implements RegistrationInterface
         $this->config = $config;
     }
 
-    public function addStubFile(string $file_name): void
+    /** @return void */
+    public function addStubFile(string $file_name)
     {
         $this->config->addStubFile($file_name);
     }

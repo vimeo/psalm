@@ -11,8 +11,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class ShowCommand extends Command
 {
-    /** @psalm-suppress UnusedMethod */
-    protected function configure(): void
+    /**
+     * @return void
+     * @psalm-suppress UnusedMethod
+     */
+    protected function configure()
     {
         $this
             ->setName('show')
@@ -20,7 +23,10 @@ class ShowCommand extends Command
             ->addUsage('[-c path/to/psalm.xml]');
     }
 
-    /** @psalm-suppress UnusedMethod */
+    /**
+     * @return null|int
+     * @psalm-suppress UnusedMethod
+     */
     protected function execute(InputInterface $i, OutputInterface $o)
     {
         $io = new SymfonyStyle($i, $o);
@@ -37,9 +43,12 @@ class ShowCommand extends Command
         $enabled = $plugin_list->getEnabled();
         $available = $plugin_list->getAvailable();
 
-        $formatRow = function (string $class, ?string $package): array {
-            return [$package, $class];
-        };
+        $formatRow =
+            /** @param null|string $package */
+            function (string $class, $package): array {
+                return [$package, $class];
+            }
+        ;
 
         $io->section('Enabled');
         if (count($enabled)) {

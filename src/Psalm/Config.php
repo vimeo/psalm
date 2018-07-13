@@ -349,8 +349,9 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException
+     * @return string|null
      */
-    public static function locateConfigFile(string $path): ?string
+    public static function locateConfigFile(string $path)
     {
         $dir_path = realpath($path);
 
@@ -771,7 +772,8 @@ class Config
         $this->plugin_paths[] = $path;
     }
 
-    public function addPluginClass(string $class_name): void
+    /** @return void */
+    public function addPluginClass(string $class_name)
     {
         $this->plugin_classes[] = $class_name;
     }
@@ -1339,7 +1341,8 @@ class Config
         $this->cache_directory .= '-s';
     }
 
-    public function addStubFile(string $stub_file): void
+    /** @return void */
+    public function addStubFile(string $stub_file)
     {
         $this->stub_files[] = $stub_file;
     }

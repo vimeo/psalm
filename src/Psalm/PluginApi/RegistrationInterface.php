@@ -3,5 +3,6 @@ namespace Psalm\PluginApi;
 
 interface RegistrationInterface
 {
-    public function addStubFile(string $file_name): void;
+    /** @return void */
+    public function addStubFile(string $file_name);
 }

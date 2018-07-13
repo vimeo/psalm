@@ -24,7 +24,8 @@ class LegacyPlugin implements PluginApi\PluginEntryPointInterface
         $this->project_checker = $project_checker;
     }
 
-    public function __invoke(PluginApi\RegistrationInterface $api): void
+    /** @return void */
+    public function __invoke(PluginApi\RegistrationInterface $api)
     {
         $codebase = $this->project_checker->codebase;
         $fq_class_name = $this->getPluginClassForPath($this->path, Plugin::class);
@@ -57,13 +58,7 @@ class LegacyPlugin implements PluginApi\PluginEntryPointInterface
         }
     }
 
-    /**
-     * @param  string $path
-     * @param  string $must_extend
-     *
-     * @return string
-     */
-    private function getPluginClassForPath(string $path, string $must_extend)
+    private function getPluginClassForPath(string $path, string $must_extend): string
     {
         $codebase = $this->project_checker->codebase;
 
