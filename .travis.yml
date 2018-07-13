@@ -1,14 +1,29 @@
 language: php
 
 matrix:
-  include:
+  exclude:
     - php: 7.0
+      env: DEPS="" COVERALLS=true
     - php: 7.1
+      env: DEPS="" COVERALLS=true
     - php: 7.2
-      env: COVERALLS=true
+      env: DEPS="" COVERALLS=""
     - php: nightly
+      env: DEPS="" COVERALLS=true
   allow_failures:
     - php: nightly
+    - php: 7.0
+      env: DEPS="" COVERALLS=""
+php:
+  - 7.0
+  - 7.1
+  - 7.2
+  - nightly
+
+env:
+  - DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
+  - DEPS="" COVERALLS=""
+  - DEPS="" COVERALLS=true
 
 cache:
   directories:
@@ -16,13 +31,14 @@ cache:
 
 before_install:
     # determine INI file
-    - export INI=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+    - export INI_DIR=~/.phpenv/versions/$(phpenv version-name)/etc/conf.d
+    - export INI=$INI_DIR/travis.ini
     # disable default memory limit
     - echo memory_limit = 2G >> $INI
-    - if [[ $COVERALLS = "" ]]; then phpenv config-rm xdebug.ini; fi
+    - if [[ $COVERALLS = "" && -f $INI_DIR/xdebug.ini ]]; then phpenv config-rm xdebug.ini; fi
 
 install:
-  - composer --prefer-source install
+  - composer --prefer-source $DEPS update
 
 script:
   - vendor/bin/phpunit

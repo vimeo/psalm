@@ -33,7 +33,7 @@ class FileManipulationTest extends TestCase
      */
     public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types)
     {
-        $test_name = $this->getName();
+        $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP7-') !== false) {
             if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.');
