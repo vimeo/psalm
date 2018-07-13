@@ -377,6 +377,23 @@ class TemplateTest extends TestCase
 
                     bar(foo("string"));',
             ],
+            'validPsalmTemplatedType' => [
+                '<?php
+                    namespace FooFoo;
+
+                    /**
+                     * @psalm-template T
+                     * @psalm-param T $x
+                     * @psalm-return T
+                     */
+                    function foo($x) {
+                        return $x;
+                    }
+
+                    function bar(string $a): void { }
+
+                    bar(foo("string"));',
+            ],
             'validTemplatedStaticMethodType' => [
                 '<?php
                     namespace FooFoo;
