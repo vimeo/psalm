@@ -624,6 +624,12 @@ class AssertionFinder
                     $whichclass_expr->class,
                     $source->getAliases()
                 );
+
+                if ($var_type === 'self') {
+                    $var_type = $this_class_name;
+                } elseif ($var_type === 'parent' || $var_type === 'static') {
+                    $var_type = null;
+                }
             } else {
                 throw new \UnexpectedValueException('Shouldn’t get here');
             }
@@ -1117,6 +1123,12 @@ class AssertionFinder
                     $whichclass_expr->class,
                     $source->getAliases()
                 );
+
+                if ($var_type === 'self') {
+                    $var_type = $this_class_name;
+                } elseif ($var_type === 'parent' || $var_type === 'static') {
+                    $var_type = null;
+                }
             } else {
                 throw new \UnexpectedValueException('Shouldn’t get here');
             }
