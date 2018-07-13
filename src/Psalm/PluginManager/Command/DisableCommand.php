@@ -24,8 +24,8 @@ class DisableCommand extends Command
                 InputArgument::REQUIRED,
                 'Plugin name (fully qualified class name or composer package name)'
             )
-            ->addUsage('vendor/plugin-package-name [-c path/to/psalm.xml]')
-            ->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
+            ->addUsage('vendor/plugin-package-name [-c path/to/psalm.xml]');
+        $this->addUsage('\'Plugin\Class\Name\' [-c path/to/psalm.xml]');
     }
 
     /** @psalm-suppress UnusedMethod */
