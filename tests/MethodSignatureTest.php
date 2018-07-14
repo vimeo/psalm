@@ -310,7 +310,7 @@ class MethodSignatureTest extends TestCase
 
                         }
                     }',
-                'error_message' => 'Method B::fooFoo has more arguments than parent method A::fooFoo',
+                'error_message' => 'Method B::fooFoo has more required parameters than parent method A::fooFoo',
             ],
             'fewerArguments' => [
                 '<?php
@@ -325,7 +325,7 @@ class MethodSignatureTest extends TestCase
 
                         }
                     }',
-                'error_message' => 'Method B::fooFoo has fewer arguments than parent method A::fooFoo',
+                'error_message' => 'Method B::fooFoo has fewer parameters than parent method A::fooFoo',
             ],
             'differentArguments' => [
                 '<?php
@@ -479,6 +479,17 @@ class MethodSignatureTest extends TestCase
                         }
                     }',
                 'error_message' => 'MethodSignatureMustOmitReturnType',
+            ],
+            'requireParam' => [
+                '<?php
+                    interface I {
+                        function foo(bool $b = false): void;
+                    }
+
+                    class C implements I {
+                        public function foo(bool $b): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src/somefile.php:6 - Method C::foo has more required',
             ],
         ];
     }
