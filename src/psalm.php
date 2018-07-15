@@ -8,16 +8,55 @@ use Psalm\IssueBuffer;
 // show all errors
 error_reporting(-1);
 
-// get options from command line
-$options = getopt(
-    'f:mhvc:ir:',
-    [
-        'help', 'debug', 'debug-by-line', 'config:', 'monochrome', 'show-info:', 'diff',
-        'output-format:', 'report:', 'find-dead-code', 'init',
-        'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
-        'version', 'plugin:', 'stats', 'show-snippet:', 'use-ini-defaults',
-    ]
+$valid_short_options = [
+    'f:',
+    'm',
+    'h',
+    'v',
+    'c:',
+    'i',
+    'r:',
+];
+
+$valid_long_options = [
+    'help', 'debug', 'debug-by-line', 'config:', 'monochrome', 'show-info:', 'diff',
+    'output-format:', 'report:', 'find-dead-code', 'init',
+    'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
+    'version', 'plugin:', 'stats', 'show-snippet:', 'use-ini-defaults',
+];
+
+$args = array_slice($argv, 1);
+
+array_map(
+    /**
+     * @param string $arg
+     *
+     * @return void
+     */
+    function ($arg) use ($valid_long_options, $valid_short_options) {
+        if (substr($arg, 0, 2) === '--' && $arg !== '--') {
+            $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
+
+            if (!in_array($arg_name, $valid_long_options) && !in_array($arg_name . ':', $valid_long_options)) {
+                echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                exit(1);
+            }
+        } elseif (substr($arg, 0, 2) === '-' && $arg !== '-' && $arg !== '--') {
+            $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
+
+            if (!in_array($arg_name, $valid_short_options) && !in_array($arg_name . ':', $valid_short_options)) {
+                echo 'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
+                    . 'Type --help to see a list of supported arguments'. PHP_EOL;
+                exit(1);
+            }
+        }
+    },
+    $args
 );
+
+// get options from command line
+$options = getopt(implode('', $valid_short_options), $valid_long_options);
 
 if (!array_key_exists('use-ini-defaults', $options)) {
     ini_set('display_errors', 1);
@@ -169,7 +208,7 @@ if (isset($options['i'])) {
     }
 
     $args = array_values(array_filter(
-        array_slice($argv, 1),
+        $args,
         /**
          * @param string $arg
          *
