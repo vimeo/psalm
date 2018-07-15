@@ -576,13 +576,15 @@ abstract class Type
      * @param  string                       $string_type
      * @param  Aliases                      $aliases
      * @param  array<string, string>|null   $template_type_names
+     * @param  array<string, array<int, string>>|null   $type_aliases
      *
      * @return array<int, string>
      */
     public static function fixUpLocalType(
         $string_type,
         Aliases $aliases,
-        array $template_type_names = null
+        array $template_type_names = null,
+        array $type_aliases = null
     ) {
         $type_tokens = self::tokenize($string_type);
 
@@ -638,10 +640,23 @@ abstract class Type
                 continue;
             }
 
-            $type_tokens[$i] = self::getFQCLNFromString(
-                $string_type_token,
-                $aliases
-            );
+            if (isset($type_aliases[$string_type_token])) {
+                $replacement_tokens = $type_aliases[$string_type_token];
+
+                $diff = count($replacement_tokens) - 1;
+
+                for ($j = 0; $j < $diff + 1; $j++) {
+                    $type_tokens[$i + $j] = $replacement_tokens[$j];
+                }
+
+                $i += $diff;
+                $l += $diff;
+            } else {
+                $type_tokens[$i] = self::getFQCLNFromString(
+                    $string_type_token,
+                    $aliases
+                );
+            }
         }
 
         return $type_tokens;

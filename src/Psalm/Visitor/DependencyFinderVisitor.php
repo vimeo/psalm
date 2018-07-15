@@ -83,6 +83,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var string[] */
     private $after_classlike_check_plugins;
 
+    /**
+     * @var array<string, array<int, string>>
+     */
+    private $type_aliases = [];
+
     public function __construct(
         Codebase $codebase,
         FileStorage $file_storage,
@@ -215,6 +220,45 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             $storage->user_defined = !$this->codebase->register_stub_files;
             $storage->stubbed = $this->codebase->register_stub_files;
 
+            $comments = $node->getComments();
+
+            foreach ($comments as $comment) {
+                if ($comment instanceof PhpParser\Comment\Doc) {
+                    try {
+                        $type_alias_tokens = CommentChecker::getTypeAliasesFromComment(
+                            (string) $comment,
+                            $this->aliases,
+                            $this->type_aliases
+                        );
+
+                        foreach ($type_alias_tokens as $type_tokens) {
+                            // finds issues, if there are any
+                            Type::parseTokens($type_tokens);
+                        }
+
+                        $this->type_aliases += $type_alias_tokens;
+                    } catch (DocblockParseException $e) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                (string)$e->getMessage(),
+                                new CodeLocation($this->file_scanner, $node, null, true)
+                            )
+                        )) {
+                            // fall through
+                        }
+                    } catch (TypeParseTreeException $e) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                (string)$e->getMessage(),
+                                new CodeLocation($this->file_scanner, $node, null, true)
+                            )
+                        )) {
+                            $storage->has_visitor_issues = true;
+                        }
+                    }
+                }
+            }
+
             $doc_comment = $node->getDocComment();
 
             $this->classlike_storages[] = $storage;
@@ -246,7 +290,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                                 $storage->template_types[$template_type[0]] = Type::parseTokens(
                                     Type::fixUpLocalType(
                                         $template_type[2],
-                                        $this->aliases
+                                        $this->aliases,
+                                        null,
+                                        $this->type_aliases
                                     )
                                 );
                             } else {
@@ -269,7 +315,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         foreach ($docblock_info->properties as $property) {
                             $pseudo_property_type_tokens = Type::fixUpLocalType(
                                 $property['type'],
-                                $this->aliases
+                                $this->aliases,
+                                null,
+                                $this->type_aliases
                             );
 
                             $pseudo_property_type = Type::parseTokens($pseudo_property_type_tokens);
@@ -541,7 +589,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $this->file_scanner,
                         $this->aliases,
                         null,
-                        null
+                        null,
+                        null,
+                        $this->type_aliases
                     );
                 } catch (DocblockParseException $e) {
                     // do nothing
@@ -1022,7 +1072,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
         try {
             $docblock_info = CommentChecker::extractFunctionDocblockInfo(
                 (string)$doc_comment,
-                $doc_comment->getLine()
+                $doc_comment->getLine(),
+                $this->aliases,
+                $this->type_aliases
             );
         } catch (IncorrectDocblockException $e) {
             if (IssueBuffer::accepts(
@@ -1050,6 +1102,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         if (!$docblock_info) {
             return $storage;
+        }
+
+        if ($docblock_info->type_aliases) {
+            $this->type_aliases += $docblock_info->type_aliases;
         }
 
         if ($docblock_info->deprecated) {
@@ -1095,7 +1151,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->template_types[$template_type[0]] = Type::parseTokens(
                         Type::fixUpLocalType(
                             $template_type[2],
-                            $this->aliases
+                            $this->aliases,
+                            null,
+                            $this->type_aliases
                         )
                     );
                 } else {
@@ -1213,7 +1271,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $fixed_type_tokens = Type::fixUpLocalType(
                             $docblock_return_type,
                             $this->aliases,
-                            $this->function_template_types + $this->class_template_types
+                            $this->function_template_types + $this->class_template_types,
+                            $this->type_aliases
                         );
 
                         $storage->return_type = Type::parseTokens(
@@ -1282,7 +1341,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $storage->global_types[$global['name']] = Type::parseTokens(
                     Type::fixUpLocalType(
                         $global['type'],
-                        $this->aliases
+                        $this->aliases,
+                        null,
+                        $this->type_aliases
                     ),
                     false
                 );
@@ -1453,7 +1514,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     Type::fixUpLocalType(
                         $docblock_param['type'],
                         $this->aliases,
-                        $this->function_template_types + $this->class_template_types
+                        $this->function_template_types + $this->class_template_types,
+                        $this->type_aliases
                     ),
                     false,
                     $this->function_template_types + $this->class_template_types
@@ -1581,7 +1643,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->file_scanner,
                     $this->aliases,
                     $this->function_template_types + $this->class_template_types,
-                    $property_type_line_number
+                    $property_type_line_number,
+                    null,
+                    $this->type_aliases
                 );
 
                 $var_comment = array_pop($var_comments);

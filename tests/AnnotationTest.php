@@ -1017,6 +1017,88 @@ class AnnotationTest extends TestCase
 
                     acceptsLiteral(returnsLiteral());'
             ],
+            'typeAliasBeforeClass' => [
+                '<?php
+                    /**
+                     * @psalm-type CoolType = A|B|null
+                     */
+
+                    class A {}
+                    class B {}
+
+                    /** @return CoolType */
+                    function foo() {
+                        if (rand(0, 1)) {
+                            return new A();
+                        }
+
+                        if (rand(0, 1)) {
+                            return new B();
+                        }
+
+                        return null;
+                    }
+
+                    /** @param CoolType $a **/
+                    function bar ($a) : void { }
+
+                    bar(foo());'
+            ],
+            'typeAliasBeforeFunction' => [
+                '<?php
+                    /**
+                     * @psalm-type CoolType = A|B|null
+                     * @return CoolType
+                     */
+                    function foo() {
+                        if (rand(0, 1)) {
+                            return new A();
+                        }
+
+                        if (rand(0, 1)) {
+                            return new B();
+                        }
+
+                        return null;
+                    }
+
+                    class A {}
+                    class B {}
+
+                    /** @param CoolType $a **/
+                    function bar ($a) : void { }
+
+                    bar(foo());'
+            ],
+            'almostFreeStandingTypeAlias' => [
+                '<?php
+                    /**
+                     * @psalm-type CoolType = A|B|null
+                     */
+
+                    // this breaks up the line
+
+                    class A {}
+                    class B {}
+
+                    /** @return CoolType */
+                    function foo() {
+                        if (rand(0, 1)) {
+                            return new A();
+                        }
+
+                        if (rand(0, 1)) {
+                            return new B();
+                        }
+
+                        return null;
+                    }
+
+                    /** @param CoolType $a **/
+                    function bar ($a) : void { }
+
+                    bar(foo());'
+            ],
         ];
     }
 
@@ -1502,6 +1584,15 @@ class AnnotationTest extends TestCase
                     function foo() : array {
                         return [];
                     }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'invalidTypeAlias' => [
+                '<?php
+                    /**
+                     * @psalm-type CoolType = A|B>
+                     */
+
+                    class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
         ];

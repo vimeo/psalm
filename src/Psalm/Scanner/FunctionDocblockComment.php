@@ -83,4 +83,9 @@ class FunctionDocblockComment
      * @var array<int, array{type: string, param_name: string}>
      */
     public $if_false_assertions = [];
+
+    /**
+     * @var array<string, array<int, string>>
+     */
+    public $type_aliases = [];
 }
