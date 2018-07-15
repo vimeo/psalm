@@ -259,6 +259,26 @@ class Php56Test extends TestCase
                     array_push($a, ...$b);',
                 'error_message' => 'InvalidArgument',
             ],
+            'shouldWarnAboutNoGeneratorReturn' => [
+                '<?php
+                    function generator2() : Generator {
+                        if (rand(0,1)) {
+                            return;
+                        }
+                        yield 2;
+                    }
+
+                    /**
+                     * @psalm-suppress InvalidNullableReturnType
+                     */
+                    function notagenerator() : Generator {
+                        if (rand(0, 1)) {
+                            return;
+                        }
+                        return generator2();
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

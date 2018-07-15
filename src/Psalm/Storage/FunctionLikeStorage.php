@@ -130,4 +130,9 @@ class FunctionLikeStorage
      * @var array<string, bool>
      */
     public $throws = [];
+
+    /**
+     * @var bool
+     */
+    public $has_yield = false;
 }

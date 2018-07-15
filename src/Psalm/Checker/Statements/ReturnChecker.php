@@ -120,7 +120,7 @@ class ReturnChecker
 
                     $local_return_type = $source->getLocalReturnType($storage->return_type);
 
-                    if ($local_return_type->isGenerator()) {
+                    if ($local_return_type->isGenerator() && $storage->has_yield) {
                         return null;
                     }
 
@@ -294,7 +294,7 @@ class ReturnChecker
             } else {
                 if ($storage->signature_return_type
                     && !$storage->signature_return_type->isVoid()
-                    && !$storage->signature_return_type->isGenerator()
+                    && (!$storage->signature_return_type->isGenerator() || !$storage->has_yield)
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidReturnStatement(
