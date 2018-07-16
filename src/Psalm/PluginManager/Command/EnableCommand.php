@@ -1,9 +1,8 @@
 <?php
 namespace Psalm\PluginManager\Command;
 
-use Psalm\PluginManager\ComposerLock;
-use Psalm\PluginManager\ConfigFile;
 use Psalm\PluginManager\PluginList;
+use Psalm\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,6 +12,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class EnableCommand extends Command
 {
+    /** @var PluginListFactory */
+    private $plugin_list_factory;
+
+    public function __construct(PluginListFactory $plugin_list_factory)
+    {
+        $this->plugin_list_factory = $plugin_list_factory;
+        parent::__construct();
+    }
+
     /**
      * @psalm-suppress UnusedMethod
      * @return void
@@ -45,9 +53,7 @@ class EnableCommand extends Command
         $config_file_path = $i->getOption('config');
         assert(null === $config_file_path || is_string($config_file_path));
 
-        $config_file = new ConfigFile($current_dir, $config_file_path);
-        $composer_lock = new ComposerLock('composer.lock');
-        $plugin_list = new PluginList($config_file, $composer_lock);
+        $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
         try {
             /** @psalm-suppress MixedAssignment */
@@ -65,7 +71,7 @@ class EnableCommand extends Command
             return 3;
         }
 
-        $config_file->addPlugin($plugin_class);
+        $plugin_list->enable($plugin_class);
         $io->success('Plugin enabled');
     }
 }

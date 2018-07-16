@@ -4,6 +4,7 @@ use Psalm\Config;
 use Psalm\PluginManager\Command\DisableCommand;
 use Psalm\PluginManager\Command\EnableCommand;
 use Psalm\PluginManager\Command\ShowCommand;
+use Psalm\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Muglug\PackageVersions\Versions;
@@ -15,10 +16,11 @@ requireAutoloaders($current_dir, false, $vendor_dir);
 
 $app = new Application('psalm-plugin', (string) Versions::getVersion('vimeo/psalm'));
 
+$plugin_list_factory = new PluginListFactory;
 $app->addCommands([
-    new ShowCommand,
-    new EnableCommand,
-    new DisableCommand,
+    new ShowCommand($plugin_list_factory),
+    new EnableCommand($plugin_list_factory),
+    new DisableCommand($plugin_list_factory),
 ]);
 
 $app->getDefinition()->addOption(
