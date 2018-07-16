@@ -33,7 +33,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @param array $options Options
      */
     public function __construct(ErrorHandler $errorHandler = null, array $options = []) {
-        $this->nameContext = new NameContext($errorHandler ?? new ErrorHandler\Throwing);
+        $this->nameContext = new NameContext($errorHandler ?: new ErrorHandler\Throwing);
     }
 
     /**
@@ -143,7 +143,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @return Name Resolved name, or original name with attribute
      */
-    protected function resolveName(Name $name, int $type) : Name {
+    protected function resolveName(Name $name, $type) : Name {
         $resolvedName = $this->nameContext->getResolvedName($name, $type);
         if (null !== $resolvedName) {
             $name->setAttribute('resolvedName', $resolvedName->toString());
