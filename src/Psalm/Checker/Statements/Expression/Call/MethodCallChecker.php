@@ -397,16 +397,12 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     $fq_class_name = $context->self;
                 }
 
-                $intersection_type_method_id = null;
-
                 if ($intersection_types && !$codebase->methodExists($method_id)) {
                     foreach ($intersection_types as $intersection_type) {
-                        $additional_method_id = $intersection_type->value . '::' . $method_name_lc;
+                        $method_id = $intersection_type->value . '::' . $method_name_lc;
                         $fq_class_name = $intersection_type->value;
 
-                        $additional_method_ids[] = $additional_method_id;
-
-                        if ($codebase->methodExists($additional_method_id)) {
+                        if ($codebase->methodExists($method_id)) {
                             break;
                         }
                     }
