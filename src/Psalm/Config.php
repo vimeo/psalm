@@ -239,7 +239,7 @@ class Config
     public $plugin_paths = [];
 
     /**
-     * @var string[]
+     * @var array<array{class:string,config:?SimpleXmlElement}>
      */
     private $plugin_classes = [];
 
@@ -662,8 +662,13 @@ class Config
                 /** @var \SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->pluginClass as $plugin) {
                     $plugin_class_name = $plugin['class'];
+                    // any child elements are used as plugin configuration
+                    $plugin_config = null;
+                    if ($plugin->count()) {
+                        $plugin_config = $plugin->children();
+                    }
 
-                    $config->addPluginClass($plugin_class_name);
+                    $config->addPluginClass($plugin_class_name, $plugin_config);
                 }
             }
         }
@@ -773,12 +778,12 @@ class Config
     }
 
     /** @return void */
-    public function addPluginClass(string $class_name)
+    public function addPluginClass(string $class_name, SimpleXmlElement $plugin_config = null)
     {
-        $this->plugin_classes[] = $class_name;
+        $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
     }
 
-    /** @return string[] */
+    /** @return array<array{class:string, config:?SimpleXmlElement}> */
     public function getPluginClasses(): array
     {
         return $this->plugin_classes;
@@ -800,12 +805,14 @@ class Config
 
         $facade = new PluginFacade($this);
         // initialize plugin classes earlier to let them hook into subsequent load process
-        foreach ($this->plugin_classes as $plugin_class_name) {
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin_config = $plugin_class_entry['config'];
             try {
                 // todo: support other forms of callables
-                /** @var callable(PluginFacade):void $plugin_object */
+                /** @var callable(PluginFacade,?SimpleXmlElement):void $plugin_object */
                 $plugin_object = new $plugin_class_name;
-                $plugin_object($facade);
+                $plugin_object($facade, $plugin_config);
             } catch (\Throwable $e) {
                 // todo: ???
                 throw $e;

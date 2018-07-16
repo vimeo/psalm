@@ -116,6 +116,9 @@
             </xs:element>
             <xs:element name="pluginClass">
                 <xs:complexType>
+                    <xs:sequence>
+                        <xs:any minOccurs="0" maxOccurs="unbounded" processContents="skip"/>
+                    </xs:sequence>
                     <xs:attribute name="class" type="xs:string" use="required" />
                 </xs:complexType>
             </xs:element>

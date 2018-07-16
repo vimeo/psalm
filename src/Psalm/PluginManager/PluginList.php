@@ -29,8 +29,10 @@ class PluginList
     {
         if (!$this->enabled_plugins) {
             $this->enabled_plugins = [];
-            foreach ($this->config_file->getConfig()->getPluginClasses() as $class) {
-                $this->enabled_plugins[$class] = $this->findPluginPackage($class);
+            foreach ($this->config_file->getConfig()->getPluginClasses() as $plugin_entry) {
+                $plugin_class = $plugin_entry['class'];
+                $plugin_config = $plugin_entry['config'];
+                $this->enabled_plugins[$plugin_class] = $this->findPluginPackage($plugin_class);
             }
         }
         return $this->enabled_plugins;
