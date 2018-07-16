@@ -295,6 +295,10 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $method_id = $fq_class_name . '::' . $method_name_lc;
 
+                $intersection_method_id = $intersection_types
+                    ? '(' . $lhs_type_part . ')'  . '::' . $stmt->name->name
+                    : null;
+
                 if ($codebase->methodExists($fq_class_name . '::__call')) {
                     if (!$codebase->methodExists($method_id)
                         || !MethodChecker::isMethodVisible(
@@ -393,12 +397,16 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     $fq_class_name = $context->self;
                 }
 
+                $intersection_type_method_id = null;
+
                 if ($intersection_types && !$codebase->methodExists($method_id)) {
                     foreach ($intersection_types as $intersection_type) {
-                        $method_id = $intersection_type->value . '::' . $method_name_lc;
+                        $additional_method_id = $intersection_type->value . '::' . $method_name_lc;
                         $fq_class_name = $intersection_type->value;
 
-                        if ($codebase->methodExists($method_id)) {
+                        $additional_method_ids[] = $additional_method_id;
+
+                        if ($codebase->methodExists($additional_method_id)) {
                             break;
                         }
                     }
@@ -462,7 +470,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         }
                     }
 
-                    $non_existent_method_ids[] = $method_id;
+                    $non_existent_method_ids[] = $intersection_method_id ?: $method_id;
                     continue;
                 }
 

@@ -368,6 +368,17 @@ class MethodCallTest extends TestCase
                     $q->foo(bar());',
                 'error_message' => 'UndefinedFunction'
             ],
+            'noIntersectionMethod' => [
+                '<?php
+                    interface A {}
+                    interface B {}
+
+                    /** @param B&A $p */
+                    function f($p): void {
+                        $p->zugzug();
+                    }',
+                'error_message' => 'UndefinedMethod - src/somefile.php:7 - Method (B&A)::zugzug does not exist'
+            ],
         ];
     }
 }
