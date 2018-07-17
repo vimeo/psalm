@@ -99,7 +99,9 @@ class ClassLoadOrderTest extends TestCase
                         protected $foo = C::DOPE;
 
                         /** @return string */
-                        public function __get() { }
+                        public function __get() {
+                            return "foo";
+                        }
                     }
 
                     class B extends A {

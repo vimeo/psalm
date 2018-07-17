@@ -69,9 +69,10 @@ class ReturnTypeChecker
 
         $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
-        if ($function instanceof ClassMethod &&
-            substr($function->name->name, 0, 2) === '__' &&
-            !$is_to_string
+        if ($function instanceof ClassMethod
+            && substr($function->name->name, 0, 2) === '__'
+            && !$is_to_string
+            && !$return_type
         ) {
             // do not check __construct, __set, __get, __call etc.
             return null;

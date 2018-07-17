@@ -28,6 +28,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /**
@@ -57,6 +59,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /**
@@ -78,15 +82,17 @@ class MagicPropertyTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     $a = new A();
@@ -104,6 +110,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /** @param mixed $value */
@@ -127,6 +135,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /** @param mixed $value */
@@ -152,6 +162,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /** @param mixed $value */
@@ -169,15 +181,17 @@ class MagicPropertyTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     /** @param mixed $b */
@@ -250,15 +264,15 @@ class MagicPropertyTest extends TestCase
                      * @property string $otherName
                      */
                     class A {
-                      public function __get(string $name): void {
-                      }
+                        public function __get(string $name): void {
+                        }
 
-                      public function goodGet(): void {
-                        echo $this->name;
-                      }
-                      public function goodGet2(): void {
-                        echo $this->otherName;
-                      }
+                        public function goodGet(): void {
+                            echo $this->name;
+                        }
+                        public function goodGet2(): void {
+                            echo $this->otherName;
+                        }
                     }
                     $a = new A();
                     echo $a->name;
@@ -324,15 +338,17 @@ class MagicPropertyTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     $a = new A();
@@ -355,6 +371,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /**
@@ -367,7 +385,7 @@ class MagicPropertyTest extends TestCase
 
                     $a = new A();
                     $a->foo = new SomeOtherPropertyType();',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:27 - $a->foo with declared type'
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:29 - $a->foo with declared type'
                     . ' \'Bar\PropertyType\' cannot',
             ],
             'propertyWriteDocblockInvalidAssignment' => [
@@ -376,15 +394,17 @@ class MagicPropertyTest extends TestCase
                      * @property-write string $foo
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     $a = new A();
@@ -398,15 +418,17 @@ class MagicPropertyTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     $a = new A();
@@ -420,15 +442,17 @@ class MagicPropertyTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     $a = new A();
@@ -441,12 +465,12 @@ class MagicPropertyTest extends TestCase
                      * @property-read string $foo
                      */
                     class A {
-                         /** @return mixed */
-                         public function __get(string $name) {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        /** @return mixed */
+                        public function __get(string $name) {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+                        }
                     }
 
                     $a = new A();
@@ -460,15 +484,17 @@ class MagicPropertyTest extends TestCase
                      * @psalm-seal-properties
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     $a = new A();
@@ -489,6 +515,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /** @param mixed $value */
@@ -515,6 +543,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /** @param mixed $value */
@@ -541,6 +571,8 @@ class MagicPropertyTest extends TestCase
                             if ($name === "foo") {
                                 return "hello";
                             }
+
+                            return null;
                         }
 
                         /** @param mixed $value */
@@ -559,15 +591,17 @@ class MagicPropertyTest extends TestCase
                      * @property string $foo
                      */
                     class A {
-                         public function __get(string $name): ?string {
-                              if ($name === "foo") {
-                                   return "hello";
-                              }
-                         }
+                        public function __get(string $name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
 
-                         /** @param mixed $value */
-                         public function __set(string $name, $value): void {
-                         }
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
                     }
 
                     /** @param mixed $b */

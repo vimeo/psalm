@@ -39,7 +39,7 @@ class MethodSignatureTest extends TestCase
                         $input_headers = [],
                         &$output_headers = []
                     ) {
-
+                        return $_GET["foo"];
                     }
                 }'
         );
