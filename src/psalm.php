@@ -202,8 +202,10 @@ $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 $ini_handler = new \Psalm\Fork\PsalmRestarter('PSALM');
 
 if ($threads > 1) {
-    $ini_handler->useThreads();
+    $ini_handler->disableExtension('grpc');
 }
+
+$ini_handler->disableExtension('apc');
 
 // If XDebug is enabled, restart without it
 $ini_handler->check();

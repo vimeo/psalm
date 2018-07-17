@@ -10,16 +10,18 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     private $required = false;
 
     /**
-     * @var bool
+     * @var string[]
      */
-    private $useThreads = false;
+    private $disabledExtensions = [];
 
     /**
+     * @param string $disabledExtension
+     *
      * @return void
      */
-    public function useThreads()
+    public function disableExtension($disabledExtension)
     {
-        $this->useThreads = true;
+        $this->disabledExtensions[] = $disabledExtension;
     }
 
     /**
@@ -27,7 +29,17 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
      */
     protected function requiresRestart($loaded)
     {
-        $this->required = $this->useThreads && extension_loaded('grpc');
+        $this->required = (bool) array_filter(
+            $this->disabledExtensions,
+            /**
+             * @param string $extension
+             *
+             * @return bool
+             */
+            function ($extension) {
+                return extension_loaded($extension);
+            }
+        );
 
         return $loaded || $this->required;
     }
@@ -39,10 +51,11 @@ class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
     protected function restart($command)
     {
         if ($this->required && $this->tmpIni) {
-            $regex = '/^\s*(extension\s*=.*grpc.*)$/mi';
+            $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabledExtensions) . ').*)$/mi';
             $content = file_get_contents($this->tmpIni);
 
             $content = preg_replace($regex, ';$1', $content);
+
             file_put_contents($this->tmpIni, $content);
         }
 
