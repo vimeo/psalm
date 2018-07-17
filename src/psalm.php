@@ -197,8 +197,16 @@ if (array_key_exists('v', $options)) {
     exit;
 }
 
+$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
+
+$ini_handler = new \Psalm\Fork\PsalmRestarter('PSALM');
+
+if ($threads > 1) {
+    $ini_handler->useThreads();
+}
+
 // If XDebug is enabled, restart without it
-(new \Composer\XdebugHandler\XdebugHandler('PSALM'))->check();
+$ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
 
@@ -317,8 +325,6 @@ $find_dead_code = isset($options['find-dead-code']);
 $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
     ? $options['find-references-to']
     : null;
-
-$threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
 $cache_provider = isset($options['no-cache'])
     ? new Psalm\Provider\NoCache\NoParserCacheProvider()
