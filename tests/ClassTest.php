@@ -7,6 +7,44 @@ class ClassTest extends TestCase
     use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
+     * @return void
+     */
+    public function testExtendsMysqli()
+    {
+        if (class_exists('mysqli') === false) {
+            $this->markTestSkipped('Cannot run test, base class "mysqli" does not exist!');
+
+            return;
+        }
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class db extends mysqli {
+                    public function close()
+                    {
+                        return true;
+                    }
+
+                    public function prepare(string $sql)
+                    {
+                        return false;
+                    }
+
+                    public function commit(?int $flags = null, ?string $name = null)
+                    {
+                        return true;
+                    }
+
+                    public function real_escape_string(string $string)
+                    {
+                        return "escaped";
+                    }
+                }'
+        );
+    }
+
+    /**
      * @return array
      */
     public function providerFileCheckerValidCodeParse()
@@ -151,31 +189,6 @@ class ClassTest extends TestCase
                         throw new Exception("not Foo");
                       }
                       return $maybeBaz;
-                    }',
-            ],
-            'extendsMysqli' => [
-                '<?php
-                    class db extends mysqli
-                    {
-                        public function close()
-                        {
-                            return true;
-                        }
-
-                        public function prepare(string $sql)
-                        {
-                            return false;
-                        }
-
-                        public function commit(?int $flags = null, ?string $name = null)
-                        {
-                            return true;
-                        }
-
-                        public function real_escape_string(string $string)
-                        {
-                            return "escaped";
-                        }
                     }',
             ],
             'assignAnonymousClassToArray' => [
