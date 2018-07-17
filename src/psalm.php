@@ -22,7 +22,7 @@ $valid_long_options = [
     'help', 'debug', 'debug-by-line', 'config:', 'monochrome', 'show-info:', 'diff',
     'output-format:', 'report:', 'find-dead-code', 'init',
     'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
-    'version', 'plugin:', 'stats', 'show-snippet:', 'use-ini-defaults',
+    'version', 'plugin:', 'stats', 'show-snippet:', 'use-ini-defaults', 'disable-extension:'
 ];
 
 $args = array_slice($argv, 1);
@@ -161,6 +161,9 @@ Options:
     --use-ini-defaults
         Use PHP-provided ini defaults for memory and error display
 
+    --disable-extension=[extension]
+        Used to disable certain extensions while Psalm is running.
+
 HELP;
 
     exit;
@@ -201,11 +204,21 @@ $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
 $ini_handler = new \Psalm\Fork\PsalmRestarter('PSALM');
 
+if (isset($options['disable-extension'])) {
+    if (is_array($options['disable-extension'])) {
+        foreach ($options['disable-extension'] as $extension) {
+            if (is_string($extension)) {
+                $ini_handler->disableExtension($extension);
+            }
+        }
+    } elseif (is_string($options['disable-extension'])) {
+        $ini_handler->disableExtension($options['disable-extension']);
+    }
+}
+
 if ($threads > 1) {
     $ini_handler->disableExtension('grpc');
 }
-
-$ini_handler->disableExtension('apc');
 
 // If XDebug is enabled, restart without it
 $ini_handler->check();
