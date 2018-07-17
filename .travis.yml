@@ -1,29 +1,24 @@
 language: php
 
 matrix:
-  exclude:
+  include:
     - php: 7.0
-      env: DEPS="" COVERALLS=true
-    - php: 7.1
-      env: DEPS="" COVERALLS=true
-    - php: 7.2
+      env: DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
+    - php: 7.0
       env: DEPS="" COVERALLS=""
-    - php: nightly
+    - php: 7.1
+      env: DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
+    - php: 7.1
+      env: DEPS="" COVERALLS=""
+    - php: 7.2
+      env: DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
+    - php: 7.2
       env: DEPS="" COVERALLS=true
+    - php: nightly
+      env: DEPS="" COVERALLS=""
   allow_failures:
     - php: nightly
-    - php: 7.0
       env: DEPS="" COVERALLS=""
-php:
-  - 7.0
-  - 7.1
-  - 7.2
-  - nightly
-
-env:
-  - DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
-  - DEPS="" COVERALLS=""
-  - DEPS="" COVERALLS=true
 
 cache:
   directories:
