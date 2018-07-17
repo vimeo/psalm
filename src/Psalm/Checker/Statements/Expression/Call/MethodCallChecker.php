@@ -93,10 +93,12 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
         $source = $statements_checker->getSource();
 
+        $args = $stmt->args;
+
         if (!$context->check_methods || !$context->check_classes) {
             if (self::checkFunctionArguments(
                 $statements_checker,
-                $stmt->args,
+                $args,
                 null,
                 null,
                 $context
@@ -217,7 +219,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                             if (self::checkFunctionArguments(
                                 $statements_checker,
-                                $stmt->args,
+                                $args,
                                 null,
                                 null,
                                 $context
@@ -318,7 +320,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                                 if (self::checkFunctionArguments(
                                     $statements_checker,
-                                    $stmt->args,
+                                    $args,
                                     $pseudo_method_storage->params,
                                     $method_id,
                                     $context
@@ -330,7 +332,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                                 if (self::checkFunctionLikeArgumentsMatch(
                                     $statements_checker,
-                                    $stmt->args,
+                                    $args,
                                     null,
                                     $pseudo_method_storage->params,
                                     $pseudo_method_storage,
@@ -356,7 +358,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             } else {
                                 if (self::checkFunctionArguments(
                                     $statements_checker,
-                                    $stmt->args,
+                                    $args,
                                     null,
                                     null,
                                     $context
@@ -374,8 +376,22 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $has_valid_method_call_type = true;
                         $existent_method_ids[] = $method_id;
 
-                        $return_type = Type::getMixed();
-                        continue;
+                        $array_values = array_map(
+                            /**
+                             * @return PhpParser\Node\Expr\ArrayItem
+                             */
+                            function (PhpParser\Node\Arg $arg) {
+                                return new PhpParser\Node\Expr\ArrayItem($arg->value);
+                            },
+                            $args
+                        );
+
+                        $args = [
+                            new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_name_lc)),
+                            new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
+                        ];
+
+                        $method_id = $fq_class_name . '::__call';
                     }
                 }
 
@@ -424,7 +440,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                             if (self::checkFunctionArguments(
                                 $statements_checker,
-                                $stmt->args,
+                                $args,
                                 $pseudo_method_storage->params,
                                 $method_id,
                                 $context
@@ -436,7 +452,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                             if (self::checkFunctionLikeArgumentsMatch(
                                 $statements_checker,
-                                $stmt->args,
+                                $args,
                                 null,
                                 $pseudo_method_storage->params,
                                 $pseudo_method_storage,
@@ -513,7 +529,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 if (self::checkMethodArgs(
                     $method_id,
-                    $stmt->args,
+                    $args,
                     $class_template_params,
                     $context,
                     $code_location,
@@ -549,11 +565,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         }
                     } else {
                         if ($call_map_id === 'domnode::appendchild'
-                            && isset($stmt->args[0]->value->inferredType)
-                            && $stmt->args[0]->value->inferredType->hasObjectType()
+                            && isset($args[0]->value->inferredType)
+                            && $args[0]->value->inferredType->hasObjectType()
                         ) {
-                            $return_type_candidate = clone $stmt->args[0]->value->inferredType;
-                        } elseif ($call_map_id === 'simplexmlelement::asxml' && !count($stmt->args)) {
+                            $return_type_candidate = clone $args[0]->value->inferredType;
+                        } elseif ($call_map_id === 'simplexmlelement::asxml' && !count($args)) {
                             $return_type_candidate = Type::parseString('string|false');
                         } else {
                             $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
@@ -603,7 +619,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     $return_type_candidate = $codebase->methods->getMethodReturnType(
                         $method_id,
                         $self_fq_class_name,
-                        $stmt->args
+                        $args
                     );
 
                     if (isset($stmt->inferredType)) {
@@ -656,7 +672,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         if ($method_storage->assertions) {
                             self::applyAssertionsToContext(
                                 $method_storage->assertions,
-                                $stmt->args,
+                                $args,
                                 $context,
                                 $statements_checker
                             );
@@ -672,7 +688,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
                 }
 
-                if (!$stmt->args && $var_id) {
+                if (!$args && $var_id) {
                     if ($config->memoize_method_calls) {
                         $method_var_id = $var_id . '->' . $method_name_lc . '()';
 
@@ -697,7 +713,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $appearing_method_id,
                             $declaring_method_id,
                             $var_id,
-                            $stmt->args,
+                            $args,
                             $code_location,
                             $context,
                             $file_manipulations,
@@ -790,7 +806,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         if ($method_id === null) {
             return self::checkMethodArgs(
                 $method_id,
-                $stmt->args,
+                $args,
                 $found_generic_params,
                 $context,
                 new CodeLocation($statements_checker->getSource(), $stmt),

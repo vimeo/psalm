@@ -220,6 +220,25 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
+            'typedMagicCall' => [
+                '<?php
+                    class B {
+                        public function __call(string $methodName, array $args) : string {
+                            return __METHOD__;
+                        }
+                    }
+                    class A {
+                        public function __call(string $methodName, array $args) : B {
+                            return new B;
+                        }
+                    }
+                    $a = (new A)->zugzug();
+                    $b = (new A)->bar()->baz();',
+                'assertions' => [
+                    '$a' => 'B',
+                    '$b' => 'string',
+                ],
+            ],
         ];
     }
 

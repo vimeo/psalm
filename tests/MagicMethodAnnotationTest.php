@@ -114,7 +114,7 @@ class MagicMethodAnnotationTest extends TestCase
             'validSimpleAnnotations' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -139,7 +139,7 @@ class MagicMethodAnnotationTest extends TestCase
                     $b = $child->setString(5);
                     $c = $child->getBool("hello");
                     $d = $child->getArray();
-                    $child->setArray(["boo"])
+                    $child->setArray(["boo"]);
                     $e = $child->getCallable();
                     $child->setMixed("hello");
                     $child->setMixed(4);
@@ -156,7 +156,7 @@ class MagicMethodAnnotationTest extends TestCase
             'validAnnotationWithDefault' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -172,7 +172,7 @@ class MagicMethodAnnotationTest extends TestCase
             'validAnnotationWithVariadic' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -187,7 +187,7 @@ class MagicMethodAnnotationTest extends TestCase
             'validUnionAnnotations' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -211,7 +211,7 @@ class MagicMethodAnnotationTest extends TestCase
                     namespace Foo;
 
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -255,7 +255,7 @@ class MagicMethodAnnotationTest extends TestCase
             'annotationWithBadDocblock' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -267,7 +267,7 @@ class MagicMethodAnnotationTest extends TestCase
             'annotationWithByRefParam' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -279,7 +279,7 @@ class MagicMethodAnnotationTest extends TestCase
             'annotationWithSealed' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -296,7 +296,7 @@ class MagicMethodAnnotationTest extends TestCase
             'annotationInvalidArg' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -312,7 +312,7 @@ class MagicMethodAnnotationTest extends TestCase
             'unionAnnotationInvalidArg' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**
@@ -328,7 +328,7 @@ class MagicMethodAnnotationTest extends TestCase
             'validAnnotationWithInvalidVariadicCall' => [
                 '<?php
                     class ParentClass {
-                        public function __call() {}
+                        public function __call(string $name, array $args) {}
                     }
 
                     /**

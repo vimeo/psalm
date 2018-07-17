@@ -85,7 +85,7 @@ class MethodCallTest extends TestCase
             'magicCall' => [
                 '<?php
                     class A {
-                        public function __call(string $method_name) {}
+                        public function __call(string $method_name, array $args) {}
                     }
 
                     $a = new A;
@@ -94,7 +94,7 @@ class MethodCallTest extends TestCase
             'canBeCalledOnMagic' => [
                 '<?php
                     class A {
-                      public function __call(string $method) {}
+                      public function __call(string $method, array $args) {}
                     }
 
                     class B {}
