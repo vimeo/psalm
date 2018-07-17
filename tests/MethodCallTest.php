@@ -166,6 +166,18 @@ class MethodCallTest extends TestCase
                         return $b->getAttribute("bat");
                     }',
             ],
+            'reflectionParameter' => [
+                '<?php
+                    function getTypeName(ReflectionParameter $parameter): string {
+                        $type = $parameter->getType();
+
+                        if ($type === null) {
+                            return "mixed";
+                        }
+
+                        return $type->getName();
+                    }'
+            ],
         ];
     }
 
