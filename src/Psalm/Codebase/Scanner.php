@@ -26,6 +26,11 @@ class Scanner
     private $classlike_files = [];
 
     /**
+     * @var array<string, bool>
+     */
+    private $deep_scanned_classlike_files = [];
+
+    /**
      * @var array<string, string>
      */
     private $files_to_scan = [];
@@ -192,7 +197,9 @@ class Scanner
             return;
         }
 
-        if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
+        if (!isset($this->classlike_files[$fq_classlike_name_lc])
+            || ($analyze_too && !isset($this->deep_scanned_classlike_files[$fq_classlike_name_lc]))
+        ) {
             if (!isset($this->classes_to_scan[$fq_classlike_name_lc]) || $store_failure) {
                 $this->classes_to_scan[$fq_classlike_name_lc] = $fq_classlike_name;
             }
@@ -267,6 +274,14 @@ class Scanner
                     } elseif ($this->store_scan_failure[$fq_classlike_name]) {
                         $classlikes->registerMissingClassLike($fq_classlike_name_lc);
                     }
+                } elseif (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])
+                    && !isset($this->deep_scanned_classlike_files[$fq_classlike_name_lc])
+                ) {
+                    $file_path = $this->classlike_files[$fq_classlike_name_lc];
+                    $this->files_to_scan[$file_path] = $file_path;
+                    unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
+                    $this->files_to_deep_scan[$file_path] = $file_path;
+                    $this->deep_scanned_classlike_files[$fq_classlike_name_lc] = true;
                 }
             }
         }
