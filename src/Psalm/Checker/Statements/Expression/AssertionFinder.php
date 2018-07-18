@@ -608,12 +608,15 @@ class AssertionFinder
                 throw new \UnexpectedValueException('$getclass_position value');
             }
 
-            /** @var PhpParser\Node\Expr\FuncCall $getclass_expr */
-            $var_name = ExpressionChecker::getArrayVarId(
-                $getclass_expr->args[0]->value,
-                $this_class_name,
-                $source
-            );
+            if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall) {
+                $var_name = ExpressionChecker::getArrayVarId(
+                    $getclass_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
+            } else {
+                $var_name = '$this';
+            }
 
             if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
                 $var_type = $whichclass_expr->value;
@@ -1108,12 +1111,15 @@ class AssertionFinder
                 throw new \UnexpectedValueException('$getclass_position value');
             }
 
-            /** @var PhpParser\Node\Expr\FuncCall $getclass_expr */
-            $var_name = ExpressionChecker::getArrayVarId(
-                $getclass_expr->args[0]->value,
-                $this_class_name,
-                $source
-            );
+            if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall) {
+                $var_name = ExpressionChecker::getArrayVarId(
+                    $getclass_expr->args[0]->value,
+                    $this_class_name,
+                    $source
+                );
+            } else {
+                $var_name = '$this';
+            }
 
             if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
                 $var_type = $whichclass_expr->value;
@@ -1280,6 +1286,16 @@ class AssertionFinder
                 $if_types[$first_var_name] = [[$prefix . 'null']];
             }
         } elseif (self::hasIsACheck($expr)) {
+            if ($expr->args[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $expr->args[0]->value->name instanceof PhpParser\Node\Identifier
+                && strtolower($expr->args[0]->value->name->name) === 'class'
+                && $expr->args[0]->value->class instanceof PhpParser\Node\Name
+                && count($expr->args[0]->value->class->parts) === 1
+                && strtolower($expr->args[0]->value->class->parts[0]) === 'static'
+            ) {
+                $first_var_name = '$this';
+            }
+
             if ($first_var_name) {
                 $second_arg = $expr->args[1]->value;
 
@@ -1657,31 +1673,43 @@ class AssertionFinder
      */
     protected static function hasGetClassCheck(PhpParser\Node\Expr\BinaryOp $conditional)
     {
-        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall &&
-            $conditional->right->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->right->name->parts[0]) === 'get_class' &&
-            (
-                $conditional->left instanceof PhpParser\Node\Scalar\String_
-                || ($conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $conditional->left->class instanceof PhpParser\Node\Name
-                    && $conditional->left->name instanceof PhpParser\Node\Identifier
-                    && strtolower($conditional->left->name->name) === 'class')
-            )
-        ) {
+        $right_get_class = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->right->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->right->name->parts[0]) === 'get_class';
+
+        $right_static_class = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $conditional->right->class instanceof PhpParser\Node\Name
+            && $conditional->right->class->parts === ['static']
+            && $conditional->right->name instanceof PhpParser\Node\Identifier
+            && strtolower($conditional->right->name->name) === 'class';
+
+        $left_class_string = $conditional->left instanceof PhpParser\Node\Scalar\String_
+            || ($conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $conditional->left->class instanceof PhpParser\Node\Name
+                && $conditional->left->name instanceof PhpParser\Node\Identifier
+                && strtolower($conditional->left->name->name) === 'class');
+
+        if (($right_get_class || $right_static_class) && $left_class_string) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall &&
-            $conditional->left->name instanceof PhpParser\Node\Name &&
-            strtolower($conditional->left->name->parts[0]) === 'get_class' &&
-            (
-                $conditional->right instanceof PhpParser\Node\Scalar\String_
-                || ($conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $conditional->right->class instanceof PhpParser\Node\Name
-                    && $conditional->right->name instanceof PhpParser\Node\Identifier
-                    && strtolower($conditional->right->name->name) === 'class')
-            )
-        ) {
+        $left_get_class = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
+            && $conditional->left->name instanceof PhpParser\Node\Name
+            && strtolower($conditional->left->name->parts[0]) === 'get_class';
+
+        $left_static_class = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $conditional->left->class instanceof PhpParser\Node\Name
+            && $conditional->left->class->parts === ['static']
+            && $conditional->left->name instanceof PhpParser\Node\Identifier
+            && strtolower($conditional->left->name->name) === 'class';
+
+        $right_class_string = $conditional->right instanceof PhpParser\Node\Scalar\String_
+            || ($conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $conditional->right->class instanceof PhpParser\Node\Name
+                && $conditional->right->name instanceof PhpParser\Node\Identifier
+                && strtolower($conditional->right->name->name) === 'class');
+
+        if (($left_get_class || $left_static_class) && $right_class_string) {
             return self::ASSIGNMENT_TO_LEFT;
         }
 

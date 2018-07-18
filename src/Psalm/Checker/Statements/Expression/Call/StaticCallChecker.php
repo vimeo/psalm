@@ -131,12 +131,19 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $context->vars_in_scope['$this'] = Type::parseString($old_self);
                         }
                     }
+                } elseif ($context->self) {
+                    if ($stmt->class->parts[0] === 'static' && isset($context->vars_in_scope['$this'])) {
+                        $fq_class_name = (string) $context->vars_in_scope['$this'];
+                        $lhs_type = clone $context->vars_in_scope['$this'];
+                    } else {
+                        $fq_class_name = $context->self;
+                    }
                 } else {
                     $namespace = $statements_checker->getNamespace()
                         ? $statements_checker->getNamespace() . '\\'
                         : '';
 
-                    $fq_class_name = $context->self ?: $namespace . $statements_checker->getClassName();
+                    $fq_class_name = $namespace . $statements_checker->getClassName();
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
@@ -178,7 +185,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 }
             }
 
-            if ($fq_class_name) {
+            if ($fq_class_name && !$lhs_type) {
                 $lhs_type = new Type\Union([new TNamedObject($fq_class_name)]);
             }
         } else {

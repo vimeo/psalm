@@ -281,17 +281,59 @@ class TraitTest extends TestCase
             'getClassTraitUser' => [
                 '<?php
                     trait T {
-                      public function f(): void {
-                        if (get_class($this) === "B") { }
-                      }
+                        public function f(): void {
+                            if (get_class($this) === "B") {
+                                $this->foo();
+                            }
+                        }
                     }
 
                     class A {
-                      use T;
+                        use T;
                     }
 
                     class B {
-                      use T;
+                        use T;
+
+                        public function foo() : void {}
+                    }',
+            ],
+            'staticClassTraitUser' => [
+                '<?php
+                    trait T {
+                        public function f(): void {
+                            if (static::class === "B") {
+                                $this->foo();
+                            }
+                        }
+                    }
+
+                    class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+
+                        public function foo() : void {}
+                    }',
+            ],
+            'isAClassTraitUser' => [
+                '<?php
+                    trait T {
+                        public function f(): void {
+                            if (is_a(static::class, "B")) { }
+                        }
+                    }
+
+                    class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+
+                        public function foo() : void {}
                     }',
             ],
             'useTraitInClassWithAbstractMethod' => [
