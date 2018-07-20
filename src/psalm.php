@@ -19,10 +19,28 @@ $valid_short_options = [
 ];
 
 $valid_long_options = [
-    'help', 'debug', 'debug-by-line', 'config:', 'monochrome', 'show-info:', 'diff',
-    'output-format:', 'report:', 'find-dead-code', 'init',
-    'find-references-to:', 'root:', 'threads:', 'clear-cache', 'no-cache',
-    'version', 'plugin:', 'stats', 'show-snippet:', 'use-ini-defaults', 'disable-extension:'
+    'clear-cache',
+    'config:',
+    'debug',
+    'debug-by-line',
+    'diff',
+    'disable-extension:',
+    'find-dead-code',
+    'find-references-to:',
+    'help',
+    'init',
+    'monochrome',
+    'no-cache',
+    'output-format:',
+    'plugin:',
+    'report:',
+    'root:',
+    'show-info:',
+    'show-snippet:',
+    'stats',
+    'threads:',
+    'use-ini-defaults',
+    'version',
 ];
 
 $args = array_slice($argv, 1);
