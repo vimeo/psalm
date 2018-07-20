@@ -19,6 +19,8 @@ matrix:
   allow_failures:
     - php: nightly
       env: DEPS="" COVERALLS=""
+    - php: 7.1
+      env: DEPS="--prefer-lowest --prefer-stable" COVERALLS=""
 
 cache:
   directories:
