@@ -15,6 +15,7 @@ use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
@@ -79,17 +80,40 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                     $fq_class_name = $class_storage->name;
 
-                    if ($stmt->name instanceof PhpParser\Node\Identifier && $class_storage->user_defined) {
+                    if ($stmt->name instanceof PhpParser\Node\Identifier
+                        && $class_storage->user_defined
+                        && ($context->collect_mutations || $context->collect_initializations)
+                    ) {
                         $method_id = $fq_class_name . '::' . strtolower($stmt->name->name);
+
+                        $appearing_method_id = $codebase->getAppearingMethodId($method_id);
+
+                        if (!$appearing_method_id) {
+                            if (IssueBuffer::accepts(
+                                new UndefinedMethod(
+                                    'Method ' . $method_id . ' does not exist',
+                                    new CodeLocation($statements_checker->getSource(), $stmt),
+                                    $method_id
+                                ),
+                                $statements_checker->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
+
+                            return;
+                        }
+
+                        list($appearing_method_class_name) = explode('::', $appearing_method_id);
 
                         $old_context_include_location = $context->include_location;
                         $old_self = $context->self;
                         $context->include_location = new CodeLocation($statements_checker->getSource(), $stmt);
-                        $context->self = $fq_class_name;
+                        $context->self = $appearing_method_class_name;
 
                         if ($context->collect_mutations) {
                             $file_checker->getMethodMutations($method_id, $context);
-                        } elseif ($context->collect_initializations) {
+                        } else {
+                            // collecting initalisations
                             $local_vars_in_scope = [];
                             $local_vars_possibly_in_scope = [];
 

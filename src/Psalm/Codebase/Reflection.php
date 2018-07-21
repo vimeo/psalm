@@ -115,7 +115,7 @@ class Reflection
 
             $property_id = (string)$class_property->class . '::$' . $property_name;
 
-            $storage->declaring_property_ids[$property_name] = $property_id;
+            $storage->declaring_property_ids[$property_name] = (string)$class_property->class;
             $storage->appearing_property_ids[$property_name] = $property_id;
 
             if (!$class_property->isPrivate()) {
@@ -131,7 +131,7 @@ class Reflection
 
                 $property_id = $class_name . '::$' . $property_name;
 
-                $storage->declaring_property_ids[$property_name] = $property_id;
+                $storage->declaring_property_ids[$property_name] = $class_name;
                 $storage->appearing_property_ids[$property_name] = $property_id;
                 $storage->inheritable_property_ids[$property_name] = $property_id;
             }
@@ -430,7 +430,7 @@ class Reflection
         }
 
         // register where they're declared
-        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
+        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_class) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
                 && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
@@ -438,7 +438,7 @@ class Reflection
                 continue;
             }
 
-            $storage->declaring_property_ids[$property_name] = $declaring_property_id;
+            $storage->declaring_property_ids[$property_name] = $declaring_property_class;
         }
 
         // register where they're declared

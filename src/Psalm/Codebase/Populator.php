@@ -652,7 +652,7 @@ class Populator
         }
 
         // register where they're declared
-        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_id) {
+        foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_class) {
             if (isset($storage->declaring_property_ids[$property_name])) {
                 continue;
             }
@@ -664,7 +664,7 @@ class Populator
                 continue;
             }
 
-            $storage->declaring_property_ids[$property_name] = $declaring_property_id;
+            $storage->declaring_property_ids[$property_name] = $declaring_property_class;
         }
 
         // register where they're declared

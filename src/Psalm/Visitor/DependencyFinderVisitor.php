@@ -691,7 +691,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     $property_id = $fq_classlike_name . '::$' . $property_name;
 
-                    $storage->declaring_property_ids[$property_name] = $property_id;
+                    $storage->declaring_property_ids[$property_name] = $fq_classlike_name;
                     $storage->appearing_property_ids[$property_name] = $property_id;
                 }
             }
@@ -1737,7 +1737,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             $property_id = $fq_classlike_name . '::$' . $property->name->name;
 
-            $storage->declaring_property_ids[$property->name->name] = $property_id;
+            $storage->declaring_property_ids[$property->name->name] = $fq_classlike_name;
             $storage->appearing_property_ids[$property->name->name] = $property_id;
 
             if ($property_is_initialized) {

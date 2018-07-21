@@ -47,11 +47,10 @@ class Properties
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             if ($this->collect_references && $code_location) {
-                $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
-                list($declaring_property_class, $declaring_property_name) = explode('::$', $declaring_property_id);
+                $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
 
                 $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
-                $declaring_property_storage = $declaring_class_storage->properties[$declaring_property_name];
+                $declaring_property_storage = $declaring_class_storage->properties[$property_name];
 
                 if ($declaring_property_storage->referencing_locations === null) {
                     $declaring_property_storage->referencing_locations = [];
@@ -80,9 +79,7 @@ class Properties
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
-            $declaring_property_id = $class_storage->declaring_property_ids[$property_name];
-
-            return explode('::$', $declaring_property_id)[0];
+            return $class_storage->declaring_property_ids[$property_name];
         }
     }
 

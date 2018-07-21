@@ -1484,6 +1484,82 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
             ],
+            'privatePropertySameNameNotSetInConstructor' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        private $b;
+
+                        public function __construct() {
+                            $this->b = "foo";
+                        }
+                    }
+
+                    class B extends A {
+                        /** @var string */
+                        private $b;
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'privateMethodCalledInParentConstructor' => [
+                '<?php
+                    class C extends B {}
+
+                    abstract class B extends A {
+                        /** @var string */
+                        private $b;
+
+                        /** @var string */
+                        protected $c;
+                    }
+
+                    class A {
+                        public function __construct() {
+                            $this->publicMethod();
+                        }
+
+                        publiic function publicMethod() : void {
+                            $this->privateMethod();
+                        }
+
+                        private function privateMethod() : void {}
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'privatePropertySetInParentConstructorReversedOrder' => [
+                '<?php
+                    class B extends A {
+                        /** @var string */
+                        private $b;
+                    }
+
+                    class A {
+                        public function __construct() {
+                            if ($this instanceof B) {
+                                $this->b = "foo";
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'privatePropertySetInParentConstructor' => [
+                '<?php
+                    class A {
+                        public function __construct() {
+                            if ($this instanceof B) {
+                                $this->b = "foo";
+                            }
+                        }
+                    }
+
+                    class B extends A {
+                        /** @var string */
+                        private $b;
+                    }
+
+                    ',
+                'error_message' => 'InaccessibleProperty',
+            ],
             'undefinedPropertyClass' => [
                 '<?php
                     class A {
