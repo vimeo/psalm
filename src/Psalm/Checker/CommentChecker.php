@@ -234,7 +234,8 @@ class CommentChecker
      * @return FunctionDocblockComment
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractFunctionDocblockInfo($comment, $line_number) {
+    public static function extractFunctionDocblockInfo($comment, $line_number)
+    {
         $comments = self::parseDocComment($comment, $line_number);
 
         $info = new FunctionDocblockComment();

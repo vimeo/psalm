@@ -141,7 +141,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             new CodeLocation($this->file_scanner, $node, null, true)
                         )
                     )) {
-
+                        // fall through
                     }
                 }
             }
