@@ -19,7 +19,6 @@
             <file name="src/Psalm/CallMap.php" />
             <directory name="src/Psalm/Stubs" />
             <directory name="tests/stubs" />
-            <file name="src/Psalm/Visitor/SimpleNameResolver.php" />
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php" />
         </ignoreFiles>
     </projectFiles>

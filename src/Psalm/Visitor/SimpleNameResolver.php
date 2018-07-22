@@ -4,6 +4,7 @@
 
 namespace Psalm\Visitor;
 
+use PhpParser;
 use PhpParser\Error;
 use PhpParser\ErrorHandler;
 use PhpParser\NameContext;
@@ -32,17 +33,8 @@ class SimpleNameResolver extends NodeVisitorAbstract
      * @param ErrorHandler|null $errorHandler Error handler
      * @param array $options Options
      */
-    public function __construct(ErrorHandler $errorHandler = null, array $options = []) {
+    public function __construct(ErrorHandler $errorHandler = null) {
         $this->nameContext = new NameContext($errorHandler ?: new ErrorHandler\Throwing);
-    }
-
-    /**
-     * Get name resolution context.
-     *
-     * @return NameContext
-     */
-    public function getNameContext() : NameContext {
-        return $this->nameContext;
     }
 
     public function beforeTraverse(array $nodes) {
@@ -90,6 +82,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             }
 
             foreach ($node->adaptations as $adaptation) {
+                /** @psalm-suppress RedundantConditionGivenDocblockType */
                 if (null !== $adaptation->trait) {
                     $adaptation->trait = $this->resolveClassName($adaptation->trait);
                 }
@@ -105,8 +98,13 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return null;
     }
 
+    /**
+     * @param int $type
+     * @return void
+     */
     private function addAlias(Stmt\UseUse $use, $type, Name $prefix = null) {
         // Add prefix for group uses
+        /** @var Name $name */
         $name = $prefix ? Name::concat($prefix, $use->name) : $use->name;
         // Type is determined either by individual element or whole use declaration
         $type |= $use->type;
@@ -116,7 +114,10 @@ class SimpleNameResolver extends NodeVisitorAbstract
         );
     }
 
-    /** @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node */
+    /**
+     * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node
+     * @return void
+     */
     private function resolveSignature($node) {
         foreach ($node->params as $param) {
             $param->type = $this->resolveType($param->type);
@@ -124,8 +125,15 @@ class SimpleNameResolver extends NodeVisitorAbstract
         $node->returnType = $this->resolveType($node->returnType);
     }
 
+    /**
+     * @param  PhpParser\Node|string|null $node
+     * @return null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType
+     * @psalm-suppress MoreSpecificReturnType
+     * @psalm-suppress LessSpecificReturnStatement
+     */
     private function resolveType($node) {
         if ($node instanceof Node\NullableType) {
+            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
             $node->type = $this->resolveType($node->type);
             return $node;
         }
@@ -143,7 +151,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @return Name Resolved name, or original name with attribute
      */
-    protected function resolveName(Name $name, $type) : Name {
+    protected function resolveName(Name $name, $type) {
         $resolvedName = $this->nameContext->getResolvedName($name, $type);
         if (null !== $resolvedName) {
             $name->setAttribute('resolvedName', $resolvedName->toString());
@@ -151,12 +159,10 @@ class SimpleNameResolver extends NodeVisitorAbstract
         return $name;
     }
 
+    /**
+     * @return Name
+     */
     protected function resolveClassName(Name $name) {
         return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
-    }
-
-    protected function addNamespacedName(Node $node) {
-        $node->namespacedName = Name::concat(
-            $this->nameContext->getNamespace(), (string) $node->name);
     }
 }
