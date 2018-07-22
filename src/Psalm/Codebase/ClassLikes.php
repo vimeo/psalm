@@ -495,13 +495,13 @@ class ClassLikes
             return true;
         }
 
-        return in_array($possible_parent, $this->getParentInterfaces($interface_name), true);
+        return isset($this->getParentInterfaces($interface_name)[strtolower($possible_parent)]);
     }
 
     /**
      * @param  string         $fq_interface_name
      *
-     * @return array<string>   all interfaces extended by $interface_name
+     * @return array<string, string>   all interfaces extended by $interface_name
      */
     public function getParentInterfaces($fq_interface_name)
     {

@@ -421,6 +421,20 @@ class InterfaceTest extends TestCase
                         return;
                     }',
             ],
+            'filterIteratorExtension' => [
+                '<?php
+                    interface I2 extends Iterator {}
+
+                    class DedupeIterator extends FilterIterator {
+                        public function __construct(I2 $i) {
+                            parent::__construct($i);
+                        }
+
+                        public function accept() : bool {
+                            return true;
+                        }
+                    }',
+            ],
         ];
     }
 
