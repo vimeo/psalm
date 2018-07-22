@@ -196,6 +196,69 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testIgnoreWildcardFilesInWildcardFolder()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="examples" />
+                        <ignoreFiles>
+                            <file name="src/Psalm/**/*Checker.php" />
+                            <file name="src/Psalm/**/**/*Checker.php" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_checker->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Visitor/DependencyFinderVisitor.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/FileChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/Statements/ReturnChecker.php')));
+        $this->assertTrue($config->isInProjectDirs(realpath('examples/StringChecker.php')));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIgnoreWildcardFilesInAllPossibleWildcardFolders()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="examples" />
+                        <ignoreFiles>
+                            <file name="**/*Checker.php" />
+                            <file name="**/**/**/*Checker.php" />
+                            <file name="**/**/**/**/*Checker.php" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_checker->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Visitor/DependencyFinderVisitor.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/FileChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Checker/Statements/ReturnChecker.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringChecker.php')));
+    }
+
+    /**
+     * @return void
+     */
     public function testIssueHandler()
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
