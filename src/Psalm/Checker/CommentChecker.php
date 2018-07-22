@@ -228,19 +228,13 @@ class CommentChecker
     /**
      * @param  string  $comment
      * @param  int     $line_number
-     * @param  array<string, array<int, string>> $type_aliases
      *
      * @throws DocblockParseException if there was a problem parsing the docblock
      *
      * @return FunctionDocblockComment
      * @psalm-suppress MixedArrayAccess
      */
-    public static function extractFunctionDocblockInfo(
-        $comment,
-        $line_number,
-        Aliases $aliases,
-        array $type_aliases
-    ) {
+    public static function extractFunctionDocblockInfo($comment, $line_number) {
         $comments = self::parseDocComment($comment, $line_number);
 
         $info = new FunctionDocblockComment();
@@ -279,14 +273,6 @@ class CommentChecker
             } else {
                 throw new DocblockParseException('Badly-formatted @return type');
             }
-        }
-
-        if (isset($comments['specials']['psalm-type'])) {
-            $info->type_aliases = self::getTypeAliasesFromCommentLines(
-                $comments['specials']['psalm-type'],
-                $aliases,
-                $type_aliases
-            );
         }
 
         if (isset($comments['specials']['param']) || isset($comments['specials']['psalm-param'])) {
