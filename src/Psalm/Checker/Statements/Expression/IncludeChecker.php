@@ -189,13 +189,23 @@ class IncludeChecker
             $stmt->name->parts === ['dirname']
         ) {
             if ($stmt->args) {
+                $dir_level = 1;
+
+                if (isset($stmt->args[1])) {
+                    if ($stmt->args[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                        $dir_level = $stmt->args[1]->value->value;
+                    } else {
+                        return null;
+                    }
+                }
+
                 $evaled_path = self::getPathTo($stmt->args[0]->value, $file_name);
 
                 if (!$evaled_path) {
                     return null;
                 }
 
-                return dirname($evaled_path);
+                return dirname($evaled_path, $dir_level);
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name instanceof PhpParser\Node\Name) {
             $const_name = implode('', $stmt->name->parts);
