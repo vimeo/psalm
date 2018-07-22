@@ -626,7 +626,7 @@ class FunctionCallTest extends TestCase
                     $b = key($a);
                     $c = $a[$b];',
                 'assertions' => [
-                    '$b' => 'false|string',
+                    '$b' => 'null|string',
                     '$c' => 'int',
                 ],
             ],

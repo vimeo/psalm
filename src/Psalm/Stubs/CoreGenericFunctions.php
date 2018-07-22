@@ -188,8 +188,8 @@ function end(array &$arr) {}
  * @template TKey
  *
  * @param array<TKey, mixed> $arr
- * @return TKey|false
- * @psalm-ignore-falsable-return
+ * @return TKey|null
+ * @psalm-ignore-nullable-return
  */
 function key($arr) {}
 
