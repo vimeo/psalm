@@ -235,6 +235,8 @@ class Reflection
         $declaring_class = $method->getDeclaringClass();
 
         $storage->is_static = $method->isStatic();
+        $storage->abstract = $method->isAbstract();
+
         $class_storage->declaring_method_ids[$method_name] =
             $declaring_class->name . '::' . strtolower((string)$method->getName());
 

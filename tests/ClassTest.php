@@ -447,11 +447,20 @@ class ClassTest extends TestCase
             ],
             'abstractClassMethod' => [
                 '<?php
-                abstract class A {
-                    abstract public function foo();
-                }
+                    abstract class A {
+                        abstract public function foo();
+                    }
 
-                class B extends A { }',
+                    class B extends A { }',
+                'error_message' => 'UnimplementedAbstractMethod',
+            ],
+            'abstractReflectedClassMethod' => [
+                '<?php
+                    class DedupeIterator extends FilterIterator {
+                        public function __construct(Iterator $i) {
+                            parent::__construct($i);
+                        }
+                    }',
                 'error_message' => 'UnimplementedAbstractMethod',
             ],
             'missingParent' => [
