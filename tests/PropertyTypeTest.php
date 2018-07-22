@@ -1524,7 +1524,7 @@ class PropertyTypeTest extends TestCase
 
                         private function privateMethod() : void {}
                     }',
-                'error_message' => 'MissingConstructor',
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'privatePropertySetInParentConstructorReversedOrder' => [
                 '<?php
