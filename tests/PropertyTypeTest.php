@@ -1518,7 +1518,7 @@ class PropertyTypeTest extends TestCase
                             $this->publicMethod();
                         }
 
-                        publiic function publicMethod() : void {
+                        public function publicMethod() : void {
                             $this->privateMethod();
                         }
 
