@@ -7,7 +7,8 @@ use Psalm\PluginManager\ComposerLock;
 use Psalm\PluginManager\ConfigFile;
 use Psalm\PluginManager\PluginList;
 
-class PluginManagerTest extends TestCase
+/** @group PluginManager */
+class PluginListTest extends TestCase
 {
     /** @var ObjectProphecy */
     private $config_file;
