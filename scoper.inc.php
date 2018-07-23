@@ -120,9 +120,6 @@ return [
                 'Psalm\PluginApi',
                 $contents
             );
-            if (strpos($contents, $prefix . '\Psalm\PluginApi')) {
-                var_dump(compact('filePath', 'contents', 'ret'));
-            }
             return $ret;
         },
     ],
