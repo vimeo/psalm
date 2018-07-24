@@ -158,6 +158,93 @@ class PsalmPluginTest extends TestCase
         $this->assertRegExp('/Usage:$\s+' . preg_quote($command, '/') . '\b/m', $output);
     }
 
+    /**
+     * @return void
+     * @test
+     */
+    public function requiresPluginNameToEnable()
+    {
+        $enable_command = new CommandTester($this->app->find('enable'));
+        $this->expectExceptionMessage('missing: "pluginName"');
+        $enable_command->execute([]);
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function requiresPluginNameToDisable()
+    {
+        $enable_command = new CommandTester($this->app->find('disable'));
+        $this->expectExceptionMessage('missing: "pluginName"');
+        $enable_command->execute([]);
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function enableComplainsWhenPassedUnresolvablePlugin()
+    {
+        $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new \InvalidArgumentException);
+
+        $enable_command = new CommandTester($this->app->find('enable'));
+        $enable_command->execute(['pluginName' => 'vendor/package']);
+
+        $output = $enable_command->getDisplay();
+
+        $this->assertContains('ERROR', $output);
+        $this->assertContains('Unknown plugin', $output);
+        $this->assertNotEquals(0, $enable_command->getStatusCode());
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function enableComplainsWhenPassedAlreadyEnabledPlugin()
+    {
+        $this->plugin_list->resolvePluginClass('vendor/package')->will(
+            function (array $args, ObjectProphecy $plugin_list): string {
+                /** @psalm-suppress TooManyArguments */
+                $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(true);
+                return 'Vendor\Package\PluginClass';
+            }
+        );
+
+        $enable_command = new CommandTester($this->app->find('enable'));
+        $enable_command->execute(['pluginName' => 'vendor/package']);
+
+        $output = $enable_command->getDisplay();
+        $this->assertContains('Plugin already enabled', $output);
+        $this->assertNotEquals(0, $enable_command->getStatusCode());
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function enableReportsSuccessWhenItEnablesPlugin()
+    {
+        $this->plugin_list->resolvePluginClass('vendor/package')->will(
+            function (array $args, ObjectProphecy $plugin_list): string {
+                $plugin_class = 'Vendor\Package\PluginClass';
+                /** @psalm-suppress TooManyArguments */
+                $plugin_list->isEnabled($plugin_class)->willReturn(false);
+                /** @psalm-suppress TooManyArguments */
+                $plugin_list->enable($plugin_class)->willReturn(null);
+                return $plugin_class;
+            }
+        );
+
+        $enable_command = new CommandTester($this->app->find('enable'));
+        $enable_command->execute(['pluginName' => 'vendor/package']);
+
+        $output = $enable_command->getDisplay();
+        $this->assertContains('Plugin enabled', $output);
+        $this->assertEquals(0, $enable_command->getStatusCode());
+    }
+
     /** @return string[][] */
     public function commands(): array
     {
