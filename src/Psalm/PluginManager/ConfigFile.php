@@ -44,19 +44,19 @@ class ConfigFile
             return;
         }
         assert($config_xml->plugins instanceof SimpleXmlElement);
-        if (!isset($config_xml->plugins->pluginClass)) {
-            // no plugin classes, nothing to remove
-            return;
-        }
-        assert($config_xml->plugins->pluginClass instanceof SimpleXmlElement);
-        /** @psalm-suppress MixedAssignment */
-        foreach ($config_xml->plugins->pluginClass as $entry) {
-            assert($entry instanceof SimpleXmlElement);
-            if ((string)$entry['class'] === $plugin_class) {
-                unset($entry[0]);
-                break;
+
+        if (isset($config_xml->plugins->pluginClass)) {
+            assert($config_xml->plugins->pluginClass instanceof SimpleXmlElement);
+            /** @psalm-suppress MixedAssignment */
+            foreach ($config_xml->plugins->pluginClass as $entry) {
+                assert($entry instanceof SimpleXmlElement);
+                if ((string)$entry['class'] === $plugin_class) {
+                    unset($entry[0]);
+                    break;
+                }
             }
         }
+
         if (!$config_xml->plugins->children()->count()) {
             // avoid breaking old psalm binaries, whose schema did not allow empty plugins
             unset($config_xml->plugins[0]);
