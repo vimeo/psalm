@@ -158,6 +158,7 @@ class PsalmPluginTest extends TestCase
         $this->assertRegExp('/Usage:$\s+' . preg_quote($command, '/') . '\b/m', $output);
     }
 
+
     /**
      * @return void
      * @test
@@ -165,17 +166,6 @@ class PsalmPluginTest extends TestCase
     public function requiresPluginNameToEnable()
     {
         $enable_command = new CommandTester($this->app->find('enable'));
-        $this->expectExceptionMessage('missing: "pluginName"');
-        $enable_command->execute([]);
-    }
-
-    /**
-     * @return void
-     * @test
-     */
-    public function requiresPluginNameToDisable()
-    {
-        $enable_command = new CommandTester($this->app->find('disable'));
         $this->expectExceptionMessage('missing: "pluginName"');
         $enable_command->execute([]);
     }
@@ -232,7 +222,7 @@ class PsalmPluginTest extends TestCase
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled($plugin_class)->willReturn(false);
                 /** @psalm-suppress TooManyArguments */
-                $plugin_list->enable($plugin_class)->willReturn(null);
+                $plugin_list->enable($plugin_class)->shouldBeCalled();
                 return $plugin_class;
             }
         );
@@ -243,6 +233,84 @@ class PsalmPluginTest extends TestCase
         $output = $enable_command->getDisplay();
         $this->assertContains('Plugin enabled', $output);
         $this->assertEquals(0, $enable_command->getStatusCode());
+    }
+
+
+    /**
+     * @return void
+     * @test
+     */
+    public function requiresPluginNameToDisable()
+    {
+        $disable_command = new CommandTester($this->app->find('disable'));
+        $this->expectExceptionMessage('missing: "pluginName"');
+        $disable_command->execute([]);
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function disableComplainsWhenPassedUnresolvablePlugin()
+    {
+
+        $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new \InvalidArgumentException);
+
+        $disable_command = new CommandTester($this->app->find('disable'));
+        $disable_command->execute(['pluginName' => 'vendor/package']);
+
+        $output = $disable_command->getDisplay();
+
+        $this->assertContains('ERROR', $output);
+        $this->assertContains('Unknown plugin', $output);
+        $this->assertNotEquals(0, $disable_command->getStatusCode());
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function disableComplainsWhenPassedNotEnabledPlugin()
+    {
+        $this->plugin_list->resolvePluginClass('vendor/package')->will(
+            function (array $args, ObjectProphecy $plugin_list): string {
+                /** @psalm-suppress TooManyArguments */
+                $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(false);
+                return 'Vendor\Package\PluginClass';
+            }
+        );
+
+        $disable_command = new CommandTester($this->app->find('disable'));
+        $disable_command->execute(['pluginName' => 'vendor/package']);
+
+        $output = $disable_command->getDisplay();
+        $this->assertContains('Plugin already disabled', $output);
+        $this->assertNotEquals(0, $disable_command->getStatusCode());
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function disableReportsSuccessWhenItDisablesPlugin()
+    {
+        $this->plugin_list->resolvePluginClass('vendor/package')->will(
+            function (array $args, ObjectProphecy $plugin_list): string {
+                $plugin_class = 'Vendor\Package\PluginClass';
+                /** @psalm-suppress TooManyArguments */
+                $plugin_list->isEnabled($plugin_class)->willReturn(true);
+                /** @psalm-suppress TooManyArguments */
+                $plugin_list->disable($plugin_class)->shouldBeCalled();
+                return $plugin_class;
+            }
+        );
+
+        $disable_command = new CommandTester($this->app->find('disable'));
+        $disable_command->execute(['pluginName' => 'vendor/package']);
+
+        $output = $disable_command->getDisplay();
+        $this->assertContains('Plugin disabled', $output);
+        $this->assertEquals(0, $disable_command->getStatusCode());
     }
 
     /** @return string[][] */
