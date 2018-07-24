@@ -248,7 +248,7 @@ function foo(string $s) : string {
 }
 ```
 
-You can also wrap the options in parenthesese - `('a' | 'b')` - if you like to space things out.
+You can also wrap the options in parentheses - `('a' | 'b')` - if you like to space things out.
 
 If the values are in class constants, you can use those too:
 
