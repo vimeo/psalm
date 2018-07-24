@@ -195,7 +195,7 @@ class PsalmPluginTest extends TestCase
     public function enableComplainsWhenPassedAlreadyEnabledPlugin()
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $args, ObjectProphecy $plugin_list): string {
+            function (array $_args, ObjectProphecy $plugin_list): string {
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(true);
                 return 'Vendor\Package\PluginClass';
@@ -217,7 +217,7 @@ class PsalmPluginTest extends TestCase
     public function enableReportsSuccessWhenItEnablesPlugin()
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $args, ObjectProphecy $plugin_list): string {
+            function (array $_args, ObjectProphecy $plugin_list): string {
                 $plugin_class = 'Vendor\Package\PluginClass';
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled($plugin_class)->willReturn(false);
@@ -273,7 +273,7 @@ class PsalmPluginTest extends TestCase
     public function disableComplainsWhenPassedNotEnabledPlugin()
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $args, ObjectProphecy $plugin_list): string {
+            function (array $_args, ObjectProphecy $plugin_list): string {
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(false);
                 return 'Vendor\Package\PluginClass';
@@ -295,7 +295,7 @@ class PsalmPluginTest extends TestCase
     public function disableReportsSuccessWhenItDisablesPlugin()
     {
         $this->plugin_list->resolvePluginClass('vendor/package')->will(
-            function (array $args, ObjectProphecy $plugin_list): string {
+            function (array $_args, ObjectProphecy $plugin_list): string {
                 $plugin_class = 'Vendor\Package\PluginClass';
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled($plugin_class)->willReturn(true);
