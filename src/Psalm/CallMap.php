@@ -3733,7 +3733,7 @@ return [
 'header' => ['void', 'header'=>'string', 'replace='=>'bool', 'http_response_code='=>'int'],
 'header_register_callback' => ['bool', 'callback'=>'callable():void'],
 'header_remove' => ['void', 'name='=>'string'],
-'headers_list' => ['array'],
+'headers_list' => ['array<int,string>'],
 'headers_sent' => ['bool', '&w_file='=>'string', '&w_line='=>'int'],
 'hebrev' => ['string', 'str'=>'string', 'max_chars_per_line='=>'int'],
 'hebrevc' => ['string', 'str'=>'string', 'max_chars_per_line='=>'int'],
