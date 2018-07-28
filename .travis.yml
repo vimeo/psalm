@@ -1,5 +1,4 @@
 language: php
-cache: false
 
 stages:
   - Code style analysis
