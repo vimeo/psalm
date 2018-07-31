@@ -113,7 +113,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         if ($context->collect_mutations) {
                             $file_checker->getMethodMutations($method_id, $context);
                         } else {
-                            // collecting initalisations
+                            // collecting initializations
                             $local_vars_in_scope = [];
                             $local_vars_possibly_in_scope = [];
 

@@ -45,7 +45,7 @@ class PropertyAssignmentChecker
      * @param   PhpParser\Node\Expr|null        $assignment_value
      * @param   Type\Union                      $assignment_value_type
      * @param   Context                         $context
-     * @param   bool                            $direct_assignment whether the variable is assigned explictly
+     * @param   bool                            $direct_assignment whether the variable is assigned explicitly
      *
      * @return  false|null
      */
