@@ -41,7 +41,7 @@ script:
   - vendor/bin/phpunit
   - ./psalm --find-dead-code
   - vendor/bin/phpcs
-  - bin/build-phar.sh
+  - bin/build-phar.sh || true
 
 after_success:
   - travis_retry php vendor/bin/php-coveralls -v
