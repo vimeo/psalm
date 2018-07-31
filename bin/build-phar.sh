@@ -3,4 +3,4 @@ composer bin box install
 
 vendor/bin/box compile
 
-build/psalm.phar --config=bin/phar.psalm.xml
+#build/psalm.phar --config=bin/phar.psalm.xml
