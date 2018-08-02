@@ -93,12 +93,10 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
         $source = $statements_checker->getSource();
 
-        $args = $stmt->args;
-
         if (!$context->check_methods || !$context->check_classes) {
             if (self::checkFunctionArguments(
                 $statements_checker,
-                $args,
+                $stmt->args,
                 null,
                 null,
                 $context
@@ -219,7 +217,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                             if (self::checkFunctionArguments(
                                 $statements_checker,
-                                $args,
+                                $stmt->args,
                                 null,
                                 null,
                                 $context
@@ -300,6 +298,8 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $intersection_method_id = $intersection_types
                     ? '(' . $lhs_type_part . ')'  . '::' . $stmt->name->name
                     : null;
+
+                $args = $stmt->args;
 
                 if ($codebase->methodExists($fq_class_name . '::__call')) {
                     if (!$codebase->methodExists($method_id)
@@ -806,7 +806,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
         if ($method_id === null) {
             return self::checkMethodArgs(
                 $method_id,
-                $args,
+                $stmt->args,
                 $found_generic_params,
                 $context,
                 new CodeLocation($statements_checker->getSource(), $stmt),
