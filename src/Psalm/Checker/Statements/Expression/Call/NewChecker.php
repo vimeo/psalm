@@ -157,6 +157,10 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         || $lhs_type_part instanceof Type\Atomic\TGenericParam
                     ) {
                         // do nothing
+                    } elseif ($lhs_type_part instanceof Type\Atomic\TFalse
+                        && $stmt->class->inferredType->ignore_falsable_issues
+                    ) {
+                        // do nothing
                     } elseif ($lhs_type_part instanceof Type\Atomic\TNull
                         && $stmt->class->inferredType->ignore_nullable_issues
                     ) {
