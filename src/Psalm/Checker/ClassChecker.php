@@ -357,13 +357,16 @@ class ClassChecker extends ClassLikeChecker
 
             $property_type_location = $property_storage->type_location;
 
-            if ($property_type_location && !$property_type->isMixed()) {
-                $fleshed_out_type = ExpressionChecker::fleshOutType(
+            $fleshed_out_type = !$property_type->isMixed()
+                ? ExpressionChecker::fleshOutType(
                     $project_checker,
                     $property_type,
                     $this->fq_class_name,
                     $this->fq_class_name
-                );
+                )
+                : $property_type;
+
+            if ($property_type_location && !$fleshed_out_type->isMixed()) {
                 $fleshed_out_type->check(
                     $this,
                     $property_type_location,
@@ -376,9 +379,9 @@ class ClassChecker extends ClassLikeChecker
             if ($property_storage->is_static) {
                 $property_id = $this->fq_class_name . '::$' . $property_name;
 
-                $class_context->vars_in_scope[$property_id] = $property_type;
+                $class_context->vars_in_scope[$property_id] = $fleshed_out_type;
             } else {
-                $class_context->vars_in_scope['$this->' . $property_name] = $property_type;
+                $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
         }
 

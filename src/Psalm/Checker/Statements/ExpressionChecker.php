@@ -854,6 +854,7 @@ class ExpressionChecker
         $fleshed_out_type->ignore_falsable_issues = $return_type->ignore_falsable_issues;
         $fleshed_out_type->possibly_undefined = $return_type->possibly_undefined;
         $fleshed_out_type->by_ref = $return_type->by_ref;
+        $fleshed_out_type->initialized = $return_type->initialized;
 
         return $fleshed_out_type;
     }

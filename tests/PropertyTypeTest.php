@@ -1027,6 +1027,79 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticPropertyMethodCall' => [
+                '<?php
+                    class A {
+                        /** @var self|null */
+                        public static $instance;
+
+                        /** @var string|null */
+                        public $bat;
+
+                        public function foo() : void {
+                            if (self::$instance) {
+                                self::$instance->bar();
+                                echo self::$instance->bat;
+                            }
+                        }
+
+                        public function bar() : void {}
+                    }
+
+                    $a = new A();
+
+                    if ($a->instance) {
+                        $a->instance->bar();
+                        echo $a->instance->bat;
+                    }',
+            ],
+            'nonStaticPropertyMethodCall' => [
+                '<?php
+                    class A {
+                        /** @var self|null */
+                        public $instance;
+
+                        /** @var string|null */
+                        public $bat;
+
+                        public function foo() : void {
+                            if ($this->instance) {
+                                $this->instance->bar();
+                                echo $this->instance->bat;
+                            }
+                        }
+
+                        public function bar() : void {}
+                    }
+
+                    $a = new A();
+
+                    if ($a->instance) {
+                        $a->instance->bar();
+                        echo $a->instance->bat;
+                    }'
+            ],
+            'staticPropertyOfStaticTypeMethodCall' => [
+                '<?php
+                    class A {
+                        /** @var static|null */
+                        public $instance;
+                    }
+
+                    class B extends A {
+                        /** @var string|null */
+                        public $bat;
+
+                        public function foo() : void {
+                            if ($this->instance) {
+                                $this->instance->bar();
+                                echo $this->instance->bat;
+                            }
+                        }
+
+                        public function bar() : void {}
+                    }'
+            ],
         ];
     }
 
@@ -1685,6 +1758,24 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'staticPropertyOfStaticTypeMethodCallWithUndefinedMethod' => [
+                '<?php
+                    class A {
+                        /** @var static|null */
+                        public $instance;
+
+                        public function foo() : void {
+                            if ($this->instance) {
+                                $this->instance->bar();
+                            }
+                        }
+                    }
+
+                    class B extends A {
+                        public function bar() : void {}
+                    }',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }
