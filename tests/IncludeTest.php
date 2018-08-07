@@ -106,6 +106,28 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
+            'requireSingleStringType' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        $a = "file1.php";
+                        require($a);
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class A{
+                            public function fooFoo(): void {
+
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+            ],
             'nestedRequire' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php

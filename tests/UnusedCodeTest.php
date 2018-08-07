@@ -284,6 +284,31 @@ class UnusedCodeTest extends TestCase
                     }
                     takesA(new B);'
             ],
+            'usedMethodInTryCatch' => [
+                '<?php
+                    class A {
+                        protected function getC() : C {
+                            return new C;
+                        }
+                    }
+                    class C {
+                        public function foo() : void {}
+                    }
+
+                    class B extends A {
+                        public function bar() : void {
+                            $c = $this->getC();
+
+                            foreach ([1, 2, 3] as $i) {
+                                try {
+                                    $c->foo();
+                                } catch (Exception $e) {}
+                            }
+                        }
+                    }
+
+                    (new B)->bar();',
+            ],
             'suppressPrivateUnusedMethod' => [
                 '<?php
                     class A {
