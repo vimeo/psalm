@@ -404,12 +404,14 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $const_type = StatementsChecker::getSimpleType($this->codebase, $const->value, $this->aliases)
                     ?: Type::getMixed();
 
+                $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
+
                 if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
-                    $this->codebase->addGlobalConstantType($const->name->name, $const_type);
+                    $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
                 }
 
-                $this->file_storage->constants[$const->name->name] = $const_type;
-                $this->file_storage->declaring_constants[$const->name->name] = $this->file_path;
+                $this->file_storage->constants[$fq_const_name] = $const_type;
+                $this->file_storage->declaring_constants[$fq_const_name] = $this->file_path;
             }
         } elseif ($this->codebase->register_autoload_files && $node instanceof PhpParser\Node\Stmt\If_) {
             if ($node->cond instanceof PhpParser\Node\Expr\BooleanNot) {

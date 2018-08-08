@@ -2,6 +2,8 @@
 
 namespace Foo;
 
+const BAR = "bat";
+
 class SystemClass  {
     const HELLO = 'hello';
 

@@ -146,7 +146,9 @@ class StubTest extends TestCase
                 echo Foo\SystemClass::HELLO;
 
                 $b = $a->foo(5, "hello");
-                $c = Foo\SystemClass::bar(5, "hello");'
+                $c = Foo\SystemClass::bar(5, "hello");
+
+                echo Foo\BAR;'
         );
 
         $this->analyzeFile($file_path, new Context());
