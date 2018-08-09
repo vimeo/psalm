@@ -303,11 +303,11 @@ if (isset($options['i'])) {
 
     $template = (string)file_get_contents($template_file_name);
 
-    $template = str_replace('<projectFiles>
-        <directory name="src" />
-    </projectFiles>', '<projectFiles>
-        <directory name="' . $source_dir . '" />
-    </projectFiles>', $template);
+    $template = str_replace(
+        '<directory name="src" />',
+        '<directory name="' . $source_dir . '" />',
+        $template
+    );
 
     if (!\Phar::running(false)) {
         $template = str_replace(
