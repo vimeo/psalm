@@ -70,6 +70,20 @@ class EnumTest extends TestCase
                     foo("bat");
                     foo("baz");',
             ],
+            'selfClassConstGoodValue' => [
+                '<?php
+                    class A {
+                        const FOO = "foo";
+                        const BAR = "bar";
+
+                        /**
+                         * @param (self::FOO | self::BAR) $s
+                         */
+                        public static function foo(string $s) : void {}
+                    }
+
+                    A::foo("foo");',
+            ],
         ];
     }
 
@@ -119,13 +133,28 @@ class EnumTest extends TestCase
                     foo("for");',
                 'error_message' => 'InvalidArgument',
             ],
-            'classConstantCorrect' => [
+            'classConstantNoClass' => [
                 '<?php
                     namespace Ns;
 
                     /** @psalm-param "foo"|"bar"|C::A|C::B $s */
                     function foo($s) : void {}',
                 'error_message' => 'UndefinedClass',
+            ],
+            'selfClassConstBadValue' => [
+                '<?php
+                    class A {
+                        const FOO = "foo";
+                        const BAR = "bar";
+
+                        /**
+                         * @param (self::FOO | self::BAR) $s
+                         */
+                        public static function foo(string $s) : void {}
+                    }
+
+                    A::foo("for");',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

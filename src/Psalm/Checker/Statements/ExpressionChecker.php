@@ -895,6 +895,10 @@ class ExpressionChecker
         }
 
         if ($return_type instanceof Type\Atomic\TScalarClassConstant) {
+            if ($return_type->fq_classlike_name === 'self' && $self_class) {
+                $return_type->fq_classlike_name = $self_class;
+            }
+
             if ($project_checker->codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
                 $class_constants = $project_checker->codebase->classlikes->getConstantsForClass(
                     $return_type->fq_classlike_name,
