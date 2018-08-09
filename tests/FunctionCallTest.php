@@ -694,12 +694,17 @@ class FunctionCallTest extends TestCase
                     '$h' => 'array<mixed, mixed>',
                 ],
             ],
-            'strstrWithPossiblyFalseFirstArg' => [
+            'strtrWithPossiblyFalseFirstArg' => [
                 '<?php
-                    strtr(
-                        file_get_contents("foobar.txt"),
-                        ["foo" => "bar"]
-                    );'
+                    /**
+                     * @param string|false $str
+                     * @param array<string, string> $replace_pairs
+                     * @return string
+                     */
+                    function strtr_wrapper($str, array $replace_pairs) {
+                        /** @psalm-suppress PossiblyFalseArgument */
+                        return strtr($str, $replace_pairs);
+                    }',
             ],
             'splatArrayIntersect' => [
                 '<?php
