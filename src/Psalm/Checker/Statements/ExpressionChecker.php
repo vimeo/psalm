@@ -791,7 +791,7 @@ class ExpressionChecker
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 return $object_id . '->' . $stmt->name;
             } elseif (isset($stmt->name->inferredType) && $stmt->name->inferredType->isSingleStringLiteral()) {
-                return $object_id . '->' . $stmt->name->inferredType->getSingleStringLiteral();
+                return $object_id . '->' . $stmt->name->inferredType->getSingleStringLiteral()->value;
             } else {
                 return null;
             }

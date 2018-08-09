@@ -253,9 +253,9 @@ class FunctionChecker extends FunctionLikeChecker
                     if (isset($call_args[1]->value->inferredType)) {
                         $value_column_name_arg= $call_args[1]->value->inferredType;
                         if ($value_column_name_arg->isSingleIntLiteral()) {
-                            $value_column_name = $value_column_name_arg->getSingleIntLiteral();
+                            $value_column_name = $value_column_name_arg->getSingleIntLiteral()->value;
                         } elseif ($value_column_name_arg->isSingleStringLiteral()) {
-                            $value_column_name = $value_column_name_arg->getSingleStringLiteral();
+                            $value_column_name = $value_column_name_arg->getSingleStringLiteral()->value;
                         }
                     }
 
@@ -264,9 +264,9 @@ class FunctionChecker extends FunctionLikeChecker
                     if (isset($call_args[2]->value->inferredType)) {
                         $key_column_name_arg = $call_args[2]->value->inferredType;
                         if ($key_column_name_arg->isSingleIntLiteral()) {
-                            $key_column_name = $key_column_name_arg->getSingleIntLiteral();
+                            $key_column_name = $key_column_name_arg->getSingleIntLiteral()->value;
                         } elseif ($key_column_name_arg->isSingleStringLiteral()) {
-                            $key_column_name = $key_column_name_arg->getSingleStringLiteral();
+                            $key_column_name = $key_column_name_arg->getSingleStringLiteral()->value;
                         }
                     }
 

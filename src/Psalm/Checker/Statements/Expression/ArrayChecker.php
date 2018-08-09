@@ -38,6 +38,7 @@ class ArrayChecker
         $item_value_type = null;
 
         $property_types = [];
+        $class_strings = [];
 
         $can_create_objectlike = true;
 
@@ -74,9 +75,14 @@ class ArrayChecker
                     }
 
                     if ($item->key->inferredType->isSingleStringLiteral()) {
-                        $item_key_value = $item->key->inferredType->getSingleStringLiteral();
+                        $item_key_literal_type = $item->key->inferredType->getSingleStringLiteral();
+                        $item_key_value = $item_key_literal_type->value;
+
+                        if ($item_key_literal_type instanceof Type\Atomic\TLiteralClassString) {
+                            $class_strings[$item_key_value] = true;
+                        }
                     } elseif ($item->key->inferredType->isSingleIntLiteral()) {
-                        $item_key_value = $item->key->inferredType->getSingleIntLiteral();
+                        $item_key_value = $item->key->inferredType->getSingleIntLiteral()->value;
 
                         if ($item_key_value > $int_offset + $int_offset_diff) {
                             $int_offset_diff = $item_key_value - ($int_offset + $int_offset_diff);
@@ -141,7 +147,7 @@ class ArrayChecker
             && ($item_key_type->hasString() || $item_key_type->hasInt())
             && $can_create_objectlike
         ) {
-            $object_like = new Type\Atomic\ObjectLike($property_types);
+            $object_like = new Type\Atomic\ObjectLike($property_types, $class_strings);
             $object_like->sealed = true;
 
             $stmt->inferredType = new Type\Union([$object_like]);

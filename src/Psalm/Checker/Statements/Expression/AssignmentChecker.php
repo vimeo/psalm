@@ -419,7 +419,7 @@ class AssignmentChecker
             } elseif (isset($assign_var->name->inferredType)
                 && $assign_var->name->inferredType->isSingleStringLiteral()
             ) {
-                $prop_name = $assign_var->name->inferredType->getSingleStringLiteral();
+                $prop_name = $assign_var->name->inferredType->getSingleStringLiteral()->value;
             } else {
                 $prop_name = null;
             }

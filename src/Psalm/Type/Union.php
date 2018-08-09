@@ -962,7 +962,7 @@ class Union
     }
 
     /**
-     * @return string the only string literal represented by this union type
+     * @return TLiteralString the only string literal represented by this union type
      * @throws \InvalidArgumentException if isSingleStringLiteral is false
      */
     public function getSingleStringLiteral()
@@ -971,7 +971,7 @@ class Union
             throw new \InvalidArgumentException("Not a string literal");
         }
 
-        return reset($this->literal_string_types)->value;
+        return reset($this->literal_string_types);
     }
 
     /**
@@ -983,7 +983,7 @@ class Union
     }
 
     /**
-     * @return int the only int literal represented by this union type
+     * @return TLiteralInt the only int literal represented by this union type
      * @throws \InvalidArgumentException if isSingleIntLiteral is false
      */
     public function getSingleIntLiteral()
@@ -992,7 +992,7 @@ class Union
             throw new \InvalidArgumentException("Not an int literal");
         }
 
-        return reset($this->literal_int_types)->value;
+        return reset($this->literal_int_types);
     }
 
     /**

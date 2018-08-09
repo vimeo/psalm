@@ -140,7 +140,7 @@ class ArrayAssignmentChecker
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_) {
                         $value = $child_stmt->dim->value;
                     } else {
-                        $value = $child_stmt->dim->inferredType->getSingleStringLiteral();
+                        $value = $child_stmt->dim->inferredType->getSingleStringLiteral()->value;
                     }
 
                     if (preg_match('/^(0|[1-9][0-9]*)$/', $value)) {
@@ -154,7 +154,7 @@ class ArrayAssignmentChecker
                     if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
                         $value = $child_stmt->dim->value;
                     } else {
-                        $value = $child_stmt->dim->inferredType->getSingleIntLiteral();
+                        $value = $child_stmt->dim->inferredType->getSingleIntLiteral()->value;
                     }
 
                     $var_id_additions[] = '[' . $value . ']';
@@ -233,9 +233,9 @@ class ArrayAssignmentChecker
                 ) {
                     $key_value = $current_dim->value;
                 } elseif ($is_single_string_literal) {
-                    $key_value = $current_dim->inferredType->getSingleStringLiteral();
+                    $key_value = $current_dim->inferredType->getSingleStringLiteral()->value;
                 } else {
-                    $key_value = $current_dim->inferredType->getSingleIntLiteral();
+                    $key_value = $current_dim->inferredType->getSingleIntLiteral()->value;
                 }
 
                 $has_matching_objectlike_property = false;
@@ -311,9 +311,9 @@ class ArrayAssignmentChecker
             ) {
                 $key_value = $current_dim->value;
             } elseif ($is_single_string_literal) {
-                $key_value = $current_dim->inferredType->getSingleStringLiteral();
+                $key_value = $current_dim->inferredType->getSingleStringLiteral()->value;
             } else {
-                $key_value = $current_dim->inferredType->getSingleIntLiteral();
+                $key_value = $current_dim->inferredType->getSingleIntLiteral()->value;
             }
 
             $has_matching_objectlike_property = false;

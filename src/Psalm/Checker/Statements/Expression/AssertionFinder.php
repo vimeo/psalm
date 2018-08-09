@@ -1326,7 +1326,7 @@ class AssertionFinder
                         && $first_arg->inferredType->isSingleStringLiteral()
                         && $source instanceof StatementsChecker
                         && $source->getSource()->getSource() instanceof \Psalm\Checker\TraitChecker
-                        && $first_arg->inferredType->getSingleStringLiteral() === $this_class_name
+                        && $first_arg->inferredType->getSingleStringLiteral()->value === $this_class_name
                     ) {
                         // do nothing
                     } else {

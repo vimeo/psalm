@@ -1100,6 +1100,15 @@ class PropertyTypeTest extends TestCase
                         public function bar() : void {}
                     }'
             ],
+            'classStringPropertyType' => [
+                '<?php
+                    class C {
+                        /** @psalm-var array<class-string, int> */
+                        public $member = [
+                            InvalidArgumentException::class => 1,
+                        ];
+                    }'
+            ],
         ];
     }
 

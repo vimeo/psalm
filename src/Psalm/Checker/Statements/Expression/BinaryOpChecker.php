@@ -1430,7 +1430,7 @@ class BinaryOpChecker
         // When concatenating two known string literals (with only one possibility),
         // put the concatenated string into $result_type
         if ($left_type && $right_type && $left_type->isSingleStringLiteral() && $right_type->isSingleStringLiteral()) {
-            $literal = $left_type->getSingleStringLiteral() . $right_type->getSingleStringLiteral();
+            $literal = $left_type->getSingleStringLiteral()->value . $right_type->getSingleStringLiteral()->value;
             if (strlen($literal) <= 10000) {
                 // Limit these to 10000 bytes to avoid extremely large union types from repeated concatenations, etc
                 $result_type = new Union([new TLiteralString($literal)]);

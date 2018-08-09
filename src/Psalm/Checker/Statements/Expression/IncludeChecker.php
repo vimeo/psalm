@@ -41,7 +41,7 @@ class IncludeChecker
             if ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
                 $path_to_file = $stmt->expr->value;
             } else {
-                $path_to_file = $stmt->expr->inferredType->getSingleStringLiteral();
+                $path_to_file = $stmt->expr->inferredType->getSingleStringLiteral()->value;
             }
 
             $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $path_to_file);
@@ -194,7 +194,7 @@ class IncludeChecker
         }
 
         if (isset($stmt->inferredType) && $stmt->inferredType->isSingleStringLiteral()) {
-            return $stmt->inferredType->getSingleStringLiteral();
+            return $stmt->inferredType->getSingleStringLiteral()->value;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {

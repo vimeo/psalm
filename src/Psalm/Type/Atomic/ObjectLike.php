@@ -17,6 +17,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public $properties;
 
     /**
+     * @var array<string, bool>|null
+     */
+    public $class_strings = null;
+
+    /**
      * @var bool - whether or not the objectlike has been created from an explicit array
      */
     public $sealed = false;
@@ -25,10 +30,12 @@ class ObjectLike extends \Psalm\Type\Atomic
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
+     * @param array<string, bool> $class_strings
      */
-    public function __construct(array $properties)
+    public function __construct(array $properties, array $class_strings = null)
     {
         $this->properties = $properties;
+        $this->class_strings = $class_strings;
     }
 
     public function __toString()
@@ -156,6 +163,8 @@ class ObjectLike extends \Psalm\Type\Atomic
         foreach ($this->properties as $key => $_) {
             if (is_int($key)) {
                 $key_types[] = new Type\Atomic\TLiteralInt($key);
+            } elseif (isset($this->class_strings[$key])) {
+                $key_types[] = new Type\Atomic\TLiteralClassString($key);
             } else {
                 $key_types[] = new Type\Atomic\TLiteralString($key);
             }
@@ -199,6 +208,8 @@ class ObjectLike extends \Psalm\Type\Atomic
         foreach ($this->properties as $key => $property) {
             if (is_int($key)) {
                 $key_types[] = new Type\Atomic\TLiteralInt($key);
+            } elseif (isset($this->class_strings[$key])) {
+                $key_types[] = new Type\Atomic\TLiteralClassString($key);
             } else {
                 $key_types[] = new Type\Atomic\TLiteralString($key);
             }
