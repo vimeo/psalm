@@ -60,10 +60,10 @@ class EnumTest extends TestCase
                     namespace Ns;
 
                     class C {
-                        const A = "bat";
+                        const A1 = "bat";
                         const B = "baz";
                     }
-                    /** @psalm-param "foo"|"bar"|C::A|C::B $s */
+                    /** @psalm-param "foo"|"bar"|C::A1|C::B $s */
                     function foo($s) : void {}
                     foo("foo");
                     foo("bar");

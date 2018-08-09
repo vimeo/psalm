@@ -465,7 +465,7 @@ class ParseTree
                         case '::':
                             $nexter_token = $i + 2 < $c ? $type_tokens[$i + 2] : null;
 
-                            if (!$nexter_token || !preg_match('/^[A-Z_]+$/', $nexter_token)) {
+                            if (!$nexter_token || !preg_match('/^[A-Z_0-9]+$/', $nexter_token)) {
                                 throw new TypeParseTreeException(
                                     'Invalid class constant ' . $nexter_token
                                 );
