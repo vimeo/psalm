@@ -900,6 +900,10 @@ class ExpressionChecker
             }
 
             if ($project_checker->codebase->classOrInterfaceExists($return_type->fq_classlike_name)) {
+                if (strtolower($return_type->const_name) === 'class') {
+                    return new Type\Atomic\TLiteralClassString($return_type->fq_classlike_name);
+                }
+
                 $class_constants = $project_checker->codebase->classlikes->getConstantsForClass(
                     $return_type->fq_classlike_name,
                     \ReflectionProperty::IS_PRIVATE

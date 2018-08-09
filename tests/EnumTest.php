@@ -84,6 +84,24 @@ class EnumTest extends TestCase
 
                     A::foo("foo");',
             ],
+            'classConstants' => [
+                '<?php
+                    namespace NS {
+                        use OtherNS\C as E;
+                        class C {}
+                        class D {};
+                        /** @psalm-param C::class|D::class|E::class $s */
+                        function foo(string $s) : void {}
+                        foo(C::class);
+                        foo(D::class);
+                        foo(E::class);
+                        foo(\OtherNS\C::class);
+                    }
+
+                    namespace OtherNS {
+                        class C {}
+                    }',
+            ],
         ];
     }
 
@@ -168,6 +186,23 @@ class EnumTest extends TestCase
                         public static function foo(string $s) : void {}
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'classConstantInvalidValue' => [
+                '<?php
+                    namespace NS {
+                        use OtherNS\C as E;
+                        class C {}
+                        class D {};
+                        class F {};
+                        /** @psalm-param C::class|D::class|E::class $s */
+                        function foo(string $s) : void {}
+                        foo(F::class);
+                    }
+
+                    namespace OtherNS {
+                        class C {}
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
