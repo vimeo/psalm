@@ -236,7 +236,7 @@ echo $a;';
                     function fooFoo() {
                         return "hello";
                     }',
-                'message' => "The type 'string' does not match the declared return type 'int' for fooFoo",
+                'message' => "The type 'string(hello)' does not match the declared return type 'int' for fooFoo",
                 'line' => 6,
                 'error' => 'return "hello";',
             ],

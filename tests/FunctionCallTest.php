@@ -903,6 +903,18 @@ class FunctionCallTest extends TestCase
                     if ($b === false) {}
                     $c = new $b();',
             ],
+            'arraySplice' => [
+                '<?php
+                    $a = [1, 2, 3];
+                    $c = $a;
+                    $b = ["a", "b", "c"];
+                    array_splice($a, -1, 1, $b);',
+                'assertions' => [
+                    '$a' => 'array<int, string|int>',
+                    '$b' => 'array{0:string, 1:string, 2:string}',
+                    '$c' => 'array{0:int, 1:int, 2:int}',
+                ],
+            ],
         ];
     }
 
