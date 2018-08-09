@@ -245,8 +245,9 @@ class ReturnChecker
                         } else {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
-                                    'The type \'' . $stmt->inferredType . '\' does not match the declared return '
-                                        . 'type \'' . $local_return_type . '\' for ' . $cased_method_id,
+                                    'The type \'' . $stmt->inferredType->getId()
+                                        . '\' does not match the declared return '
+                                        . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id,
                                     new CodeLocation($source, $stmt)
                                 ),
                                 $statements_checker->getSuppressedIssues()

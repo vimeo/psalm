@@ -643,11 +643,12 @@ abstract class Type
             if (isset($type_aliases[$string_type_token])) {
                 $replacement_tokens = $type_aliases[$string_type_token];
 
+                array_unshift($replacement_tokens, '(');
+                array_push($replacement_tokens, ')');
+
                 $diff = count($replacement_tokens) - 1;
 
-                for ($j = 0; $j < $diff + 1; $j++) {
-                    $type_tokens[$i + $j] = $replacement_tokens[$j];
-                }
+                array_splice($type_tokens, $i, 1, $replacement_tokens);
 
                 $i += $diff;
                 $l += $diff;

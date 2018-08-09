@@ -346,6 +346,84 @@ class CallChecker
             return;
         }
 
+        if ($method_id && $method_id === 'array_splice' && $function_params && count($args) > 1) {
+            $array_arg = $args[0]->value;
+
+            if (ExpressionChecker::analyze(
+                $statements_checker,
+                $array_arg,
+                $context
+            ) === false) {
+                return false;
+            }
+
+            $offset_arg = $args[1]->value;
+
+            if (ExpressionChecker::analyze(
+                $statements_checker,
+                $offset_arg,
+                $context
+            ) === false) {
+                return false;
+            }
+
+            if (!isset($args[2]) || !isset($args[3])) {
+                return;
+            }
+
+            $length_arg = $args[2]->value;
+
+            if (ExpressionChecker::analyze(
+                $statements_checker,
+                $length_arg,
+                $context
+            ) === false) {
+                return false;
+            }
+
+            $replacement_arg = $args[3]->value;
+
+            if (ExpressionChecker::analyze(
+                $statements_checker,
+                $replacement_arg,
+                $context
+            ) === false) {
+                return false;
+            }
+
+            if (isset($array_arg->inferredType)
+                && $array_arg->inferredType->hasArray()
+                && isset($replacement_arg->inferredType)
+                && $replacement_arg->inferredType->hasArray()
+            ) {
+                /** @var TArray|ObjectLike */
+                $array_type = $array_arg->inferredType->getTypes()['array'];
+
+                if ($array_type instanceof ObjectLike) {
+                    $array_type = $array_type->getGenericArrayType();
+                }
+
+                /** @var TArray|ObjectLike */
+                $replacement_array_type = $replacement_arg->inferredType->getTypes()['array'];
+
+                if ($replacement_array_type instanceof ObjectLike) {
+                    $replacement_array_type = $replacement_array_type->getGenericArrayType();
+                }
+
+                $by_ref_type = Type\TypeCombination::combineTypes([$array_type, $replacement_array_type]);
+
+                ExpressionChecker::assignByRefParam(
+                    $statements_checker,
+                    $array_arg,
+                    $by_ref_type,
+                    $context,
+                    false
+                );
+            }
+
+            return;
+        }
+
         foreach ($args as $argument_offset => $arg) {
             if ($function_params !== null) {
                 $by_ref = $argument_offset < count($function_params)
@@ -712,7 +790,7 @@ class CallChecker
                         'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
                         'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
                         'end', 'next', 'prev', 'array_pop', 'array_shift',
-                        'array_push', 'array_unshift', 'socket_select',
+                        'array_push', 'array_unshift', 'socket_select', 'array_splice',
                     ],
                     true
                 )) {
