@@ -156,7 +156,7 @@ class EnumTest extends TestCase
                     A::foo("for");',
                 'error_message' => 'InvalidArgument',
             ],
-            'selfClassConstBadValue' => [
+            'selfClassConstBadConst' => [
                 '<?php
                     class A {
                         const FOO = "foo";
