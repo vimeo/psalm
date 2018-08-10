@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
+use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
@@ -685,6 +686,20 @@ class ClassChecker extends ClassLikeChecker
                     }
 
                     continue;
+                }
+
+                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
+
+                if ($trait_storage->deprecated) {
+                    if (IssueBuffer::accepts(
+                        new DeprecatedTrait(
+                            'Trait ' . $fq_trait_name . ' is deprecated',
+                            new CodeLocation($this, $trait_name)
+                        ),
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                    )) {
+                        return false;
+                    }
                 }
 
                 $trait_file_checker = $project_checker->getFileCheckerForClassLike($fq_trait_name);

@@ -80,6 +80,19 @@ class A {}
 new A();
 ```
 
+### DeprecatedConstant
+
+Emitted when referring to a deprecated constant:
+
+```php
+class A {
+    /** @deprecated */
+    const FOO = 'foo';
+}
+
+echo A::FOO;
+```
+
 ### DeprecatedInterface
 
 Emitted when referring to a deprecated interface
@@ -116,6 +129,18 @@ class A {
     public $foo;
 }
 (new A())->foo = 5;
+```
+
+### DeprecatedTrait
+
+Emitted when referring to a deprecated trait:
+
+```php
+/** @deprecated */
+trait T {}
+class A {
+    use T;
+}
 ```
 
 ### DocblockTypeContradiction

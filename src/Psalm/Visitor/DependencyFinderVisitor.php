@@ -1766,6 +1766,18 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             + $storage->private_class_constants
             + $storage->public_class_constants;
 
+        $comment = $stmt->getDocComment();
+        $deprecated = false;
+        $config = $this->config;
+
+        if ($comment && $comment->getText() && ($config->use_docblock_types || $config->use_docblock_property_types)) {
+            $comments = CommentChecker::parseDocComment($comment->getText(), 0);
+
+            if (isset($comments['specials']['deprecated'])) {
+                $deprecated = true;
+            }
+        }
+
         foreach ($stmt->consts as $const) {
             $const_type = StatementsChecker::getSimpleType(
                 $this->codebase,
@@ -1796,6 +1808,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 }
 
                 $storage->aliases = $this->aliases;
+            }
+
+            if ($deprecated) {
+                $storage->deprecated_constants[$const->name->name] = true;
             }
         }
     }

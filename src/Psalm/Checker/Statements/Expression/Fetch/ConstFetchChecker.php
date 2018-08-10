@@ -9,6 +9,7 @@ use Psalm\Checker\TraitChecker;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedConstant;
@@ -202,6 +203,20 @@ class ConstFetchChecker
                 }
 
                 return false;
+            }
+
+            $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            if (isset($class_const_storage->deprecated_constants[$stmt->name->name])) {
+                if (IssueBuffer::accepts(
+                    new DeprecatedConstant(
+                        'Constant ' . $const_id . ' is deprecated',
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
 
             if (isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
