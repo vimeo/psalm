@@ -365,7 +365,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                                     $statements_checker,
                                     new CodeLocation($statements_checker->getSource(), $stmt),
                                     $statements_checker->getSuppressedIssues(),
-                                    $context->getPhantomClasses()
+                                    $context->phantom_classes
                                 );
                             }
                         }
@@ -481,9 +481,15 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 $context->check_methods = false;
             } elseif ($function->parts === ['class_exists']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    $context->addPhantomClass($first_arg->value->value);
+                    $context->phantom_classes[strtolower($first_arg->value->value)] = true;
                 } else {
                     $context->check_classes = false;
+                }
+            } elseif ($function->parts === ['file_exists'] && $first_arg) {
+                $var_id = ExpressionChecker::getArrayVarId($first_arg->value, null);
+
+                if ($var_id) {
+                    $context->phantom_files[$var_id] = true;
                 }
             } elseif ($function->parts === ['extension_loaded']) {
                 $context->check_classes = false;

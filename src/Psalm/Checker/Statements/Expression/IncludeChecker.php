@@ -150,16 +150,20 @@ class IncludeChecker
                 // fall through
             }
         } else {
-            $source = $statements_checker->getSource();
+            $var_id = ExpressionChecker::getArrayVarId($stmt->expr, null);
 
-            if (IssueBuffer::accepts(
-                new UnresolvableInclude(
-                    'Cannot resolve the given expression to a file path',
-                    new CodeLocation($source, $stmt)
-                ),
-                $source->getSuppressedIssues()
-            )) {
-                // fall through
+            if (!$var_id || !isset($context->phantom_files[$var_id])) {
+                $source = $statements_checker->getSource();
+
+                if (IssueBuffer::accepts(
+                    new UnresolvableInclude(
+                        'Cannot resolve the given expression to a file path',
+                        new CodeLocation($source, $stmt)
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 

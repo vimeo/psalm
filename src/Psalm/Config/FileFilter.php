@@ -71,7 +71,14 @@ class FileFilter
         if ($e->directory) {
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
-                $prospective_directory_path = ($base_dir . DIRECTORY_SEPARATOR . (string)$directory['name']);
+                $directory_path = (string) $directory['name'];
+
+                if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                    $prospective_directory_path = $directory_path;
+                } else {
+                    $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
+                }
+
                 if (strpos($prospective_directory_path, '*') !== false) {
                     $globs = array_map(
                         'realpath',
@@ -113,7 +120,13 @@ class FileFilter
         if ($e->file) {
             /** @var \SimpleXMLElement $file */
             foreach ($e->file as $file) {
-                $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . (string)$file['name'];
+                $file_path = (string) $file['name'];
+
+                if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                    $prospective_file_path = $file_path;
+                } else {
+                    $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;
+                }
 
                 if (strpos($prospective_file_path, '*') !== false) {
                     $globs = array_map(

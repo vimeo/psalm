@@ -105,7 +105,14 @@ class Context
      *
      * @var array<string,bool>
      */
-    private $phantom_classes = [];
+    public $phantom_classes = [];
+
+    /**
+     * A list of files checked with file_exists
+     *
+     * @var array<string,bool>
+     */
+    public $phantom_files = [];
 
     /**
      * A list of clauses in Conjunctive Normal Form
@@ -656,24 +663,6 @@ class Context
     public function isPhantomClass($class_name)
     {
         return isset($this->phantom_classes[strtolower($class_name)]);
-    }
-
-    /**
-     * @param   string $class_name
-     *
-     * @return  void
-     */
-    public function addPhantomClass($class_name)
-    {
-        $this->phantom_classes[strtolower($class_name)] = true;
-    }
-
-    /**
-     * @return  array<string, bool>
-     */
-    public function getPhantomClasses()
-    {
-        return $this->phantom_classes;
     }
 
     /**

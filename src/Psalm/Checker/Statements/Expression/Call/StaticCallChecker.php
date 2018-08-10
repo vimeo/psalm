@@ -456,7 +456,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $statements_checker,
                             new CodeLocation($source, $stmt),
                             $statements_checker->getSuppressedIssues(),
-                            $context->getPhantomClasses()
+                            $context->phantom_classes
                         );
                     }
                 }
