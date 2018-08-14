@@ -568,6 +568,44 @@ class ProjectChecker
     }
 
     /**
+     * @param string[] $paths_to_check
+     * @return void
+     */
+    public function checkPaths(array $paths_to_check)
+    {
+        foreach ($paths_to_check as $path) {
+            if ($this->debug_output) {
+                echo 'Checking ' . $path . "\n";
+            }
+
+            if (is_dir($path)) {
+                $this->checkDirWithConfig($path, $this->config, true);
+            } elseif (is_file($path)) {
+                $this->codebase->addFilesToAnalyze([$path => $path]);
+                $this->config->hide_external_errors = $this->config->isInProjectDirs($path);
+            }
+        }
+
+        FileReferenceProvider::loadReferenceCache();
+
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Scanning files...' . "\n";
+        }
+
+        $this->config->initializePlugins($this);
+
+        $this->codebase->scanFiles();
+
+        $this->config->visitStubFiles($this->codebase, $this->debug_output);
+
+        if ($this->output_format === self::TYPE_CONSOLE) {
+            echo 'Analyzing files...' . "\n";
+        }
+
+        $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
+    }
+
+    /**
      * @return Config
      */
     public function getConfig()

@@ -439,13 +439,7 @@ $start_time = (float) microtime(true);
 if ($paths_to_check === null) {
     $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
-    foreach ($paths_to_check as $path_to_check) {
-        if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check);
-        } else {
-            $project_checker->checkFile($path_to_check);
-        }
-    }
+    $project_checker->checkPaths($paths_to_check);
 }
 
 if ($find_references_to) {
