@@ -920,6 +920,14 @@ class FunctionCallTest extends TestCase
                     '$c' => 'array{0:int, 1:int, 2:int}',
                 ],
             ],
+            'arraySpliceOtherType' => [
+                '<?php
+                    $d = [["red"], ["green"], ["blue"]];
+                    array_splice($d, -1, 1, "foo");',
+                'assertions' => [
+                    '$d' => 'array<int, array{0:string}|string>',
+                ],
+            ],
         ];
     }
 

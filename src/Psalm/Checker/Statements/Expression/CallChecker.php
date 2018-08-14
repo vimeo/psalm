@@ -391,6 +391,16 @@ class CallChecker
                 return false;
             }
 
+            if (isset($replacement_arg->inferredType)
+                && !$replacement_arg->inferredType->hasArray()
+                && $replacement_arg->inferredType->hasString()
+                && $replacement_arg->inferredType->isSingle()
+            ) {
+                $replacement_arg->inferredType = new Type\Union([
+                    new Type\Atomic\TArray([Type::getInt(), $replacement_arg->inferredType])
+                ]);
+            }
+
             if (isset($array_arg->inferredType)
                 && $array_arg->inferredType->hasArray()
                 && isset($replacement_arg->inferredType)
@@ -419,7 +429,17 @@ class CallChecker
                     $context,
                     false
                 );
+
+                return;
             }
+
+            ExpressionChecker::assignByRefParam(
+                $statements_checker,
+                $array_arg,
+                Type::getArray(),
+                $context,
+                false
+            );
 
             return;
         }
