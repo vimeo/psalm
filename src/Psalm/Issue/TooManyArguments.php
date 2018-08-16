@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class TooManyArguments extends CodeIssue
+class TooManyArguments extends MethodIssue
 {
 }

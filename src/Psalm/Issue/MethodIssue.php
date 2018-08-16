@@ -19,6 +19,6 @@ abstract class MethodIssue extends CodeIssue
         $method_id
     ) {
         parent::__construct($message, $code_location);
-        $this->method_id = $method_id;
+        $this->method_id = strtolower($method_id);
     }
 }

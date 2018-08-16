@@ -323,7 +323,8 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     if (IssueBuffer::accepts(
                         new TooManyArguments(
                             'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $fq_class_name . '::__construct'
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {

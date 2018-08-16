@@ -256,8 +256,8 @@
             <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReferenceConstraintViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="TooFewArguments" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="TooManyArguments" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TooFewArguments" type="FunctionIssueHandlerType" minOccurs="0" />
+            <xs:element name="TooManyArguments" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainNull" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />

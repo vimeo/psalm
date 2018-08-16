@@ -1066,7 +1066,8 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
-                        $code_location
+                        $code_location,
+                        $method_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -1076,7 +1077,8 @@ class CallChecker
                 if (IssueBuffer::accepts(
                     new TooFewArguments(
                         'Too few arguments for ' . $method_id,
-                        $code_location
+                        $code_location,
+                        $method_id
                     ),
                     $statements_checker->getSuppressedIssues()
                 )) {
@@ -1102,7 +1104,8 @@ class CallChecker
                 new TooManyArguments(
                     'Too many arguments for method ' . ($cased_method_id ?: $method_id)
                         . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
-                    $code_location
+                    $code_location,
+                    $method_id ?: ''
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1121,7 +1124,8 @@ class CallChecker
                         new TooFewArguments(
                             'Too few arguments for method ' . $cased_method_id
                                 . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
-                            $code_location
+                            $code_location,
+                            $method_id ?: ''
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
@@ -1402,7 +1406,8 @@ class CallChecker
                 new TooManyArguments(
                     'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
-                    new CodeLocation($statements_checker->getSource(), $closure_arg)
+                    new CodeLocation($statements_checker->getSource(), $closure_arg),
+                    $method_id
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {
@@ -1415,7 +1420,8 @@ class CallChecker
                 new TooFewArguments(
                     'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
-                    new CodeLocation($statements_checker->getSource(), $closure_arg)
+                    new CodeLocation($statements_checker->getSource(), $closure_arg),
+                    $method_id
                 ),
                 $statements_checker->getSuppressedIssues()
             )) {

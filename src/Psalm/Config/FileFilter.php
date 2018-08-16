@@ -180,6 +180,13 @@ class FileFilter
             }
         }
 
+        if ($e->referencedFunction) {
+            /** @var \SimpleXMLElement $referenced_function */
+            foreach ($e->referencedFunction as $referenced_function) {
+                $filter->method_ids[] = strtolower((string)$referenced_function['name']);
+            }
+        }
+
         if ($e->referencedProperty) {
             /** @var \SimpleXMLElement $referenced_property */
             foreach ($e->referencedProperty as $referenced_property) {
@@ -277,7 +284,7 @@ class FileFilter
      */
     public function allowsMethod($method_id)
     {
-        return in_array(strtolower($method_id), $this->method_ids);
+        return in_array($method_id, $this->method_ids);
     }
 
     /**

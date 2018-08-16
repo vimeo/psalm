@@ -95,7 +95,7 @@ class IssueHandler
     public function getReportingLevelForMethod($method_id)
     {
         foreach ($this->custom_levels as $custom_level) {
-            if ($custom_level->allowsMethod($method_id)) {
+            if ($custom_level->allowsMethod(strtolower($method_id))) {
                 return $custom_level->getErrorLevel();
             }
         }
