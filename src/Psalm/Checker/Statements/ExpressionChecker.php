@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\TypeCombination;
@@ -428,11 +429,13 @@ class ExpressionChecker
 
                 foreach ($stmt->expr->inferredType->getTypes() as $type) {
                     if ($type instanceof Scalar) {
-                        $permissible_atomic_types[] = new TArray([Type::getInt(), new Type\Union([$type])]);
+                        $permissible_atomic_types[] = new ObjectLike([new Type\Union([$type])]);
+                    } elseif ($type instanceof TNull) {
+                        $permissible_atomic_types[] = new TArray([Type::getEmpty(), Type::getEmpty()]);
                     } elseif ($type instanceof TArray) {
-                        $permissible_atomic_types[] = $type;
+                        $permissible_atomic_types[] = clone $type;
                     } elseif ($type instanceof ObjectLike) {
-                        $permissible_atomic_types[] = $type->getGenericArrayType();
+                        $permissible_atomic_types[] = clone $type;
                     } else {
                         $all_permissible = false;
                         break;

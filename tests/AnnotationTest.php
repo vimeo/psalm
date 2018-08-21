@@ -1127,6 +1127,24 @@ class AnnotationTest extends TestCase
 
                     bar(foo());'
             ],
+            'listUnpackWithDocblock' => [
+                '<?php
+                    interface I {}
+
+                    class A implements I {
+                        public function bar() : void {}
+                    }
+
+                    /** @return I[] */
+                    function foo() : array {
+                        return [new A()];
+                    }
+
+                    /** @var A $a1 */
+                    [$a1, $a2] = foo();
+
+                    $a1->bar();',
+            ],
         ];
     }
 

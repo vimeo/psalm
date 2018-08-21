@@ -932,6 +932,15 @@ class ArrayAssignmentTest extends TestCase
                     $arr[BAR] = [6];
                     $bar = $arr[BAR][0];',
             ],
+            'castToArray' => [
+                '<?php
+                    $a = (array) (rand(0, 1) ? [1 => "one"] : 0);
+                    $b = (array) null;',
+                'assertions' => [
+                    '$a' => 'array{1?:string, 0?:int}',
+                    '$b' => 'array<empty, empty>',
+                ],
+            ]
         ];
     }
 

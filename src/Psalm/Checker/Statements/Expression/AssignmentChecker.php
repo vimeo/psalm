@@ -397,6 +397,33 @@ class AssignmentChecker
                         );
                     }
 
+                    foreach ($var_comments as $var_comment) {
+                        try {
+                            if ($var_comment->var_id === $list_var_id) {
+                                $var_comment_type = ExpressionChecker::fleshOutType(
+                                    $statements_checker->getFileChecker()->project_checker,
+                                    $var_comment->type,
+                                    $context->self,
+                                    $context->self
+                                );
+
+                                $var_comment_type->setFromDocblock();
+
+                                $new_assign_type = $var_comment_type;
+                                break;
+                            }
+                        } catch (\UnexpectedValueException $e) {
+                            if (IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    (string)$e->getMessage(),
+                                    new CodeLocation($statements_checker->getSource(), $assign_var)
+                                )
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
+
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
                 }
             }
