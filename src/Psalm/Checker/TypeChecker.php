@@ -638,6 +638,7 @@ class TypeChecker
 
             if ($input_type_part instanceof TClassString) {
                 $type_coerced = true;
+                $type_coerced_from_scalar = true;
 
                 return false;
             }
