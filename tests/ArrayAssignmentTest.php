@@ -940,7 +940,20 @@ class ArrayAssignmentTest extends TestCase
                     '$a' => 'array{1?:string, 0?:int}',
                     '$b' => 'array<empty, empty>',
                 ],
-            ]
+            ],
+            'getOnCoercedArray' => [
+                '<?php
+                    function getArray() : array {
+                        return rand(0, 1) ? ["attr" => []] : [];
+                    }
+
+                    $out = getArray();
+                    $out["attr"] = (array) ($out["attr"] ?? []);
+                    $out["attr"]["bar"] = 1;',
+                'assertions' => [
+                    '$out[\'attr\'][\'bar\']' => 'int'
+                ],
+            ],
         ];
     }
 
@@ -1075,6 +1088,11 @@ class ArrayAssignmentTest extends TestCase
                         2 => 4,
                     ];',
                 'error_message' => 'DuplicateArrayKey',
+            ],
+            'mixedArrayAssignment' => [
+                '<?php
+                    $_GET["foo"][0] = "5";',
+                'error_message' => 'MixedArrayAssignment',
             ],
         ];
     }

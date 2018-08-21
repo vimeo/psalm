@@ -107,6 +107,8 @@ class ArrayAssignmentChecker
 
         $var_id_additions = [];
 
+        $parent_var_id = null;
+
         $full_var_id = true;
 
         $child_stmt = null;
@@ -180,6 +182,12 @@ class ArrayAssignmentChecker
             }
 
             $array_var_id = $root_var_id . implode('', $var_id_additions);
+
+            if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
+                $child_stmt->var->inferredType = clone $context->vars_in_scope[$parent_var_id];
+            }
+
+            $parent_var_id = $array_var_id;
 
             $child_stmt->inferredType = ArrayFetchChecker::getArrayAccessTypeGivenOffset(
                 $statements_checker,
