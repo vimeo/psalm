@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 
 class ArrayFetchChecker
@@ -576,23 +577,37 @@ class ArrayFetchChecker
                     }
                 }
 
+                if ($type instanceof TSingleLetter) {
+                    $valid_offset_type = Type::getInt(false, 0);
+                } elseif ($type instanceof TLiteralString) {
+                    $valid_offsets = [];
+
+                    for ($i = 0, $l = strlen($type->value); $i < $l; $i++) {
+                        $valid_offsets[] = new TLiteralInt($i);
+                    }
+
+                    $valid_offset_type = new Type\Union($valid_offsets);
+                } else {
+                    $valid_offset_type = Type::getInt();
+                }
+
                 if (!TypeChecker::isContainedBy(
                     $project_checker->codebase,
                     $offset_type,
-                    Type::getInt(),
+                    $valid_offset_type,
                     true
                 )) {
-                    $expected_offset_types[] = 'int';
+                    $expected_offset_types[] = $valid_offset_type->getId();
                 } else {
                     $has_valid_offset = true;
                 }
 
                 if (!$array_access_type) {
-                    $array_access_type = Type::getString();
+                    $array_access_type = Type::getSingleLetter();
                 } else {
                     $array_access_type = Type::combineUnionTypes(
                         $array_access_type,
-                        Type::getString()
+                        Type::getSingleLetter()
                     );
                 }
 

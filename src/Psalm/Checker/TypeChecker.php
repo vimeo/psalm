@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 
@@ -604,7 +605,10 @@ class TypeChecker
             return true;
         }
 
-        if (get_class($container_type_part) === TString::class && $input_type_part instanceof TLiteralString) {
+        if ((get_class($container_type_part) === TString::class
+                || get_class($container_type_part) === TSingleLetter::class)
+            && $input_type_part instanceof TLiteralString
+        ) {
             return true;
         }
 
@@ -622,7 +626,9 @@ class TypeChecker
             return false;
         }
 
-        if (get_class($input_type_part) === TString::class && $container_type_part instanceof TLiteralString) {
+        if ((get_class($input_type_part) === TString::class || get_class($container_type_part) === TSingleLetter::class)
+            && $container_type_part instanceof TLiteralString
+        ) {
             $type_coerced = true;
             $type_coerced_from_scalar = true;
 
@@ -651,6 +657,7 @@ class TypeChecker
 
         if (($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
+                || get_class($container_type_part) === TSingleLetter::class
                 || get_class($container_type_part) === Type\Atomic\GetClassT::class)
         ) {
             return true;

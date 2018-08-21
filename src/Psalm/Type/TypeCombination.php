@@ -373,7 +373,16 @@ class TypeCombination
                     }
                 } else {
                     $combination->strings = null;
-                    $combination->value_types[$type_key] = $type;
+
+                    if (!isset($combination->value_types['string'])) {
+                        $combination->value_types[$type_key] = $type;
+                    } elseif (get_class($combination->value_types['string']) !== TString::class) {
+                        if (get_class($type) === TString::class) {
+                            $combination->value_types[$type_key] = $type;
+                        } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
+                            $combination->value_types[$type_key] = new TString();
+                        }
+                    }
                 }
             } elseif ($type instanceof TInt) {
                 if ($type instanceof TLiteralInt) {

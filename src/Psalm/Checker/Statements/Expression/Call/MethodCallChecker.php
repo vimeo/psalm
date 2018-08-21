@@ -192,6 +192,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         case Type\Atomic\TArray::class:
                         case Type\Atomic\ObjectLike::class:
                         case Type\Atomic\TString::class:
+                        case Type\Atomic\TSingleLetter::class:
                         case Type\Atomic\TLiteralString::class:
                         case Type\Atomic\TLiteralClassString::class:
                         case Type\Atomic\TNumericString::class:

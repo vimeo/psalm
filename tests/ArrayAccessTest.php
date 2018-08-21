@@ -243,6 +243,13 @@ class ArrayAccessTest extends TestCase
                     echo $x["a"];',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'noImpossibleStringAccess' => [
+                '<?php
+                    function foo(string $s) : void {
+                        echo $s[0][1];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
         ];
     }
 }
