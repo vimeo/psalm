@@ -454,7 +454,8 @@ class MethodChecker extends FunctionLikeChecker
                             . $implementer_signature_return_type . '\' is different to return type \''
                             . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location
-                    )
+                    ),
+                    $suppressed_issues
                 )) {
                     return false;
                 }

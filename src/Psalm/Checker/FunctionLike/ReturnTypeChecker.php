@@ -318,7 +318,8 @@ class ReturnTypeChecker
                         'No return statements were found for method ' . $cased_method_id .
                             ' but return type \'' . $declared_return_type . '\' was expected',
                         $return_type_location
-                    )
+                    ),
+                    $suppressed_issues
                 )) {
                     return false;
                 }
