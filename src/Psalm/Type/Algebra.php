@@ -137,9 +137,9 @@ class Algebra
                         true,
                         $orred_types[0][0] === '^'
                             || $orred_types[0][0] === '~'
-                            || (strlen($orred_types[0][0]) > 1
-                                && ($orred_types[0][0][1] === '^'
-                                    || $orred_types[0][0][1] === '~'))
+                            || (strlen($orred_types[0]) > 1
+                                && ($orred_types[0][1] === '^'
+                                    || $orred_types[0][1] === '~'))
                     );
                 }
             }
