@@ -42,4 +42,12 @@ class TLiteralClassString extends TLiteralString
     {
         return false;
     }
+
+    /**
+     * @return string
+     */
+    public function getId()
+    {
+        return 'class-string(' . $this->value . ')';
+    }
 }

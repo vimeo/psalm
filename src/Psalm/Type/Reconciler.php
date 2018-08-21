@@ -1423,7 +1423,7 @@ class Reconciler
                     $existing_var_type = new Type\Union([new Type\Atomic\TLiteralInt($value)]);
                 }
             }
-        } elseif ($scalar_type === 'string') {
+        } elseif ($scalar_type === 'string' || $scalar_type === 'class-string') {
             if ($existing_var_type->hasString()) {
                 $existing_string_types = $existing_var_type->getLiteralStrings();
 
@@ -1455,7 +1455,11 @@ class Reconciler
                         );
                     }
                 } else {
-                    $existing_var_type = new Type\Union([new Type\Atomic\TLiteralString($value)]);
+                    if ($scalar_type === 'class-string') {
+                        $existing_var_type = new Type\Union([new Type\Atomic\TLiteralClassString($value)]);
+                    } else {
+                        $existing_var_type = new Type\Union([new Type\Atomic\TLiteralString($value)]);
+                    }
                 }
             }
         } elseif ($scalar_type === 'float') {
@@ -1536,7 +1540,7 @@ class Reconciler
                     $did_remove_type = true;
                 }
             }
-        } elseif ($scalar_type === 'string') {
+        } elseif ($scalar_type === 'string' || $scalar_type === 'class-string') {
             if ($existing_var_type->hasString() && $existing_string_types = $existing_var_type->getLiteralStrings()) {
                 $did_match_literal_type = true;
 

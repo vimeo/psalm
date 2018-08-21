@@ -215,6 +215,37 @@ class ClassStringTest extends TestCase
                     bar(rand(0, 1) ? foo() : A::class);
                     bar(rand(0, 1) ? A::class : foo());',
             ],
+            'assertionToClassString' => [
+                '<?php
+                    class A {}
+
+                    function foo(string $s) : void {
+                        if ($s === A::class) {
+                            bar($s);
+                        }
+                    }
+
+                    /** @param class-string $s */
+                    function bar(string $s) : void {
+                        new $s();
+                    }',
+            ],
+            'constantArrayOffset' => [
+                '<?php
+                    class A {
+                        const FOO = [
+                            B::class => "bar",
+                        ];
+                    }
+                    class B {}
+
+                    /** @param class-string $s */
+                    function bar(string $s) : void {}
+
+                    foreach (A::FOO as $class => $_) {
+                        bar($class);
+                    }',
+            ],
         ];
     }
 
