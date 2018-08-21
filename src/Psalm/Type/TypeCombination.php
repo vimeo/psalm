@@ -9,6 +9,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
@@ -17,6 +18,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -369,7 +371,17 @@ class TypeCombination
                         $combination->strings[] = $type;
                     } else {
                         $combination->strings = null;
-                        $combination->value_types['string'] = new TString();
+
+                        if (isset($combination->value_types['string'])
+                            && $combination->value_types['string'] instanceof TClassString
+                            && $type instanceof TLiteralClassString
+                        ) {
+                            // do nothing
+                        } elseif ($type instanceof TLiteralClassString) {
+                            $combination->value_types['string'] = new TClassString();
+                        } else {
+                            $combination->value_types['string'] = new TString();
+                        }
                     }
                 } else {
                     $combination->strings = null;
