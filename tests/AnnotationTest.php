@@ -960,6 +960,13 @@ class AnnotationTest extends TestCase
 
                     $a1->bar();',
             ],
+            'spaceInType' => [
+                '<?php
+                    /** @return string | null */
+                    function foo(string $s = null) {
+                        return $s;
+                    }',
+            ],
         ];
     }
 

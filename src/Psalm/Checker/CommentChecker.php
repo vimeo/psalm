@@ -735,8 +735,20 @@ class CommentChecker
                 ) {
                     throw new DocblockParseException('Invalid string ' . $return_block);
                 }
-            } elseif ($char === ' ' || $char === "\t") {
+            } elseif ($char === ' ') {
                 if ($brackets) {
+                    continue;
+                }
+
+                if ($next_char === '|') {
+                    ++$i;
+                    $type .= $next_char;
+                    continue;
+                }
+
+                $last_char = $i > 0 ? $return_block[$i - 1] : null;
+
+                if ($last_char === '|') {
                     continue;
                 }
 
