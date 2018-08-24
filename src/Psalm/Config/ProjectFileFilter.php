@@ -69,4 +69,27 @@ class ProjectFileFilter extends FileFilter
 
         return false;
     }
+
+    /**
+     * @param  string $file_name
+     * @param  bool   $case_sensitive
+     *
+     * @return bool
+     */
+    public function reportTypeStats($file_name, $case_sensitive = false)
+    {
+        foreach ($this->ignore_type_stats as $exclude_dir => $_) {
+            if ($case_sensitive) {
+                if (strpos($file_name, $exclude_dir) === 0) {
+                    return false;
+                }
+            } else {
+                if (stripos($file_name, $exclude_dir) === 0) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 }

@@ -46,7 +46,7 @@
 
     <xs:complexType name="ProjectFilesType">
         <xs:choice maxOccurs="unbounded">
-            <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="ProjectDirectoryAttributeType" />
             <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
             <xs:element name="ignoreFiles" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
@@ -61,6 +61,11 @@
 
     <xs:complexType name="NameAttributeType">
         <xs:attribute name="name" type="xs:string" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="ProjectDirectoryAttributeType">
+        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="ignoreTypeStats" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="FileExtensionsType">

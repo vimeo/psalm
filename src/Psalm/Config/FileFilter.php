@@ -41,6 +41,11 @@ class FileFilter
     protected $inclusive;
 
     /**
+     * @var array<string, bool>
+     */
+    protected $ignore_type_stats = [];
+
+    /**
      * @param  bool             $inclusive
      *
      * @psalm-suppress DocblockTypeContradiction
@@ -72,6 +77,9 @@ class FileFilter
             /** @var \SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
                 $directory_path = (string) $directory['name'];
+                $ignore_type_stats = strtolower(
+                    isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
+                ) === 'true';
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_directory_path = $directory_path;
@@ -100,6 +108,11 @@ class FileFilter
                                 (string)$directory['name'] . ':' . $glob_index . PHP_EOL;
                             exit(1);
                         }
+
+                        if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
+                            $filter->ignore_type_stats[$directory_path] = true;
+                        }
+
                         $filter->addDirectory($directory_path);
                     }
                     continue;
@@ -111,6 +124,10 @@ class FileFilter
                     echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                         (string)$directory['name'] . PHP_EOL;
                     exit(1);
+                }
+
+                if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
+                    $filter->ignore_type_stats[$directory_path] = true;
                 }
 
                 $filter->addDirectory($directory_path);

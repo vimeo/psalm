@@ -306,6 +306,10 @@ class Analyzer
         }
 
         foreach ($all_deep_scanned_files as $file_path => $_) {
+            if (!$this->config->reportTypeStatsForFile($file_path)) {
+                continue;
+            }
+
             if (isset($this->mixed_counts[$file_path])) {
                 list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
                 $mixed_count += $path_mixed_count;
@@ -341,6 +345,10 @@ class Analyzer
 
         foreach ($this->files_to_analyze as $file_path => $_) {
             $all_deep_scanned_files[$file_path] = true;
+
+            if (!$this->config->reportTypeStatsForFile($file_path)) {
+                continue;
+            }
 
             foreach ($this->file_storage_provider->get($file_path)->required_file_paths as $required_file_path) {
                 $all_deep_scanned_files[$required_file_path] = true;

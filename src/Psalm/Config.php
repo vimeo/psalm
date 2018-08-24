@@ -984,6 +984,16 @@ class Config
     }
 
     /**
+     * @param   string $file_path
+     *
+     * @return  bool
+     */
+    public function reportTypeStatsForFile($file_path)
+    {
+        return $this->project_files && $this->project_files->reportTypeStats($file_path);
+    }
+
+    /**
      * @return array<string>
      */
     public function getFileExtensions()
