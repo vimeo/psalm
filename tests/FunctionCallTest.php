@@ -913,7 +913,9 @@ class FunctionCallTest extends TestCase
                     $a = [1, 2, 3];
                     $c = $a;
                     $b = ["a", "b", "c"];
-                    array_splice($a, -1, 1, $b);',
+                    array_splice($a, -1, 1, $b);
+                    $d = [1, 2, 3];
+                    array_splice($d, -1, 1);',
                 'assertions' => [
                     '$a' => 'array<int, string|int>',
                     '$b' => 'array{0:string, 1:string, 2:string}',

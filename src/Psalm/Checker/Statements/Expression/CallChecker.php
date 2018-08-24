@@ -367,7 +367,7 @@ class CallChecker
                 return false;
             }
 
-            if (!isset($args[2]) || !isset($args[3])) {
+            if (!isset($args[2])) {
                 return;
             }
 
@@ -379,6 +379,10 @@ class CallChecker
                 $context
             ) === false) {
                 return false;
+            }
+
+            if (!isset($args[3])) {
+                return;
             }
 
             $replacement_arg = $args[3]->value;
