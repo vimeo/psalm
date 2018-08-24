@@ -189,6 +189,21 @@ class AssertTest extends TestCase
                         echo "Ma chaine " . $myString;
                     }'
             ],
+            'assertServerVar' => [
+                '<?php
+                    /**
+                     * @psalm-assert-if-true string $a
+                     * @param mixed $a
+                     */
+                    function my_is_string($a) : bool
+                    {
+                        return is_string($a);
+                    }
+
+                    if (my_is_string($_SERVER["abc"])) {
+                        $i = substr($_SERVER["abc"], 1, 2);
+                    }',
+            ],
         ];
     }
 

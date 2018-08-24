@@ -107,6 +107,8 @@ class VariableFetchChecker
         )
         ) {
             $stmt->inferredType = Type::getArray();
+            $context->vars_in_scope['$' . $stmt->name] = Type::getArray();
+            $context->vars_possibly_in_scope['$' . $stmt->name] = true;
 
             return null;
         }

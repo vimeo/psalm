@@ -288,7 +288,7 @@ class BinaryOpChecker
                 $statements_checker
             );
 
-            $mixed_var_ids = ['$_GET', '$_POST', '$_SERVER'];
+            $mixed_var_ids = [];
 
             foreach ($context->vars_in_scope as $var_id => $type) {
                 if ($type->isMixed()) {

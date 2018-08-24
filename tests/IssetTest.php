@@ -341,6 +341,12 @@ class IssetTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
+            'mixedArrayIssetGetStringVar' => [
+                '<?php
+                    if (isset($_GET["b"]) && is_string($_GET["b"])) {
+                        echo $_GET["b"];
+                    }',
+            ],
             'nestedArrayAccessInLoopAfterIsset' => [
                 '<?php
                     $arr = [];
