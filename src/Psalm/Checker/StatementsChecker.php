@@ -625,7 +625,14 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
                 // do nothing
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
-                // do nothing
+                foreach ($stmt->declares as $declaration) {
+                    if ((string) $declaration->key === 'strict_types'
+                        && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
+                        && $declaration->value->value === 1
+                    ) {
+                        $context->strict_types = true;
+                    }
+                }
             } else {
                 if (IssueBuffer::accepts(
                     new UnrecognizedStatement(

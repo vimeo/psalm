@@ -962,6 +962,25 @@ class FunctionCallTest extends TestCase
                     fooFoo("string");',
                 'error_message' => 'InvalidArgument',
             ],
+            'builtinFunctioninvalidArgumentWithWeakTypes' => [
+                '<?php
+                    $s = substr(5, 4);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'builtinFunctioninvalidArgumentWithDeclareStrictTypes' => [
+                '<?php declare(strict_types=1);
+                    $s = substr(5, 4);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'builtinFunctioninvalidArgumentWithDeclareStrictTypesInClass' => [
+                '<?php declare(strict_types=1);
+                    class A {
+                        public function foo() : void {
+                            $s = substr(5, 4);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'mixedArgument' => [
                 '<?php
                     function fooFoo(int $a): void {}

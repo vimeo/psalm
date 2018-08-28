@@ -83,9 +83,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var string[] */
     private $after_classlike_check_plugins;
 
-    /** @var bool */
-    private $strict_types = false;
-
     /**
      * @var array<string, array<int, string>>
      */
@@ -459,7 +456,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
                     && $declaration->value->value === 1
                 ) {
-                    $this->strict_types = true;
+                    $this->file_storage->strict_types = true;
                 }
             }
         }
@@ -1430,7 +1427,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($param_type_string) {
-                $param_type = Type::parseString($param_type_string, true, [], $this->strict_types);
+                $param_type = Type::parseString($param_type_string, true, [], $this->file_storage->strict_types);
 
                 if ($is_nullable) {
                     $param_type->addType(new Type\Atomic\TNull);

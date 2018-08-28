@@ -75,10 +75,6 @@ class CallMap
                     ? Type::parseString($arg_type)
                     : Type::getMixed();
 
-                if ($param_type->hasScalarType() || $param_type->hasObject()) {
-                    $param_type->from_docblock = true;
-                }
-
                 $function_types[] = new FunctionLikeParameter(
                     $arg_name,
                     $by_reference,

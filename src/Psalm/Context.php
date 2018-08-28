@@ -255,6 +255,11 @@ class Context
     public $switch_scope = null;
 
     /**
+     * @var bool
+     */
+    public $strict_types = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

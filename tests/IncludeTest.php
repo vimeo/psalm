@@ -467,6 +467,75 @@ class IncludeTest extends TestCase
                 ],
                 'error_message' => 'UndefinedMethod',
             ],
+            'requireFunctionWithStrictTypes' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function fooFoo(int $bar): void {
+
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php declare(strict_types=1);
+                        require("file1.php");
+
+                        fooFoo("hello");',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'InvalidArgument',
+            ],
+            'requireFunctionWithStrictTypesInClass' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function fooFoo(int $bar): void {
+
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php declare(strict_types=1);
+                        require("file1.php");
+
+                        class A {
+                            public function foo() {
+                                fooFoo("hello");
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'InvalidArgument',
+            ],
+            'requireFunctionWithWeakTypes' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function fooFoo(int $bar): void {
+
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        require("file1.php");
+
+                        fooFoo("hello");',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'requireFunctionWithStrictTypesButDocblockType' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        /** @param int $bar */
+                        function fooFoo($bar): void {
+
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php declare(strict_types=1);
+                        require("file1.php");
+
+                        fooFoo("hello");',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'namespacedRequireFunction' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php

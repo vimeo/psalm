@@ -73,6 +73,11 @@ class FileStorage
     public $has_visitor_issues = false;
 
     /**
+     * @var bool
+     */
+    public $strict_types = false;
+
+    /**
      * @param string $file_path
      */
     public function __construct($file_path)

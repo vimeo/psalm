@@ -683,8 +683,9 @@ class TypeChecker
             return false;
         }
 
-        if ($container_type_part instanceof TString &&
-            $input_type_part instanceof TNamedObject
+        if ($container_type_part instanceof TString
+            && $input_type_part instanceof TNamedObject
+            && !$container_type_part->strict
         ) {
             // check whether the object has a __toString method
             if ($codebase->classOrInterfaceExists($input_type_part->value)

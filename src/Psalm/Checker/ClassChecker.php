@@ -282,6 +282,10 @@ class ClassChecker extends ClassLikeChecker
             $class_context->parent = $parent_fq_class_name;
         }
 
+        if ($global_context) {
+            $class_context->strict_types = $global_context->strict_types;
+        }
+
         if ($this->leftover_stmts) {
             (new StatementsChecker($this))->analyze($this->leftover_stmts, $class_context);
         }

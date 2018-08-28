@@ -1627,6 +1627,15 @@ class CallChecker
             $to_string_cast
         );
 
+        if ($context->strict_types && !$param_type->from_docblock) {
+            $scalar_type_match_found = false;
+
+            if ($to_string_cast) {
+                $to_string_cast = false;
+                $type_match_found = false;
+            }
+        }
+
         if ($type_coerced) {
             if ($type_coerced_from_mixed) {
                 if (IssueBuffer::accepts(
