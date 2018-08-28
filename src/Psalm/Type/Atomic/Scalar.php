@@ -3,6 +3,9 @@ namespace Psalm\Type\Atomic;
 
 abstract class Scalar extends \Psalm\Type\Atomic
 {
+    /** @var true|null */
+    public $strict;
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes

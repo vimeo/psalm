@@ -733,6 +733,7 @@ class TypeChecker
 
         if ($input_type_part instanceof Scalar) {
             if ($container_type_part instanceof Scalar
+                && !$container_type_part->strict
                 && !$container_type_part instanceof TLiteralInt
                 && !$container_type_part instanceof TLiteralString
                 && !$container_type_part instanceof TLiteralFloat

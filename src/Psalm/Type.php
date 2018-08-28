@@ -76,12 +76,17 @@ abstract class Type
      * @param  string $type_string
      * @param  bool   $php_compatible
      * @param  array<string, string> $template_type_names
+     * @param  bool   $strict_types
      *
      * @return Union
      */
-    public static function parseString($type_string, $php_compatible = false, array $template_type_names = [])
-    {
-        return self::parseTokens(self::tokenize($type_string), $php_compatible, $template_type_names);
+    public static function parseString(
+        $type_string,
+        $php_compatible = false,
+        array $template_type_names = [],
+        $strict_types = false
+    ) {
+        return self::parseTokens(self::tokenize($type_string), $php_compatible, $template_type_names, $strict_types);
     }
 
     /**
@@ -90,11 +95,16 @@ abstract class Type
      * @param  array<int, string> $type_tokens
      * @param  bool   $php_compatible
      * @param  array<string, string> $template_type_names
+     * @param  bool   $strict_types
      *
      * @return Union
      */
-    public static function parseTokens(array $type_tokens, $php_compatible = false, array $template_type_names = [])
-    {
+    public static function parseTokens(
+        array $type_tokens,
+        $php_compatible = false,
+        array $template_type_names = [],
+        $strict_types = false
+    ) {
         if (count($type_tokens) === 1) {
             $only_token = $type_tokens[0];
 
@@ -105,7 +115,7 @@ abstract class Type
 
             $only_token = self::fixScalarTerms($only_token, $php_compatible);
 
-            return new Union([Atomic::create($only_token, $php_compatible, $template_type_names)]);
+            return new Union([Atomic::create($only_token, $php_compatible, $template_type_names, $strict_types)]);
         }
 
         try {

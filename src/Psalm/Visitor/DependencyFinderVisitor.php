@@ -83,6 +83,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var string[] */
     private $after_classlike_check_plugins;
 
+    /** @var bool */
+    private $strict_types = false;
+
     /**
      * @var array<string, array<int, string>>
      */
@@ -449,6 +452,15 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if ($function_like_storage) {
                 $function_like_storage->has_yield = true;
+            }
+        } elseif ($node instanceof PhpParser\Node\Stmt\Declare_) {
+            foreach ($node->declares as $declaration) {
+                if ((string) $declaration->key === 'strict_types'
+                    && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
+                    && $declaration->value->value === 1
+                ) {
+                    $this->strict_types = true;
+                }
             }
         }
     }
@@ -1418,11 +1430,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($param_type_string) {
-                if ($is_nullable) {
-                    $param_type_string .= '|null';
-                }
+                $param_type = Type::parseString($param_type_string, true, [], $this->strict_types);
 
-                $param_type = Type::parseString($param_type_string, true);
+                if ($is_nullable) {
+                    $param_type->addType(new Type\Atomic\TNull);
+                }
 
                 if ($param->variadic) {
                     $param_type = new Type\Union([

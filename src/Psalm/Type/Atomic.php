@@ -54,26 +54,55 @@ abstract class Atomic
      * @param  string $value
      * @param  bool   $php_compatible
      * @param  array<string, string> $template_type_names
+     * @param  bool   $strict_types
      *
      * @return Atomic
      */
-    public static function create($value, $php_compatible = false, array $template_type_names = [])
-    {
+    public static function create(
+        $value,
+        $php_compatible = false,
+        array $template_type_names = [],
+        $strict_types = false
+    ) {
         switch ($value) {
             case 'int':
-                return new TInt();
+                $t = new TInt();
+
+                if ($strict_types) {
+                    $t->strict = true;
+                }
+
+                return $t;
+
+            case 'float':
+                $t = new TFloat();
+
+                if ($strict_types) {
+                    $t->strict = true;
+                }
+
+                return $t;
+
+            case 'string':
+                $t = new TString();
+
+                if ($strict_types) {
+                    $t->strict = true;
+                }
+
+                return $t;
+
+            case 'bool':
+                $t = new TBool();
+
+                if ($strict_types) {
+                    $t->strict = true;
+                }
+
+                return $t;
 
             case 'void':
                 return new TVoid();
-
-            case 'float':
-                return new TFloat();
-
-            case 'string':
-                return new TString();
-
-            case 'bool':
-                return new TBool();
 
             case 'object':
                 return new TObject();
