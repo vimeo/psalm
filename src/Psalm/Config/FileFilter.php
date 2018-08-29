@@ -46,6 +46,11 @@ class FileFilter
     protected $ignore_type_stats = [];
 
     /**
+     * @var array<string, bool>
+     */
+    protected $declare_strict_types = [];
+
+    /**
      * @param  bool             $inclusive
      *
      * @psalm-suppress DocblockTypeContradiction
@@ -80,6 +85,9 @@ class FileFilter
                 $ignore_type_stats = strtolower(
                     isset($directory['ignoreTypeStats']) ? (string) $directory['ignoreTypeStats'] : ''
                 ) === 'true';
+                $declare_strict_types = strtolower(
+                    isset($directory['useStrictTypes']) ? (string) $directory['useStrictTypes'] : ''
+                ) === 'true';
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
                     $prospective_directory_path = $directory_path;
@@ -113,6 +121,10 @@ class FileFilter
                             $filter->ignore_type_stats[$directory_path] = true;
                         }
 
+                        if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
+                            $filter->declare_strict_types[$directory_path] = true;
+                        }
+
                         $filter->addDirectory($directory_path);
                     }
                     continue;
@@ -128,6 +140,10 @@ class FileFilter
 
                 if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
                     $filter->ignore_type_stats[$directory_path] = true;
+                }
+
+                if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
+                    $filter->declare_strict_types[$directory_path] = true;
                 }
 
                 $filter->addDirectory($directory_path);

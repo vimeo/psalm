@@ -450,15 +450,6 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($function_like_storage) {
                 $function_like_storage->has_yield = true;
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\Declare_) {
-            foreach ($node->declares as $declaration) {
-                if ((string) $declaration->key === 'strict_types'
-                    && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
-                    && $declaration->value->value === 1
-                ) {
-                    $this->file_storage->strict_types = true;
-                }
-            }
         }
     }
 
@@ -1427,7 +1418,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             }
 
             if ($param_type_string) {
-                $param_type = Type::parseString($param_type_string, true, [], $this->file_storage->strict_types);
+                $param_type = Type::parseString($param_type_string, true, []);
 
                 if ($is_nullable) {
                     $param_type->addType(new Type\Atomic\TNull);

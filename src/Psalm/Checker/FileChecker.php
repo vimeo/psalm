@@ -114,6 +114,10 @@ class FileChecker extends SourceChecker implements StatementsSource
             $this->context->collect_references = $codebase->collect_references;
         }
 
+        if ($codebase->config->useStrictTypesForFile($this->file_path)) {
+            $this->context->strict_types = true;
+        }
+
         $this->context->is_global = true;
 
         $stmts = $codebase->getStatementsForFile($this->file_path);

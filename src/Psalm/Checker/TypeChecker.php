@@ -218,7 +218,7 @@ class TypeChecker
                     $atomic_to_string_cast
                 );
 
-                if ($is_atomic_contained_by) {
+                if ($is_atomic_contained_by && !$atomic_to_string_cast) {
                     return true;
                 }
             }
@@ -685,7 +685,6 @@ class TypeChecker
 
         if ($container_type_part instanceof TString
             && $input_type_part instanceof TNamedObject
-            && !$container_type_part->strict
         ) {
             // check whether the object has a __toString method
             if ($codebase->classOrInterfaceExists($input_type_part->value)
@@ -734,7 +733,6 @@ class TypeChecker
 
         if ($input_type_part instanceof Scalar) {
             if ($container_type_part instanceof Scalar
-                && !$container_type_part->strict
                 && !$container_type_part instanceof TLiteralInt
                 && !$container_type_part instanceof TLiteralString
                 && !$container_type_part instanceof TLiteralFloat

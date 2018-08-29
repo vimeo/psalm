@@ -994,6 +994,16 @@ class Config
     }
 
     /**
+     * @param   string $file_path
+     *
+     * @return  bool
+     */
+    public function useStrictTypesForFile($file_path)
+    {
+        return $this->project_files && $this->project_files->useStrictTypes($file_path);
+    }
+
+    /**
      * @return array<string>
      */
     public function getFileExtensions()

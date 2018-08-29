@@ -66,6 +66,7 @@
     <xs:complexType name="ProjectDirectoryAttributeType">
         <xs:attribute name="name" type="xs:string" use="required" />
         <xs:attribute name="ignoreTypeStats" type="xs:string" />
+        <xs:attribute name="useStrictTypes" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="FileExtensionsType">
