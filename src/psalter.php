@@ -7,8 +7,8 @@ use Psalm\IssueBuffer;
 
 // show all errors
 error_reporting(-1);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
 ini_set('memory_limit', '2048M');
 
 // get options from command line

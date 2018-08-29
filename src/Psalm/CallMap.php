@@ -5343,7 +5343,7 @@ return [
 'ini_get' => ['string|false', 'varname'=>'string'],
 'ini_get_all' => ['array', 'extension='=>'?string', 'details='=>'bool'],
 'ini_restore' => ['void', 'varname'=>'string'],
-'ini_set' => ['string|false', 'varname'=>'string', 'newvalue'=>'string|int|float|bool'],
+'ini_set' => ['string|false', 'varname'=>'string', 'newvalue'=>'string'],
 'inotify_add_watch' => ['int', 'inotify_instance'=>'resource', 'pathname'=>'string', 'mask'=>'int'],
 'inotify_init' => ['resource'],
 'inotify_queue_len' => ['int', 'inotify_instance'=>'resource'],

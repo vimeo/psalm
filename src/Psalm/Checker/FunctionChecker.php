@@ -494,6 +494,11 @@ class FunctionChecker extends FunctionLikeChecker
             case 'strrpos':
             case 'stripos':
             case 'strripos':
+            case 'strstr':
+            case 'stristr':
+            case 'strrchr':
+            case 'strpbrk':
+            case 'array_search':
                 break;
 
             default:
