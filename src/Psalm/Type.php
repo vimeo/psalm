@@ -387,18 +387,23 @@ abstract class Type
         }
 
         if ($parse_tree instanceof ParseTree\NullableTree) {
-            $atomic_type = self::getTypeFromTree($parse_tree->children[0], false, $template_type_names);
+            $non_nullable_type = self::getTypeFromTree($parse_tree->children[0], false, $template_type_names);
 
-            if (!$atomic_type instanceof Atomic) {
-                throw new \UnexpectedValueException(
-                    'Was expecting an atomic type, got ' . get_class($atomic_type)
-                );
+            if ($non_nullable_type instanceof Union) {
+                $non_nullable_type->addType(new TNull);
+                return $non_nullable_type;
             }
 
-            return TypeCombination::combineTypes([
-                new TNull,
-                $atomic_type
-            ]);
+            if ($non_nullable_type instanceof Atomic) {
+                return TypeCombination::combineTypes([
+                    new TNull,
+                    $non_nullable_type
+                ]);
+            }
+
+            throw new \UnexpectedValueException(
+                'Was expecting an atomic or union type, got ' . get_class($non_nullable_type)
+            );
         }
 
         if (!$parse_tree instanceof ParseTree\Value) {
