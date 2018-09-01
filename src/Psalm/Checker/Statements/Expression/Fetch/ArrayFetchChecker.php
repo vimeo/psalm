@@ -380,10 +380,12 @@ class ArrayFetchChecker
                             $type->type_params[0] = $offset_type;
                         }
                     } elseif (!$type->type_params[0]->isEmpty()) {
-                        if (!TypeChecker::isContainedBy(
+                        if ((!TypeChecker::isContainedBy(
                             $project_checker->codebase,
                             $offset_type,
-                            $type->type_params[0],
+                            $type->type_params[0]->isMixed()
+                                ? new Type\Union([ new TInt, new TString ])
+                                : $type->type_params[0],
                             true,
                             $offset_type->ignore_falsable_issues,
                             $has_scalar_match,
@@ -391,7 +393,8 @@ class ArrayFetchChecker
                             $type_coerced_from_mixed,
                             $to_string_cast,
                             $type_coerced_from_scalar
-                        ) && !$type_coerced_from_scalar
+                        ) && !$type_coerced_from_scalar)
+                            || $to_string_cast
                         ) {
                             $expected_offset_types[] = $type->type_params[0]->getId();
                         } else {
