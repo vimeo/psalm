@@ -941,6 +941,13 @@ class FunctionCallTest extends TestCase
                      */
                     function acceptsAShape(array $a): void {}',
             ],
+            'suppressError' => [
+                '<?php
+                    $a = @file_get_contents("foo");',
+                'assertions' => [
+                    '$a' => 'string|false',
+                ],
+            ],
         ];
     }
 

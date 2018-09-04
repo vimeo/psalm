@@ -509,6 +509,7 @@ class ExpressionChecker
             if (self::analyze($statements_checker, $stmt->expr, $context) === false) {
                 return false;
             }
+            $stmt->inferredType = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
         } elseif ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
             if (IssueBuffer::accepts(
                 new ForbiddenCode(
