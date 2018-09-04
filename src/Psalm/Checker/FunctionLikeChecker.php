@@ -155,6 +155,10 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             try {
                 $storage = $codebase->methods->getStorage($real_method_id);
             } catch (\UnexpectedValueException $e) {
+                if ($class_storage->has_visitor_issues) {
+                    return null;
+                }
+
                 if (!$class_storage->parent_classes) {
                     throw $e;
                 }

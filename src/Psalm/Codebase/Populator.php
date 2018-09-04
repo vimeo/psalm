@@ -298,6 +298,10 @@ class Populator
                 $parent_storage->invalid_dependencies
             );
 
+            if ($parent_storage->has_visitor_issues) {
+                $storage->has_visitor_issues = true;
+            }
+
             $storage->public_class_constants += $parent_storage->public_class_constants;
             $storage->protected_class_constants += $parent_storage->protected_class_constants;
 

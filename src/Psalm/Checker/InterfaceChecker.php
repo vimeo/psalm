@@ -26,6 +26,10 @@ class InterfaceChecker extends ClassLikeChecker
             throw new \LogicException('Something went badly wrong');
         }
 
+        if (isset($class->isDuplicate)) {
+            return false;
+        }
+
         if ($this->class->extends) {
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(

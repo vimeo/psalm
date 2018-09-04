@@ -580,6 +580,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             $this->file_storage->has_visitor_issues = true;
                         }
 
+                        $duplicate_storage->has_visitor_issues = true;
+
                         return false;
                     }
                 } elseif (!$duplicate_storage->location

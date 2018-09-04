@@ -14,8 +14,12 @@ class IncludeTest extends TestCase
      *
      * @return void
      */
-    public function testValidInclude(array $files, array $files_to_check, $hoist_constants = false)
-    {
+    public function testValidInclude(
+        array $files,
+        array $files_to_check,
+        $hoist_constants = false,
+        array $error_levels = []
+    ) {
         $codebase = $this->project_checker->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -27,9 +31,14 @@ class IncludeTest extends TestCase
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
+        $config = $codebase->config;
+
+        foreach ($error_levels as $error_level) {
+            $config->setCustomErrorLevel($error_level, \Psalm\Config::REPORT_SUPPRESS);
+        }
+
         $codebase->scanFiles();
 
-        $config = $codebase->config;
         $config->hoist_constants = $hoist_constants;
 
         foreach ($files_to_check as $file_path) {
@@ -51,8 +60,7 @@ class IncludeTest extends TestCase
     public function testInvalidInclude(
         array $files,
         array $files_to_check,
-        $error_message,
-        $hoist_constants = false
+        $error_message
     ) {
         $codebase = $this->project_checker->getCodebase();
 
@@ -65,13 +73,12 @@ class IncludeTest extends TestCase
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
-        $codebase->scanFiles();
+        $config = $codebase->config;
 
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
-        $config = $codebase->config;
-        $config->hoist_constants = $hoist_constants;
+        $codebase->scanFiles();
 
         foreach ($files_to_check as $file_path) {
             $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
@@ -433,8 +440,29 @@ class IncludeTest extends TestCase
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'hoist_constants' => true,
+            ],
+            'duplicateClasses' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class A {
+                            public function aa() : void {}
+                            public function bb() : void { $this->aa(); }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        class A {
+                            public function dd() : void {}
+                            public function zz() : void { $this->dd(); }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'hoist_constants' => false,
+                'error_levels' => ['DuplicateClass'],
             ],
         ];
     }
