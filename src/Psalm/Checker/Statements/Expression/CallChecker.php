@@ -532,7 +532,7 @@ class CallChecker
                         }
 
                         // noops
-                        if (in_array($method_id, ['reset', 'end', 'next', 'prev'], true)) {
+                        if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
                             continue;
                         }
 
