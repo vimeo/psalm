@@ -224,7 +224,7 @@ class Config
     /**
      * @var string[]
      */
-    private $plugin_paths = [];
+    public $plugin_paths = [];
 
     /**
      * Static methods to be called after method checks have completed

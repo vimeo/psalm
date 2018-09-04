@@ -31,6 +31,10 @@ class ClassLikeStorageCacheProvider
             $storage_dir . 'MethodStorage.php',
         ];
 
+        if ($config->after_visit_classlikes) {
+            $dependent_files = array_merge($dependent_files, $config->plugin_paths);
+        }
+
         foreach ($dependent_files as $dependent_file_path) {
             if (!file_exists($dependent_file_path)) {
                 throw new \UnexpectedValueException($dependent_file_path . ' must exist');
