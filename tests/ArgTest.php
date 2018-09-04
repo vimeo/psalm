@@ -25,7 +25,7 @@ class ArgTest extends TestCase
                     sort($b);
                 ',
                 'assertions' => [
-                    '$a' => 'array<string, int>',
+                    '$a' => 'array{b:int, a:int}',
                     '$b' => 'array<int, int>',
                 ],
             ],
