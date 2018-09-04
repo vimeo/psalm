@@ -448,7 +448,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     }
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\Expr\Yield_) {
+        } elseif ($node instanceof PhpParser\Node\Expr\Yield_ || $node instanceof PhpParser\Node\Expr\YieldFrom) {
             $function_like_storage = end($this->functionlike_storages);
 
             if ($function_like_storage) {

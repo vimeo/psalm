@@ -323,6 +323,13 @@ class Php70Test extends TestCase
                         takesString($s);
                     }',
             ],
+            'expectNonNullableTypeWithYield' => [
+                '<?php
+                    function example() : Generator {
+                        yield from [2];
+                        return null;
+                    }',
+            ],
         ];
     }
 
@@ -349,6 +356,21 @@ class Php70Test extends TestCase
                         }
                     };',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'expectNonNullableTypeWithNullReturn' => [
+                '<?php
+                    function example() : Generator {
+                        yield from [2];
+                        return null;
+                    }
+
+                    function example2() : Generator {
+                        if (rand(0, 1)) {
+                            return example();
+                        }
+                        return null;
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
         ];
     }
