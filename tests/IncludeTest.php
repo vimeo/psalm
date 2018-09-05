@@ -449,11 +449,15 @@ class IncludeTest extends TestCase
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         class A {
+                            /** @var string|null */
+                            protected $a;
                             public function aa() : void {}
                             public function bb() : void { $this->aa(); }
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
                         class A {
+                            /** @var string|null */
+                            protected $b;
                             public function dd() : void {}
                             public function zz() : void { $this->dd(); }
                         }',
@@ -464,6 +468,24 @@ class IncludeTest extends TestCase
                 ],
                 'hoist_constants' => false,
                 'error_levels' => ['DuplicateClass'],
+            ],
+            'duplicateClassesProperty' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        class A {
+                            protected $a;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        class A {
+                            protected $b;
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'hoist_constants' => false,
+                'error_levels' => ['DuplicateClass', 'MissingPropertyType'],
             ],
         ];
     }

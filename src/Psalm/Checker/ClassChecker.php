@@ -85,6 +85,10 @@ class ClassChecker extends ClassLikeChecker
 
         $storage = $this->storage;
 
+        if ($storage->has_visitor_issues) {
+            return;
+        }
+
         if ($class->name && preg_match(
             '/(^|\\\)(int|float|bool|string|void|null|false|true|resource|object|numeric|mixed)$/i',
             $fq_class_name
@@ -889,12 +893,6 @@ class ClassChecker extends ClassLikeChecker
         ) {
             $return_type_location = null;
             $secondary_return_type_location = null;
-
-            $self_class = $classlike_storage_provider->get($class_context->self);
-
-            if ($self_class->has_visitor_issues) {
-                return;
-            }
 
             $actual_method_storage = $codebase->methods->getStorage($actual_method_id);
 
