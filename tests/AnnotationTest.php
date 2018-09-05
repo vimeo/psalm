@@ -862,7 +862,8 @@ class AnnotationTest extends TestCase
             'typeAliasBeforeFunction' => [
                 '<?php
                     /**
-                     * @psalm-type CoolType = A|B|null
+                     * @psalm-type A_OR_B = A|B
+                     * @psalm-type CoolType = A_OR_B|null
                      * @return CoolType
                      */
                     function foo() {

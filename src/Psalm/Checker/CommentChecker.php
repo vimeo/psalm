@@ -213,7 +213,7 @@ class CommentChecker
                     $type_string,
                     $aliases,
                     null,
-                    $type_aliases
+                    $type_alias_tokens + $type_aliases
                 );
             } catch (TypeParseTreeException $e) {
                 throw new DocblockParseException($type_string . ' is not a valid type');
