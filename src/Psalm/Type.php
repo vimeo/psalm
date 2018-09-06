@@ -314,7 +314,7 @@ abstract class Type
             }
 
             if ($type !== 'array') {
-                throw new \InvalidArgumentException('Object-like type must be array');
+                throw new TypeParseTreeException('Unexpected brace character');
             }
 
             if (!$properties) {

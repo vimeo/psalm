@@ -514,6 +514,16 @@ class TypeParseTest extends TestCase
      *
      * @return void
      */
+    public function testGeneratorWithWBadBrackets()
+    {
+        Type::parseString('Generator{string, A}');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
     public function testBadEquals()
     {
         Type::parseString('=array');
