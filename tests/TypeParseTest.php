@@ -504,6 +504,16 @@ class TypeParseTest extends TestCase
      *
      * @return void
      */
+    public function testMoreBadBrackets()
+    {
+        Type::parseString('max(a):void');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
     public function testBadEquals()
     {
         Type::parseString('=array');

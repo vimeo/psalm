@@ -406,7 +406,9 @@ abstract class Type
             );
         }
 
-        if ($parse_tree instanceof ParseTree\MethodTree) {
+        if ($parse_tree instanceof ParseTree\MethodTree
+            || $parse_tree instanceof ParseTree\MethodWithReturnTypeTree
+        ) {
             throw new TypeParseTreeException('Misplaced brackets');
         }
 
