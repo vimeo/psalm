@@ -406,6 +406,10 @@ abstract class Type
             );
         }
 
+        if ($parse_tree instanceof ParseTree\MethodTree) {
+            throw new TypeParseTreeException('Misplaced brackets');
+        }
+
         if (!$parse_tree instanceof ParseTree\Value) {
             throw new \InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
         }
