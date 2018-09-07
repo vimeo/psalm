@@ -132,7 +132,7 @@ class TypeParseTest extends TestCase
      */
     public function testIntersection()
     {
-        $this->assertSame('I1&I2', (string) Type::parseString('I1&I2'));
+        $this->assertSame('I1&I2&I3', (string) Type::parseString('I1&I2&I3'));
     }
 
     /**
@@ -168,6 +168,14 @@ class TypeParseTest extends TestCase
             'Traversable&Iterator<int>|null',
             (string) Type::parseString('Traversable&Iterator<int>|null')
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function testIntersectionAfterGeneric()
+    {
+        $this->assertSame('Countable&iterable<int>&I', (string) Type::parseString('Countable&iterable<int>&I'));
     }
 
     /**
