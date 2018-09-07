@@ -448,6 +448,7 @@ class Reconciler
 
             foreach ($existing_var_atomic_types as $type_key => $type) {
                 if ($type instanceof TNamedObject
+                    || $type instanceof TObject
                     || $type instanceof TResource
                     || $type instanceof TCallable
                 ) {
