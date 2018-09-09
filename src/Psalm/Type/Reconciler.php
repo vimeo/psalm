@@ -1393,6 +1393,10 @@ class Reconciler
         if ($scalar_type === 'int') {
             $value = (int) $value;
 
+            if ($existing_var_type->isMixed()) {
+                return new Type\Union([new Type\Atomic\TLiteralInt($value)]);
+            }
+
             if ($existing_var_type->hasInt()) {
                 $existing_int_types = $existing_var_type->getLiteralInts();
 
@@ -1428,6 +1432,10 @@ class Reconciler
                 }
             }
         } elseif ($scalar_type === 'string' || $scalar_type === 'class-string') {
+            if ($existing_var_type->isMixed()) {
+                return new Type\Union([new Type\Atomic\TLiteralString($value)]);
+            }
+
             if ($existing_var_type->hasString()) {
                 $existing_string_types = $existing_var_type->getLiteralStrings();
 
@@ -1468,6 +1476,10 @@ class Reconciler
             }
         } elseif ($scalar_type === 'float') {
             $value = (float) $value;
+
+            if ($existing_var_type->isMixed()) {
+                return new Type\Union([new Type\Atomic\TLiteralFloat($value)]);
+            }
 
             if ($existing_var_type->hasFloat()) {
                 $existing_float_types = $existing_var_type->getLiteralFloats();

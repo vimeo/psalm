@@ -419,6 +419,34 @@ class ValueTest extends TestCase
                     do {} while (--$i > 0);
                     echo $i === 0;',
             ],
+            'coerceFromMixed' => [
+                '<?php
+                    function type(int $b): void {}
+
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo($a) : void {
+                        if ($a === 1 || $a === 2) {
+                            type($a);
+                        }
+
+                        if (in_array($a, [1, 2], true)) {
+                            type($a);
+                        }
+                    }',
+            ],
+            'coerceFromString' => [
+                '<?php
+                    /** @param "a"|"b" $b */
+                    function type(string $b): void {}
+
+                    function foo(string $a) : void {
+                        if ($a === "a" || $a === "b") {
+                            type($a);
+                        }
+                    }',
+            ],
         ];
     }
 
