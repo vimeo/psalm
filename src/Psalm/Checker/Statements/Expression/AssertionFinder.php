@@ -705,18 +705,10 @@ class AssertionFinder
                 && $source instanceof StatementsSource
                 && $project_checker
             ) {
-                if (!TypeChecker::isContainedBy(
-                    $project_checker->codebase,
-                    $var_type,
-                    $other_type,
-                    true,
-                    true
-                ) && !TypeChecker::isContainedBy(
+                if (!TypeChecker::canBeIdenticalTo(
                     $project_checker->codebase,
                     $other_type,
-                    $var_type,
-                    true,
-                    true
+                    $var_type
                 )) {
                     if ($var_type->from_docblock || $other_type->from_docblock) {
                         if (IssueBuffer::accepts(

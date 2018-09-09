@@ -46,6 +46,7 @@ class TypeChecker
      * @param  bool         &$type_coerced_from_mixed
      * @param  bool         &$to_string_cast
      * @param  bool         &$type_coerced_from_scalar
+     * @param  bool        $allow_interface_equality
      *
      * @return bool
      */
@@ -59,7 +60,8 @@ class TypeChecker
         &$type_coerced = null,
         &$type_coerced_from_mixed = null,
         &$to_string_cast = null,
-        &$type_coerced_from_scalar = null
+        &$type_coerced_from_scalar = null,
+        $allow_interface_equality = false
     ) {
         $has_scalar_match = true;
 
@@ -90,6 +92,7 @@ class TypeChecker
                     $codebase,
                     $input_type_part,
                     $container_type_part,
+                    $allow_interface_equality,
                     $scalar_type_match_found,
                     $type_coerced,
                     $type_coerced_from_mixed,
@@ -212,6 +215,7 @@ class TypeChecker
                     $codebase,
                     $input_type_part,
                     $container_type_part,
+                    false,
                     $scalar_type_match_found,
                     $type_coerced,
                     $type_coerced_from_mixed,
@@ -258,11 +262,13 @@ class TypeChecker
                 $either_contains = self::isAtomicContainedBy(
                     $codebase,
                     $type1_part,
-                    $type2_part
+                    $type2_part,
+                    true
                 ) || self::isAtomicContainedBy(
                     $codebase,
                     $type2_part,
-                    $type1_part
+                    $type1_part,
+                    true
                 );
 
                 if ($either_contains) {
@@ -278,13 +284,15 @@ class TypeChecker
      * @param  Codebase       $codebase
      * @param  TNamedObject   $input_type_part
      * @param  TNamedObject   $container_type_part
+     * @param  bool           $allow_interface_equality
      *
      * @return bool
      */
     private static function isObjectContainedByObject(
         Codebase $codebase,
         TNamedObject $input_type_part,
-        TNamedObject $container_type_part
+        TNamedObject $container_type_part,
+        $allow_interface_equality
     ) {
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[] = $input_type_part;
@@ -308,6 +316,13 @@ class TypeChecker
                     continue 2;
                 }
 
+                $input_type_is_interface = $codebase->interfaceExists($intersection_input_type->value);
+                $container_type_is_interface = $codebase->interfaceExists($intersection_container_type->value);
+
+                if ($allow_interface_equality && $input_type_is_interface && $container_type_is_interface) {
+                    continue 2;
+                }
+
                 if ($codebase->classExists($intersection_input_type->value)
                     && $codebase->classExtendsOrImplements(
                         $intersection_input_type->value,
@@ -317,7 +332,7 @@ class TypeChecker
                     continue 2;
                 }
 
-                if ($codebase->interfaceExists($intersection_input_type->value)
+                if ($input_type_is_interface
                     && $codebase->interfaceExtends(
                         $intersection_input_type->value,
                         $intersection_container_type->value
@@ -348,6 +363,7 @@ class TypeChecker
      * @param  bool         &$type_coerced_from_mixed
      * @param  bool         &$to_string_cast
      * @param  bool         &$type_coerced_from_scalar
+     * @param  bool         $allow_interface_equality
      *
      * @return bool
      */
@@ -355,6 +371,7 @@ class TypeChecker
         Codebase $codebase,
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
+        $allow_interface_equality = false,
         &$has_scalar_match = null,
         &$type_coerced = null,
         &$type_coerced_from_mixed = null,
@@ -393,7 +410,12 @@ class TypeChecker
             (
                 $input_type_part instanceof TNamedObject
                 && $container_type_part instanceof TNamedObject
-                && self::isObjectContainedByObject($codebase, $input_type_part, $container_type_part)
+                && self::isObjectContainedByObject(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $allow_interface_equality
+                )
             )
         ) {
             return self::isMatchingTypeContainedBy(
@@ -403,7 +425,8 @@ class TypeChecker
                 $has_scalar_match,
                 $type_coerced,
                 $type_coerced_from_mixed,
-                $to_string_cast
+                $to_string_cast,
+                $allow_interface_equality
             );
         }
 
@@ -495,7 +518,8 @@ class TypeChecker
                         $property_type_coerced,
                         $property_type_coerced_from_mixed,
                         $property_type_to_string_cast,
-                        $property_type_coerced_from_scalar
+                        $property_type_coerced_from_scalar,
+                        $allow_interface_equality
                     )
                     && !$property_type_coerced_from_scalar
                 ) {
@@ -509,7 +533,8 @@ class TypeChecker
                         $inverse_property_type_coerced,
                         $inverse_property_type_coerced_from_mixed,
                         $inverse_property_type_to_string_cast,
-                        $inverse_property_type_coerced_from_scalar
+                        $inverse_property_type_coerced_from_scalar,
+                        $allow_interface_equality
                     )
                     || $inverse_property_type_coerced_from_scalar
                     ) {
@@ -571,7 +596,8 @@ class TypeChecker
                             $array_type_coerced,
                             $type_coerced_from_mixed,
                             $array_to_string_cast,
-                            $array_type_coerced_from_scalar
+                            $array_type_coerced_from_scalar,
+                            $allow_interface_equality
                         )
                         && !$array_type_coerced_from_scalar
                     ) {
@@ -652,7 +678,12 @@ class TypeChecker
             $fake_container_object = new TNamedObject($container_type_part->value);
             $fake_input_object = new TNamedObject($input_type_part->value);
 
-            return self::isObjectContainedByObject($codebase, $fake_input_object, $fake_container_object);
+            return self::isObjectContainedByObject(
+                $codebase,
+                $fake_input_object,
+                $fake_container_object,
+                $allow_interface_equality
+            );
         }
 
         if (($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
@@ -781,6 +812,7 @@ class TypeChecker
      * @param  bool        &$type_coerced
      * @param  bool        &$type_coerced_from_mixed
      * @param  bool        &$to_string_cast
+     * @param  bool        $allow_interface_equality
      *
      * @return bool
      */
@@ -791,7 +823,8 @@ class TypeChecker
         &$has_scalar_match,
         &$type_coerced,
         &$type_coerced_from_mixed,
-        &$to_string_cast
+        &$to_string_cast,
+        $allow_interface_equality
     ) {
         $all_types_contain = true;
 
@@ -819,7 +852,10 @@ class TypeChecker
                         $input_param->ignore_falsable_issues,
                         $has_scalar_match,
                         $type_coerced,
-                        $type_coerced_from_mixed
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $type_coerced_from_scalar,
+                        $allow_interface_equality
                     )
                 ) {
                     $all_types_contain = false;
@@ -904,7 +940,10 @@ class TypeChecker
                         $input_param->ignore_falsable_issues,
                         $has_scalar_match,
                         $type_coerced,
-                        $type_coerced_from_mixed
+                        $type_coerced_from_mixed,
+                        $to_string_cast,
+                        $type_coerced_from_scalar,
+                        $allow_interface_equality
                     )
                 ) {
                     $all_types_contain = false;
@@ -1098,6 +1137,7 @@ class TypeChecker
                         $codebase,
                         $type_part,
                         $container_type_part,
+                        false,
                         $has_scalar_match,
                         $type_coerced,
                         $type_coerced_from_mixed,
