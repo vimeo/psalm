@@ -302,8 +302,14 @@ class Populator
                 $storage->has_visitor_issues = true;
             }
 
-            $storage->public_class_constants += $parent_storage->public_class_constants;
-            $storage->protected_class_constants += $parent_storage->protected_class_constants;
+            $storage->public_class_constants = array_merge(
+                $parent_storage->public_class_constants,
+                $storage->public_class_constants
+            );
+            $storage->protected_class_constants = array_merge(
+                $parent_storage->protected_class_constants,
+                $storage->protected_class_constants
+            );
 
             $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
             $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
@@ -332,8 +338,8 @@ class Populator
 
             // copy over any constants
             $storage->public_class_constants = array_merge(
-                $storage->public_class_constants,
-                $parent_interface_storage->public_class_constants
+                $parent_interface_storage->public_class_constants,
+                $storage->public_class_constants
             );
 
             $storage->invalid_dependencies = array_merge(
@@ -371,8 +377,8 @@ class Populator
 
             // copy over any constants
             $storage->public_class_constants = array_merge(
-                $storage->public_class_constants,
-                $implemented_interface_storage->public_class_constants
+                $implemented_interface_storage->public_class_constants,
+                $storage->public_class_constants
             );
 
             $storage->invalid_dependencies = array_merge(
@@ -381,8 +387,6 @@ class Populator
             );
 
             $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
-
-            $storage->public_class_constants += $implemented_interface_storage->public_class_constants;
         }
 
         $storage->class_implements = array_merge($extra_interfaces, $storage->class_implements);

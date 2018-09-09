@@ -194,8 +194,6 @@ class ClassChecker extends ClassLikeChecker
                     continue;
                 }
 
-                $storage->public_class_constants += $interface_storage->public_class_constants;
-
                 $code_location = new CodeLocation(
                     $this,
                     $class->name ? $class->name : $class,

@@ -238,6 +238,28 @@ class ConstantTest extends TestCase
                         if (isset(C[$s])) {}
                     }',
             ],
+            'resolveClassConstToCurrentClass' => [
+                '<?php
+                    interface I {
+                        public const C = "a";
+
+                        public function getC(): string;
+                    }
+
+                    class A implements I {
+                        public function getC(): string {
+                            return self::C;
+                        }
+                    }
+
+                    class B extends A {
+                        public const C = [5];
+                      
+                        public function getA(): array {
+                            return self::C;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -310,6 +332,29 @@ class ConstantTest extends TestCase
                         const C = [B];
                     }',
                 'error_message' => 'UndefinedConstant',
+            ],
+            'resolveConstToCurrentClassWithBadReturn' => [
+                '<?php
+                    interface I {
+                        public const C = "a";
+
+                        public function getC(): string;
+                    }
+
+                    class A implements I {
+                        public function getC(): string {
+                            return self::C;
+                        }
+                    }
+
+                    class B extends A {
+                        public const C = [5];
+                      
+                        public function getC(): string {
+                            return self::C;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
