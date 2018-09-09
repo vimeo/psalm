@@ -310,67 +310,65 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $statements_checker->getSource()
                         )
                     ) {
-                        if ($var_id !== '$this') {
-                            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+                        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
-                            if (isset($class_storage->pseudo_methods[$method_name_lc])) {
-                                $has_valid_method_call_type = true;
-                                $existent_method_ids[] = $method_id;
+                        if (isset($class_storage->pseudo_methods[$method_name_lc])) {
+                            $has_valid_method_call_type = true;
+                            $existent_method_ids[] = $method_id;
 
-                                $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
+                            $pseudo_method_storage = $class_storage->pseudo_methods[$method_name_lc];
 
-                                if (self::checkFunctionArguments(
-                                    $statements_checker,
-                                    $args,
-                                    $pseudo_method_storage->params,
-                                    $method_id,
-                                    $context
-                                ) === false) {
-                                    return false;
+                            if (self::checkFunctionArguments(
+                                $statements_checker,
+                                $args,
+                                $pseudo_method_storage->params,
+                                $method_id,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
+                            $generic_params = [];
+
+                            if (self::checkFunctionLikeArgumentsMatch(
+                                $statements_checker,
+                                $args,
+                                null,
+                                $pseudo_method_storage->params,
+                                $pseudo_method_storage,
+                                null,
+                                $generic_params,
+                                $code_location,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
+                            if ($pseudo_method_storage->return_type) {
+                                $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                                if (!$return_type) {
+                                    $return_type = $return_type_candidate;
+                                } else {
+                                    $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
                                 }
 
-                                $generic_params = [];
+                                continue;
+                            }
+                        } else {
+                            if (self::checkFunctionArguments(
+                                $statements_checker,
+                                $args,
+                                null,
+                                null,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
 
-                                if (self::checkFunctionLikeArgumentsMatch(
-                                    $statements_checker,
-                                    $args,
-                                    null,
-                                    $pseudo_method_storage->params,
-                                    $pseudo_method_storage,
-                                    null,
-                                    $generic_params,
-                                    $code_location,
-                                    $context
-                                ) === false) {
-                                    return false;
-                                }
-
-                                if ($pseudo_method_storage->return_type) {
-                                    $return_type_candidate = clone $pseudo_method_storage->return_type;
-
-                                    if (!$return_type) {
-                                        $return_type = $return_type_candidate;
-                                    } else {
-                                        $return_type = Type::combineUnionTypes($return_type_candidate, $return_type);
-                                    }
-
-                                    continue;
-                                }
-                            } else {
-                                if (self::checkFunctionArguments(
-                                    $statements_checker,
-                                    $args,
-                                    null,
-                                    null,
-                                    $context
-                                ) === false) {
-                                    return false;
-                                }
-
-                                if ($class_storage->sealed_methods) {
-                                    $non_existent_method_ids[] = $method_id;
-                                    continue;
-                                }
+                            if ($class_storage->sealed_methods) {
+                                $non_existent_method_ids[] = $method_id;
+                                continue;
                             }
                         }
 
