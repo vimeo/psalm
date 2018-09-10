@@ -84,6 +84,12 @@ class ForeachTest extends TestCase
                       echo $item->prop;
                     }'
             ],
+            'foreachIntersectionTraversable' => [
+                '<?php
+                    /** @var Countable&Traversable<int> */
+                    $c = null;
+                    foreach ($c as $i) {}',
+            ],
         ];
     }
 

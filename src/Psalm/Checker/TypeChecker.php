@@ -316,6 +316,12 @@ class TypeChecker
                     continue 2;
                 }
 
+                if ($intersection_input_type_lower === 'traversable'
+                    && $intersection_container_type_lower === 'iterable'
+                ) {
+                    continue 2;
+                }
+
                 $input_type_is_interface = $codebase->interfaceExists($intersection_input_type->value);
                 $container_type_is_interface = $codebase->interfaceExists($intersection_container_type->value);
 
