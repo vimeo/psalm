@@ -427,6 +427,23 @@ class Reconciler
                 }
             }
 
+            if ($existing_var_type->hasFloat()) {
+                $existing_float_types = $existing_var_type->getLiteralFloats();
+
+                if ($existing_float_types) {
+                    foreach ($existing_float_types as $key => $literal_type) {
+                        if ($literal_type->value) {
+                            $existing_var_type->removeType($key);
+                            $did_remove_type = true;
+                        }
+                    }
+                } else {
+                    $did_remove_type = true;
+                    $existing_var_type->removeType('float');
+                    $existing_var_type->addType(new Type\Atomic\TLiteralFloat(0));
+                }
+            }
+
             if (isset($existing_var_atomic_types['array'])
                 && $existing_var_atomic_types['array']->getId() !== 'array<empty, empty>'
             ) {

@@ -1042,6 +1042,12 @@ class TypeReconciliationTest extends TestCase
                         if (!$a || ($a instanceof B && $a->b())) {}
                     }',
             ],
+            'reconcileFloatToEmpty' => [
+                '<?php
+                    function bar(float $f) : void {
+                        if (!$f) {}
+                    }',
+            ],
         ];
     }
 
