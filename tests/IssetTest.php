@@ -397,6 +397,50 @@ class IssetTest extends TestCase
                         throw new \InvalidArgumentException();
                     }'
             ],
+            'notIssetOneOrOther' => [
+                '<?php
+                    $foo = [
+                        "one" => rand(0,1) ? new DateTime : null,
+                        "two" => rand(0,1) ? new DateTime : null, 
+                        "three" => new DateTime
+                    ];
+
+                    if (!(isset($foo["one"]) || isset($foo["two"]))) {
+                        exit;
+                    }
+
+                    echo $foo["one"]->format("Y");',
+                'assertions' => [],
+                'error_levels' => ['PossiblyNullReference'],
+            ],
+            'notIssetOneOrOtherWithoutAssert' => [
+                '<?php
+                    $foo = [
+                        "one" => rand(0,1) ? new DateTime : null,
+                        "two" => rand(0,1) ? new DateTime : null, 
+                        "three" => new DateTime
+                    ];
+
+                    isset($foo["one"]) || isset($foo["two"]);
+
+                    echo $foo["one"]->format("Y");',
+                'assertions' => [],
+                'error_levels' => ['PossiblyNullReference'],
+            ],
+            'notIssetOneOrOtherWithAssert' => [
+                '<?php
+                    $foo = [
+                        "one" => rand(0,1) ? new DateTime : null,
+                        "two" => rand(0,1) ? new DateTime : null, 
+                        "three" => new DateTime
+                    ];
+
+                    assert(isset($foo["one"]) || isset($foo["two"]));
+
+                    echo $foo["one"]->format("Y");',
+                'assertions' => [],
+                'error_levels' => ['PossiblyNullReference'],
+            ],
         ];
     }
 

@@ -1029,6 +1029,19 @@ class TypeReconciliationTest extends TestCase
                   if (!$data) {}
                   if ($data) {}',
             ],
+            'reconcileWithInstanceof' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                        public function b() : bool {
+                            return (bool) rand(0, 1);
+                        }
+                    }
+
+                    function bar(?A $a) : void {
+                        if (!$a || ($a instanceof B && $a->b())) {}
+                    }',
+            ],
         ];
     }
 

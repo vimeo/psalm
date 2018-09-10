@@ -166,14 +166,28 @@ class BinaryOpChecker
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
 
-            if (ExpressionChecker::analyze($statements_checker, $stmt->left, $context) === false) {
+            $pre_op_context = clone $context;
+            $pre_op_context->parent_context = $context;
+
+            if (ExpressionChecker::analyze($statements_checker, $stmt->left, $pre_op_context) === false) {
                 return false;
             }
 
-            $new_referenced_var_ids = $context->referenced_var_ids;
-            $context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+            foreach ($pre_op_context->vars_in_scope as $var_id => $type) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = clone $type;
+                } else {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $type
+                    );
+                }
+            }
 
-            $new_assigned_var_ids = array_diff_key($context->assigned_var_ids, $pre_assigned_var_ids);
+            $new_referenced_var_ids = $pre_op_context->referenced_var_ids;
+            $pre_op_context->referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
+
+            $new_assigned_var_ids = array_diff_key($pre_op_context->assigned_var_ids, $pre_assigned_var_ids);
 
             $new_referenced_var_ids = array_diff_key($new_referenced_var_ids, $new_assigned_var_ids);
 
@@ -187,7 +201,7 @@ class BinaryOpChecker
 
             $clauses_for_right_analysis = Algebra::simplifyCNF(
                 array_merge(
-                    $context->clauses,
+                    $pre_op_context->clauses,
                     $negated_left_clauses
                 )
             );
@@ -200,7 +214,7 @@ class BinaryOpChecker
             // statements of the form if ($x === null || $x->foo())
             $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
                 $negated_type_assertions,
-                $context->vars_in_scope,
+                $pre_op_context->vars_in_scope,
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_checker,
@@ -208,11 +222,14 @@ class BinaryOpChecker
                 $statements_checker->getSuppressedIssues()
             );
 
-            $op_context = clone $context;
+            $op_context = clone $pre_op_context;
             $op_context->clauses = $clauses_for_right_analysis;
             $op_context->vars_in_scope = $op_vars_in_scope;
 
-            $op_context->removeReconciledClauses($changed_var_ids);
+            if ($changed_var_ids) {
+                $op_context->removeReconciledClauses($changed_var_ids);
+                $context->removeReconciledClauses($changed_var_ids);
+            }
 
             if (ExpressionChecker::analyze($statements_checker, $stmt->right, $op_context) === false) {
                 return false;
@@ -230,10 +247,10 @@ class BinaryOpChecker
             } elseif ($stmt->left instanceof PhpParser\Node\Expr\Assign) {
                 $var_id = ExpressionChecker::getVarId($stmt->left->var, $context->self);
 
-                if ($var_id && isset($context->vars_in_scope[$var_id])) {
+                if ($var_id && isset($pre_op_context->vars_in_scope[$var_id])) {
                     $left_inferred_reconciled = Reconciler::reconcileTypes(
                         '!falsy',
-                        $context->vars_in_scope[$var_id],
+                        $pre_op_context->vars_in_scope[$var_id],
                         '',
                         $statements_checker,
                         new CodeLocation($statements_checker->getSource(), $stmt->left),
