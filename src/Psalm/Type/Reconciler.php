@@ -1450,6 +1450,10 @@ class Reconciler
             }
         } elseif ($scalar_type === 'string' || $scalar_type === 'class-string') {
             if ($existing_var_type->isMixed()) {
+                if ($scalar_type === 'class-string') {
+                    return new Type\Union([new Type\Atomic\TLiteralClassString($value)]);
+                }
+
                 return new Type\Union([new Type\Atomic\TLiteralString($value)]);
             }
 
