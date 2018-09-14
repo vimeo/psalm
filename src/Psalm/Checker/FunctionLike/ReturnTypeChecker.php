@@ -62,6 +62,8 @@ class ReturnTypeChecker
 
         if ($source instanceof StatementsChecker) {
             $function_like_storage = $function_like_checker->getFunctionLikeStorage($source);
+        } elseif ($source instanceof \Psalm\Checker\ClassChecker) {
+            $function_like_storage = $function_like_checker->getFunctionLikeStorage();
         }
 
         if (!$function->getStmts() &&
