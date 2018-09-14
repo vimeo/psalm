@@ -1114,6 +1114,60 @@ class FileManipulationTest extends TestCase
                 ['LessSpecificReturnType'],
                 false,
             ],
+            'fixInvalidReturnTypePreserveNotes' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        /**
+                         * @return string some description
+                         */
+                        function foo() {
+                            return new \stdClass();
+                        }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        /**
+                         * @return \stdClass some description
+                         */
+                        function foo() {
+                            return new \stdClass();
+                        }
+                    }',
+                '5.6',
+                ['InvalidReturnType'],
+                false,
+            ],
+            'fixInvalidNullableReturnTypePreserveNotes' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        /**
+                         * @return string|null some notes
+                         */
+                        function foo() : ?string {
+                            return "hello";
+                        }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        /**
+                         * @return string some notes
+                         */
+                        function foo() : string {
+                            return "hello";
+                        }
+                    }',
+                '7.1',
+                ['LessSpecificReturnType'],
+                false,
+            ],
             'fixLessSpecificReturnType' => [
                 '<?php
                     class A {}

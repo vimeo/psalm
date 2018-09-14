@@ -456,7 +456,7 @@ class ReturnTypeChecker
                     || $function->isPrivate()
                 ) {
                     $check_for_less_specific_type = true;
-                } elseif ($function_like_storage) {
+                } elseif ($source instanceof StatementsChecker) {
                     if ($function_like_storage instanceof MethodStorage) {
                         $check_for_less_specific_type = !$function_like_storage->overridden_somewhere;
                     } else {
