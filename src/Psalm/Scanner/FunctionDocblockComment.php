@@ -9,6 +9,11 @@ class FunctionDocblockComment
     public $return_type = null;
 
     /**
+     * @var string|null
+     */
+    public $return_type_description = null;
+
+    /**
      * @var array<int, array{name:string, type:string, line_number: int}>
      */
     public $params = [];

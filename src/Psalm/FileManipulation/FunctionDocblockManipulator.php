@@ -77,6 +77,9 @@ class FunctionDocblockManipulator
     /** @var string */
     private $indentation;
 
+    /** @var string|null */
+    private $return_type_description;
+
     /**
      * @param  string $file_path
      * @param  string $function_id
@@ -235,10 +238,11 @@ class FunctionDocblockManipulator
      * @param   string      $new_type
      * @param   string      $phpdoc_type
      * @param   bool        $is_php_compatible
+     * @param   ?string     $description
      *
      * @return  void
      */
-    public function setReturnType($php_type, $new_type, $phpdoc_type, $is_php_compatible)
+    public function setReturnType($php_type, $new_type, $phpdoc_type, $is_php_compatible, $description)
     {
         $new_type = str_replace(['<mixed, mixed>', '<empty, empty>'], '', $new_type);
 
@@ -246,6 +250,7 @@ class FunctionDocblockManipulator
         $this->new_phpdoc_return_type = $phpdoc_type;
         $this->new_psalm_return_type = $new_type;
         $this->return_type_is_php_compatible = $is_php_compatible;
+        $this->return_type_description = $description;
     }
 
     /**
@@ -309,7 +314,10 @@ class FunctionDocblockManipulator
         }
 
         if ($this->new_phpdoc_return_type) {
-            $parsed_docblock['specials']['return'] = [$this->new_phpdoc_return_type];
+            $parsed_docblock['specials']['return'] = [
+                $this->new_phpdoc_return_type
+                    . ($this->return_type_description ? (' ' . $this->return_type_description) : '')
+            ];
         }
 
         if ($this->new_phpdoc_return_type !== $this->new_psalm_return_type && $this->new_psalm_return_type) {

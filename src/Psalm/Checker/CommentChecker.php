@@ -265,7 +265,9 @@ class CommentChecker
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
-                $info->return_type = $line_parts[0];
+                $info->return_type = array_shift($line_parts);
+                $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
+
                 $line_number = array_keys($return_specials)[0];
 
                 if ($line_number) {

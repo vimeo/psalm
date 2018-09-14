@@ -58,6 +58,12 @@ class ReturnTypeChecker
         $suppressed_issues = $function_like_checker->getSuppressedIssues();
         $project_checker = $source->getFileChecker()->project_checker;
 
+        $function_like_storage = null;
+
+        if ($source instanceof StatementsChecker) {
+            $function_like_storage = $function_like_checker->getFunctionLikeStorage($source);
+        }
+
         if (!$function->getStmts() &&
             (
                 $function instanceof ClassMethod &&
@@ -224,7 +230,8 @@ class ReturnTypeChecker
                         $function_like_checker,
                         ($project_checker->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock
+                            && $inferred_return_type->from_docblock,
+                        $function_like_storage
                     );
 
                     return null;
@@ -259,7 +266,8 @@ class ReturnTypeChecker
                     $compatible_method_ids
                     || (($project_checker->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
-                        && $inferred_return_type->from_docblock)
+                        && $inferred_return_type->from_docblock),
+                    $function_like_storage
                 );
 
                 return null;
@@ -395,7 +403,8 @@ class ReturnTypeChecker
                             $function_like_checker,
                             ($project_checker->only_replace_php_types_with_non_docblock_types
                                 || $unsafe_return_type)
-                                && $inferred_return_type->from_docblock
+                                && $inferred_return_type->from_docblock,
+                            $function_like_storage
                         );
 
                         return null;
@@ -431,7 +440,8 @@ class ReturnTypeChecker
                         $compatible_method_ids
                         || (($project_checker->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
-                        && $inferred_return_type->from_docblock)
+                        && $inferred_return_type->from_docblock),
+                        $function_like_storage
                     );
 
                     return null;
@@ -444,11 +454,9 @@ class ReturnTypeChecker
                     || $function->isPrivate()
                 ) {
                     $check_for_less_specific_type = true;
-                } elseif ($source instanceof StatementsChecker) {
-                    $method_storage = $function_like_checker->getFunctionLikeStorage($source);
-
-                    if ($method_storage instanceof MethodStorage) {
-                        $check_for_less_specific_type = !$method_storage->overridden_somewhere;
+                } elseif ($function_like_storage) {
+                    if ($function_like_storage instanceof MethodStorage) {
+                        $check_for_less_specific_type = !$function_like_storage->overridden_somewhere;
                     } else {
                         $check_for_less_specific_type = false;
                     }
@@ -487,7 +495,8 @@ class ReturnTypeChecker
                         $function_like_checker,
                         ($project_checker->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock
+                            && $inferred_return_type->from_docblock,
+                        $function_like_storage
                     );
 
                     return null;
@@ -521,7 +530,8 @@ class ReturnTypeChecker
                         $function_like_checker,
                         ($project_checker->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
-                            && $inferred_return_type->from_docblock
+                            && $inferred_return_type->from_docblock,
+                        $function_like_storage
                     );
 
                     return null;
@@ -658,7 +668,8 @@ class ReturnTypeChecker
         Type\Union $inferred_return_type,
         StatementsSource $source,
         FunctionLikeChecker $function_like_checker,
-        $docblock_only = false
+        $docblock_only = false,
+        FunctionLikeStorage $function_like_storage = null
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_checker,
@@ -687,7 +698,8 @@ class ReturnTypeChecker
                 $source->getFQCLN(),
                 true
             ),
-            $inferred_return_type->canBeFullyExpressedInPhp()
+            $inferred_return_type->canBeFullyExpressedInPhp(),
+            $function_like_storage ? $function_like_storage->return_type_description : null
         );
     }
 }

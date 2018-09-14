@@ -511,6 +511,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         if ($this->function instanceof Closure) {
             $this->verifyReturnType(
+                $statements_checker,
                 $storage->return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location
@@ -714,13 +715,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
      * @return  false|null
      */
     public function verifyReturnType(
+        StatementsChecker $statements_checker,
         Type\Union $return_type = null,
         $fq_class_name = null,
         CodeLocation $return_type_location = null
     ) {
         ReturnTypeChecker::verifyReturnType(
             $this->function,
-            $this->source,
+            $statements_checker,
             $this,
             $return_type,
             $fq_class_name,

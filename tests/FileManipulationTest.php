@@ -1091,6 +1091,29 @@ class FileManipulationTest extends TestCase
                 ['LessSpecificReturnType'],
                 false,
             ],
+            'fixLessSpecificReturnTypePreserveNotes' => [
+                '<?php
+                    namespace Foo;
+
+                    /**
+                     * @return object some description
+                     */
+                    function foo() {
+                        return new \stdClass();
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /**
+                     * @return \stdClass some description
+                     */
+                    function foo() {
+                        return new \stdClass();
+                    }',
+                '5.6',
+                ['LessSpecificReturnType'],
+                false,
+            ],
             'fixLessSpecificReturnType' => [
                 '<?php
                     class A {}

@@ -135,4 +135,9 @@ class FunctionLikeStorage
      * @var bool
      */
     public $has_yield = false;
+
+    /**
+     * @var string|null
+     */
+    public $return_type_description;
 }

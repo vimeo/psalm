@@ -1347,6 +1347,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
                 }
             }
+
+            $storage->return_type_description = $docblock_info->return_type_description;
         }
 
         foreach ($docblock_info->globals as $global) {
