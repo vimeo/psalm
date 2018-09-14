@@ -73,15 +73,15 @@ trait CallableTrait
                      */
                     function (FunctionLikeParameter $param) use ($namespace, $aliased_classes, $this_class) {
                         if (!$param->type) {
-                            throw new \UnexpectedValueException('Param type must not be null');
+                            $type_string = 'mixed';
+                        } else {
+                            $type_string = $param->type->toNamespacedString(
+                                $namespace,
+                                $aliased_classes,
+                                $this_class,
+                                false
+                            );
                         }
-
-                        $type_string = $param->type->toNamespacedString(
-                            $namespace,
-                            $aliased_classes,
-                            $this_class,
-                            false
-                        );
 
                         return ($param->is_variadic ? '...' : '') . $type_string . ($param->is_optional ? '=' : '');
                     },
@@ -107,6 +107,29 @@ trait CallableTrait
         }
 
         return 'callable' . $param_string . $return_type_string;
+    }
+
+    /**
+     * @param  string|null   $namespace
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  int           $php_major_version
+     * @param  int           $php_minor_version
+     *
+     * @return string
+     */
+    public function toPhpString(
+        $namespace,
+        array $aliased_classes,
+        $this_class,
+        $php_major_version,
+        $php_minor_version
+    ) {
+        if ($this instanceof TNamedObject) {
+            return parent::toNamespacedString($namespace, $aliased_classes, $this_class, true);
+        }
+
+        return $this->value;
     }
 
     public function getId()

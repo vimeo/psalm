@@ -1061,6 +1061,36 @@ class FileManipulationTest extends TestCase
                 ['LessSpecificReturnType'],
                 true,
             ],
+            'fixLessSpecificClosureReturnType' => [
+                '<?php
+                    function foo(string $name) : string {
+                        return $name . " hello";
+                    }
+
+                    function bar() : callable {
+                        return function(string $name) {
+                            return foo($name);
+                        };
+                    }',
+                '<?php
+                    function foo(string $name) : string {
+                        return $name . " hello";
+                    }
+
+                    /**
+                     * @return Closure
+                     *
+                     * @psalm-return Closure(string):string
+                     */
+                    function bar() : Closure {
+                        return function(string $name) {
+                            return foo($name);
+                        };
+                    }',
+                '7.1',
+                ['LessSpecificReturnType'],
+                false,
+            ],
             'fixLessSpecificReturnType' => [
                 '<?php
                     class A {}

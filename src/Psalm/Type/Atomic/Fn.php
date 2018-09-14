@@ -18,4 +18,9 @@ class Fn extends TNamedObject
     {
         return 'Closure';
     }
+
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }
