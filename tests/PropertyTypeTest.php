@@ -700,7 +700,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     $node = new Node();
-                    $next = $node->next',
+                    $next = $node->next;',
                 'assertions' => [
                     '$next' => 'Node|null',
                 ],

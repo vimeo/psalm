@@ -176,7 +176,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    $efoo = new Foo(Exception::class)
+                    $efoo = new Foo(Exception::class);
                     $efoo_bar = $efoo->bar();
 
                     $ffoo = new Foo("LogicException");

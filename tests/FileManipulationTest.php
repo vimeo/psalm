@@ -162,14 +162,14 @@ class FileManipulationTest extends TestCase
                 '<?php
                     $a = function() {
                         return "hello";
-                    }',
+                    };',
                 '<?php
                     $a = /**
                      * @return string
                      */
                     function() {
                         return "hello";
-                    }',
+                    };',
                 '5.6',
                 ['MissingClosureReturnType'],
                 true,

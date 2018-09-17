@@ -36,7 +36,7 @@ class ToStringTest extends TestCase
                     class C extends B {}
 
                     $c = new C();
-                    echo (string) $c',
+                    echo (string) $c;',
             ],
             'goodCast' => [
                 '<?php

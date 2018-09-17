@@ -923,7 +923,7 @@ class ArrayAssignmentTest extends TestCase
             'noDuplicateImplicitIntArrayKey' => [
                 '<?php
                     $arr = [1 => 0, 1, 2, 3];
-                    $arr = [1 => "one", 2 => "two", "three")',
+                    $arr = [1 => "one", 2 => "two", "three"];',
             ],
             'constArrayAssignment' => [
                 '<?php

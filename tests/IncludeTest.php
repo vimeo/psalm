@@ -375,9 +375,9 @@ class IncludeTest extends TestCase
                             function doThing() : void {}
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        require("file1.php");
-
                         namespace Bar;
+
+                        require("file1.php");
 
                         use Foo\A;
 
@@ -386,9 +386,9 @@ class IncludeTest extends TestCase
                             return new A;
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
-                        require("file2.php");
-
                         namespace Bat;
+
+                        require("file2.php");
 
                         class C {
                             function boop() : void {
@@ -647,9 +647,9 @@ class IncludeTest extends TestCase
             'invalidDoubleNestedTraitFunctionReturnInUncheckedFile' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
-                        require("file2.php");
-
                         namespace Foo;
+
+                        require("file2.php");
 
                         use Bar\B;
 
@@ -657,9 +657,9 @@ class IncludeTest extends TestCase
                             use B;
                         }',
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        require("file1.php");
-
                         namespace Bar;
+
+                        require("file1.php");
 
                         use Bat\A;
 

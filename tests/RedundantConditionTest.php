@@ -14,7 +14,7 @@ class RedundantConditionTest extends TestCase
         return [
             'ignoreIssueAndAssign' => [
                 '<?php
-                    public function foo(): stdClass {
+                    function foo(): stdClass {
                         return new stdClass;
                     }
 
@@ -483,19 +483,19 @@ class RedundantConditionTest extends TestCase
         return [
             'ifFalse' => [
                 '<?php
-                    $y = false:
+                    $y = false;
                     if ($y) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'ifNotTrue' => [
                 '<?php
-                    $y = true:
+                    $y = true;
                     if (!$y) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'ifTrue' => [
                 '<?php
-                    $y = true:
+                    $y = true;
                     if ($y) {}',
                 'error_message' => 'RedundantCondition',
             ],

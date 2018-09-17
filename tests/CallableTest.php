@@ -312,7 +312,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
-                        }
+                        };
                     }'
             ],
             'returnsTypedClosureWithClasses' => [
@@ -330,7 +330,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (C $x) use ($f, $g) : A {
                             return $f($g($x));
-                        }
+                        };
                     }
 
                     $a = foo(
@@ -357,7 +357,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (C2 $x) use ($f, $g) : A {
                             return $f($g($x));
-                        }
+                        };
                     }
 
                     $a = foo(
@@ -384,7 +384,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (C $x) use ($f, $g) : A2 {
                             return $f($g($x));
-                        }
+                        };
                     }
 
                     $a = foo(
@@ -410,7 +410,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : callable {
                         return function (C $x) use ($f, $g) : A {
                             return $f($g($x));
-                        }
+                        };
                     }
 
                     $a = foo(
@@ -547,11 +547,11 @@ class CallableTest extends TestCase
                     /** @param Closure(int):bool $c */
                     function acceptsIntToBool(Closure $c): void {}
 
-                    acceptsIntToBool(Closure::fromCallable(function(int $n): bool { return $n > 0 }));',
+                    acceptsIntToBool(Closure::fromCallable(function(int $n): bool { return $n > 0; }));',
             ],
             'singleLineClosures' => [
                 '<?php
-                    $a = function() : Closure { return function() : string { return "hello"; }};
+                    $a = function() : Closure { return function() : string { return "hello"; }; };
                     $b = $a()();',
                 'assertions' => [
                     '$a' => 'Closure():Closure():string',
@@ -694,7 +694,7 @@ class CallableTest extends TestCase
                 '<?php
                     $a = function() {
                         return "foo";
-                    }',
+                    };',
                 'error_message' => 'MissingClosureReturnType',
             ],
             'wrongCallableReturnType' => [
@@ -724,7 +724,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
@@ -739,7 +739,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : callable {
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
@@ -754,7 +754,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
@@ -769,7 +769,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : callable {
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
@@ -789,7 +789,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (int $x) use ($f, $g) : int {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'InvalidArgument',
             ],
@@ -809,7 +809,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (C $x) use ($f, $g) : A {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
@@ -829,7 +829,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : Closure {
                         return function (C $x) use ($f, $g) : A {
                             return $f($g($x));
-                        }
+                        };
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
@@ -848,7 +848,7 @@ class CallableTest extends TestCase
                     function foo(Closure $f, Closure $g) : callable {
                         return function (C $x) use ($f, $g) : A {
                             return $f($g($x));
-                        }
+                        };
                     }
 
                     /**
