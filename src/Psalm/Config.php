@@ -227,6 +227,11 @@ class Config
     public $forbidden_functions = [];
 
     /**
+     * @var bool
+     */
+    public $forbid_echo = false;
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -554,6 +559,11 @@ class Config
         if (isset($config_xml['checkForThrowsDocblock'])) {
             $attribute_text = (string) $config_xml['checkForThrowsDocblock'];
             $config->check_for_throws_docblock = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['forbidEcho'])) {
+            $attribute_text = (string) $config_xml['forbidEcho'];
+            $config->forbid_echo = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {

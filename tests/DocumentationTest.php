@@ -154,6 +154,9 @@ class DocumentationTest extends TestCase
                 case 'InvalidStringClass':
                     continue 2;
 
+                case 'ForbiddenEcho':
+                    continue 2;
+
                 case 'InvalidFalsableReturnType':
                     $ignored_issues = ['FalsableReturnStatement'];
                     break;

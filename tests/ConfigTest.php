@@ -657,7 +657,7 @@ class ConfigTest extends TestCase
      * @expectedExceptionMessage  ForbiddenCode
      * @return void
      */
-    public function testForbiddenEchoFunction()
+    public function testForbiddenEchoFunctionViaFunctions()
     {
         $this->project_checker = $this->getProjectCheckerWithConfig(
             TestConfig::loadFromXML(
@@ -668,6 +668,32 @@ class ConfigTest extends TestCase
                         <function name="echo" />
                     </forbiddenFunctions>
                 </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo "hello";'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException  \Psalm\Exception\CodeException
+     * @expectedExceptionMessage  ForbiddenEcho
+     * @return void
+     */
+    public function testForbiddenEchoFunctionViaFlag()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm forbidEcho="true"></psalm>'
             )
         );
 

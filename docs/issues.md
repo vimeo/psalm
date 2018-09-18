@@ -228,6 +228,14 @@ Emitted when Psalm encounters a var_dump, exec or similar expression that may ma
 var_dump("bah");
 ```
 
+### ForbiddenEcho
+
+Emitted when Psalm encounters an echo statement and the `forbidEcho` flag in your config is set to `true`
+
+```php
+echo("bah");
+```
+
 ### ImplementedReturnTypeMismatch
 
 Emitted when a class that inherits another, or implements an interface, has docblock return type that's entirely different to the parent. Subclasses of the parent return type are permitted, in docblocks.
