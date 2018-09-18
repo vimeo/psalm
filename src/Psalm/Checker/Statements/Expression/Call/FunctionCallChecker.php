@@ -512,6 +512,16 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 )) {
                     return false;
                 }
+            } elseif (isset($codebase->config->forbidden_functions[strtolower((string) $function)])) {
+                if (IssueBuffer::accepts(
+                    new ForbiddenCode(
+                        'You have forbidden the use of ' . $function,
+                        new CodeLocation($statements_checker->getSource(), $stmt)
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
+                    return false;
+                }
             } elseif ($function->parts === ['define']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $second_arg = $stmt->args[1];

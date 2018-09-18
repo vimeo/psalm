@@ -631,6 +631,116 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testAllowedEchoFunction()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm></psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo "hello";'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException  \Psalm\Exception\CodeException
+     * @expectedExceptionMessage  ForbiddenCode
+     * @return void
+     */
+    public function testForbiddenEchoFunction()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="echo" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo "hello";'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testAllowedVarExportFunction()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm></psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = [1, 2, 3];
+                var_export($a);'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException  \Psalm\Exception\CodeException
+     * @expectedExceptionMessage  ForbiddenCode
+     * @return  void
+     */
+    public function testForbiddenVarExportFunction()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <forbiddenFunctions>
+                        <function name="var_export" />
+                    </forbiddenFunctions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = [1, 2, 3];
+                var_export($a);'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testTemplatedFiles()
     {
         foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {

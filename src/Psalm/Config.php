@@ -222,6 +222,11 @@ class Config
     public $ignored_exceptions = [];
 
     /**
+     * @var array<string, bool>
+     */
+    public $forbidden_functions = [];
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -572,6 +577,13 @@ class Config
             /** @var \SimpleXMLElement $exception_class */
             foreach ($config_xml->ignoreExceptions->class as $exception_class) {
                 $config->ignored_exceptions[(string) $exception_class['name']] = true;
+            }
+        }
+
+        if (isset($config_xml->forbiddenFunctions) && isset($config_xml->forbiddenFunctions->function)) {
+            /** @var \SimpleXMLElement $forbidden_function */
+            foreach ($config_xml->forbiddenFunctions->function as $forbidden_function) {
+                $config->forbidden_functions[strtolower((string) $forbidden_function['name'])] = true;
             }
         }
 

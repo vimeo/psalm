@@ -24,6 +24,7 @@ use Psalm\Exception\DocblockParseException;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ContinueOutsideLoop;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\Issue\UnevaluatedCode;
@@ -431,6 +432,18 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         ) === false) {
                             return false;
                         }
+                    }
+                }
+
+                if (isset($codebase->config->forbidden_functions['echo'])) {
+                    if (IssueBuffer::accepts(
+                        new ForbiddenCode(
+                            'Use of echo',
+                            new CodeLocation($this->source, $stmt)
+                        ),
+                        $this->source->getSuppressedIssues()
+                    )) {
+                        return false;
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {

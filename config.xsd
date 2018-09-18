@@ -15,6 +15,7 @@
             <xs:element name="stubs" type="StubsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="plugins" type="PluginsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="exitFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="forbiddenFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
