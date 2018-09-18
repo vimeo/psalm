@@ -484,6 +484,7 @@ class ClassChecker extends ClassLikeChecker
                             function (FunctionLikeParameter $param) {
                                 $fake_param = (new PhpParser\Builder\Param($param->name));
                                 if ($param->signature_type) {
+                                    /** @psalm-suppress DeprecatedMethod */
                                     $fake_param->setTypehint((string)$param->signature_type);
                                 }
 
