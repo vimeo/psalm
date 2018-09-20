@@ -151,7 +151,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
         $original_context = null;
 
         if ($context->loop_scope) {
-            $original_context = clone $context;
+            $original_context = clone $context->loop_scope->loop_parent_context;
         }
 
         $plugin_classes = $codebase->config->after_statement_checks;
