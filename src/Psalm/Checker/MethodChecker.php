@@ -633,10 +633,11 @@ class MethodChecker extends FunctionLikeChecker
                 && (
                     !$implemeneter_param_type
                     || (
-                        $implemeneter_param_type->getId() !== $guide_param->type->getId()
+                        strtolower($implemeneter_param_type->getId()) !== strtolower($guide_param->type->getId())
                         && (
                             !$or_null_guide_type
-                            || $implemeneter_param_type->getId() !== $or_null_guide_type->getId()
+                            || strtolower($implemeneter_param_type->getId())
+                                !== strtolower($or_null_guide_type->getId())
                         )
                     )
                 )
