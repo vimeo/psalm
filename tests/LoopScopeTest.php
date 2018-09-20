@@ -1144,6 +1144,18 @@ class LoopScopeTest extends TestCase
                         $foo["bar"] = "bat";
                     } while (rand(0, 1));',
             ],
+            'updateExistingValueAfterLoopContinue' => [
+                '<?php
+                    $i = false;
+                    $b = (bool) rand(0, 1);
+                    foreach ([$b] as $n) {
+                        $i = $n;
+                        if ($i) {
+                            continue;
+                        }
+                    }
+                    if ($i) {}',
+            ],
         ];
     }
 

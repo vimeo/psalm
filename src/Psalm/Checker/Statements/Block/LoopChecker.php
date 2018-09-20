@@ -158,6 +158,8 @@ class LoopChecker
             $inner_context->parent_context = $loop_scope->loop_context;
             $inner_context->loop_scope = $loop_scope;
 
+            var_dump((string) $inner_context->vars_in_scope['$i']);
+
             $old_referenced_var_ids = $inner_context->referenced_var_ids;
             $inner_context->referenced_var_ids = [];
 
