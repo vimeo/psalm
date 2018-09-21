@@ -33,20 +33,26 @@ class ThrowChecker
             $file_checker = $statements_checker->getFileChecker();
             $project_checker = $file_checker->project_checker;
 
-            if (!TypeChecker::isContainedBy($project_checker->codebase, $throw_type, $exception_type)) {
-                if (IssueBuffer::accepts(
-                    new InvalidThrow(
-                        'Cannot throw ' . $throw_type . ' as it does not extend Exception or implement Throwable',
-                        new CodeLocation($file_checker, $stmt)
-                    ),
-                    $statements_checker->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } elseif ($context->collect_exceptions) {
-                foreach ($throw_type->getTypes() as $throw_atomic_type) {
-                    if ($throw_atomic_type instanceof TNamedObject) {
-                        $context->possibly_thrown_exceptions[$throw_atomic_type->value] = true;
+            foreach ($throw_type->getTypes() as $throw_type_part) {
+                $throw_type_candidate = new Union([$throw_type_part]);
+
+                if (!TypeChecker::isContainedBy($project_checker->codebase, $throw_type_candidate, $exception_type)) {
+                    if (IssueBuffer::accepts(
+                        new InvalidThrow(
+                            'Cannot throw ' . $throw_type_part
+                                . ' as it does not extend Exception or implement Throwable',
+                            new CodeLocation($file_checker, $stmt),
+                            (string) $throw_type_part
+                        ),
+                        $statements_checker->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                } elseif ($context->collect_exceptions) {
+                    foreach ($throw_type->getTypes() as $throw_atomic_type) {
+                        if ($throw_atomic_type instanceof TNamedObject) {
+                            $context->possibly_thrown_exceptions[$throw_atomic_type->value] = true;
+                        }
                     }
                 }
             }

@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class InvalidThrow extends CodeIssue
+class InvalidThrow extends ClassIssue
 {
 }

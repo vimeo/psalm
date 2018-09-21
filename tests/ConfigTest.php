@@ -765,6 +765,162 @@ class ConfigTest extends TestCase
     }
 
     /**
+     * @expectedException  \Psalm\Exception\CodeException
+     * @expectedExceptionMessage  InvalidCatch
+     * @return void
+     */
+    public function testValidThrowInvalidCatch()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <InvalidThrow>
+                            <errorLevel type="suppress">
+                                <referencedClass name="I" />
+                            </errorLevel>
+                        </InvalidThrow>
+                    </issueHandlers>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {}
+
+                class E extends Exception implements I {}
+
+                function foo() : void {
+                    throw new E();
+                }
+
+                function handleThrow(I $e) : void {
+                    echo "about to throw";
+                    throw $e;
+                }
+
+                try {
+                    foo();
+                } catch (I $e) {
+                    handleThrow($e);
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException  \Psalm\Exception\CodeException
+     * @expectedExceptionMessage  InvalidThrow
+     * @return void
+     */
+    public function testInvalidThrowValidCatch()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <InvalidCatch>
+                            <errorLevel type="suppress">
+                                <referencedClass name="I" />
+                            </errorLevel>
+                        </InvalidCatch>
+                    </issueHandlers>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {}
+
+                class E extends Exception implements I {}
+
+                function foo() : void {
+                    throw new E();
+                }
+
+                function handleThrow(I $e) : void {
+                    echo "about to throw";
+                    throw $e;
+                }
+
+                try {
+                    foo();
+                } catch (I $e) {
+                    handleThrow($e);
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testValidThrowValidCatch()
+    {
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <InvalidCatch>
+                            <errorLevel type="suppress">
+                                <referencedClass name="I" />
+                            </errorLevel>
+                        </InvalidCatch>
+                        <InvalidThrow>
+                            <errorLevel type="suppress">
+                                <referencedClass name="I" />
+                            </errorLevel>
+                        </InvalidThrow>
+                    </issueHandlers>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {}
+
+                class E extends Exception implements I {}
+
+                function foo() : void {
+                    throw new E();
+                }
+
+                function handleThrow(I $e) : void {
+                    echo "about to throw";
+                    throw $e;
+                }
+
+                try {
+                    foo();
+                } catch (I $e) {
+                    handleThrow($e);
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @return void
      */
     public function testTemplatedFiles()

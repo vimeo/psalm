@@ -176,7 +176,8 @@ class TryChecker
                     if (IssueBuffer::accepts(
                         new InvalidCatch(
                             'Class/interface ' . $fq_catch_class . ' cannot be caught',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            $fq_catch_class
                         ),
                         $statements_checker->getSuppressedIssues()
                     )) {
