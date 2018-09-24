@@ -1919,4 +1919,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     {
         return $this->aliases;
     }
+
+    public function afterTraverse(array $nodes)
+    {
+        $this->file_storage->type_aliases = $this->type_aliases;
+    }
 }

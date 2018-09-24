@@ -61,13 +61,22 @@ class AssignmentChecker
         $comment_type = null;
 
         if ($doc_comment) {
+            $file_path = $statements_checker->getRootFilePath();
+            $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+            $file_storage_provider = $project_checker->file_storage_provider;
+
+            $file_storage = $file_storage_provider->get($file_path);
+
             try {
                 $var_comments = CommentChecker::getTypeFromComment(
                     $doc_comment,
                     $statements_checker->getSource(),
                     $statements_checker->getAliases(),
                     null,
-                    $came_from_line_number
+                    $came_from_line_number,
+                    null,
+                    $file_storage->type_aliases
                 );
             } catch (IncorrectDocblockException $e) {
                 if (IssueBuffer::accepts(

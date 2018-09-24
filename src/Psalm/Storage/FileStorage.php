@@ -73,6 +73,11 @@ class FileStorage
     public $has_visitor_issues = false;
 
     /**
+     * @var array<string, array<int, string>>
+     */
+    public $type_aliases = [];
+
+    /**
      * @param string $file_path
      */
     public function __construct($file_path)
