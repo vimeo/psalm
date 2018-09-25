@@ -411,7 +411,15 @@ $project_checker = new ProjectChecker(
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
+$start_time = (float) microtime(true);
+
 $config->visitComposerAutoloadFiles($project_checker, $debug);
+
+$now_time = (float) microtime(true);
+
+if ($debug) {
+    echo 'Visiting autoload files took ' . number_format($now_time - $start_time, 2) . "\n";
+}
 
 if (array_key_exists('debug-by-line', $options)) {
     $project_checker->debug_lines = true;
@@ -433,8 +441,6 @@ if ($find_dead_code) {
 foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
 }
-
-$start_time = (float) microtime(true);
 
 if ($paths_to_check === null) {
     $project_checker->check($current_dir, $is_diff);
