@@ -20,6 +20,7 @@
             <directory name="src/Psalm/Stubs" />
             <directory name="tests/stubs" />
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php" />
+            <file name="src/Psalm/Diff/Differ.php" />
         </ignoreFiles>
     </projectFiles>
 
