@@ -28,4 +28,33 @@ class NoParserCacheProvider extends \Psalm\Provider\ParserCacheProvider
     public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
     {
     }
+
+    /**
+     * @param float $start_time
+     *
+     * @return void
+     */
+    public function processSuccessfulRun($start_time)
+    {
+    }
+
+    /**
+     * @param  string   $file_cache_key
+     *
+     * @return string|null
+     */
+    public function loadExistingFileContentsFromCache($file_cache_key)
+    {
+        return null;
+    }
+
+    /**
+     * @param  string  $file_cache_key
+     * @param  string  $file_contents
+     *
+     * @return void
+     */
+    public function cacheFileContents($file_cache_key, $file_contents)
+    {
+    }
 }

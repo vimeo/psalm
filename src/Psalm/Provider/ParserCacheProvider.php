@@ -8,6 +8,7 @@ class ParserCacheProvider
 {
     const FILE_HASHES = 'file_hashes_json';
     const PARSER_CACHE_DIRECTORY = 'php-parser';
+    const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
     const GOOD_RUN_NAME = 'good_run';
 
     /**
@@ -60,6 +61,58 @@ class ParserCacheProvider
 
             /** @var array<int, \PhpParser\Node\Stmt> */
             return unserialize((string)file_get_contents($cache_location)) ?: null;
+        }
+    }
+
+    /**
+     * @param  string   $file_cache_key
+     *
+     * @return array<int, PhpParser\Node\Stmt>|null
+     *
+     * @psalm-suppress UndefinedFunction
+     */
+    public function loadExistingStatementsFromCache($file_cache_key)
+    {
+        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if (!$root_cache_directory) {
+            return;
+        }
+
+        $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
+
+        $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
+
+        if (is_readable($cache_location)) {
+            if ($this->use_igbinary) {
+                /** @var array<int, \PhpParser\Node\Stmt> */
+                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+            }
+
+            /** @var array<int, \PhpParser\Node\Stmt> */
+            return unserialize((string)file_get_contents($cache_location)) ?: null;
+        }
+    }
+
+    /**
+     * @param  string   $file_cache_key
+     *
+     * @return string|null
+     */
+    public function loadExistingFileContentsFromCache($file_cache_key)
+    {
+        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if (!$root_cache_directory) {
+            return;
+        }
+
+        $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_CONTENTS_CACHE_DIRECTORY;
+
+        $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
+
+        if (is_readable($cache_location)) {
+            return file_get_contents($cache_location);
         }
     }
 
@@ -125,6 +178,31 @@ class ParserCacheProvider
                 json_encode($this->file_content_hashes)
             );
         }
+    }
+
+    /**
+     * @param  string  $file_cache_key
+     * @param  string  $file_contents
+     *
+     * @return void
+     */
+    public function cacheFileContents($file_cache_key, $file_contents)
+    {
+        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if (!$root_cache_directory) {
+            return;
+        }
+
+        $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_CONTENTS_CACHE_DIRECTORY;
+
+        $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
+
+        if (!is_dir($parser_cache_directory)) {
+            mkdir($parser_cache_directory, 0777, true);
+        }
+
+        file_put_contents($cache_location, $file_contents);
     }
 
     /**

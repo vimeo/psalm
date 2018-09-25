@@ -294,6 +294,11 @@ class Config
      */
     public $exit_functions = [];
 
+    /**
+     * @var int
+     */
+    public $modified_time = 0;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -371,6 +376,7 @@ class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents);
+            $config->modified_time = filemtime($file_path);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()

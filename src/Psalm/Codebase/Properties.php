@@ -31,11 +31,13 @@ class Properties
      * Whether or not a given property exists
      *
      * @param  string $property_id
+     * @param  string $calling_method_id
      *
      * @return bool
      */
     public function propertyExists(
         $property_id,
+        ?string $calling_method_id = null,
         CodeLocation $code_location = null
     ) {
         // remove trailing backslash if it exists
@@ -46,9 +48,16 @@ class Properties
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
-            if ($this->collect_references && $code_location) {
-                $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
+            $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
 
+            if ($calling_method_id) {
+                \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                    $calling_method_id,
+                    strtolower($declaring_property_class) . '::$' . $property_name
+                );
+            }
+
+            if ($this->collect_references && $code_location) {
                 $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
                 $declaring_property_storage = $declaring_class_storage->properties[$property_name];
 

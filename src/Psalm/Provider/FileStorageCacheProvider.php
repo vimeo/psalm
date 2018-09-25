@@ -16,7 +16,7 @@ class FileStorageCacheProvider
      */
     private $config;
 
-    const FILE_CACHE_DIRECTORY = 'file_cache';
+    const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
     public function __construct(Config $config)
     {
@@ -154,7 +154,7 @@ class FileStorageCacheProvider
             throw new \UnexpectedValueException('No cache directory defined');
         }
 
-        $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_CACHE_DIRECTORY;
+        $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_STORAGE_CACHE_DIRECTORY;
 
         if ($create_directory && !is_dir($parser_cache_directory)) {
             mkdir($parser_cache_directory, 0777, true);

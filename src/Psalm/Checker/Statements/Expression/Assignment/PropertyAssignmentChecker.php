@@ -302,7 +302,7 @@ class PropertyAssignmentChecker
 
                 $has_regular_setter = true;
 
-                if (!$codebase->properties->propertyExists($property_id)) {
+                if (!$codebase->properties->propertyExists($property_id, $context->calling_method_id)) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         // if this is a proper error, we'll see it on the first pass
                         if ($context->collect_mutations) {
@@ -680,7 +680,7 @@ class PropertyAssignmentChecker
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if (!$codebase->properties->propertyExists($property_id)) {
+        if (!$codebase->properties->propertyExists($property_id, $context->calling_method_id)) {
             if (IssueBuffer::accepts(
                 new UndefinedPropertyAssignment(
                     'Static property ' . $property_id . ' is not defined',

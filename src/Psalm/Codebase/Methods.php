@@ -50,7 +50,8 @@ class Methods
      * @return bool
      */
     public function methodExists(
-        $method_id,
+        string $method_id,
+        ?string $calling_method_id = null,
         CodeLocation $code_location = null
     ) {
         // remove trailing backslash if it exists
@@ -64,8 +65,36 @@ class Methods
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
+            $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
+
+            $declaring_method_id_lc = strtolower($declaring_method_id);
+
+            if ($calling_method_id === $declaring_method_id_lc) {
+                return true;
+            }
+
+            if ($calling_method_id) {
+                $method_id_lc = strtolower($method_id);
+
+                if ($method_id_lc !== $declaring_method_id_lc
+                    && $class_storage->user_defined
+                    && isset($class_storage->potential_declaring_method_ids[$method_name])
+                ) {
+                    foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
+                        \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                            $calling_method_id,
+                            $potential_id
+                        );
+                    }
+                } else {
+                    \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                        $calling_method_id,
+                        $declaring_method_id_lc
+                    );
+                }
+            }
+
             if ($this->collect_references && $code_location) {
-                $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
                 list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
 
                 $declaring_class_storage = $this->classlike_storage_provider->get($declaring_method_class);
@@ -120,6 +149,14 @@ class Methods
             && (CallMap::inCallMap($method_id) || ($old_method_id && CallMap::inCallMap($method_id)))
         ) {
             return true;
+        }
+
+        if ($calling_method_id) {
+            // also store failures in case the method is added later
+            \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                $calling_method_id,
+                strtolower($method_id)
+            );
         }
 
         return false;

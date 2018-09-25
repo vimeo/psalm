@@ -12,6 +12,8 @@ use Psalm\Config;
 class FileReferenceProvider
 {
     const REFERENCE_CACHE_NAME = 'references';
+    const CORRECT_METHODS_CACHE_NAME = 'correct_methods';
+    const CLASS_METHOD_CACHE_NAME = 'class_method_references';
 
     /**
      * A lookup table used for getting all the files that reference a class
@@ -45,6 +47,11 @@ class FileReferenceProvider
      * @var array<string, array{a:array<int, string>, i:array<int, string>}>
      */
     protected static $file_references = [];
+
+    /**
+     * @var array<string, array<string, bool>>
+     */
+    private static $class_method_references = [];
 
     /**
      * @return array<string>
@@ -198,6 +205,16 @@ class FileReferenceProvider
     }
 
     /**
+     * @param  string $member_id
+     *
+     * @return array<string, bool>
+     */
+    public static function getMethodsReferencingClassMember($member_id)
+    {
+        return isset(self::$class_method_references[$member_id]) ? self::$class_method_references[$member_id] : [];
+    }
+
+    /**
      * @return bool
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
@@ -209,17 +226,33 @@ class FileReferenceProvider
         if ($cache_directory) {
             $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
-            if (is_readable($cache_location)) {
-                $reference_cache = unserialize((string) file_get_contents($cache_location));
-
-                if (!is_array($reference_cache)) {
-                    throw new \UnexpectedValueException('The reference cache must be an array');
-                }
-
-                self::$file_references = $reference_cache;
-
-                return true;
+            if (!is_readable($cache_location)) {
+                return false;
             }
+
+            $reference_cache = unserialize((string) file_get_contents($cache_location));
+
+            if (!is_array($reference_cache)) {
+                throw new \UnexpectedValueException('The reference cache must be an array');
+            }
+
+            self::$file_references = $reference_cache;
+
+            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+
+            if (!is_readable($cache_location)) {
+                return false;
+            }
+
+            $class_method_reference_cache = unserialize((string) file_get_contents($cache_location));
+
+            if (!is_array($class_method_reference_cache)) {
+                throw new \UnexpectedValueException('The reference cache must be an array');
+            }
+
+            self::$class_method_references = $class_method_reference_cache;
+
+            return true;
         }
 
         return false;
@@ -234,7 +267,9 @@ class FileReferenceProvider
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
-        if ($cache_directory) {
+        if ($cache_directory
+            && !$project_checker->cache_provider instanceof \Psalm\Provider\NoCache\NoParserCacheProvider
+        ) {
             $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
             foreach ($visited_files as $file => $_) {
@@ -259,6 +294,101 @@ class FileReferenceProvider
             }
 
             file_put_contents($cache_location, serialize(self::$file_references));
+
+            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+
+            file_put_contents($cache_location, serialize(self::$class_method_references));
         }
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public static function getCorrectMethodCache(Config $config)
+    {
+        $cache_directory = $config->getCacheDirectory();
+
+        $correct_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CORRECT_METHODS_CACHE_NAME;
+
+        if ($cache_directory
+            && file_exists($correct_methods_cache_location)
+            && filemtime($correct_methods_cache_location) > $config->modified_time
+        ) {
+            /** @var array<string, array<string, bool>> */
+            return unserialize(file_get_contents($correct_methods_cache_location));
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, array<string, bool>> $correct_methods
+     * @return void
+     */
+    public static function setCorrectMethodCache(array $correct_methods)
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $correct_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CORRECT_METHODS_CACHE_NAME;
+
+            file_put_contents(
+                $correct_methods_cache_location,
+                serialize($correct_methods)
+            );
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public static function addReferenceToClassMethod(string $calling_method_id, string $referenced_member_id)
+    {
+        if (!isset(self::$class_method_references[$referenced_member_id])) {
+            self::$class_method_references[$referenced_member_id] = [$calling_method_id => true];
+        } else {
+            self::$class_method_references[$referenced_member_id][$calling_method_id] = true;
+        }
+    }
+
+    /**
+     * @return array<string, array<string,bool>>
+     */
+    public static function getClassMethodReferences() : array
+    {
+        return self::$class_method_references;
+    }
+
+    /**
+     * @param array<string, array<string,bool>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public static function addClassMethodReferences(array $references)
+    {
+        foreach ($references as $referenced_member_id => $calling_method_ids) {
+            if (isset(self::$class_method_references[$referenced_member_id])) {
+                self::$class_method_references[$referenced_member_id] = array_merge(
+                    self::$class_method_references[$referenced_member_id],
+                    $calling_method_ids
+                );
+            } else {
+                self::$class_method_references[$referenced_member_id] = $calling_method_ids;
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearCache()
+    {
+        self::$file_references_to_class = [];
+        self::$referencing_files = [];
+        self::$files_inheriting_classes = [];
+        self::$deleted_files = null;
+        self::$file_references = [];
+        self::$class_method_references = [];
     }
 }

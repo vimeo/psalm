@@ -194,6 +194,11 @@ class ClassLikeStorage
     public $inheritable_method_ids = [];
 
     /**
+     * @var array<string, array<string, bool>>
+     */
+    public $potential_declaring_method_ids = [];
+
+    /**
      * @var array<string, PropertyStorage>
      */
     public $properties = [];

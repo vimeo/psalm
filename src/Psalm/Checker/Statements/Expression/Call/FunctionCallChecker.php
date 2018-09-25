@@ -378,6 +378,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                         $statements_checker,
                         $function_id,
                         $stmt->args,
+                        $context,
                         $code_location,
                         $statements_checker->getSuppressedIssues()
                     );

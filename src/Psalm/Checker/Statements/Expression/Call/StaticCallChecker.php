@@ -297,25 +297,49 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
             $has_mock = $has_mock || $is_mock;
 
-            $method_id = null;
-
-            if ($stmt->name instanceof PhpParser\Node\Identifier
-                && !$codebase->methodExists($fq_class_name . '::__callStatic')
-                && !$is_mock
-            ) {
+            if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
                 $method_id = $fq_class_name . '::' . strtolower($stmt->name->name);
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
-                $source_method_id = $source instanceof FunctionLikeChecker
-                    ? $source->getMethodId()
-                    : null;
+                $args = $stmt->args;
+
+                if (!$codebase->methods->methodExists($method_id)
+                    || !MethodChecker::isMethodVisible(
+                        $method_id,
+                        $context->self,
+                        $statements_checker->getSource()
+                    )
+                ) {
+                    if ($codebase->methods->methodExists(
+                        $fq_class_name . '::__callStatic',
+                        $context->calling_method_id
+                    )) {
+                        $array_values = array_map(
+                            /**
+                             * @return PhpParser\Node\Expr\ArrayItem
+                             */
+                            function (PhpParser\Node\Arg $arg) {
+                                return new PhpParser\Node\Expr\ArrayItem($arg->value);
+                            },
+                            $args
+                        );
+
+                        $args = [
+                            new PhpParser\Node\Arg(new PhpParser\Node\Scalar\String_($method_id)),
+                            new PhpParser\Node\Arg(new PhpParser\Node\Expr\Array_($array_values)),
+                        ];
+
+                        $method_id = $fq_class_name . '::__callstatic';
+                        $cased_method_id = $fq_class_name . '::__callStatic';
+                    }
+                }
 
                 $does_method_exist = MethodChecker::checkMethodExists(
                     $project_checker,
                     $cased_method_id,
                     new CodeLocation($source, $stmt),
                     $statements_checker->getSuppressedIssues(),
-                    $source_method_id
+                    $context->calling_method_id
                 );
 
                 if (!$does_method_exist) {
@@ -404,7 +428,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 if (self::checkMethodArgs(
                     $method_id,
-                    $stmt->args,
+                    $args,
                     $found_generic_params,
                     $context,
                     new CodeLocation($statements_checker->getSource(), $stmt),
@@ -422,7 +446,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $return_type_candidate = $codebase->methods->getMethodReturnType(
                     $method_id,
                     $self_fq_class_name,
-                    $stmt->args
+                    $args
                 );
 
                 if ($return_type_candidate) {
@@ -499,7 +523,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                             $appearing_method_id,
                             $declaring_method_id,
                             null,
-                            $stmt->args,
+                            $args,
                             $code_location,
                             $context,
                             $file_manipulations,

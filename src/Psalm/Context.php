@@ -260,6 +260,11 @@ class Context
     public $strict_types = false;
 
     /**
+     * @var string|null
+     */
+    public $calling_method_id;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

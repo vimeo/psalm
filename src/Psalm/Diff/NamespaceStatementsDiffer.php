@@ -20,6 +20,9 @@ class NamespaceStatementsDiffer extends Differ
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
     {
         list($trace, $x, $y, $bc) = self::calculateTrace(
+            /**
+             * @psalm-suppress UnusedParam
+             */
             function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, string $a_code, string $b_code) : bool {
                 if (($a instanceof PhpParser\Node\Stmt\Class_ && $b instanceof PhpParser\Node\Stmt\Class_)
                     || ($a instanceof PhpParser\Node\Stmt\Interface_ && $b instanceof PhpParser\Node\Stmt\Interface_)

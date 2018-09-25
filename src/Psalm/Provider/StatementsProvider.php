@@ -26,9 +26,24 @@ class StatementsProvider
     private $file_storage_cache_provider;
 
     /**
+     * @var array<string, array<string, bool>>
+     */
+    private $unchanged_members = [];
+
+    /**
+     * @var array<string, array<string, bool>>
+     */
+    private $unchanged_signature_members = [];
+
+    /**
      * @var PhpParser\Parser|null
      */
     protected static $parser;
+
+    /**
+     * @var PhpParser\NodeTraverser|null
+     */
+    protected static $node_traverser;
 
     public function __construct(
         FileProvider $file_provider,
@@ -71,17 +86,59 @@ class StatementsProvider
             }
 
             $stmts = self::parseStatements($file_contents);
+
+            $existing_file_contents = $this->cache_provider->loadExistingFileContentsFromCache($file_cache_key);
+
+            if ($existing_file_contents) {
+                $existing_statements = $this->cache_provider->loadExistingStatementsFromCache($file_cache_key);
+
+                if ($existing_statements) {
+                    list($unchanged_members, $unchanged_signature_members) = \Psalm\Diff\FileStatementsDiffer::diff(
+                        $existing_statements,
+                        $stmts,
+                        $existing_file_contents,
+                        $file_contents
+                    );
+
+                    $unchanged_members = array_map(
+                        function (int $_) : bool {
+                            return true;
+                        },
+                        array_flip($unchanged_members)
+                    );
+
+                    $unchanged_signature_members = array_map(
+                        function (int $_) : bool {
+                            return true;
+                        },
+                        array_flip($unchanged_signature_members)
+                    );
+
+                    if (isset($this->unchanged_members[$file_path])) {
+                        $this->unchanged_members[$file_path] = array_intersect_key(
+                            $this->unchanged_members[$file_path],
+                            $unchanged_members
+                        );
+                    } else {
+                        $this->unchanged_members[$file_path] = $unchanged_members;
+                    }
+
+                    if (isset($this->unchanged_signature_members[$file_path])) {
+                        $this->unchanged_signature_members[$file_path] = array_intersect_key(
+                            $this->unchanged_signature_members[$file_path],
+                            $unchanged_signature_members
+                        );
+                    } else {
+                        $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
+                    }
+                }
+            }
+
             $this->file_storage_cache_provider->removeCacheForFile($file_path);
+            $this->cache_provider->cacheFileContents($file_cache_key, $file_contents);
         } else {
             $from_cache = true;
         }
-
-        $nameResolver = new \Psalm\Visitor\SimpleNameResolver;
-        $nodeTraverser = new PhpParser\NodeTraverser;
-        $nodeTraverser->addVisitor($nameResolver);
-
-        /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = $nodeTraverser->traverse($stmts);
 
         $this->cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
 
@@ -90,6 +147,22 @@ class StatementsProvider
         }
 
         return $stmts;
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getUnchangedMembers()
+    {
+        return $this->unchanged_members;
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getUnchangedSignatureMembers()
+    {
+        return $this->unchanged_signature_members;
     }
 
     /**
@@ -109,16 +182,21 @@ class StatementsProvider
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
         }
 
-        $error_handler = new \PhpParser\ErrorHandler\Collecting();
+        if (!self::$node_traverser) {
+            self::$node_traverser = new PhpParser\NodeTraverser;
+            $name_resolver = new \Psalm\Visitor\SimpleNameResolver;
+            self::$node_traverser->addVisitor($name_resolver);
+        }
+
+        try {
+            /** @var array<int, \PhpParser\Node\Stmt> */
+            $stmts = self::$parser->parse($file_contents);
+        } catch (PhpParser\Error $e) {
+            throw $e;
+        }
 
         /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = self::$parser->parse($file_contents, $error_handler);
-
-        if (!$stmts && $error_handler->hasErrors()) {
-            foreach ($error_handler->getErrors() as $error) {
-                throw $error;
-            }
-        }
+        $stmts = self::$node_traverser->traverse($stmts);
 
         return $stmts;
     }
