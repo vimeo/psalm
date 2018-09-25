@@ -214,6 +214,15 @@ class Populator
             $this->populateDataFromParentClass($storage, $storage_provider, $dependent_classlikes);
         }
 
+        if (!strpos($fq_classlike_name_lc, '\\')
+            && !isset($storage->methods['__construct'])
+            && isset($storage->methods[$fq_classlike_name_lc])
+            && !$storage->is_interface
+            && !$storage->is_trait
+        ) {
+            $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
+        }
+
         $this->populateInterfaceDataFromParentInterfaces($storage, $storage_provider, $dependent_classlikes);
 
         $this->populateDataFromImplementedInterfaces($storage, $storage_provider, $dependent_classlikes);
