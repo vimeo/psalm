@@ -219,6 +219,8 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             }
 
             MethodChecker::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
+
+            $context->calling_method_id = strtolower($method_id);
         } elseif ($this->function instanceof Function_) {
             $file_storage = $file_storage_provider->get($this->source->getFilePath());
 

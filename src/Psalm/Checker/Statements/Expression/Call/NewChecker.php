@@ -228,8 +228,9 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     }
                 }
 
-                if ($codebase->methodExists(
+                if ($codebase->methods->methodExists(
                     $fq_class_name . '::__construct',
+                    $context->calling_method_id,
                     $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
                 )) {
                     $method_id = $fq_class_name . '::__construct';

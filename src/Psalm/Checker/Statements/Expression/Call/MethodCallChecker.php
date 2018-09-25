@@ -302,14 +302,14 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 $args = $stmt->args;
 
-                if ($codebase->methodExists($fq_class_name . '::__call')) {
-                    if (!$codebase->methodExists($method_id)
-                        || !MethodChecker::isMethodVisible(
-                            $method_id,
-                            $context->self,
-                            $statements_checker->getSource()
-                        )
-                    ) {
+                if (!$codebase->methods->methodExists($method_id)
+                    || !MethodChecker::isMethodVisible(
+                        $method_id,
+                        $context->self,
+                        $statements_checker->getSource()
+                    )
+                ) {
+                    if ($codebase->methods->methodExists($fq_class_name . '::__call', $context->calling_method_id)) {
                         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 
                         if (isset($class_storage->pseudo_methods[$method_name_lc])) {
@@ -427,7 +427,11 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     ? $source->getMethodId()
                     : null;
 
-                if (!$codebase->methodExists($method_id, $method_id !== $source_method_id ? $code_location : null)) {
+                if (!$codebase->methods->methodExists(
+                    $method_id,
+                    $context->calling_method_id,
+                    $method_id !== $source_method_id ? $code_location : null
+                )) {
                     if ($config->use_phpdoc_methods_without_call) {
                         $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
 

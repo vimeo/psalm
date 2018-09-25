@@ -4,6 +4,7 @@ namespace Psalm\Checker;
 use PhpParser;
 use Psalm\Checker\Statements\Expression\AssertionFinder;
 use Psalm\Codebase\CallMap;
+use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidReturnType;
@@ -35,6 +36,7 @@ class FunctionChecker extends FunctionLikeChecker
         StatementsChecker $statements_checker,
         $function_id,
         array $call_args,
+        Context $context,
         CodeLocation $code_location,
         array $suppressed_issues
     ) {
@@ -159,6 +161,7 @@ class FunctionChecker extends FunctionLikeChecker
                 case 'array_map':
                     return self::getArrayMapReturnType(
                         $statements_checker,
+                        $context,
                         $call_args
                     );
 
@@ -173,6 +176,7 @@ class FunctionChecker extends FunctionLikeChecker
                 case 'array_reduce':
                     return self::getArrayReduceReturnType(
                         $statements_checker,
+                        $context,
                         $call_args
                     );
 
@@ -718,6 +722,7 @@ class FunctionChecker extends FunctionLikeChecker
      */
     private static function getArrayMapReturnType(
         StatementsChecker $statements_checker,
+        Context $context,
         $call_args
     ) {
         $array_arg = isset($call_args[1]->value) ? $call_args[1]->value : null;
@@ -832,7 +837,14 @@ class FunctionChecker extends FunctionLikeChecker
                                     continue;
                                 }
 
-                                if (!$codebase->methodExists($mapping_function_id_part)) {
+                                if (!$codebase->methods->methodExists(
+                                    $mapping_function_id_part,
+                                    $context->calling_method_id,
+                                    new CodeLocation(
+                                        $statements_checker->getSource(),
+                                        $function_call_arg->value
+                                    )
+                                )) {
                                     continue;
                                 }
 
@@ -927,7 +939,8 @@ class FunctionChecker extends FunctionLikeChecker
      */
     private static function getArrayReduceReturnType(
         StatementsChecker $statements_checker,
-        $call_args
+        Context $context,
+        array $call_args
     ) {
         if (!isset($call_args[0]) || !isset($call_args[1])) {
             return Type::getMixed();
@@ -1104,7 +1117,14 @@ class FunctionChecker extends FunctionLikeChecker
                                 continue;
                             }
 
-                            if (!$codebase->methodExists($mapping_function_id_part)) {
+                            if (!$codebase->methods->methodExists(
+                                $mapping_function_id_part,
+                                $context->calling_method_id,
+                                new CodeLocation(
+                                    $statements_checker->getSource(),
+                                    $function_call_arg
+                                )
+                            )) {
                                 continue;
                             }
 

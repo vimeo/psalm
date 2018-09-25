@@ -205,6 +205,13 @@ class ConstFetchChecker
                 return false;
             }
 
+            if ($context->calling_method_id) {
+                \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                    $context->calling_method_id,
+                    strtolower($fq_class_name) . '::' . $stmt->name->name
+                );
+            }
+
             $class_const_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
             if (isset($class_const_storage->deprecated_constants[$stmt->name->name])) {

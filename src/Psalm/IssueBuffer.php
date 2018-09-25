@@ -172,6 +172,7 @@ class IssueBuffer
         }
 
         if (!self::alreadyEmitted($error_message)) {
+            ++self::$error_count;
             self::$issues_data[] = $e->toArray(Config::REPORT_ERROR);
         }
 
@@ -269,13 +270,21 @@ class IssueBuffer
     }
 
     /**
-     * @return array<int, array{severity: string, line_from: int, type: string, message: string, file_name: string,
-     *  file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int, column_from: int,
-     *  column_to: int}>
+     * @return array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
+     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
+     *  column_from: int, column_to: int}>
      */
     public static function getIssuesData()
     {
         return self::$issues_data;
+    }
+
+    /**
+     * @return int
+     */
+    public static function getErrorCount()
+    {
+        return self::$error_count;
     }
 
     /**

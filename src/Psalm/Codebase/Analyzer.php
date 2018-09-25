@@ -13,6 +13,34 @@ use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
 
 /**
+ * @psalm-type  IssueData = array{
+ *          issues: array<
+ *            int,
+ *            array{
+ *              severity: string,
+ *              line_from: int,
+ *              line_to: int,
+ *              type: string,
+ *              message: string,
+ *              file_name: string,
+ *              file_path: string,
+ *              snippet: string,
+ *              from: int,
+ *              to: int,
+ *              snippet_from: int,
+ *              snippet_to: int,
+ *              column_from: int,
+ *              column_to: int
+ *            }
+ *          >,
+ *          file_references: array<string, array<string,bool>>,
+ *          mixed_counts: array<string, array{0: int, 1: int}>,
+ *          method_references: array<string, array<string,bool>>,
+ *          correct_methods: array<string, array<string, bool>>
+ *        }
+ */
+
+/**
  * @internal
  *
  * Called in the analysis phase of Psalm's execution
@@ -57,6 +85,11 @@ class Analyzer
      * @var array<string, string>
      */
     private $files_to_analyze = [];
+
+    /**
+     * @var array<string, array<string, bool>>
+     */
+    private $correct_methods = [];
 
     /**
      * @param bool $debug_output
@@ -130,6 +163,48 @@ class Analyzer
      */
     public function analyzeFiles(ProjectChecker $project_checker, $pool_size, $alter_code)
     {
+        if (!$project_checker->cache_provider instanceof \Psalm\Provider\NoCache\NoParserCacheProvider
+            && !$project_checker->codebase->collect_references
+        ) {
+            $this->correct_methods = \Psalm\Provider\FileReferenceProvider::getCorrectMethodCache($this->config);
+        } else {
+            $this->correct_methods = [];
+        }
+
+        $unchanged_methods = $project_checker->codebase->statements_provider->getUnchangedMembers();
+        $unchanged_signature_methods = $project_checker->codebase->statements_provider->getUnchangedSignatureMembers();
+
+        $method_map = [];
+
+        foreach ($this->correct_methods as $file_path => $correct_methods) {
+            foreach ($correct_methods as $correct_method_id => $_) {
+                $method_map[$correct_method_id] = $file_path;
+            }
+        }
+
+        foreach ($this->correct_methods as $file_path => $correct_methods) {
+            foreach ($correct_methods as $correct_method_id => $_) {
+                if (isset($unchanged_methods[$file_path])
+                    && !isset($unchanged_methods[$file_path][$correct_method_id])
+                ) {
+                    unset($this->correct_methods[$file_path][$correct_method_id]);
+
+                    if (!isset($unchanged_signature_methods[$file_path][$correct_method_id])) {
+                        $referencing_methods = \Psalm\Provider\FileReferenceProvider::getMethodsReferencingClassMember(
+                            $correct_method_id
+                        );
+
+                        foreach ($referencing_methods as $method_id => $_) {
+                            if (isset($method_map[$method_id])) {
+                                $method_file_path = $method_map[$method_id];
+                                unset($this->correct_methods[$method_file_path][$method_id]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         $filetype_checkers = $this->config->getFiletypeCheckers();
 
         $analysis_worker =
@@ -167,28 +242,31 @@ class Analyzer
                 function () {
                 },
                 $analysis_worker,
-                /** @return array */
+                /** @return IssueData */
                 function () {
+                    $analyzer = ProjectChecker::getInstance()->codebase->analyzer;
+
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
                         'file_references' => FileReferenceProvider::getAllFileReferences(),
-                        'mixed_counts' => ProjectChecker::getInstance()->codebase->analyzer->getMixedCounts(),
+                        'method_references' => FileReferenceProvider::getClassMethodReferences(),
+                        'mixed_counts' => $analyzer->getMixedCounts(),
+                        'correct_methods' => $analyzer->getCorrectMethods(),
                     ];
                 }
             );
 
             // Wait for all tasks to complete and collect the results.
             /**
-             * @var array<array{issues: array<int, array{severity: string, line_from: int, line_to: int, type: string,
-             *  message: string, file_name: string, file_path: string, snippet: string, from: int, to: int,
-             *  snippet_from: int, snippet_to: int, column_from: int, column_to: int}>, file_references: array<string,
-             *  array<string,bool>>, mixed_counts: array<string, array{0: int, 1: int}>}>
+             * @var array<int, IssueData>
              */
             $forked_pool_data = $pool->wait();
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
                 FileReferenceProvider::addFileReferences($pool_data['file_references']);
+                FileReferenceProvider::addClassMethodReferences($pool_data['method_references']);
+                $this->correct_methods = array_merge($pool_data['correct_methods'], $this->correct_methods);
 
                 foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
                     if (!isset($this->mixed_counts[$file_path])) {
@@ -209,6 +287,10 @@ class Analyzer
                 $analysis_worker($i, $file_path);
                 ++$i;
             }
+        }
+
+        if (!$project_checker->cache_provider instanceof \Psalm\Provider\NoCache\NoParserCacheProvider) {
+            \Psalm\Provider\FileReferenceProvider::setCorrectMethodCache($this->correct_methods);
         }
 
         if ($alter_code) {
@@ -449,5 +531,34 @@ class Analyzer
 
             $this->file_provider->setContents($file_path, $existing_contents);
         }
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getCorrectMethods()
+    {
+        return $this->correct_methods;
+    }
+
+    /**
+     * @param string $file_path
+     * @param string $method_id
+     *
+     * @return void
+     */
+    public function setCorrectMethod($file_path, $method_id)
+    {
+        $this->correct_methods[$file_path][$method_id] = true;
+    }
+
+    /**
+     * @param  string  $file_path
+     * @param  string  $method_id
+     * @return bool
+     */
+    public function isMethodCorrect($file_path, $method_id)
+    {
+        return isset($this->correct_methods[$file_path][$method_id]);
     }
 }

@@ -20,6 +20,9 @@ class FileStatementsDiffer extends Differ
     public static function diff(array $a, array $b, string $a_code, string $b_code)
     {
         list($trace, $x, $y, $bc) = self::calculateTrace(
+            /**
+             * @psalm-suppress UnusedParam
+             */
             function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, string $a_code, string $b_code) : bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;

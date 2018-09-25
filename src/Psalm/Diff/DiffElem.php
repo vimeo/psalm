@@ -24,6 +24,7 @@ class DiffElem
      * @param int    $type
      * @param mixed  $old
      * @param mixed  $new
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public function __construct(int $type, $old, $new)
     {

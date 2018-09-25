@@ -107,7 +107,7 @@ class MethodChecker extends FunctionLikeChecker
      * @param  string       $method_id
      * @param  CodeLocation $code_location
      * @param  array        $suppressed_issues
-     * @param  string|null  $source_method_id
+     * @param  string|null  $calling_method_id
      *
      * @return bool|null
      */
@@ -116,11 +116,12 @@ class MethodChecker extends FunctionLikeChecker
         $method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $source_method_id = null
+        $calling_method_id = null
     ) {
-        if ($project_checker->codebase->methodExists(
+        if ($project_checker->codebase->methods->methodExists(
             $method_id,
-            $source_method_id !== $method_id ? $code_location : null
+            $calling_method_id,
+            $calling_method_id !== $method_id ? $code_location : null
         )) {
             return true;
         }
@@ -308,7 +309,15 @@ class MethodChecker extends FunctionLikeChecker
                 return true;
             }
 
-            throw new \UnexpectedValueException('$declaring_method_id not expected to be null here');
+            if ($method_id === 'Closure::__invoke') {
+                return true;
+            }
+
+            if ($method_id === 'ReflectionType::getname') {
+                return true;
+            }
+
+            throw new \UnexpectedValueException('$declaring_method_id not expected to be null for ' . $method_id);
         }
 
         $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);

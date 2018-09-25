@@ -315,6 +315,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         FunctionLikeChecker::clearCache();
         \Psalm\Provider\ClassLikeStorageProvider::deleteAll();
         \Psalm\Provider\FileStorageProvider::deleteAll();
+        \Psalm\Provider\FileReferenceProvider::clearCache();
     }
 
     /**
