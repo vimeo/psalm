@@ -229,13 +229,11 @@ class FileReferenceProvider
     }
 
     /**
-     * @param  string $member_id
-     *
-     * @return array<string, bool>
+     * @return array<string, array<string, bool>>
      */
-    public static function getMethodsReferencingClassMember($member_id)
+    public static function getMethodsReferencing()
     {
-        return isset(self::$class_method_references[$member_id]) ? self::$class_method_references[$member_id] : [];
+        return self::$class_method_references;
     }
 
     /**
