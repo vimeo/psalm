@@ -160,7 +160,7 @@ class IssueBuffer
         }
 
         if ($reporting_level === Config::REPORT_INFO) {
-            if ($project_checker->show_info && !self::alreadyEmitted($error_message)) {
+            if (!self::alreadyEmitted($error_message)) {
                 self::$issues_data[] = $e->toArray(Config::REPORT_INFO);
             }
 
@@ -355,7 +355,8 @@ class IssueBuffer
             echo self::getOutput(
                 $project_checker->output_format,
                 $project_checker->use_color,
-                $project_checker->show_snippet
+                $project_checker->show_snippet,
+                $project_checker->show_info
             );
         }
 
@@ -378,7 +379,7 @@ class IssueBuffer
                 echo 'No errors found!' . "\n";
             }
 
-            if ($info_count) {
+            if ($info_count && $project_checker->show_info) {
                 echo str_repeat('-', 30) . "\n";
 
                 echo $info_count . ' other issues found.' . "\n"
@@ -420,10 +421,11 @@ class IssueBuffer
      * @param string $format
      * @param bool   $use_color
      * @param bool   $show_snippet
+     * @param bool   $show_info
      *
      * @return string
      */
-    public static function getOutput($format, $use_color, $show_snippet = true)
+    public static function getOutput($format, $use_color, $show_snippet = true, $show_info = true)
     {
         if ($format === ProjectChecker::TYPE_JSON) {
             return json_encode(self::$issues_data) . "\n";
@@ -449,6 +451,10 @@ class IssueBuffer
 
         $output = '';
         foreach (self::$issues_data as $issue_data) {
+            if (!$show_info && $issue_data['severity'] === Config::REPORT_INFO) {
+                continue;
+            }
+
             $output .= self::getConsoleOutput($issue_data, $use_color, $show_snippet) . "\n" . "\n";
         }
 
