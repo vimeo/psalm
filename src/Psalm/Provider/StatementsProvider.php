@@ -36,6 +36,11 @@ class StatementsProvider
     private $unchanged_signature_members = [];
 
     /**
+     * @var array<string, array<string, bool>>
+     */
+    private $changed_members = [];
+
+    /**
      * @var array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>>
      */
     private $diff_map = [];
@@ -98,7 +103,7 @@ class StatementsProvider
                 $existing_statements = $this->cache_provider->loadExistingStatementsFromCache($file_cache_key);
 
                 if ($existing_statements) {
-                    list($unchanged_members, $unchanged_signature_members, $diff_map)
+                    list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
                         = \Psalm\Diff\FileStatementsDiffer::diff(
                             $existing_statements,
                             $stmts,
@@ -120,6 +125,13 @@ class StatementsProvider
                         array_flip($unchanged_signature_members)
                     );
 
+                    $changed_members = array_map(
+                        function (int $_) : bool {
+                            return true;
+                        },
+                        array_flip($changed_members)
+                    );
+
                     if (isset($this->unchanged_members[$file_path])) {
                         $this->unchanged_members[$file_path] = array_intersect_key(
                             $this->unchanged_members[$file_path],
@@ -136,6 +148,15 @@ class StatementsProvider
                         );
                     } else {
                         $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
+                    }
+
+                    if (isset($this->changed_members[$file_path])) {
+                        $this->changed_members[$file_path] = array_merge(
+                            $this->changed_members[$file_path],
+                            $changed_members
+                        );
+                    } else {
+                        $this->changed_members[$file_path] = $changed_members;
                     }
 
                     $this->diff_map[$file_path] = $diff_map;
@@ -172,6 +193,14 @@ class StatementsProvider
     public function getUnchangedSignatureMembers()
     {
         return $this->unchanged_signature_members;
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getChangedMembers()
+    {
+        return $this->changed_members;
     }
 
     /**

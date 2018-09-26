@@ -181,8 +181,9 @@ class Analyzer
 
         $statements_provider = $project_checker->codebase->statements_provider;
 
-        $unchanged_methods = $statements_provider->getUnchangedMembers();
-        $unchanged_signature_methods = $statements_provider->getUnchangedSignatureMembers();
+        $unchanged_members = $statements_provider->getUnchangedMembers();
+        $changed_members = $statements_provider->getChangedMembers();
+        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
         $diff_map = $statements_provider->getDiffMap();
 
         $method_map = [];
@@ -193,25 +194,28 @@ class Analyzer
             }
         }
 
+        $all_referencing_methods = \Psalm\Provider\FileReferenceProvider::getMethodsReferencing();
+
+        $newly_invalidated_methods = [];
+
+        foreach ($changed_members as $file_changed_members) {
+            foreach ($file_changed_members as $member_id => $_) {
+                if (isset($all_referencing_methods[$member_id])) {
+                    $newly_invalidated_methods = array_merge($all_referencing_methods[$member_id]);
+                }
+            }
+        }
+
         foreach ($this->correct_methods as $file_path => $correct_methods) {
             foreach ($correct_methods as $correct_method_id => $_) {
-                if (isset($unchanged_methods[$file_path])
-                    && !isset($unchanged_methods[$file_path][$correct_method_id])
+                if (isset($newly_invalidated_methods[$correct_method_id])) {
+                    unset($this->correct_methods[$file_path][$correct_method_id]);
+                }
+
+                if (isset($unchanged_members[$file_path])
+                    && !isset($unchanged_members[$file_path][$correct_method_id])
                 ) {
                     unset($this->correct_methods[$file_path][$correct_method_id]);
-
-                    if (!isset($unchanged_signature_methods[$file_path][$correct_method_id])) {
-                        $referencing_methods = \Psalm\Provider\FileReferenceProvider::getMethodsReferencingClassMember(
-                            $correct_method_id
-                        );
-
-                        foreach ($referencing_methods as $method_id => $_) {
-                            if (isset($method_map[$method_id])) {
-                                $method_file_path = $method_map[$method_id];
-                                unset($this->correct_methods[$method_file_path][$method_id]);
-                            }
-                        }
-                    }
                 }
             }
         }

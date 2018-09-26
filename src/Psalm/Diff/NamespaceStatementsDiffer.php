@@ -15,7 +15,12 @@ class NamespaceStatementsDiffer extends Differ
      * @param PhpParser\Node\Stmt[] $a
      * @param PhpParser\Node\Stmt[] $b New array
      *
-     * @return array{0:array<int, string>, 1:array<int, string>, 2: array<int, array{0: int, 1: int, 2: int, 3: int}>}
+     * @return array{
+     *      0: array<int, string>,
+     *.     1: array<int, string>,
+     *      2: array<int, string>,
+     *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
+     * }
      */
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
     {
@@ -44,6 +49,7 @@ class NamespaceStatementsDiffer extends Differ
 
         $keep = [];
         $keep_signature = [];
+        $delete = [];
         $diff_map = [];
 
         foreach ($diff as $diff_elem) {
@@ -63,11 +69,12 @@ class NamespaceStatementsDiffer extends Differ
 
                     $keep = array_merge($keep, $class_keep[0]);
                     $keep_signature = array_merge($keep_signature, $class_keep[1]);
-                    $diff_map = array_merge($diff_map, $class_keep[2]);
+                    $delete = array_merge($delete, $class_keep[2]);
+                    $diff_map = array_merge($diff_map, $class_keep[3]);
                 }
             }
         }
 
-        return [$keep, $keep_signature, $diff_map];
+        return [$keep, $keep_signature, $delete, $diff_map];
     }
 }

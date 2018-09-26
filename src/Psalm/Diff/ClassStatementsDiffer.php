@@ -15,7 +15,12 @@ class ClassStatementsDiffer extends Differ
      * @param PhpParser\Node\Stmt[] $a
      * @param PhpParser\Node\Stmt[] $b New array
      *
-     * @return array{0:array<int, string>, 1:array<int, string>, 2: array<int, array{0: int, 1: int, 2: int, 3: int}>}
+     * @return array{
+     *      0: array<int, string>,
+     *.     1: array<int, string>,
+     *      2: array<int, string>,
+     *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
+     * }
      */
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
     {
@@ -94,6 +99,17 @@ class ClassStatementsDiffer extends Differ
                     $signature_change = $signature_change
                         || substr($a_code, $a_start, $a_stmts_start - $a_start)
                             !== substr($b_code, $b_start, $b_stmts_start - $b_start);
+                } elseif ($a instanceof PhpParser\Node\Stmt\Property && $b instanceof PhpParser\Node\Stmt\Property) {
+                    if (count($a->props) !== 1 || count($b->props) !== 1) {
+                        return false;
+                    }
+
+                    if ((string) $a->props[0]->name !== (string) $b->props[0]->name) {
+                        return false;
+                    }
+
+                    $body_change = substr($a_code, $a_comments_end, $a_end - $a_comments_end)
+                        !== substr($b_code, $b_comments_end, $b_end - $b_comments_end);
                 } else {
                     $signature_change = true;
                 }
@@ -114,6 +130,7 @@ class ClassStatementsDiffer extends Differ
 
         $keep = [];
         $keep_signature = [];
+        $delete = [];
 
         foreach ($diff as $diff_elem) {
             if ($diff_elem->type === DiffElem::TYPE_KEEP) {
@@ -136,9 +153,21 @@ class ClassStatementsDiffer extends Differ
                         $keep_signature[] = strtolower($name) . '::$' . $prop->name;
                     }
                 }
+            } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
+                if ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassMethod) {
+                    $delete[] = strtolower($name) . '::' . strtolower((string) $diff_elem->old->name);
+                } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\Property) {
+                    foreach ($diff_elem->old->props as $prop) {
+                        $delete[] = strtolower($name) . '::$' . $prop->name;
+                    }
+                } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassConst) {
+                    foreach ($diff_elem->old->consts as $const) {
+                        $delete[] = strtolower($name) . '::' . $const->name;
+                    }
+                }
             }
         };
 
-        return [$keep, $keep_signature, $diff_map];
+        return [$keep, $keep_signature, $delete, $diff_map];
     }
 }
