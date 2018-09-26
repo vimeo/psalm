@@ -894,6 +894,23 @@ class ClassChecker extends ClassLikeChecker
                 echo 'Skipping analysis of pre-verified method ' . $analyzed_method_id . "\n";
             }
 
+            $start = (int)$stmt->getAttribute('startFilePos');
+            $end = (int)$stmt->getAttribute('endFilePos');
+
+            $comments = $stmt->getComments();
+
+            if ($comments) {
+                $start = $comments[0]->getFilePos();
+            }
+
+            $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
+                $source->getFilePath(),
+                $start,
+                $end
+            );
+
+            IssueBuffer::addIssues($existing_issues);
+
             return $method_checker;
         }
 

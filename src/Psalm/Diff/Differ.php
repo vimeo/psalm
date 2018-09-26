@@ -20,7 +20,7 @@ class Differ
      * @param  \Closure $is_equal
      * @param  array    $a
      * @param  array    $b
-     * @return array{0:array, 1: int, 2: int, 3: array<int, true>}
+     * @return array{0:array, 1: int, 2: int, 3: array<int, true>, 4: array<int, array{0: int, 1: int, 2: int, 3: int}>}
      */
     protected static function calculateTrace(
         \Closure $is_equal,
