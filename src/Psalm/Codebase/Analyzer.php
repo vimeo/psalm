@@ -14,30 +14,29 @@ use Psalm\Provider\FileStorageProvider;
 
 /**
  * @psalm-type  IssueData = array{
- *          issues: array<
- *            int,
- *            array{
- *              severity: string,
- *              line_from: int,
- *              line_to: int,
- *              type: string,
- *              message: string,
- *              file_name: string,
- *              file_path: string,
- *              snippet: string,
- *              from: int,
- *              to: int,
- *              snippet_from: int,
- *              snippet_to: int,
- *              column_from: int,
- *              column_to: int
- *            }
- *          >,
- *          file_references: array<string, array<string,bool>>,
- *          mixed_counts: array<string, array{0: int, 1: int}>,
- *          method_references: array<string, array<string,bool>>,
- *          correct_methods: array<string, array<string, bool>>
- *        }
+ *     severity: string,
+ *     line_from: int,
+ *     line_to: int,
+ *     type: string,
+ *     message: string,
+ *     file_name: string,
+ *     file_path: string,
+ *     snippet: string,
+ *     from: int,
+ *     to: int,
+ *     snippet_from: int,
+ *     snippet_to: int,
+ *     column_from: int,
+ *     column_to: int
+ * }
+ *
+ * @psalm-type  WorkerData = array{
+ *     issues: array<int, IssueData>,
+ *     file_references: array<string, array<string,bool>>,
+ *     mixed_counts: array<string, array{0: int, 1: int}>,
+ *     method_references: array<string, array<string,bool>>,
+ *     correct_methods: array<string, array<string, bool>>
+ * }
  */
 
 /**
@@ -90,6 +89,11 @@ class Analyzer
      * @var array<string, array<string, bool>>
      */
     private $correct_methods = [];
+
+    /**
+     * @var array<string, array<int, IssueData>>
+     */
+    private $existing_issues = [];
 
     /**
      * @param bool $debug_output
@@ -167,12 +171,19 @@ class Analyzer
             && !$project_checker->codebase->collect_references
         ) {
             $this->correct_methods = \Psalm\Provider\FileReferenceProvider::getCorrectMethodCache($this->config);
+            $this->existing_issues = \Psalm\Provider\FileReferenceProvider::getExistingIssues();
         } else {
             $this->correct_methods = [];
+            $this->existing_issues = [];
         }
 
-        $unchanged_methods = $project_checker->codebase->statements_provider->getUnchangedMembers();
-        $unchanged_signature_methods = $project_checker->codebase->statements_provider->getUnchangedSignatureMembers();
+        FileReferenceProvider::clearExistingIssues();
+
+        $statements_provider = $project_checker->codebase->statements_provider;
+
+        $unchanged_methods = $statements_provider->getUnchangedMembers();
+        $unchanged_signature_methods = $statements_provider->getUnchangedSignatureMembers();
+        $diff_map = $statements_provider->getDiffMap();
 
         $method_map = [];
 
@@ -200,6 +211,43 @@ class Analyzer
                                 unset($this->correct_methods[$method_file_path][$method_id]);
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        foreach ($this->existing_issues as $file_path => &$file_issues) {
+            if (!isset($this->correct_methods[$file_path]) || !isset($diff_map[$file_path])) {
+                unset($this->existing_issues[$file_path]);
+                continue;
+            }
+
+            $file_diff_map = $diff_map[$file_path];
+
+            if (!$file_diff_map) {
+                continue;
+            }
+
+            $first_diff_offset = $file_diff_map[0][0];
+            $last_diff_offset = $file_diff_map[count($file_diff_map) - 1][1];
+
+            foreach ($file_issues as $i => &$issue_data) {
+                if ($issue_data['to'] < $first_diff_offset || $issue_data['from'] > $last_diff_offset) {
+                    continue;
+                }
+
+                foreach ($file_diff_map as list($from, $to, $file_offset, $line_offset)) {
+                    if ($issue_data['from'] >= $from && $issue_data['from'] <= $to) {
+                        if ($file_offset !== 0) {
+                            $issue_data['from'] += $file_offset;
+                            $issue_data['to'] += $file_offset;
+                            $issue_data['snippet_from'] += $file_offset;
+                            $issue_data['snippet_to'] += $file_offset;
+                            $issue_data['line_from'] += $line_offset;
+                            $issue_data['line_to'] += $line_offset;
+                        }
+
+                        continue 2;
                     }
                 }
             }
@@ -242,7 +290,7 @@ class Analyzer
                 function () {
                 },
                 $analysis_worker,
-                /** @return IssueData */
+                /** @return WorkerData */
                 function () {
                     $analyzer = ProjectChecker::getInstance()->codebase->analyzer;
 
@@ -258,12 +306,17 @@ class Analyzer
 
             // Wait for all tasks to complete and collect the results.
             /**
-             * @var array<int, IssueData>
+             * @var array<int, WorkerData>
              */
             $forked_pool_data = $pool->wait();
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
+
+                foreach ($pool_data['issues'] as $issue_data) {
+                    FileReferenceProvider::addIssue($issue_data['file_path'], $issue_data);
+                }
+
                 FileReferenceProvider::addFileReferences($pool_data['file_references']);
                 FileReferenceProvider::addClassMethodReferences($pool_data['method_references']);
                 $this->correct_methods = array_merge($pool_data['correct_methods'], $this->correct_methods);
@@ -286,6 +339,10 @@ class Analyzer
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $analysis_worker($i, $file_path);
                 ++$i;
+            }
+
+            foreach (IssueBuffer::getIssuesData() as $issue_data) {
+                FileReferenceProvider::addIssue($issue_data['file_path'], $issue_data);
             }
         }
 
@@ -531,6 +588,30 @@ class Analyzer
 
             $this->file_provider->setContents($file_path, $existing_contents);
         }
+    }
+
+    /**
+     * @param string $file_path
+     * @param int $start
+     * @param int $end
+     *
+     * @return array<int, IssueData>
+     */
+    public function getExistingIssuesForFile($file_path, $start, $end)
+    {
+        if (!isset($this->existing_issues[$file_path])) {
+            return [];
+        }
+
+        $applicable_issues = [];
+
+        foreach ($this->existing_issues[$file_path] as $issue_data) {
+            if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
+                $applicable_issues[] = $issue_data;
+            }
+        }
+
+        return $applicable_issues;
     }
 
     /**

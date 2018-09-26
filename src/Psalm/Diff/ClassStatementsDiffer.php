@@ -9,19 +9,18 @@ use PhpParser;
  */
 class ClassStatementsDiffer extends Differ
 {
-    /** @var PhpParser\PrettyPrinter\Standard|null */
-    private static $pretty_printer;
-
     /**
      * Calculate diff (edit script) from $a to $b.
      *
      * @param PhpParser\Node\Stmt[] $a
      * @param PhpParser\Node\Stmt[] $b New array
      *
-     * @return array{0:array<int, string>, 1:array<int, string>}
+     * @return array{0:array<int, string>, 1:array<int, string>, 2: array<int, array{0: int, 1: int, 2: int, 3: int}>}
      */
     public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
     {
+        $diff_map = [];
+
         list($trace, $x, $y, $bc) = self::calculateTrace(
             function (
                 PhpParser\Node\Stmt $a,
@@ -29,7 +28,7 @@ class ClassStatementsDiffer extends Differ
                 string $a_code,
                 string $b_code,
                 bool &$body_change = false
-            ) : bool {
+            ) use (&$diff_map) : bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }
@@ -69,6 +68,8 @@ class ClassStatementsDiffer extends Differ
                 $b_size = $b_end - $b_start;
 
                 if (substr($a_code, $a_start, $a_size) === substr($b_code, $b_start, $b_size)) {
+                    $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
+
                     return true;
                 }
 
@@ -79,31 +80,26 @@ class ClassStatementsDiffer extends Differ
                     $signature_change = true;
                 }
 
-                if (!self::$pretty_printer) {
-                    self::$pretty_printer = new PhpParser\PrettyPrinter\Standard;
-                }
-
                 if ($a instanceof PhpParser\Node\Stmt\ClassMethod && $b instanceof PhpParser\Node\Stmt\ClassMethod) {
                     if ((string) $a->name !== (string) $b->name) {
                         return false;
                     }
 
-                    $a_stmts = $a->stmts;
-                    $a->stmts = [];
-                    $b_stmts = $b->stmts;
-                    $b->stmts = [];
+                    $a_stmts_start = $a->stmts ? (int) $a->stmts[0]->getAttribute('startFilePos') : $a_end;
+                    $b_stmts_start = $b->stmts ? (int) $b->stmts[0]->getAttribute('startFilePos') : $b_end;
 
-                    $body_change = $a_stmts !== $b_stmts
-                        && self::$pretty_printer->prettyPrint($a_stmts ?: [])
-                            !== self::$pretty_printer->prettyPrint($b_stmts ?: []);
+                    $body_change = substr($a_code, $a_stmts_start, $a_end - $a_stmts_start)
+                        !== substr($b_code, $b_stmts_start, $b_end - $b_stmts_start);
+
                     $signature_change = $signature_change
-                        || self::$pretty_printer->prettyPrint([$a]) !== self::$pretty_printer->prettyPrint([$b]);
-
-                    $a->stmts = $a_stmts;
-                    $b->stmts = $b_stmts;
+                        || substr($a_code, $a_start, $a_stmts_start - $a_start)
+                            !== substr($b_code, $b_start, $b_stmts_start - $b_start);
                 } else {
-                    $signature_change = $signature_change
-                        || self::$pretty_printer->prettyPrint([$a]) !== self::$pretty_printer->prettyPrint([$b]);
+                    $signature_change = true;
+                }
+
+                if (!$signature_change && !$body_change) {
+                    $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
                 }
 
                 return !$signature_change;
@@ -143,6 +139,6 @@ class ClassStatementsDiffer extends Differ
             }
         };
 
-        return [$keep, $keep_signature];
+        return [$keep, $keep_signature, $diff_map];
     }
 }

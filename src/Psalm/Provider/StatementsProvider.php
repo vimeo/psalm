@@ -36,6 +36,11 @@ class StatementsProvider
     private $unchanged_signature_members = [];
 
     /**
+     * @var array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>>
+     */
+    private $diff_map = [];
+
+    /**
      * @var PhpParser\Parser|null
      */
     protected static $parser;
@@ -93,12 +98,13 @@ class StatementsProvider
                 $existing_statements = $this->cache_provider->loadExistingStatementsFromCache($file_cache_key);
 
                 if ($existing_statements) {
-                    list($unchanged_members, $unchanged_signature_members) = \Psalm\Diff\FileStatementsDiffer::diff(
-                        $existing_statements,
-                        $stmts,
-                        $existing_file_contents,
-                        $file_contents
-                    );
+                    list($unchanged_members, $unchanged_signature_members, $diff_map)
+                        = \Psalm\Diff\FileStatementsDiffer::diff(
+                            $existing_statements,
+                            $stmts,
+                            $existing_file_contents,
+                            $file_contents
+                        );
 
                     $unchanged_members = array_map(
                         function (int $_) : bool {
@@ -131,6 +137,8 @@ class StatementsProvider
                     } else {
                         $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
                     }
+
+                    $this->diff_map[$file_path] = $diff_map;
                 }
             }
 
@@ -138,6 +146,7 @@ class StatementsProvider
             $this->cache_provider->cacheFileContents($file_cache_key, $file_contents);
         } else {
             $from_cache = true;
+            $this->diff_map[$file_path] = [];
         }
 
         $this->cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
@@ -163,6 +172,25 @@ class StatementsProvider
     public function getUnchangedSignatureMembers()
     {
         return $this->unchanged_signature_members;
+    }
+
+    /**
+     * @param string $file_path
+     * @return void
+     */
+    public function setUnchangedFile($file_path)
+    {
+        if (!isset($this->diff_map[$file_path])) {
+            $this->diff_map[$file_path] = [];
+        }
+    }
+
+    /**
+     * @return array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>>
+     */
+    public function getDiffMap()
+    {
+        return $this->diff_map;
     }
 
     /**

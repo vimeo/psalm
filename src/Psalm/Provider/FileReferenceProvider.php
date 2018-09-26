@@ -6,6 +6,24 @@ use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
 
 /**
+ * @psalm-type  IssueData = array{
+ *     severity: string,
+ *     line_from: int,
+ *     line_to: int,
+ *     type: string,
+ *     message: string,
+ *     file_name: string,
+ *     file_path: string,
+ *     snippet: string,
+ *     from: int,
+ *     to: int,
+ *     snippet_from: int,
+ *     snippet_to: int,
+ *     column_from: int,
+ *     column_to: int
+ * }
+ */
+/**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  */
@@ -14,6 +32,7 @@ class FileReferenceProvider
     const REFERENCE_CACHE_NAME = 'references';
     const CORRECT_METHODS_CACHE_NAME = 'correct_methods';
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
+    const ISSUES_CACHE_NAME = 'issues';
 
     /**
      * A lookup table used for getting all the files that reference a class
@@ -52,6 +71,11 @@ class FileReferenceProvider
      * @var array<string, array<string, bool>>
      */
     private static $class_method_references = [];
+
+    /**
+     * @var array<string, array<int, IssueData>>
+     */
+    private static $issues = [];
 
     /**
      * @return array<string>
@@ -224,13 +248,13 @@ class FileReferenceProvider
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
+            $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
-            if (!is_readable($cache_location)) {
+            if (!is_readable($reference_cache_location)) {
                 return false;
             }
 
-            $reference_cache = unserialize((string) file_get_contents($cache_location));
+            $reference_cache = unserialize((string) file_get_contents($reference_cache_location));
 
             if (!is_array($reference_cache)) {
                 throw new \UnexpectedValueException('The reference cache must be an array');
@@ -238,19 +262,33 @@ class FileReferenceProvider
 
             self::$file_references = $reference_cache;
 
-            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+            $class_method_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
 
-            if (!is_readable($cache_location)) {
+            if (!is_readable($class_method_cache_location)) {
                 return false;
             }
 
-            $class_method_reference_cache = unserialize((string) file_get_contents($cache_location));
+            $class_method_reference_cache = unserialize((string) file_get_contents($class_method_cache_location));
 
             if (!is_array($class_method_reference_cache)) {
                 throw new \UnexpectedValueException('The reference cache must be an array');
             }
 
             self::$class_method_references = $class_method_reference_cache;
+
+            $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
+
+            if (!is_readable($issues_cache_location)) {
+                return false;
+            }
+
+            $issues_cache = unserialize((string) file_get_contents($issues_cache_location));
+
+            if (!is_array($issues_cache)) {
+                throw new \UnexpectedValueException('The reference cache must be an array');
+            }
+
+            self::$issues = $issues_cache;
 
             return true;
         }
@@ -270,8 +308,6 @@ class FileReferenceProvider
         if ($cache_directory
             && !$project_checker->cache_provider instanceof \Psalm\Provider\NoCache\NoParserCacheProvider
         ) {
-            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
-
             foreach ($visited_files as $file => $_) {
                 $all_file_references = array_unique(
                     array_merge(
@@ -293,11 +329,17 @@ class FileReferenceProvider
                 ];
             }
 
-            file_put_contents($cache_location, serialize(self::$file_references));
+            $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
 
-            $cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+            file_put_contents($reference_cache_location, serialize(self::$file_references));
 
-            file_put_contents($cache_location, serialize(self::$class_method_references));
+            $method_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+
+            file_put_contents($method_cache_location, serialize(self::$class_method_references));
+
+            $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
+
+            file_put_contents($issues_cache_location, serialize(self::$issues));
         }
     }
 
@@ -380,6 +422,34 @@ class FileReferenceProvider
     }
 
     /**
+     * @return array<string, array<int, IssueData>>
+     */
+    public static function getExistingIssues() : array
+    {
+        return self::$issues;
+    }
+
+    /**
+     * @return void
+     */
+    public static function clearExistingIssues()
+    {
+        self::$issues = [];
+    }
+
+    /**
+     * @return void
+     */
+    public static function addIssue(string $file_path, array $issue)
+    {
+        if (!isset(self::$issues[$file_path])) {
+            self::$issues[$file_path] = [$issue];
+        } else {
+            self::$issues[$file_path][] = $issue;
+        }
+    }
+
+    /**
      * @return void
      */
     public static function clearCache()
@@ -390,5 +460,6 @@ class FileReferenceProvider
         self::$deleted_files = null;
         self::$file_references = [];
         self::$class_method_references = [];
+        self::$issues = [];
     }
 }

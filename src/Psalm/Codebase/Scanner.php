@@ -335,6 +335,8 @@ class Scanner
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
             }
         } else {
+            $this->codebase->statements_provider->setUnchangedFile($file_path);
+
             foreach ($file_storage->required_file_paths as $required_file_path) {
                 if ($will_analyze) {
                     $this->addFileToDeepScan($required_file_path);
