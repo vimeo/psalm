@@ -64,6 +64,7 @@ class IncludeChecker
         }
 
         if ($path_to_file) {
+            $path_to_file = str_replace('/./', '/', $path_to_file);
             $slash = preg_quote(DIRECTORY_SEPARATOR, '/');
             $reduce_pattern = '/' . $slash . '[^' . $slash . ']+' . $slash . '\.\.' . $slash . '/';
 
