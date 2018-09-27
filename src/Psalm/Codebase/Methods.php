@@ -45,13 +45,14 @@ class Methods
      * Whether or not a given method exists
      *
      * @param  string       $method_id
+     * @param  ?string      $calling_method_id
      * @param  CodeLocation|null $code_location
      *
      * @return bool
      */
     public function methodExists(
-        string $method_id,
-        ?string $calling_method_id = null,
+        $method_id,
+        $calling_method_id = null,
         CodeLocation $code_location = null
     ) {
         // remove trailing backslash if it exists

@@ -380,9 +380,11 @@ class FileReferenceProvider
     }
 
     /**
+     * @param string $calling_method_id
+     * @param string $referenced_member_id
      * @return void
      */
-    public static function addReferenceToClassMethod(string $calling_method_id, string $referenced_member_id)
+    public static function addReferenceToClassMethod($calling_method_id, $referenced_member_id)
     {
         if (!isset(self::$class_method_references[$referenced_member_id])) {
             self::$class_method_references[$referenced_member_id] = [$calling_method_id => true];
@@ -436,9 +438,10 @@ class FileReferenceProvider
     }
 
     /**
+     * @param string $file_path
      * @return void
      */
-    public static function addIssue(string $file_path, array $issue)
+    public static function addIssue($file_path, array $issue)
     {
         if (!isset(self::$issues[$file_path])) {
             self::$issues[$file_path] = [$issue];

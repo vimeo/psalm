@@ -26,7 +26,7 @@ class DiffElem
      * @param mixed  $new
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function __construct(int $type, $old, $new)
+    public function __construct($type, $old, $new)
     {
         $this->type = $type;
         $this->old = $old;
