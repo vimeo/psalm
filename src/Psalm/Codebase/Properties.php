@@ -31,13 +31,14 @@ class Properties
      * Whether or not a given property exists
      *
      * @param  string $property_id
+     * @param  ?string $calling_method_id
      * @param  string $calling_method_id
      *
      * @return bool
      */
     public function propertyExists(
         $property_id,
-        ?string $calling_method_id = null,
+        $calling_method_id = null,
         CodeLocation $code_location = null
     ) {
         // remove trailing backslash if it exists

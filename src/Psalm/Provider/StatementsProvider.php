@@ -112,21 +112,33 @@ class StatementsProvider
                         );
 
                     $unchanged_members = array_map(
-                        function (int $_) : bool {
+                        /**
+                         * @param int $_
+                         * @return bool
+                         */
+                        function ($_) {
                             return true;
                         },
                         array_flip($unchanged_members)
                     );
 
                     $unchanged_signature_members = array_map(
-                        function (int $_) : bool {
+                        /**
+                         * @param int $_
+                         * @return bool
+                         */
+                        function ($_) {
                             return true;
                         },
                         array_flip($unchanged_signature_members)
                     );
 
                     $changed_members = array_map(
-                        function (int $_) : bool {
+                        /**
+                         * @param int $_
+                         * @return bool
+                         */
+                        function ($_) {
                             return true;
                         },
                         array_flip($changed_members)
@@ -185,14 +197,6 @@ class StatementsProvider
     public function getUnchangedMembers()
     {
         return $this->unchanged_members;
-    }
-
-    /**
-     * @return array<string, array<string, bool>>
-     */
-    public function getUnchangedSignatureMembers()
-    {
-        return $this->unchanged_signature_members;
     }
 
     /**

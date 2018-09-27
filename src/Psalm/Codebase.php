@@ -567,10 +567,11 @@ class Codebase
      *
      * @param  string       $method_id
      * @param  CodeLocation|null $code_location
+     * @param  string       $calling_method_id
      *
      * @return bool
      */
-    public function methodExists($method_id, CodeLocation $code_location = null, ?string $calling_method_id = null)
+    public function methodExists($method_id, CodeLocation $code_location = null, $calling_method_id = null)
     {
         return $this->methods->methodExists($method_id, $calling_method_id, $code_location);
     }

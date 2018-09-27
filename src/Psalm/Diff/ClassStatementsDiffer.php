@@ -12,28 +12,38 @@ class ClassStatementsDiffer extends Differ
     /**
      * Calculate diff (edit script) from $a to $b.
      *
+     * @param string $name
+     * @param string $a_code
+     * @param string $b_code
      * @param PhpParser\Node\Stmt[] $a
      * @param PhpParser\Node\Stmt[] $b New array
      *
      * @return array{
      *      0: array<int, string>,
-     *.     1: array<int, string>,
+     *      1: array<int, string>,
      *      2: array<int, string>,
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff(string $name, array $a, array $b, string $a_code, string $b_code)
+    public static function diff($name, array $a, array $b, $a_code, $b_code)
     {
         $diff_map = [];
 
         list($trace, $x, $y, $bc) = self::calculateTrace(
+            /**
+             * @param string $a_code
+             * @param string $b_code
+             * @param bool $body_change
+             *
+             * @return bool
+             */
             function (
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
-                string $a_code,
-                string $b_code,
-                bool &$body_change = false
-            ) use (&$diff_map) : bool {
+                $a_code,
+                $b_code,
+                &$body_change = false
+            ) use (&$diff_map) {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }

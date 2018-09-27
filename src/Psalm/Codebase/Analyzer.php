@@ -183,7 +183,7 @@ class Analyzer
 
         $unchanged_members = $statements_provider->getUnchangedMembers();
         $changed_members = $statements_provider->getChangedMembers();
-        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
+
         $diff_map = $statements_provider->getDiffMap();
 
         $method_map = [];

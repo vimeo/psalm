@@ -26,8 +26,8 @@ class Differ
         \Closure $is_equal,
         array $a,
         array $b,
-        string $a_code,
-        string $b_code
+        $a_code,
+        $b_code
     ) : array {
         $n = \count($a);
         $m = \count($b);
@@ -65,7 +65,7 @@ class Differ
     /**
      * @return DiffElem[]
      */
-    protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc) : array
+    protected static function extractDiff(array $trace, $x, $y, array $a, array $b, array $bc) : array
     {
         $result = [];
         for ($d = \count($trace) - 1; $d >= 0; $d--) {

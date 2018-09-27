@@ -12,23 +12,29 @@ class FileStatementsDiffer extends Differ
     /**
      * Calculate diff (edit script) from $a to $b.
      *
+     * @param string $a_code
+     * @param string $b_code
      * @param PhpParser\Node\Stmt[] $a
      * @param PhpParser\Node\Stmt[] $b New array
      *
      * @return array{
      *      0: array<int, string>,
-     *.     1: array<int, string>,
+     *      1: array<int, string>,
      *      2: array<int, string>,
      *      3: array<int, array{0: int, 1: int, 2: int, 3: int}>
      * }
      */
-    public static function diff(array $a, array $b, string $a_code, string $b_code)
+    public static function diff(array $a, array $b, $a_code, $b_code)
     {
         list($trace, $x, $y, $bc) = self::calculateTrace(
             /**
+             * @param string $a_code
+             * @param string $b_code
              * @psalm-suppress UnusedParam
+             *
+             * @return bool
              */
-            function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, string $a_code, string $b_code) : bool {
+            function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code) {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }
