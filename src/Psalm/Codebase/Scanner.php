@@ -91,6 +91,11 @@ class Scanner
     private $file_provider;
 
     /**
+     * @var FileReferenceProvider
+     */
+    private $file_reference_provider;
+
+    /**
      * @param bool $debug_output
      */
     public function __construct(
@@ -99,6 +104,7 @@ class Scanner
         FileStorageProvider $file_storage_provider,
         FileProvider $file_provider,
         Reflection $reflection,
+        FileReferenceProvider $file_reference_provider,
         $debug_output
     ) {
         $this->codebase = $codebase;
@@ -107,6 +113,7 @@ class Scanner
         $this->debug_output = $debug_output;
         $this->file_storage_provider = $file_storage_provider;
         $this->config = $config;
+        $this->file_reference_provider = $file_reference_provider;
     }
 
     /**
@@ -149,6 +156,18 @@ class Scanner
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    public function removeFile($file_path)
+    {
+        unset(
+            $this->scanned_files[$file_path]
+        );
     }
 
     /**
@@ -212,7 +231,7 @@ class Scanner
         }
 
         if ($referencing_file_path) {
-            FileReferenceProvider::addFileReferenceToClass($referencing_file_path, $fq_classlike_name_lc);
+            $this->file_reference_provider->addFileReferenceToClass($referencing_file_path, $fq_classlike_name_lc);
         }
     }
 
@@ -331,7 +350,7 @@ class Scanner
         );
 
         if (!$from_cache) {
-            if (!$file_storage->has_visitor_issues) {
+            if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
             }
         } else {

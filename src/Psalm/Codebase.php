@@ -2,9 +2,11 @@
 namespace Psalm;
 
 use PhpParser;
+use Psalm\Checker\ProjectChecker;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileStorageProvider;
+use Psalm\Provider\Providers;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -132,53 +134,115 @@ class Codebase
      */
     public function __construct(
         Config $config,
-        FileStorageProvider $file_storage_provider,
-        ClassLikeStorageProvider $classlike_storage_provider,
-        FileProvider $file_provider,
-        StatementsProvider $statements_provider,
+        Providers $providers,
         $debug_output = false
     ) {
         $this->config = $config;
-        $this->file_storage_provider = $file_storage_provider;
-        $this->classlike_storage_provider = $classlike_storage_provider;
+        $this->file_storage_provider = $providers->file_storage_provider;
+        $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->debug_output = $debug_output;
-        $this->file_provider = $file_provider;
-        $this->statements_provider = $statements_provider;
+        $this->file_provider = $providers->file_provider;
+        $this->statements_provider = $providers->statements_provider;
         $this->debug_output = $debug_output;
 
         self::$stubbed_constants = [];
 
-        $this->reflection = new Codebase\Reflection($classlike_storage_provider, $this);
+        $this->reflection = new Codebase\Reflection($providers->classlike_storage_provider, $this);
 
         $this->scanner = new Codebase\Scanner(
             $this,
             $config,
-            $file_storage_provider,
-            $file_provider,
+            $providers->file_storage_provider,
+            $providers->file_provider,
             $this->reflection,
+            $providers->file_reference_provider,
             $debug_output
         );
 
-        $this->analyzer = new Codebase\Analyzer($config, $file_provider, $file_storage_provider, $debug_output);
+        $this->loadAnalyzer();
 
-        $this->functions = new Codebase\Functions($file_storage_provider, $this->reflection);
-        $this->methods = new Codebase\Methods($config, $classlike_storage_provider);
-        $this->properties = new Codebase\Properties($classlike_storage_provider);
+        $this->functions = new Codebase\Functions($providers->file_storage_provider, $this->reflection);
+        $this->methods = new Codebase\Methods(
+            $config,
+            $providers->classlike_storage_provider,
+            $providers->file_reference_provider
+        );
+        $this->properties = new Codebase\Properties(
+            $providers->classlike_storage_provider,
+            $providers->file_reference_provider
+        );
         $this->classlikes = new Codebase\ClassLikes(
             $config,
             $this,
-            $classlike_storage_provider,
+            $providers->classlike_storage_provider,
             $this->scanner,
             $this->methods,
             $debug_output
         );
         $this->populator = new Codebase\Populator(
             $config,
-            $classlike_storage_provider,
-            $file_storage_provider,
+            $providers->classlike_storage_provider,
+            $providers->file_storage_provider,
             $this->classlikes,
+            $providers->file_reference_provider,
             $debug_output
         );
+    }
+
+    /**
+     * @return void
+     */
+    private function loadAnalyzer()
+    {
+        $this->analyzer = new Codebase\Analyzer(
+            $this->config,
+            $this->file_provider,
+            $this->file_storage_provider,
+            $this->debug_output
+        );
+    }
+
+    /**
+     * @param array<string> $diff_files
+     *
+     * @return void
+     */
+    public function reloadFiles(ProjectChecker $project_checker, array $diff_files)
+    {
+        $this->loadAnalyzer();
+
+        $project_checker->file_reference_provider->loadReferenceCache();
+
+        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files);
+
+        foreach ($diff_files as $diff_file_path) {
+            $this->invalidateInformationForFile($diff_file_path);
+        }
+
+        foreach ($referenced_files as $referenced_file_path) {
+            if (in_array($referenced_file_path, $diff_files)) {
+                continue;
+            }
+
+            $file_storage = $this->file_storage_provider->get($referenced_file_path);
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                $this->classlike_storage_provider->remove($fq_classlike_name);
+                $this->classlikes->removeClassLike($fq_classlike_name);
+            }
+
+            $this->file_storage_provider->remove($referenced_file_path);
+            $this->scanner->removeFile($referenced_file_path);
+        }
+
+        $referenced_files = array_combine($referenced_files, $referenced_files);
+
+        $this->scanner->addFilesToDeepScan($referenced_files);
+        $this->scanner->scanFiles($this->classlikes);
+
+        $project_checker->file_reference_provider->updateReferenceCache($project_checker, $referenced_files);
+
+        $this->populator->populateCodebase($this);
     }
 
     /**
@@ -267,7 +331,10 @@ class Codebase
     public function cacheClassLikeStorage(ClassLikeStorage $classlike_storage, $file_path)
     {
         $file_contents = $this->file_provider->getContents($file_path);
-        $this->classlike_storage_provider->cache->writeToCache($classlike_storage, $file_path, $file_contents);
+
+        if ($this->classlike_storage_provider->cache) {
+            $this->classlike_storage_provider->cache->writeToCache($classlike_storage, $file_path, $file_contents);
+        }
     }
 
     /**
@@ -670,5 +737,28 @@ class Codebase
     public function getCasedMethodId($method_id)
     {
         return $this->methods->getCasedMethodId($method_id);
+    }
+
+    /**
+     * @param string $file_path
+     *
+     * @return void
+     */
+    private function invalidateInformationForFile($file_path)
+    {
+        $this->scanner->removeFile($file_path);
+
+        try {
+            $file_storage = $this->file_storage_provider->get($file_path);
+        } catch (\InvalidArgumentException $e) {
+            return;
+        }
+
+        foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+            $this->classlike_storage_provider->remove($fq_classlike_name);
+            $this->classlikes->removeClassLike($fq_classlike_name);
+        }
+
+        $this->file_storage_provider->remove($file_path);
     }
 }

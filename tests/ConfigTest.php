@@ -80,10 +80,10 @@ class ConfigTest extends TestCase
     {
         return new \Psalm\Checker\ProjectChecker(
             $config,
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            )
         );
     }
 

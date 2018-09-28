@@ -167,17 +167,132 @@ class Analyzer
      */
     public function analyzeFiles(ProjectChecker $project_checker, $pool_size, $alter_code)
     {
-        if (!$project_checker->cache_provider instanceof \Psalm\Provider\NoCache\NoParserCacheProvider
-            && !$project_checker->codebase->collect_references
-        ) {
-            $this->correct_methods = \Psalm\Provider\FileReferenceProvider::getCorrectMethodCache($this->config);
-            $this->existing_issues = \Psalm\Provider\FileReferenceProvider::getExistingIssues();
+        $this->loadCachedResults($project_checker);
+
+        $filetype_checkers = $this->config->getFiletypeCheckers();
+
+        $analysis_worker =
+            /**
+             * @param int $_
+             * @param string $file_path
+             *
+             * @return void
+             */
+            function ($_, $file_path) use ($project_checker, $filetype_checkers) {
+                $file_checker = $this->getFileChecker($project_checker, $file_path, $filetype_checkers);
+
+                if ($this->debug_output) {
+                    echo 'Analyzing ' . $file_checker->getFilePath() . "\n";
+                }
+
+                $file_checker->analyze(null);
+            };
+
+        if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
+            $process_file_paths = [];
+
+            $i = 0;
+
+            foreach ($this->files_to_analyze as $file_path) {
+                $process_file_paths[$i % $pool_size][] = $file_path;
+                ++$i;
+            }
+
+            // Run analysis one file at a time, splitting the set of
+            // files up among a given number of child processes.
+            $pool = new \Psalm\Fork\Pool(
+                $process_file_paths,
+                /** @return void */
+                function () {
+                },
+                $analysis_worker,
+                /** @return WorkerData */
+                function () {
+                    $project_checker = ProjectChecker::getInstance();
+                    $analyzer = $project_checker->codebase->analyzer;
+                    $file_reference_provider = $project_checker->file_reference_provider;
+
+                    return [
+                        'issues' => IssueBuffer::getIssuesData(),
+                        'file_references' => $file_reference_provider->getAllFileReferences(),
+                        'method_references' => $file_reference_provider->getClassMethodReferences(),
+                        'mixed_counts' => $analyzer->getMixedCounts(),
+                        'correct_methods' => $analyzer->getCorrectMethods(),
+                    ];
+                }
+            );
+
+            // Wait for all tasks to complete and collect the results.
+            /**
+             * @var array<int, WorkerData>
+             */
+            $forked_pool_data = $pool->wait();
+
+            foreach ($forked_pool_data as $pool_data) {
+                IssueBuffer::addIssues($pool_data['issues']);
+
+                foreach ($pool_data['issues'] as $issue_data) {
+                    $project_checker->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
+                }
+
+                $project_checker->file_reference_provider->addFileReferences($pool_data['file_references']);
+                $project_checker->file_reference_provider->addClassMethodReferences($pool_data['method_references']);
+                $this->correct_methods = array_merge($pool_data['correct_methods'], $this->correct_methods);
+
+                foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
+                    if (!isset($this->mixed_counts[$file_path])) {
+                        $this->mixed_counts[$file_path] = [$mixed_count, $nonmixed_count];
+                    } else {
+                        $this->mixed_counts[$file_path][0] += $mixed_count;
+                        $this->mixed_counts[$file_path][1] += $nonmixed_count;
+                    }
+                }
+            }
+
+            // TODO: Tell the caller that the fork pool encountered an error in another PR?
+            // $did_fork_pool_have_error = $pool->didHaveError();
         } else {
-            $this->correct_methods = [];
-            $this->existing_issues = [];
+            $i = 0;
+
+            foreach ($this->files_to_analyze as $file_path => $_) {
+                $analysis_worker($i, $file_path);
+                ++$i;
+            }
+
+            foreach (IssueBuffer::getIssuesData() as $issue_data) {
+                $project_checker->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
+            }
         }
 
-        FileReferenceProvider::clearExistingIssues();
+        if ($project_checker->cache_results && $project_checker->file_reference_provider->cache) {
+            $project_checker->file_reference_provider->cache->setCorrectMethodCache($this->correct_methods);
+        }
+
+        if ($alter_code) {
+            foreach ($this->files_to_analyze as $file_path) {
+                $this->updateFile($file_path, $project_checker->dry_run, true);
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function loadCachedResults(ProjectChecker $project_checker)
+    {
+        if ($project_checker->cache_results
+            && !$project_checker->codebase->collect_references
+        ) {
+            if ($project_checker->file_reference_provider->cache) {
+                $this->correct_methods = $project_checker->file_reference_provider->cache->getCorrectMethodCache(
+                    $this->config
+                );
+            }
+
+            $this->existing_issues = $project_checker->file_reference_provider->getExistingIssues();
+        }
+
+        $project_checker->file_reference_provider->clearExistingIssues();
 
         $statements_provider = $project_checker->codebase->statements_provider;
 
@@ -194,7 +309,7 @@ class Analyzer
             }
         }
 
-        $all_referencing_methods = \Psalm\Provider\FileReferenceProvider::getMethodsReferencing();
+        $all_referencing_methods = $project_checker->file_reference_provider->getMethodsReferencing();
 
         $newly_invalidated_methods = [];
 
@@ -254,109 +369,6 @@ class Analyzer
                         continue 2;
                     }
                 }
-            }
-        }
-
-        $filetype_checkers = $this->config->getFiletypeCheckers();
-
-        $analysis_worker =
-            /**
-             * @param int $_
-             * @param string $file_path
-             *
-             * @return void
-             */
-            function ($_, $file_path) use ($project_checker, $filetype_checkers) {
-                $file_checker = $this->getFileChecker($project_checker, $file_path, $filetype_checkers);
-
-                if ($this->debug_output) {
-                    echo 'Analyzing ' . $file_checker->getFilePath() . "\n";
-                }
-
-                $file_checker->analyze(null);
-            };
-
-        if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
-            $process_file_paths = [];
-
-            $i = 0;
-
-            foreach ($this->files_to_analyze as $file_path) {
-                $process_file_paths[$i % $pool_size][] = $file_path;
-                ++$i;
-            }
-
-            // Run analysis one file at a time, splitting the set of
-            // files up among a given number of child processes.
-            $pool = new \Psalm\Fork\Pool(
-                $process_file_paths,
-                /** @return void */
-                function () {
-                },
-                $analysis_worker,
-                /** @return WorkerData */
-                function () {
-                    $analyzer = ProjectChecker::getInstance()->codebase->analyzer;
-
-                    return [
-                        'issues' => IssueBuffer::getIssuesData(),
-                        'file_references' => FileReferenceProvider::getAllFileReferences(),
-                        'method_references' => FileReferenceProvider::getClassMethodReferences(),
-                        'mixed_counts' => $analyzer->getMixedCounts(),
-                        'correct_methods' => $analyzer->getCorrectMethods(),
-                    ];
-                }
-            );
-
-            // Wait for all tasks to complete and collect the results.
-            /**
-             * @var array<int, WorkerData>
-             */
-            $forked_pool_data = $pool->wait();
-
-            foreach ($forked_pool_data as $pool_data) {
-                IssueBuffer::addIssues($pool_data['issues']);
-
-                foreach ($pool_data['issues'] as $issue_data) {
-                    FileReferenceProvider::addIssue($issue_data['file_path'], $issue_data);
-                }
-
-                FileReferenceProvider::addFileReferences($pool_data['file_references']);
-                FileReferenceProvider::addClassMethodReferences($pool_data['method_references']);
-                $this->correct_methods = array_merge($pool_data['correct_methods'], $this->correct_methods);
-
-                foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
-                    if (!isset($this->mixed_counts[$file_path])) {
-                        $this->mixed_counts[$file_path] = [$mixed_count, $nonmixed_count];
-                    } else {
-                        $this->mixed_counts[$file_path][0] += $mixed_count;
-                        $this->mixed_counts[$file_path][1] += $nonmixed_count;
-                    }
-                }
-            }
-
-            // TODO: Tell the caller that the fork pool encountered an error in another PR?
-            // $did_fork_pool_have_error = $pool->didHaveError();
-        } else {
-            $i = 0;
-
-            foreach ($this->files_to_analyze as $file_path => $_) {
-                $analysis_worker($i, $file_path);
-                ++$i;
-            }
-
-            foreach (IssueBuffer::getIssuesData() as $issue_data) {
-                FileReferenceProvider::addIssue($issue_data['file_path'], $issue_data);
-            }
-        }
-
-        if (!$project_checker->cache_provider instanceof \Psalm\Provider\NoCache\NoParserCacheProvider) {
-            \Psalm\Provider\FileReferenceProvider::setCorrectMethodCache($this->correct_methods);
-        }
-
-        if ($alter_code) {
-            foreach ($this->files_to_analyze as $file_path) {
-                $this->updateFile($file_path, $project_checker->dry_run, true);
             }
         }
     }
@@ -635,6 +647,16 @@ class Analyzer
     public function setCorrectMethod($file_path, $method_id)
     {
         $this->correct_methods[$file_path][$method_id] = true;
+    }
+
+    /**
+     * @param array<string, array<string, bool>> $correct_methods
+     *
+     * @return void
+     */
+    public function setCorrectMethods(array $correct_methods)
+    {
+        $this->correct_methods = $correct_methods;
     }
 
     /**

@@ -13,11 +13,11 @@ class ClassLikeStorageProvider
     private static $storage = [];
 
     /**
-     * @var ClassLikeStorageCacheProvider
+     * @var ?ClassLikeStorageCacheProvider
      */
     public $cache;
 
-    public function __construct(ClassLikeStorageCacheProvider $cache)
+    public function __construct(ClassLikeStorageCacheProvider $cache = null)
     {
         $this->cache = $cache;
     }
@@ -65,6 +65,10 @@ class ClassLikeStorageProvider
             return self::$storage[$fq_classlike_name_lc];
         }
 
+        if (!$this->cache) {
+            throw new \LogicException('Cannot exhume when there’s no cache');
+        }
+
         self::$storage[$fq_classlike_name_lc]
             = $cached_value
             = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
@@ -92,6 +96,16 @@ class ClassLikeStorageProvider
         self::$storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage($fq_classlike_name);
 
         return $storage;
+    }
+
+    /**
+     * @param  string $fq_classlike_name
+     *
+     * @return void
+     */
+    public function remove($fq_classlike_name)
+    {
+        unset(self::$storage[strtolower($fq_classlike_name)]);
     }
 
     /**

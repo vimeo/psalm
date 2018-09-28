@@ -41,6 +41,7 @@ $valid_long_options = [
     'threads:',
     'use-ini-defaults',
     'version',
+    'cache-results',
 ];
 
 $args = array_slice($argv, 1);
@@ -146,6 +147,9 @@ Options:
 
     --diff
         Runs Psalm in diff mode, only checking files that have changed (and their dependents)
+
+    --cache-results
+        Cache results of analysis for faster runs
 
     --output-format=console
         Changes the output format. Possible values: console, emacs, json, pylint, xml
@@ -360,10 +364,6 @@ $find_references_to = isset($options['find-references-to']) && is_string($option
     ? $options['find-references-to']
     : null;
 
-$cache_provider = isset($options['no-cache'])
-    ? new Psalm\Provider\NoCache\NoParserCacheProvider()
-    : new Psalm\Provider\ParserCacheProvider();
-
 // initialise custom config, if passed
 try {
     if ($path_to_config) {
@@ -378,14 +378,6 @@ try {
 
 $config->setComposerClassLoader($first_autoloader);
 
-$file_storage_cache_provider = isset($options['no-cache'])
-    ? new Psalm\Provider\NoCache\NoFileStorageCacheProvider()
-    : new Psalm\Provider\FileStorageCacheProvider($config);
-
-$classlike_storage_cache_provider = isset($options['no-cache'])
-    ? new Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
-    : new Psalm\Provider\ClassLikeStorageCacheProvider($config);
-
 if (isset($options['clear-cache'])) {
     $cache_directory = $config->getCacheDirectory();
 
@@ -396,12 +388,23 @@ if (isset($options['clear-cache'])) {
 
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
+if (isset($options['no-cache'])) {
+    $providers = new Psalm\Provider\Providers(
+        new Psalm\Provider\FileProvider
+    );
+} else {
+    $providers = new Psalm\Provider\Providers(
+        new Psalm\Provider\FileProvider,
+        new Psalm\Provider\ParserCacheProvider,
+        new Psalm\Provider\FileStorageCacheProvider($config),
+        new Psalm\Provider\ClassLikeStorageCacheProvider($config),
+        new Psalm\Provider\FileReferenceCacheProvider($config)
+    );
+}
+
 $project_checker = new ProjectChecker(
     $config,
-    new Psalm\Provider\FileProvider(),
-    $cache_provider,
-    $file_storage_cache_provider,
-    $classlike_storage_cache_provider,
+    $providers,
     !array_key_exists('m', $options),
     $show_info,
     $output_format,
@@ -410,6 +413,8 @@ $project_checker = new ProjectChecker(
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null,
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
+
+$project_checker->cache_results = isset($options['cache-results']);
 
 $start_time = (float) microtime(true);
 

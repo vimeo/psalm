@@ -23,10 +23,10 @@ class JsonOutputTest extends TestCase
 
         $this->project_checker = new ProjectChecker(
             $config,
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            ),
             false,
             true,
             ProjectChecker::TYPE_JSON

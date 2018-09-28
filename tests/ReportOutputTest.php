@@ -24,10 +24,10 @@ class ReportOutputTest extends TestCase
 
         $this->project_checker = new ProjectChecker(
             $config,
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            ),
             false
         );
         $this->project_checker->reports['json'] = __DIR__ . '/test-report.json';
@@ -45,10 +45,10 @@ class ReportOutputTest extends TestCase
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
             new ProjectChecker(
                 $config,
-                $this->file_provider,
-                new Provider\FakeParserCacheProvider(),
-                new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-                new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
+                new \Psalm\Provider\Providers(
+                    $this->file_provider,
+                    new Provider\FakeParserCacheProvider()
+                ),
                 false,
                 true,
                 ProjectChecker::TYPE_CONSOLE,
@@ -71,10 +71,10 @@ class ReportOutputTest extends TestCase
 
         new ProjectChecker(
             $config,
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            ),
             false,
             true,
             ProjectChecker::TYPE_CONSOLE,

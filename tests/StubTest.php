@@ -44,10 +44,10 @@ class StubTest extends TestCase
     {
         $project_checker = new \Psalm\Checker\ProjectChecker(
             $config,
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            )
         );
 
         $config->visitComposerAutoloadFiles($project_checker, false);

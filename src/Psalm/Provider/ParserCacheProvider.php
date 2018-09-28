@@ -232,8 +232,6 @@ class ParserCacheProvider
 
         touch($run_cache_location, (int)$start_time);
 
-        FileReferenceProvider::removeDeletedFilesFromReferences();
-
         $cache_directory .= DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
         if (is_dir($cache_directory)) {
