@@ -60,8 +60,8 @@ class FileUpdateTest extends TestCase
 
         $config = $codebase->config;
 
-        foreach ($error_levels as $error_level) {
-            $config->setCustomErrorLevel($error_level, \Psalm\Config::REPORT_SUPPRESS);
+        foreach ($error_levels as $error_type => $error_level) {
+            $config->setCustomErrorLevel($error_type, $error_level);
         }
 
         foreach ($start_files as $file_path => $contents) {
@@ -131,6 +131,8 @@ class FileUpdateTest extends TestCase
                             public function bar() : void {
                                 echo (new A)->barBar();
                             }
+
+                            public function noReturnType() {}
                         }',
                 ],
                 'end_files' => [
@@ -157,16 +159,19 @@ class FileUpdateTest extends TestCase
                             public function bar() : void {
                                 echo (new A)->barBar();
                             }
+
+                            public function noReturnType() {}
                         }',
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => true,
-                        'foo\a::barbar' => true
+                        'foo\a::barbar' => true,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => true,
                         'foo\b::bar' => true,
+                        'foo\b::noreturntype' => true,
                     ],
                 ],
                 'unaffected_correct_methods' => [
@@ -174,9 +179,13 @@ class FileUpdateTest extends TestCase
                         'foo\a::barbar' => true
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true
+                        'foo\b::bar' => true,
+                        'foo\b::noreturntype' => true,
                     ],
                 ],
+                [
+                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                ]
             ],
         ];
     }
