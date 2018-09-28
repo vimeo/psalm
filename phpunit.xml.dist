@@ -24,7 +24,9 @@
                 <file>src/Psalm/CallMap.php</file>
                 <file>src/Psalm/Fork/Pool.php</file>
                 <file>src/Psalm/PropertyMap.php</file>
-                <file>src/Psalm/Provider/Cache/NoParserCacheProvider.php</file>
+                <file>src/Psalm/Provider/ClassLikeStorageCacheProvider.php</file>
+                <file>src/Psalm/Provider/FileReferenceCacheProvider.php</file>
+                <file>src/Psalm/Provider/FileStorageCacheProvider.php</file>
                 <file>src/Psalm/Provider/ParserCacheProvider.php</file>
             </exclude>
         </whitelist>
