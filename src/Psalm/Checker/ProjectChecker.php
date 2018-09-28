@@ -11,6 +11,7 @@ use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageCacheProvider;
 use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\ParserCacheProvider;
+use Psalm\Provider\Providers;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Type;
 use RecursiveDirectoryIterator;
@@ -46,8 +47,11 @@ class ProjectChecker
     /** @var ClassLikeStorageProvider */
     public $classlike_storage_provider;
 
-    /** @var ParserCacheProvider */
-    public $cache_provider;
+    /** @var ?ParserCacheProvider */
+    public $parser_cache_provider;
+
+    /** @var FileReferenceProvider */
+    public $file_reference_provider;
 
     /**
      * Whether or not to use colors in error output
@@ -133,6 +137,11 @@ class ProjectChecker
     /**
      * @var bool
      */
+    public $cache_results = false;
+
+    /**
+     * @var bool
+     */
     public $only_replace_php_types_with_non_docblock_types = false;
 
     const TYPE_CONSOLE = 'console';
@@ -151,7 +160,7 @@ class ProjectChecker
 
     /**
      * @param FileProvider  $file_provider
-     * @param ParserCacheProvider $cache_provider
+     * @param Providers     $cache_provider
      * @param bool          $use_color
      * @param bool          $show_info
      * @param string        $output_format
@@ -162,10 +171,7 @@ class ProjectChecker
      */
     public function __construct(
         Config $config,
-        FileProvider $file_provider,
-        ParserCacheProvider $cache_provider,
-        FileStorageCacheProvider $file_storage_cache_provider,
-        ClassLikeStorageCacheProvider $classlike_storage_cache_provider,
+        Providers $providers,
         $use_color = true,
         $show_info = true,
         $output_format = self::TYPE_CONSOLE,
@@ -174,8 +180,12 @@ class ProjectChecker
         $reports = null,
         $show_snippet = true
     ) {
-        $this->file_provider = $file_provider;
-        $this->cache_provider = $cache_provider;
+        $this->parser_cache_provider = $providers->parser_cache_provider;
+        $this->file_provider = $providers->file_provider;
+        $this->file_storage_provider = $providers->file_storage_provider;
+        $this->classlike_storage_provider = $providers->classlike_storage_provider;
+        $this->file_reference_provider = $providers->file_reference_provider;
+
         $this->use_color = $use_color;
         $this->show_info = $show_info;
         $this->debug_output = $debug_output;
@@ -183,21 +193,9 @@ class ProjectChecker
         $this->config = $config;
         $this->show_snippet = $show_snippet;
 
-        $this->file_storage_provider = new FileStorageProvider($file_storage_cache_provider);
-        $this->classlike_storage_provider = new ClassLikeStorageProvider($classlike_storage_cache_provider);
-
-        $statements_provider = new StatementsProvider(
-            $file_provider,
-            $cache_provider,
-            $file_storage_cache_provider
-        );
-
         $this->codebase = new Codebase(
             $config,
-            $this->file_storage_provider,
-            $this->classlike_storage_provider,
-            $file_provider,
-            $statements_provider,
+            $providers,
             $debug_output
         );
 
@@ -230,7 +228,9 @@ class ProjectChecker
         $this->output_format = $output_format;
         self::$instance = $this;
 
-        $this->cache_provider->use_igbinary = $config->use_igbinary;
+        if ($this->parser_cache_provider) {
+            $this->parser_cache_provider->use_igbinary = $config->use_igbinary;
+        }
     }
 
     /**
@@ -258,8 +258,12 @@ class ProjectChecker
         $diff_files = null;
         $deleted_files = null;
 
-        if ($is_diff && FileReferenceProvider::loadReferenceCache() && $this->cache_provider->canDiffFiles()) {
-            $deleted_files = FileReferenceProvider::getDeletedReferencedFiles();
+        if ($is_diff
+            && $this->parser_cache_provider
+            && $this->file_reference_provider->loadReferenceCache()
+            && $this->parser_cache_provider->canDiffFiles()
+        ) {
+            $deleted_files = $this->file_reference_provider->getDeletedReferencedFiles();
             $diff_files = $deleted_files;
 
             foreach ($this->config->getProjectDirectories() as $dir_name) {
@@ -289,7 +293,7 @@ class ProjectChecker
             }
 
             if ($diff_files) {
-                $file_list = self::getReferencedFilesFromDiff($diff_files);
+                $file_list = $this->getReferencedFilesFromDiff($diff_files);
 
                 // strip out deleted files
                 $file_list = array_diff($file_list, $deleted_files);
@@ -310,16 +314,18 @@ class ProjectChecker
 
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->alter_code);
 
-        $removed_parser_files = $this->cache_provider->deleteOldParserCaches(
-            $is_diff ? $this->cache_provider->getLastGoodRun() : $start_checks
-        );
+        if ($this->parser_cache_provider) {
+            $removed_parser_files = $this->parser_cache_provider->deleteOldParserCaches(
+                $is_diff ? $this->parser_cache_provider->getLastGoodRun() : $start_checks
+            );
 
-        if ($this->debug_output && $removed_parser_files) {
-            echo 'Removed ' . $removed_parser_files . ' old parser caches' . "\n";
-        }
+            if ($this->debug_output && $removed_parser_files) {
+                echo 'Removed ' . $removed_parser_files . ' old parser caches' . "\n";
+            }
 
-        if ($is_diff) {
-            $this->cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
+            if ($is_diff) {
+                $this->parser_cache_provider->touchParserCaches($this->getAllFiles($this->config), $start_checks);
+            }
         }
     }
 
@@ -381,7 +387,7 @@ class ProjectChecker
      */
     public function checkDir($dir_name)
     {
-        FileReferenceProvider::loadReferenceCache();
+        $this->file_reference_provider->loadReferenceCache();
 
         $this->checkDirWithConfig($dir_name, $this->config, true);
 
@@ -477,11 +483,17 @@ class ProjectChecker
     {
         $file_extensions = $config->getFileExtensions();
 
+        if (!$this->parser_cache_provider) {
+            throw new \UnexpectedValueException('Parser cache provider cannot be null here');
+        }
+
         /** @var RecursiveDirectoryIterator */
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
         $iterator->rewind();
 
         $diff_files = [];
+
+        $last_good_run = $this->parser_cache_provider->getLastGoodRun();
 
         while ($iterator->valid()) {
             if (!$iterator->isDot()) {
@@ -490,8 +502,7 @@ class ProjectChecker
                     $file_path = (string)$iterator->getRealPath();
 
                     if ($config->isInProjectDirs($file_path)) {
-                        if ($this->file_provider->getModifiedTime($file_path) > $this->cache_provider->getLastGoodRun()
-                        ) {
+                        if ($this->file_provider->getModifiedTime($file_path) > $last_good_run) {
                             $diff_files[] = $file_path;
                         }
                     }
@@ -548,7 +559,7 @@ class ProjectChecker
 
         $this->codebase->addFilesToAnalyze([$file_path => $file_path]);
 
-        FileReferenceProvider::loadReferenceCache();
+        $this->file_reference_provider->loadReferenceCache();
 
         if ($this->output_format === self::TYPE_CONSOLE) {
             echo 'Scanning files...' . "\n";
@@ -586,7 +597,7 @@ class ProjectChecker
             }
         }
 
-        FileReferenceProvider::loadReferenceCache();
+        $this->file_reference_provider->loadReferenceCache();
 
         if ($this->output_format === self::TYPE_CONSOLE) {
             echo 'Scanning files...' . "\n";
@@ -618,14 +629,14 @@ class ProjectChecker
      *
      * @return array<string>
      */
-    public static function getReferencedFilesFromDiff(array $diff_files)
+    public function getReferencedFilesFromDiff(array $diff_files)
     {
         $all_inherited_files_to_check = $diff_files;
 
         while ($diff_files) {
             $diff_file = array_shift($diff_files);
 
-            $dependent_files = FileReferenceProvider::getFilesInheritingFromFile($diff_file);
+            $dependent_files = $this->file_reference_provider->getFilesInheritingFromFile($diff_file);
             $new_dependent_files = array_diff($dependent_files, $all_inherited_files_to_check);
 
             $all_inherited_files_to_check += $new_dependent_files;
@@ -635,7 +646,7 @@ class ProjectChecker
         $all_files_to_check = $all_inherited_files_to_check;
 
         foreach ($all_inherited_files_to_check as $file_name) {
-            $dependent_files = FileReferenceProvider::getFilesReferencingFile($file_name);
+            $dependent_files = $this->file_reference_provider->getFilesReferencingFile($file_name);
             $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
         }
 

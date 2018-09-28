@@ -21,10 +21,10 @@ class FileReferenceTest extends TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             new TestConfig(),
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            )
         );
 
         $this->project_checker->getCodebase()->collectReferences();
@@ -111,7 +111,7 @@ class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $referenced_methods = \Psalm\Provider\FileReferenceProvider::getClassMethodReferences();
+        $referenced_methods = $this->project_checker->file_reference_provider->getClassMethodReferences();
 
         $this->assertSame($expected_referenced_methods, $referenced_methods);
     }

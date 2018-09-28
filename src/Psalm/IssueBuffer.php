@@ -314,7 +314,7 @@ class IssueBuffer
         $add_stats = false
     ) {
         $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
-        Provider\FileReferenceProvider::updateReferenceCache($project_checker, $scanned_files);
+        $project_checker->file_reference_provider->updateReferenceCache($project_checker, $scanned_files);
 
         if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
             echo "\n";
@@ -413,7 +413,11 @@ class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            $project_checker->cache_provider->processSuccessfulRun($start_time);
+            $project_checker->file_reference_provider->removeDeletedFilesFromReferences();
+
+            if ($project_checker->parser_cache_provider) {
+                $project_checker->parser_cache_provider->processSuccessfulRun($start_time);
+            }
         }
     }
 

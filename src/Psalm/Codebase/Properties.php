@@ -3,6 +3,7 @@ namespace Psalm\Codebase;
 
 use Psalm\CodeLocation;
 use Psalm\Provider\ClassLikeStorageProvider;
+use Psalm\Provider\FileReferenceProvider;
 
 /**
  * @internal
@@ -21,10 +22,17 @@ class Properties
      */
     public $collect_references = false;
 
+    /**
+     * @var FileReferenceProvider
+     */
+    public $file_reference_provider;
+
     public function __construct(
-        ClassLikeStorageProvider $storage_provider
+        ClassLikeStorageProvider $storage_provider,
+        FileReferenceProvider $file_reference_provider
     ) {
         $this->classlike_storage_provider = $storage_provider;
+        $this->file_reference_provider = $file_reference_provider;
     }
 
     /**
@@ -52,7 +60,7 @@ class Properties
             $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
 
             if ($calling_method_id) {
-                \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                $this->file_reference_provider->addReferenceToClassMethod(
                     $calling_method_id,
                     strtolower($declaring_property_class) . '::$' . $property_name
                 );

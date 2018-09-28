@@ -11,9 +11,9 @@ class StatementsProvider
     private $file_provider;
 
     /**
-     * @var ParserCacheProvider
+     * @var ?ParserCacheProvider
      */
-    private $cache_provider;
+    private $parser_cache_provider;
 
     /**
      * @var int
@@ -21,7 +21,7 @@ class StatementsProvider
     private $this_modified_time;
 
     /**
-     * @var FileStorageCacheProvider
+     * @var ?FileStorageCacheProvider
      */
     private $file_storage_cache_provider;
 
@@ -57,11 +57,11 @@ class StatementsProvider
 
     public function __construct(
         FileProvider $file_provider,
-        ParserCacheProvider $cache_provider,
-        FileStorageCacheProvider $file_storage_cache_provider
+        ParserCacheProvider $parser_cache_provider = null,
+        FileStorageCacheProvider $file_storage_cache_provider = null
     ) {
         $this->file_provider = $file_provider;
-        $this->cache_provider = $cache_provider;
+        $this->parser_cache_provider = $parser_cache_provider;
         $this->this_modified_time = filemtime(__FILE__);
         $this->file_storage_cache_provider = $file_storage_cache_provider;
     }
@@ -81,10 +81,21 @@ class StatementsProvider
         $file_contents = $this->file_provider->getContents($file_path);
         $modified_time = $this->file_provider->getModifiedTime($file_path);
 
-        $file_content_hash = md5($version . $file_contents);
-        $file_cache_key = $this->cache_provider->getParserCacheKey($file_path, $this->cache_provider->use_igbinary);
+        if (!$this->parser_cache_provider) {
+            if ($debug_output) {
+                echo 'Parsing ' . $file_path . "\n";
+            }
 
-        $stmts = $this->cache_provider->loadStatementsFromCache(
+            return self::parseStatements($file_contents) ?: [];
+        }
+
+        $file_content_hash = md5($version . $file_contents);
+        $file_cache_key = $this->parser_cache_provider->getParserCacheKey(
+            $file_path,
+            $this->parser_cache_provider->use_igbinary
+        );
+
+        $stmts = $this->parser_cache_provider->loadStatementsFromCache(
             $modified_time,
             $file_content_hash,
             $file_cache_key
@@ -97,10 +108,10 @@ class StatementsProvider
 
             $stmts = self::parseStatements($file_contents);
 
-            $existing_file_contents = $this->cache_provider->loadExistingFileContentsFromCache($file_cache_key);
+            $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_cache_key);
 
             if ($existing_file_contents) {
-                $existing_statements = $this->cache_provider->loadExistingStatementsFromCache($file_cache_key);
+                $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_cache_key);
 
                 if ($existing_statements) {
                     list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
@@ -175,14 +186,17 @@ class StatementsProvider
                 }
             }
 
-            $this->file_storage_cache_provider->removeCacheForFile($file_path);
-            $this->cache_provider->cacheFileContents($file_cache_key, $file_contents);
+            if ($this->file_storage_cache_provider) {
+                $this->file_storage_cache_provider->removeCacheForFile($file_path);
+            }
+
+            $this->parser_cache_provider->cacheFileContents($file_cache_key, $file_contents);
         } else {
             $from_cache = true;
             $this->diff_map[$file_path] = [];
         }
 
-        $this->cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
+        $this->parser_cache_provider->saveStatementsToCache($file_cache_key, $file_content_hash, $stmts, $from_cache);
 
         if (!$stmts) {
             return [];

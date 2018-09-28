@@ -21,10 +21,10 @@ class UnusedVariableTest extends TestCase
 
         $this->project_checker = new \Psalm\Checker\ProjectChecker(
             new TestConfig(),
-            $this->file_provider,
-            new Provider\FakeParserCacheProvider(),
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider()
+            new \Psalm\Provider\Providers(
+                $this->file_provider,
+                new Provider\FakeParserCacheProvider()
+            )
         );
 
         $this->project_checker->getCodebase()->reportUnusedCode();

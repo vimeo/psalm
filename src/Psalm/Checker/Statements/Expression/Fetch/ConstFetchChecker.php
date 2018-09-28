@@ -206,7 +206,7 @@ class ConstFetchChecker
             }
 
             if ($context->calling_method_id) {
-                \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                $project_checker->file_reference_provider->addReferenceToClassMethod(
                     $context->calling_method_id,
                     strtolower($fq_class_name) . '::' . $stmt->name->name
                 );

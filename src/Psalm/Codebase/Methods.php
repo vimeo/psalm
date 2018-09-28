@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Checker\MethodChecker;
 use Psalm\CodeLocation;
 use Psalm\Provider\ClassLikeStorageProvider;
+use Psalm\Provider\FileReferenceProvider;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
@@ -31,14 +32,21 @@ class Methods
     public $collect_references = false;
 
     /**
+     * @var FileReferenceProvider
+     */
+    public $file_reference_provider;
+
+    /**
      * @param ClassLikeStorageProvider $storage_provider
      */
     public function __construct(
         \Psalm\Config $config,
-        ClassLikeStorageProvider $storage_provider
+        ClassLikeStorageProvider $storage_provider,
+        FileReferenceProvider $file_reference_provider
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->config = $config;
+        $this->file_reference_provider = $file_reference_provider;
     }
 
     /**
@@ -82,13 +90,13 @@ class Methods
                     && isset($class_storage->potential_declaring_method_ids[$method_name])
                 ) {
                     foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
-                        \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                        $this->file_reference_provider->addReferenceToClassMethod(
                             $calling_method_id,
                             $potential_id
                         );
                     }
                 } else {
-                    \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+                    $this->file_reference_provider->addReferenceToClassMethod(
                         $calling_method_id,
                         $declaring_method_id_lc
                     );
@@ -154,7 +162,7 @@ class Methods
 
         if ($calling_method_id) {
             // also store failures in case the method is added later
-            \Psalm\Provider\FileReferenceProvider::addReferenceToClassMethod(
+            $this->file_reference_provider->addReferenceToClassMethod(
                 $calling_method_id,
                 strtolower($method_id)
             );

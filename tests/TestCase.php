@@ -2,6 +2,7 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
+use Psalm\Provider\Providers;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
 use RuntimeException;
@@ -45,17 +46,18 @@ class TestCase extends BaseTestCase
 
         FileChecker::clearCache();
 
-        $this->file_provider = new Provider\FakeFileProvider();
+        $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
 
         $config = new TestConfig();
-        $parser_cache_provider = new Provider\FakeParserCacheProvider();
+
+        $providers = new Providers(
+            $this->file_provider,
+            new Provider\FakeParserCacheProvider()
+        );
 
         $this->project_checker = new ProjectChecker(
             $config,
-            $this->file_provider,
-            $parser_cache_provider,
-            new \Psalm\Provider\NoCache\NoFileStorageCacheProvider(),
-            new \Psalm\Provider\NoCache\NoClassLikeStorageCacheProvider(),
+            $providers,
             false,
             true,
             ProjectChecker::TYPE_CONSOLE,
