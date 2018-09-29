@@ -401,6 +401,10 @@ class ConfigTest extends TestCase
                  * @return string
                  */
                 function ($issue_name) {
+                    if ($issue_name === 'ParseError') {
+                        return '';
+                    }
+
                     return '<' . $issue_name . ' errorLevel="suppress" />' . "\n";
                 },
                 self::getAllIssues()

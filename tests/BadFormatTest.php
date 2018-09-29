@@ -6,7 +6,8 @@ use Psalm\Context;
 class BadFormatTest extends TestCase
 {
     /**
-     * @expectedException PhpParser\Error
+     * @expectedException Psalm\Exception\CodeException
+     * @expectedExceptionMessage  ParseError - somefile.php:9
      * @return void
      */
     public function testMissingSemicolon()
