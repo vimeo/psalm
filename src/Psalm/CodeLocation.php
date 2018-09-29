@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use PhpParser;
 use Psalm\Checker\CommentChecker;
 
 class CodeLocation
@@ -12,22 +13,22 @@ class CodeLocation
     public $file_name;
 
     /** @var int */
-    private $line_number;
+    protected $line_number;
 
     /** @var int */
     private $end_line_number = -1;
 
     /** @var int */
-    private $file_start;
+    protected $file_start;
 
     /** @var int */
-    private $file_end;
+    protected $file_end;
 
     /** @var bool */
-    private $single_line;
+    protected $single_line;
 
     /** @var int */
-    private $preview_start;
+    protected $preview_start;
 
     /** @var int */
     private $preview_end = -1;
@@ -81,7 +82,7 @@ class CodeLocation
      */
     public function __construct(
         FileSource $file_source,
-        \PhpParser\Node $stmt,
+        PhpParser\Node $stmt,
         CodeLocation $previous_location = null,
         $single_line = false,
         $regex_type = null,

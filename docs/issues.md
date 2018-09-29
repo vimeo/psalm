@@ -1196,6 +1196,18 @@ class A {
 }
 ```
 
+### ParseError
+
+Emitted when the PHP Parser encounters an error.
+
+```php
+class A {
+  public function foo() : void {
+    echo "foo"
+  }
+}
+```
+
 ### PossiblyFalseArgument
 
 Emitted when a function argument is possibly `false`, but the function doesn’t expect `false`. This is distinct from a function argument is possibly `bool`, which results in `PossiblyInvalidArgument`.

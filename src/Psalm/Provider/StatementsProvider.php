@@ -86,7 +86,7 @@ class StatementsProvider
                 echo 'Parsing ' . $file_path . "\n";
             }
 
-            return self::parseStatements($file_contents) ?: [];
+            return self::parseStatements($file_contents, $file_path) ?: [];
         }
 
         $file_content_hash = md5($version . $file_contents);
@@ -106,7 +106,7 @@ class StatementsProvider
                 echo 'Parsing ' . $file_path . "\n";
             }
 
-            $stmts = self::parseStatements($file_contents);
+            $stmts = self::parseStatements($file_contents, $file_path);
 
             $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_cache_key);
 
@@ -242,10 +242,11 @@ class StatementsProvider
 
     /**
      * @param  string   $file_contents
+     * @param  string   $file_path
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    public static function parseStatements($file_contents)
+    public static function parseStatements($file_contents, $file_path = null)
     {
         if (!self::$parser) {
             $lexer = new PhpParser\Lexer([
@@ -263,15 +264,33 @@ class StatementsProvider
             self::$node_traverser->addVisitor($name_resolver);
         }
 
-        try {
-            /** @var array<int, \PhpParser\Node\Stmt> */
-            $stmts = self::$parser->parse($file_contents);
-        } catch (PhpParser\Error $e) {
-            throw $e;
+        $error_handler = new \PhpParser\ErrorHandler\Collecting();
+        
+        /** @var array<int, \PhpParser\Node\Stmt> */
+        $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+
+        if ($error_handler->hasErrors() && $file_path) {
+            $config = \Psalm\Config::getInstance();
+
+            foreach ($error_handler->getErrors() as $error) {
+                if ($error->hasColumnInfo()) {
+                    \Psalm\IssueBuffer::add(
+                        new \Psalm\Issue\ParseError(
+                            $error->getMessage(),
+                            new \Psalm\CodeLocation\ParseErrorLocation(
+                                $error,
+                                $file_contents,
+                                $file_path,
+                                $config->shortenFileName($file_path)
+                            )
+                        )
+                    );
+                }
+            }
         }
 
         /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = self::$node_traverser->traverse($stmts);
+        self::$node_traverser->traverse($stmts);
 
         return $stmts;
     }
