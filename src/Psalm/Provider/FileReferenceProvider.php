@@ -30,6 +30,11 @@ use Psalm\Config;
 class FileReferenceProvider
 {
     /**
+     * @var bool
+     */
+    private $loaded_from_cache = false;
+
+    /**
      * A lookup table used for getting all the files that reference a class
      *
      * @var array<string, array<string,bool>>
@@ -68,9 +73,19 @@ class FileReferenceProvider
     private static $class_method_references = [];
 
     /**
+     * @var array<string, array<string, bool>>
+     */
+    private static $correct_methods = [];
+
+    /**
      * @var array<string, array<int, IssueData>>
      */
     private static $issues = [];
+
+    /**
+     * @var bool
+     */
+    private $loaded_correct_methods_from_cache = false;
 
     /**
      * @var ?FileReferenceCacheProvider
@@ -245,7 +260,9 @@ class FileReferenceProvider
      */
     public function loadReferenceCache()
     {
-        if ($this->cache) {
+        if ($this->cache && !$this->loaded_from_cache) {
+            $this->loaded_from_cache = true;
+
             $file_references = $this->cache->getCachedFileReferences();
 
             if ($file_references === null) {
@@ -362,11 +379,12 @@ class FileReferenceProvider
     }
 
     /**
+     * @param string $file_path
      * @return void
      */
-    public function clearExistingIssues()
+    public function clearExistingIssuesForFile($file_path)
     {
-        self::$issues = [];
+        unset(self::$issues[$file_path]);
     }
 
     /**
@@ -383,6 +401,32 @@ class FileReferenceProvider
     }
 
     /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getCorrectMethods(\Psalm\Config $config)
+    {
+        if (!$this->loaded_correct_methods_from_cache && $this->cache) {
+            self::$correct_methods = $this->cache->getCorrectMethodCache($config) ?: [];
+            $this->loaded_correct_methods_from_cache = true;
+        }
+
+        return self::$correct_methods;
+    }
+
+    /**
+     * @param array<string, array<string, bool>> $correct_methods
+     * @return  void
+     */
+    public function setCorrectMethods(array $correct_methods)
+    {
+        self::$correct_methods = $correct_methods;
+            
+        if ($this->cache) {
+            $this->cache->setCorrectMethodCache($correct_methods);
+        }
+    }
+
+    /**
      * @return void
      */
     public static function clearCache()
@@ -393,6 +437,7 @@ class FileReferenceProvider
         self::$deleted_files = null;
         self::$file_references = [];
         self::$class_method_references = [];
+        self::$correct_methods = [];
         self::$issues = [];
     }
 }

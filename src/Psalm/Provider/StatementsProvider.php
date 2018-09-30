@@ -241,6 +241,17 @@ class StatementsProvider
     }
 
     /**
+     * @return void
+     */
+    public function resetDiffs()
+    {
+        $this->changed_members = [];
+        $this->unchanged_members = [];
+        $this->unchanged_signature_members = [];
+        $this->diff_map = [];
+    }
+
+    /**
      * @param  string   $file_contents
      * @param  string   $file_path
      *

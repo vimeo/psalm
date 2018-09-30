@@ -264,8 +264,9 @@ class Analyzer
             }
         }
 
-        if ($project_checker->cache_results && $project_checker->file_reference_provider->cache) {
-            $project_checker->file_reference_provider->cache->setCorrectMethodCache($this->correct_methods);
+        if ($project_checker->cache_results) {
+            $project_checker->file_reference_provider->setCorrectMethods($this->correct_methods);
+            $project_checker->codebase->statements_provider->resetDiffs();
         }
 
         if ($alter_code) {
@@ -283,16 +284,12 @@ class Analyzer
         if ($project_checker->cache_results
             && !$project_checker->codebase->collect_references
         ) {
-            if ($project_checker->file_reference_provider->cache) {
-                $this->correct_methods = $project_checker->file_reference_provider->cache->getCorrectMethodCache(
-                    $this->config
-                );
-            }
+            $this->correct_methods = $project_checker->file_reference_provider->getCorrectMethods(
+                $this->config
+            );
 
             $this->existing_issues = $project_checker->file_reference_provider->getExistingIssues();
         }
-
-        $project_checker->file_reference_provider->clearExistingIssues();
 
         $statements_provider = $project_checker->codebase->statements_provider;
 
@@ -336,12 +333,12 @@ class Analyzer
         }
 
         foreach ($this->existing_issues as $file_path => &$file_issues) {
-            if (!isset($this->correct_methods[$file_path]) || !isset($diff_map[$file_path])) {
+            if (!isset($this->correct_methods[$file_path])) {
                 unset($this->existing_issues[$file_path]);
                 continue;
             }
 
-            $file_diff_map = $diff_map[$file_path];
+            $file_diff_map = $diff_map[$file_path] ?? [];
 
             if (!$file_diff_map) {
                 continue;
@@ -370,6 +367,10 @@ class Analyzer
                     }
                 }
             }
+        }
+
+        foreach ($this->files_to_analyze as $file_path) {
+            $project_checker->file_reference_provider->clearExistingIssuesForFile($file_path);
         }
     }
 
@@ -647,16 +648,6 @@ class Analyzer
     public function setCorrectMethod($file_path, $method_id)
     {
         $this->correct_methods[$file_path][$method_id] = true;
-    }
-
-    /**
-     * @param array<string, array<string, bool>> $correct_methods
-     *
-     * @return void
-     */
-    public function setCorrectMethods(array $correct_methods)
-    {
-        $this->correct_methods = $correct_methods;
     }
 
     /**
