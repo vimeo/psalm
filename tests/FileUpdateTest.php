@@ -22,7 +22,10 @@ class FileUpdateTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Provider\ParserInstanceCacheProvider()
+            new \Psalm\Tests\Provider\ParserInstanceCacheProvider(),
+            null,
+            null,
+            new Provider\FakeFileReferenceCacheProvider()
         );
 
         $this->project_checker = new ProjectChecker(
@@ -39,7 +42,7 @@ class FileUpdateTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestValidIncludes
+     * @dataProvider providerTestValidUpdates
      *
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
@@ -75,11 +78,9 @@ class FileUpdateTest extends TestCase
 
         $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
 
-        $previous_correct_methods = $codebase->analyzer->getCorrectMethods();
-
         $this->assertSame(
             $initial_correct_methods,
-            $previous_correct_methods
+            $codebase->analyzer->getCorrectMethods()
         );
 
         foreach ($end_files as $file_path => $contents) {
@@ -87,9 +88,10 @@ class FileUpdateTest extends TestCase
         }
 
         $codebase->reloadFiles($this->project_checker, array_keys($end_files));
-        $codebase->analyzer->setCorrectMethods($previous_correct_methods);
 
-        $this->assertSame($previous_correct_methods, $codebase->analyzer->getCorrectMethods());
+        foreach ($end_files as $file_path => $_) {
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
 
         $codebase->scanFiles();
         $codebase->analyzer->loadCachedResults($this->project_checker);
@@ -101,9 +103,61 @@ class FileUpdateTest extends TestCase
     }
 
     /**
+     * @dataProvider providerTestInvalidUpdates
+     *
+     * @param array<string, string> $start_files
+     * @param array<string, string> $end_files
+     * @param array<string, string> $error_levels
+     *
+     * @return void
+     */
+    public function testErrorAfterUpdate(
+        array $start_files,
+        array $end_files,
+        string $error_message,
+        array $error_levels = []
+    ) {
+        $this->project_checker->cache_results = true;
+
+        $codebase = $this->project_checker->getCodebase();
+
+        $config = $codebase->config;
+
+        foreach ($error_levels as $error_type => $error_level) {
+            $config->setCustomErrorLevel($error_type, $error_level);
+        }
+
+        foreach ($start_files as $file_path => $contents) {
+            $this->file_provider->registerFile($file_path, $contents);
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+
+        foreach ($end_files as $file_path => $contents) {
+            $this->file_provider->registerFile($file_path, $contents);
+        }
+
+        $codebase->reloadFiles($this->project_checker, array_keys($end_files));
+
+        foreach ($end_files as $file_path => $_) {
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
+
+        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+    }
+
+    /**
      * @return array
      */
-    public function providerTestValidIncludes()
+    public function providerTestValidUpdates()
     {
         return [
             'basicRequire' => [
@@ -186,6 +240,56 @@ class FileUpdateTest extends TestCase
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerTestInvalidUpdates()
+    {
+        return [
+            'invalidateParentCaller' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public function foo() : void {}
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B extends A { }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        namespace Foo;
+
+                        class C {
+                            public function bar() : void {
+                                (new B)->foo();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A { }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B extends A { }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        namespace Foo;
+
+                        class C {
+                            public function bar() : void {
+                                (new B)->foo();
+                            }
+                        }',
+                ],
+                'error_message' => 'UndefinedMethod'
             ],
         ];
     }
