@@ -114,7 +114,7 @@ class ClassStatementsDiffer extends Differ
                         return false;
                     }
 
-                    if ((string) $a->props[0]->name !== (string) $b->props[0]->name) {
+                    if ((string) $a->props[0]->name !== (string) $b->props[0]->name || $a->flags !== $b->flags) {
                         return false;
                     }
 

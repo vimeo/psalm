@@ -274,6 +274,46 @@ class FileDiffTest extends TestCase
                 ['foo\a::$a'],
                 []
             ],
+            'propertyStaticChange' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /** @var ?string */
+                    public static $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /** @var ?string */
+                    public $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a'],
+                []
+            ],
+            'propertyVisibilityChange' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /** @var ?string */
+                    public $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /** @var ?string */
+                    private $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a'],
+                []
+            ],
             'addDocblockToFirst' => [
                 '<?php
                 namespace Foo;
@@ -393,6 +433,34 @@ class FileDiffTest extends TestCase
                      * @return void
                      */
                     public function bar() {
+                        $b = 2;
+                    }
+                }',
+                ['foo\a::foo'],
+                [],
+                ['foo\a::bar'],
+                [[0, 0]]
+            ],
+            'changeMethodVisibility' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public function foo() {
+                        $a = 1;
+                    }
+                    public function bar() {
+                        $b = 2;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public function foo() {
+                        $a = 1;
+                    }
+                    private function bar() {
                         $b = 2;
                     }
                 }',

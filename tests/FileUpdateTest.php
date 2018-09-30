@@ -241,6 +241,224 @@ class FileUpdateTest extends TestCase
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]
             ],
+            'invalidateAfterPropertyChange' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return (new A)->foo;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var int */
+                            public $foo = 5;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return (new A)->foo;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::bar' => true,
+                    ],
+                ]
+            ],
+            'invalidateAfterStaticPropertyChange' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public static $foo = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::$foo;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var int */
+                            public static $foo = 5;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::$foo;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::bar' => true,
+                    ],
+                ]
+            ],
+            'invalidateAfterStaticFlipPropertyChange' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public static $foo = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::$foo;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::$foo;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::bar' => true,
+                    ],
+                ]
+            ],
+            'invalidateAfterConstantChange' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public const FOO = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::FOO;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public const FOO = 5;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::FOO;
+                            }
+
+                            public function bar() : void {
+                                $a = new A();
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::bar' => true,
+                    ],
+                ]
+            ],
         ];
     }
 
@@ -290,6 +508,78 @@ class FileUpdateTest extends TestCase
                         }',
                 ],
                 'error_message' => 'UndefinedMethod'
+            ],
+            'invalidateAfterPropertyTypeChange' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return (new A)->foo;
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var int */
+                            public $foo = 5;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return (new A)->foo;
+                            }
+                        }',
+                ],
+                'error_message' => 'InvalidReturnStatement'
+            ],
+            'invalidateAfterConstantChange' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public const FOO = "bar";
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::FOO;
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public const FOO = 5;
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo() : string {
+                                return A::FOO;
+                            }
+                        }',
+                ],
+                'error_message' => 'InvalidReturnStatement'
             ],
         ];
     }
