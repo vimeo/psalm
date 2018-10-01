@@ -64,6 +64,7 @@ class IncludeChecker
         }
 
         if ($path_to_file) {
+            $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
             $path_to_file = str_replace('/./', '/', $path_to_file);
             $slash = preg_quote(DIRECTORY_SEPARATOR, '/');
             $reduce_pattern = '/' . $slash . '[^' . $slash . ']+' . $slash . '\.\.' . $slash . '/';
@@ -202,7 +203,16 @@ class IncludeChecker
             return $stmt->inferredType->getSingleStringLiteral()->value;
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+        if ($stmt instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            if ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                && $stmt->var->name === 'GLOBALS'
+                && $stmt->dim instanceof PhpParser\Node\Scalar\String_
+            ) {
+                if (isset($GLOBALS[$stmt->dim->value])) {
+                    return $GLOBALS[$stmt->dim->value];
+                }
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             $left_string = self::getPathTo($stmt->left, $file_name);
             $right_string = self::getPathTo($stmt->right, $file_name);
 

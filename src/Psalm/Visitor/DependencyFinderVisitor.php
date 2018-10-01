@@ -1860,6 +1860,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
             }
 
+            $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
+            $path_to_file = str_replace('/./', '/', $path_to_file);
+
             if ($this->file_path === $path_to_file) {
                 return;
             }
