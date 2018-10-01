@@ -208,7 +208,8 @@ class IncludeChecker
                 && $stmt->var->name === 'GLOBALS'
                 && $stmt->dim instanceof PhpParser\Node\Scalar\String_
             ) {
-                if (isset($GLOBALS[$stmt->dim->value])) {
+                if (isset($GLOBALS[$stmt->dim->value]) && is_string($GLOBALS[$stmt->dim->value])) {
+                    /** @var string */
                     return $GLOBALS[$stmt->dim->value];
                 }
             }
