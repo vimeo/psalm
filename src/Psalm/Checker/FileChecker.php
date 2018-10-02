@@ -97,6 +97,7 @@ class FileChecker extends SourceChecker implements StatementsSource
      */
     public function analyze(Context $file_context = null, $preserve_checkers = false, Context $global_context = null)
     {
+        $time = microtime(true);
         $codebase = $this->project_checker->codebase;
 
         $file_storage = $codebase->file_storage_provider->get($this->file_path);

@@ -105,15 +105,13 @@ class FileUpdateTest extends TestCase
     /**
      * @dataProvider providerTestInvalidUpdates
      *
-     * @param array<string, string> $start_files
-     * @param array<string, string> $end_files
+     * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $error_levels
      *
      * @return void
      */
     public function testErrorAfterUpdate(
-        array $start_files,
-        array $end_files,
+        array $file_stages,
         string $error_message,
         array $error_levels = []
     ) {
@@ -127,14 +125,24 @@ class FileUpdateTest extends TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
-        foreach ($start_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $end_files = array_pop($file_stages);
+
+        foreach ($file_stages as $files) {
+            foreach ($files as $file_path => $contents) {
+                $this->file_provider->registerFile($file_path, $contents);
+            }
+
+            $codebase->reloadFiles($this->project_checker, array_keys($files));
+
+            foreach ($files as $file_path => $contents) {
+                $this->file_provider->registerFile($file_path, $contents);
+                $codebase->addFilesToAnalyze([$file_path => $file_path]);
+            }
+
+            $codebase->scanFiles();
+
+            $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
         }
-
-        $codebase->scanFiles();
-
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
 
         foreach ($end_files as $file_path => $contents) {
             $this->file_provider->registerFile($file_path, $contents);
@@ -469,117 +477,208 @@ class FileUpdateTest extends TestCase
     {
         return [
             'invalidateParentCaller' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public function foo() : void {}
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                public function foo() : void {}
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
 
-                        class B extends A { }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
-                        namespace Foo;
+                            class B extends A { }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
 
-                        class C {
-                            public function bar() : void {
-                                (new B)->foo();
-                            }
-                        }',
+                            class C {
+                                public function bar() : void {
+                                    (new B)->foo();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A { }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            class B extends A { }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
+
+                            class C {
+                                public function bar() : void {
+                                    (new B)->foo();
+                                }
+                            }',
+                    ],
                 ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
-
-                        class A { }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
-
-                        class B extends A { }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
-                        namespace Foo;
-
-                        class C {
-                            public function bar() : void {
-                                (new B)->foo();
-                            }
-                        }',
-                ],
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
             'invalidateAfterPropertyTypeChange' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            /** @var string */
-                            public $foo = "bar";
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                /** @var string */
+                                public $foo = "bar";
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
 
-                        class B {
-                            public function foo() : string {
-                                return (new A)->foo;
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            class B {
+                                public function foo() : string {
+                                    return (new A)->foo;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            /** @var int */
-                            public $foo = 5;
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                /** @var int */
+                                public $foo = 5;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
 
-                        class B {
-                            public function foo() : string {
-                                return (new A)->foo;
-                            }
-                        }',
+                            class B {
+                                public function foo() : string {
+                                    return (new A)->foo;
+                                }
+                            }',
+                    ],
                 ],
                 'error_message' => 'InvalidReturnStatement'
             ],
             'invalidateAfterConstantChange' => [
-                'start_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public const FOO = "bar";
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                public const FOO = "bar";
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
 
-                        class B {
-                            public function foo() : string {
-                                return A::FOO;
-                            }
-                        }',
-                ],
-                'end_files' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                        namespace Foo;
+                            class B {
+                                public function foo() : string {
+                                    return A::FOO;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
 
-                        class A {
-                            public const FOO = 5;
-                        }',
-                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
-                        namespace Foo;
+                            class A {
+                                public const FOO = 5;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
 
-                        class B {
-                            public function foo() : string {
-                                return A::FOO;
-                            }
-                        }',
+                            class B {
+                                public function foo() : string {
+                                    return A::FOO;
+                                }
+                            }',
+                    ],
                 ],
                 'error_message' => 'InvalidReturnStatement'
+            ],
+            'invalidateAfterSkippedAnalysis' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function getB() : B {
+                                    return new B;
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function getString() : string {
+                                    return "foo";
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
+
+                            class C {
+                                public function bar() : string {
+                                    return (new A)->getB()->getString();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function getB() : B {
+                                    return new B;
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function getString() : string {
+                                    return "foo";
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
+
+                            class C {
+                                public function bar() : string {
+                                    return (new A)->getB()->getString();
+                                }
+
+                                public function bat() : void {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function getB() : B {
+                                    return new B;
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function getString() : ?string {
+                                    return "foo";
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
+
+                            class C {
+                                public function bar() : string {
+                                    return (new A)->getB()->getString();
+                                }
+                            }',
+                    ],
+                ],
+                'error_message' => 'NullableReturnStatement'
             ],
         ];
     }
