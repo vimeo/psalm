@@ -154,6 +154,10 @@ class ClassStatementsDiffer extends Differ
                     foreach ($diff_elem->old->consts as $const) {
                         $keep[] = strtolower($name) . '::' . $const->name;
                     }
+                } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\TraitUse) {
+                    foreach ($diff_elem->old->traits as $trait) {
+                        $keep[] = strtolower((string) $trait->getAttribute('resolvedName')) . '::*';
+                    }
                 }
             } elseif ($diff_elem->type === DiffElem::TYPE_KEEP_SIGNATURE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -173,6 +177,10 @@ class ClassStatementsDiffer extends Differ
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassConst) {
                     foreach ($diff_elem->old->consts as $const) {
                         $delete[] = strtolower($name) . '::' . $const->name;
+                    }
+                } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\TraitUse) {
+                    foreach ($diff_elem->old->traits as $trait) {
+                        $delete[] = strtolower((string) $trait->getAttribute('resolvedName')) . '::*';
                     }
                 }
             }

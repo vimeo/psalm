@@ -38,6 +38,7 @@ class NamespaceStatementsDiffer extends Differ
             function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code) {
                 if (($a instanceof PhpParser\Node\Stmt\Class_ && $b instanceof PhpParser\Node\Stmt\Class_)
                     || ($a instanceof PhpParser\Node\Stmt\Interface_ && $b instanceof PhpParser\Node\Stmt\Interface_)
+                    || ($a instanceof PhpParser\Node\Stmt\Trait_ && $b instanceof PhpParser\Node\Stmt\Trait_)
                 ) {
                     // @todo add check for comments comparison
 
@@ -56,7 +57,7 @@ class NamespaceStatementsDiffer extends Differ
 
         $keep = [];
         $keep_signature = [];
-        $delete = [];
+        $add_or_delete = [];
         $diff_map = [];
 
         foreach ($diff as $diff_elem) {
@@ -65,6 +66,8 @@ class NamespaceStatementsDiffer extends Differ
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Class_)
                     || ($diff_elem->old instanceof PhpParser\Node\Stmt\Interface_
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Interface_)
+                    || ($diff_elem->old instanceof PhpParser\Node\Stmt\Trait_
+                        && $diff_elem->new instanceof PhpParser\Node\Stmt\Trait_)
                 ) {
                     $class_keep = ClassStatementsDiffer::diff(
                         ($name ? $name . '\\' : '') . $diff_elem->old->name,
@@ -76,12 +79,12 @@ class NamespaceStatementsDiffer extends Differ
 
                     $keep = array_merge($keep, $class_keep[0]);
                     $keep_signature = array_merge($keep_signature, $class_keep[1]);
-                    $delete = array_merge($delete, $class_keep[2]);
+                    $add_or_delete = array_merge($add_or_delete, $class_keep[2]);
                     $diff_map = array_merge($diff_map, $class_keep[3]);
                 }
             }
         }
 
-        return [$keep, $keep_signature, $delete, $diff_map];
+        return [$keep, $keep_signature, $add_or_delete, $diff_map];
     }
 }

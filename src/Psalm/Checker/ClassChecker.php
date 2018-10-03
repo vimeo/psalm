@@ -914,6 +914,8 @@ class ClassChecker extends ClassLikeChecker
             return $method_checker;
         }
 
+        //echo 'Analysing ' . $analyzed_method_id . "\n";
+
         $existing_error_count = IssueBuffer::getErrorCount();
 
         $method_context = clone $class_context;
@@ -1000,7 +1002,7 @@ class ClassChecker extends ClassLikeChecker
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
-            $codebase->analyzer->setCorrectMethod($source->getFilePath(), strtolower($analyzed_method_id));
+            $codebase->analyzer->setCorrectMethod($source->getFilePath(), strtolower($actual_method_id));
         }
 
         return $method_checker;

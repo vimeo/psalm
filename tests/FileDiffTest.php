@@ -767,6 +767,60 @@ class FileDiffTest extends TestCase
                 [],
                 [[0, 0], [0, 0], [120, 2]]
             ],
+            'sameTrait' => [
+                '<?php
+                namespace Foo;
+
+                trait T {
+                    public $aB = 5;
+
+                    const F = 1;
+
+                    public function foo() {
+                        $a = 1;
+                    }
+                    public function bar() {
+                        $b = 1;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                trait T {
+                    public $aB = 5;
+
+                    const F = 1;
+
+                    public function foo() {
+                        $a = 1;
+                    }
+                    public function bar() {
+                        $b = 1;
+                    }
+                }',
+                ['foo\t::$aB', 'foo\t::F', 'foo\t::foo', 'foo\t::bar'],
+                [],
+                [],
+                [[0, 0], [0, 0], [0, 0], [0, 0]]
+            ],
+            'traitPropertyChange' => [
+                '<?php
+                namespace Foo;
+
+                trait T {
+                    public $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                trait T {
+                    public $b;
+                }',
+                [],
+                [],
+                ['foo\t::$a'],
+                []
+            ],
         ];
     }
 }

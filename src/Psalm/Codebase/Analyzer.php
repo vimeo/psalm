@@ -308,24 +308,42 @@ class Analyzer
 
         $all_referencing_methods = $project_checker->file_reference_provider->getMethodsReferencing();
 
+        foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
+            $member_stub = preg_replace('/::.*$/', '::*', $member_id);
+
+            if (!isset($all_referencing_methods[$member_stub])) {
+                $all_referencing_methods[$member_stub] = $referencing_method_ids;
+            } else {
+                $all_referencing_methods[$member_stub] += $referencing_method_ids;
+            }
+        }
+
         $newly_invalidated_methods = [];
 
         foreach ($changed_members as $file_changed_members) {
             foreach ($file_changed_members as $member_id => $_) {
                 if (isset($all_referencing_methods[$member_id])) {
-                    $newly_invalidated_methods = array_merge($all_referencing_methods[$member_id]);
+                    $newly_invalidated_methods = array_merge(
+                        $all_referencing_methods[$member_id],
+                        $newly_invalidated_methods
+                    );
                 }
             }
         }
 
         foreach ($this->correct_methods as $file_path => $correct_methods) {
             foreach ($correct_methods as $correct_method_id => $_) {
-                if (isset($newly_invalidated_methods[$correct_method_id])) {
+                $correct_method_stub = preg_replace('/::.*$/', '::*', $correct_method_id);
+
+                if (isset($newly_invalidated_methods[$correct_method_id])
+                    || isset($newly_invalidated_methods[$correct_method_stub])
+                ) {
                     unset($this->correct_methods[$file_path][$correct_method_id]);
                 }
 
                 if (isset($unchanged_members[$file_path])
                     && !isset($unchanged_members[$file_path][$correct_method_id])
+                    && !isset($unchanged_members[$file_path][$correct_method_stub])
                 ) {
                     unset($this->correct_methods[$file_path][$correct_method_id]);
                 }

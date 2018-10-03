@@ -467,6 +467,260 @@ class FileUpdateTest extends TestCase
                     ],
                 ]
             ],
+            'dontInvalidateTraitMethods' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            public function fooFoo(): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+
+                            public function noReturnType() {}
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            public function fooFoo(?string $foo = null): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+
+                            public function noReturnType() {}
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                        'foo\t::barbar' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::foofoo' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                        'foo\b::noreturntype' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                        'foo\t::barbar' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::bar' => true,
+                        'foo\b::noreturntype' => true,
+                    ],
+                ],
+                [
+                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                ]
+            ],
+            'invalidateTraitMethodsWhenTraitRemoved' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            public function fooFoo(): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public function fooFoo(?string $foo = null): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                        'foo\t::barbar' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::foofoo' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                        'foo\t::barbar' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                ]
+            ],
+            'invalidateTraitMethodsWhenTraitReplaced' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            public function fooFoo(): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            public function fooFoo(?string $foo = null): void { }
+
+                            public function barBar(): int {
+                                return 5;
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                        'foo\t::barbar' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::foofoo' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
+                        'foo\t::barbar' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                ]
+            ],
         ];
     }
 

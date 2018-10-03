@@ -42,6 +42,7 @@ class FileStatementsDiffer extends Differ
                 if (($a instanceof PhpParser\Node\Stmt\Namespace_ && $b instanceof PhpParser\Node\Stmt\Namespace_)
                     || ($a instanceof PhpParser\Node\Stmt\Class_ && $b instanceof PhpParser\Node\Stmt\Class_)
                     || ($a instanceof PhpParser\Node\Stmt\Interface_ && $b instanceof PhpParser\Node\Stmt\Interface_)
+                    || ($a instanceof PhpParser\Node\Stmt\Trait_ && $b instanceof PhpParser\Node\Stmt\Trait_)
                 ) {
                     return (string)$a->name === (string)$b->name;
                 }
@@ -58,7 +59,7 @@ class FileStatementsDiffer extends Differ
 
         $keep = [];
         $keep_signature = [];
-        $delete = [];
+        $add_or_delete = [];
         $diff_map = [];
 
         foreach ($diff as $diff_elem) {
@@ -76,12 +77,14 @@ class FileStatementsDiffer extends Differ
 
                     $keep = array_merge($keep, $namespace_keep[0]);
                     $keep_signature = array_merge($keep_signature, $namespace_keep[1]);
-                    $delete = array_merge($delete, $namespace_keep[2]);
+                    $add_or_delete = array_merge($add_or_delete, $namespace_keep[2]);
                     $diff_map = array_merge($diff_map, $namespace_keep[3]);
                 } elseif (($diff_elem->old instanceof PhpParser\Node\Stmt\Class_
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Class_)
                     || ($diff_elem->old instanceof PhpParser\Node\Stmt\Interface_
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Interface_)
+                    || ($diff_elem->old instanceof PhpParser\Node\Stmt\Trait_
+                        && $diff_elem->new instanceof PhpParser\Node\Stmt\Trait_)
                 ) {
                     $class_keep = ClassStatementsDiffer::diff(
                         (string) $diff_elem->old->name,
@@ -93,12 +96,12 @@ class FileStatementsDiffer extends Differ
 
                     $keep = array_merge($keep, $class_keep[0]);
                     $keep_signature = array_merge($keep_signature, $class_keep[1]);
-                    $delete = array_merge($delete, $class_keep[2]);
+                    $add_or_delete = array_merge($add_or_delete, $class_keep[2]);
                     $diff_map = array_merge($diff_map, $class_keep[3]);
                 }
             }
         }
 
-        return [$keep, $keep_signature, $delete, $diff_map];
+        return [$keep, $keep_signature, $add_or_delete, $diff_map];
     }
 }
