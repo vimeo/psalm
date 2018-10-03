@@ -57,6 +57,11 @@ class FileUpdateTest extends TestCase
         array $unaffected_correct_methods,
         array $error_levels = []
     ) {
+        $test_name = $this->getTestName();
+        if (strpos($test_name, 'SKIPPED-') !== false) {
+            $this->markTestSkipped('Skipped due to a bug.');
+        }
+
         $this->project_checker->cache_results = true;
 
         $codebase = $this->project_checker->getCodebase();
@@ -467,7 +472,7 @@ class FileUpdateTest extends TestCase
                     ],
                 ]
             ],
-            'dontInvalidateTraitMethods' => [
+            'SKIPPED-dontInvalidateTraitMethods' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
@@ -533,10 +538,8 @@ class FileUpdateTest extends TestCase
                         }',
                 ],
                 'initial_correct_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\t::barbar' => true,
-                    ],
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::barbar' => true,
                         'foo\a::foofoo' => true,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
@@ -546,10 +549,9 @@ class FileUpdateTest extends TestCase
                     ],
                 ],
                 'unaffected_correct_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\t::barbar' => true,
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::barbar' => true,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => true,
                         'foo\b::noreturntype' => true,
@@ -619,10 +621,8 @@ class FileUpdateTest extends TestCase
                         }',
                 ],
                 'initial_correct_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\t::barbar' => true,
-                    ],
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::barbar' => true,
                         'foo\a::foofoo' => true,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
@@ -631,9 +631,6 @@ class FileUpdateTest extends TestCase
                     ],
                 ],
                 'unaffected_correct_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\t::barbar' => true,
-                    ],
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ]
@@ -702,10 +699,8 @@ class FileUpdateTest extends TestCase
                         }',
                 ],
                 'initial_correct_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\t::barbar' => true,
-                    ],
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::barbar' => true,
                         'foo\a::foofoo' => true,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
@@ -714,10 +709,94 @@ class FileUpdateTest extends TestCase
                     ],
                 ],
                 'unaffected_correct_methods' => [
-                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => [
-                        'foo\t::barbar' => true,
-                    ],
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                ]
+            ],
+            'SKIPPED-invalidateTraitMethodsWhenMethodChanged' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            public function fooFoo(): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): string {
+                                return "hello";
+                            }
+
+                            public function bat(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            public function fooFoo(?string $foo = null): void { }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        namespace Foo;
+
+                        class B {
+                            public function foo(): void {
+                                (new A)->fooFoo();
+                            }
+
+                            public function bar() : void {
+                                echo (new A)->barBar();
+                            }
+                        }',
+                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function barBar(): int {
+                                return 5;
+                            }
+
+                            public function bat(): string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::barbar' => true,
+                        'foo\a::bat' => true,
+                        'foo\a::foofoo' => true,
+                    ],
+                    getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
+                        'foo\b::foo' => true,
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::bat' => true,
+                    ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ]
             ],

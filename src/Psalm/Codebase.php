@@ -198,6 +198,7 @@ class Codebase
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
+            $this->classlike_storage_provider,
             $this->debug_output
         );
     }

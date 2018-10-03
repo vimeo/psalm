@@ -8,6 +8,7 @@ use Psalm\FileManipulation\FileManipulation;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
+use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
 use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
@@ -62,6 +63,11 @@ class Analyzer
     private $file_storage_provider;
 
     /**
+     * @var ClassLikeStorageProvider
+     */
+    private $classlike_storage_provider;
+
+    /**
      * @var bool
      */
     private $debug_output;
@@ -102,11 +108,13 @@ class Analyzer
         Config $config,
         FileProvider $file_provider,
         FileStorageProvider $file_storage_provider,
+        ClassLikeStorageProvider $classlike_storage_provider,
         $debug_output
     ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
         $this->file_storage_provider = $file_storage_provider;
+        $this->classlike_storage_provider = $classlike_storage_provider;
         $this->debug_output = $debug_output;
     }
 
@@ -309,7 +317,15 @@ class Analyzer
         $all_referencing_methods = $project_checker->file_reference_provider->getMethodsReferencing();
 
         foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
-            $member_stub = preg_replace('/::.*$/', '::*', $member_id);
+            $member_class_name = preg_replace('/::.*$/', '', $member_id);
+
+            $member_class_storage = $this->classlike_storage_provider->get($member_class_name);
+
+            if (!$member_class_storage->is_trait) {
+                continue;
+            }
+
+            $member_stub = $member_class_name . '::*';
 
             if (!isset($all_referencing_methods[$member_stub])) {
                 $all_referencing_methods[$member_stub] = $referencing_method_ids;
@@ -328,6 +344,15 @@ class Analyzer
                         $newly_invalidated_methods
                     );
                 }
+
+                $member_stub = preg_replace('/::.*$/', '::*', $member_id);
+
+                if (isset($all_referencing_methods[$member_stub])) {
+                    $newly_invalidated_methods = array_merge(
+                        $all_referencing_methods[$member_stub],
+                        $newly_invalidated_methods
+                    );
+                }
             }
         }
 
@@ -335,9 +360,7 @@ class Analyzer
             foreach ($correct_methods as $correct_method_id => $_) {
                 $correct_method_stub = preg_replace('/::.*$/', '::*', $correct_method_id);
 
-                if (isset($newly_invalidated_methods[$correct_method_id])
-                    || isset($newly_invalidated_methods[$correct_method_stub])
-                ) {
+                if (isset($newly_invalidated_methods[$correct_method_id])) {
                     unset($this->correct_methods[$file_path][$correct_method_id]);
                 }
 

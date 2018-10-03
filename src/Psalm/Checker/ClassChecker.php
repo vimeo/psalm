@@ -846,6 +846,12 @@ class ClassChecker extends ClassLikeChecker
 
         $classlike_storage_provider = $project_checker->classlike_storage_provider;
 
+        $included_file_path = $source->getFilePath();
+
+        if ($class_context->include_location) {
+            $included_file_path = $class_context->include_location->file_path;
+        }
+
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
             $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
 
@@ -881,7 +887,7 @@ class ClassChecker extends ClassLikeChecker
         }
 
         $is_method_correct = $codebase->analyzer->isMethodCorrect(
-            $source->getFilePath(),
+            $included_file_path,
             strtolower($analyzed_method_id)
         );
 
@@ -913,8 +919,6 @@ class ClassChecker extends ClassLikeChecker
 
             return $method_checker;
         }
-
-        //echo 'Analysing ' . $analyzed_method_id . "\n";
 
         $existing_error_count = IssueBuffer::getErrorCount();
 
@@ -1002,7 +1006,7 @@ class ClassChecker extends ClassLikeChecker
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
-            $codebase->analyzer->setCorrectMethod($source->getFilePath(), strtolower($actual_method_id));
+            $codebase->analyzer->setCorrectMethod($included_file_path, strtolower($analyzed_method_id));
         }
 
         return $method_checker;
