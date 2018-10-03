@@ -310,7 +310,11 @@ class Analyzer
         foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
             $member_class_name = preg_replace('/::.*$/', '', $member_id);
 
-            $member_class_storage = $this->classlike_storage_provider->get($member_class_name);
+            try {
+                $member_class_storage = $this->classlike_storage_provider->get($member_class_name);
+            } catch (\Exception $e) {
+                continue;
+            }
 
             if (!$member_class_storage->is_trait) {
                 continue;
