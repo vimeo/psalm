@@ -301,18 +301,9 @@ class Analyzer
 
         $statements_provider = $project_checker->codebase->statements_provider;
 
-        $unchanged_members = $statements_provider->getUnchangedMembers();
         $changed_members = $statements_provider->getChangedMembers();
 
         $diff_map = $statements_provider->getDiffMap();
-
-        $method_map = [];
-
-        foreach ($this->correct_methods as $file_path => $correct_methods) {
-            foreach ($correct_methods as $correct_method_id => $_) {
-                $method_map[$correct_method_id] = $file_path;
-            }
-        }
 
         $all_referencing_methods = $project_checker->file_reference_provider->getMethodsReferencing();
 
@@ -338,6 +329,8 @@ class Analyzer
 
         foreach ($changed_members as $file_changed_members) {
             foreach ($file_changed_members as $member_id => $_) {
+                $newly_invalidated_methods[$member_id] = true;
+
                 if (isset($all_referencing_methods[$member_id])) {
                     $newly_invalidated_methods = array_merge(
                         $all_referencing_methods[$member_id],
@@ -358,17 +351,17 @@ class Analyzer
 
         foreach ($this->correct_methods as $file_path => $correct_methods) {
             foreach ($correct_methods as $correct_method_id => $_) {
-                $correct_method_stub = preg_replace('/::.*$/', '::*', $correct_method_id);
+                $trait_safe_method_id = $correct_method_id;
 
-                if (isset($newly_invalidated_methods[$correct_method_id])) {
-                    unset($this->correct_methods[$file_path][$correct_method_id]);
-                }
+                $correct_method_ids = explode('&', $correct_method_id);
 
-                if (isset($unchanged_members[$file_path])
-                    && !isset($unchanged_members[$file_path][$correct_method_id])
-                    && !isset($unchanged_members[$file_path][$correct_method_stub])
+                $correct_method_id = $correct_method_ids[0];
+
+                if (isset($newly_invalidated_methods[$correct_method_id])
+                    || (isset($correct_method_ids[1])
+                        && isset($newly_invalidated_methods[$correct_method_ids[1]]))
                 ) {
-                    unset($this->correct_methods[$file_path][$correct_method_id]);
+                    unset($this->correct_methods[$file_path][$trait_safe_method_id]);
                 }
             }
         }

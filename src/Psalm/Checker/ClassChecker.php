@@ -886,9 +886,15 @@ class ClassChecker extends ClassLikeChecker
             }
         }
 
+        $trait_safe_method_id = strtolower($analyzed_method_id);
+
+        if (strtolower($actual_method_id) !== $trait_safe_method_id) {
+            $trait_safe_method_id .= '&' . strtolower($actual_method_id);
+        }
+
         $is_method_correct = $codebase->analyzer->isMethodCorrect(
             $included_file_path,
-            strtolower($analyzed_method_id)
+            $trait_safe_method_id
         );
 
         if ($is_method_correct
@@ -1006,7 +1012,7 @@ class ClassChecker extends ClassLikeChecker
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
-            $codebase->analyzer->setCorrectMethod($included_file_path, strtolower($analyzed_method_id));
+            $codebase->analyzer->setCorrectMethod($included_file_path, $trait_safe_method_id);
         }
 
         return $method_checker;

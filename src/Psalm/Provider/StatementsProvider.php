@@ -208,14 +208,6 @@ class StatementsProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getUnchangedMembers()
-    {
-        return $this->unchanged_members;
-    }
-
-    /**
-     * @return array<string, array<string, bool>>
-     */
     public function getChangedMembers()
     {
         return $this->changed_members;
@@ -276,7 +268,7 @@ class StatementsProvider
         }
 
         $error_handler = new \PhpParser\ErrorHandler\Collecting();
-        
+
         /** @var array<int, \PhpParser\Node\Stmt> */
         $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
 
