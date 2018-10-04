@@ -493,7 +493,14 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                     $context->phantom_files[$var_id] = true;
                 }
             } elseif ($function->parts === ['extension_loaded']) {
-                $context->check_classes = false;
+                if ($first_arg
+                    && $first_arg->value instanceof PhpParser\Node\Scalar\String_
+                    && @extension_loaded($first_arg->value->value)
+                ) {
+                    // do nothing
+                } else {
+                    $context->check_classes = false;
+                }
             } elseif ($function->parts === ['function_exists']) {
                 $context->check_functions = false;
             } elseif ($function->parts === ['is_callable']) {
