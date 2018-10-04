@@ -62,6 +62,19 @@ class ToStringTest extends TestCase
                     if ($a === false) exit;
                     $b = (string) $a;',
             ],
+            'canBeObject' => [
+                '<?php
+                    class A {
+                        public function __toString() {
+                            return "A";
+                        }
+                    }
+
+                    /** @param string|object $s */
+                    function foo($s) : void {}
+
+                    foo(new A);',
+            ],
         ];
     }
 

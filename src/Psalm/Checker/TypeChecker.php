@@ -85,9 +85,10 @@ class TypeChecker
             $type_match_found = false;
             $scalar_type_match_found = false;
             $all_to_string_cast = true;
-            $atomic_to_string_cast = false;
 
             foreach ($container_type->getTypes() as $container_type_part) {
+                $atomic_to_string_cast = false;
+
                 $is_atomic_contained_by = self::isAtomicContainedBy(
                     $codebase,
                     $input_type_part,
