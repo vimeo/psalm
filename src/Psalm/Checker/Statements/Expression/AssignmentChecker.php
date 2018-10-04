@@ -128,17 +128,31 @@ class AssignmentChecker
             }
         }
 
-        if ($assign_value && ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
-            if ($var_id) {
-                if ($array_var_id) {
-                    $context->removeDescendents($array_var_id, null, $assign_value_type);
+        if ($assign_value) {
+            if ($var_id && $assign_value instanceof PhpParser\Node\Expr\Closure) {
+                foreach ($assign_value->uses as $closure_use) {
+                    if ($closure_use->byRef
+                        && is_string($closure_use->var->name)
+                        && $var_id === '$' . $closure_use->var->name
+                    ) {
+                        $context->vars_in_scope[$var_id] = Type::getClosure();
+                        $context->vars_possibly_in_scope[$var_id] = true;
+                    }
                 }
-
-                // if we're not exiting immediately, make everything mixed
-                $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
             }
 
-            return false;
+            if (ExpressionChecker::analyze($statements_checker, $assign_value, $context) === false) {
+                if ($var_id) {
+                    if ($array_var_id) {
+                        $context->removeDescendents($array_var_id, null, $assign_value_type);
+                    }
+
+                    // if we're not exiting immediately, make everything mixed
+                    $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
+                }
+
+                return false;
+            }
         }
 
         if ($comment_type) {

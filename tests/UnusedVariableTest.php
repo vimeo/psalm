@@ -855,6 +855,16 @@ class UnusedVariableTest extends TestCase
                     } while (--$i > 0);
                     echo $i;',
             ],
+            'callableReferencesItself' => [
+                '<?php
+                    /** @psalm-suppress UnusedParam */
+                    function foo(callable $c) : void {}
+                    $listener = function () use (&$listener) : void {
+                        /** @psalm-suppress MixedArgument */
+                        foo($listener);
+                    };
+                    foo($listener);',
+            ],
         ];
     }
 
