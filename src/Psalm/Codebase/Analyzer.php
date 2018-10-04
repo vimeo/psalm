@@ -302,6 +302,7 @@ class Analyzer
         $statements_provider = $project_checker->codebase->statements_provider;
 
         $changed_members = $statements_provider->getChangedMembers();
+        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
 
         $diff_map = $statements_provider->getDiffMap();
 
@@ -330,6 +331,10 @@ class Analyzer
         }
 
         $newly_invalidated_methods = [];
+
+        foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
+            $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
+        }
 
         foreach ($changed_members as $file_changed_members) {
             foreach ($file_changed_members as $member_id => $_) {

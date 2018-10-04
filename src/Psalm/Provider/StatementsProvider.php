@@ -214,6 +214,14 @@ class StatementsProvider
     }
 
     /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getUnchangedSignatureMembers()
+    {
+        return $this->unchanged_signature_members;
+    }
+
+    /**
      * @param string $file_path
      * @return void
      */
