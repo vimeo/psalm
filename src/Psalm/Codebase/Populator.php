@@ -619,10 +619,6 @@ class Populator
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
             if (!$parent_storage->is_trait) {
                 $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
-
-                if (isset($storage->methods[$method_name])) {
-                    $storage->methods[$method_name]->overridden_somewhere = true;
-                }
             }
 
             $aliased_method_names = [$method_name];

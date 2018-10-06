@@ -6,6 +6,7 @@ use Psalm\Checker\MethodChecker;
 use Psalm\CodeLocation;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileReferenceProvider;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
@@ -174,14 +175,69 @@ class Methods
     /**
      * @param  string $method_id
      *
-     * @return array<int, \Psalm\Storage\FunctionLikeParameter>
+     * @return array<int, FunctionLikeParameter>
      */
     public function getMethodParams($method_id)
     {
         if ($method_id = $this->getDeclaringMethodId($method_id)) {
             $storage = $this->getStorage($method_id);
 
-            return $storage->params;
+            $non_null_param_types = array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return $p->type !== null;
+                }
+            );
+
+            $params = $storage->params;
+
+            if ($non_null_param_types) {
+                return $params;
+            }
+
+            $appearing_method_id = $this->getAppearingMethodId($method_id);
+
+            if (!$appearing_method_id) {
+                return $params;
+            }
+
+            list($appearing_fq_class_name, $appearing_method_name) = explode('::', $appearing_method_id);
+
+            $class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
+
+            if (!isset($class_storage->overridden_method_ids[$appearing_method_name])) {
+                return $params;
+            }
+
+            foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
+                $overridden_storage = $this->getStorage($overridden_method_id);
+
+                $non_null_param_types = array_filter(
+                    $overridden_storage->params,
+                    /** @return bool */
+                    function (FunctionLikeParameter $p) {
+                        return $p->type !== null && $p->type->from_docblock;
+                    }
+                );
+
+                if ($non_null_param_types) {
+                    foreach ($params as $i => $param) {
+                        if (isset($overridden_storage->params[$i]->type)
+                            && $overridden_storage->params[$i]->type->from_docblock
+                            && $overridden_storage->params[$i]->name === $param->name
+                        ) {
+                            $params[$i] = clone $param;
+                            $params[$i]->type = $overridden_storage->params[$i]->type;
+                            $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            return $params;
         }
 
         throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);

@@ -406,6 +406,27 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod - src/somefile.php:7 - Method (B&A)::zugzug does not exist'
             ],
+            'inheritParamTypes' => [
+                '<?php
+                    class A {
+                      /**
+                       * @param string $bar
+                       * @return void
+                       */
+                      public function foo($bar) {
+                        echo $bar;
+                      }
+                    }
+
+                    class B extends A {
+                      public function foo($bar) {
+                        echo "hello " . $bar;
+                      }
+                    }
+
+                    (new B)->foo(new stdClass);',
+                'error_message' => 'InvalidArgument'
+            ],
         ];
     }
 }
