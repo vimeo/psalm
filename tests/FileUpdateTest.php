@@ -1141,7 +1141,7 @@ class FileUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo = "bar";
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A {}',
@@ -1154,7 +1154,7 @@ class FileUpdateTest extends TestCase
                                 /** @var string */
                                 public $foo;
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A {}',
@@ -1174,7 +1174,7 @@ class FileUpdateTest extends TestCase
 
                                 public function __construct() {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A {
@@ -1191,7 +1191,7 @@ class FileUpdateTest extends TestCase
 
                                 public function __construct() {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A {
@@ -1199,7 +1199,7 @@ class FileUpdateTest extends TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'MissingConstructor'
+                'error_message' => 'PropertyNotSetInConstructor'
             ],
         ];
     }
