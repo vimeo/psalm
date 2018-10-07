@@ -1081,7 +1081,7 @@ class FileUpdateTest extends TestCase
                 ],
                 'error_message' => 'NullableReturnStatement'
             ],
-            'invalidateAfterPropertyChange' => [
+            'invalidateMissingConstructorAfterPropertyChange' => [
                 'file_stages' => [
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
@@ -1099,6 +1099,103 @@ class FileUpdateTest extends TestCase
                             class A {
                                 /** @var string */
                                 public $foo;
+                            }',
+                    ],
+                ],
+                'error_message' => 'MissingConstructor'
+            ],
+            'invalidateEmptyConstructorAfterPropertyChange' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo = "bar";
+
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
+            'invalidateMissingConstructorAfterParentPropertyChange' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            abstract class A {
+                                /** @var string */
+                                public $foo = "bar";
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B extends A {}',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            abstract class A {
+                                /** @var string */
+                                public $foo;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B extends A {}',
+                    ],
+                ],
+                'error_message' => 'MissingConstructor'
+            ],
+            'invalidateNotSetInConstructorAfterParentPropertyChange' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            abstract class A {
+                                /** @var string */
+                                public $foo = "bar";
+
+                                public function __construct() {}
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B extends A {
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            abstract class A {
+                                /** @var string */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B extends A {
+                                public function __construct() {}
                             }',
                     ],
                 ],
