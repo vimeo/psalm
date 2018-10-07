@@ -277,7 +277,7 @@ class Analyzer
         $project_checker->file_reference_provider->setCorrectMethods($this->correct_methods);
         $project_checker->file_reference_provider->updateReferenceCache($project_checker->codebase, $scanned_files);
 
-        if ($project_checker->cache_results) {
+        if ($project_checker->diff_methods) {
             $project_checker->codebase->statements_provider->resetDiffs();
         }
 
@@ -293,7 +293,7 @@ class Analyzer
      */
     public function loadCachedResults(ProjectChecker $project_checker)
     {
-        if ($project_checker->cache_results
+        if ($project_checker->diff_methods
             && !$project_checker->codebase->collect_references
         ) {
             $this->correct_methods = $project_checker->file_reference_provider->getCorrectMethods();

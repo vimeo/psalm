@@ -41,7 +41,7 @@ $valid_long_options = [
     'threads:',
     'use-ini-defaults',
     'version',
-    'cache-results',
+    'diff-methods',
 ];
 
 $args = array_slice($argv, 1);
@@ -148,8 +148,8 @@ Options:
     --diff
         Runs Psalm in diff mode, only checking files that have changed (and their dependents)
 
-    --cache-results
-        Cache results of analysis for faster runs
+    --diff-methods
+        Only checks methods that have changed (and their dependents)
 
     --output-format=console
         Changes the output format. Possible values: console, emacs, json, pylint, xml
@@ -414,7 +414,7 @@ $project_checker = new ProjectChecker(
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
-$project_checker->cache_results = isset($options['cache-results']);
+$project_checker->diff_methods = isset($options['diff-methods']);
 
 $start_time = (float) microtime(true);
 

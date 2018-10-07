@@ -138,7 +138,7 @@ class ProjectChecker
     /**
      * @var bool
      */
-    public $cache_results = false;
+    public $diff_methods = false;
 
     /**
      * @var bool

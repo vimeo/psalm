@@ -62,7 +62,7 @@ class FileUpdateTest extends TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        $this->project_checker->cache_results = true;
+        $this->project_checker->diff_methods = true;
 
         $codebase = $this->project_checker->getCodebase();
 
@@ -120,7 +120,7 @@ class FileUpdateTest extends TestCase
         string $error_message,
         array $error_levels = []
     ) {
-        $this->project_checker->cache_results = true;
+        $this->project_checker->diff_methods = true;
 
         $codebase = $this->project_checker->getCodebase();
 
