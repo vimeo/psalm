@@ -1081,6 +1081,29 @@ class FileUpdateTest extends TestCase
                 ],
                 'error_message' => 'NullableReturnStatement'
             ],
+            'invalidateAfterPropertyChange' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo = "bar";
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo;
+                            }',
+                    ],
+                ],
+                'error_message' => 'MissingConstructor'
+            ],
         ];
     }
 }
