@@ -11,6 +11,7 @@ use Psalm\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Checker\ClassLikeChecker;
 
 class Codebase
 {
@@ -130,6 +131,7 @@ class Codebase
     public $populator;
 
     /**
+     * @param bool $collect_references
      * @param bool $debug_output
      */
     public function __construct(
@@ -171,13 +173,14 @@ class Codebase
             $providers->classlike_storage_provider,
             $providers->file_reference_provider
         );
+
         $this->classlikes = new Codebase\ClassLikes(
-            $config,
+            $this->config,
             $this,
             $providers->classlike_storage_provider,
             $this->scanner,
             $this->methods,
-            $debug_output
+            $this->debug_output
         );
         $this->populator = new Codebase\Populator(
             $config,
@@ -187,6 +190,8 @@ class Codebase
             $providers->file_reference_provider,
             $debug_output
         );
+
+        $this->loadAnalyzer();
     }
 
     /**
@@ -214,7 +219,7 @@ class Codebase
 
         $project_checker->file_reference_provider->loadReferenceCache();
 
-        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files);
+        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files, false);
 
         foreach ($diff_files as $diff_file_path) {
             $this->invalidateInformationForFile($diff_file_path);
@@ -241,7 +246,7 @@ class Codebase
         $this->scanner->addFilesToDeepScan($referenced_files);
         $this->scanner->scanFiles($this->classlikes);
 
-        $project_checker->file_reference_provider->updateReferenceCache($project_checker, $referenced_files);
+        $project_checker->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
         $this->populator->populateCodebase($this);
     }

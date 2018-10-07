@@ -178,23 +178,23 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return array<string, array<string, bool>>
+     * @return array<string, array<string, bool>>|false
      */
-    public function getCorrectMethodCache(Config $config)
+    public function getCorrectMethodCache()
     {
-        $cache_directory = $config->getCacheDirectory();
+        $cache_directory = $this->config->getCacheDirectory();
 
         $correct_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CORRECT_METHODS_CACHE_NAME;
 
         if ($cache_directory
             && file_exists($correct_methods_cache_location)
-            && filemtime($correct_methods_cache_location) > $config->modified_time
+            && filemtime($correct_methods_cache_location) > $this->config->modified_time
         ) {
             /** @var array<string, array<string, bool>> */
             return unserialize(file_get_contents($correct_methods_cache_location));
         }
 
-        return [];
+        return false;
     }
 
     /**

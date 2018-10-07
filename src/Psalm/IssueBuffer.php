@@ -313,9 +313,6 @@ class IssueBuffer
         $start_time,
         $add_stats = false
     ) {
-        $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
-        $project_checker->file_reference_provider->updateReferenceCache($project_checker, $scanned_files);
-
         if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
             echo "\n";
         }

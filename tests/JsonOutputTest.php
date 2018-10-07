@@ -226,7 +226,7 @@ echo $a;';
                     }',
                 'message' => 'Method fooFoo does not have a return type, expecting string',
                 'line' => 2,
-                'error' => 'function fooFoo() {',
+                'error' => 'fooFoo',
             ],
             'wrongMultilineReturnType' => [
                 '<?php

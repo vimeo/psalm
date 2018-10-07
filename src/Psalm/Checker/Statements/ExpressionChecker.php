@@ -528,6 +528,8 @@ class ExpressionChecker
             self::analyzeYield($statements_checker, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Expr\YieldFrom) {
             self::analyzeYieldFrom($statements_checker, $stmt, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Error) {
+            // do nothing
         } else {
             if (IssueBuffer::accepts(
                 new UnrecognizedExpression(

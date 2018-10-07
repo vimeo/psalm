@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Codebase;
 
+use PhpParser;
 use Psalm\Checker\FileChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
@@ -272,8 +273,11 @@ class Analyzer
             }
         }
 
+        $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
+        $project_checker->file_reference_provider->setCorrectMethods($this->correct_methods);
+        $project_checker->file_reference_provider->updateReferenceCache($project_checker->codebase, $scanned_files);
+
         if ($project_checker->cache_results) {
-            $project_checker->file_reference_provider->setCorrectMethods($this->correct_methods);
             $project_checker->codebase->statements_provider->resetDiffs();
         }
 
@@ -292,10 +296,7 @@ class Analyzer
         if ($project_checker->cache_results
             && !$project_checker->codebase->collect_references
         ) {
-            $this->correct_methods = $project_checker->file_reference_provider->getCorrectMethods(
-                $this->config
-            );
-
+            $this->correct_methods = $project_checker->file_reference_provider->getCorrectMethods();
             $this->existing_issues = $project_checker->file_reference_provider->getExistingIssues();
         }
 
@@ -375,6 +376,19 @@ class Analyzer
             }
         }
 
+        $this->shiftFileOffsets($diff_map);
+
+        foreach ($this->files_to_analyze as $file_path) {
+            $project_checker->file_reference_provider->clearExistingIssuesForFile($file_path);
+        }
+    }
+
+    /**
+     * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
+     * @return void
+     */
+    public function shiftFileOffsets(array $diff_map)
+    {
         foreach ($this->existing_issues as $file_path => &$file_issues) {
             if (!isset($this->correct_methods[$file_path])) {
                 unset($this->existing_issues[$file_path]);
@@ -410,10 +424,6 @@ class Analyzer
                     }
                 }
             }
-        }
-
-        foreach ($this->files_to_analyze as $file_path) {
-            $project_checker->file_reference_provider->clearExistingIssuesForFile($file_path);
         }
     }
 

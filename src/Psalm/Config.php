@@ -97,7 +97,7 @@ class Config
      *
      * @var string
      */
-    protected $base_dir;
+    public $base_dir;
 
     /**
      * @var array<int, string>
@@ -756,7 +756,7 @@ class Config
         $codebase = $project_checker->codebase;
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
-            $fq_class_name = $this->getPluginClassForPath($project_checker, $path, 'Psalm\\Scanner\\FileScanner');
+            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Scanner\\FileScanner');
 
             $this->filetype_scanners[$extension] = $fq_class_name;
 
@@ -765,7 +765,7 @@ class Config
         }
 
         foreach ($this->filetype_checker_paths as $extension => $path) {
-            $fq_class_name = $this->getPluginClassForPath($project_checker, $path, 'Psalm\\Checker\\FileChecker');
+            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Checker\\FileChecker');
 
             $this->filetype_checkers[$extension] = $fq_class_name;
 
@@ -774,7 +774,7 @@ class Config
         }
 
         foreach ($this->plugin_paths as $path) {
-            $fq_class_name = $this->getPluginClassForPath($project_checker, $path, 'Psalm\\Plugin');
+            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Plugin');
 
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
@@ -811,10 +811,8 @@ class Config
      *
      * @return string
      */
-    private function getPluginClassForPath(ProjectChecker $project_checker, $path, $must_extend)
+    private function getPluginClassForPath(Codebase $codebase, $path, $must_extend)
     {
-        $codebase = $project_checker->codebase;
-
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->shortenFileName($path), true);
         $file_to_scan->scan(
@@ -822,7 +820,7 @@ class Config
             $file_storage
         );
 
-        $declared_classes = ClassLikeChecker::getClassesForFile($project_checker, $path);
+        $declared_classes = ClassLikeChecker::getClassesForFile($codebase, $path);
 
         if (count($declared_classes) !== 1) {
             throw new \InvalidArgumentException(

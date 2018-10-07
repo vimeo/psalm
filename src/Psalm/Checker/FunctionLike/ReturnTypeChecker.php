@@ -279,7 +279,7 @@ class ReturnTypeChecker
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type' .
                       (!$inferred_return_type->isMixed() ? ', expecting ' . $inferred_return_type : ''),
-                    new CodeLocation($function_like_checker, $function, null, true)
+                    new CodeLocation($function_like_checker, $function->name, null, true)
                 ),
                 $suppressed_issues
             )) {

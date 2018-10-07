@@ -85,7 +85,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Provider\FileReferenceCacheP
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getCorrectMethodCache(Config $config)
+    public function getCorrectMethodCache()
     {
         return $this->cached_correct_methods;
     }

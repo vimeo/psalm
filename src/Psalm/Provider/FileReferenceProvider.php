@@ -3,6 +3,7 @@ namespace Psalm\Provider;
 
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ProjectChecker;
+use Psalm\Codebase;
 use Psalm\Config;
 
 /**
@@ -22,6 +23,8 @@ use Psalm\Config;
  *     column_from: int,
  *     column_to: int
  * }
+ *
+ * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  */
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -81,11 +84,6 @@ class FileReferenceProvider
      * @var array<string, array<int, IssueData>>
      */
     private static $issues = [];
-
-    /**
-     * @var bool
-     */
-    private $loaded_correct_methods_from_cache = false;
 
     /**
      * @var ?FileReferenceCacheProvider
@@ -166,11 +164,11 @@ class FileReferenceProvider
      *
      * @return  array
      */
-    private function calculateFilesReferencingFile(ProjectChecker $project_checker, $file)
+    private function calculateFilesReferencingFile(Codebase $codebase, $file)
     {
         $referenced_files = [];
 
-        $file_classes = ClassLikeChecker::getClassesForFile($project_checker, $file);
+        $file_classes = ClassLikeChecker::getClassesForFile($codebase, $file);
 
         foreach ($file_classes as $file_class_lc => $_) {
             if (isset(self::$file_references_to_class[$file_class_lc])) {
@@ -189,11 +187,11 @@ class FileReferenceProvider
      *
      * @return  array
      */
-    private function calculateFilesInheritingFile(ProjectChecker $project_checker, $file)
+    private function calculateFilesInheritingFile(Codebase $codebase, $file)
     {
         $referenced_files = [];
 
-        $file_classes = ClassLikeChecker::getClassesForFile($project_checker, $file);
+        $file_classes = ClassLikeChecker::getClassesForFile($codebase, $file);
 
         foreach ($file_classes as $file_class_lc => $_) {
             if (isset(self::$files_inheriting_classes[$file_class_lc])) {
@@ -279,6 +277,14 @@ class FileReferenceProvider
 
             self::$class_method_references = $class_method_references;
 
+            $correct_methods = $this->cache->getCorrectMethodCache();
+
+            if ($correct_methods === false) {
+                return false;
+            }
+
+            self::$correct_methods = $correct_methods;
+
             $issues = $this->cache->getCachedIssues();
 
             if ($issues === null) {
@@ -298,20 +304,20 @@ class FileReferenceProvider
      *
      * @return void
      */
-    public function updateReferenceCache(ProjectChecker $project_checker, array $visited_files)
+    public function updateReferenceCache(Codebase $codebase, array $visited_files)
     {
         foreach ($visited_files as $file => $_) {
             $all_file_references = array_unique(
                 array_merge(
                     isset(self::$file_references[$file]['a']) ? self::$file_references[$file]['a'] : [],
-                    $this->calculateFilesReferencingFile($project_checker, $file)
+                    $this->calculateFilesReferencingFile($codebase, $file)
                 )
             );
 
             $inheritance_references = array_unique(
                 array_merge(
                     isset(self::$file_references[$file]['i']) ? self::$file_references[$file]['i'] : [],
-                    $this->calculateFilesInheritingFile($project_checker, $file)
+                    $this->calculateFilesInheritingFile($codebase, $file)
                 )
             );
 
@@ -325,6 +331,7 @@ class FileReferenceProvider
             $this->cache->setCachedFileReferences(self::$file_references);
             $this->cache->setCachedMethodReferences(self::$class_method_references);
             $this->cache->setCachedIssues(self::$issues);
+            $this->cache->setCorrectMethodCache(self::$correct_methods);
         }
     }
 
@@ -401,29 +408,20 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string, array<string, bool>>
-     */
-    public function getCorrectMethods(\Psalm\Config $config)
-    {
-        if (!$this->loaded_correct_methods_from_cache && $this->cache) {
-            self::$correct_methods = $this->cache->getCorrectMethodCache($config) ?: [];
-            $this->loaded_correct_methods_from_cache = true;
-        }
-
-        return self::$correct_methods;
-    }
-
-    /**
      * @param array<string, array<string, bool>> $correct_methods
      * @return  void
      */
     public function setCorrectMethods(array $correct_methods)
     {
         self::$correct_methods = $correct_methods;
-            
-        if ($this->cache) {
-            $this->cache->setCorrectMethodCache($correct_methods);
-        }
+    }
+
+    /**
+     * @return array<string, array<string, bool>>
+     */
+    public function getCorrectMethods()
+    {
+        return self::$correct_methods;
     }
 
     /**
