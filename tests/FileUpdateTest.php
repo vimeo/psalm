@@ -983,6 +983,63 @@ class FileUpdateTest extends TestCase
                     ],
                 ]
             ],
+            'invalidateConstructorWhenDependentTraitMethodChanges' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            private function setFoo() : void {
+                                $this->foo = "bar";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            private function setFoo() : void {
+                                //$this->foo = "bar";
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::setfoo&foo\t::setfoo' => 1,
+                        'foo\a::__construct' => 2,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
+                ]
+            ],
         ];
     }
 
@@ -1237,6 +1294,87 @@ class FileUpdateTest extends TestCase
                             namespace Foo;
 
                             class A {
+                                /** @var string */
+                                public $foo;
+
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
+            'invalidateEmptyTraitConstructorAfterPropertyChange' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+
+                                /** @var string */
+                                public $foo = "bar";
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+
+                                /** @var string */
+                                public $foo;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
+            'invalidateEmptyTraitConstructorAfterTraitPropertyChange' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                /** @var string */
+                                public $foo = "bar";
+
+                                public function __construct() {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+
+                                /** @var string */
+                                public $foo;
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
                                 /** @var string */
                                 public $foo;
 
