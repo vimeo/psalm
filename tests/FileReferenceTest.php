@@ -304,11 +304,12 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'foo\a::__construct' => [
+                    'foo\a::$fooBar' => [
+                        'foo\a::__construct' => true,
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
-                    'foo\a::$fooBar' => [
+                    'foo\a::__construct' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],

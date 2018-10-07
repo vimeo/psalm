@@ -489,6 +489,14 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     continue;
                 }
 
+                if ($context->collect_initializations && $context->calling_method_id) {
+                    list($calling_method_class) = explode('::', $context->calling_method_id);
+                    $codebase->file_reference_provider->addReferenceToClassMethod(
+                        $calling_method_class . '::__construct',
+                        strtolower($method_id)
+                    );
+                }
+
                 $existent_method_ids[] = $method_id;
 
                 $class_template_params = null;

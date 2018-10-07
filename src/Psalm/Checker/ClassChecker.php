@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\Checker\FunctionLike\ReturnTypeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -393,7 +394,6 @@ class ClassChecker extends ClassLikeChecker
         }
 
         $constructor_checker = null;
-        $constructor_appearing_fqcln = $fq_class_name;
         $member_stmts = [];
 
         foreach ($class->stmts as $stmt) {
@@ -438,184 +438,14 @@ class ClassChecker extends ClassLikeChecker
 
         $config = Config::getInstance();
 
-        if ($config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
-            $uninitialized_variables = [];
-            $uninitialized_properties = [];
-
-            foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-                $property_class_name = $codebase->properties->getDeclaringClassForProperty($appearing_property_id);
-                $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
-
-                $property = $property_class_storage->properties[$property_name];
-
-                $property_is_initialized = isset($property_class_storage->initialized_properties[$property_name]);
-
-                if ($property->has_default || $property->is_static || !$property->type || $property_is_initialized) {
-                    continue;
-                }
-
-                if ($property->type->isMixed() || $property->type->isNullable()) {
-                    continue;
-                }
-
-                $uninitialized_variables[] = '$this->' . $property_name;
-                $uninitialized_properties[$property_name] = $property;
-            }
-
-            if ($uninitialized_properties) {
-                if (!$storage->abstract
-                    && !$constructor_checker
-                    && isset($storage->declaring_method_ids['__construct'])
-                    && $class->extends
-                ) {
-                    list($constructor_declaring_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
-                    list($constructor_appearing_fqcln) = explode('::', $storage->appearing_method_ids['__construct']);
-
-                    $constructor_class_storage = $classlike_storage_provider->get($constructor_declaring_fqcln);
-
-                    // ignore oldstyle constructors and classes without any declared properties
-                    if ($constructor_class_storage->user_defined
-                        && isset($constructor_class_storage->methods['__construct'])
-                    ) {
-                        $constructor_storage = $constructor_class_storage->methods['__construct'];
-
-                        $fake_constructor_params = array_map(
-                            /** @return PhpParser\Node\Param */
-                            function (FunctionLikeParameter $param) {
-                                $fake_param = (new PhpParser\Builder\Param($param->name));
-                                if ($param->signature_type) {
-                                    /** @psalm-suppress DeprecatedMethod */
-                                    $fake_param->setTypehint((string)$param->signature_type);
-                                }
-
-                                return $fake_param->getNode();
-                            },
-                            $constructor_storage->params
-                        );
-
-                        $fake_constructor_stmt_args = array_map(
-                            /** @return PhpParser\Node\Arg */
-                            function (FunctionLikeParameter $param) {
-                                return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
-                            },
-                            $constructor_storage->params
-                        );
-
-                        $fake_constructor_stmts = [
-                            new PhpParser\Node\Stmt\Expression(
-                                new PhpParser\Node\Expr\StaticCall(
-                                    new PhpParser\Node\Name(['parent']),
-                                    new PhpParser\Node\Identifier('__construct'),
-                                    $fake_constructor_stmt_args,
-                                    [
-                                        'line' => $class->extends->getLine(),
-                                        'startFilePos' => $class->extends->getAttribute('startFilePos'),
-                                        'endFilePos' => $class->extends->getAttribute('endFilePos'),
-                                    ]
-                                )
-                            ),
-                        ];
-
-                        $fake_stmt = new PhpParser\Node\Stmt\ClassMethod(
-                            new PhpParser\Node\Identifier('__construct'),
-                            [
-                                'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
-                                'params' => $fake_constructor_params,
-                                'stmts' => $fake_constructor_stmts,
-                            ]
-                        );
-
-                        $codebase->analyzer->disableMixedCounts();
-
-                        $constructor_checker = $this->analyzeClassMethod(
-                            $fake_stmt,
-                            $storage,
-                            $this,
-                            $class_context,
-                            $global_context,
-                            true
-                        );
-
-                        $codebase->analyzer->enableMixedCounts();
-                    }
-                }
-
-                if ($constructor_checker) {
-                    $method_context = clone $class_context;
-                    $method_context->collect_initializations = true;
-                    $method_context->self = $fq_class_name;
-                    $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
-                    $method_context->vars_possibly_in_scope['$this'] = true;
-
-                    $constructor_checker->analyze($method_context, $global_context, true);
-
-                    foreach ($uninitialized_properties as $property_name => $property_storage) {
-                        if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
-                            throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
-                        }
-
-                        $end_type = $method_context->vars_in_scope['$this->' . $property_name];
-
-                        $property_id = $constructor_appearing_fqcln . '::$' . $property_name;
-
-                        $constructor_class_property_storage = $property_storage;
-
-                        if ($fq_class_name !== $constructor_appearing_fqcln) {
-                            $a_class_storage = $classlike_storage_provider->get($constructor_appearing_fqcln);
-
-                            if (!isset($a_class_storage->declaring_property_ids[$property_name])) {
-                                $constructor_class_property_storage = null;
-                            } else {
-                                $declaring_property_class = $a_class_storage->declaring_property_ids[$property_name];
-                                $constructor_class_property_storage = $classlike_storage_provider
-                                    ->get($declaring_property_class)
-                                    ->properties[$property_name];
-                            }
-                        }
-
-                        if ($property_storage->location
-                            && (!$end_type->initialized || $property_storage !== $constructor_class_property_storage)
-                        ) {
-                            if (!$config->reportIssueInFile(
-                                'PropertyNotSetInConstructor',
-                                $property_storage->location->file_path
-                            ) && $class->extends
-                            ) {
-                                $error_location = new CodeLocation($this, $class->extends);
-                            } else {
-                                $error_location = $property_storage->location;
-                            }
-
-                            if (IssueBuffer::accepts(
-                                new PropertyNotSetInConstructor(
-                                    'Property ' . $property_id . ' is not defined in constructor of ' .
-                                        $this->fq_class_name . ' or in any private methods called in the constructor',
-                                    $error_location
-                                ),
-                                array_merge($this->source->getSuppressedIssues(), $storage->suppressed_issues)
-                            )) {
-                                continue;
-                            }
-                        }
-                    }
-                } elseif (!$storage->abstract) {
-                    $first_uninitialized_property = array_shift($uninitialized_properties);
-
-                    if ($first_uninitialized_property->location) {
-                        if (IssueBuffer::accepts(
-                            new MissingConstructor(
-                                $fq_class_name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
-                                    ', but no constructor',
-                                $first_uninitialized_property->location
-                            ),
-                            array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
-                        )) {
-                            // fall through
-                        }
-                    }
-                }
-            }
-        }
+        $this->checkPropertyInitialization(
+            $codebase,
+            $config,
+            $storage,
+            $class_context,
+            $global_context,
+            $constructor_checker
+        );
 
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
@@ -642,6 +472,258 @@ class ClassChecker extends ClassLikeChecker
                             $this->checkForMissingPropertyType($project_checker, $trait_checker, $trait_stmt);
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    private function checkPropertyInitialization(
+        Codebase $codebase,
+        Config $config,
+        ClassLikeStorage $storage,
+        Context $class_context,
+        Context $global_context = null,
+        MethodChecker $constructor_checker = null
+    ) {
+        if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
+            return;
+        }
+
+        if (!isset($storage->declaring_method_ids['__construct'])
+            && !$config->reportIssueInFile('MissingConstructor', $this->getFilePath())
+        ) {
+            return;
+        }
+
+        $fq_class_name = $class_context->self ? $class_context->self : $this->fq_class_name;
+
+        $included_file_path = $this->getFilePath();
+
+        if ($class_context->include_location) {
+            $included_file_path = $class_context->include_location->file_path;
+        }
+
+        $is_method_correct = $codebase->analyzer->isMethodCorrect(
+            $included_file_path,
+            strtolower($fq_class_name) . '::__construct',
+            true
+        );
+
+        if ($is_method_correct) {
+            return;
+        }
+
+        /** @var PhpParser\Node\Stmt\Class_ */
+        $class = $this->class;
+        $classlike_storage_provider = $codebase->classlike_storage_provider;
+
+        $constructor_appearing_fqcln = $fq_class_name;
+
+        $uninitialized_variables = [];
+        $uninitialized_properties = [];
+
+        foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
+            $property_class_name = $codebase->properties->getDeclaringClassForProperty($appearing_property_id);
+            $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
+
+            $property = $property_class_storage->properties[$property_name];
+
+            $property_is_initialized = isset($property_class_storage->initialized_properties[$property_name]);
+
+            if ($property->is_static) {
+                continue;
+            }
+
+            if ($property_class_name) {
+                $codebase->file_reference_provider->addReferenceToClassMethod(
+                    strtolower($fq_class_name) . '::__construct',
+                    strtolower($property_class_name) . '::$' . $property_name
+                );
+            }
+
+            if ($property->has_default || !$property->type || $property_is_initialized) {
+                continue;
+            }
+
+            if ($property->type->isMixed() || $property->type->isNullable()) {
+                continue;
+            }
+
+            $uninitialized_variables[] = '$this->' . $property_name;
+            $uninitialized_properties[$property_name] = $property;
+        }
+
+        if (!$uninitialized_properties) {
+            return;
+        }
+
+        if (!$storage->abstract
+            && !$constructor_checker
+            && isset($storage->declaring_method_ids['__construct'])
+            && $class->extends
+        ) {
+            list($constructor_declaring_fqcln) = explode('::', $storage->declaring_method_ids['__construct']);
+            list($constructor_appearing_fqcln) = explode('::', $storage->appearing_method_ids['__construct']);
+
+            $constructor_class_storage = $classlike_storage_provider->get($constructor_declaring_fqcln);
+
+            // ignore oldstyle constructors and classes without any declared properties
+            if ($constructor_class_storage->user_defined
+                && isset($constructor_class_storage->methods['__construct'])
+            ) {
+                $constructor_storage = $constructor_class_storage->methods['__construct'];
+
+                $fake_constructor_params = array_map(
+                    /** @return PhpParser\Node\Param */
+                    function (FunctionLikeParameter $param) {
+                        $fake_param = (new PhpParser\Builder\Param($param->name));
+                        if ($param->signature_type) {
+                            /** @psalm-suppress DeprecatedMethod */
+                            $fake_param->setTypehint((string)$param->signature_type);
+                        }
+
+                        return $fake_param->getNode();
+                    },
+                    $constructor_storage->params
+                );
+
+                $fake_constructor_stmt_args = array_map(
+                    /** @return PhpParser\Node\Arg */
+                    function (FunctionLikeParameter $param) {
+                        return new PhpParser\Node\Arg(new PhpParser\Node\Expr\Variable($param->name));
+                    },
+                    $constructor_storage->params
+                );
+
+                $fake_constructor_stmts = [
+                    new PhpParser\Node\Stmt\Expression(
+                        new PhpParser\Node\Expr\StaticCall(
+                            new PhpParser\Node\Name(['parent']),
+                            new PhpParser\Node\Identifier('__construct'),
+                            $fake_constructor_stmt_args,
+                            [
+                                'line' => $class->extends->getLine(),
+                                'startFilePos' => $class->extends->getAttribute('startFilePos'),
+                                'endFilePos' => $class->extends->getAttribute('endFilePos'),
+                            ]
+                        )
+                    ),
+                ];
+
+                $fake_stmt = new PhpParser\Node\Stmt\ClassMethod(
+                    new PhpParser\Node\Identifier('__construct'),
+                    [
+                        'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
+                        'params' => $fake_constructor_params,
+                        'stmts' => $fake_constructor_stmts,
+                    ]
+                );
+
+                $codebase->analyzer->disableMixedCounts();
+
+                $constructor_checker = $this->analyzeClassMethod(
+                    $fake_stmt,
+                    $storage,
+                    $this,
+                    $class_context,
+                    $global_context,
+                    true
+                );
+
+                $codebase->analyzer->enableMixedCounts();
+            }
+        }
+
+        if ($constructor_checker) {
+            $existing_error_count = IssueBuffer::getErrorCount();
+
+            $method_context = clone $class_context;
+            $method_context->collect_initializations = true;
+            $method_context->self = $fq_class_name;
+            $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
+            $method_context->vars_possibly_in_scope['$this'] = true;
+
+            $constructor_checker->analyze($method_context, $global_context, true);
+
+            foreach ($uninitialized_properties as $property_name => $property_storage) {
+                if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
+                    throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
+                }
+
+                $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+
+                $property_id = $constructor_appearing_fqcln . '::$' . $property_name;
+
+                $constructor_class_property_storage = $property_storage;
+
+                if ($fq_class_name !== $constructor_appearing_fqcln) {
+                    $a_class_storage = $classlike_storage_provider->get($constructor_appearing_fqcln);
+
+                    if (!isset($a_class_storage->declaring_property_ids[$property_name])) {
+                        $constructor_class_property_storage = null;
+                    } else {
+                        $declaring_property_class = $a_class_storage->declaring_property_ids[$property_name];
+                        $constructor_class_property_storage = $classlike_storage_provider
+                            ->get($declaring_property_class)
+                            ->properties[$property_name];
+                    }
+                }
+
+                if ($property_storage->location
+                    && (!$end_type->initialized || $property_storage !== $constructor_class_property_storage)
+                ) {
+                    if (!$config->reportIssueInFile(
+                        'PropertyNotSetInConstructor',
+                        $property_storage->location->file_path
+                    ) && $class->extends
+                    ) {
+                        $error_location = new CodeLocation($this, $class->extends);
+                    } else {
+                        $error_location = $property_storage->location;
+                    }
+
+                    if (IssueBuffer::accepts(
+                        new PropertyNotSetInConstructor(
+                            'Property ' . $property_id . ' is not defined in constructor of ' .
+                                $this->fq_class_name . ' or in any private methods called in the constructor',
+                            $error_location
+                        ),
+                        array_merge($this->source->getSuppressedIssues(), $storage->suppressed_issues)
+                    )) {
+                        continue;
+                    }
+                }
+            }
+
+            $has_errors = IssueBuffer::getErrorCount() > $existing_error_count;
+
+            if (!$has_errors) {
+                $codebase->analyzer->setCorrectMethod(
+                    $included_file_path,
+                    strtolower($fq_class_name) . '::__construct',
+                    true
+                );
+            }
+
+            return;
+        }
+
+        if (!$storage->abstract) {
+            $first_uninitialized_property = array_shift($uninitialized_properties);
+
+            if ($first_uninitialized_property->location) {
+                if (IssueBuffer::accepts(
+                    new MissingConstructor(
+                        $fq_class_name . ' has an uninitialized variable ' . $uninitialized_variables[0] .
+                            ', but no constructor',
+                        $first_uninitialized_property->location
+                    ),
+                    array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                )) {
+                    // fall through
                 }
             }
         }

@@ -149,10 +149,10 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
-                    public function foo() {
+                    public function foo() : void {
                         $a = 1;
                     }
-                    public function bar() {
+                    public function bar() : void {
                         $b = 1;
                     }
                 }',
@@ -160,10 +160,10 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
-                    public function foo() {
+                    public function foo() : void {
                         $a = 12;
                     }
-                    public function bar() {
+                    public function bar() : void {
                         $b = 1;
                     }
                 }',

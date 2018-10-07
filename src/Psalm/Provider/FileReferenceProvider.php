@@ -76,7 +76,7 @@ class FileReferenceProvider
     private static $class_method_references = [];
 
     /**
-     * @var array<string, array<string, bool>>
+     * @var array<string, array<string, int>>
      */
     private static $correct_methods = [];
 
@@ -408,7 +408,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @param array<string, array<string, bool>> $correct_methods
+     * @param array<string, array<string, int>> $correct_methods
      * @return  void
      */
     public function setCorrectMethods(array $correct_methods)
@@ -417,7 +417,7 @@ class FileReferenceProvider
     }
 
     /**
-     * @return array<string, array<string, bool>>
+     * @return array<string, array<string, int>>
      */
     public function getCorrectMethods()
     {

@@ -178,7 +178,7 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @return array<string, array<string, bool>>|false
+     * @return array<string, array<string, int>>|false
      */
     public function getCorrectMethodCache()
     {
@@ -190,7 +190,7 @@ class FileReferenceCacheProvider
             && file_exists($correct_methods_cache_location)
             && filemtime($correct_methods_cache_location) > $this->config->modified_time
         ) {
-            /** @var array<string, array<string, bool>> */
+            /** @var array<string, array<string, int>> */
             return unserialize(file_get_contents($correct_methods_cache_location));
         }
 
@@ -198,7 +198,7 @@ class FileReferenceCacheProvider
     }
 
     /**
-     * @param array<string, array<string, bool>> $correct_methods
+     * @param array<string, array<string, int>> $correct_methods
      * @return void
      */
     public function setCorrectMethodCache(array $correct_methods)

@@ -37,7 +37,7 @@ use Psalm\Provider\FileStorageProvider;
  *     file_references: array<string, array<string,bool>>,
  *     mixed_counts: array<string, array{0: int, 1: int}>,
  *     method_references: array<string, array<string,bool>>,
- *     correct_methods: array<string, array<string, bool>>
+ *     correct_methods: array<string, array<string, int>>
  * }
  */
 
@@ -93,7 +93,7 @@ class Analyzer
     private $files_to_analyze = [];
 
     /**
-     * @var array<string, array<string, bool>>
+     * @var array<string, array<string, int>>
      */
     private $correct_methods = [];
 
@@ -335,6 +335,17 @@ class Analyzer
 
         foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
             $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
+
+            foreach ($file_unchanged_signature_members as $unchanged_signature_member_id => $_) {
+                // also check for things that might invalidate constructor property initialisation
+                if (isset($all_referencing_methods[$unchanged_signature_member_id])) {
+                    foreach ($all_referencing_methods[$unchanged_signature_member_id] as $referencing_method_id => $_) {
+                        if (substr($referencing_method_id, -13) === '::__construct') {
+                            $newly_invalidated_methods[$referencing_method_id] = true;
+                        }
+                    }
+                }
+            }
         }
 
         foreach ($changed_members as $file_changed_members) {
@@ -685,7 +696,7 @@ class Analyzer
     }
 
     /**
-     * @return array<string, array<string, bool>>
+     * @return array<string, array<string, int>>
      */
     public function getCorrectMethods()
     {
@@ -695,21 +706,29 @@ class Analyzer
     /**
      * @param string $file_path
      * @param string $method_id
+     * @param bool $is_constructor
      *
      * @return void
      */
-    public function setCorrectMethod($file_path, $method_id)
+    public function setCorrectMethod($file_path, $method_id, $is_constructor = false)
     {
-        $this->correct_methods[$file_path][$method_id] = true;
+        $this->correct_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
     }
 
     /**
      * @param  string  $file_path
      * @param  string  $method_id
+     * @param bool $is_constructor
+     *
      * @return bool
      */
-    public function isMethodCorrect($file_path, $method_id)
+    public function isMethodCorrect($file_path, $method_id, $is_constructor = false)
     {
+        if ($is_constructor) {
+            return isset($this->correct_methods[$file_path][$method_id])
+                && $this->correct_methods[$file_path][$method_id] === 2;
+        }
+
         return isset($this->correct_methods[$file_path][$method_id]);
     }
 }

@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Provider\ClassLikeStorageProvider;
 use Psalm\Provider\FileProvider;
+use Psalm\Provider\FileReferenceProvider;
 use Psalm\Provider\FileStorageProvider;
 use Psalm\Provider\Providers;
 use Psalm\Provider\StatementsProvider;
@@ -55,6 +56,11 @@ class Codebase
      * @var FileProvider
      */
     private $file_provider;
+
+    /**
+     * @var FileReferenceProvider
+     */
+    public $file_reference_provider;
 
     /**
      * @var StatementsProvider
@@ -144,6 +150,7 @@ class Codebase
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->debug_output = $debug_output;
         $this->file_provider = $providers->file_provider;
+        $this->file_reference_provider = $providers->file_reference_provider;
         $this->statements_provider = $providers->statements_provider;
         $this->debug_output = $debug_output;
 

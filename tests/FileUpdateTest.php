@@ -232,22 +232,22 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::foofoo' => true,
-                        'foo\a::barbar' => true,
+                        'foo\a::foofoo' => 1,
+                        'foo\a::barbar' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
-                        'foo\b::noreturntype' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
+                        'foo\b::noreturntype' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar' => true
+                        'foo\a::barbar' => 1
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
-                        'foo\b::noreturntype' => true,
+                        'foo\b::bar' => 1,
+                        'foo\b::noreturntype' => 1,
                     ],
                 ],
                 [
@@ -299,13 +299,13 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
+                        'foo\b::bar' => 1,
                     ],
                 ]
             ],
@@ -354,13 +354,13 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
+                        'foo\b::bar' => 1,
                     ],
                 ]
             ],
@@ -409,13 +409,13 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
+                        'foo\b::bar' => 1,
                     ],
                 ]
             ],
@@ -462,13 +462,13 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
+                        'foo\b::bar' => 1,
                     ],
                 ]
             ],
@@ -539,22 +539,22 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true,
-                        'foo\a::foofoo' => true,
+                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'foo\a::foofoo' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
-                        'foo\b::noreturntype' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
+                        'foo\b::noreturntype' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true,
+                        'foo\a::barbar&foo\t::barbar' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
-                        'foo\b::noreturntype' => true,
+                        'foo\b::bar' => 1,
+                        'foo\b::noreturntype' => 1,
                     ],
                 ],
                 [
@@ -622,17 +622,17 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true,
-                        'foo\a::foofoo' => true,
+                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'foo\a::foofoo' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true, // this doesn't exist, so we don't care
+                        'foo\a::barbar&foo\t::barbar' => 1, // this doesn't exist, so we don't care
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ]
@@ -702,12 +702,12 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true,
-                        'foo\a::foofoo' => true,
+                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'foo\a::foofoo' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
@@ -786,18 +786,18 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true,
-                        'foo\a::bat&foo\t::bat' => true,
-                        'foo\a::foofoo' => true,
+                        'foo\a::barbar&foo\t::barbar' => 1,
+                        'foo\a::bat&foo\t::bat' => 1,
+                        'foo\a::foofoo' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::foo' => true,
-                        'foo\b::bar' => true,
+                        'foo\b::foo' => 1,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::bat&foo\t::bat' => true,
+                        'foo\a::bat&foo\t::bat' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ]
@@ -857,15 +857,130 @@ class FileUpdateTest extends TestCase
                 ],
                 'initial_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar&foo\t::barbar' => true,
+                        'foo\a::barbar&foo\t::barbar' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
-                        'foo\b::bar' => true,
+                        'foo\b::bar' => 1,
                     ],
                 ],
                 'unaffected_correct_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
+                ]
+            ],
+            'dontInvalidateConstructor' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            private function setFoo() : void {
+                                $this->reallySetFoo();
+                            }
+
+                            private function reallySetFoo() : void {
+                                $this->foo = "bar";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            private function setFoo() : void {
+                                $this->reallySetFoo();
+                            }
+
+                            private function reallySetFoo() : void {
+                                $this->foo = "bar";
+                            }
+                        }',
+                ],
+
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                        'foo\a::setfoo' => 1,
+                        'foo\a::reallysetfoo' => 1,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                        'foo\a::setfoo' => 1,
+                        'foo\a::reallysetfoo' => 1,
+                    ],
+                ]
+            ],
+            'invalidateConstructorWhenDependentMethodChanges' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            private function setFoo() : void {
+                                $this->reallySetFoo();
+                            }
+
+                            private function reallySetFoo() : void {
+                                $this->foo = "bar";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            public $foo;
+
+                            public function __construct() {
+                                $this->setFoo();
+                            }
+
+                            private function setFoo() : void {
+                                $this->reallySetFoo();
+                            }
+
+                            private function reallySetFoo() : void {
+                                //$this->foo = "bar";
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                        'foo\a::setfoo' => 1,
+                        'foo\a::reallysetfoo' => 1,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::setfoo' => 1,
+                    ],
                 ]
             ],
         ];
@@ -1126,6 +1241,44 @@ class FileUpdateTest extends TestCase
                                 public $foo;
 
                                 public function __construct() {}
+                            }',
+                    ],
+                ],
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
+            'invalidateSetInPrivateMethodConstructorCheck' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo;
+
+                                public function __construct() {
+                                    $this->setFoo();
+                                }
+
+                                private function setFoo() : void {
+                                    $this->foo = "bar";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo;
+
+                                public function __construct() {
+                                    $this->setFoo();
+                                }
+
+                                private function setFoo() : void {
+                                }
                             }',
                     ],
                 ],

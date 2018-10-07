@@ -106,9 +106,21 @@ class ClassStatementsDiffer extends Differ
                     $body_change = substr($a_code, $a_stmts_start, $a_end - $a_stmts_start)
                         !== substr($b_code, $b_stmts_start, $b_end - $b_stmts_start);
 
-                    $signature_change = $signature_change
-                        || substr($a_code, $a_start, $a_stmts_start - $a_start)
-                            !== substr($b_code, $b_start, $b_stmts_start - $b_start);
+                    if (!$signature_change) {
+                        $a_signature = substr($a_code, $a_start, $a_stmts_start - $a_start);
+                        $b_signature = substr($b_code, $b_start, $b_stmts_start - $b_start);
+
+                        if ($a_signature !== $b_signature) {
+                            $a_signature = trim($a_signature);
+                            $b_signature = trim($b_signature);
+
+                            if (strpos($a_signature, $b_signature) === false
+                                && strpos($b_signature, $a_signature) === false
+                            ) {
+                                $signature_change = true;
+                            }
+                        }
+                    }
                 } elseif ($a instanceof PhpParser\Node\Stmt\Property && $b instanceof PhpParser\Node\Stmt\Property) {
                     if (count($a->props) !== 1 || count($b->props) !== 1) {
                         return false;
