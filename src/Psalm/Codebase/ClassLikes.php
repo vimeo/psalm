@@ -258,13 +258,6 @@ class ClassLikes
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
-                if ($this->debug_output) {
-                    echo 'Last-chance attempt to hydrate ' . $fq_class_name . "\n";
-                }
-                // attempt to load in the class
-                $this->scanner->queueClassLikeForScanning($fq_class_name);
-                $this->codebase->scanFiles();
-
                 if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
                     $this->existing_classes_lc[$fq_class_name_lc] = false;
 
@@ -307,14 +300,6 @@ class ClassLikes
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
-                if ($this->debug_output) {
-                    echo 'Last-chance attempt to hydrate ' . $fq_class_name . "\n";
-                }
-
-                // attempt to load in the class
-                $this->scanner->queueClassLikeForScanning($fq_class_name);
-                $this->scanner->scanFiles($this);
-
                 if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
                     $this->existing_interfaces_lc[$fq_class_name_lc] = false;
 
