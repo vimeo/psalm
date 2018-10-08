@@ -292,7 +292,8 @@ class ProjectChecker
             $this->codebase->scanFiles();
         } else {
             if ($this->debug_output) {
-                echo count($diff_files) . ' changed files' . "\n";
+                echo count($diff_files) . ' changed files: ' . "\n";
+                echo '    ' . implode("\n    ", $diff_files) . "\n";
             }
 
             if ($diff_files) {
