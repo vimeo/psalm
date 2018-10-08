@@ -7,10 +7,8 @@
     ],
     "files-bin": ["config.xsd"],
     "directories-bin" : ["assets"],
-    "intercept" : false,
     "compactors" : [
+        "KevinGH\\Box\\Compactor\\Php",
         "KevinGH\\Box\\Compactor\\PhpScoper"
-    ],
-    "chmod" : "0755",
-    "compression": "NONE"
+    ]
 }
