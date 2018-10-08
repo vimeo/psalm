@@ -483,8 +483,6 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             } elseif ($function->parts === ['class_exists']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                } else {
-                    $context->check_classes = false;
                 }
             } elseif ($function->parts === ['file_exists'] && $first_arg) {
                 $var_id = ExpressionChecker::getArrayVarId($first_arg->value, null);
@@ -495,11 +493,12 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
             } elseif ($function->parts === ['extension_loaded']) {
                 if ($first_arg
                     && $first_arg->value instanceof PhpParser\Node\Scalar\String_
-                    && @extension_loaded($first_arg->value->value)
                 ) {
-                    // do nothing
-                } else {
-                    $context->check_classes = false;
+                    if (@extension_loaded($first_arg->value->value)) {
+                        // do nothing
+                    } else {
+                        $context->check_classes = false;
+                    }
                 }
             } elseif ($function->parts === ['function_exists']) {
                 $context->check_functions = false;
