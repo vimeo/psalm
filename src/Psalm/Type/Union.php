@@ -797,8 +797,6 @@ class Union
             unset($this->types[$key]);
         }
 
-        //var_dump($this->types, $generic_params);
-
         $this->id = null;
     }
 

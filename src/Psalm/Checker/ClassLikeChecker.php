@@ -249,7 +249,15 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
             return null;
         }
 
-        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+        try {
+            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
+            if (!$inferred) {
+                throw $e;
+            }
+
+            return null;
+        }
 
         foreach ($class_storage->invalid_dependencies as $dependency_class_name) {
             if (IssueBuffer::accepts(
