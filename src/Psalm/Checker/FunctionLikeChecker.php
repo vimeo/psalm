@@ -278,6 +278,14 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
             $template_types = array_merge($template_types ?: [], $class_storage->template_types);
         }
 
+        $non_null_param_types = array_filter(
+            $storage->params,
+            /** @return bool */
+            function (FunctionLikeParameter $p) {
+                return $p->type !== null;
+            }
+        );
+
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
 
@@ -301,7 +309,7 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     $context->self
                 );
             } else {
-                if (isset($implemented_docblock_param_types[$offset])) {
+                if (!$non_null_param_types && isset($implemented_docblock_param_types[$offset])) {
                     $param_type = clone $implemented_docblock_param_types[$offset];
 
                     $param_type = ExpressionChecker::fleshOutType(
