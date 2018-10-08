@@ -979,7 +979,8 @@ class ClassChecker extends ClassLikeChecker
             $trait_safe_method_id
         );
 
-        if ($is_method_correct
+        if ($project_checker->diff_methods
+            && $is_method_correct
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
             && !$is_fake
