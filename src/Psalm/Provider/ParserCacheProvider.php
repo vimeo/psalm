@@ -19,7 +19,7 @@ class ParserCacheProvider
     /**
      * A map of filename hashes to contents hashes
      *
-     * @var array<string, string>|null
+     * @var array<string, string>
      */
     protected $file_content_hashes = [];
 
@@ -133,17 +133,20 @@ class ParserCacheProvider
                 $hashes_encoded = (string) file_get_contents($file_hashes_path);
 
                 if (!$hashes_encoded) {
-                    return $this->file_content_hashes;
                     error_log('Unexpected value when loading from file content hashes');
+
+                    return $this->file_content_hashes;
                 }
 
+                /** @psalm-suppress MixedAssignment */
                 $hashes_decoded = json_decode($hashes_encoded, true);
 
                 if (!is_array($hashes_decoded)) {
-                    return $this->file_content_hashes;
                     error_log('Unexpected value ' . gettype($hashes_decoded));
+                    return $this->file_content_hashes;
                 }
 
+                /** @var array<string, string> $hashes_decoded */
                 $this->file_content_hashes = $hashes_decoded;
             }
         }

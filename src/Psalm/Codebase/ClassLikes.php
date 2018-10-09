@@ -27,11 +27,6 @@ use ReflectionProperty;
 class ClassLikes
 {
     /**
-     * @var Codebase
-     */
-    private $codebase;
-
-    /**
      * @var ClassLikeStorageProvider
      */
     private $classlike_storage_provider;
@@ -107,27 +102,18 @@ class ClassLikes
     private $scanner;
 
     /**
-     * @var bool
-     */
-    private $debug_output;
-
-    /**
      * @param bool $debug_output
      */
     public function __construct(
         Config $config,
-        Codebase $codebase,
         ClassLikeStorageProvider $storage_provider,
         Scanner $scanner,
-        Methods $methods,
-        $debug_output
+        Methods $methods
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
         $this->scanner = $scanner;
-        $this->debug_output = $debug_output;
         $this->methods = $methods;
-        $this->codebase = $codebase;
 
         $this->collectPredefinedClassLikes();
     }

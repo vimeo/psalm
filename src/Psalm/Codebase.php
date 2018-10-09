@@ -183,11 +183,9 @@ class Codebase
 
         $this->classlikes = new Codebase\ClassLikes(
             $this->config,
-            $this,
             $providers->classlike_storage_provider,
             $this->scanner,
-            $this->methods,
-            $this->debug_output
+            $this->methods
         );
         $this->populator = new Codebase\Populator(
             $config,
