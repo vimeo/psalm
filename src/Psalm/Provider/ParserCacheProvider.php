@@ -199,6 +199,8 @@ class ParserCacheProvider
                 $file_hashes_path,
                 json_encode($file_content_hashes)
             );
+
+            $this->file_content_hashes = $file_content_hashes;
         }
     }
 
