@@ -85,8 +85,7 @@ class PropertyFetchChecker
 
             $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
 
-            if ($context->collect_references
-                && isset($stmt->var->inferredType)
+            if (isset($stmt->var->inferredType)
                 && $stmt->var->inferredType->hasObjectType()
                 && $stmt->name instanceof PhpParser\Node\Identifier
             ) {
@@ -102,7 +101,9 @@ class PropertyFetchChecker
                         $codebase->properties->propertyExists(
                             $property_id,
                             $context->calling_method_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            $context->collect_references
+                                ? new CodeLocation($statements_checker->getSource(), $stmt)
+                                : null
                         );
                     }
                 }

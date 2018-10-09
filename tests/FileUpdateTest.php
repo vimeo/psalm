@@ -1040,6 +1040,53 @@ class FileUpdateTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                 ]
             ],
+            'rescanPropertyAssertingMethod' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string */
+                            private $foo;
+
+                            public function __construct() {}
+
+                            public function bar() : void {
+                                if ($this->foo === null) {}
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string|null */
+                            private $foo;
+
+                            public function __construct() {}
+
+                            public function bar() : void {
+                                if ($this->foo === null) {}
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 2,
+                        'foo\a::bar' => 1,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    ],
+                ],
+                [
+                    'PropertyNotSetInConstructor' => \Psalm\Config::REPORT_INFO,
+                    'DocblockTypeContradiction' => \Psalm\Config::REPORT_INFO,
+                    'RedundantConditionGivenDocblockType' => \Psalm\Config::REPORT_INFO,
+                ]
+            ],
         ];
     }
 
