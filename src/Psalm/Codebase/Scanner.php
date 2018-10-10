@@ -251,72 +251,97 @@ class Scanner
      */
     public function scanFiles(ClassLikes $classlikes)
     {
-        $filetype_scanners = $this->config->getFiletypeScanners();
-
         $has_changes = false;
 
         while ($this->files_to_scan || $this->classes_to_scan) {
             if ($this->files_to_scan) {
-                $file_path = array_shift($this->files_to_scan);
-
-                if (!isset($this->scanned_files[$file_path])
-                    || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path])
-                ) {
-                    $this->scanFile(
-                        $file_path,
-                        $filetype_scanners,
-                        isset($this->files_to_deep_scan[$file_path])
-                    );
+                if ($this->scanFilePaths()) {
                     $has_changes = true;
                 }
             } else {
-                $fq_classlike_name = array_shift($this->classes_to_scan);
-                $fq_classlike_name_lc = strtolower($fq_classlike_name);
-
-                if (isset($this->reflected_classlikes_lc[$fq_classlike_name_lc])) {
-                    continue;
-                }
-
-                if ($classlikes->isMissingClassLike($fq_classlike_name_lc)) {
-                    continue;
-                }
-
-                if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
-                    if ($classlikes->doesClassLikeExist($fq_classlike_name_lc)) {
-                        if ($this->debug_output) {
-                            echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
-                        }
-
-                        $reflected_class = new \ReflectionClass($fq_classlike_name);
-                        $this->reflection->registerClass($reflected_class);
-                        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
-                    } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
-                        // even though we've checked this above, calling the method invalidates it
-                        if (isset($this->classlike_files[$fq_classlike_name_lc])) {
-                            /** @var string */
-                            $file_path = $this->classlike_files[$fq_classlike_name_lc];
-                            $this->files_to_scan[$file_path] = $file_path;
-                            if (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])) {
-                                unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
-                                $this->files_to_deep_scan[$file_path] = $file_path;
-                            }
-                        }
-                    } elseif ($this->store_scan_failure[$fq_classlike_name]) {
-                        $classlikes->registerMissingClassLike($fq_classlike_name_lc);
-                    }
-                } elseif (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])
-                    && !isset($this->deep_scanned_classlike_files[$fq_classlike_name_lc])
-                ) {
-                    $file_path = $this->classlike_files[$fq_classlike_name_lc];
-                    $this->files_to_scan[$file_path] = $file_path;
-                    unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
-                    $this->files_to_deep_scan[$file_path] = $file_path;
-                    $this->deep_scanned_classlike_files[$fq_classlike_name_lc] = true;
-                }
+                $this->convertClassesToFilePaths($classlikes);
             }
         }
 
         return $has_changes;
+    }
+
+    private function scanFilePaths() : bool
+    {
+        $filetype_scanners = $this->config->getFiletypeScanners();
+        $files_to_scan = $this->files_to_scan;
+        $has_changes = false;
+        $this->files_to_scan = [];
+
+        foreach ($files_to_scan as $file_path) {
+            if (!isset($this->scanned_files[$file_path])
+                || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path])
+            ) {
+                $this->scanFile(
+                    $file_path,
+                    $filetype_scanners,
+                    isset($this->files_to_deep_scan[$file_path])
+                );
+                $has_changes = true;
+            }
+        }
+
+        return $has_changes;
+    }
+
+    /**
+     * @return void
+     */
+    private function convertClassesToFilePaths(ClassLikes $classlikes)
+    {
+        $classes_to_scan = $this->classes_to_scan;
+
+        $this->classes_to_scan = [];
+
+        foreach ($classes_to_scan as $fq_classlike_name) {
+            $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+            if (isset($this->reflected_classlikes_lc[$fq_classlike_name_lc])) {
+                continue;
+            }
+
+            if ($classlikes->isMissingClassLike($fq_classlike_name_lc)) {
+                continue;
+            }
+
+            if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
+                if ($classlikes->doesClassLikeExist($fq_classlike_name_lc)) {
+                    if ($this->debug_output) {
+                        echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
+                    }
+
+                    $reflected_class = new \ReflectionClass($fq_classlike_name);
+                    $this->reflection->registerClass($reflected_class);
+                    $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
+                } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
+                    // even though we've checked this above, calling the method invalidates it
+                    if (isset($this->classlike_files[$fq_classlike_name_lc])) {
+                        /** @var string */
+                        $file_path = $this->classlike_files[$fq_classlike_name_lc];
+                        $this->files_to_scan[$file_path] = $file_path;
+                        if (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])) {
+                            unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
+                            $this->files_to_deep_scan[$file_path] = $file_path;
+                        }
+                    }
+                } elseif ($this->store_scan_failure[$fq_classlike_name]) {
+                    $classlikes->registerMissingClassLike($fq_classlike_name_lc);
+                }
+            } elseif (isset($this->classes_to_deep_scan[$fq_classlike_name_lc])
+                && !isset($this->deep_scanned_classlike_files[$fq_classlike_name_lc])
+            ) {
+                $file_path = $this->classlike_files[$fq_classlike_name_lc];
+                $this->files_to_scan[$file_path] = $file_path;
+                unset($this->classes_to_deep_scan[$fq_classlike_name_lc]);
+                $this->files_to_deep_scan[$file_path] = $file_path;
+                $this->deep_scanned_classlike_files[$fq_classlike_name_lc] = true;
+            }
+        }
     }
 
     /**
