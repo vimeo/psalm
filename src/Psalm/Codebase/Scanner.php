@@ -232,7 +232,7 @@ class Scanner
             if (PropertyMap::inPropertyMap($fq_classlike_name_lc)) {
                 $public_mapped_properties = PropertyMap::getPropertyMap()[$fq_classlike_name_lc];
 
-                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                foreach ($public_mapped_properties as $public_mapped_property) {
                     if (strtolower($public_mapped_property) !== $fq_classlike_name_lc) {
                         $property_type = \Psalm\Type::parseString($public_mapped_property);
                         $property_type->queueClassLikesForScanning($this->codebase);
