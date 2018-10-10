@@ -65,7 +65,7 @@ class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
     public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
     {
         $this->statements_cache[$file_cache_key] = $stmts;
-        $this->statements_cache_time[$file_cache_key] = (float) microtime(true);
+        $this->statements_cache_time[$file_cache_key] = microtime(true);
     }
 
     /**

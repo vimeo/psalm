@@ -194,7 +194,7 @@ $project_checker->alterCodeAfterCompletion(
 );
 $project_checker->setIssuesToFix($keyed_issues);
 
-$start_time = (float) microtime(true);
+$start_time = microtime(true);
 
 if ($paths_to_check === null) {
     $project_checker->check($current_dir);

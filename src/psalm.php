@@ -416,11 +416,11 @@ $project_checker = new ProjectChecker(
 
 $project_checker->diff_methods = isset($options['diff-methods']);
 
-$start_time = (float) microtime(true);
+$start_time = microtime(true);
 
 $config->visitComposerAutoloadFiles($project_checker, $debug);
 
-$now_time = (float) microtime(true);
+$now_time = microtime(true);
 
 if ($debug) {
     echo 'Visiting autoload files took ' . number_format($now_time - $start_time, 2) . "\n";

@@ -389,7 +389,7 @@ class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                echo 'Checks took ' . number_format((float)microtime(true) - $start_time, 2) . ' seconds';
+                echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
 
                 if ($is_full) {
