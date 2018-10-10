@@ -624,6 +624,9 @@ class Reconciler
             foreach ($existing_var_atomic_types as $type) {
                 if ($type instanceof TBool) {
                     $bool_types[] = $type;
+                } elseif ($type instanceof TScalar) {
+                    $bool_types[] = new TBool;
+                    $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
                 }
@@ -1059,6 +1062,10 @@ class Reconciler
                     || ($is_equality && get_class($type) === TBool::class)
                 ) {
                     $non_bool_types[] = $type;
+
+                    if ($type instanceof TScalar) {
+                        $did_remove_type = true;
+                    }
                 } else {
                     $did_remove_type = true;
                 }

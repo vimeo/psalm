@@ -1048,6 +1048,24 @@ class TypeReconciliationTest extends TestCase
                         if (!$f) {}
                     }',
             ],
+            'scalarToBool' => [
+                '<?php
+                    /** @param mixed $s */
+                    function foo($s) : void {
+                        if (!is_scalar($s)) {
+                            return;
+                        }
+
+                        if (is_bool($s)) {}
+                        if (!is_bool($s)) {}
+                        if (is_string($s)) {}
+                        if (!is_string($s)) {}
+                        if (is_int($s)) {}
+                        if (!is_int($s)) {}
+                        if (is_float($s)) {}
+                        if (!is_float($s)) {}
+                    }',
+            ],
         ];
     }
 
@@ -1246,6 +1264,20 @@ class TypeReconciliationTest extends TestCase
                         if (\is_array($iterable) && $iterable instanceof \Traversable) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'scalarToBoolContradiction' => [
+                '<?php
+                    /** @param mixed $s */
+                    function foo($s) : void {
+                        if (!is_scalar($s)) {
+                            return;
+                        }
+
+                        if (!is_bool($s)) {
+                            if (is_bool($s)) {}
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
         ];
     }
