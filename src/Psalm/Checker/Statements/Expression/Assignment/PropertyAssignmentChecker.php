@@ -302,6 +302,19 @@ class PropertyAssignmentChecker
 
                 $has_regular_setter = true;
 
+                if ($stmt->var instanceof PhpParser\Node\Expr\Variable
+                    && $stmt->var->name === 'this'
+                    && $context->self
+                ) {
+                    $self_property_id = $context->self . '::$' . $prop_name;
+
+                    if ($self_property_id !== $property_id
+                        && $codebase->properties->propertyExists($self_property_id)
+                    ) {
+                        $property_id = $self_property_id;
+                    }
+                }
+
                 if (!$codebase->properties->propertyExists($property_id, $context->calling_method_id)) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         // if this is a proper error, we'll see it on the first pass
@@ -361,7 +374,7 @@ class PropertyAssignmentChecker
                 }
 
                 $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                    $lhs_type_part->value . '::$' . $prop_name
+                    $property_id
                 );
 
                 $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
