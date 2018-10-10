@@ -135,6 +135,22 @@ class FunctionChecker extends FunctionLikeChecker
 
                     return $call_map_key === 'var_export' ? Type::getVoid() : Type::getBool();
 
+                case 'print_r':
+                    if (isset($call_args[1]->value->inferredType)) {
+                        $subject_type = $call_args[1]->value->inferredType;
+
+                        if ((string) $subject_type === 'true') {
+                            return Type::getString();
+                        }
+
+                        return new Type\Union([
+                            new Type\Atomic\TString,
+                            new Type\Atomic\TTrue
+                        ]);
+                    }
+
+                    return Type::getTrue();
+
                 case 'getenv':
                     return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);
 
