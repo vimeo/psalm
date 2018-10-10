@@ -60,6 +60,9 @@ class FunctionChecker extends FunctionLikeChecker
                             Type::getInt()
                         ])
                     ]);
+
+                case 'microtime':
+                    return Type::getString();
             }
         } else {
             switch ($call_map_key) {
@@ -142,14 +145,30 @@ class FunctionChecker extends FunctionLikeChecker
                         if ((string) $subject_type === 'true') {
                             return Type::getString();
                         }
-
-                        return new Type\Union([
-                            new Type\Atomic\TString,
-                            new Type\Atomic\TTrue
-                        ]);
                     }
 
-                    return Type::getTrue();
+                    return new Type\Union([
+                        new Type\Atomic\TString,
+                        new Type\Atomic\TTrue
+                    ]);
+
+                case 'microtime':
+                    if (isset($call_args[0]->value->inferredType)) {
+                        $subject_type = $call_args[0]->value->inferredType;
+
+                        if ((string) $subject_type === 'true') {
+                            return Type::getFloat();
+                        }
+
+                        if ((string) $subject_type === 'false') {
+                            return Type::getString();
+                        }
+                    }
+
+                    return new Type\Union([
+                        new Type\Atomic\TFloat,
+                        new Type\Atomic\TString
+                    ]);
 
                 case 'getenv':
                     return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);

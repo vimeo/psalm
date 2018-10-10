@@ -968,6 +968,20 @@ class FunctionCallTest extends TestCase
 
                     foo(print_r(1, true));',
             ],
+            'microtime' => [
+                '<?php
+                    $a = microtime(true);
+                    $b = microtime();
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $c = microtime(1);
+                    $d = microtime(false);',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'string',
+                    '$c' => 'float|string',
+                    '$d' => 'string',
+                ],
+            ],
         ];
     }
 
