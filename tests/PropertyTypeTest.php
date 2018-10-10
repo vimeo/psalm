@@ -318,6 +318,12 @@ class PropertyTypeTest extends TestCase
                     '$owner' => 'DOMDocument',
                 ],
             ],
+            'propertyMapHydration' => [
+                '<?php
+                    function foo(DOMElement $e) : void {
+                        echo $e->attributes->length;
+                    }',
+            ],
             'goodArrayProperties' => [
                 '<?php
                     interface I1 {}

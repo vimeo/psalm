@@ -228,6 +228,17 @@ class Scanner
             }
 
             $this->store_scan_failure[$fq_classlike_name] = $store_failure;
+
+            if (PropertyMap::inPropertyMap($fq_classlike_name_lc)) {
+                $public_mapped_properties = PropertyMap::getPropertyMap()[$fq_classlike_name_lc];
+
+                foreach ($public_mapped_properties as $property_name => $public_mapped_property) {
+                    if (strtolower($public_mapped_property) !== $fq_classlike_name_lc) {
+                        $property_type = \Psalm\Type::parseString($public_mapped_property);
+                        $property_type->queueClassLikesForScanning($this->codebase);
+                    }
+                }
+            }
         }
 
         if ($referencing_file_path) {
