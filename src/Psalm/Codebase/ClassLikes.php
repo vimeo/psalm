@@ -888,4 +888,77 @@ class ClassLikes
 
         $this->scanner->removeClassLike($fq_class_name_lc);
     }
+
+    /**
+     * @return array{
+     *     0: array<string, bool>,
+     *     1: array<string, bool>,
+     *     2: array<string, bool>,
+     *     3: array<string, bool>,
+     *     4: array<string, bool>,
+     *     5: array<string, bool>,
+     *     6: array<string, bool>,
+     *     7: array<string, \PhpParser\Node\Stmt\Trait_>,
+     *     8: array<string, \Psalm\Aliases>,
+     *     9: array<string, int>
+     * }
+     */
+    public function getThreadData()
+    {
+        return [
+            $this->existing_classlikes_lc,
+            $this->existing_classes_lc,
+            $this->existing_traits_lc,
+            $this->existing_traits,
+            $this->existing_interfaces_lc,
+            $this->existing_interfaces,
+            $this->existing_classes,
+            $this->trait_nodes,
+            $this->trait_aliases,
+            $this->classlike_references
+        ];
+    }
+
+    /**
+     * @param array{
+     *     0: array<string, bool>,
+     *     1: array<string, bool>,
+     *     2: array<string, bool>,
+     *     3: array<string, bool>,
+     *     4: array<string, bool>,
+     *     5: array<string, bool>,
+     *     6: array<string, bool>,
+     *     7: array<string, \PhpParser\Node\Stmt\Trait_>,
+     *     8: array<string, \Psalm\Aliases>,
+     *     9: array<string, int>
+     * } $thread_data
+     *
+     * @return void
+     */
+    public function addThreadData(array $thread_data)
+    {
+        list (
+            $existing_classlikes_lc,
+            $existing_classes_lc,
+            $existing_traits_lc,
+            $existing_traits,
+            $existing_interfaces_lc,
+            $existing_interfaces,
+            $existing_classes,
+            $trait_nodes,
+            $trait_aliases,
+            $classlike_references
+        ) = $thread_data;
+
+        $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);
+        $this->existing_classes_lc = array_merge($existing_classes_lc, $this->existing_classes_lc);
+        $this->existing_traits_lc = array_merge($existing_traits_lc, $this->existing_traits_lc);
+        $this->existing_traits = array_merge($existing_traits, $this->existing_traits);
+        $this->existing_interfaces_lc = array_merge($existing_interfaces_lc, $this->existing_interfaces_lc);
+        $this->existing_interfaces = array_merge($existing_interfaces, $this->existing_interfaces);
+        $this->existing_classes = array_merge($existing_classes, $this->existing_classes);
+        $this->trait_nodes = array_merge($trait_nodes, $this->trait_nodes);
+        $this->trait_aliases = array_merge($trait_aliases, $this->trait_aliases);
+        $this->classlike_references = array_merge($classlike_references, $this->classlike_references);
+    }
 }

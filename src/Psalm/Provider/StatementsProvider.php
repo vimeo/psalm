@@ -214,11 +214,29 @@ class StatementsProvider
     }
 
     /**
+     * @param array<string, array<string, bool>> $more_changed_members
+     * @return void
+     */
+    public function addChangedMembers(array $more_changed_members)
+    {
+        $this->changed_members = array_merge($more_changed_members, $this->changed_members);
+    }
+
+    /**
      * @return array<string, array<string, bool>>
      */
     public function getUnchangedSignatureMembers()
     {
         return $this->unchanged_signature_members;
+    }
+
+    /**
+     * @param array<string, array<string, bool>> $more_unchanged_members
+     * @return void
+     */
+    public function addUnchangedSignatureMembers(array $more_unchanged_members)
+    {
+        $this->unchanged_signature_members = array_merge($more_unchanged_members, $this->unchanged_signature_members);
     }
 
     /**
@@ -238,6 +256,15 @@ class StatementsProvider
     public function getDiffMap()
     {
         return $this->diff_map;
+    }
+
+    /**
+     * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
+     * @return void
+     */
+    public function addDiffMap(array $diff_map)
+    {
+        $this->diff_map = array_merge($diff_map, $this->diff_map);
     }
 
     /**

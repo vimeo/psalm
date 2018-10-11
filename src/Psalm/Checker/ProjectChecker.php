@@ -289,7 +289,7 @@ class ProjectChecker
 
             $this->config->initializePlugins($this);
 
-            $this->codebase->scanFiles();
+            $this->codebase->scanFiles($this->threads);
         } else {
             if ($this->debug_output) {
                 echo count($diff_files) . ' changed files: ' . "\n";
@@ -306,7 +306,7 @@ class ProjectChecker
 
                 $this->config->initializePlugins($this);
 
-                $this->codebase->scanFiles();
+                $this->codebase->scanFiles($this->threads);
             }
         }
 
@@ -401,7 +401,7 @@ class ProjectChecker
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles();
+        $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
@@ -571,7 +571,7 @@ class ProjectChecker
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles();
+        $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
@@ -609,7 +609,7 @@ class ProjectChecker
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles();
+        $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->debug_output);
 

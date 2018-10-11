@@ -292,9 +292,9 @@ class Codebase
      *
      * @return void
      */
-    public function scanFiles()
+    public function scanFiles(int $threads = 1)
     {
-        $has_changes = $this->scanner->scanFiles($this->classlikes);
+        $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         if ($has_changes) {
             $this->populator->populateCodebase($this);
