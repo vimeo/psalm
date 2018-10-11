@@ -150,6 +150,33 @@ function takesA(A $a) : void {
 }
 ```
 
+As well as getting Psalm to understand that the given data must be a certain type, you can also show that a variable must be not null:
+
+```php
+
+/**
+ * @psalm-assert !null $value
+ */
+function assertNotNull($value): void {
+  // Some check that will mean the method will only complete if $value is not null.
+}
+
+```
+
+And you can check on null values:
+
+```php
+
+/**
+ * @psalm-assert-if-true null $value
+ */
+function isNull($value): void {
+  return ($value === null);
+}
+
+```
+
+
 ### `@psalm-ignore-nullable-return`
 
 This can be used to tell Psalm not to worry if a function/method returns null. It’s a bit of a hack, but occasionally useful for scenarios where you either have a very high confidence of a non-null value, or some other function guarantees a non-null value for that particular code path.
