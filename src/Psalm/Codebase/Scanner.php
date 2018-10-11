@@ -269,24 +269,25 @@ class Scanner
     private function scanFilePaths() : bool
     {
         $filetype_scanners = $this->config->getFiletypeScanners();
-        $files_to_scan = $this->files_to_scan;
-        $has_changes = false;
+        $files_to_scan = array_filter(
+            $this->files_to_scan,
+            function (string $file_path) : bool {
+                return !isset($this->scanned_files[$file_path])
+                    || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]);
+            }
+        );
+
         $this->files_to_scan = [];
 
         foreach ($files_to_scan as $file_path) {
-            if (!isset($this->scanned_files[$file_path])
-                || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path])
-            ) {
-                $this->scanFile(
-                    $file_path,
-                    $filetype_scanners,
-                    isset($this->files_to_deep_scan[$file_path])
-                );
-                $has_changes = true;
-            }
+            $this->scanFile(
+                $file_path,
+                $filetype_scanners,
+                isset($this->files_to_deep_scan[$file_path])
+            );
         }
 
-        return $has_changes;
+        return (bool) $files_to_scan;
     }
 
     /**
