@@ -343,6 +343,10 @@ class Scanner
 
         $this->files_to_scan = [];
 
+        if (!$files_to_scan) {
+            return false;
+        }
+
         $files_to_deep_scan = $this->files_to_deep_scan;
 
         $scanner_worker =
@@ -447,7 +451,7 @@ class Scanner
             }
         }
 
-        return (bool) $files_to_scan;
+        return true;
     }
 
     /**

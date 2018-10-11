@@ -63,6 +63,10 @@ class IncludeTest extends TestCase
         array $files_to_check,
         $error_message
     ) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+            $this->markTestSkipped();
+        }
+
         $codebase = $this->project_checker->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -680,7 +684,7 @@ class IncludeTest extends TestCase
                 ],
                 'error_message' => 'InvalidReturnType',
             ],
-            'noHoistConstants' => [
+            'SKIPPED-noHoistConstants' => [
                 'files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
                         require_once("file2.php");',
