@@ -85,6 +85,15 @@ class ClassLikeStorageProvider
     }
 
     /**
+     * @param array<string, ClassLikeStorage> $more
+     * @return void
+     */
+    public function addMore(array $more)
+    {
+        self::$storage = array_merge($more, self::$storage);
+    }
+
+    /**
      * @param  string $fq_classlike_name
      *
      * @return ClassLikeStorage
