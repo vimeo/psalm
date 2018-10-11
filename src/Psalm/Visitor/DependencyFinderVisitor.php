@@ -458,6 +458,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
             if ($function_like_storage) {
                 $function_like_storage->has_yield = true;
             }
+        } elseif ($node instanceof PhpParser\Node\Expr\Cast\Object_) {
+            $this->codebase->scanner->queueClassLikeForScanning('stdClass', null, false, false);
         }
     }
 

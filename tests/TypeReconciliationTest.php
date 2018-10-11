@@ -1279,6 +1279,13 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition',
             ],
+            'noCrashWhenCastingArray' => [
+                '<?php
+                    function foo() : string {
+                        return (object) ["a" => 1, "b" => 2];
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }
