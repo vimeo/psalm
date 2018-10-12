@@ -165,9 +165,17 @@ class Scanner
      */
     public function removeFile($file_path)
     {
-        unset(
-            $this->scanned_files[$file_path]
-        );
+        unset($this->scanned_files[$file_path]);
+    }
+
+    /**
+     * @param  string $fq_classlike_name_lc
+     * @return void
+     */
+    public function removeClassLike($fq_classlike_name_lc)
+    {
+        unset($this->classlike_files[$fq_classlike_name_lc]);
+        unset($this->deep_scanned_classlike_files[$fq_classlike_name_lc]);
     }
 
     /**

@@ -21,7 +21,6 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
         $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
 
         $config = new TestConfig();
-        $config->throw_exception = false;
 
         $providers = new Providers(
             $this->file_provider,
