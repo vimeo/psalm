@@ -259,17 +259,20 @@ class Pool
 
         // Wait for all children to return
         foreach ($this->child_pid_list as $child_pid) {
+            posix_kill($child_pid, SIGALRM);
             if (pcntl_waitpid($child_pid, $status) < 0) {
                 error_log(posix_strerror(posix_get_last_error()));
             }
 
             // Check to see if the child died a graceful death
-            $status = 0;
             if (pcntl_wifsignaled($status)) {
                 $return_code = pcntl_wexitstatus($status);
                 $term_sig = pcntl_wtermsig($status);
-                $this->did_have_error = true;
-                error_log("Child terminated with return code $return_code and signal $term_sig");
+
+                if ($term_sig !== SIGALRM) {
+                    $this->did_have_error = true;
+                    error_log("Child terminated with return code $return_code and signal $term_sig");
+                }
             }
         }
 

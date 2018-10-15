@@ -258,8 +258,9 @@ class Analyzer
                 }
             }
 
-            // TODO: Tell the caller that the fork pool encountered an error in another PR?
-            // $did_fork_pool_have_error = $pool->didHaveError();
+            if ($pool->didHaveError()) {
+                exit(1);
+            }
         } else {
             $i = 0;
 
