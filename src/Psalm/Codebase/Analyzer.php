@@ -316,10 +316,10 @@ class Analyzer
             try {
                 $member_class_storage = $this->classlike_storage_provider->get($member_class_name);
             } catch (\Exception $e) {
-                continue;
+                $member_class_storage = null;
             }
 
-            if (!$member_class_storage->is_trait) {
+            if ($member_class_storage && !$member_class_storage->is_trait) {
                 continue;
             }
 
