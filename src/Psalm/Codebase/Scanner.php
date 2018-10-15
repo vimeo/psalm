@@ -55,7 +55,8 @@ use Psalm\Scanner\FileScanner;
  *     unchanged_signature_members:array<string, array<string, bool>>,
  *     diff_map:array<string, array<int, array{0:int, 1:int, 2:int, 3:int}>>,
  *     classlike_storage:array<string, \Psalm\Storage\ClassLikeStorage>,
- *     file_storage:array<string, \Psalm\Storage\FileStorage>
+ *     file_storage:array<string, \Psalm\Storage\FileStorage>,
+ *     new_file_content_hashes: array<string, string>
  * }
  */
 
@@ -412,6 +413,9 @@ class Scanner
                         'diff_map' => $statements_provider->getDiffMap(),
                         'classlike_storage' => $project_checker->classlike_storage_provider->getAll(),
                         'file_storage' => $project_checker->file_storage_provider->getAll(),
+                        'new_file_content_hashes' => $statements_provider->parser_cache_provider
+                            ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
+                            : [],
                     ];
                 }
             );
@@ -441,6 +445,12 @@ class Scanner
                 $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
 
                 $this->addThreadData($pool_data['scanner_data']);
+
+                if ($this->codebase->statements_provider->parser_cache_provider) {
+                    $this->codebase->statements_provider->parser_cache_provider->addNewFileContentHashes(
+                        $pool_data['new_file_content_hashes']
+                    );
+                }
             }
         } else {
             $i = 0;
@@ -449,6 +459,10 @@ class Scanner
                 $scanner_worker($i, $file_path);
                 ++$i;
             }
+        }
+
+        if ($this->codebase->statements_provider->parser_cache_provider) {
+            $this->codebase->statements_provider->parser_cache_provider->saveFileContentHashes();
         }
 
         return true;

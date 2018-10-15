@@ -20,6 +20,7 @@ $valid_short_options = [
 
 $valid_long_options = [
     'clear-cache',
+    'clear-global-cache',
     'config:',
     'debug',
     'debug-by-line',
@@ -169,7 +170,10 @@ Options:
         (Currently supported format: ".json", ".xml", ".txt")
 
     --clear-cache
-        Clears all cache files that Psalm uses
+        Clears all cache files that Psalm uses for this specific project
+
+    --clear-global-cache
+        Clears all cache files that Psalm uses for all projects
 
     --no-cache
         Runs Psalm without using cache
@@ -383,6 +387,14 @@ if (isset($options['clear-cache'])) {
 
     Config::removeCacheDirectory($cache_directory);
     echo 'Cache directory deleted' . PHP_EOL;
+    exit;
+}
+
+if (isset($options['clear-global-cache'])) {
+    $cache_directory = $config->getGlobalCacheDirectory();
+
+    Config::removeCacheDirectory($cache_directory);
+    echo 'Global cache directory deleted' . PHP_EOL;
     exit;
 }
 

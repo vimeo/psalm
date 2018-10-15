@@ -19,9 +19,16 @@ class ParserCacheProvider
     /**
      * A map of filename hashes to contents hashes
      *
+     * @var array<string, string>|null
+     */
+    protected $existing_file_content_hashes = null;
+
+    /**
+     * A map of recently-added filename hashes to contents hashes
+     *
      * @var array<string, string>
      */
-    protected $file_content_hashes = [];
+    protected $new_file_content_hashes = [];
 
     /** @var bool */
     public $use_igbinary = false;
@@ -45,7 +52,7 @@ class ParserCacheProvider
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
-        $file_content_hashes = $this->getFileContentHashes();
+        $file_content_hashes = $this->new_file_content_hashes + $this->getExistingFileContentHashes();
 
         $cache_location = $parser_cache_directory . DIRECTORY_SEPARATOR . $file_cache_key;
 
@@ -121,12 +128,12 @@ class ParserCacheProvider
     /**
      * @return array<string, string>
      */
-    public function getFileContentHashes()
+    private function getExistingFileContentHashes()
     {
         $config = Config::getInstance();
         $root_cache_directory = $config->getCacheDirectory();
 
-        if (!$this->file_content_hashes || !$config->cache_file_hashes_during_run) {
+        if ($this->existing_file_content_hashes === null) {
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
             if ($root_cache_directory && is_readable($file_hashes_path)) {
@@ -134,8 +141,8 @@ class ParserCacheProvider
 
                 if (!$hashes_encoded) {
                     error_log('Unexpected value when loading from file content hashes');
-
-                    return $this->file_content_hashes;
+                    $this->existing_file_content_hashes = [];
+                    return [];
                 }
 
                 /** @psalm-suppress MixedAssignment */
@@ -143,15 +150,18 @@ class ParserCacheProvider
 
                 if (!is_array($hashes_decoded)) {
                     error_log('Unexpected value ' . gettype($hashes_decoded));
-                    return $this->file_content_hashes;
+                    $this->existing_file_content_hashes = [];
+                    return [];
                 }
 
                 /** @var array<string, string> $hashes_decoded */
-                $this->file_content_hashes = $hashes_decoded;
+                $this->existing_file_content_hashes = $hashes_decoded;
+            } else {
+                $this->existing_file_content_hashes = [];
             }
         }
 
-        return $this->file_content_hashes;
+        return $this->existing_file_content_hashes;
     }
 
     /**
@@ -189,19 +199,46 @@ class ParserCacheProvider
                 file_put_contents($cache_location, serialize($stmts));
             }
 
-            $file_content_hashes = $this->getFileContentHashes();
-
-            $file_content_hashes[$file_cache_key] = $file_content_hash;
-
-            $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
-
-            file_put_contents(
-                $file_hashes_path,
-                json_encode($file_content_hashes)
-            );
-
-            $this->file_content_hashes = $file_content_hashes;
+            $this->new_file_content_hashes[$file_cache_key] = $file_content_hash;
         }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getNewFileContentHashes()
+    {
+        return $this->new_file_content_hashes;
+    }
+
+    /**
+     * @param array<string, string> $file_content_hashes
+     * @return void
+     */
+    public function addNewFileContentHashes(array $file_content_hashes)
+    {
+        $this->new_file_content_hashes = $file_content_hashes + $this->new_file_content_hashes;
+    }
+
+    /**
+     * @return void
+     */
+    public function saveFileContentHashes()
+    {
+        $root_cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if (!$root_cache_directory) {
+            return;
+        }
+
+        $file_content_hashes = $this->new_file_content_hashes + $this->getExistingFileContentHashes();
+
+        $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
+
+        file_put_contents(
+            $file_hashes_path,
+            json_encode($file_content_hashes)
+        );
     }
 
     /**
