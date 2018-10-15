@@ -81,6 +81,13 @@ class Config
     public $cache_directory;
 
     /**
+     * The directory to store all Psalm project caches
+     *
+     * @var string
+     */
+    public $global_cache_directory;
+
+    /**
      * Path to the autoader
      *
      * @var string|null
@@ -138,11 +145,6 @@ class Config
      * @var array<int, string>
      */
     private $stub_files = [];
-
-    /**
-     * @var bool
-     */
-    public $cache_file_hashes_during_run = true;
 
     /**
      * @var bool
@@ -481,6 +483,10 @@ class Config
             $config->cache_directory = sys_get_temp_dir() . '/psalm';
         }
 
+        $config->global_cache_directory = $config->cache_directory;
+
+        $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+
         if (@mkdir($config->cache_directory, 0777, true) === false && is_dir($config->cache_directory) === false) {
             trigger_error('Could not create cache directory: ' . $config->cache_directory, E_USER_ERROR);
         }
@@ -508,11 +514,6 @@ class Config
         if (isset($config_xml['useAssertForType'])) {
             $attribute_text = (string) $config_xml['useAssertForType'];
             $config->use_assert_for_type = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['cacheFileContentHashes'])) {
-            $attribute_text = (string) $config_xml['cacheFileContentHashes'];
-            $config->cache_file_hashes_during_run = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['rememberPropertyAssignmentsAfterCall'])) {
@@ -1109,6 +1110,14 @@ class Config
     public function getCacheDirectory()
     {
         return $this->cache_directory;
+    }
+
+    /**
+     * @return string
+     */
+    public function getGlobalCacheDirectory()
+    {
+        return $this->global_cache_directory;
     }
 
     /**

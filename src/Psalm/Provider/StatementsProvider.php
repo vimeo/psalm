@@ -13,7 +13,7 @@ class StatementsProvider
     /**
      * @var ?ParserCacheProvider
      */
-    private $parser_cache_provider;
+    public $parser_cache_provider;
 
     /**
      * @var int
