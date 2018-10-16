@@ -228,10 +228,6 @@ class ProjectChecker
 
         $this->output_format = $output_format;
         self::$instance = $this;
-
-        if ($this->parser_cache_provider) {
-            $this->parser_cache_provider->use_igbinary = $config->use_igbinary;
-        }
     }
 
     /**
@@ -630,11 +626,10 @@ class ProjectChecker
 
     /**
      * @param  array<string>  $diff_files
-     * @param  bool           $include_referencing_files
      *
      * @return array<string, string>
      */
-    public function getReferencedFilesFromDiff(array $diff_files, $include_referencing_files = true)
+    public function getReferencedFilesFromDiff(array $diff_files)
     {
         $all_inherited_files_to_check = $diff_files;
 
@@ -650,11 +645,9 @@ class ProjectChecker
 
         $all_files_to_check = $all_inherited_files_to_check;
 
-        if ($include_referencing_files) {
-            foreach ($all_inherited_files_to_check as $file_name) {
-                $dependent_files = $this->file_reference_provider->getFilesReferencingFile($file_name);
-                $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
-            }
+        foreach ($all_inherited_files_to_check as $file_name) {
+            $dependent_files = $this->file_reference_provider->getFilesReferencingFile($file_name);
+            $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
         }
 
         return array_combine($all_files_to_check, $all_files_to_check);

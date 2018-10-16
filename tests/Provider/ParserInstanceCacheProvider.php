@@ -20,19 +20,16 @@ class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
      */
     private $statements_cache_time = [];
 
-    /**
-     * @param  string   $file_content_hash
-     * @param  string   $file_cache_key
-     * @param mixed $file_modified_time
-     *
-     * @return array<int, PhpParser\Node\Stmt>|null
-     */
-    public function loadStatementsFromCache($file_modified_time, $file_content_hash, $file_cache_key)
+    public function __construct()
     {
-        if (isset($this->statements_cache[$file_cache_key])
-            && $this->statements_cache_time[$file_cache_key] >= $file_modified_time
+    }
+
+    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash)
+    {
+        if (isset($this->statements_cache[$file_path])
+            && $this->statements_cache_time[$file_path] >= $file_modified_time
         ) {
-            return $this->statements_cache[$file_cache_key];
+            return $this->statements_cache[$file_path];
         }
 
         return null;
@@ -40,56 +37,56 @@ class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
 
     /**
      * @param  string   $file_content_hash
-     * @param  string   $file_cache_key
+     * @param  string   $file_path
      * @param mixed $file_modified_time
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      */
-    public function loadExistingStatementsFromCache($file_cache_key)
+    public function loadExistingStatementsFromCache($file_path)
     {
-        if (isset($this->statements_cache[$file_cache_key])) {
-            return $this->statements_cache[$file_cache_key];
+        if (isset($this->statements_cache[$file_path])) {
+            return $this->statements_cache[$file_path];
         }
 
         return null;
     }
 
     /**
-     * @param  string                           $file_cache_key
+     * @param  string                           $file_path
      * @param  string                           $file_content_hash
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
      * @param  bool                             $touch_only
      *
      * @return void
      */
-    public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache($file_path, $file_content_hash, array $stmts, $touch_only)
     {
-        $this->statements_cache[$file_cache_key] = $stmts;
-        $this->statements_cache_time[$file_cache_key] = microtime(true);
+        $this->statements_cache[$file_path] = $stmts;
+        $this->statements_cache_time[$file_path] = microtime(true);
     }
 
     /**
-     * @param  string   $file_cache_key
+     * @param  string   $file_path
      *
      * @return string|null
      */
-    public function loadExistingFileContentsFromCache($file_cache_key)
+    public function loadExistingFileContentsFromCache($file_path)
     {
-        if (isset($this->file_contents_cache[$file_cache_key])) {
-            return $this->file_contents_cache[$file_cache_key];
+        if (isset($this->file_contents_cache[$file_path])) {
+            return $this->file_contents_cache[$file_path];
         }
 
         return null;
     }
 
     /**
-     * @param  string  $file_cache_key
+     * @param  string  $file_path
      * @param  string  $file_contents
      *
      * @return void
      */
-    public function cacheFileContents($file_cache_key, $file_contents)
+    public function cacheFileContents($file_path, $file_contents)
     {
-        $this->file_contents_cache[$file_cache_key] = $file_contents;
+        $this->file_contents_cache[$file_path] = $file_contents;
     }
 }

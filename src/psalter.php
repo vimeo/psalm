@@ -131,7 +131,7 @@ $project_checker = new ProjectChecker(
     $config,
     new Psalm\Provider\Providers(
         new Psalm\Provider\FileProvider(),
-        new Psalm\Provider\ParserCacheProvider(),
+        new Psalm\Provider\ParserCacheProvider($config),
         new Psalm\Provider\FileStorageCacheProvider($config),
         new Psalm\Provider\ClassLikeStorageCacheProvider($config)
     ),

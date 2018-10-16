@@ -407,7 +407,7 @@ if (isset($options['no-cache'])) {
 } else {
     $providers = new Psalm\Provider\Providers(
         new Psalm\Provider\FileProvider,
-        new Psalm\Provider\ParserCacheProvider,
+        new Psalm\Provider\ParserCacheProvider($config),
         new Psalm\Provider\FileStorageCacheProvider($config),
         new Psalm\Provider\ClassLikeStorageCacheProvider($config),
         new Psalm\Provider\FileReferenceCacheProvider($config)

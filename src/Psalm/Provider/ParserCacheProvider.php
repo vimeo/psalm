@@ -31,24 +31,33 @@ class ParserCacheProvider
     protected $new_file_content_hashes = [];
 
     /** @var bool */
-    public $use_igbinary = false;
+    private $use_igbinary;
+
+    public function __construct(Config $config)
+    {
+        $this->use_igbinary = $config->use_igbinary;
+    }
 
     /**
      * @param  int      $file_modified_time
      * @param  string   $file_content_hash
-     * @param  string   $file_cache_key
+     * @param  string   $file_path
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadStatementsFromCache($file_modified_time, $file_content_hash, $file_cache_key)
+    public function loadStatementsFromCache($file_path, $file_modified_time, $file_content_hash)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
         }
+
+        $file_cache_key = $this->getParserCacheKey(
+            $file_path
+        );
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
@@ -74,19 +83,23 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_cache_key
+     * @param  string   $file_path
      *
      * @return array<int, PhpParser\Node\Stmt>|null
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function loadExistingStatementsFromCache($file_cache_key)
+    public function loadExistingStatementsFromCache($file_path)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
         }
+
+        $file_cache_key = $this->getParserCacheKey(
+            $file_path
+        );
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
@@ -104,17 +117,21 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string   $file_cache_key
+     * @param  string   $file_path
      *
      * @return string|null
      */
-    public function loadExistingFileContentsFromCache($file_cache_key)
+    public function loadExistingFileContentsFromCache($file_path)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
         }
+
+        $file_cache_key = $this->getParserCacheKey(
+            $file_path
+        );
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_CONTENTS_CACHE_DIRECTORY;
 
@@ -165,7 +182,7 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string                           $file_cache_key
+     * @param  string                           $file_path
      * @param  string                           $file_content_hash
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
      * @param  bool                             $touch_only
@@ -174,13 +191,17 @@ class ParserCacheProvider
      *
      * @psalm-suppress UndefinedFunction
      */
-    public function saveStatementsToCache($file_cache_key, $file_content_hash, array $stmts, $touch_only)
+    public function saveStatementsToCache($file_path, $file_content_hash, array $stmts, $touch_only)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
         }
+
+        $file_cache_key = $this->getParserCacheKey(
+            $file_path
+        );
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::PARSER_CACHE_DIRECTORY;
 
@@ -242,18 +263,22 @@ class ParserCacheProvider
     }
 
     /**
-     * @param  string  $file_cache_key
+     * @param  string  $file_path
      * @param  string  $file_contents
      *
      * @return void
      */
-    public function cacheFileContents($file_cache_key, $file_contents)
+    public function cacheFileContents($file_path, $file_contents)
     {
         $root_cache_directory = Config::getInstance()->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
         }
+
+        $file_cache_key = $this->getParserCacheKey(
+            $file_path
+        );
 
         $parser_cache_directory = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_CONTENTS_CACHE_DIRECTORY;
 
@@ -379,8 +404,7 @@ class ParserCacheProvider
 
         if (is_dir($cache_directory)) {
             foreach ($file_names as $file_name) {
-                $hash_file_name =
-                    $cache_directory . DIRECTORY_SEPARATOR . $this->getParserCacheKey($file_name, $this->use_igbinary);
+                $hash_file_name = $cache_directory . DIRECTORY_SEPARATOR . $this->getParserCacheKey($file_name);
 
                 if (file_exists($hash_file_name)) {
                     if (filemtime($hash_file_name) < $min_time) {
@@ -393,12 +417,11 @@ class ParserCacheProvider
 
     /**
      * @param  string  $file_name
-     * @param  bool $use_igbinary
      *
      * @return string
      */
-    public static function getParserCacheKey($file_name, $use_igbinary)
+    private function getParserCacheKey($file_name)
     {
-        return md5($file_name) . ($use_igbinary ? '-igbinary' : '') . '-r';
+        return md5($file_name) . ($this->use_igbinary ? '-igbinary' : '') . '-r';
     }
 }

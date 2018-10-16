@@ -214,17 +214,33 @@ class Codebase
     }
 
     /**
-     * @param array<string> $diff_files
+     * @param array<string> $candidate_files
      *
      * @return void
      */
-    public function reloadFiles(ProjectChecker $project_checker, array $diff_files)
+    public function reloadFiles(ProjectChecker $project_checker, array $candidate_files)
     {
         $this->loadAnalyzer();
 
         $project_checker->file_reference_provider->loadReferenceCache();
 
-        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files, false);
+        if (!$this->statements_provider->parser_cache_provider) {
+            $diff_files = $candidate_files;
+        } else {
+            $diff_files = [];
+
+            $parser_cache_provider = $this->statements_provider->parser_cache_provider;
+
+            foreach ($candidate_files as $candidate_file_path) {
+                if ($parser_cache_provider->loadExistingFileContentsFromCache($candidate_file_path)
+                    !== $this->file_provider->getContents($candidate_file_path)
+                ) {
+                    $diff_files[] = $candidate_file_path;
+                }
+            }
+        }
+
+        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files);
 
         foreach ($diff_files as $diff_file_path) {
             $this->invalidateInformationForFile($diff_file_path);
