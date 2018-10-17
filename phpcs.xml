@@ -15,5 +15,9 @@
     <exclude-pattern>tests/stubs/</exclude-pattern>
     <rule ref="Generic.Files.LineLength">
         <exclude-pattern>tests</exclude-pattern>
-     </rule>
+    </rule>
+
+    <rule ref="PSR2.Namespaces.UseDeclaration">
+        <exclude-pattern>*</exclude-pattern>
+    </rule>
 </ruleset>

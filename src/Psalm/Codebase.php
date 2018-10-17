@@ -137,6 +137,11 @@ class Codebase
     public $populator;
 
     /**
+     * @var bool
+     */
+    public $server_mode = false;
+
+    /**
      * @param bool $collect_references
      * @param bool $debug_output
      */
@@ -270,6 +275,12 @@ class Codebase
         $project_checker->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
         $this->populator->populateCodebase($this);
+    }
+
+    /** @return void */
+    public function enterServerMode()
+    {
+        $this->server_mode = true;
     }
 
     /**
@@ -771,7 +782,7 @@ class Codebase
      *
      * @return void
      */
-    private function invalidateInformationForFile($file_path)
+    private function invalidateInformationForFile(string $file_path)
     {
         $this->scanner->removeFile($file_path);
 

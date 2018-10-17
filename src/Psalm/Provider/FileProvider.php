@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Provider;
 
+use PhpParser;
+use Psalm\Checker\ProjectChecker;
+
 class FileProvider
 {
     /**

@@ -79,7 +79,6 @@ class FileChecker extends SourceChecker implements StatementsSource
     public $project_checker;
 
     /**
-     * @param ProjectChecker  $project_checker
      * @param string  $file_path
      * @param string  $file_name
      */
@@ -95,13 +94,16 @@ class FileChecker extends SourceChecker implements StatementsSource
      *
      * @return void
      */
-    public function analyze(Context $file_context = null, $preserve_checkers = false, Context $global_context = null)
-    {
+    public function analyze(
+        Context $file_context = null,
+        $preserve_checkers = false,
+        Context $global_context = null
+    ) {
         $codebase = $this->project_checker->codebase;
 
         $file_storage = $codebase->file_storage_provider->get($this->file_path);
 
-        if (!$file_storage->deep_scan) {
+        if (!$file_storage->deep_scan && !$codebase->server_mode) {
             throw new UnpreparedAnalysisException('File ' . $this->file_path . ' has not been properly scanned');
         }
 
@@ -120,7 +122,11 @@ class FileChecker extends SourceChecker implements StatementsSource
 
         $this->context->is_global = true;
 
-        $stmts = $codebase->getStatementsForFile($this->file_path);
+        try {
+            $stmts = $codebase->getStatementsForFile($this->file_path);
+        } catch (PhpParser\Error $e) {
+            return;
+        }
 
         $statements_checker = new StatementsChecker($this);
 
@@ -138,6 +144,7 @@ class FileChecker extends SourceChecker implements StatementsSource
         }
 
         // check any leftover classes not already evaluated
+
         foreach ($this->class_checkers_to_analyze as $class_checker) {
             $class_checker->analyze(null, $this->context);
         }
