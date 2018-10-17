@@ -1941,7 +1941,9 @@ class CallChecker
                 && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
             ) {
-                return [(string) $callable_arg->left->class->getAttribute('resolvedName') . $callable_arg->right->value];
+                return [
+                    (string) $callable_arg->left->class->getAttribute('resolvedName') . $callable_arg->right->value
+                ];
             }
 
             return [];
