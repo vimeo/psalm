@@ -308,6 +308,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                     if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
                         || $node_arg_value instanceof PhpParser\Node\Expr\Array_
+                        || $node_arg_value instanceof PhpParser\Node\Expr\BinaryOp\Concat
                     ) {
                         $mapping_function_ids = CallChecker::getFunctionIdsFromCallableArg(
                             $this->file_scanner,

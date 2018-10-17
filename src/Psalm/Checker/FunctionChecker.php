@@ -827,6 +827,7 @@ class FunctionChecker extends FunctionLikeChecker
                 ]);
             } elseif ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
+                || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
             ) {
                 $mapping_function_ids = Statements\Expression\CallChecker::getFunctionIdsFromCallableArg(
                     $statements_checker,
@@ -1113,6 +1114,7 @@ class FunctionChecker extends FunctionLikeChecker
 
         if ($function_call_arg instanceof PhpParser\Node\Scalar\String_
             || $function_call_arg instanceof PhpParser\Node\Expr\Array_
+            || $function_call_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat
         ) {
             $mapping_function_ids = Statements\Expression\CallChecker::getFunctionIdsFromCallableArg(
                 $statements_checker,
