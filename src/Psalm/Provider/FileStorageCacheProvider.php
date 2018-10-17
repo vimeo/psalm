@@ -74,6 +74,7 @@ class FileStorageCacheProvider
      */
     public function getLatestFromCache($file_path, $file_contents)
     {
+        $file_path = strtolower($file_path);
         $cached_value = $this->loadFromCache($file_path);
 
         if (!$cached_value) {

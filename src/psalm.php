@@ -43,6 +43,7 @@ $valid_long_options = [
     'use-ini-defaults',
     'version',
     'diff-methods',
+    'server',
 ];
 
 $args = array_slice($argv, 1);
@@ -189,6 +190,9 @@ Options:
 
     --disable-extension=[extension]
         Used to disable certain extensions while Psalm is running.
+
+    --server=[url]
+        Start Psalm in server mode with optional TCP url (by default it uses stdio)
 
 HELP;
 
@@ -426,7 +430,7 @@ $project_checker = new ProjectChecker(
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
-$project_checker->diff_methods = isset($options['diff-methods']);
+$project_checker->diff_methods = isset($options['diff-methods']) || isset($options['server']);
 
 $start_time = microtime(true);
 
@@ -459,7 +463,9 @@ foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
 }
 
-if ($paths_to_check === null) {
+if (isset($options['server'])) {
+    $project_checker->server(is_string($options['server']) ? $options['server'] : null);
+} elseif ($paths_to_check === null) {
     $project_checker->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
     $project_checker->checkPaths($paths_to_check);

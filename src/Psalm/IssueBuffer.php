@@ -494,6 +494,19 @@ class IssueBuffer
     }
 
     /**
+     * @return array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
+     *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
+     *  column_from: int, column_to: int}>
+     */
+    public static function clear()
+    {
+        $current_data = self::$issues_data;
+        self::$issues_data = [];
+        self::$emitted = [];
+        return $current_data;
+    }
+
+    /**
      * @return bool
      */
     public static function isRecording()

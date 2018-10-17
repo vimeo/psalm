@@ -2,6 +2,7 @@
 namespace Psalm\Provider;
 
 use PhpParser;
+use Psalm\Checker\ProjectChecker;
 
 class StatementsProvider
 {
@@ -86,7 +87,9 @@ class StatementsProvider
                 echo 'Parsing ' . $file_path . "\n";
             }
 
-            return self::parseStatements($file_contents, $file_path) ?: [];
+            $stmts = self::parseStatements($file_contents, $file_path);
+
+            return $stmts ?: [];
         }
 
         $file_content_hash = md5($version . $file_contents);
@@ -275,7 +278,8 @@ class StatementsProvider
     }
 
     /**
-     * @param  string   $file_contents
+     * @param  string  $file_contents
+     * @param  bool    $server_mode
      * @param  string   $file_path
      *
      * @return array<int, \PhpParser\Node\Stmt>
@@ -283,11 +287,11 @@ class StatementsProvider
     public static function parseStatements($file_contents, $file_path = null)
     {
         if (!self::$parser) {
-            $lexer = new PhpParser\Lexer([
-                'usedAttributes' => [
-                    'comments', 'startLine', 'startFilePos', 'endFilePos',
-                ],
-            ]);
+            $attributes = [
+                'comments', 'startLine', 'startFilePos', 'endFilePos',
+            ];
+
+            $lexer = new PhpParser\Lexer\Emulative([ 'usedAttributes' => $attributes ]);
 
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
         }
@@ -323,7 +327,6 @@ class StatementsProvider
             }
         }
 
-        /** @var array<int, \PhpParser\Node\Stmt> */
         self::$node_traverser->traverse($stmts);
 
         return $stmts;

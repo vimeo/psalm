@@ -3,6 +3,7 @@ namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
 use Psalm\Type;
+use Psalm\Checker\ClassLikeChecker;
 
 class PropertyStorage
 {

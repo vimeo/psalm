@@ -11,11 +11,18 @@
     ],
     "require": {
         "php": "^7.0",
-        "nikic/PHP-Parser": "^4.0",
+        "nikic/PHP-Parser": "dev-master",
         "openlss/lib-array2xml": "^0.0.10||^0.5.1",
         "muglug/package-versions-56": "1.2.4",
         "php-cs-fixer/diff": "^1.2",
-        "composer/xdebug-handler": "^1.1"
+        "composer/xdebug-handler": "^1.1",
+        "felixfbecker/language-server-protocol": "^1.2",
+        "felixfbecker/advanced-json-rpc": "^3.0.3",
+        "netresearch/jsonmapper": "^1.0",
+        "sabre/event": "^5.0.1",
+        "sabre/uri": "^2.0",
+        "webmozart/glob": "^4.1",
+        "webmozart/path-util": "^2.3"
     },
     "bin": ["psalm", "psalter"],
     "autoload": {
@@ -31,6 +38,8 @@
     "config": {
         "optimize-autoloader": true
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require-dev": {
         "phpunit/phpunit": "^6.0 || ^7.0",
         "squizlabs/php_codesniffer": "^3.0",

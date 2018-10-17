@@ -80,6 +80,7 @@
 
         <PossiblyUnusedProperty>
             <errorLevel type="info">
+                <file name="src/Psalm/LanguageServer/LanguageClient.php" />
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
             </errorLevel>
         </PossiblyUnusedProperty>
@@ -90,6 +91,8 @@
             <errorLevel type="suppress">
                 <directory name="tests" />
                 <file name="src/Psalm/Plugin.php" />
+                <file name="src/Psalm/LanguageServer/Client/TextDocument.php" />
+                <file name="src/Psalm/LanguageServer/Server/TextDocument.php" />
                 <referencedMethod name="Psalm\Codebase::getParentInterfaces" />
                 <referencedMethod name="Psalm\Codebase::getMethodParams" />
                 <referencedMethod name="Psalm\Codebase::getMethodReturnType" />

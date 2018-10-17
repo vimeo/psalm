@@ -20,6 +20,8 @@ use Psalm\Config;
  *     column_from: int,
  *     column_to: int
  * }
+ *
+ * @psalm-type  TaggedCodeType = array<int, array{0: int, 1: string}>
  */
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -31,6 +33,7 @@ class FileReferenceCacheProvider
     const CORRECT_METHODS_CACHE_NAME = 'correct_methods';
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
     const ISSUES_CACHE_NAME = 'issues';
+    const FILE_MAPS_CACHE_NAME = 'file_maps';
 
     /**
      * @var Config
