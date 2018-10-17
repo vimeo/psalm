@@ -21,6 +21,9 @@ class FakeFileReferenceCacheProvider extends \Psalm\Provider\FileReferenceCacheP
     /** @var array<string, array<string, int>> */
     private $cached_correct_methods = [];
 
+    /** @var array<string, array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}> */
+    private $cached_file_maps = [];
+
     public function __construct()
     {
     }
@@ -97,5 +100,25 @@ class FakeFileReferenceCacheProvider extends \Psalm\Provider\FileReferenceCacheP
     public function setCorrectMethodCache(array $correct_methods)
     {
         $this->cached_correct_methods = $correct_methods;
+    }
+
+    /**
+     * @return array<string, array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}>
+     */
+    public function getFileMapCache()
+    {
+        return $this->cached_file_maps;
+    }
+
+    /**
+     * @param array<
+     *    string,
+     *    array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}
+     * > $file_maps
+     * @return void
+     */
+    public function setFileMapCache(array $file_maps)
+    {
+        $this->cached_file_maps = $file_maps;
     }
 }
