@@ -245,7 +245,7 @@ class Codebase
             }
         }
 
-        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files);
+        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files, false);
 
         foreach ($diff_files as $diff_file_path) {
             $this->invalidateInformationForFile($diff_file_path);

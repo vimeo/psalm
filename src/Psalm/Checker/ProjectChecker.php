@@ -712,7 +712,7 @@ class ProjectChecker
      *
      * @return array<string, string>
      */
-    public function getReferencedFilesFromDiff(array $diff_files)
+    public function getReferencedFilesFromDiff(array $diff_files, bool $include_referencing_files = true)
     {
         $all_inherited_files_to_check = $diff_files;
 
@@ -720,17 +720,20 @@ class ProjectChecker
             $diff_file = array_shift($diff_files);
 
             $dependent_files = $this->file_reference_provider->getFilesInheritingFromFile($diff_file);
+
             $new_dependent_files = array_diff($dependent_files, $all_inherited_files_to_check);
 
-            $all_inherited_files_to_check += $new_dependent_files;
-            $diff_files += $new_dependent_files;
+            $all_inherited_files_to_check = array_merge($all_inherited_files_to_check, $new_dependent_files);
+            $diff_files = array_merge($diff_files, $new_dependent_files);
         }
 
         $all_files_to_check = $all_inherited_files_to_check;
 
-        foreach ($all_inherited_files_to_check as $file_name) {
-            $dependent_files = $this->file_reference_provider->getFilesReferencingFile($file_name);
-            $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
+        if ($include_referencing_files) {
+            foreach ($all_inherited_files_to_check as $file_name) {
+                $dependent_files = $this->file_reference_provider->getFilesReferencingFile($file_name);
+                $all_files_to_check = array_merge($dependent_files, $all_files_to_check);
+            }
         }
 
         return array_combine($all_files_to_check, $all_files_to_check);
