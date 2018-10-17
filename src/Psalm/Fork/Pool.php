@@ -253,15 +253,27 @@ class Pool
      */
     public function wait()
     {
+        global $argv;
 
         // Read all the streams from child processes into an array.
         $content = $this->readResultsFromChildren();
 
+        $command = $argv[0];
+
         // Wait for all children to return
         foreach ($this->child_pid_list as $child_pid) {
-            posix_kill($child_pid, SIGALRM);
-            if (pcntl_waitpid($child_pid, $status) < 0) {
-                error_log(posix_strerror(posix_get_last_error()));
+            /** @psalm-suppress ForbiddenCode */
+            $process_lookup = @shell_exec('ps x -p ' . $child_pid . ' | grep "' . $command . '"');
+
+            $status = 0;
+
+            if ($process_lookup) {
+                error_log('Forcing child ' . $child_pid . ' to close');
+                posix_kill($child_pid, SIGALRM);
+
+                if (pcntl_waitpid($child_pid, $status) < 0) {
+                    error_log(posix_strerror(posix_get_last_error()));
+                }
             }
 
             // Check to see if the child died a graceful death
