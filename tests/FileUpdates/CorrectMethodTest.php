@@ -69,6 +69,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
         $codebase = $this->project_checker->getCodebase();
 
         $config = $codebase->config;
+        $config->throw_exception = false;
 
         foreach ($error_levels as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
@@ -1027,6 +1028,90 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                     'PropertyNotSetInConstructor' => \Psalm\Config::REPORT_INFO,
                     'DocblockTypeContradiction' => \Psalm\Config::REPORT_INFO,
                     'RedundantConditionGivenDocblockType' => \Psalm\Config::REPORT_INFO,
+                ]
+            ],
+            'noChangeAfterSyntaxError' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string|null */
+                            private $foo;
+
+                            public function __construct() {}
+
+                            public function bar() : void {
+                                if ($this->foo === null) {}
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string|null */
+                            private $foo
+
+                            public function __construct() {}
+
+                            public function bar() : void {
+                                if ($this->foo === null) {}
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 1,
+                        'foo\a::bar' => 1,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                    ],
+                ]
+            ],
+            'nothingBeforeSyntaxError' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string|null */
+                            private $foo
+
+                            public function __construct() {}
+
+                            public function bar() : void {
+                                if ($this->foo === null) {}
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            /** @var string|null */
+                            private $foo;
+
+                            public function __construct() {}
+
+                            public function bar() : void {
+                                if ($this->foo === null) {}
+                            }
+                        }',
+                ],
+                'initial_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 1,
+                    ],
+                ],
+                'unaffected_correct_methods' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
+                        'foo\a::__construct' => 1,
+                    ],
                 ]
             ],
         ];

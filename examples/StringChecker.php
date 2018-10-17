@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Example\Plugin;
+namespace Vimeo\CodeAnalysis;
 
 use PhpParser;
 use Psalm\Checker;
@@ -8,10 +8,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\FileManipulation\FileManipulation;
 
-/**
- * Checks all strings to see if they contain references to classes
- * and, if so, checks that those classes exist.
- */
 class StringChecker extends \Psalm\Plugin
 {
     /**
@@ -34,35 +30,54 @@ class StringChecker extends \Psalm\Plugin
         array $suppressed_issues,
         array &$file_replacements = []
     ) {
-        if ($stmt instanceof \PhpParser\Node\Scalar\String_) {
-            // Replace "Psalm" with your namespace
+        $project_checker = $statements_checker->getFileChecker()->project_checker;
+
+        if ($stmt instanceof PhpParser\Node\Scalar\String_) {
             $class_or_class_method = '/^\\\?Psalm(\\\[A-Z][A-Za-z0-9]+)+(::[A-Za-z0-9]+)?$/';
 
-            if (preg_match($class_or_class_method, $stmt->value)) {
-                $fq_class_name = preg_split('/[:]/', $stmt->value)[0];
+            if (strpos($code_location->file_name, 'base/DefinitionManager.php') === false
+                && strpos($stmt->value, 'TestController') === false
+                && preg_match($class_or_class_method, $stmt->value)
+            ) {
+                $absolute_class = preg_split('/[:]/', $stmt->value)[0];
 
-                $project_checker = $statements_checker->getFileChecker()->project_checker;
-                if (Checker\ClassChecker::checkFullyQualifiedClassLikeName(
-                    $statements_checker,
-                    $fq_class_name,
-                    $code_location,
+                if (\Psalm\IssueBuffer::accepts(
+                    new \Psalm\Issue\InvalidClass(
+                        'Use ::class constants when representing class names',
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $absolute_class
+                    ),
                     $suppressed_issues
-                ) === false
-                ) {
+                )) {
+                    // fall through
+                }
+            }
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            && $stmt->left instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $stmt->left->class instanceof PhpParser\Node\Name
+            && $stmt->left->name instanceof PhpParser\Node\Identifier
+            && strtolower($stmt->left->name->name) === 'class'
+            && !in_array(strtolower($stmt->left->class->parts[0]), ['self', 'static', 'parent'])
+            && $stmt->right instanceof PhpParser\Node\Scalar\String_
+            && preg_match('/^::[A-Za-z0-9]+$/', $stmt->right->value)
+        ) {
+            $method_id = ((string) $stmt->left->class->getAttribute('resolvedName')) . $stmt->right->value;
+
+            $appearing_method_id = $project_checker->codebase->getAppearingMethodId($method_id);
+
+            if (!$appearing_method_id) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new \Psalm\Issue\UndefinedMethod(
+                        'Method ' . $method_id . ' does not exist',
+                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        $method_id
+                    ),
+                    $statements_checker->getSuppressedIssues()
+                )) {
                     return false;
                 }
 
-                if ($fq_class_name !== $stmt->value) {
-                    if (Checker\MethodChecker::checkMethodExists(
-                        $project_checker,
-                        $stmt->value,
-                        $code_location,
-                        $suppressed_issues
-                    )
-                    ) {
-                        return false;
-                    }
-                }
+                return;
             }
         }
     }
