@@ -129,6 +129,7 @@ class CallableTest extends TestCase
                     function foo(callable $c): void {}
 
                     foo("A::bar");
+                    foo(A::class . "::bar");
                     foo(["A", "bar"]);
                     foo([A::class, "bar"]);
                     $a = new A();
@@ -625,7 +626,7 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidFunctionCall',
                 'error_levels' => ['UndefinedClass'],
             ],
-            'undefinedCallableMethod' => [
+            'undefinedCallableMethodFullString' => [
                 '<?php
                     class A {
                         public static function bar(string $a): string {
@@ -636,6 +637,45 @@ class CallableTest extends TestCase
                     function foo(callable $c): void {}
 
                     foo("A::barr");',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'undefinedCallableMethodClassConcat' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a): string {
+                            return $a . "b";
+                        }
+                    }
+
+                    function foo(callable $c): void {}
+
+                    foo(A::class . "::barr");',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'undefinedCallableMethodArray' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a): string {
+                            return $a . "b";
+                        }
+                    }
+
+                    function foo(callable $c): void {}
+
+                    foo([A::class, "::barr"]);',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'undefinedCallableMethodArrayWithoutClass' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a): string {
+                            return $a . "b";
+                        }
+                    }
+
+                    function foo(callable $c): void {}
+
+                    foo(["A", "::barr"]);',
                 'error_message' => 'UndefinedMethod',
             ],
             'undefinedCallableMethodClass' => [

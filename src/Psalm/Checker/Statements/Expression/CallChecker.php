@@ -1238,6 +1238,7 @@ class CallChecker
         if (!$closure_type instanceof Type\Atomic\Fn) {
             if (!$closure_arg->value instanceof PhpParser\Node\Scalar\String_
                 && !$closure_arg->value instanceof PhpParser\Node\Expr\Array_
+                && !$closure_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
             ) {
                 return;
             }
@@ -1720,6 +1721,7 @@ class CallChecker
             }
         } elseif ($input_expr instanceof PhpParser\Node\Scalar\String_
             || $input_expr instanceof PhpParser\Node\Expr\Array_
+            || $input_expr instanceof PhpParser\Node\Expr\BinaryOp\Concat
         ) {
             foreach ($param_type->getTypes() as $param_type_part) {
                 if ($param_type_part instanceof TClassString
@@ -1921,7 +1923,8 @@ class CallChecker
     }
 
     /**
-     * @param  PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_ $callable_arg
+     * @param  PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat
+     *         $callable_arg
      *
      * @return string[]
      */
@@ -1929,6 +1932,21 @@ class CallChecker
         \Psalm\FileSource $file_source,
         $callable_arg
     ) {
+        if ($callable_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            if ($callable_arg->left instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $callable_arg->left->class instanceof PhpParser\Node\Name
+                && $callable_arg->left->name instanceof PhpParser\Node\Identifier
+                && strtolower($callable_arg->left->name->name) === 'class'
+                && !in_array(strtolower($callable_arg->left->class->parts[0]), ['self', 'static', 'parent'])
+                && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
+                && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
+            ) {
+                return [(string) $callable_arg->left->class->getAttribute('resolvedName') . $callable_arg->right->value];
+            }
+
+            return [];
+        }
+
         if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
             return [preg_replace('/^\\\/', '', $callable_arg->value)];
         }
