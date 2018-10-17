@@ -1061,17 +1061,12 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $this->aliases
                 );
 
-                if (!in_array(strtolower($return_type_fq_classlike_name), ['self', 'parent'], true)) {
-                    $this->codebase->scanner->queueClassLikeForScanning(
-                        $return_type_fq_classlike_name,
-                        $this->file_path
-                    );
-                }
-
                 $return_type_string = $return_type_fq_classlike_name . $suffix;
             }
 
             $storage->return_type = Type::parseString($return_type_string, true);
+            $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+
             $storage->return_type_location = new CodeLocation(
                 $this->file_scanner,
                 $stmt,
