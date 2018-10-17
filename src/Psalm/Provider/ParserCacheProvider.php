@@ -14,21 +14,21 @@ class ParserCacheProvider
     /**
      * @var int|null
      */
-    protected $last_good_run = null;
+    private $last_good_run = null;
 
     /**
      * A map of filename hashes to contents hashes
      *
      * @var array<string, string>|null
      */
-    protected $existing_file_content_hashes = null;
+    private $existing_file_content_hashes = null;
 
     /**
      * A map of recently-added filename hashes to contents hashes
      *
      * @var array<string, string>
      */
-    protected $new_file_content_hashes = [];
+    private $new_file_content_hashes = [];
 
     /** @var bool */
     private $use_igbinary;
@@ -343,7 +343,11 @@ class ParserCacheProvider
         if ($this->last_good_run === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();
 
-            $this->last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME) ?: 0;
+            if (file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME)) {
+                $this->last_good_run = filemtime($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
+            } else {
+                $this->last_good_run = 0;
+            }
         }
 
         return $this->last_good_run;

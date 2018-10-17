@@ -14,8 +14,6 @@ use Psalm\Provider\ParserCacheProvider;
 use Psalm\Provider\Providers;
 use Psalm\Provider\StatementsProvider;
 use Psalm\Type;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use Sabre\Event\Loop;
 
 class ProjectChecker
@@ -255,7 +253,7 @@ class ProjectChecker
         $diff_files = null;
         $deleted_files = null;
 
-        $reference_cache = $this->file_reference_provider->loadReferenceCache();
+        $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
         if ($is_diff
             && $reference_cache
@@ -419,25 +417,14 @@ class ProjectChecker
     {
         $file_extensions = $config->getFileExtensions();
 
-        /** @var RecursiveDirectoryIterator */
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
-        $iterator->rewind();
+        $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 
         $files_to_scan = [];
 
-        while ($iterator->valid()) {
-            if (!$iterator->isDot()) {
-                $extension = $iterator->getExtension();
-                if (in_array($extension, $file_extensions, true)) {
-                    $file_path = (string)$iterator->getRealPath();
-
-                    if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
-                        $files_to_scan[$file_path] = $file_path;
-                    }
-                }
+        foreach ($file_paths as $file_path) {
+            if ($allow_non_project_files || $config->isInProjectDirs($file_path)) {
+                $files_to_scan[$file_path] = $file_path;
             }
-
-            $iterator->next();
         }
 
         $this->codebase->addFilesToAnalyze($files_to_scan);
@@ -451,26 +438,16 @@ class ProjectChecker
     private function getAllFiles(Config $config)
     {
         $file_extensions = $config->getFileExtensions();
-        $file_names = [];
+        $file_paths = [];
 
         foreach ($config->getProjectDirectories() as $dir_name) {
-            /** @var RecursiveDirectoryIterator */
-            $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
-            $iterator->rewind();
-
-            while ($iterator->valid()) {
-                if (!$iterator->isDot()) {
-                    $extension = $iterator->getExtension();
-                    if (in_array($extension, $file_extensions, true)) {
-                        $file_names[] = (string)$iterator->getRealPath();
-                    }
-                }
-
-                $iterator->next();
-            }
+            $file_paths = array_merge(
+                $file_paths,
+                $this->file_provider->getFilesInDir($dir_name, $file_extensions)
+            );
         }
 
-        return $file_names;
+        return $file_paths;
     }
 
     /**
@@ -487,29 +464,18 @@ class ProjectChecker
             throw new \UnexpectedValueException('Parser cache provider cannot be null here');
         }
 
-        /** @var RecursiveDirectoryIterator */
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir_name));
-        $iterator->rewind();
-
         $diff_files = [];
 
         $last_good_run = $this->parser_cache_provider->getLastGoodRun();
 
-        while ($iterator->valid()) {
-            if (!$iterator->isDot()) {
-                $extension = $iterator->getExtension();
-                if (in_array($extension, $file_extensions, true)) {
-                    $file_path = (string)$iterator->getRealPath();
+        $file_paths = $this->file_provider->getFilesInDir($dir_name, $file_extensions);
 
-                    if ($config->isInProjectDirs($file_path)) {
-                        if ($this->file_provider->getModifiedTime($file_path) > $last_good_run) {
-                            $diff_files[] = $file_path;
-                        }
-                    }
+        foreach ($file_paths as $file_path) {
+            if ($config->isInProjectDirs($file_path)) {
+                if ($this->file_provider->getModifiedTime($file_path) > $last_good_run) {
+                    $diff_files[] = $file_path;
                 }
             }
-
-            $iterator->next();
         }
 
         return $diff_files;
@@ -526,7 +492,7 @@ class ProjectChecker
         $files_to_scan = [];
 
         foreach ($file_list as $file_path) {
-            if (!file_exists($file_path)) {
+            if (!$this->file_provider->fileExists($file_path)) {
                 continue;
             }
 

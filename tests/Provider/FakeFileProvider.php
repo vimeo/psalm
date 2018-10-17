@@ -74,4 +74,23 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
         $this->fake_files[$file_path] = $file_contents;
         $this->fake_file_times[$file_path] = microtime(true);
     }
+
+    /**
+     * @param string $dir_path
+     * @param array<string> $file_extensions
+     *
+     * @return array<int, string>
+     */
+    public function getFilesInDir($dir_path, array $file_extensions)
+    {
+        $file_paths = parent::getFilesInDir($dir_path, $file_extensions);
+
+        foreach ($this->fake_files as $file_path => $_) {
+            if (strpos(strtolower($file_path), strtolower($dir_path)) === 0) {
+                $file_paths[] = $file_path;
+            }
+        }
+
+        return $file_paths;
+    }
 }

@@ -19,6 +19,7 @@
             <file name="src/Psalm/CallMap.php" />
             <directory name="src/Psalm/Stubs" />
             <directory name="tests/stubs" />
+            <directory name="tests/DummyProject" />
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php" />
             <file name="src/Psalm/Diff/Differ.php" />
         </ignoreFiles>
