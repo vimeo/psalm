@@ -102,7 +102,7 @@ function takesArray(array $arr) : void {
     validateStringArray($arr);
 
     takesInt($arr[0]); // this is an error
-  
+
     foreach ($arr as $a) {
         takesString($a); // this is fine
     }
@@ -145,7 +145,7 @@ function takesA(A $a) : void {
     } else {
         $a->bar();
     }
-  
+
     $a->bar(); //error
 }
 ```
@@ -170,7 +170,7 @@ And you can check on null values:
 /**
  * @psalm-assert-if-true null $value
  */
-function isNull($value): void {
+function isNull($value): bool {
   return ($value === null);
 }
 
