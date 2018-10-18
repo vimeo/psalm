@@ -14,6 +14,14 @@ class FileStorageProvider
     private static $storage = [];
 
     /**
+     * A list of data useful to analyse new files
+     * Storing this statically is much faster (at least in PHP 7.2.1)
+     *
+     * @var array<string, FileStorage>
+     */
+    private static $new_storage = [];
+
+    /**
      * @var ?FileStorageCacheProvider
      */
     public $cache;
@@ -74,6 +82,7 @@ class FileStorageProvider
         }
 
         self::$storage[$file_path] = $cached_value;
+        self::$new_storage[$file_path] = $cached_value;
 
         return true;
     }
@@ -87,11 +96,20 @@ class FileStorageProvider
     }
 
     /**
+     * @return array<string, FileStorage>
+     */
+    public function getNew()
+    {
+        return self::$new_storage;
+    }
+
+    /**
      * @param array<string, FileStorage> $more
      * @return void
      */
     public function addMore(array $more)
     {
+        self::$new_storage = array_merge($more, self::$new_storage);
         self::$storage = array_merge($more, self::$storage);
     }
 
@@ -104,7 +122,9 @@ class FileStorageProvider
     {
         $file_path_lc = strtolower($file_path);
 
-        self::$storage[$file_path_lc] = $storage = new FileStorage($file_path);
+        $storage = new FileStorage($file_path);
+        self::$storage[$file_path_lc] = $storage;
+        self::$new_storage[$file_path_lc] = $storage;
 
         return $storage;
     }
@@ -115,5 +135,13 @@ class FileStorageProvider
     public static function deleteAll()
     {
         self::$storage = [];
+    }
+
+    /**
+     * @return void
+     */
+    public static function populated()
+    {
+        self::$new_storage = [];
     }
 }

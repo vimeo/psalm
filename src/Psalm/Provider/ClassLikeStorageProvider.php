@@ -13,6 +13,11 @@ class ClassLikeStorageProvider
     private static $storage = [];
 
     /**
+     * @var array<string, ClassLikeStorage>
+     */
+    private static $new_storage = [];
+
+    /**
      * @var ?ClassLikeStorageCacheProvider
      */
     public $cache;
@@ -69,9 +74,10 @@ class ClassLikeStorageProvider
             throw new \LogicException('Cannot exhume when there’s no cache');
         }
 
-        self::$storage[$fq_classlike_name_lc]
-            = $cached_value
-            = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
+        $cached_value = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
+
+        self::$storage[$fq_classlike_name_lc] =  $cached_value;
+        self::$new_storage[$fq_classlike_name_lc] =  $cached_value;
 
         return $cached_value;
     }
@@ -85,11 +91,20 @@ class ClassLikeStorageProvider
     }
 
     /**
+     * @return array<string, ClassLikeStorage>
+     */
+    public function getNew()
+    {
+        return self::$new_storage;
+    }
+
+    /**
      * @param array<string, ClassLikeStorage> $more
      * @return void
      */
     public function addMore(array $more)
     {
+        self::$new_storage = array_merge($more, self::$new_storage);
         self::$storage = array_merge($more, self::$storage);
     }
 
@@ -102,7 +117,9 @@ class ClassLikeStorageProvider
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        self::$storage[$fq_classlike_name_lc] = $storage = new ClassLikeStorage($fq_classlike_name);
+        $storage = new ClassLikeStorage($fq_classlike_name);
+        self::$storage[$fq_classlike_name_lc] = $storage;
+        self::$new_storage[$fq_classlike_name_lc] = $storage;
 
         return $storage;
     }
@@ -123,5 +140,13 @@ class ClassLikeStorageProvider
     public static function deleteAll()
     {
         self::$storage = [];
+    }
+
+    /**
+     * @return void
+     */
+    public static function populated()
+    {
+        self::$new_storage = [];
     }
 }

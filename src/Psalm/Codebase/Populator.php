@@ -77,7 +77,7 @@ class Populator
             echo 'ClassLikeStorage is populating' . "\n";
         }
 
-        foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
+        foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             if (!$class_storage->user_defined && !$class_storage->stubbed) {
                 continue;
             }
@@ -93,14 +93,13 @@ class Populator
             echo 'FileStorage is populating' . "\n";
         }
 
-        $all_file_storage = $this->file_storage_provider->getAll();
+        $all_file_storage = $this->file_storage_provider->getNew();
 
         foreach ($all_file_storage as $file_storage) {
             $this->populateFileStorage($file_storage);
         }
 
-
-        foreach ($this->classlike_storage_provider->getAll() as $class_storage) {
+        foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             if ($this->config->allow_phpstorm_generics) {
                 foreach ($class_storage->properties as $property_storage) {
                     if ($property_storage->type) {
@@ -182,6 +181,9 @@ class Populator
         if ($this->debug_output) {
             echo 'FileStorage is populated' . "\n";
         }
+
+        $this->classlike_storage_provider->populated();
+        $this->file_storage_provider->populated();
     }
 
     /**
