@@ -291,7 +291,7 @@ class StatementsProvider
                 'comments', 'startLine', 'startFilePos', 'endFilePos',
             ];
 
-            $lexer = new PhpParser\Lexer\Emulative([ 'usedAttributes' => $attributes ]);
+            $lexer = new PhpParser\Lexer([ 'usedAttributes' => $attributes ]);
 
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
         }
