@@ -228,7 +228,7 @@ class ClassLikes
     /**
      * @param string        $fq_class_name_lc
      *
-     * @return void
+     * @return bool
      */
     public function hasFullyQualifiedClassLikeName($fq_class_name_lc)
     {

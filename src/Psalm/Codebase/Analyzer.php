@@ -64,11 +64,6 @@ class Analyzer
     private $file_storage_provider;
 
     /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
-
-    /**
      * @var bool
      */
     private $debug_output;
@@ -109,13 +104,11 @@ class Analyzer
         Config $config,
         FileProvider $file_provider,
         FileStorageProvider $file_storage_provider,
-        ClassLikeStorageProvider $classlike_storage_provider,
         $debug_output
     ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
         $this->file_storage_provider = $file_storage_provider;
-        $this->classlike_storage_provider = $classlike_storage_provider;
         $this->debug_output = $debug_output;
     }
 
