@@ -274,6 +274,8 @@ class Pool
                 if (pcntl_waitpid($child_pid, $status) < 0) {
                     error_log(posix_strerror(posix_get_last_error()));
                 }
+            } else {
+                error_log('Child ' . $child_pid . ' presumably dead, spawned from ' . $command);
             }
 
             // Check to see if the child died a graceful death

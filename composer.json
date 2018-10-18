@@ -24,7 +24,7 @@
         "webmozart/glob": "^4.1",
         "webmozart/path-util": "^2.3"
     },
-    "bin": ["psalm", "psalter"],
+    "bin": ["psalm", "psalter", "psalm-language-server"],
     "autoload": {
         "psr-4": {
             "Psalm\\": "src/Psalm"

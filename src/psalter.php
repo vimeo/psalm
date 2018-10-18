@@ -39,7 +39,7 @@ if (isset($options['c']) && is_array($options['c'])) {
 if (array_key_exists('h', $options)) {
     echo <<< HELP
 Usage:
-    psalm [options] [file...]
+    psalter [options] [file...]
 
 Options:
     -h, --help

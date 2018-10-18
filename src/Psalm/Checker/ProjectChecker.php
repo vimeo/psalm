@@ -238,8 +238,11 @@ class ProjectChecker
      */
     public function server($address = '127.0.0.1:12345', $server_mode = true)
     {
+        $this->diff_methods = true;
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
+
+        $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
         $cwd = getcwd();
 
