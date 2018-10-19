@@ -142,7 +142,7 @@ class Analyzer
      */
     private function getFileChecker(ProjectChecker $project_checker, $file_path, array $filetype_checkers)
     {
-        $extension = (string)pathinfo($file_path)['extension'];
+        $extension = (string) (pathinfo($file_path)['extension'] ?? '');
 
         $file_name = $this->config->shortenFileName($file_path);
 
