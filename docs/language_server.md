@@ -21,7 +21,7 @@ This is the config I used:
 
 Haven't managed to get it working yet in PhpStorm. But soon.
 
-## Sublime Test
+## Sublime Text
 
 I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with the following config:
 
