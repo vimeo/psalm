@@ -13,8 +13,18 @@ I got it working with [eglot](https://github.com/joaotavora/eglot)
 This is the config I used:
 
 ```
-(require 'eglot)
-(add-to-list 'eglot-server-programs '(php-mode . ("php" "vendor/bin/psalm-language-server")))
+(when (file-exists-p "vendor/bin/psalm-language-server")
+  (progn
+    (require 'php-mode)
+    (require 'eglot)
+    (add-to-list 'eglot-server-programs '(php-mode . ("php" "vendor/bin/psalm-language-server")))
+    (add-hook 'php-mode-hook 'eglot-ensure)
+    (advice-add 'eglot-eldoc-function :around
+                (lambda (oldfun)
+                  (let ((help (help-at-pt-kbd-string)))
+                    (if help (message "%s" help) (funcall oldfun)))))
+    )
+  )
 ```
 
 ## PhpStorm
