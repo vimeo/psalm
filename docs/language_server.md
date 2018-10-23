@@ -79,4 +79,4 @@ au User lsp_setup call lsp#register_server({
 
 ## VS Code
 
-Get the Psalm plugin here: https://marketplace.visualstudio.com/items?itemName=getpsalm.psalm-vscode-plugin
+Get the Psalm plugin here (Requires VS Code 1.26+): https://marketplace.visualstudio.com/items?itemName=getpsalm.psalm-vscode-plugin
