@@ -157,12 +157,6 @@ class ExpressionChecker
                         if ($type_part instanceof Type\Atomic\TLiteralInt
                             && $stmt instanceof PhpParser\Node\Expr\UnaryMinus
                         ) {
-                            // negating zero? That's weird. We're not gonna let that happen
-                            if ($type_part->value === 0) {
-                                $acceptable_types[] = new TInt;
-                                continue;
-                            }
-
                             $type_part->value = -$type_part->value;
                         } elseif ($type_part instanceof Type\Atomic\TLiteralFloat
                             && $stmt instanceof PhpParser\Node\Expr\UnaryMinus

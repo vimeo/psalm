@@ -509,6 +509,7 @@ class ArrayFetchChecker
                         $type_coerced_from_scalar
                     )
                     || $type_coerced_from_scalar
+                    || $type_coerced_from_mixed
                     || $in_assignment)
                     && !$to_string_cast
                     ) {
