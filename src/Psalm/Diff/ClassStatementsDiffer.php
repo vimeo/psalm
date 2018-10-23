@@ -15,8 +15,8 @@ class ClassStatementsDiffer extends Differ
      * @param string $name
      * @param string $a_code
      * @param string $b_code
-     * @param PhpParser\Node\Stmt[] $a
-     * @param PhpParser\Node\Stmt[] $b New array
+     * @param array<int, PhpParser\Node\Stmt> $a
+     * @param array<int, PhpParser\Node\Stmt> $b
      *
      * @return array{
      *      0: array<int, string>,
