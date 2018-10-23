@@ -36,6 +36,7 @@ Setup is done via a GUI.
 When you install the plugin you should see a "Language Server Protocol" section under the "Languages & Frameworks" tab.
 
 In the "Server definitions" tab you should add a definition for Psalm:
+
  - Extension: `php`
  - Path: `<path-to-php-binary>` e.g. `/usr/local/bin/php`
     - this should be an absolute path, not just `php`
