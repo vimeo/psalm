@@ -30,6 +30,7 @@ class FileStatementsDiffer extends Differ
             /**
              * @param string $a_code
              * @param string $b_code
+             * @psalm-suppress UnusedParam
              *
              * @return bool
              */
