@@ -29,9 +29,9 @@ This is the config I used:
 
 ## PhpStorm
 
-I've got it working with this plugin: https://github.com/juliandolby/intellij-lsp
+I've got it working with this plugin: https://plugins.jetbrains.com/plugin/10209-lsp-support.
 
-But it's non-trivial.
+Setup is done via a GUI.
 
 When you install the plugin you should see a "Language Server Protocol" section under the "Languages & Frameworks" tab.
 
