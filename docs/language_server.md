@@ -57,7 +57,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
         }
 ```
 
-## vim/neovim
+## Vim & Neovim
 
 ### ALE
 
@@ -67,7 +67,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 
 I got it working with [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
 
-This is the config I used:
+This is the config I used (for Vim):
 
 ```
 au User lsp_setup call lsp#register_server({
