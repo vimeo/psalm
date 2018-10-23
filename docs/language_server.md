@@ -29,7 +29,7 @@ This is the config I used:
 
 ## PhpStorm
 
-I've got it working with this plugin: https://plugins.jetbrains.com/plugin/10209-lsp-support.
+I've got it working with [this plugin](https://plugins.jetbrains.com/plugin/10209-lsp-support).
 
 Setup is done via a GUI.
 
@@ -79,4 +79,4 @@ au User lsp_setup call lsp#register_server({
 
 ## VS Code
 
-Get the Psalm plugin here (Requires VS Code 1.26+): https://marketplace.visualstudio.com/items?itemName=getpsalm.psalm-vscode-plugin
+[Get the Psalm plugin here](https://marketplace.visualstudio.com/items?itemName=getpsalm.psalm-vscode-plugin) (Requires VS Code 1.26+):
