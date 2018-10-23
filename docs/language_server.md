@@ -29,7 +29,19 @@ This is the config I used:
 
 ## PhpStorm
 
-Haven't managed to get it working yet in PhpStorm. But soon.
+I've got it working with this plugin: https://github.com/juliandolby/intellij-lsp
+
+But it's non-trivial.
+
+When you install the plugin you should see a "Language Server Protocol" section under the "Languages & Frameworks" tab.
+
+In the "Server definitions" tab you should add a definition for Psalm:
+ - Extension: `php`
+ - Path: `<path-to-php-binary e.g. /usr/local/bin/php>`
+    - this should be an absolute path, not just `php`
+ - Args: `vendor/bin/psalm-language-server`
+
+In the "Timeouts" tab you can adjust the initialization timeout. This is important if you have a large project. You should set the "Init" value to the number of milliseconds you allow Psalm to scan your entire project and your project's dependencies.
 
 ## Sublime Text
 
