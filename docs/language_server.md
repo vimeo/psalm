@@ -1,10 +1,10 @@
 # Using Psalm's Language Server
 
-Psalm now has built-in Language Server Compatibility support.
+Psalm now has built-in Language Server Compatibility support so you can run it in your favourite IDE.
 
-It currently only supports diagnostics, with more functionality coming soon.
+It currently only supports diagnostics (i.e. finding errors and warnings), but more functionality is coming soon.
 
-It works well in a variety of editors:
+It works well in a variety of editors (listed alphabetically):
 
 ## emacs
 
