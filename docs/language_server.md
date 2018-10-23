@@ -61,7 +61,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 
 ### ALE
 
-[Coming soon](https://github.com/w0rp/ale/pull/2008), but you can use the existing ALE Psalm plugin for now.
+[Coming soon](https://github.com/w0rp/ale/pull/2013), but you can use the existing ALE Psalm plugin for now.
 
 ### vim-lsp
 
