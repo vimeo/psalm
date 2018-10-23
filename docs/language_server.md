@@ -6,7 +6,7 @@ It currently only supports diagnostics (i.e. finding errors and warnings), but m
 
 It works well in a variety of editors (listed alphabetically):
 
-## emacs
+## Emacs
 
 I got it working with [eglot](https://github.com/joaotavora/eglot)
 
@@ -59,11 +59,11 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 
 ## Vim & Neovim
 
-### ALE
+**ALE**
 
 [Coming soon](https://github.com/w0rp/ale/pull/2013), but you can use the existing ALE Psalm plugin for now.
 
-### vim-lsp
+**vim-lsp**
 
 I got it working with [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
 
