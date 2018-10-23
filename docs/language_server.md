@@ -79,4 +79,4 @@ au User lsp_setup call lsp#register_server({
 
 ## VS Code
 
-Plugin under development here: https://github.com/psalm/psalm-vscode-plugin
+Get the Psalm plugin here: https://marketplace.visualstudio.com/items?itemName=getpsalm.psalm-vscode-plugin
