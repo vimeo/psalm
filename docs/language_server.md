@@ -61,6 +61,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 ## Vim & Neovim
 
 **ALE**
+
 LSP supported was recently added to [ALE](https://github.com/w0rp/ale)'s master branch, but not yet in a tagged release.
 
 **vim-lsp**
