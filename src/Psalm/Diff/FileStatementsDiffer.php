@@ -14,8 +14,8 @@ class FileStatementsDiffer extends Differ
      *
      * @param string $a_code
      * @param string $b_code
-     * @param PhpParser\Node\Stmt[] $a
-     * @param PhpParser\Node\Stmt[] $b New array
+     * @param array<int, PhpParser\Node\Stmt> $a
+     * @param array<int, PhpParser\Node\Stmt> $b
      *
      * @return array{
      *      0: array<int, string>,
@@ -34,7 +34,7 @@ class FileStatementsDiffer extends Differ
              *
              * @return bool
              */
-            function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code) {
+            function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code, bool &$body_change = false) {
                 if (get_class($a) !== get_class($b)) {
                     return false;
                 }

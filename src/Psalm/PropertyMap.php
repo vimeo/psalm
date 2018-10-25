@@ -464,4 +464,13 @@ return [
     'phpparser\\node\\stmt\\do_' => [
         'stmts' => 'array<int, PhpParser\Node\Stmt>',
     ],
+    'phpparser\\node\\stmt\\class_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\trait_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+    ],
+    'phpparser\\node\\stmt\\interface_' => [
+        'stmts' => 'array<int, PhpParser\Node\Stmt>',
+    ],
 ];

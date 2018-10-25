@@ -17,17 +17,17 @@ use PhpParser;
 class Differ
 {
     /**
-     * @param  \Closure $is_equal
-     * @param  array    $a
-     * @param  array    $b
-     * @return array{0:array, 1: int, 2: int, 3: array<int, true>, 4: array<int, array{0: int, 1: int, 2: int, 3: int}>}
+     * @param  \Closure(PhpParser\Node\Stmt, PhpParser\Node\Stmt, string, string, bool=) : bool $is_equal
+     * @param  array<int, PhpParser\Node\Stmt> $a
+     * @param  array<int, PhpParser\Node\Stmt> $b
+     * @return array{0:array<int, array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
     protected static function calculateTrace(
         \Closure $is_equal,
         array $a,
         array $b,
-        $a_code,
-        $b_code
+        string $a_code,
+        string $b_code
     ) : array {
         $n = \count($a);
         $m = \count($b);
@@ -35,7 +35,6 @@ class Differ
         $v = [1 => 0];
         $bc = [];
         $trace = [];
-        $body_change = false;
         for ($d = 0; $d <= $max; $d++) {
             $trace[] = $v;
             for ($k = -$d; $k <= $d; $k += 2) {
@@ -47,10 +46,15 @@ class Differ
 
                 $y = $x - $k;
 
+                $body_change = false;
+
                 while ($x < $n && $y < $m && ($is_equal)($a[$x], $b[$y], $a_code, $b_code, $body_change)) {
+                    /** @var bool */
                     $bc[$x] = $body_change;
                     $x++;
                     $y++;
+
+                    $body_change = false;
                 }
 
                 $v[$k] = $x;
@@ -63,6 +67,12 @@ class Differ
     }
 
     /**
+     * @param array<int, array<int, int>> $trace
+     * @param int $x
+     * @param int $y
+     * @param array<int, PhpParser\Node\Stmt> $a
+     * @param array<int, PhpParser\Node\Stmt> $b
+     * @param array<int, bool> $bc
      * @return DiffElem[]
      */
     protected static function extractDiff(array $trace, $x, $y, array $a, array $b, array $bc) : array
