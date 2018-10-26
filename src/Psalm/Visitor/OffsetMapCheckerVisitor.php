@@ -57,9 +57,9 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
     {
         $attrs = $node->getAttributes();
 
-        if ($c = $node->getDocComment()) {
+        if ($cs = $node->getComments()) {
             /** @var int */
-            $stmt_start_pos = $c->getFilePos();
+            $stmt_start_pos = $cs[0]->getFilePos();
         } else {
             /** @var int */
             $stmt_start_pos = $attrs['startFilePos'];
@@ -229,14 +229,26 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
 
         if ($start_offset !== 0 || $end_offset !== 0 || $line_offset !== 0) {
             if ($start_offset !== 0) {
-                if ($c) {
-                    $node->setDocComment(
-                        new PhpParser\Comment\Doc(
-                            $c->getText(),
-                            $c->getLine() + $line_offset,
-                            $c->getFilePos() + $start_offset
-                        )
-                    );
+                if ($cs) {
+                    $new_comments = [];
+
+                    foreach ($cs as $c) {
+                        if ($c instanceof PhpParser\Comment\Doc) {
+                            $new_comments[] = new PhpParser\Comment\Doc(
+                                $c->getText(),
+                                $c->getLine() + $line_offset,
+                                $c->getFilePos() + $start_offset
+                            );
+                        } else {
+                            $new_comments[] = new PhpParser\Comment(
+                                $c->getText(),
+                                $c->getLine() + $line_offset,
+                                $c->getFilePos() + $start_offset
+                            );
+                        }
+                    }
+
+                    $node->setAttribute('comments', $new_comments);
 
                     /** @psalm-suppress MixedOperand */
                     $node->setAttribute('startFilePos', $attrs['startFilePos'] + $start_offset);
