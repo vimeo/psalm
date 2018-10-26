@@ -137,6 +137,7 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                         if (!$replacement_stmts
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
+                            || count($replacement_stmts[0]->stmts) > 1
                         ) {
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $fake_class);
 
@@ -148,6 +149,7 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                             if (!$replacement_stmts
                                 || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
+                                || count($replacement_stmts[0]->stmts) > 1
                             ) {
                                 \error_log($hacky_class_fix);
 

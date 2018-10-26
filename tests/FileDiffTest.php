@@ -1196,6 +1196,56 @@ class FileDiffTest extends TestCase
                 [],
                 [[-36, -1]]
             ],
+            'docblockTwiceOver' => [
+                '<?php
+                    namespace Bar;
+
+                    class Foo
+                    {
+                        public function a()
+                        {
+                            return 5;
+                        }
+
+                        /**
+                         * @return bool
+                         */
+                        public function c()
+                        {
+                            return true;
+                        }
+                    }',
+                '<?php
+                    namespace Bar;
+
+                    class Foo
+                    {
+                        public function a()
+                        {
+                            return 5;
+                        }
+
+                        /**
+                         * @return void
+                         */
+                        public function b()
+                        {
+                            $a = 1;
+                        }
+
+                        /**
+                         * @return bool
+                         */
+                        public function c()
+                        {
+                            return true;
+                        }
+                    }',
+                ['bar\foo::a', 'bar\foo::c'],
+                [],
+                ['bar\foo::b'],
+                [[229, 8]]
+            ],
         ];
     }
 }
