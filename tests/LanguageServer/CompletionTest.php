@@ -42,7 +42,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->infer_types_from_usage = true;
+        $this->project_checker->codebase->server_mode = true;
     }
 
     /**
@@ -204,40 +204,5 @@ class CompletionTest extends \Psalm\Tests\TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $this->assertSame(['B\C', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 39)));
-    }
-
-    /**
-     * @return void
-     */
-    public function testCompletionOnStaticClass()
-    {
-        $codebase = $this->project_checker->getCodebase();
-        $config = $codebase->config;
-        $config->throw_exception = false;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                namespace B;
-
-                class C {
-                    public static function otherFunction() : void
-                }
-
-                class A {
-                    public function foo() : void {
-                        C::
-                    }
-                }'
-        );
-
-        new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
-
-        $codebase = $this->project_checker->getCodebase();
-
-        $codebase->scanFiles();
-        $this->analyzeFile('somefile.php', new Context());
-
-        $this->assertSame(['B\C', '::'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(9, 27)));
     }
 }

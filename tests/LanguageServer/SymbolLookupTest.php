@@ -43,7 +43,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->infer_types_from_usage = true;
+        $this->project_checker->codebase->server_mode = true;
     }
 
     /**
@@ -83,7 +83,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('<?php public function foo() : void', $codebase->getSymbolInformation('somefile.php', 'B\A::foo()'));
         $this->assertSame('<?php protected int|null $a', $codebase->getSymbolInformation('somefile.php', 'B\A::$a'));
         $this->assertSame('<?php function B\bar() : int', $codebase->getSymbolInformation('somefile.php', 'B\bar()'));
-        $this->assertSame('<?php const BANANA', $codebase->getSymbolInformation('somefile.php', 'B\A::BANANA'));
+        $this->assertSame('<?php BANANA', $codebase->getSymbolInformation('somefile.php', 'B\A::BANANA'));
     }
 
     /**
@@ -208,7 +208,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 new \LanguageServerProtocol\TextDocumentContentChangeEvent(
                     null,
                     null,
-            '<?php
+                    '<?php
                 namespace B;
 
                 class A {

@@ -170,8 +170,6 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
                                 || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                                 || count($replacement_stmts[0]->stmts) > 1
                             ) {
-                                \error_log($hacky_class_fix);
-
                                 $this->must_rescan = true;
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
                             }
