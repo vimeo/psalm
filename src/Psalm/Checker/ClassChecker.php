@@ -979,6 +979,15 @@ class ClassChecker extends ClassLikeChecker
             $trait_safe_method_id
         );
 
+        $start = (int)$stmt->getAttribute('startFilePos');
+        $end = (int)$stmt->getAttribute('endFilePos');
+
+        $comments = $stmt->getComments();
+
+        if ($comments) {
+            $start = $comments[0]->getFilePos();
+        }
+
         if ($project_checker->diff_methods
             && $is_method_correct
             && !$class_context->collect_initializations
@@ -987,15 +996,6 @@ class ClassChecker extends ClassLikeChecker
         ) {
             if ($project_checker->debug_output) {
                 echo 'Skipping analysis of pre-verified method ' . $analyzed_method_id . "\n";
-            }
-
-            $start = (int)$stmt->getAttribute('startFilePos');
-            $end = (int)$stmt->getAttribute('endFilePos');
-
-            $comments = $stmt->getComments();
-
-            if ($comments) {
-                $start = $comments[0]->getFilePos();
             }
 
             $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
@@ -1008,6 +1008,12 @@ class ClassChecker extends ClassLikeChecker
 
             return $method_checker;
         }
+
+        $codebase->analyzer->removeExistingDataForFile(
+            $source->getFilePath(),
+            $start,
+            $end
+        );
 
         $existing_error_count = IssueBuffer::getErrorCount();
 

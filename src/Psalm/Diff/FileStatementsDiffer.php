@@ -7,7 +7,7 @@ use PhpParser;
 /**
  * @internal
  */
-class FileStatementsDiffer extends Differ
+class FileStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.

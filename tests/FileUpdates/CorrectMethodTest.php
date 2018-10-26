@@ -680,7 +680,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                                 echo (new A)->barBar();
                             }
                         }',
-                     getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                         namespace Foo;
 
                         trait T {

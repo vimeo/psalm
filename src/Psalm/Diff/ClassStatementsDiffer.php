@@ -7,7 +7,7 @@ use PhpParser;
 /**
  * @internal
  */
-class ClassStatementsDiffer extends Differ
+class ClassStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -83,7 +83,12 @@ class ClassStatementsDiffer extends Differ
                 $b_size = $b_end - $b_start;
 
                 if (substr($a_code, $a_start, $a_size) === substr($b_code, $b_start, $b_size)) {
-                    $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
+                    $start_diff = $b_start - $a_start;
+                    $line_diff = $b->getLine() - $a->getLine();
+
+                    if ($start_diff !== 0 || $line_diff !== 0) {
+                        $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
+                    }
 
                     return true;
                 }

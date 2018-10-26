@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
+use PhpParser;
+
 class FileDiffTest extends TestCase
 {
     /**
@@ -62,6 +64,137 @@ class FileDiffTest extends TestCase
     }
 
     /**
+     * @dataProvider getChanges
+     *
+     * @param string $a
+     * @param string $b
+     * @param string[] $same_methods
+     *
+     * @return void
+     */
+    public function testPartialAstDiff(
+        string $a,
+        string $b,
+        array $same_methods,
+        array $same_signatures,
+        array $changed_methods,
+        array $diff_map_offsets
+    ) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+            $this->markTestSkipped();
+        }
+
+        $file_changes = \Psalm\Diff\FileDiffer::getDiff($a, $b);
+
+        $a_stmts = \Psalm\Provider\StatementsProvider::parseStatements($a);
+
+        $traverser = new PhpParser\NodeTraverser;
+        $traverser->addVisitor(new \Psalm\Visitor\CloningVisitor);
+        // performs a deep clone
+        /** @var array<int, PhpParser\Node\Stmt> */
+        $a_stmts_copy = $traverser->traverse($a_stmts);
+
+        $this->assertTreesEqual($a_stmts, $a_stmts_copy);
+
+        $b_stmts = \Psalm\Provider\StatementsProvider::parseStatements($b, null, $a, $a_stmts_copy, $file_changes);
+        $b_clean_stmts = \Psalm\Provider\StatementsProvider::parseStatements($b);
+
+        $this->assertTreesEqual($b_clean_stmts, $b_stmts);
+
+        $diff = \Psalm\Diff\FileStatementsDiffer::diff($a_stmts, $b_clean_stmts, $a, $b);
+
+        $this->assertSame(
+            $same_methods,
+            $diff[0]
+        );
+
+        $this->assertSame(
+            $same_signatures,
+            $diff[1]
+        );
+
+        $this->assertSame(
+            $changed_methods,
+            $diff[2]
+        );
+
+        $this->assertSame(count($diff_map_offsets), count($diff[3]));
+
+        $found_offsets = array_map(
+            /**
+             * @param array{0: int, 1: int, 2: int, 3: int} $arr
+             *
+             * @return array{0: int, 1: int}
+             */
+            function (array $arr) {
+                return [$arr[2], $arr[3]];
+            },
+            $diff[3]
+        );
+
+        $this->assertSame($diff_map_offsets, $found_offsets);
+    }
+
+    /**
+     * @param  array<int, PhpParser\Node\Stmt>  $a
+     * @param  array<int, PhpParser\Node\Stmt>  $b
+     * @return void
+     */
+    private function assertTreesEqual(array $a, array $b)
+    {
+        $this->assertSame(count($a), count($b));
+
+        foreach ($a as $i => $a_stmt) {
+            $b_stmt = $b[$i];
+
+            $this->assertNotSame($a_stmt, $b_stmt);
+
+            $this->assertSame(get_class($a_stmt), get_class($b_stmt));
+
+            if ($a_stmt instanceof PhpParser\Node\Stmt\Expression
+                && $b_stmt instanceof PhpParser\Node\Stmt\Expression
+            ) {
+                $this->assertSame(get_class($a_stmt->expr), get_class($b_stmt->expr));
+            }
+
+            if ($a_doc = $a_stmt->getDocComment()) {
+                $b_doc = $b_stmt->getDocComment();
+
+                $this->assertNotNull($b_doc);
+
+                if (!$b_doc) {
+                    throw new \UnexpectedValueException('');
+                }
+
+                $this->assertNotSame($a_doc, $b_doc);
+
+                $this->assertSame($a_doc->getLine(), $b_doc->getLine());
+            }
+
+            $this->assertSame(
+                $a_stmt->getAttribute('startFilePos'),
+                $b_stmt->getAttribute('startFilePos')
+            );
+            $this->assertSame(
+                $a_stmt->getAttribute('endFilePos'),
+                $b_stmt->getAttribute('endFilePos'),
+                ($a_stmt instanceof PhpParser\Node\Stmt\Expression
+                    ? get_class($a_stmt->expr)
+                    : get_class($a_stmt))
+                    . ' on line ' . $a_stmt->getLine()
+            );
+            $this->assertSame($a_stmt->getLine(), $b_stmt->getLine());
+
+            if (isset($a_stmt->stmts)) {
+                $this->assertTrue(isset($b_stmt->stmts));
+
+                /** @psalm-suppress UndefinedPropertyFetch */
+                $this->assertTreesEqual($a_stmt->stmts, $b_stmt->stmts);
+            }
+        }
+    }
+
+    /**
      * @return array
      */
     public function getChanges()
@@ -101,7 +234,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
                 [],
                 [],
-                [[0, 0], [0, 0], [0, 0], [0, 0]]
+                []
             ],
             'lineChanges' => [
                 '<?php
@@ -144,7 +277,7 @@ class FileDiffTest extends TestCase
                 [],
                 [[1, 1], [2, 2], [2, 2], [5, 5]]
             ],
-            'simpleBodyChange' => [
+            'simpleBodyChangeWithoutSignatureChange' => [
                 '<?php
                 namespace Foo;
 
@@ -172,6 +305,35 @@ class FileDiffTest extends TestCase
                 [],
                 [[1, 0]]
             ],
+            'simpleBodyChangesWithoutSignatureChange' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public function foo() : void {
+                        $a = 1;
+                    }
+                    public function bar() : void {
+                        $c = 1;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public function foo() : void {
+                        $a = 1;
+                        $b = 2;
+                    }
+                    public function bar() : void {
+                        $c = 1;
+                    }
+                }',
+                ['foo\a::bar'],
+                ['foo\a::foo'],
+                [],
+                [[32, 1]]
+            ],
             'simpleBodyChangeWithSignatureChange' => [
                 '<?php
                 namespace Foo;
@@ -198,7 +360,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                [[0, 0]]
+                []
             ],
             'propertyChange' => [
                 '<?php
@@ -374,7 +536,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                [[0, 0]]
+                []
             ],
             'removeDocblock' => [
                 '<?php
@@ -405,7 +567,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                [[0, 0]]
+                []
             ],
             'changeDocblock' => [
                 '<?php
@@ -439,7 +601,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                [[0, 0]]
+                []
             ],
             'changeMethodVisibility' => [
                 '<?php
@@ -467,7 +629,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                [[0, 0]]
+                []
             ],
             'removeFunctionAtEnd' => [
                 '<?php
@@ -498,7 +660,155 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                [[0, 0], [0, 0]]
+                []
+            ],
+            'addSpaceInFunction' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                        $b = 2;
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bar() {
+                        $c = 3;
+                        $d = 4;
+
+                        if (true) {
+
+                        }
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bat() {
+                        $e = 5;
+                        $f = 6;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                        $b = 2;
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bar() {
+                        $c = 3;
+
+
+
+
+                        $d = 4;
+
+                        if (true) {
+
+                        }
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bat() {
+                        $e = 5;
+                        $f = 6;
+                    }
+                }',
+                ['foo\a::foo', 'foo\a::bat'],
+                ['foo\a::bar'],
+                [],
+                [[4, 4]]
+            ],
+            'removeSpaceInFunction' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                        $b = 2;
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bar() {
+                        $c = 3;
+
+
+
+
+                        $d = 4;
+
+                        if (true) {
+
+                        }
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bat() {
+                        $e = 5;
+                        $f = 6;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                        $b = 2;
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bar() {
+                        $c = 3;
+                        $d = 4;
+
+                        if (true) {
+
+                        }
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bat() {
+                        $e = 5;
+                        $f = 6;
+                    }
+                }',
+                ['foo\a::foo', 'foo\a::bat'],
+                ['foo\a::bar'],
+                [],
+                [[-4, -4]]
             ],
             'removeFunctionAtBeginning' => [
                 '<?php
@@ -560,7 +870,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bat'],
                 [],
                 ['foo\a::bar'],
-                [[0, 0], [-98, -3]],
+                [[-98, -3]],
             ],
             'changeNamespace' => [
                 '<?php
@@ -639,7 +949,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                [[0, 0], [0, 0]]
+                []
             ],
             'newFunctionAtBeginning' => [
                 '<?php
@@ -701,7 +1011,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                [[0, 0], [98, 3]]
+                [[98, 3]]
             ],
             'SKIPPED-whiteSpaceOnly' => [
                 '<?php
@@ -765,7 +1075,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::__construct', 'foo\a::bar', 'foo\b::bat'],
                 [],
                 ['foo\b::__construct', 'foo\b::bar'],
-                [[0, 0], [0, 0], [120, 2]]
+                [[120, 2]]
             ],
             'sameTrait' => [
                 '<?php
@@ -801,7 +1111,7 @@ class FileDiffTest extends TestCase
                 ['foo\t::$aB', 'foo\t::F', 'foo\t::foo', 'foo\t::bar'],
                 [],
                 [],
-                [[0, 0], [0, 0], [0, 0], [0, 0]]
+                []
             ],
             'traitPropertyChange' => [
                 '<?php
@@ -820,6 +1130,71 @@ class FileDiffTest extends TestCase
                 [],
                 ['foo\t::$a', 'foo\t::$b'],
                 []
+            ],
+            'traitMethodReturnTypeChange' => [
+                '<?php
+                    namespace Foo;
+
+                    trait T {
+                        public function barBar(): string {
+                            return "hello";
+                        }
+
+                        public function bat(): string {
+                            return "hello";
+                        }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    trait T {
+                        public function barBar(): int {
+                            return 5;
+                        }
+
+                        public function bat(): string {
+                            return "hello";
+                        }
+                    }',
+                ['foo\t::bat'],
+                [],
+                ['foo\t::barbar', 'foo\t::barbar'],
+                [[-9, 0]]
+            ],
+            'removeManyArguments' => [
+                '<?php
+                    namespace Foo;
+
+                    class C {
+                        public function barBar() {
+                            foo(
+                                $a,
+                                $b
+                            );
+                        }
+
+                        public function bat() {
+                            return "hello";
+                        }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class C {
+                        public function barBar() {
+                            foo(
+                                $a
+                            );
+                        }
+
+                        public function bat() {
+                            return "hello";
+                        }
+                    }',
+                ['foo\c::bat'],
+                ['foo\c::barbar'],
+                [],
+                [[-36, -1]]
             ],
         ];
     }

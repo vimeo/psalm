@@ -11,6 +11,11 @@ class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
     private $file_contents_cache = [];
 
     /**
+     * @var array<string, string>
+     */
+    private $file_content_hash = [];
+
+    /**
      * @var array<string, array<int, PhpParser\Node\Stmt>>
      */
     private $statements_cache = [];
@@ -33,6 +38,7 @@ class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
     {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
+            && $this->file_content_hash[$file_path] === $file_content_hash
         ) {
             return $this->statements_cache[$file_path];
         }
@@ -68,6 +74,7 @@ class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
     {
         $this->statements_cache[$file_path] = $stmts;
         $this->statements_cache_time[$file_path] = microtime(true);
+        $this->file_content_hash[$file_path] = $file_content_hash;
     }
 
     /**

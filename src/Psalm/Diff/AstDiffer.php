@@ -14,7 +14,7 @@ use PhpParser;
  *
  * @internal
  */
-class Differ
+class AstDiffer
 {
     /**
      * @param  \Closure(PhpParser\Node\Stmt, PhpParser\Node\Stmt, string, string, bool=) : bool $is_equal

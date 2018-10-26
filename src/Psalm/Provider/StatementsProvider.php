@@ -51,11 +51,6 @@ class StatementsProvider
      */
     protected static $parser;
 
-    /**
-     * @var PhpParser\NodeTraverser|null
-     */
-    protected static $node_traverser;
-
     public function __construct(
         FileProvider $file_provider,
         ParserCacheProvider $parser_cache_provider = null,
@@ -105,84 +100,114 @@ class StatementsProvider
                 echo 'Parsing ' . $file_path . "\n";
             }
 
-            $stmts = self::parseStatements($file_contents, $file_path);
+            $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
 
             $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path);
 
-            if ($existing_file_contents) {
-                $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
+            // this happens after editing temporary file
+            if ($existing_file_contents === $file_contents && $existing_statements) {
+                $this->diff_map[$file_path] = [];
+                $this->parser_cache_provider->saveStatementsToCache(
+                    $file_path,
+                    $file_content_hash,
+                    $existing_statements,
+                    true
+                );
 
-                if ($existing_statements) {
-                    list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
-                        = \Psalm\Diff\FileStatementsDiffer::diff(
-                            $existing_statements,
-                            $stmts,
-                            $existing_file_contents,
-                            $file_contents
-                        );
+                return $existing_statements;
+            }
 
-                    $unchanged_members = array_map(
-                        /**
-                         * @param int $_
-                         * @return bool
-                         */
-                        function ($_) {
-                            return true;
-                        },
-                        array_flip($unchanged_members)
+            $file_changes = null;
+
+            $existing_statements_copy = null;
+
+            if ($existing_statements && $existing_file_contents) {
+                $file_changes = \Psalm\Diff\FileDiffer::getDiff($existing_file_contents, $file_contents);
+                $traverser = new PhpParser\NodeTraverser;
+                $traverser->addVisitor(new \Psalm\Visitor\CloningVisitor);
+                // performs a deep clone
+                /** @var array<int, PhpParser\Node\Stmt> */
+                $existing_statements_copy = $traverser->traverse($existing_statements);
+            }
+
+            $stmts = self::parseStatements(
+                $file_contents,
+                $file_path,
+                $existing_file_contents,
+                $existing_statements_copy,
+                $file_changes
+            );
+
+            if ($existing_file_contents && $existing_statements) {
+                list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
+                    = \Psalm\Diff\FileStatementsDiffer::diff(
+                        $existing_statements,
+                        $stmts,
+                        $existing_file_contents,
+                        $file_contents
                     );
 
-                    $unchanged_signature_members = array_map(
-                        /**
-                         * @param int $_
-                         * @return bool
-                         */
-                        function ($_) {
-                            return true;
-                        },
-                        array_flip($unchanged_signature_members)
+                $unchanged_members = array_map(
+                    /**
+                     * @param int $_
+                     * @return bool
+                     */
+                    function ($_) {
+                        return true;
+                    },
+                    array_flip($unchanged_members)
+                );
+
+                $unchanged_signature_members = array_map(
+                    /**
+                     * @param int $_
+                     * @return bool
+                     */
+                    function ($_) {
+                        return true;
+                    },
+                    array_flip($unchanged_signature_members)
+                );
+
+                $changed_members = array_map(
+                    /**
+                     * @param int $_
+                     * @return bool
+                     */
+                    function ($_) {
+                        return true;
+                    },
+                    array_flip($changed_members)
+                );
+
+                if (isset($this->unchanged_members[$file_path])) {
+                    $this->unchanged_members[$file_path] = array_intersect_key(
+                        $this->unchanged_members[$file_path],
+                        $unchanged_members
                     );
-
-                    $changed_members = array_map(
-                        /**
-                         * @param int $_
-                         * @return bool
-                         */
-                        function ($_) {
-                            return true;
-                        },
-                        array_flip($changed_members)
-                    );
-
-                    if (isset($this->unchanged_members[$file_path])) {
-                        $this->unchanged_members[$file_path] = array_intersect_key(
-                            $this->unchanged_members[$file_path],
-                            $unchanged_members
-                        );
-                    } else {
-                        $this->unchanged_members[$file_path] = $unchanged_members;
-                    }
-
-                    if (isset($this->unchanged_signature_members[$file_path])) {
-                        $this->unchanged_signature_members[$file_path] = array_intersect_key(
-                            $this->unchanged_signature_members[$file_path],
-                            $unchanged_signature_members
-                        );
-                    } else {
-                        $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
-                    }
-
-                    if (isset($this->changed_members[$file_path])) {
-                        $this->changed_members[$file_path] = array_merge(
-                            $this->changed_members[$file_path],
-                            $changed_members
-                        );
-                    } else {
-                        $this->changed_members[$file_path] = $changed_members;
-                    }
-
-                    $this->diff_map[$file_path] = $diff_map;
+                } else {
+                    $this->unchanged_members[$file_path] = $unchanged_members;
                 }
+
+                if (isset($this->unchanged_signature_members[$file_path])) {
+                    $this->unchanged_signature_members[$file_path] = array_intersect_key(
+                        $this->unchanged_signature_members[$file_path],
+                        $unchanged_signature_members
+                    );
+                } else {
+                    $this->unchanged_signature_members[$file_path] = $unchanged_signature_members;
+                }
+
+                if (isset($this->changed_members[$file_path])) {
+                    $this->changed_members[$file_path] = array_merge(
+                        $this->changed_members[$file_path],
+                        $changed_members
+                    );
+                } else {
+                    $this->changed_members[$file_path] = $changed_members;
+                }
+
+                $this->diff_map[$file_path] = $diff_map;
             }
 
             if ($this->file_storage_cache_provider) {
@@ -281,11 +306,18 @@ class StatementsProvider
      * @param  string  $file_contents
      * @param  bool    $server_mode
      * @param  string   $file_path
+     * @param  array<int, \PhpParser\Node\Stmt> $existing_statements
+     * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes
      *
      * @return array<int, \PhpParser\Node\Stmt>
      */
-    public static function parseStatements($file_contents, $file_path = null)
-    {
+    public static function parseStatements(
+        $file_contents,
+        $file_path = null,
+        string $existing_file_contents = null,
+        array $existing_statements = null,
+        array $file_changes = null
+    ) {
         if (!self::$parser) {
             $attributes = [
                 'comments', 'startLine', 'startFilePos', 'endFilePos',
@@ -296,16 +328,33 @@ class StatementsProvider
             self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::PREFER_PHP7, $lexer);
         }
 
-        if (!self::$node_traverser) {
-            self::$node_traverser = new PhpParser\NodeTraverser;
-            $name_resolver = new \Psalm\Visitor\SimpleNameResolver;
-            self::$node_traverser->addVisitor($name_resolver);
-        }
+        $used_cached_statements = false;
 
         $error_handler = new \PhpParser\ErrorHandler\Collecting();
 
-        /** @var array<int, \PhpParser\Node\Stmt> */
-        $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+        if ($existing_statements && $file_changes && $existing_file_contents) {
+            $clashing_traverser = new \Psalm\Traverser\CustomTraverser;
+            $offset_checker = new \Psalm\Visitor\OffsetMapCheckerVisitor(
+                self::$parser,
+                $error_handler,
+                $file_changes,
+                $existing_file_contents,
+                $file_contents
+            );
+            $clashing_traverser->addVisitor($offset_checker);
+            $clashing_traverser->traverse($existing_statements);
+
+            if (!$offset_checker->mustRescan()) {
+                $used_cached_statements = true;
+                $stmts = $existing_statements;
+            } else {
+                /** @var array<int, \PhpParser\Node\Stmt> */
+                $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+            }
+        } else {
+            /** @var array<int, \PhpParser\Node\Stmt> */
+            $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+        }
 
         if ($error_handler->hasErrors() && $file_path) {
             $config = \Psalm\Config::getInstance();
@@ -327,7 +376,13 @@ class StatementsProvider
             }
         }
 
-        self::$node_traverser->traverse($stmts);
+        $resolving_traverser = new PhpParser\NodeTraverser;
+        $name_resolver = new \Psalm\Visitor\SimpleNameResolver(
+            $error_handler,
+            $used_cached_statements ? $file_changes : []
+        );
+        $resolving_traverser->addVisitor($name_resolver);
+        $resolving_traverser->traverse($stmts);
 
         return $stmts;
     }

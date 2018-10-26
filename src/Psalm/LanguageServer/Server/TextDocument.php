@@ -55,10 +55,17 @@ class TextDocument
      */
     protected $server;
 
+    /**
+     * @var Codebase
+     */
+    protected $codebase;
+
     public function __construct(
-        LanguageServer $server
+        LanguageServer $server,
+        Codebase $codebase
     ) {
         $this->server = $server;
+        $this->codebase = $codebase;
     }
 
     /**
@@ -73,6 +80,10 @@ class TextDocument
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return;
+        }
+
         $this->server->invalidateFileAndDependents($textDocument->uri);
 
         $this->server->analyzePath($file_path);
@@ -86,10 +97,20 @@ class TextDocument
     {
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
+        if (!$this->codebase->config->isInProjectDirs($file_path)) {
+            return;
+        }
+
+        $time = microtime(true);
+
         $this->server->invalidateFileAndDependents($textDocument->uri);
 
         $this->server->analyzePath($file_path);
         $this->server->emitIssues($textDocument->uri);
+
+        $diff = microtime(true) - $time;
+
+        error_log('Scanning & analysis took ' . number_format($diff, 4));
     }
 
     /**

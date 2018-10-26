@@ -18,7 +18,13 @@ use PhpParser\NodeVisitorAbstract;
 class SimpleNameResolver extends NodeVisitorAbstract
 {
     /** @var NameContext Naming context */
-    protected $nameContext;
+    private $nameContext;
+
+    /** @var int|null */
+    private $start_change;
+
+    /** @var int|null */
+    private $end_change;
 
     /**
      * Constructs a name resolution visitor.
@@ -30,11 +36,22 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *    resolvedName attribute is added. (Names that cannot be statically resolved receive a
      *    namespacedName attribute, as usual.)
      *
-     * @param ErrorHandler|null $errorHandler Error handler
-     * @param array $options Options
+     * @param ErrorHandler $errorHandler Error handler
+     * @param array<int, array{0: int, 1: int, 2: int, 3: int}> $offset_map
      */
-    public function __construct(ErrorHandler $errorHandler = null) {
-        $this->nameContext = new NameContext($errorHandler ?: new ErrorHandler\Throwing);
+    public function __construct(ErrorHandler $errorHandler, array $offset_map = null)
+    {
+        if ($offset_map) {
+            foreach ($offset_map as list(,, $b_s, $b_e)) {
+                if ($this->start_change === null) {
+                    $this->start_change = $b_s;
+                }
+
+                $this->end_change = $b_e;
+            }
+        }
+
+        $this->nameContext = new NameContext($errorHandler);
     }
 
     public function beforeTraverse(array $nodes) {
@@ -53,7 +70,19 @@ class SimpleNameResolver extends NodeVisitorAbstract
             foreach ($node->uses as $use) {
                 $this->addAlias($use, $node->type, $node->prefix);
             }
-        } elseif ($node instanceof Stmt\ClassMethod
+        }
+
+        if ($this->start_change && $this->end_change) {
+            $attrs = $node->getAttributes();
+
+            if ($attrs['endFilePos'] < $this->start_change
+                || $attrs['startFilePos'] > $this->end_change
+            ) {
+                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            }
+        }
+
+        if ($node instanceof Stmt\ClassMethod
                   || $node instanceof Expr\Closure
         ) {
             $this->resolveSignature($node);

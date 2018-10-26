@@ -7,7 +7,7 @@ use PhpParser;
 /**
  * @internal
  */
-class NamespaceStatementsDiffer extends Differ
+class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.

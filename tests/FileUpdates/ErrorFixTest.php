@@ -75,12 +75,6 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
         // first batch
         foreach ($start_files as $file_path => $contents) {
             $this->file_provider->registerFile($file_path, $contents);
-        }
-
-        $codebase->reloadFiles($this->project_checker, array_keys($start_files));
-
-        foreach ($start_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
@@ -99,8 +93,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->reloadFiles($this->project_checker, array_keys($middle_files));
 
-        foreach ($middle_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
+        foreach ($middle_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
@@ -112,15 +105,14 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $this->assertSame($error_counts[1], count($data));
 
-        // first batch
+        // third batch
         foreach ($end_files as $file_path => $contents) {
             $this->file_provider->registerFile($file_path, $contents);
         }
 
         $codebase->reloadFiles($this->project_checker, array_keys($end_files));
 
-        foreach ($end_files as $file_path => $contents) {
-            $this->file_provider->registerFile($file_path, $contents);
+        foreach ($end_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 

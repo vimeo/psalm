@@ -688,6 +688,24 @@ class Analyzer
     }
 
     /**
+     * @param string $file_path
+     * @param int $start
+     * @param int $end
+     *
+     * @return void
+     */
+    public function removeExistingDataForFile($file_path, $start, $end)
+    {
+        if (isset($this->existing_issues[$file_path])) {
+            foreach ($this->existing_issues[$file_path] as $i => $issue_data) {
+                if ($issue_data['from'] >= $start && $issue_data['from'] <= $end) {
+                    unset($this->existing_issues[$file_path][$i]);
+                }
+            }
+        }
+    }
+
+    /**
      * @return array<string, array<string, int>>
      */
     public function getCorrectMethods()

@@ -167,7 +167,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 if ($this->textDocument === null) {
                     $this->textDocument = new TextDocument(
-                        $this
+                        $this,
+                        $this->project_checker->codebase
                     );
                 }
 

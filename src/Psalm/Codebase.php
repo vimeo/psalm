@@ -55,7 +55,7 @@ class Codebase
     /**
      * @var FileProvider
      */
-    private $file_provider;
+    public $file_provider;
 
     /**
      * @var FileReferenceProvider
