@@ -459,6 +459,12 @@ class AssignmentChecker
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
             if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
+                // this can happen when the user actually means to type $this-><autocompleted>, but there's
+                // a variable on the next line
+                if (ExpressionChecker::analyze($statements_checker, $assign_var->var, $context) === false) {
+                    return false;
+                }
+
                 if (ExpressionChecker::analyze($statements_checker, $assign_var->name, $context) === false) {
                     return false;
                 }

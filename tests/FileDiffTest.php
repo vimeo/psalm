@@ -236,6 +236,60 @@ class FileDiffTest extends TestCase
                 [],
                 []
             ],
+            'sameFileWithDoubleDocblocks' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public $aB = 5;
+
+                    const F = 1;
+
+                    /*
+                     * another
+                     */
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                    }
+
+                    // this is one line
+                    // this is another
+                    public function bar() {
+                        $b = 1;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public $aB = 5;
+
+                    const F = 1;
+
+                    /*
+                     * another
+                     */
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                    }
+
+                    // this is one line
+                    // this is another
+                    public function bar() {
+                        $b = 1;
+                    }
+                }',
+                ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
+                [],
+                [],
+                []
+            ],
             'lineChanges' => [
                 '<?php
                 namespace Foo;

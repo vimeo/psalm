@@ -288,6 +288,18 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
 
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
+            $signature_type_location = $function_param->signature_type_location;
+
+            if ($signature_type && $signature_type_location) {
+                list($start, $end) = $signature_type_location->getSelectionBounds();
+
+                $codebase->analyzer->addOffsetReference(
+                    $this->getFilePath(),
+                    $start,
+                    $end,
+                    (string) $signature_type
+                );
+            }
 
             if ($function_param->type) {
                 if ($function_param->type_location) {
@@ -528,6 +540,17 @@ abstract class FunctionLikeChecker extends SourceChecker implements StatementsSo
                     );
                 }
             }
+        }
+
+        if ($storage->signature_return_type && $storage->signature_return_type_location) {
+            list($start, $end) = $storage->signature_return_type_location->getSelectionBounds();
+
+            $codebase->analyzer->addOffsetReference(
+                $this->getFilePath(),
+                $start,
+                $end,
+                (string) $storage->signature_return_type
+            );
         }
 
         if ($this->function instanceof Closure) {

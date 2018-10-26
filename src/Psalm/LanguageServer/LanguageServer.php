@@ -181,16 +181,17 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                 // Support "Find all symbols in workspace"
                 $serverCapabilities->workspaceSymbolProvider = false;
                 // Support "Go to definition"
-                $serverCapabilities->definitionProvider = false;
+                $serverCapabilities->definitionProvider = true;
                 // Support "Find all references"
                 $serverCapabilities->referencesProvider = false;
                 // Support "Hover"
-                $serverCapabilities->hoverProvider = false;
+                $serverCapabilities->hoverProvider = true;
                 // Support "Completion"
-                /*
+
+                /**
                 $serverCapabilities->completionProvider = new CompletionOptions;
-                $serverCapabilities->completionProvider->resolveProvider = true;
-                $serverCapabilities->completionProvider->triggerCharacters = ['$', '>'];
+                $serverCapabilities->completionProvider->resolveProvider = false;
+                $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':'];
                 */
 
                 /*
@@ -325,6 +326,27 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     public function exit()
     {
         exit(0);
+    }
+
+    /**
+     * Transforms an absolute file path into a URI as used by the language server protocol.
+     *
+     * @param string $filepath
+     * @return string
+     */
+    public static function pathToUri(string $filepath): string
+    {
+        $filepath = trim(str_replace('\\', '/', $filepath), '/');
+        $parts = explode('/', $filepath);
+        // Don't %-encode the colon after a Windows drive letter
+        $first = array_shift($parts);
+        if (substr($first, -1) !== ':') {
+            $first = rawurlencode($first);
+        }
+        $parts = array_map('rawurlencode', $parts);
+        array_unshift($parts, $first);
+        $filepath = implode('/', $parts);
+        return 'file:///' . $filepath;
     }
 
     /**

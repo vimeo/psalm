@@ -157,6 +157,9 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
 
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $fake_class);
 
+                            // allows autocompletion
+                            $hacky_class_fix = str_replace(["->\n", "::\n"], "~;\n", $hacky_class_fix);
+
                             /** @var array<PhpParser\Node\Stmt> */
                             $replacement_stmts = $this->parser->parse(
                                 $hacky_class_fix,

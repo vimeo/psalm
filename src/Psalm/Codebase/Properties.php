@@ -122,4 +122,29 @@ class Properties
             return explode('::$', $appearing_property_id)[0];
         }
     }
+
+    /**
+     * @param  string $property_id
+     * @return  \Psalm\Storage\PropertyStorage
+     */
+    public function getStorage($property_id)
+    {
+        // remove trailing backslash if it exists
+        $property_id = preg_replace('/^\\\\/', '', $property_id);
+
+        list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_property_ids[$property_name])) {
+            $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
+            $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
+
+            if (isset($declaring_class_storage->properties[$property_name])) {
+                return $declaring_class_storage->properties[$property_name];
+            }
+        }
+
+        throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+    }
 }

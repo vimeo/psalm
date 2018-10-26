@@ -435,7 +435,7 @@ $config->visitComposerAutoloadFiles($project_checker, $debug);
 $now_time = microtime(true);
 
 if ($debug) {
-    echo 'Visiting autoload files took ' . number_format($now_time - $start_time, 2) . "\n";
+    echo 'Visiting autoload files took ' . number_format($now_time - $start_time, 3) . 's' . "\n";
 }
 
 if (array_key_exists('debug-by-line', $options)) {

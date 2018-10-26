@@ -1808,6 +1808,11 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 } else {
                     $storage->public_class_constants[$const->name->name] = $const_type;
                 }
+
+                $storage->class_constant_locations[$const->name->name] = new CodeLocation(
+                    $this->file_scanner,
+                    $const->name
+                );
             } else {
                 if ($stmt->isProtected()) {
                     $storage->protected_class_constant_nodes[$const->name->name] = $const->value;

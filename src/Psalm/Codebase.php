@@ -1,6 +1,7 @@
 <?php
 namespace Psalm;
 
+use LanguageServerProtocol\{Position, Range};
 use PhpParser;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Provider\ClassLikeStorageProvider;
@@ -797,5 +798,285 @@ class Codebase
         }
 
         $this->file_storage_provider->remove($file_path);
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getSymbolInformation(string $file_path, string $symbol)
+    {
+        if (substr($symbol, 0, 6) === 'type: ') {
+            return substr($symbol, 6);
+        }
+
+        try {
+            if (strpos($symbol, '::')) {
+                if (strpos($symbol, '()')) {
+                    $symbol = substr($symbol, 0, -2);
+
+                    $declaring_method_id = $this->methods->getDeclaringMethodId($symbol);
+
+                    if (!$declaring_method_id) {
+                        return null;
+                    }
+
+                    $storage = $this->methods->getStorage($declaring_method_id);
+
+                    return '<?php ' . $storage;
+                }
+
+                list(, $symbol_name) = explode('::', $symbol);
+
+                if (strpos($symbol, '$') !== false) {
+                    $storage = $this->properties->getStorage($symbol);
+
+                    return '<?php ' . $storage->getInfo() . ' ' . $symbol_name;
+                }
+
+                list($fq_classlike_name, $const_name) = explode('::', $symbol);
+
+                $class_constants = $this->classlikes->getConstantsForClass(
+                    $fq_classlike_name,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (!isset($class_constants[$const_name])) {
+                    return null;
+                }
+
+                return '<?php ' . $const_name;
+            }
+
+            if (strpos($symbol, '()')) {
+                $file_storage = $this->file_storage_provider->get($file_path);
+
+                $function_id = strtolower(substr($symbol, 0, -2));
+
+                if (isset($file_storage->functions[$function_id])) {
+                    $function_storage = $file_storage->functions[$function_id];
+
+                    return '<?php ' . $function_storage;
+                }
+
+                return null;
+            }
+
+            $storage = $this->classlike_storage_provider->get($symbol);
+
+            return '<?php ' . ($storage->abstract ? 'abstract ' : '') . 'class ' . $storage->name;
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * @return ?CodeLocation
+     */
+    public function getSymbolLocation(string $file_path, string $symbol)
+    {
+        try {
+            if (strpos($symbol, '::')) {
+                if (strpos($symbol, '()')) {
+                    $symbol = substr($symbol, 0, -2);
+
+                    $declaring_method_id = $this->methods->getDeclaringMethodId($symbol);
+
+                    if (!$declaring_method_id) {
+                        return null;
+                    }
+
+                    $storage = $this->methods->getStorage($declaring_method_id);
+
+                    return $storage->location;
+                }
+
+                if (strpos($symbol, '$') !== false) {
+                    $storage = $this->properties->getStorage($symbol);
+
+                    return $storage->location;
+                }
+
+                list($fq_classlike_name, $const_name) = explode('::', $symbol);
+
+                $class_constants = $this->classlikes->getConstantsForClass(
+                    $fq_classlike_name,
+                    \ReflectionProperty::IS_PRIVATE
+                );
+
+                if (!isset($class_constants[$const_name])) {
+                    return null;
+                }
+
+                $class_const_storage = $this->classlike_storage_provider->get($fq_classlike_name);
+
+                return $class_const_storage->class_constant_locations[$const_name];
+            }
+
+            if (strpos($symbol, '()')) {
+                $file_storage = $this->file_storage_provider->get($file_path);
+
+                $function_id = strtolower(substr($symbol, 0, -2));
+
+                if (isset($file_storage->functions[$function_id])) {
+                    return $file_storage->functions[$function_id]->location;
+                }
+
+                return null;
+            }
+
+            $storage = $this->classlike_storage_provider->get($symbol);
+
+            return $storage->location;
+        } catch (\UnexpectedValueException $e) {
+            error_log($e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: Range}|null
+     */
+    public function getReferenceAtPosition(string $file_path, Position $position)
+    {
+        $file_contents = $this->getFileContents($file_path);
+
+        $offset = $position->toOffset($file_contents);
+
+        list($reference_map, $type_map) = $this->analyzer->getMapsForFile($file_path);
+
+        $reference = null;
+
+        if (!$reference_map && !$type_map) {
+            return null;
+        }
+
+        $start_pos = null;
+        $end_pos = null;
+
+        ksort($reference_map);
+
+        foreach ($reference_map as $start_pos => list($end_pos, $possible_reference)) {
+            if ($offset < $start_pos) {
+                break;
+            }
+
+            if ($offset > $end_pos + 1) {
+                continue;
+            }
+
+            $reference = $possible_reference;
+        }
+
+        if ($reference === null || $start_pos === null || $end_pos === null) {
+            ksort($type_map);
+
+            foreach ($type_map as $start_pos => list($end_pos, $possible_type)) {
+                if ($offset < $start_pos) {
+                    break;
+                }
+
+                if ($offset > $end_pos + 1) {
+                    continue;
+                }
+
+                $reference = 'type: ' . $possible_type;
+            }
+
+            if ($reference === null || $start_pos === null || $end_pos === null) {
+                return null;
+            }
+        }
+
+        $range = new Range(
+            self::getPositionFromOffset($start_pos, $file_contents),
+            self::getPositionFromOffset($end_pos, $file_contents)
+        );
+
+        return [$reference, $range];
+    }
+
+    /**
+     * @return array{0: string, 1: string}|null
+     */
+    public function getCompletionDataAtPosition(string $file_path, Position $position)
+    {
+        $file_contents = $this->getFileContents($file_path);
+
+        $offset = $position->toOffset($file_contents);
+
+        list(, $type_map) = $this->analyzer->getMapsForFile($file_path);
+
+        if (!$type_map) {
+            return null;
+        }
+
+        $recent_type = null;
+        $start_pos = null;
+        $end_pos = null;
+
+        krsort($type_map);
+
+        foreach ($type_map as $start_pos => list($end_pos, $possible_type)) {
+            if ($offset < $start_pos) {
+                continue;
+            }
+
+            if ($offset - $end_pos === 3 || $offset - $end_pos === 4) {
+                $recent_type = $possible_type;
+
+                break;
+            }
+
+            if ($offset - $end_pos > 4) {
+                break;
+            }
+        }
+
+        if (!$recent_type
+            || $recent_type === 'mixed'
+            || $end_pos === null
+            || $start_pos === null
+        ) {
+            return null;
+        }
+
+        $gap = substr($file_contents, $end_pos + 1, $offset - $end_pos - 1);
+
+        return [$recent_type, $gap];
+    }
+
+    private static function getPositionFromOffset(int $offset, string $file_contents) : Position
+    {
+        $file_contents = substr($file_contents, 0, $offset);
+        return new Position(
+            substr_count("\n", $file_contents),
+            $offset - (int)strrpos($file_contents, "\n", strlen($file_contents))
+        );
+    }
+
+    /**
+     * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $changes
+     * @return void
+     */
+    public function addTemporaryFileChanges(string $file_path, array $changes)
+    {
+        $this->file_provider->addTemporaryFileChanges($file_path, $changes);
+        $this->invalidateInformationForFile($file_path);
+        $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
+        $this->scanner->scanFiles($this->classlikes);
+        $this->populator->populateCodebase($this);
+    }
+
+    /**
+     * @return void
+     */
+    public function removeTemporaryFileChanges(string $file_path)
+    {
+        $this->file_provider->openFile($file_path);
+        $this->invalidateInformationForFile($file_path);
+        $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
+        $this->scanner->scanFiles($this->classlikes);
+        $this->populator->populateCodebase($this);
     }
 }

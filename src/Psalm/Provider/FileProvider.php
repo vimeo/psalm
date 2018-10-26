@@ -7,12 +7,21 @@ use Psalm\Checker\ProjectChecker;
 class FileProvider
 {
     /**
+     * @var array<string, string>
+     */
+    protected $temp_files = [];
+
+    /**
      * @param  string  $file_path
      *
      * @return string
      */
-    public function getContents($file_path)
+    public function getContents($file_path, bool $go_to_source = false)
     {
+        if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
+            return $this->temp_files[strtolower($file_path)];
+        }
+
         return (string)file_get_contents($file_path);
     }
 
@@ -35,6 +44,37 @@ class FileProvider
     public function getModifiedTime($file_path)
     {
         return (int)filemtime($file_path);
+    }
+
+    /**
+     * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $changes
+     * @return  void
+     */
+    public function addTemporaryFileChanges(string $file_path, array $changes)
+    {
+        if (count($changes) === 1 && $changes[0]->range === null) {
+            $new_content = $changes[0]->text;
+
+            $this->temp_files[strtolower($file_path)] = $new_content;
+        } else {
+            throw new \UnexpectedValueException('Incremental changes not supported');
+        }
+    }
+
+    /**
+     * @return  void
+     */
+    public function openFile(string $file_path)
+    {
+        $this->temp_files[strtolower($file_path)] = $this->getContents($file_path, true);
+    }
+
+    /**
+     * @return  void
+     */
+    public function closeFile(string $file_path)
+    {
+        unset($this->temp_files[strtolower($file_path)]);
     }
 
     /**

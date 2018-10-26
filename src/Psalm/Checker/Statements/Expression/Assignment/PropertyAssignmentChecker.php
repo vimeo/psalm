@@ -348,6 +348,17 @@ class PropertyAssignmentChecker
                     continue;
                 }
 
+                if ($codebase->server_mode
+                    && (!$context->collect_initializations
+                        && !$context->collect_mutations)
+                ) {
+                    $codebase->analyzer->addNodeReference(
+                        $statements_checker->getFilePath(),
+                        $stmt->name,
+                        $property_id
+                    );
+                }
+
                 $property_exists = true;
 
                 if (!$context->collect_mutations) {
@@ -486,6 +497,18 @@ class PropertyAssignmentChecker
         $invalid_assignment_value_types = [];
 
         $has_valid_assignment_value_type = false;
+
+        if ($codebase->server_mode
+            && (!$context->collect_initializations
+                && !$context->collect_mutations)
+            && count($class_property_types) === 1
+        ) {
+            $codebase->analyzer->addNodeType(
+                $statements_checker->getFilePath(),
+                $stmt->name,
+                (string) $class_property_types[0]
+            );
+        }
 
         foreach ($class_property_types as $class_property_type) {
             if ($class_property_type->isMixed()) {

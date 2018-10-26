@@ -28,8 +28,12 @@ class FakeFileProvider extends \Psalm\Provider\FileProvider
      *
      * @return string
      */
-    public function getContents($file_path)
+    public function getContents($file_path, bool $go_to_source = false)
     {
+        if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
+            return $this->temp_files[strtolower($file_path)];
+        }
+
         if (isset($this->fake_files[$file_path])) {
             return $this->fake_files[$file_path];
         }

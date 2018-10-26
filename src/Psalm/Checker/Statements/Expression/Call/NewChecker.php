@@ -94,6 +94,14 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         break;
                 }
             }
+
+            if ($codebase->server_mode && $fq_class_name) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_checker->getFilePath(),
+                    $stmt->class,
+                    $fq_class_name
+                );
+            }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_checker->analyze([$stmt->class], $context);
             $fq_class_name = ClassChecker::getAnonymousClassName($stmt->class, $statements_checker->getFilePath());

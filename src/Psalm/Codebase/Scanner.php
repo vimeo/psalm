@@ -317,7 +317,6 @@ class Scanner
     public function scanFiles(ClassLikes $classlikes, int $pool_size = 1)
     {
         $has_changes = false;
-
         while ($this->files_to_scan || $this->classes_to_scan) {
             if ($this->files_to_scan) {
                 if ($this->scanFilePaths($pool_size)) {
@@ -327,7 +326,6 @@ class Scanner
                 $this->convertClassesToFilePaths($classlikes);
             }
         }
-
         return $has_changes;
     }
 

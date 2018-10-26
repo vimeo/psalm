@@ -209,6 +209,14 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 }
             }
 
+            if ($codebase->server_mode && $fq_class_name) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_checker->getFilePath(),
+                    $stmt->class,
+                    $fq_class_name
+                );
+            }
+
             if ($fq_class_name && !$lhs_type) {
                 $lhs_type = new Type\Union([new TNamedObject($fq_class_name)]);
             }
@@ -554,6 +562,28 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 ) === false) {
                     return false;
                 }
+            }
+
+            if ($codebase->server_mode && $method_id) {
+                /** @psalm-suppress PossiblyInvalidArgument never a string, PHP Parser bug */
+                $codebase->analyzer->addNodeReference(
+                    $statements_checker->getFilePath(),
+                    $stmt->name,
+                    $method_id . '()'
+                );
+            }
+
+            if ($codebase->server_mode
+                && (!$context->collect_initializations
+                    && !$context->collect_mutations)
+                && isset($stmt->inferredType)
+            ) {
+                /** @psalm-suppress PossiblyInvalidArgument never a string, PHP Parser bug */
+                $codebase->analyzer->addNodeType(
+                    $statements_checker->getFilePath(),
+                    $stmt->name,
+                    (string) $stmt->inferredType
+                );
             }
         }
 

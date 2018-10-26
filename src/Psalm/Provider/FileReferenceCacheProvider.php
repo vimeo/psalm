@@ -217,4 +217,43 @@ class FileReferenceCacheProvider
             );
         }
     }
+
+    /**
+     * @return array<string, array{0: TaggedCodeType, 1: TaggedCodeType}>|false
+     */
+    public function getFileMapCache()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
+
+        if ($cache_directory
+            && file_exists($file_maps_cache_location)
+            && filemtime($file_maps_cache_location) > $this->config->modified_time
+        ) {
+            /** @var array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> */
+            $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
+            return $file_maps_cache;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> $file_maps
+     * @return void
+     */
+    public function setFileMapCache(array $file_maps)
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
+
+            file_put_contents(
+                $file_maps_cache_location,
+                serialize($file_maps)
+            );
+        }
+    }
 }

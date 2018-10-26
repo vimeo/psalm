@@ -633,6 +633,14 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $args
                     );
 
+                    if ($codebase->server_mode && $method_id) {
+                        $codebase->analyzer->addNodeReference(
+                            $statements_checker->getFilePath(),
+                            $stmt->name,
+                            $method_id . '()'
+                        );
+                    }
+
                     if (isset($stmt->inferredType)) {
                         $return_type_candidate = $stmt->inferredType;
                     }
@@ -814,6 +822,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
             }
         }
 
+
         if ($method_id === null) {
             return self::checkMethodArgs(
                 $method_id,
@@ -822,6 +831,18 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                 $context,
                 new CodeLocation($statements_checker->getSource(), $stmt),
                 $statements_checker
+            );
+        }
+
+        if ($codebase->server_mode
+            && (!$context->collect_initializations
+                && !$context->collect_mutations)
+            && isset($stmt->inferredType)
+        ) {
+            $codebase->analyzer->addNodeType(
+                $statements_checker->getFilePath(),
+                $stmt->name,
+                (string) $stmt->inferredType
             );
         }
 

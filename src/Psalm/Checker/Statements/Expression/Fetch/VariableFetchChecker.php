@@ -38,6 +38,7 @@ class VariableFetchChecker
         $from_global = false
     ) {
         $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $project_checker->codebase;
 
         if ($stmt->name === 'this') {
             if ($statements_checker->isStatic()) {
@@ -52,7 +53,9 @@ class VariableFetchChecker
                 }
 
                 return null;
-            } elseif (!isset($context->vars_in_scope['$this'])) {
+            }
+
+            if (!isset($context->vars_in_scope['$this'])) {
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Invalid reference to $this in a non-class context',
@@ -70,6 +73,24 @@ class VariableFetchChecker
             }
 
             $stmt->inferredType = clone $context->vars_in_scope['$this'];
+
+            if ($codebase->server_mode
+                    && (!$context->collect_initializations
+                        && !$context->collect_mutations)
+                && isset($stmt->inferredType)
+            ) {
+                $codebase->analyzer->addNodeType(
+                    $statements_checker->getFilePath(),
+                    $stmt,
+                    (string) $stmt->inferredType
+                );
+
+                $codebase->analyzer->addNodeReference(
+                    $statements_checker->getFilePath(),
+                    $stmt,
+                    (string) $stmt->inferredType
+                );
+            }
 
             return null;
         }
@@ -261,6 +282,32 @@ class VariableFetchChecker
             }
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
+
+            if ($codebase->server_mode
+                    && (!$context->collect_initializations
+                        && !$context->collect_mutations)
+                && isset($stmt->inferredType)
+            ) {
+                $codebase->analyzer->addNodeType(
+                    $statements_checker->getFilePath(),
+                    $stmt,
+                    (string) $stmt->inferredType
+                );
+
+                $types = $stmt->inferredType->getTypes();
+
+                if (count($types) === 1) {
+                    $reference_type = reset($types);
+
+                    if ($reference_type instanceof Type\Atomic\TNamedObject) {
+                        $codebase->analyzer->addNodeReference(
+                            $statements_checker->getFilePath(),
+                            $stmt,
+                            $reference_type->value
+                        );
+                    }
+                }
+            }
         }
 
         return null;

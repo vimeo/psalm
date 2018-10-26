@@ -87,7 +87,6 @@ class ConstFetchChecker
     ) {
         if ($context->check_consts
             && $stmt->class instanceof PhpParser\Node\Name
-            && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
             $first_part_lc = strtolower($stmt->class->parts[0]);
 
@@ -119,20 +118,22 @@ class ConstFetchChecker
                     $statements_checker->getAliases()
                 );
 
-                if (!$context->inside_class_exists || $stmt->name->name !== 'class') {
-                    if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
-                        $statements_checker,
-                        $fq_class_name,
-                        new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues(),
-                        false
-                    ) === false) {
-                        return false;
+                if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                    if (!$context->inside_class_exists || $stmt->name->name !== 'class') {
+                        if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                            $statements_checker,
+                            $fq_class_name,
+                            new CodeLocation($statements_checker->getSource(), $stmt->class),
+                            $statements_checker->getSuppressedIssues(),
+                            false
+                        ) === false) {
+                            return false;
+                        }
                     }
                 }
             }
 
-            if ($stmt->name->name === 'class') {
+            if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 $stmt->inferredType = Type::getClassString($fq_class_name);
 
                 return null;
@@ -148,7 +149,27 @@ class ConstFetchChecker
                 return null;
             }
 
+            if ($codebase->server_mode) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_checker->getFilePath(),
+                    $stmt->class,
+                    $fq_class_name
+                );
+            }
+
+            if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+                return null;
+            }
+
             $const_id = $fq_class_name . '::' . $stmt->name;
+
+            if ($codebase->server_mode) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_checker->getFilePath(),
+                    $stmt->name,
+                    $const_id
+                );
+            }
 
             if ($fq_class_name === $context->self
                 || (
