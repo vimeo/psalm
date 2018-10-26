@@ -109,6 +109,14 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
                                 $start_offset = $b_s2 - $a_s2;
                             }
 
+                            if ($a_e2 < $stmt_start_pos) {
+                                $start_offset = $end_offset;
+
+                                $line_offset = $line_diff;
+
+                                continue;
+                            }
+
                             if ($a_s2 >= $stmt_start_pos && $a_e2 <= $stmt_end_pos) {
                                 $this->non_method_changes--;
                             }
@@ -139,6 +147,14 @@ class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements P
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
                             || count($replacement_stmts[0]->stmts) > 1
                         ) {
+                            if ($replacement_stmts
+                                && $replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
+                                && count($replacement_stmts[0]->stmts) > 1
+                            ) {
+                                $this->must_rescan = true;
+                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                            }
+
                             $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $fake_class);
 
                             /** @var array<PhpParser\Node\Stmt> */

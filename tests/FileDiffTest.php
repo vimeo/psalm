@@ -160,7 +160,7 @@ class FileDiffTest extends TestCase
             if ($a_doc = $a_stmt->getDocComment()) {
                 $b_doc = $b_stmt->getDocComment();
 
-                $this->assertNotNull($b_doc);
+                $this->assertNotNull($b_doc, var_export($a_doc, true));
 
                 if (!$b_doc) {
                     throw new \UnexpectedValueException('');
@@ -1245,6 +1245,55 @@ class FileDiffTest extends TestCase
                 [],
                 ['bar\foo::b'],
                 [[229, 8]]
+            ],
+            'removeStatementsAbove' => [
+                '<?php
+                    namespace A;
+
+                    class B
+                    {
+                        /**
+                         * @return void
+                         */
+                        public static function foo() {
+                            echo 4;
+                            echo 5;
+                        }
+
+                        /**
+                         * @return void
+                         */
+                        public static function bar() {
+                            echo 4;
+                            echo 5;
+                        }
+                    }',
+                '<?php
+                    namespace A;
+
+                    class B
+                    {
+                        /**
+                         * @return void
+                         */
+                        public static function foo() {
+                            echo 5;
+                        }
+
+                        /**
+                         * @return void
+                         */
+                        public static function bar() {
+                            echo 5;
+                        }
+                    }',
+                [],
+                [
+                    'a\b::foo',
+                    'a\b::bar',
+                ],
+                [],
+                []
             ],
         ];
     }
