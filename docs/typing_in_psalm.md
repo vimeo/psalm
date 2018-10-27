@@ -4,7 +4,7 @@ Psalm is able to interpret all PHPDoc type annotations, and use them to further 
 
 ## Union Types
 
-PHP and other dynamically-typed languages allow expressions to resolved to conflicting types – for example, after this statement
+PHP and other dynamically-typed languages allow expressions to resolve to conflicting types – for example, after this statement
 ```php
 $rabbit = rand(0, 10) === 4 ? 'rabbit' : ['rabbit'];
 ```
@@ -58,7 +58,7 @@ foreach ([1, 2, 3] as $i) {
 }
 ```
 
-Because Psalm scans a file progressively, it cannot tell that `return $a` produces an integer. Instead it knows only that `$a` is not `empty`. We can fix this by adding a type hint docblock:
+Because Psalm scans a file progressively, it cannot tell that `return $a` produces an integer. Instead, it knows only that `$a` is not `empty`. We can fix this by adding a type hint docblock:
 
 ```php
 /** @var int|null */
