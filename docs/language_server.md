@@ -33,7 +33,7 @@ I've got it working with [this plugin](https://plugins.jetbrains.com/plugin/1020
 
 Setup is done via a GUI.
 
-When you install the plugin you should see a "Language Server Protocol" section under the "Languages & Frameworks" tab.
+When you install the plugin, you should see a "Language Server Protocol" section under the "Languages & Frameworks" tab.
 
 In the "Server definitions" tab you should add a definition for Psalm:
 
@@ -62,7 +62,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 
 **ALE**
 
-LSP supported was recently added to [ALE](https://github.com/w0rp/ale)'s master branch, but not yet in a tagged release.
+LSP support was recently added to [ALE](https://github.com/w0rp/ale)'s master branch, but not yet in a tagged release.
 
 **vim-lsp**
 

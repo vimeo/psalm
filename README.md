@@ -13,7 +13,7 @@ It's able to find a [large number of issues](https://github.com/vimeo/psalm/blob
 
 ## Psalm documentation
 
-Documentation is available on [Psalm’s website](https://getpsalm.org/docs), generated from the [docs](https://github.com/vimeo/psalm/blob/master/docs) folder. 
+Documentation is available on [Psalm’s website](https://getpsalm.org/docs), generated from the [docs](https://github.com/vimeo/psalm/blob/master/docs) folder.
 
 ## Quickstart Guide
 
@@ -35,7 +35,7 @@ Then run Psalm:
 ./vendor/bin/psalm
 ```
 
-The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config you can specify the level with
+The config created above will show you all issues in your code, but will emit `INFO` issues (as opposed to `ERROR`) for certain common trivial code problems. If you want a more lenient config, you can specify the level with
 
 ```bash
 ./vendor/bin/psalm --init [source_dir] [level]

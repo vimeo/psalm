@@ -59,7 +59,7 @@ Psalm uses an XML config file. A barebones example looks like this:
 - `allowFileIncludes=[bool]`<br />
   whether or not to allow `require`/`include` calls in your PHP. Defaults to `true`.
 - `serializer=["igbinary"|"default"]`<br />
-  Allows you to hard-code a serializer for Psalm to use when caching data. By default Psalm uses `ext-igbinary` *if* the version is greater or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
+  Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
 
 
 ## Project settings
@@ -84,5 +84,5 @@ Psalm uses an XML config file. A barebones example looks like this:
   Do you use mock classes in your tests? If you want Psalm to ignore them when checking files, include a fully-qualified path to the class with `<class name="Your\Namespace\ClassName" />`
 - `<stubs>` (optional)<br />
   If you codebase uses classes and functions that are not visible to Psalm via reflection (e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm), you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and functions without the implementations. You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs). List out each file with `<file name="path/to/file.php" />`.
-  
-  
+
+
