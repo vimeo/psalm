@@ -335,8 +335,10 @@ abstract class ClassLikeChecker extends SourceChecker implements StatementsSourc
      *
      * @return string
      */
-    public static function getFQCLNFromNameObject(PhpParser\Node\Name $class_name, Aliases $aliases)
-    {
+    public static function getFQCLNFromNameObject(
+        PhpParser\Node\Name $class_name,
+        Aliases $aliases
+    ) {
         /** @var string|null */
         $resolved_name = $class_name->getAttribute('resolvedName');
 

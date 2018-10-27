@@ -82,6 +82,20 @@ class NamespaceStatementsDiffer extends AstDiffer
                     $add_or_delete = array_merge($add_or_delete, $class_keep[2]);
                     $diff_map = array_merge($diff_map, $class_keep[3]);
                 }
+            } elseif ($diff_elem->type === DiffElem::TYPE_REMOVE) {
+                if ($diff_elem->old instanceof PhpParser\Node\Stmt\Use_
+                    || $diff_elem->old instanceof PhpParser\Node\Stmt\GroupUse
+                ) {
+                    foreach ($diff_elem->old->uses as $use) {
+                        if ($use->alias) {
+                            $add_or_delete[] = 'use:' . (string) $use->alias;
+                        } else {
+                            $name_parts = $use->name->parts;
+
+                            $add_or_delete[] = 'use:' . end($name_parts);
+                        }
+                    }
+                }
             }
         }
 

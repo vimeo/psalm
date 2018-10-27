@@ -1349,6 +1349,30 @@ class FileDiffTest extends TestCase
                 [],
                 []
             ],
+            'removeUse' => [
+                '<?php
+                    namespace Foo;
+
+                    use Exception;
+
+                    class A {
+                        public function foo() : void {
+                            throw new Exception();
+                        }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {
+                            throw new Exception();
+                        }
+                    }',
+                ['foo\a::foo'],
+                [],
+                ['use:Exception'],
+                [[-36, -2]]
+            ],
         ];
     }
 }

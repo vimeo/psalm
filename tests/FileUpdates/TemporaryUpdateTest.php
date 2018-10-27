@@ -472,6 +472,212 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[120], [120]],
             ],
+            'removeUseShouldInvalidate' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            use Exception;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Exception();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Exception();
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [197]],
+            ],
+            'removeGroupUseShouldInvalidate' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            use PhpParser\{Error};
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Error("bad", 5);
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Error("bad", 5);
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [197]],
+            ],
+            'removeUseWithAliasShouldInvalidate' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            use Exception as E;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E();
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [197]],
+            ],
+            'removeGroupUseWithAliasShouldInvalidate' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            use PhpParser\{Error as E};
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E("bad", 5);
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E("bad", 5);
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [197]],
+            ],
+            'removeUseShouldInvalidateNoNamespace' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            use PhpParser\Node\Name;
+
+                            class A {
+                                public function foo() : void {
+                                    new Name("Martin");
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public function foo() : void {
+                                    new Name("Martin");
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [147]],
+            ],
+            'removeGroupUseShouldInvalidateNoNamespace' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            use PhpParser\{Error};
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Error("bad", 5);
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Error("bad", 5);
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [197]],
+            ],
+            'removeUseWithAliasShouldInvalidateNoNamespace' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            use Exception as E;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                public function foo() : void {
+                                    throw new E();
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [153]],
+            ],
+            'removeGroupUseWithAliasShouldInvalidateNoNamespace' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            use PhpParser\{Error as E};
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E("bad", 5);
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new E("bad", 5);
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [197]],
+            ],
         ];
     }
 }

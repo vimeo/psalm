@@ -169,6 +169,19 @@ class StatementsProvider
                     array_flip($unchanged_signature_members)
                 );
 
+                $file_path_hash = \md5($file_path);
+
+                $changed_members = array_map(
+                    function (string $key) use ($file_path_hash) : string {
+                        if (substr($key, 0, 4) === 'use:') {
+                            return $key . ':' . $file_path_hash;
+                        }
+
+                        return $key;
+                    },
+                    $changed_members
+                );
+
                 $changed_members = array_map(
                     /**
                      * @param int $_
