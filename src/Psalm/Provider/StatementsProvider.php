@@ -347,7 +347,7 @@ class StatementsProvider
 
         if ($existing_statements && $file_changes && $existing_file_contents) {
             $clashing_traverser = new \Psalm\Traverser\CustomTraverser;
-            $offset_checker = new \Psalm\Visitor\OffsetMapCheckerVisitor(
+            $offset_checker = new \Psalm\Visitor\PartialParserVisitor(
                 self::$parser,
                 $error_handler,
                 $file_changes,

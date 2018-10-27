@@ -4,6 +4,9 @@ namespace Psalm\Visitor;
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
 
+/**
+ * Shifts all nodes in a given AST by a set amount
+ */
 class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
 {
     /** @var int */

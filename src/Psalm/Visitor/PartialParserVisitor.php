@@ -4,7 +4,11 @@ namespace Psalm\Visitor;
 use PhpParser;
 use Psalm\Checker\Statements\ExpressionChecker;
 
-class OffsetMapCheckerVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
+/**
+ * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses
+ * just those methods.
+ */
+class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
 {
     /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4:int}> */
     private $offset_map;
