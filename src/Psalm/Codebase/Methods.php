@@ -535,7 +535,7 @@ class Methods
     /**
      * @param  string $method_id
      *
-     * @return MethodStorage
+     * @return ?MethodStorage
      */
     public function getUserMethodStorage($method_id)
     {
@@ -548,7 +548,7 @@ class Methods
         $storage = $this->getStorage($declaring_method_id);
 
         if (!$storage->location) {
-            throw new \UnexpectedValueException('Storage for ' . $method_id . ' is not user-defined');
+            return null;
         }
 
         return $storage;

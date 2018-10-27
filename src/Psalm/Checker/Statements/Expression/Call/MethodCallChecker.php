@@ -688,21 +688,23 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                     if (count($lhs_types) === 1) {
                         $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
-                        if ($method_storage->assertions) {
-                            self::applyAssertionsToContext(
-                                $method_storage->assertions,
-                                $args,
-                                $context,
-                                $statements_checker
-                            );
-                        }
+                        if ($method_storage) {
+                            if ($method_storage->assertions) {
+                                self::applyAssertionsToContext(
+                                    $method_storage->assertions,
+                                    $args,
+                                    $context,
+                                    $statements_checker
+                                );
+                            }
 
-                        if ($method_storage->if_true_assertions) {
-                            $stmt->ifTrueAssertions = $method_storage->if_true_assertions;
-                        }
+                            if ($method_storage->if_true_assertions) {
+                                $stmt->ifTrueAssertions = $method_storage->if_true_assertions;
+                            }
 
-                        if ($method_storage->if_false_assertions) {
-                            $stmt->ifFalseAssertions = $method_storage->if_false_assertions;
+                            if ($method_storage->if_false_assertions) {
+                                $stmt->ifFalseAssertions = $method_storage->if_false_assertions;
+                            }
                         }
                     }
                 }
