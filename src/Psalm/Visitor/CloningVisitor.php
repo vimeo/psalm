@@ -15,8 +15,19 @@ class CloningVisitor extends NodeVisitorAbstract
     public function enterNode(Node $origNode)
     {
         $node = clone $origNode;
-        if ($c = $node->getDocComment()) {
-            $node->setDocComment(clone $c);
+        if ($cs = $node->getComments()) {
+            $node->setAttribute(
+                'comments',
+                array_map(
+                    /**
+                     * @return \PhpParser\Comment
+                     */
+                    function (\PhpParser\Comment $c) {
+                        return clone $c;
+                    },
+                    $cs
+                )
+            );
         }
         return $node;
     }
