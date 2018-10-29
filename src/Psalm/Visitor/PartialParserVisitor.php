@@ -107,6 +107,12 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                                 break;
                             }
 
+                            // we have a diff that goes outside the bounds that we care about
+                            if ($a_e2 > $stmt_end_pos) {
+                                $this->must_rescan = true;
+                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                            }
+
                             $end_offset = $b_e2 - $a_e2;
 
                             if ($a_s2 < $stmt_start_pos) {
@@ -137,6 +143,11 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             $stmt_end_pos - $stmt_start_pos + 1
                         );
 
+                        if (!$method_contents) {
+                            $this->must_rescan = true;
+                            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                        }
+
                         $error_handler = new \PhpParser\ErrorHandler\Collecting();
 
                         $fake_class = "<?php class _ {" . $method_contents . "}";
@@ -149,11 +160,11 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         if (!$replacement_stmts
                             || !$replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
-                            || count($replacement_stmts[0]->stmts) > 1
+                            || count($replacement_stmts[0]->stmts) !== 1
                         ) {
                             if ($replacement_stmts
                                 && $replacement_stmts[0] instanceof PhpParser\Node\Stmt\ClassLike
-                                && count($replacement_stmts[0]->stmts) > 1
+                                && count($replacement_stmts[0]->stmts) !== 1
                             ) {
                                 $this->must_rescan = true;
                                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
@@ -213,14 +224,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         $traverseChildren = false;
 
-                        $replacement_stmt = reset($replacement_stmts);
-
-                        if ($replacement_stmt === false) {
-                            $this->must_rescan = true;
-                            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
-                        }
-
-                        return $replacement_stmt;
+                        return reset($replacement_stmts);
                     }
 
                     $this->must_rescan = true;

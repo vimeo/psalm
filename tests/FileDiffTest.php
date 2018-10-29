@@ -1139,6 +1139,55 @@ class FileDiffTest extends TestCase
                 ['foo\a::bat'],
                 [[183, 7]]
             ],
+            'removeAdditionalComments' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    /**
+                     * more Comments
+                     *
+                     * @return void
+                     */
+                    public function foo() {
+                        $a = 1;
+                    }
+
+                    /**
+                     * more Comments
+                     *
+                     * @return void
+                     */
+                    public function bar() {
+                        $b = 1;
+                    }
+                }',
+                '<?php
+                namespace Foo;
+
+                use D;
+                use E;
+
+                class A {
+                    /**
+                     * @return void
+                     */
+                    public function foo() {
+                        $c = 1;
+                    }
+
+                    /**
+                     * @return void
+                     */
+                    public function bar() {
+                        $a = 1;
+                    }
+                }',
+                [],
+                [],
+                ['foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
+                []
+            ],
             'SKIPPED-whiteSpaceOnly' => [
                 '<?php
                 namespace Foo;
@@ -1444,6 +1493,76 @@ class FileDiffTest extends TestCase
                 [],
                 ['use:Exception'],
                 [[-36, -2]]
+            ],
+            'vimeoDiff' => [
+                '<?php
+                    namespace C;
+
+                    class A extends B
+                    {
+                        /**
+                         * Another thing
+                         *
+                         * @return D
+                         */
+                        public function foo() {
+                            $a = 1;
+                            $b = 2;
+                        }
+
+                        /**
+                         * Other thing
+                         *
+                         * @return D
+                         */
+                        public function bar() {
+                            $a = 1;
+                            $b = 2;
+                        }
+
+                        /**
+                         * Some thing
+                         *
+                         * @return D
+                         */
+                        public function zap() {
+                            $a = 1;
+                            $b = 2;
+                        }
+
+                        /**
+                         * @return Foo
+                         */
+                        private function top(
+                            D $c
+                        ) {
+                            return $c;
+                        }
+                    }
+                    ',
+                '<?php
+                    namespace C;
+
+                    class A extends B
+                    {
+                        /**
+                         * @return D
+                         */
+                        public function rot() {
+                            $c = 1;
+                        }
+
+                        /**
+                         * @return D
+                         */
+                        public function bar() {
+                            return $c;
+                        }
+                    }',
+                [],
+                [],
+                ['c\a::foo', 'c\a::bar', 'c\a::zap', 'c\a::top', 'c\a::rot', 'c\a::bar'],
+                []
             ],
         ];
     }
