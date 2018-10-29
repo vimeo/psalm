@@ -69,7 +69,7 @@ class LegacyPlugin implements PluginApi\PluginEntryPointInterface
             $file_storage
         );
 
-        $declared_classes = ClassLikeChecker::getClassesForFile($this->project_checker, $path);
+        $declared_classes = ClassLikeChecker::getClassesForFile($codebase, $path);
 
         if (count($declared_classes) !== 1) {
             throw new \InvalidArgumentException(
