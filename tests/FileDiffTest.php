@@ -690,12 +690,23 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bat() {
                         $c = 1;
                     }
@@ -704,9 +715,16 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
@@ -979,9 +997,16 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
@@ -990,12 +1015,23 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bat() {
                         $c = 1;
                     }
@@ -1010,9 +1046,16 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
@@ -1021,12 +1064,23 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function bat() {
                         $c = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
@@ -1034,16 +1088,23 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                [[98, 3], [98, 3]]
+                [[183, 7], [183, 7]]
             ],
             'newFunctionInMiddle' => [
                 '<?php
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
@@ -1052,12 +1113,23 @@ class FileDiffTest extends TestCase
                 namespace Foo;
 
                 class A {
+                    /**
+                     * @return void
+                     */
                     public function foo() {
                         $a = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bat() {
                         $c = 1;
                     }
+
+                    /**
+                     * @return void
+                     */
                     public function bar() {
                         $b = 1;
                     }
@@ -1065,7 +1137,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                [[98, 3]]
+                [[183, 7]]
             ],
             'SKIPPED-whiteSpaceOnly' => [
                 '<?php
