@@ -187,7 +187,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                             $current_line
                         );
                         $renumbering_traverser->addVisitor($position_shifter);
-                        $renumbering_traverser->traverse($replacement_stmts);
+                        $replacement_stmts = $renumbering_traverser->traverse($replacement_stmts);
 
                         if ($error_handler->hasErrors()) {
                             foreach ($error_handler->getErrors() as $error) {
@@ -213,7 +213,14 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
 
                         $traverseChildren = false;
 
-                        return reset($replacement_stmts);
+                        $replacement_stmt = reset($replacement_stmts);
+
+                        if ($replacement_stmt === false) {
+                            $this->must_rescan = true;
+                            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                        }
+
+                        return $replacement_stmt;
                     }
 
                     $this->must_rescan = true;
