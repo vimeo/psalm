@@ -196,6 +196,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         case Type\Atomic\TLiteralString::class:
                         case Type\Atomic\TLiteralClassString::class:
                         case Type\Atomic\TNumericString::class:
+                        case Type\Atomic\THtmlEscapedString::class:
                         case Type\Atomic\TClassString::class:
                         case Type\Atomic\TEmptyMixed::class:
                             $invalid_method_call_types[] = (string)$lhs_type_part;

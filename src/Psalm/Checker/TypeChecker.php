@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -701,11 +702,17 @@ class TypeChecker
             return true;
         }
 
-        if ($container_type_part instanceof TString && $input_type_part instanceof TNumericString) {
+        if ($container_type_part instanceof TString
+            && ($input_type_part instanceof TNumericString
+                || $input_type_part instanceof THtmlEscapedString)
+        ) {
             return true;
         }
 
-        if ($container_type_part instanceof TNumericString && $input_type_part instanceof TString) {
+        if ($input_type_part instanceof TString
+            && ($container_type_part instanceof TNumericString
+                || $container_type_part instanceof THtmlEscapedString)
+        ) {
             $type_coerced = true;
 
             return false;

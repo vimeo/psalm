@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -116,6 +117,9 @@ abstract class Atomic
 
             case 'numeric-string':
                 return new TNumericString();
+
+            case 'html-escaped-string':
+                return new THtmlEscapedString();
 
             case '$this':
                 return new TNamedObject('static');

@@ -53,6 +53,8 @@ abstract class Type
         'mixed' => true,
         'numeric-string' => true,
         'class-string' => true,
+        'mysql-escaped-string' => true,
+        'html-escaped-string' => true,
         'boolean' => true,
         'integer' => true,
         'double' => true,
