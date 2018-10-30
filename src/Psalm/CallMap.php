@@ -8387,7 +8387,7 @@ return [
 'odbc_execute' => ['bool', 'result_id'=>'resource', 'parameters_array='=>'array'],
 'odbc_fetch_array' => ['array', 'result'=>'resource', 'rownumber='=>'int'],
 'odbc_fetch_into' => ['int', 'result_id'=>'resource', '&w_result_array'=>'array', 'rownumber='=>'int'],
-'odbc_fetch_object' => ['object', 'result'=>'int', 'rownumber='=>'int'],
+'odbc_fetch_object' => ['object', 'result'=>'resource', 'rownumber='=>'int'],
 'odbc_fetch_row' => ['bool', 'result_id'=>'resource', 'row_number='=>'int'],
 'odbc_field_len' => ['int', 'result_id'=>'resource', 'field_number'=>'int'],
 'odbc_field_name' => ['string', 'result_id'=>'resource', 'field_number'=>'int'],
