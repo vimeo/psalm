@@ -221,10 +221,7 @@ $project_checker = new ProjectChecker(
     $providers
 );
 
-error_log(var_export($options, true));
-
 if (isset($options['disable-on-change'])) {
-    error_log('disabling on change');
     $project_checker->onchange_line_limit = (int) $options['disable-on-change'];
 }
 
