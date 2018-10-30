@@ -288,18 +288,19 @@ abstract class Atomic
         FileStorage $file_storage = null,
         array $phantom_classes = []
     ) {
-        if ($this instanceof TNamedObject && !isset($phantom_classes[strtolower($this->value)])) {
-            $codebase->scanner->queueClassLikeForScanning(
-                $this->value,
-                $file_storage ? $file_storage->file_path : null,
-                false,
-                !$this->from_docblock
-            );
-            if ($file_storage) {
-                $file_storage->referenced_classlikes[] = $this->value;
-            }
+        if ($this instanceof TNamedObject) {
+            if (!isset($phantom_classes[strtolower($this->value)])) {
+                $codebase->scanner->queueClassLikeForScanning(
+                    $this->value,
+                    $file_storage ? $file_storage->file_path : null,
+                    false,
+                    !$this->from_docblock
+                );
 
-            return;
+                if ($file_storage) {
+                    $file_storage->referenced_classlikes[] = $this->value;
+                }
+            }
         }
 
         if ($this instanceof TScalarClassConstant) {
