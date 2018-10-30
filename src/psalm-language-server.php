@@ -24,6 +24,7 @@ $valid_long_options = [
     'use-ini-defaults',
     'version',
     'tcp:',
+    'disable-on-change::'
 ];
 
 $args = array_slice($argv, 1);
@@ -38,7 +39,10 @@ array_map(
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
-            if (!in_array($arg_name, $valid_long_options) && !in_array($arg_name . ':', $valid_long_options)) {
+            if (!in_array($arg_name, $valid_long_options)
+                && !in_array($arg_name . ':', $valid_long_options)
+                && !in_array($arg_name . '::', $valid_long_options)
+            ) {
                 echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
                     . 'Type --help to see a list of supported arguments'. PHP_EOL;
                 exit(1);
@@ -112,6 +116,9 @@ Options:
     --tcp=url
         Use TCP mode (by default Psalm uses STDIO)
 
+    --disable-on-change[=line-number-threshold]
+        If added, the language server will not respond to onChange events.
+        You can also specify a line count over which Psalm will not run on-change events.
 HELP;
 
     exit;
@@ -213,6 +220,13 @@ $project_checker = new ProjectChecker(
     $config,
     $providers
 );
+
+error_log(var_export($options, true));
+
+if (isset($options['disable-on-change'])) {
+    error_log('disabling on change');
+    $project_checker->onchange_line_limit = (int) $options['disable-on-change'];
+}
 
 $config->visitComposerAutoloadFiles($project_checker);
 

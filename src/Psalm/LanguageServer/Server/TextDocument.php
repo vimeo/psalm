@@ -61,12 +61,17 @@ class TextDocument
      */
     protected $codebase;
 
+    /** @var ?int */
+    protected $onchange_line_limit;
+
     public function __construct(
         LanguageServer $server,
-        Codebase $codebase
+        Codebase $codebase,
+        ?int $onchange_line_limit
     ) {
         $this->server = $server;
         $this->codebase = $codebase;
+        $this->onchange_line_limit = $onchange_line_limit;
     }
 
     /**
@@ -130,6 +135,19 @@ class TextDocument
 
         $time = microtime(true);
         $this->codebase->addTemporaryFileChanges($file_path, $contentChanges);
+
+        if ($this->onchange_line_limit !== null) {
+            if ($this->onchange_line_limit === 0) {
+                return;
+            }
+
+            $c = $this->codebase->getFileContents($file_path);
+
+            if (substr_count($c, "\n") > $this->onchange_line_limit) {
+                return;
+            }
+        }
+
         $this->server->analyzePath($file_path);
         $this->server->emitIssues($textDocument->uri);
         $diff = microtime(true) - $time;

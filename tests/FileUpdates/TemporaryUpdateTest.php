@@ -678,6 +678,33 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [197]],
             ],
+            'addUseShouldValidate' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Exception();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            use Exception;
+
+                            class A {
+                                public function foo() : void {
+                                    throw new Exception();
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[197], []],
+            ],
         ];
     }
 }

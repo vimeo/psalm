@@ -145,6 +145,11 @@ class ProjectChecker
      */
     public $only_replace_php_types_with_non_docblock_types = false;
 
+    /**
+     * @var ?int
+     */
+    public $onchange_line_limit;
+
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';
