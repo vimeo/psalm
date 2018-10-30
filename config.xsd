@@ -43,6 +43,7 @@
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:string" />
         <xs:attribute name="checkForThrowsDocblock" type="xs:string" />
         <xs:attribute name="forbidEcho" type="xs:string" />
+        <xs:attribute name="errorBaseline" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">

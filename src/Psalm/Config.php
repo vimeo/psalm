@@ -301,6 +301,9 @@ class Config
      */
     public $modified_time = 0;
 
+    /** @var string|null */
+    public $error_baseline = null;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -571,6 +574,11 @@ class Config
         if (isset($config_xml['forbidEcho'])) {
             $attribute_text = (string) $config_xml['forbidEcho'];
             $config->forbid_echo = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['errorBaseline'])) {
+            $attribute_text = (string) $config_xml['errorBaseline'];
+            $config->error_baseline = $attribute_text;
         }
 
         if (isset($config_xml->projectFiles)) {

@@ -24,6 +24,7 @@
             <file name="src/Psalm/Traverser/CustomTraverser.php" />
             <directory name="tests/performance/a.test" />
             <directory name="tests/performance/b.test" />
+            <file name="tests/ErrorBaselineTest.php" />
         </ignoreFiles>
     </projectFiles>
 

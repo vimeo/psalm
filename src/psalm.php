@@ -1,6 +1,7 @@
 <?php
 require_once('command_functions.php');
 
+use Psalm\ErrorBaseline;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Config;
 use Psalm\IssueBuffer;
@@ -25,10 +26,12 @@ $valid_long_options = [
     'debug',
     'debug-by-line',
     'diff',
+    'diff-methods',
     'disable-extension:',
     'find-dead-code',
     'find-references-to:',
     'help',
+    'ignore-baseline',
     'init',
     'monochrome',
     'no-cache',
@@ -36,13 +39,14 @@ $valid_long_options = [
     'plugin:',
     'report:',
     'root:',
+    'set-baseline:',
     'show-info:',
     'show-snippet:',
     'stats',
     'threads:',
+    'update-baseline',
     'use-ini-defaults',
     'version',
-    'diff-methods',
 ];
 
 $args = array_slice($argv, 1);
@@ -189,6 +193,15 @@ Options:
 
     --disable-extension=[extension]
         Used to disable certain extensions while Psalm is running.
+        
+    --set-baseline=PATH
+        Save all current error level issues to a file, to mark them as info in subsequent runs
+
+    --ignore-baseline=PATH
+        Ignore the error baseline
+        
+    --update-baseline
+        Update the baseline by removing fixed issues. This will not add new issues to the baseline
 
 HELP;
 
@@ -251,6 +264,12 @@ if ($threads > 1) {
 $ini_handler->check();
 
 setlocale(LC_CTYPE, 'C');
+
+if (isset($options['set-baseline'])) {
+    if (is_array($options['set-baseline'])) {
+        die('Only one baseline file can be created at a time' . PHP_EOL);
+    }
+}
 
 if (isset($options['i'])) {
     if (file_exists($current_dir . 'psalm.xml')) {
@@ -477,4 +496,59 @@ if ($find_references_to) {
     }
 }
 
-IssueBuffer::finish($project_checker, !$paths_to_check, $start_time, isset($options['stats']));
+if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
+    echo 'Writing error baseline to file...', PHP_EOL;
+
+    ErrorBaseline::create(
+        new \Psalm\Provider\FileProvider,
+        $options['set-baseline'],
+        IssueBuffer::getIssuesData()
+    );
+
+    echo "Baseline saved to {$options['set-baseline']}.";
+
+    if (Config::getInstance()->error_baseline !== $options['set-baseline']) {
+        echo " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.";
+    }
+
+    echo PHP_EOL;
+}
+
+$issue_baseline = [];
+
+if (isset($options['update-baseline'])) {
+    $baselineFile = Config::getInstance()->error_baseline;
+
+    if (empty($baselineFile)) {
+        die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+    }
+
+    try {
+        $issue_baseline = ErrorBaseline::update(
+            new \Psalm\Provider\FileProvider,
+            $baselineFile,
+            IssueBuffer::getIssuesData()
+        );
+    } catch (\Psalm\Exception\ConfigException $exception) {
+        die('Could not update baseline file: ' . $exception->getMessage());
+    }
+}
+
+if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-baseline'])) {
+    try {
+        $issue_baseline = ErrorBaseline::read(
+            new \Psalm\Provider\FileProvider,
+            (string)Config::getInstance()->error_baseline
+        );
+    } catch (\Psalm\Exception\ConfigException $exception) {
+        die('Error while reading baseline: ' . $exception->getMessage());
+    }
+}
+
+IssueBuffer::finish(
+    $project_checker,
+    !$paths_to_check,
+    $start_time,
+    isset($options['stats']),
+    $issue_baseline
+);
