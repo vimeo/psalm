@@ -300,18 +300,20 @@ class IssueBuffer
     }
 
     /**
-     * @param  ProjectChecker       $project_checker
-     * @param  bool                 $is_full
-     * @param  float                $start_time
-     * @param  bool                 $add_stats
+     * @param  ProjectChecker                   $project_checker
+     * @param  bool                             $is_full
+     * @param  float                            $start_time
+     * @param  bool                             $add_stats
+     * @param  array<string,array<string,int>>  $issue_baseline
      *
      * @return void
      */
     public static function finish(
         ProjectChecker $project_checker,
-        $is_full,
-        $start_time,
-        $add_stats = false
+        bool $is_full,
+        float $start_time,
+        bool $add_stats = false,
+        array $issue_baseline = []
     ) {
         if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
             echo "\n";
@@ -340,6 +342,21 @@ class IssueBuffer
                     return $d1['file_path'] > $d2['file_path'] ? 1 : -1;
                 }
             );
+
+            if (!empty($issue_baseline)) {
+                // Set severity for issues in baseline to INFO
+                foreach (self::$issues_data as $key => $issue_data) {
+                    $file = $issue_data['file_name'];
+                    $type = $issue_data['type'];
+
+                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type] > 0) {
+                        $issue_data['severity'] = Config::REPORT_INFO;
+                        $issue_baseline[$file][$type] = (int)$issue_baseline[$file][$type] - 1;
+                    }
+
+                    self::$issues_data[$key] = $issue_data;
+                }
+            }
 
             foreach (self::$issues_data as $issue_data) {
                 if ($issue_data['severity'] === Config::REPORT_ERROR) {
