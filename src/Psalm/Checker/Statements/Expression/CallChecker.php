@@ -2092,6 +2092,7 @@ class CallChecker
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
+     * @param  array<int, string> $template_typeof_params
      * @param  StatementsChecker $statements_checker
      *
      * @return void
@@ -2099,12 +2100,15 @@ class CallChecker
     protected static function applyAssertionsToContext(
         array $assertions,
         array $args,
+        array $template_typeof_params,
         Context $context,
         StatementsChecker $statements_checker
     ) {
         $type_assertions = [];
 
         foreach ($assertions as $assertion) {
+            $assertion_var_id = null;
+
             if (is_int($assertion->var_id)) {
                 if (!isset($args[$assertion->var_id])) {
                     continue;
@@ -2115,10 +2119,26 @@ class CallChecker
                 $arg_var_id = ExpressionChecker::getArrayVarId($arg_value, null, $statements_checker);
 
                 if ($arg_var_id) {
-                    $type_assertions[$arg_var_id] = $assertion->rule;
+                    $assertion_var_id = $arg_var_id;
                 }
             } else {
-                $type_assertions[$assertion->var_id] = $assertion->rule;
+                $assertion_var_id = $assertion->var_id;
+            }
+
+            if ($assertion_var_id) {
+                $offset = array_search($assertion->rule[0][0], $template_typeof_params, true);
+
+                if ($offset !== false) {
+                    if (isset($args[$offset]->value->inferredType)) {
+                        $templated_type = $args[$offset]->value->inferredType;
+
+                        if ($templated_type->isSingleStringLiteral()) {
+                            $type_assertions[$assertion_var_id] = [[$templated_type->getSingleStringLiteral()->value]];
+                        }
+                    }
+                } else {
+                    $type_assertions[$assertion_var_id] = $assertion->rule;
+                }
             }
         }
 

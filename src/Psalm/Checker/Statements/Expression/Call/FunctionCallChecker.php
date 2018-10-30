@@ -481,6 +481,7 @@ class FunctionCallChecker extends \Psalm\Checker\Statements\Expression\CallCheck
                 self::applyAssertionsToContext(
                     $function_storage->assertions,
                     $stmt->args,
+                    $function_storage->template_typeof_params ?: [],
                     $context,
                     $statements_checker
                 );

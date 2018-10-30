@@ -694,6 +694,7 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                                 self::applyAssertionsToContext(
                                     $method_storage->assertions,
                                     $args,
+                                    $method_storage->template_typeof_params ?: [],
                                     $context,
                                     $statements_checker
                                 );

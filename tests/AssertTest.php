@@ -204,6 +204,37 @@ class AssertTest extends TestCase
                         $i = substr($_SERVER["abc"], 1, 2);
                     }',
             ],
+            'assertTemplatedType' => [
+                '<?php
+                    interface Foo {}
+
+                    class Bar implements Foo {
+                        public function sayHello(): void {
+                            echo "Hello";
+                        }
+                    }
+
+                    /**
+                     * @param mixed $value
+                     * @param class-string $type
+                     * @template T
+                     * @template-typeof T $type
+                     * @psalm-assert T $value
+                     */
+                    function assertInstanceOf($value, string $type): void {
+                        // some code
+                    }
+
+                    // Returns concreate implmenetation of Foo, which in this case is Bar
+                    function getImplementationOfFoo(): Foo {
+                        return new Bar();
+                    }
+
+                    $bar = getImplementationOfFoo();
+                    assertInstanceOf($bar, Bar::class);
+
+                    $bar->sayHello();'
+            ],
         ];
     }
 

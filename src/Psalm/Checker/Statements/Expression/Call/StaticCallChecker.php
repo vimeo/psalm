@@ -512,6 +512,7 @@ class StaticCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         self::applyAssertionsToContext(
                             $method_storage->assertions,
                             $stmt->args,
+                            $method_storage->template_typeof_params ?: [],
                             $context,
                             $statements_checker
                         );
