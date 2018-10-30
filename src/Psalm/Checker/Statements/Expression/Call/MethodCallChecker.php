@@ -418,6 +418,17 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
                         $method_id = $intersection_type->value . '::' . $method_name_lc;
                         $fq_class_name = $intersection_type->value;
 
+                        $does_class_exist = ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                            $statements_checker,
+                            $fq_class_name,
+                            new CodeLocation($source, $stmt->var),
+                            $statements_checker->getSuppressedIssues()
+                        );
+
+                        if (!$does_class_exist) {
+                            return false;
+                        }
+
                         if ($codebase->methodExists($method_id)) {
                             break;
                         }
