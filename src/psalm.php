@@ -263,7 +263,7 @@ if (isset($options['i'])) {
         function ($arg) {
             return $arg !== '--ansi'
                 && $arg !== '--no-ansi'
-                && $arg !== '--i'
+                && $arg !== '-i'
                 && $arg !== '--init'
                 && strpos($arg, '--root=') !== 0
                 && strpos($arg, '--r=') !== 0;
