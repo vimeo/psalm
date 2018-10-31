@@ -396,6 +396,8 @@ class ClassChecker extends ClassLikeChecker
         $constructor_checker = null;
         $member_stmts = [];
 
+        $time = microtime(true);
+
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 $method_checker = $this->analyzeClassMethod(
@@ -432,6 +434,8 @@ class ClassChecker extends ClassLikeChecker
                 $member_stmts[] = $stmt;
             }
         }
+
+        error_log(number_format(microtime(true) - $time, 4));
 
         $statements_checker = new StatementsChecker($this);
         $statements_checker->analyze($member_stmts, $class_context, $global_context, true);
@@ -1103,6 +1107,8 @@ class ClassChecker extends ClassLikeChecker
         ) {
             $codebase->analyzer->setCorrectMethod($included_file_path, $trait_safe_method_id);
         }
+
+        error_log($trait_safe_method_id);
 
         return $method_checker;
     }

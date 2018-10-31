@@ -36,6 +36,10 @@ class NamespaceStatementsDiffer extends AstDiffer
              * @return bool
              */
             function (PhpParser\Node\Stmt $a, PhpParser\Node\Stmt $b, $a_code, $b_code, bool &$body_change = false) {
+                if (get_class($a) !== get_class($b)) {
+                    return false;
+                }
+
                 if (($a instanceof PhpParser\Node\Stmt\Class_ && $b instanceof PhpParser\Node\Stmt\Class_)
                     || ($a instanceof PhpParser\Node\Stmt\Interface_ && $b instanceof PhpParser\Node\Stmt\Interface_)
                     || ($a instanceof PhpParser\Node\Stmt\Trait_ && $b instanceof PhpParser\Node\Stmt\Trait_)
@@ -43,6 +47,25 @@ class NamespaceStatementsDiffer extends AstDiffer
                     // @todo add check for comments comparison
 
                     return (string)$a->name === (string)$b->name;
+                }
+
+                if (($a instanceof PhpParser\Node\Stmt\Use_
+                        && $b instanceof PhpParser\Node\Stmt\Use_)
+                    || ($a instanceof PhpParser\Node\Stmt\GroupUse
+                        && $b instanceof PhpParser\Node\Stmt\GroupUse)
+                ) {
+                    $a_start = (int)$a->getAttribute('startFilePos');
+                    $a_end = (int)$a->getAttribute('endFilePos');
+
+                    $b_start = (int)$b->getAttribute('startFilePos');
+                    $b_end = (int)$b->getAttribute('endFilePos');
+
+                    $a_size = $a_end - $a_start;
+                    $b_size = $b_end - $b_start;
+
+                    if (substr($a_code, $a_start, $a_size) === substr($b_code, $b_start, $b_size)) {
+                        return true;
+                    }
                 }
 
                 return false;

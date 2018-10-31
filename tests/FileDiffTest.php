@@ -1564,6 +1564,44 @@ class FileDiffTest extends TestCase
                 ['c\a::foo', 'c\a::bar', 'c\a::zap', 'c\a::top', 'c\a::rot', 'c\a::bar'],
                 []
             ],
+            'noUseChange' => [
+                '<?php
+                    namespace A;
+
+                    use PhpParser;
+                    use Psalm\Aliases;
+
+                    class C
+                    {
+                        /**
+                         * @return D
+                         */
+                        public function foo() {
+                            $c = 1;
+                        }
+                    }
+                    ',
+                '<?php
+                    namespace A;
+
+                    use PhpParser;
+                    use Psalm\Aliases;
+
+                    class C
+                    {
+                        /**
+                         * @return D
+                         */
+                        public function foo() {
+                            $d = 1;
+                        }
+                    }
+                    ',
+                [],
+                ['a\c::foo'],
+                [],
+                []
+            ],
         ];
     }
 }
