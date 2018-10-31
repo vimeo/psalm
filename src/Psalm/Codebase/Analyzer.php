@@ -279,14 +279,10 @@ class Analyzer
         } else {
             $i = 0;
 
-            $time = microtime(true);
-
             foreach ($this->files_to_analyze as $file_path => $_) {
                 $analysis_worker($i, $file_path);
                 ++$i;
             }
-
-            error_log(number_format(microtime(true) - $time, 4));
 
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
                 $project_checker->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
@@ -331,9 +327,6 @@ class Analyzer
 
         $changed_members = $statements_provider->getChangedMembers();
         $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
-
-        error_log(var_export($changed_members, true));
-        error_log(var_export($unchanged_signature_members, true));
 
         $diff_map = $statements_provider->getDiffMap();
 
