@@ -123,11 +123,16 @@ class StatementsProvider
 
             if ($existing_statements && $existing_file_contents) {
                 $file_changes = \Psalm\Diff\FileDiffer::getDiff($existing_file_contents, $file_contents);
-                $traverser = new PhpParser\NodeTraverser;
-                $traverser->addVisitor(new \Psalm\Visitor\CloningVisitor);
-                // performs a deep clone
-                /** @var array<int, PhpParser\Node\Stmt> */
-                $existing_statements_copy = $traverser->traverse($existing_statements);
+
+                if (count($file_changes) < 10) {
+                    $traverser = new PhpParser\NodeTraverser;
+                    $traverser->addVisitor(new \Psalm\Visitor\CloningVisitor);
+                    // performs a deep clone
+                    /** @var array<int, PhpParser\Node\Stmt> */
+                    $existing_statements_copy = $traverser->traverse($existing_statements);
+                } else {
+                    $file_changes = null;
+                }
             }
 
             $stmts = self::parseStatements(
