@@ -34,15 +34,23 @@ class FileReferenceCacheProvider
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
     const ISSUES_CACHE_NAME = 'issues';
     const FILE_MAPS_CACHE_NAME = 'file_maps';
+    const CONFIG_HASH_CACHE_NAME = 'config';
 
     /**
      * @var Config
      */
     private $config;
 
+    /**
+     * @var bool
+     */
+    public $config_changed;
+
     public function __construct(Config $config)
     {
         $this->config = $config;
+        $this->config_changed = $config->hash !== $this->getConfigHashCache();
+        $this->setConfigHashCache($config->hash);
     }
 
     /**
@@ -191,7 +199,7 @@ class FileReferenceCacheProvider
 
         if ($cache_directory
             && file_exists($correct_methods_cache_location)
-            && filemtime($correct_methods_cache_location) > $this->config->modified_time
+            && !$this->config_changed
         ) {
             /** @var array<string, array<string, int>> */
             return unserialize(file_get_contents($correct_methods_cache_location));
@@ -229,7 +237,7 @@ class FileReferenceCacheProvider
 
         if ($cache_directory
             && file_exists($file_maps_cache_location)
-            && filemtime($file_maps_cache_location) > $this->config->modified_time
+            && !$this->config_changed
         ) {
             /** @var array<string, array{0: TaggedCodeType, 1: TaggedCodeType}> */
             $file_maps_cache = unserialize(file_get_contents($file_maps_cache_location));
@@ -253,6 +261,43 @@ class FileReferenceCacheProvider
             file_put_contents(
                 $file_maps_cache_location,
                 serialize($file_maps)
+            );
+        }
+    }
+
+    /**
+     * @return string|false
+     */
+    public function getConfigHashCache()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
+
+        if ($cache_directory
+            && file_exists($config_hash_cache_location)
+        ) {
+            /** @var string */
+            $file_maps_cache = unserialize(file_get_contents($config_hash_cache_location));
+            return $file_maps_cache;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return void
+     */
+    public function setConfigHashCache(string $hash)
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
+
+            file_put_contents(
+                $config_hash_cache_location,
+                serialize($hash)
             );
         }
     }

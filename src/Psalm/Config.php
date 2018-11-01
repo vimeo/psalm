@@ -297,9 +297,9 @@ class Config
     public $exit_functions = [];
 
     /**
-     * @var int
+     * @var string
      */
-    public $modified_time = 0;
+    public $hash = '';
 
     /** @var string|null */
     public $error_baseline = null;
@@ -388,7 +388,7 @@ class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents);
-            $config->modified_time = filemtime($file_path);
+            $config->hash = sha1($file_contents);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage()
