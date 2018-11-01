@@ -44,7 +44,7 @@ class FileStorageCacheProvider
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= PSALM_VERSION;
+        $this->modified_timestamps .= PSALM_VERSION . $this->config->modified_time;
     }
 
     /**
