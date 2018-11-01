@@ -225,7 +225,7 @@ class CodeLocation
             );
 
             if ($this->text) {
-                $regex = '/(' . str_replace(',', ',[ ]*', preg_quote($this->text)) . ')/';
+                $regex = '/(' . str_replace(',', ',[ ]*', preg_quote($this->text, '/')) . ')/';
                 $match_offset = 1;
             }
 
