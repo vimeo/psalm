@@ -197,7 +197,7 @@ Options:
     --set-baseline=PATH
         Save all current error level issues to a file, to mark them as info in subsequent runs
 
-    --ignore-baseline=PATH
+    --ignore-baseline
         Ignore the error baseline
         
     --update-baseline
