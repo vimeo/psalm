@@ -325,6 +325,29 @@ class Config
      */
     public static function getConfigForPath($path, $base_dir, $output_format)
     {
+        $config_path = self::locateConfigFile($path);
+
+        if (!$config_path) {
+            if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+                exit(
+                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
+                    PHP_EOL
+                );
+            }
+            throw new ConfigException('Config not found for path ' . $path);
+        }
+
+        return self::loadFromXMLFile($config_path, $base_dir);
+    }
+
+    /**
+     * Searches up a folder hierarchy for the most immediate config.
+     *
+     * @throws ConfigException
+     * @return ?string
+     */
+    public static function locateConfigFile(string $path)
+    {
         $dir_path = realpath($path);
 
         if ($dir_path === false) {
@@ -335,32 +358,16 @@ class Config
             $dir_path = dirname($dir_path);
         }
 
-        $config = null;
-
         do {
             $maybe_path = $dir_path . DIRECTORY_SEPARATOR . Config::DEFAULT_FILE_NAME;
 
             if (file_exists($maybe_path) || file_exists($maybe_path .= '.dist')) {
-                $config = self::loadFromXMLFile($maybe_path, $base_dir);
-
-                break;
+                return $maybe_path;
             }
 
             $dir_path = dirname($dir_path);
         } while (dirname($dir_path) !== $dir_path);
-
-        if (!$config) {
-            if ($output_format === ProjectChecker::TYPE_CONSOLE) {
-                exit(
-                    'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
-                    PHP_EOL
-                );
-            }
-
-            throw new ConfigException('Config not found for path ' . $path);
-        }
-
-        return $config;
+        return null;
     }
 
     /**
