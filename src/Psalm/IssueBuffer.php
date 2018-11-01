@@ -296,7 +296,13 @@ class IssueBuffer
      */
     public static function addIssues(array $issues_data)
     {
-        self::$issues_data = array_merge($issues_data, self::$issues_data);
+        foreach ($issues_data as $issue) {
+            $error_message = $issue['type'] . ' - ' . $issue['file_name'] . ':' . $issue['line_from'] . ' - ' . $issue['message'];
+
+            if (!self::alreadyEmitted($error_message)) {
+                self::$issues_data[] = $issue;
+            }
+        }
     }
 
     /**
