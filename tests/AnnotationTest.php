@@ -1000,6 +1000,19 @@ class AnnotationTest extends TestCase
                         return $s;
                     }',
             ],
+            'missingReturnTypeWithBadDocblockIgnoreBoth' => [
+                '<?php
+                    /**
+                     * @return [bad]
+                     */
+                    function fooBar() {
+                    }',
+                [],
+                [
+                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
+                    'MissingReturnType' => \Psalm\Config::REPORT_INFO,
+                ]
+            ],
         ];
     }
 
@@ -1170,6 +1183,18 @@ class AnnotationTest extends TestCase
                     function fooBar(): void {
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5 - Badly-formatted @param',
+            ],
+            'missingReturnTypeWithBadDocblock' => [
+                '<?php
+                    /**
+                     * @return [bad]
+                     */
+                    function fooBar() {
+                    }',
+                'error_message' => 'MissingReturnType',
+                [
+                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
+                ]
             ],
             'invalidDocblockReturn' => [
                 '<?php

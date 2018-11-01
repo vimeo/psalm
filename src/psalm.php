@@ -193,13 +193,13 @@ Options:
 
     --disable-extension=[extension]
         Used to disable certain extensions while Psalm is running.
-        
+
     --set-baseline=PATH
         Save all current error level issues to a file, to mark them as info in subsequent runs
 
     --ignore-baseline
         Ignore the error baseline
-        
+
     --update-baseline
         Update the baseline by removing fixed issues. This will not add new issues to the baseline
 

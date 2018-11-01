@@ -512,6 +512,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                 $this->file_storage->has_visitor_issues = true;
             }
 
+            if ($classlike_storage->has_docblock_issues) {
+                $this->file_storage->has_docblock_issues = true;
+            }
+
             $this->class_template_types = [];
 
             if ($this->after_classlike_check_plugins) {
@@ -542,6 +546,10 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
 
             if ($functionlike_storage->has_visitor_issues) {
                 $this->file_storage->has_visitor_issues = true;
+            }
+
+            if ($functionlike_storage->has_docblock_issues) {
+                $this->file_storage->has_docblock_issues = true;
             }
         }
 
@@ -584,8 +592,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                                 new CodeLocation($this->file_scanner, $node, null, true)
                             )
                         )) {
-                            $this->file_storage->has_visitor_issues = true;
                         }
+
+                        $this->file_storage->has_visitor_issues = true;
 
                         $duplicate_storage->has_visitor_issues = true;
 
@@ -633,8 +642,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         new CodeLocation($this->file_scanner, $node, null, true)
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
                 }
+
+                $storage->has_docblock_issues = true;
             }
 
             if ($docblock_info) {
@@ -904,8 +914,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         new CodeLocation($this->file_scanner, $param, null, true)
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
                 }
+
+                $storage->has_docblock_issues = true;
 
                 ++$i;
 
@@ -921,12 +932,13 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         new CodeLocation($this->file_scanner, $param, null, true)
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
-
-                    ++$i;
-
-                    continue;
                 }
+
+                $storage->has_docblock_issues = true;
+
+                ++$i;
+
+                continue;
             }
 
             $existing_params['$' . $param_array->name] = $i;
@@ -947,8 +959,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             new CodeLocation($this->file_scanner, $param, null, true)
                         )
                     )) {
-                        $storage->has_visitor_issues = true;
                     }
+
+                    $storage->has_visitor_issues = true;
                 }
             } else {
                 $has_optional_param = true;
@@ -1102,9 +1115,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     new CodeLocation($this->file_scanner, $stmt, null, true)
                 )
             )) {
-                $storage->has_visitor_issues = true;
             }
 
+            $storage->has_docblock_issues = true;
             $docblock_info = null;
         } catch (DocblockParseException $e) {
             if (IssueBuffer::accepts(
@@ -1113,8 +1126,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     new CodeLocation($this->file_scanner, $stmt, null, true)
                 )
             )) {
-                $storage->has_visitor_issues = true;
             }
+
+            $storage->has_docblock_issues = true;
 
             $docblock_info = null;
         }
@@ -1328,8 +1342,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                                 new CodeLocation($this->file_scanner, $stmt, null, true)
                             )
                         )) {
-                            $storage->has_visitor_issues = true;
                         }
+
+                        $storage->has_docblock_issues = true;
                     }
                 }
 
@@ -1371,8 +1386,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         new CodeLocation($this->file_scanner, $stmt, null, true)
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
                 }
+
+                $storage->has_docblock_issues = true;
 
                 continue;
             }
@@ -1544,8 +1560,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         $code_location
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
                 }
+
+                $storage->has_docblock_issues = true;
 
                 continue;
             }
@@ -1673,8 +1690,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         new CodeLocation($this->file_scanner, $stmt, null, true)
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
                 }
+
+                $storage->has_docblock_issues = true;
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
@@ -1682,8 +1700,9 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         new CodeLocation($this->file_scanner, $stmt, null, true)
                     )
                 )) {
-                    $storage->has_visitor_issues = true;
                 }
+
+                $storage->has_docblock_issues = true;
             }
         }
 

@@ -128,6 +128,11 @@ class FunctionLikeStorage
     public $has_visitor_issues = false;
 
     /**
+     * @var bool
+     */
+    public $has_docblock_issues = false;
+
+    /**
      * @var array<string, bool>
      */
     public $throws = [];

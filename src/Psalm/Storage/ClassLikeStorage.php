@@ -278,6 +278,11 @@ class ClassLikeStorage
     public $has_visitor_issues = false;
 
     /**
+     * @var bool
+     */
+    public $has_docblock_issues = false;
+
+    /**
      * @param string $name
      */
     public function __construct($name)

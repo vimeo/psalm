@@ -445,7 +445,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[136, 273], [275, 144, 136]],
+                'error_positions' => [[136, 273], [144, 136, 275]],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]

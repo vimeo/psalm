@@ -17,7 +17,7 @@ trait FileCheckerInvalidCodeParseTestTrait
      *
      * @param string $code
      * @param string $error_message
-     * @param array<string> $error_levels
+     * @param array<int|string, string> $error_levels
      * @param bool $strict_mode
      *
      * @return void
@@ -32,8 +32,15 @@ trait FileCheckerInvalidCodeParseTestTrait
             Config::getInstance()->strict_binary_operands = true;
         }
 
-        foreach ($error_levels as $error_level) {
-            Config::getInstance()->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+        foreach ($error_levels as $error_level_key => $error_level) {
+            if (is_int($error_level_key)) {
+                $issue_name = $error_level;
+                $error_level = Config::REPORT_SUPPRESS;
+            } else {
+                $issue_name = $error_level_key;
+            }
+
+            Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
