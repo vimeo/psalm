@@ -202,8 +202,8 @@ class FileDiffer
 
                 $max_same_count = min($old_text_length, $new_text_length);
 
-                for ($i = 0; $i < $max_same_count; $i++) {
-                    if ($old_diff_text[$i] !== $new_diff_text[$i]) {
+                for ($j = 0; $j < $max_same_count; $j++) {
+                    if ($old_diff_text[$j] !== $new_diff_text[$j]) {
                         break;
                     }
 
@@ -213,10 +213,10 @@ class FileDiffer
                     $new_text_length--;
                 }
 
-                $old_diff_text = substr($old_diff_text, $i);
-                $new_diff_text = substr($new_diff_text, $i);
+                $old_diff_text = substr($old_diff_text, $j);
+                $new_diff_text = substr($new_diff_text, $j);
 
-                if ($last_change === null || $i) {
+                if ($last_change === null || $j) {
                     $i++;
                     $last_change = [
                         $a_offset,

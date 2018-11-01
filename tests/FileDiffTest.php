@@ -1602,6 +1602,80 @@ class FileDiffTest extends TestCase
                 [],
                 []
             ],
+            'diffMultipleBadDocblocks' => [
+                '<?php
+                    namespace Foo;
+
+                    class A
+                    {
+                        /**
+                         * @param string $s
+                         * @param string $t
+                         * @return Database
+                         */
+                        public static function foo()
+                        {
+                            return D::eep();
+                        }
+
+                        /**
+                         * @param string $s
+                         * @param string $t
+                         * @return bool
+                         */
+                        public static function bar()
+                        {
+                            return 2;
+                        }
+
+                        /**
+                         * @return C|null
+                         */
+                        public static function bat()
+                        {
+                            return 1;
+                        }
+                    }
+                    ',
+                    '<?php
+                    namespace Foo;
+
+                    class A
+                    {
+                        /**
+                         * @param string $s
+                         * @param string
+                         * @return Database
+                         */
+                        public static function foo()
+                        {
+                            return D::eep();
+                        }
+
+                        /**
+                         * @param string $s
+                         * @param string
+                         * @return bool
+                         */
+                        public static function bar()
+                        {
+                            return 2;
+                        }
+
+                        /**
+                         * @return C|null
+                         */
+                        public static function bat()
+                        {
+                            return 1;
+                        }
+                    }
+                    ',
+                ['foo\a::bat'],
+                [],
+                ['foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
+                [[-6, 0]]
+            ],
         ];
     }
 }
