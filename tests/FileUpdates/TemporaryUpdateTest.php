@@ -324,6 +324,50 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]
             ],
+            'resolveNamesInDifferentFunction' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /**
+                                 * @param string (A::class | B::class)
+                                 * @return string
+                                 */
+                                public function foo($a) {
+                                    return A::class;
+                                }
+
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /**
+                                 * @param string $a - one of (A::class | B::class)
+                                 * @return string
+                                 */
+                                public function foo($a) {
+                                    return A::class;
+                                }
+
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[333], []],
+                [
+                    'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
+                ]
+            ],
             'bridgeStatements' => [
                 [
                     [
@@ -686,21 +730,29 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new Exception();
+                                    throw new E();
                                 }
                             }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'E.php' => '<?php
+                            namespace Bar;
+
+                            class E extends \Exception {}',
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            use Exception;
+                            use Bar\E;
 
                             class A {
                                 public function foo() : void {
-                                    throw new Exception();
+                                    throw new E();
                                 }
                             }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'E.php' => '<?php
+                            namespace Bar;
+
+                            class E extends \Exception {}',
                     ],
                 ],
                 'error_positions' => [[197], []],

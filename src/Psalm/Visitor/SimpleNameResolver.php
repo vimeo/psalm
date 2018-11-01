@@ -72,8 +72,16 @@ class SimpleNameResolver extends NodeVisitorAbstract
             }
         }
 
-        if ($this->start_change && $this->end_change) {
+        if ($node instanceof Stmt\ClassMethod
+            && $this->start_change
+            && $this->end_change
+        ) {
             $attrs = $node->getAttributes();
+
+            if ($cs = $node->getComments()) {
+                /** @var int */
+                $attrs['startFilePos'] = $cs[0]->getFilePos();
+            }
 
             if ($attrs['endFilePos'] < $this->start_change
                 || $attrs['startFilePos'] > $this->end_change
