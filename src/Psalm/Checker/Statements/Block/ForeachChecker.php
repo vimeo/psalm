@@ -168,7 +168,7 @@ class ForeachChecker
                             return false;
                         }
                     }
-                    
+
                     if (TypeChecker::isAtomicContainedBy(
                         $codebase,
                         $iterator_type,
@@ -184,12 +184,16 @@ class ForeachChecker
                         }
 
                         foreach ($iterator_types as $iterator_type) {
+                            if ($iterator_type instanceof Type\Atomic\TGenericParam) {
+                                throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+                            }
+
                             $has_valid_iterator = true;
 
-                            if ($iterator_type instanceof Type\Atomic\TGenericObject &&
-                                (strtolower($iterator_type->value) === 'iterable' ||
-                                    strtolower($iterator_type->value) === 'traversable' ||
-                                    $codebase->classImplements(
+                            if ($iterator_type instanceof Type\Atomic\TGenericObject
+                                && (strtolower($iterator_type->value) === 'iterable'
+                                    || strtolower($iterator_type->value) === 'traversable'
+                                    || $codebase->classImplements(
                                         $iterator_type->value,
                                         'Traversable'
                                     ))

@@ -1997,6 +1997,9 @@ class CallChecker
 
                 if ($type_part->extra_types) {
                     foreach ($type_part->extra_types as $extra_type) {
+                        if ($extra_type instanceof Type\Atomic\TGenericParam) {
+                            throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+                        }
                         $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
                     }
                 }

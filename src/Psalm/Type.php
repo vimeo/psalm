@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -271,12 +272,14 @@ abstract class Type
             );
 
             foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof TNamedObject) {
+                if (!$intersection_type instanceof TNamedObject
+                    && !$intersection_type instanceof TGenericParam
+                ) {
                     throw new TypeParseTreeException('Intersection types must all be objects');
                 }
             }
 
-            /** @var TNamedObject[] $intersection_types */
+            /** @var array<int, TNamedObject|TGenericParam> $intersection_types */
             $first_type = array_shift($intersection_types);
 
             $first_type->extra_types = $intersection_types;

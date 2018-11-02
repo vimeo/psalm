@@ -415,6 +415,10 @@ class MethodCallChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 if ($intersection_types && !$codebase->methodExists($method_id)) {
                     foreach ($intersection_types as $intersection_type) {
+                        if ($intersection_type instanceof Type\Atomic\TGenericParam) {
+                            throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+                        }
+
                         $method_id = $intersection_type->value . '::' . $method_name_lc;
                         $fq_class_name = $intersection_type->value;
 

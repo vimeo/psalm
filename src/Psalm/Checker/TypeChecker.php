@@ -303,9 +303,17 @@ class TypeChecker
         $intersection_container_types[] = $container_type_part;
 
         foreach ($intersection_container_types as $intersection_container_type) {
+            if ($intersection_container_type instanceof TGenericParam) {
+                continue;
+            }
+
             $intersection_container_type_lower = strtolower($intersection_container_type->value);
 
             foreach ($intersection_input_types as $intersection_input_type) {
+                if ($intersection_input_type instanceof TGenericParam) {
+                    continue;
+                }
+
                 $intersection_input_type_lower = strtolower($intersection_input_type->value);
 
                 if ($intersection_container_type_lower === $intersection_input_type_lower) {

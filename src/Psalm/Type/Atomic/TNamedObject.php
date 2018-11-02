@@ -2,18 +2,16 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Union;
 
 class TNamedObject extends Atomic
 {
+    use HasIntersectionTrait;
+
     /**
      * @var string
      */
     public $value;
-
-    /**
-     * @var TNamedObject[]|null
-     */
-    public $extra_types;
 
     /**
      * @param string $value the name of the object
@@ -57,30 +55,12 @@ class TNamedObject extends Atomic
         $class_parts = explode('\\', $this->value);
         $class_name = array_pop($class_parts);
 
-        $intersection_types = $this->extra_types
-            ? '&' . implode(
-                '&',
-                array_map(
-                    /**
-                     * @return string
-                     */
-                    function (TNamedObject $extra_type) use (
-                        $namespace,
-                        $aliased_classes,
-                        $this_class,
-                        $use_phpdoc_format
-                    ) {
-                        return $extra_type->toNamespacedString(
-                            $namespace,
-                            $aliased_classes,
-                            $this_class,
-                            $use_phpdoc_format
-                        );
-                    },
-                    $this->extra_types
-                )
-            )
-            : '';
+        $intersection_types = $this->getNamespacedIntersectionTypes(
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            $use_phpdoc_format
+        );
 
         if ($this->value === $this_class) {
             return 'self' . $intersection_types;
@@ -136,10 +116,43 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @return TNamedObject[]|null
+     * @return array<int, TNamedObject|TGenericParam>|null
      */
     public function getIntersectionTypes()
     {
         return $this->extra_types;
+    }
+
+    /**
+     * @param  array<string, Union>     $template_types
+     *
+     * @return void
+     */
+    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    {
+        if (!$this->extra_types) {
+            return;
+        }
+
+        $keys_to_unset = [];
+
+        $new_types = [];
+
+        foreach ($this->extra_types as $i => $extra_type) {
+            if ($extra_type instanceof TGenericParam && isset($template_types[$extra_type->param_name])) {
+                $keys_to_unset[] = $i;
+                $template_type = clone $template_types[$extra_type->param_name];
+
+                foreach ($template_type->getTypes() as $template_type_part) {
+                    if ($template_type_part instanceof TNamedObject) {
+                        $new_types[] = $template_type_part;
+                    }
+                }
+            } else {
+                $new_types[] = $extra_type;
+            }
+        }
+
+        $this->extra_types = $new_types;
     }
 }

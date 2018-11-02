@@ -3,6 +3,8 @@ namespace Psalm\Type\Atomic;
 
 class TGenericParam extends \Psalm\Type\Atomic
 {
+    use HasIntersectionTrait;
+
     /**
      * @var string
      */
@@ -51,6 +53,26 @@ class TGenericParam extends \Psalm\Type\Atomic
         $php_minor_version
     ) {
         return null;
+    }
+
+    /**
+     * @param  string|null   $namespace
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  bool          $use_phpdoc_format
+     *
+     * @return string
+     */
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
+    {
+        $intersection_types = $this->getNamespacedIntersectionTypes(
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            $use_phpdoc_format
+        );
+
+        return $this->param_name . $intersection_types;
     }
 
     /**
