@@ -271,12 +271,26 @@ class ClassStringTest extends TestCase
                         switch ($a) {
                             case A::class:
                                 return;
-                          
+
                             case B::class:
                             case C::class:
                                 return;
                         }
                     }',
+            ],
+            'reconcileToFalsy' => [
+                '<?php
+                    class A {}
+
+                    /** @psalm-return ?class-string */
+                    function foo() : ?string {
+                      if (rand(0, 1)) return null;
+                      return A::class;
+                    }
+
+                    $a = foo();
+
+                    $a ? 1 : 0;',
             ],
         ];
     }
