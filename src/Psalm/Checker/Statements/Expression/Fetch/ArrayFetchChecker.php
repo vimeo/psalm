@@ -494,74 +494,90 @@ class ArrayFetchChecker
 
                             $array_access_type = Type::getMixed();
                         }
-                    } elseif ((TypeChecker::isContainedBy(
-                        $codebase,
-                        $offset_type,
-                        $generic_key_type->isMixed()
-                            ? new Type\Union([ new TInt, new TString ])
-                            : $generic_key_type,
-                        true,
-                        $offset_type->ignore_falsable_issues,
-                        $has_scalar_match,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $to_string_cast,
-                        $type_coerced_from_scalar
-                    )
-                    || $type_coerced_from_scalar
-                    || $type_coerced_from_mixed
-                    || $in_assignment)
-                    && !$to_string_cast
-                    ) {
-                        if ($replacement_type) {
-                            $generic_params = Type::combineUnionTypes(
-                                $type->getGenericValueType(),
-                                $replacement_type
-                            );
-
-                            $new_key_type = Type::combineUnionTypes(
-                                $generic_key_type,
-                                $offset_type
-                            );
-
-                            $property_count = $type->sealed ? count($type->properties) : null;
-
-                            $type = new TArray([
-                                $new_key_type,
-                                $generic_params,
-                            ]);
-
-                            if (!$stmt->dim && $property_count) {
-                                ++$property_count;
-                                $type->count = $property_count;
-                            }
-
-                            if (!$array_access_type) {
-                                $array_access_type = clone $generic_params;
-                            } else {
-                                $array_access_type = Type::combineUnionTypes(
-                                    $array_access_type,
-                                    $generic_params
-                                );
-                            }
-                        } else {
-                            if (!$array_access_type) {
-                                $array_access_type = $type->getGenericValueType();
-                            } else {
-                                $array_access_type = Type::combineUnionTypes(
-                                    $array_access_type,
-                                    $type->getGenericValueType()
-                                );
-                            }
-                        }
-
-                        $has_valid_offset = true;
                     } else {
-                        if (!$inside_isset || $type->sealed) {
-                            $expected_offset_types[] = (string)$generic_key_type->getId();
+                        $key_type = $generic_key_type->isMixed()
+                                ? new Type\Union([ new TInt, new TString ])
+                                : $generic_key_type;
+
+                        $is_contained = TypeChecker::isContainedBy(
+                            $codebase,
+                            $offset_type,
+                            $key_type,
+                            true,
+                            $offset_type->ignore_falsable_issues,
+                            $has_scalar_match,
+                            $type_coerced,
+                            $type_coerced_from_mixed,
+                            $to_string_cast,
+                            $type_coerced_from_scalar
+                        );
+
+                        if ($inside_isset && !$is_contained) {
+                            $is_contained = TypeChecker::canBeContainedBy(
+                                $codebase,
+                                $offset_type,
+                                $key_type,
+                                true,
+                                $offset_type->ignore_falsable_issues
+                            );
                         }
 
-                        $array_access_type = Type::getMixed();
+                        if (($is_contained
+                            || $type_coerced_from_scalar
+                            || $type_coerced_from_mixed
+                            || $in_assignment)
+                            && !$to_string_cast
+                        ) {
+                            if ($replacement_type) {
+                                $generic_params = Type::combineUnionTypes(
+                                    $type->getGenericValueType(),
+                                    $replacement_type
+                                );
+
+                                $new_key_type = Type::combineUnionTypes(
+                                    $generic_key_type,
+                                    $offset_type
+                                );
+
+                                $property_count = $type->sealed ? count($type->properties) : null;
+
+                                $type = new TArray([
+                                    $new_key_type,
+                                    $generic_params,
+                                ]);
+
+                                if (!$stmt->dim && $property_count) {
+                                    ++$property_count;
+                                    $type->count = $property_count;
+                                }
+
+                                if (!$array_access_type) {
+                                    $array_access_type = clone $generic_params;
+                                } else {
+                                    $array_access_type = Type::combineUnionTypes(
+                                        $array_access_type,
+                                        $generic_params
+                                    );
+                                }
+                            } else {
+                                if (!$array_access_type) {
+                                    $array_access_type = $type->getGenericValueType();
+                                } else {
+                                    $array_access_type = Type::combineUnionTypes(
+                                        $array_access_type,
+                                        $type->getGenericValueType()
+                                    );
+                                }
+                            }
+
+                            $has_valid_offset = true;
+                        } else {
+                            if (!$inside_isset || $type->sealed) {
+                                $expected_offset_types[] = (string)$generic_key_type->getId();
+                            }
+
+                            $array_access_type = Type::getMixed();
+                        }
                     }
                 }
                 continue;
