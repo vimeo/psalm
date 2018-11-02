@@ -280,17 +280,20 @@ class ClassStringTest extends TestCase
             ],
             'reconcileToFalsy' => [
                 '<?php
+                    /** @psalm-param ?class-string $s */
+                    function bar(?string $s) : void {}
+
                     class A {}
 
                     /** @psalm-return ?class-string */
-                    function foo() : ?string {
-                      if (rand(0, 1)) return null;
-                      return A::class;
+                    function bat() {
+                        if (rand(0, 1)) return null;
+                        return A::class;
                     }
 
-                    $a = foo();
-
-                    $a ? 1 : 0;',
+                    $a = bat();
+                    $a ? 1 : 0;
+                    bar($a);',
             ],
         ];
     }

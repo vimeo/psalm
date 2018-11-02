@@ -134,13 +134,10 @@ class TNamedObject extends Atomic
             return;
         }
 
-        $keys_to_unset = [];
-
         $new_types = [];
 
         foreach ($this->extra_types as $i => $extra_type) {
             if ($extra_type instanceof TGenericParam && isset($template_types[$extra_type->param_name])) {
-                $keys_to_unset[] = $i;
                 $template_type = clone $template_types[$extra_type->param_name];
 
                 foreach ($template_type->getTypes() as $template_type_part) {

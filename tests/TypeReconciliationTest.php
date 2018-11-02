@@ -222,6 +222,8 @@ class TypeReconciliationTest extends TestCase
             '2dArray' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
 
             'numeric' => ['string', 'numeric', 'string'],
+
+            'nullableClassString' => ['null', 'falsy', '?class-string'],
         ];
     }
 

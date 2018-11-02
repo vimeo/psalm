@@ -404,9 +404,15 @@ class Reconciler
                     }
                 } else {
                     $did_remove_type = true;
-                    $existing_var_type->removeType('string');
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
-                    $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                    if ($existing_var_type->hasType('class-string')) {
+                        $existing_var_type->removeType('class-string');
+                    }
+
+                    if ($existing_var_type->hasType('string')) {
+                        $existing_var_type->removeType('string');
+                        $existing_var_type->addType(new Type\Atomic\TLiteralString(''));
+                        $existing_var_type->addType(new Type\Atomic\TLiteralString('0'));
+                    }
                 }
             }
 
