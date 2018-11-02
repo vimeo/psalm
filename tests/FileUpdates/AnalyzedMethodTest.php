@@ -7,7 +7,7 @@ use Psalm\Provider\Providers;
 use Psalm\Tests\TestConfig;
 use Psalm\Tests\Provider;
 
-class CorrectMethodTest extends \Psalm\Tests\TestCase
+class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 {
     /**
      * @return void
@@ -55,8 +55,8 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
     public function testValidInclude(
         array $start_files,
         array $end_files,
-        array $initial_correct_methods,
-        array $unaffected_correct_methods,
+        array $initial_analyzed_methods,
+        array $unaffected_analyzed_methods,
         array $error_levels = []
     ) {
         $test_name = $this->getTestName();
@@ -82,13 +82,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $this->assertSame([], $codebase->analyzer->getCorrectMethods());
+        $this->assertSame([], $codebase->analyzer->getAnalyzedMethods());
 
         $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
 
         $this->assertSame(
-            $initial_correct_methods,
-            $codebase->analyzer->getCorrectMethods()
+            $initial_analyzed_methods,
+            $codebase->analyzer->getAnalyzedMethods()
         );
 
         foreach ($end_files as $file_path => $contents) {
@@ -105,8 +105,8 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
         $codebase->analyzer->loadCachedResults($this->project_checker);
 
         $this->assertSame(
-            $unaffected_correct_methods,
-            $codebase->analyzer->getCorrectMethods()
+            $unaffected_analyzed_methods,
+            $codebase->analyzer->getAnalyzedMethods()
         );
     }
 
@@ -173,7 +173,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             public function noReturnType() {}
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::foofoo' => 1,
                         'foo\a::barbar' => 1,
@@ -184,7 +184,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar' => 1
                     ],
@@ -240,13 +240,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
@@ -295,13 +295,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
@@ -350,13 +350,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
@@ -403,13 +403,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::foo' => 1,
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
@@ -480,7 +480,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                         'foo\a::foofoo' => 1,
@@ -491,7 +491,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
@@ -563,7 +563,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                         'foo\a::foofoo' => 1,
@@ -573,7 +573,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1, // this doesn't exist, so we don't care
                     ],
@@ -643,7 +643,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                         'foo\a::foofoo' => 1,
@@ -653,7 +653,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ]
@@ -727,7 +727,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                         'foo\a::bat&foo\t::bat' => 1,
@@ -738,7 +738,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::bat&foo\t::bat' => 1,
                     ],
@@ -798,7 +798,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::barbar&foo\t::barbar' => 1,
                     ],
@@ -806,7 +806,7 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         'foo\b::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
                 ]
@@ -855,14 +855,14 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                         }',
                 ],
 
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
                         'foo\a::reallysetfoo' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
@@ -913,14 +913,14 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::setfoo' => 1,
                         'foo\a::reallysetfoo' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::setfoo' => 1,
                     ],
@@ -973,13 +973,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::setfoo&foo\t::setfoo' => 1,
                         'foo\a::__construct' => 2,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                 ]
             ],
@@ -1014,13 +1014,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                         'foo\a::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                     ],
                 ],
@@ -1061,13 +1061,13 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
                         'foo\a::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                     ],
                 ]
@@ -1103,14 +1103,16 @@ class CorrectMethodTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'initial_correct_methods' => [
+                'initial_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
+                        'foo\a::bar' => 1,
                     ],
                 ],
-                'unaffected_correct_methods' => [
+                'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
+                        'foo\a::bar' => 1,
                     ],
                 ]
             ],

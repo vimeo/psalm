@@ -47,7 +47,6 @@ class NewChecker extends \Psalm\Checker\Statements\Expression\CallChecker
 
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
-                    && isset($aliases->uses[strtolower($stmt->class->parts[0])])
                 ) {
                     $codebase->file_reference_provider->addReferenceToClassMethod(
                         $context->calling_method_id,

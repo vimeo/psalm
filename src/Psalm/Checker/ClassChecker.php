@@ -506,13 +506,13 @@ class ClassChecker extends ClassLikeChecker
             $included_file_path = $class_context->include_location->file_path;
         }
 
-        $is_method_correct = $codebase->analyzer->isMethodCorrect(
+        $method_already_analyzed = $codebase->analyzer->isMethodAlreadyAnalyzed(
             $included_file_path,
             strtolower($fq_class_name) . '::__construct',
             true
         );
 
-        if ($is_method_correct) {
+        if ($method_already_analyzed) {
             return;
         }
 
@@ -638,8 +638,6 @@ class ClassChecker extends ClassLikeChecker
         }
 
         if ($constructor_checker) {
-            $existing_error_count = IssueBuffer::getErrorCount();
-
             $method_context = clone $class_context;
             $method_context->collect_initializations = true;
             $method_context->self = $fq_class_name;
@@ -698,15 +696,11 @@ class ClassChecker extends ClassLikeChecker
                 }
             }
 
-            $has_errors = IssueBuffer::getErrorCount() > $existing_error_count;
-
-            if (!$has_errors) {
-                $codebase->analyzer->setCorrectMethod(
-                    $included_file_path,
-                    strtolower($fq_class_name) . '::__construct',
-                    true
-                );
-            }
+            $codebase->analyzer->setAnalyzedMethod(
+                $included_file_path,
+                strtolower($fq_class_name) . '::__construct',
+                true
+            );
 
             return;
         }
@@ -974,7 +968,7 @@ class ClassChecker extends ClassLikeChecker
             $trait_safe_method_id .= '&' . strtolower($actual_method_id);
         }
 
-        $is_method_correct = $codebase->analyzer->isMethodCorrect(
+        $method_already_analyzed = $codebase->analyzer->isMethodAlreadyAnalyzed(
             $included_file_path,
             $trait_safe_method_id
         );
@@ -989,13 +983,13 @@ class ClassChecker extends ClassLikeChecker
         }
 
         if ($project_checker->diff_methods
-            && $is_method_correct
+            && $method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
             if ($project_checker->debug_output) {
-                echo 'Skipping analysis of pre-verified method ' . $analyzed_method_id . "\n";
+                echo 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n";
             }
 
             $existing_issues = $codebase->analyzer->getExistingIssuesForFile(
@@ -1014,8 +1008,6 @@ class ClassChecker extends ClassLikeChecker
             $start,
             $end
         );
-
-        $existing_error_count = IssueBuffer::getErrorCount();
 
         $method_context = clone $class_context;
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
@@ -1093,15 +1085,12 @@ class ClassChecker extends ClassLikeChecker
             }
         }
 
-        $has_errors = IssueBuffer::getErrorCount() > $existing_error_count;
-
-        if (!$is_method_correct
-            && !$has_errors
+        if (!$method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
             && !$is_fake
         ) {
-            $codebase->analyzer->setCorrectMethod($included_file_path, $trait_safe_method_id);
+            $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
 
         return $method_checker;

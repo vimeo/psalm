@@ -78,7 +78,7 @@ class FileReferenceProvider
     /**
      * @var array<string, array<string, int>>
      */
-    private static $correct_methods = [];
+    private static $analyzed_methods = [];
 
     /**
      * @var array<string, array<int, IssueData>>
@@ -283,13 +283,13 @@ class FileReferenceProvider
 
             self::$class_method_references = $class_method_references;
 
-            $correct_methods = $this->cache->getCorrectMethodCache();
+            $analyzed_methods = $this->cache->getAnalyzedMethodCache();
 
-            if ($correct_methods === false) {
+            if ($analyzed_methods === false) {
                 return false;
             }
 
-            self::$correct_methods = $correct_methods;
+            self::$analyzed_methods = $analyzed_methods;
 
             $issues = $this->cache->getCachedIssues();
 
@@ -340,7 +340,7 @@ class FileReferenceProvider
             $this->cache->setCachedMethodReferences(self::$class_method_references);
             $this->cache->setCachedIssues(self::$issues);
             $this->cache->setFileMapCache(self::$file_maps);
-            $this->cache->setCorrectMethodCache(self::$correct_methods);
+            $this->cache->setAnalyzedMethodCache(self::$analyzed_methods);
         }
     }
 
@@ -432,12 +432,12 @@ class FileReferenceProvider
     }
 
     /**
-     * @param array<string, array<string, int>> $correct_methods
+     * @param array<string, array<string, int>> $analyzed_methods
      * @return  void
      */
-    public function setCorrectMethods(array $correct_methods)
+    public function setAnalyzedMethods(array $analyzed_methods)
     {
-        self::$correct_methods = $correct_methods;
+        self::$analyzed_methods = $analyzed_methods;
     }
 
     /**
@@ -452,9 +452,9 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, int>>
      */
-    public function getCorrectMethods()
+    public function getAnalyzedMethods()
     {
-        return self::$correct_methods;
+        return self::$analyzed_methods;
     }
 
     /**
@@ -476,7 +476,7 @@ class FileReferenceProvider
         self::$deleted_files = null;
         self::$file_references = [];
         self::$class_method_references = [];
-        self::$correct_methods = [];
+        self::$analyzed_methods = [];
         self::$issues = [];
         self::$file_maps = [];
     }

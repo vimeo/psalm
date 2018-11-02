@@ -30,7 +30,7 @@ use Psalm\Config;
 class FileReferenceCacheProvider
 {
     const REFERENCE_CACHE_NAME = 'references';
-    const CORRECT_METHODS_CACHE_NAME = 'correct_methods';
+    const ANALYZED_METHODS_CACHE_NAME = 'analyzed_methods';
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
     const ISSUES_CACHE_NAME = 'issues';
     const FILE_MAPS_CACHE_NAME = 'file_maps';
@@ -191,37 +191,39 @@ class FileReferenceCacheProvider
     /**
      * @return array<string, array<string, int>>|false
      */
-    public function getCorrectMethodCache()
+    public function getAnalyzedMethodCache()
     {
         $cache_directory = $this->config->getCacheDirectory();
 
-        $correct_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CORRECT_METHODS_CACHE_NAME;
+        $analyzed_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ANALYZED_METHODS_CACHE_NAME;
 
         if ($cache_directory
-            && file_exists($correct_methods_cache_location)
+            && file_exists($analyzed_methods_cache_location)
             && !$this->config_changed
         ) {
             /** @var array<string, array<string, int>> */
-            return unserialize(file_get_contents($correct_methods_cache_location));
+            return unserialize(file_get_contents($analyzed_methods_cache_location));
         }
 
         return false;
     }
 
     /**
-     * @param array<string, array<string, int>> $correct_methods
+     * @param array<string, array<string, int>> $analyzed_methods
      * @return void
      */
-    public function setCorrectMethodCache(array $correct_methods)
+    public function setAnalyzedMethodCache(array $analyzed_methods)
     {
         $cache_directory = Config::getInstance()->getCacheDirectory();
 
         if ($cache_directory) {
-            $correct_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CORRECT_METHODS_CACHE_NAME;
+            $analyzed_methods_cache_location = $cache_directory
+                . DIRECTORY_SEPARATOR
+                . self::ANALYZED_METHODS_CACHE_NAME;
 
             file_put_contents(
-                $correct_methods_cache_location,
-                serialize($correct_methods)
+                $analyzed_methods_cache_location,
+                serialize($analyzed_methods)
             );
         }
     }

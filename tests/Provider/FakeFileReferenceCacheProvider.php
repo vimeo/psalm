@@ -88,7 +88,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Provider\FileReferenceCacheP
     /**
      * @return array<string, array<string, int>>
      */
-    public function getCorrectMethodCache()
+    public function getAnalyzedMethodCache()
     {
         return $this->cached_correct_methods;
     }
@@ -97,7 +97,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Provider\FileReferenceCacheP
      * @param array<string, array<string, int>> $correct_methods
      * @return void
      */
-    public function setCorrectMethodCache(array $correct_methods)
+    public function setAnalyzedMethodCache(array $correct_methods)
     {
         $this->cached_correct_methods = $correct_methods;
     }

@@ -119,6 +119,20 @@ class NamespaceStatementsDiffer extends AstDiffer
                         }
                     }
                 }
+            } elseif ($diff_elem->type === DiffElem::TYPE_ADD) {
+                if ($diff_elem->new instanceof PhpParser\Node\Stmt\Use_
+                    || $diff_elem->new instanceof PhpParser\Node\Stmt\GroupUse
+                ) {
+                    foreach ($diff_elem->new->uses as $use) {
+                        if ($use->alias) {
+                            $add_or_delete[] = 'use:' . (string) $use->alias;
+                        } else {
+                            $name_parts = $use->name->parts;
+
+                            $add_or_delete[] = 'use:' . end($name_parts);
+                        }
+                    }
+                }
             }
         }
 

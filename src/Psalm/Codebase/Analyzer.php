@@ -39,7 +39,7 @@ use Psalm\Provider\FileStorageProvider;
  *     file_references: array<string, array<string,bool>>,
  *     mixed_counts: array<string, array{0: int, 1: int}>,
  *     method_references: array<string, array<string,bool>>,
- *     correct_methods: array<string, array<string, int>>,
+ *     analyzed_methods: array<string, array<string, int>>,
  *     file_maps: array<
  *         string,
  *         array{0: TaggedCodeType, 1: TaggedCodeType}
@@ -96,7 +96,7 @@ class Analyzer
     /**
      * @var array<string, array<string, int>>
      */
-    private $correct_methods = [];
+    private $analyzed_methods = [];
 
     /**
      * @var array<string, array<int, IssueData>>
@@ -235,7 +235,7 @@ class Analyzer
                         'file_references' => $file_reference_provider->getAllFileReferences(),
                         'method_references' => $file_reference_provider->getClassMethodReferences(),
                         'mixed_counts' => $analyzer->getMixedCounts(),
-                        'correct_methods' => $analyzer->getCorrectMethods(),
+                        'analyzed_methods' => $analyzer->getAnalyzedMethods(),
                         'file_maps' => $analyzer->getFileMaps(),
                     ];
                 }
@@ -256,7 +256,7 @@ class Analyzer
 
                 $project_checker->file_reference_provider->addFileReferences($pool_data['file_references']);
                 $project_checker->file_reference_provider->addClassMethodReferences($pool_data['method_references']);
-                $this->correct_methods = array_merge($pool_data['correct_methods'], $this->correct_methods);
+                $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
 
                 foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
                     if (!isset($this->mixed_counts[$file_path])) {
@@ -290,7 +290,7 @@ class Analyzer
         }
 
         $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
-        $project_checker->file_reference_provider->setCorrectMethods($this->correct_methods);
+        $project_checker->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
         $project_checker->file_reference_provider->setFileMaps($this->getFileMaps());
         $project_checker->file_reference_provider->updateReferenceCache($project_checker->codebase, $scanned_files);
 
@@ -313,7 +313,7 @@ class Analyzer
         if ($project_checker->diff_methods
             && (!$project_checker->codebase->collect_references || $project_checker->codebase->server_mode)
         ) {
-            $this->correct_methods = $project_checker->file_reference_provider->getCorrectMethods();
+            $this->analyzed_methods = $project_checker->file_reference_provider->getAnalyzedMethods();
             $this->existing_issues = $project_checker->file_reference_provider->getExistingIssues();
             $file_maps = $project_checker->file_reference_provider->getFileMaps();
 
@@ -391,8 +391,8 @@ class Analyzer
             }
         }
 
-        foreach ($this->correct_methods as $file_path => $correct_methods) {
-            foreach ($correct_methods as $correct_method_id => $_) {
+        foreach ($this->analyzed_methods as $file_path => $analyzed_methods) {
+            foreach ($analyzed_methods as $correct_method_id => $_) {
                 $trait_safe_method_id = $correct_method_id;
 
                 $correct_method_ids = explode('&', $correct_method_id);
@@ -403,7 +403,7 @@ class Analyzer
                     || (isset($correct_method_ids[1])
                         && isset($newly_invalidated_methods[$correct_method_ids[1]]))
                 ) {
-                    unset($this->correct_methods[$file_path][$trait_safe_method_id]);
+                    unset($this->analyzed_methods[$file_path][$trait_safe_method_id]);
                 }
             }
         }
@@ -424,7 +424,7 @@ class Analyzer
     public function shiftFileOffsets(array $diff_map)
     {
         foreach ($this->existing_issues as $file_path => &$file_issues) {
-            if (!isset($this->correct_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path])) {
                 unset($this->existing_issues[$file_path]);
                 continue;
             }
@@ -457,7 +457,7 @@ class Analyzer
         }
 
         foreach ($this->reference_map as $file_path => &$reference_map) {
-            if (!isset($this->correct_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path])) {
                 unset($this->reference_map[$file_path]);
                 continue;
             }
@@ -489,7 +489,7 @@ class Analyzer
         }
 
         foreach ($this->type_map as $file_path => &$type_map) {
-            if (!isset($this->correct_methods[$file_path])) {
+            if (!isset($this->analyzed_methods[$file_path])) {
                 unset($this->type_map[$file_path]);
                 continue;
             }
@@ -849,9 +849,9 @@ class Analyzer
     /**
      * @return array<string, array<string, int>>
      */
-    public function getCorrectMethods()
+    public function getAnalyzedMethods()
     {
-        return $this->correct_methods;
+        return $this->analyzed_methods;
     }
 
     /**
@@ -894,9 +894,9 @@ class Analyzer
      *
      * @return void
      */
-    public function setCorrectMethod($file_path, $method_id, $is_constructor = false)
+    public function setAnalyzedMethod($file_path, $method_id, $is_constructor = false)
     {
-        $this->correct_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
+        $this->analyzed_methods[$file_path][$method_id] = $is_constructor ? 2 : 1;
     }
 
     /**
@@ -906,13 +906,13 @@ class Analyzer
      *
      * @return bool
      */
-    public function isMethodCorrect($file_path, $method_id, $is_constructor = false)
+    public function isMethodAlreadyAnalyzed($file_path, $method_id, $is_constructor = false)
     {
         if ($is_constructor) {
-            return isset($this->correct_methods[$file_path][$method_id])
-                && $this->correct_methods[$file_path][$method_id] === 2;
+            return isset($this->analyzed_methods[$file_path][$method_id])
+                && $this->analyzed_methods[$file_path][$method_id] === 2;
         }
 
-        return isset($this->correct_methods[$file_path][$method_id]);
+        return isset($this->analyzed_methods[$file_path][$method_id]);
     }
 }

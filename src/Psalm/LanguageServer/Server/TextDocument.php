@@ -133,7 +133,6 @@ class TextDocument
             return;
         }
 
-        $time = microtime(true);
         $this->codebase->addTemporaryFileChanges($file_path, $contentChanges);
 
         if ($this->onchange_line_limit !== null) {
@@ -150,8 +149,6 @@ class TextDocument
 
         $this->server->analyzePath($file_path);
         $this->server->emitIssues($textDocument->uri);
-        $diff = microtime(true) - $time;
-        error_log('Scanning & Analysis took ' . number_format($diff, 3) . 's');
     }
 
     /**

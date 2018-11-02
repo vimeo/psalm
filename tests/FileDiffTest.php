@@ -1185,7 +1185,7 @@ class FileDiffTest extends TestCase
                 }',
                 [],
                 [],
-                ['foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
+                ['use:D', 'use:E', 'foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
                 []
             ],
             'SKIPPED-whiteSpaceOnly' => [

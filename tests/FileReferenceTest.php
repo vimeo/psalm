@@ -175,12 +175,19 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
+                    'use:A:170c429ab240e049ef0956f744ed16c7' => [
+                        'foo\b::__construct' => true,
+                        'foo\c::foo' => true,
+                    ],
                     'foo\a::__construct' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
                     'foo\a::bat' => [
                         'foo\b::__construct' => true,
+                    ],
+                    'use:C:170c429ab240e049ef0956f744ed16c7' => [
+                        'foo\b::bar' => true,
                     ],
                     'foo\c::__construct' => [
                         'foo\b::bar' => true,
@@ -210,6 +217,9 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
+                    'use:C:170c429ab240e049ef0956f744ed16c7' => [
+                        'foo\d::bat' => true,
+                    ],
                     'foo\b::__construct' => [
                         'foo\d::bat' => true,
                     ],
@@ -277,6 +287,10 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
+                    'use:A:170c429ab240e049ef0956f744ed16c7' => [
+                        'foo\b::__construct' => true,
+                        'foo\c::foo' => true,
+                    ],
                     'foo\a::$fooBar' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
@@ -306,6 +320,10 @@ class FileReferenceTest extends TestCase
                 [
                     'foo\a::$fooBar' => [
                         'foo\a::__construct' => true,
+                        'foo\b::__construct' => true,
+                        'foo\c::foo' => true,
+                    ],
+                    'use:A:170c429ab240e049ef0956f744ed16c7' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],

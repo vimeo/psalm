@@ -1063,6 +1063,7 @@ class Codebase
     {
         $this->file_provider->addTemporaryFileChanges($file_path, $changes);
         $this->invalidateInformationForFile($file_path);
+
         $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
         $this->scanner->scanFiles($this->classlikes);
         $this->populator->populateCodebase($this);
