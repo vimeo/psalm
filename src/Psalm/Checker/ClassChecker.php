@@ -572,6 +572,7 @@ class ClassChecker extends ClassLikeChecker
 
             // ignore oldstyle constructors and classes without any declared properties
             if ($constructor_class_storage->user_defined
+                && !$constructor_class_storage->stubbed
                 && isset($constructor_class_storage->methods['__construct'])
             ) {
                 $constructor_storage = $constructor_class_storage->methods['__construct'];
