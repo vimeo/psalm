@@ -161,6 +161,14 @@ class ClassChecker extends ClassLikeChecker
                         // fall through
                     }
                 }
+
+                if ($codebase->server_mode && $fq_class_name) {
+                    $codebase->analyzer->addNodeReference(
+                        $this->getFilePath(),
+                        $class->extends,
+                        $parent_fq_class_name
+                    );
+                }
             } catch (\InvalidArgumentException $e) {
                 // do nothing
             }
@@ -182,6 +190,17 @@ class ClassChecker extends ClassLikeChecker
                 false
             ) === false) {
                 return false;
+            }
+
+            if ($codebase->server_mode && $fq_class_name) {
+                $bounds = $interface_location->getSelectionBounds();
+
+                $codebase->analyzer->addOffsetReference(
+                    $this->getFilePath(),
+                    $bounds[0],
+                    $bounds[1],
+                    $fq_interface_name
+                );
             }
         }
 

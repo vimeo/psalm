@@ -27,6 +27,9 @@ class InterfaceChecker extends ClassLikeChecker
         }
 
         if ($this->class->extends) {
+            $project_checker = $this->file_checker->project_checker;
+            $codebase = $project_checker->codebase;
+
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(
                     $extended_interface,
@@ -43,6 +46,17 @@ class InterfaceChecker extends ClassLikeChecker
                 )) {
                     // we should not normally get here
                     return;
+                }
+
+                if ($codebase->server_mode && $extended_interface_name) {
+                    $bounds = $parent_reference_location->getSelectionBounds();
+
+                    $codebase->analyzer->addOffsetReference(
+                        $this->getFilePath(),
+                        $bounds[0],
+                        $bounds[1],
+                        $extended_interface_name
+                    );
                 }
             }
         }
