@@ -105,7 +105,7 @@ class FileReferenceTest extends TestCase
 
         $context = new Context();
 
-        $file_path = self::$src_dir_path . 'somefile.php';
+        $file_path = '/var/www/somefile.php';
 
         $this->addFile($file_path, $input_code);
 
@@ -175,7 +175,7 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'use:A:170c429ab240e049ef0956f744ed16c7' => [
+                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
@@ -186,7 +186,7 @@ class FileReferenceTest extends TestCase
                     'foo\a::bat' => [
                         'foo\b::__construct' => true,
                     ],
-                    'use:C:170c429ab240e049ef0956f744ed16c7' => [
+                    'use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\b::bar' => true,
                     ],
                     'foo\c::__construct' => [
@@ -217,7 +217,7 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'use:C:170c429ab240e049ef0956f744ed16c7' => [
+                    'use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\d::bat' => true,
                     ],
                     'foo\b::__construct' => [
@@ -287,7 +287,7 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'use:A:170c429ab240e049ef0956f744ed16c7' => [
+                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
@@ -323,7 +323,7 @@ class FileReferenceTest extends TestCase
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
-                    'use:A:170c429ab240e049ef0956f744ed16c7' => [
+                    'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
