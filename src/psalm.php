@@ -507,9 +507,39 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
 
     echo "Baseline saved to {$options['set-baseline']}.";
 
-    if (Config::getInstance()->error_baseline !== $options['set-baseline']) {
-        echo " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.";
+    /** @var string $configFile */
+    $configFile = Config::locateConfigFile($path_to_config ?? $current_dir);
+    $configFileContents = $amendedConfigFileContents = file_get_contents($configFile);
+
+    if ($config->error_baseline) {
+        $amendedConfigFileContents = preg_replace(
+            '/errorBaseline=".*?"/',
+            "errorBaseline=\"{$options['set-baseline']}\"",
+            $configFileContents
+        );
+    } else {
+        $endPsalmOpenTag = strpos($configFileContents, '>', (int)strpos($configFileContents, '<psalm'));
+
+        if (!$endPsalmOpenTag) {
+            echo " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.";
+        } elseif ($configFileContents[$endPsalmOpenTag - 1] === "\n") {
+            $amendedConfigFileContents = substr_replace(
+                $configFileContents,
+                "    errorBaseline=\"{$options['set-baseline']}\"\n>",
+                $endPsalmOpenTag,
+                1
+            );
+        } else {
+            $amendedConfigFileContents = substr_replace(
+                $configFileContents,
+                " errorBaseline=\"{$options['set-baseline']}\">",
+                $endPsalmOpenTag,
+                1
+            );
+        }
     }
+
+    file_put_contents($configFile, $amendedConfigFileContents);
 
     echo PHP_EOL;
 }
