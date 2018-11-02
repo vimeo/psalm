@@ -686,15 +686,27 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                             $this->type_aliases
                         );
 
-                        $pseudo_property_type = Type::parseTokens($pseudo_property_type_tokens);
-                        $pseudo_property_type->setFromDocblock();
+                        try {
+                            $pseudo_property_type = Type::parseTokens($pseudo_property_type_tokens);
+                            $pseudo_property_type->setFromDocblock();
 
-                        if ($property['tag'] !== 'property-read') {
-                            $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
-                        }
+                            if ($property['tag'] !== 'property-read') {
+                                $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
+                            }
 
-                        if ($property['tag'] !== 'property-write') {
-                            $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
+                            if ($property['tag'] !== 'property-write') {
+                                $storage->pseudo_property_get_types[$property['name']] = $pseudo_property_type;
+                            }
+                        } catch (TypeParseTreeException $e) {
+                            if (IssueBuffer::accepts(
+                                new InvalidDocblock(
+                                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                                    new CodeLocation($this->file_scanner, $node, null, true)
+                                )
+                            )) {
+                            }
+
+                            $storage->has_docblock_issues = true;
                         }
                     }
                 }
