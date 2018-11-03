@@ -17,7 +17,9 @@ class ComposerLockTest extends TestCase
             'name' => 'vendor/package',
             'type' => 'psalm-plugin',
             'extra' => [
-                'pluginClass' => 'Some\Class',
+                'psalm' => [
+                    'pluginClass' => 'Some\Class',
+                ]
             ]
         ]));
 
@@ -48,7 +50,9 @@ class ComposerLockTest extends TestCase
                     'name' => 'vendor/package',
                     'type' => 'psalm-plugin',
                     'extra' => (object)[
-                        'pluginClass' => 'Vendor\Package\PluginClass',
+                        'psalm' => (object) [
+                            'pluginClass' => 'Vendor\Package\PluginClass',
+                        ]
                     ],
                 ],
             ],
@@ -74,7 +78,9 @@ class ComposerLockTest extends TestCase
                     'name' => 'vendor/package',
                     'type' => 'psalm-plugin',
                     'extra' => (object)[
-                        'pluginClass' => 'Vendor\Package\PluginClass',
+                        'psalm' => (object)[
+                            'pluginClass' => 'Vendor\Package\PluginClass',
+                        ]
                     ],
                 ],
             ],
