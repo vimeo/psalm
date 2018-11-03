@@ -9,6 +9,7 @@ use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Scanner\FileScanner;
 use SimpleXMLElement;
+use Psalm\PluginRegistrationSocket;
 
 class Config
 {
@@ -803,16 +804,16 @@ class Config
     {
         $codebase = $project_checker->getCodebase();
 
-        $facade = new PluginFacade($this);
+        $socket = new PluginRegistrationSocket($this);
         // initialize plugin classes earlier to let them hook into subsequent load process
         foreach ($this->plugin_classes as $plugin_class_entry) {
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
                 // todo: support other forms of callables
-                /** @var callable(PluginFacade,?SimpleXmlElement):void $plugin_object */
+                /** @var callable(PluginRegistrationSocket,?SimpleXmlElement):void $plugin_object */
                 $plugin_object = new $plugin_class_name;
-                $plugin_object($facade, $plugin_config);
+                $plugin_object($socket, $plugin_config);
             } catch (\Throwable $e) {
                 // todo: ???
                 throw $e;
@@ -840,7 +841,7 @@ class Config
         foreach ($this->plugin_paths as $path) {
             try {
                 $plugin_object = new LegacyPlugin($path, $this, $project_checker);
-                $plugin_object($facade);
+                $plugin_object($socket);
             } catch (\Throwable $e) {
                 // todo: ???
                 throw $e;
