@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\PluginApi;
-use SimpleXmlElement;
+
+use SimpleXMLElement;
 
 interface PluginEntryPointInterface
 {
     /** @return void */
-    public function __invoke(RegistrationInterface $api, ?SimpleXmlElement $config = null);
+    public function __invoke(RegistrationInterface $api, ?SimpleXMLElement $config = null);
 }
