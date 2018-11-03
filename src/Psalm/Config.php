@@ -349,7 +349,7 @@ class Config
      * Searches up a folder hierarchy for the most immediate config.
      *
      * @throws ConfigException
-     * @return string|null
+     * @return ?string
      */
     public static function locateConfigFile(string $path)
     {
