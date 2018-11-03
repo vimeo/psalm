@@ -5,6 +5,7 @@ use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\ProjectChecker;
 use Psalm\Scanner\FileScanner;
 use Psalm\PluginApi;
+use SimpleXmlElement;
 
 class LegacyPlugin implements PluginApi\PluginEntryPointInterface
 {
@@ -25,7 +26,7 @@ class LegacyPlugin implements PluginApi\PluginEntryPointInterface
     }
 
     /** @return void */
-    public function __invoke(PluginApi\RegistrationInterface $api)
+    public function __invoke(PluginApi\RegistrationInterface $api, ?SimpleXmlElement $config = null)
     {
         $codebase = $this->project_checker->codebase;
         $fq_class_name = $this->getPluginClassForPath($this->path, Plugin::class);
