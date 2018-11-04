@@ -346,11 +346,7 @@ class MethodChecker extends FunctionLikeChecker
                 return true;
 
             case ClassLikeChecker::VISIBILITY_PRIVATE:
-                if (!$calling_context || $appearing_method_class !== $calling_context) {
-                    return false;
-                }
-
-                return true;
+                return $calling_context && $appearing_method_class === $calling_context;
 
             case ClassLikeChecker::VISIBILITY_PROTECTED:
                 if (!$calling_context) {
