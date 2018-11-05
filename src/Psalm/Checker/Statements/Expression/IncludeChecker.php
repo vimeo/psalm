@@ -73,6 +73,8 @@ class IncludeChecker
                 $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
             }
 
+            $path_to_file = str_replace('/./', '/', $path_to_file);
+
             // if the file is already included, we can't check much more
             if (in_array(realpath($path_to_file), get_included_files(), true)) {
                 return null;
