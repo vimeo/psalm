@@ -810,13 +810,11 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
-                // todo: support other forms of callables
-                /** @var callable(PluginRegistrationSocket,?SimpleXmlElement):void $plugin_object */
+                /** @var PluginApi\PluginEntryPointInterface $plugin_object */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);
             } catch (\Throwable $e) {
-                // todo: ???
-                throw $e;
+                throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
             }
         }
 
