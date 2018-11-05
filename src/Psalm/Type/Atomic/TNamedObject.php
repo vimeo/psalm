@@ -136,7 +136,7 @@ class TNamedObject extends Atomic
 
         $new_types = [];
 
-        foreach ($this->extra_types as $i => $extra_type) {
+        foreach ($this->extra_types as $extra_type) {
             if ($extra_type instanceof TGenericParam && isset($template_types[$extra_type->param_name])) {
                 $template_type = clone $template_types[$extra_type->param_name];
 
