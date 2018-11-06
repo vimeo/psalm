@@ -108,6 +108,10 @@ class ParseTree
                     }
 
                     do {
+                        if ($current_leaf->parent === null) {
+                            break;
+                        }
+
                         $current_leaf = $current_leaf->parent;
                     } while (!$current_leaf instanceof ParseTree\EncapsulationTree
                         && !$current_leaf instanceof ParseTree\CallableTree
