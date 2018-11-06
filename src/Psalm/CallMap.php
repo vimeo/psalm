@@ -7668,7 +7668,7 @@ return [
 'mysqli_stmt::close' => ['bool'],
 'mysqli_stmt::data_seek' => ['void', 'offset'=>'int'],
 'mysqli_stmt::execute' => ['bool'],
-'mysqli_stmt::fetch' => ['bool'],
+'mysqli_stmt::fetch' => ['bool|null'],
 'mysqli_stmt::free_result' => ['void'],
 'mysqli_stmt::get_result' => ['mysqli_result|false'],
 'mysqli_stmt::get_warnings' => ['object'],
