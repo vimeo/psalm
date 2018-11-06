@@ -2,17 +2,17 @@
 namespace Psalm\Codebase;
 
 use PhpParser;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\FileManipulation\FileManipulationBuffer;
 use Psalm\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileProvider;
-use Psalm\Provider\FileReferenceProvider;
-use Psalm\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
 
 /**
  * @psalm-type  IssueData = array{
@@ -152,21 +152,21 @@ class Analyzer
      * @param  string $file_path
      * @param  array<string, string> $filetype_checkers
      *
-     * @return FileChecker
+     * @return FileAnalyzer
      *
      * @psalm-suppress MixedOperand
      */
-    private function getFileChecker(ProjectChecker $project_checker, $file_path, array $filetype_checkers)
+    private function getFileAnalyzer(ProjectAnalyzer $project_checker, $file_path, array $filetype_checkers)
     {
         $extension = (string) (pathinfo($file_path)['extension'] ?? '');
 
         $file_name = $this->config->shortenFileName($file_path);
 
         if (isset($filetype_checkers[$extension])) {
-            /** @var FileChecker */
+            /** @var FileAnalyzer */
             $file_checker = new $filetype_checkers[$extension]($project_checker, $file_path, $file_name);
         } else {
-            $file_checker = new FileChecker($project_checker, $file_path, $file_name);
+            $file_checker = new FileAnalyzer($project_checker, $file_path, $file_name);
         }
 
         if ($this->debug_output) {
@@ -177,17 +177,17 @@ class Analyzer
     }
 
     /**
-     * @param  ProjectChecker $project_checker
+     * @param  ProjectAnalyzer $project_checker
      * @param  int            $pool_size
      * @param  bool           $alter_code
      *
      * @return void
      */
-    public function analyzeFiles(ProjectChecker $project_checker, $pool_size, $alter_code)
+    public function analyzeFiles(ProjectAnalyzer $project_checker, $pool_size, $alter_code)
     {
         $this->loadCachedResults($project_checker);
 
-        $filetype_checkers = $this->config->getFiletypeCheckers();
+        $filetype_checkers = $this->config->getFiletypeAnalyzers();
 
         $analysis_worker =
             /**
@@ -197,7 +197,7 @@ class Analyzer
              * @return void
              */
             function ($_, $file_path) use ($project_checker, $filetype_checkers) {
-                $file_checker = $this->getFileChecker($project_checker, $file_path, $filetype_checkers);
+                $file_checker = $this->getFileAnalyzer($project_checker, $file_path, $filetype_checkers);
 
                 if ($this->debug_output) {
                     echo 'Analyzing ' . $file_checker->getFilePath() . "\n";
@@ -218,7 +218,7 @@ class Analyzer
 
             // Run analysis one file at a time, splitting the set of
             // files up among a given number of child processes.
-            $pool = new \Psalm\Fork\Pool(
+            $pool = new \Psalm\Internal\Fork\Pool(
                 $process_file_paths,
                 /** @return void */
                 function () {
@@ -226,9 +226,10 @@ class Analyzer
                 $analysis_worker,
                 /** @return WorkerData */
                 function () {
-                    $project_checker = ProjectChecker::getInstance();
-                    $analyzer = $project_checker->codebase->analyzer;
-                    $file_reference_provider = $project_checker->file_reference_provider;
+                    $project_checker = ProjectAnalyzer::getInstance();
+                    $codebase = $project_checker->getCodebase();
+                    $analyzer = $codebase->analyzer;
+                    $file_reference_provider = $codebase->file_reference_provider;
 
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
@@ -289,13 +290,14 @@ class Analyzer
             }
         }
 
-        $scanned_files = $project_checker->codebase->scanner->getScannedFiles();
+        $codebase = $project_checker->getCodebase();
+        $scanned_files = $codebase->scanner->getScannedFiles();
         $project_checker->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
         $project_checker->file_reference_provider->setFileMaps($this->getFileMaps());
-        $project_checker->file_reference_provider->updateReferenceCache($project_checker->codebase, $scanned_files);
+        $project_checker->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
-        if ($project_checker->diff_methods) {
-            $project_checker->codebase->statements_provider->resetDiffs();
+        if ($codebase->diff_methods) {
+            $codebase->statements_provider->resetDiffs();
         }
 
         if ($alter_code) {
@@ -308,10 +310,11 @@ class Analyzer
     /**
      * @return void
      */
-    public function loadCachedResults(ProjectChecker $project_checker)
+    public function loadCachedResults(ProjectAnalyzer $project_checker)
     {
-        if ($project_checker->diff_methods
-            && (!$project_checker->codebase->collect_references || $project_checker->codebase->server_mode)
+        $codebase = $project_checker->getCodebase();
+        if ($codebase->diff_methods
+            && (!$codebase->collect_references || $codebase->server_mode)
         ) {
             $this->analyzed_methods = $project_checker->file_reference_provider->getAnalyzedMethods();
             $this->existing_issues = $project_checker->file_reference_provider->getExistingIssues();
@@ -323,7 +326,7 @@ class Analyzer
             }
         }
 
-        $statements_provider = $project_checker->codebase->statements_provider;
+        $statements_provider = $codebase->statements_provider;
 
         $changed_members = $statements_provider->getChangedMembers();
         $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
@@ -332,7 +335,7 @@ class Analyzer
 
         $all_referencing_methods = $project_checker->file_reference_provider->getMethodsReferencing();
 
-        $classlikes = $project_checker->codebase->classlikes;
+        $classlikes = $codebase->classlikes;
 
         foreach ($all_referencing_methods as $member_id => $referencing_method_ids) {
             $member_class_name = preg_replace('/::.*$/', '', $member_id);

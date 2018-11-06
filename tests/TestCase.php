@@ -2,9 +2,9 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
-use Psalm\Provider\Providers;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use RuntimeException;
 
 class TestCase extends BaseTestCase
@@ -12,7 +12,7 @@ class TestCase extends BaseTestCase
     /** @var string */
     protected static $src_dir_path;
 
-    /** @var ProjectChecker */
+    /** @var ProjectAnalyzer */
     protected $project_checker;
 
     /** @var Provider\FakeFileProvider */
@@ -44,7 +44,7 @@ class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
         $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
 
@@ -55,17 +55,17 @@ class TestCase extends BaseTestCase
             new Provider\FakeParserCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_checker = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->infer_types_from_usage = true;
+        $this->project_checker->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -95,7 +95,7 @@ class TestCase extends BaseTestCase
 
         $codebase->config->visitStubFiles($codebase);
 
-        $file_checker = new FileChecker(
+        $file_checker = new FileAnalyzer(
             $this->project_checker,
             $file_path,
             $codebase->config->shortenFileName($file_path)

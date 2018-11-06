@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Codebase;
 
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\CommentChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Codebase;
-use Psalm\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
@@ -108,11 +108,11 @@ class Reflection
             }
 
             if ($class_property->isPublic()) {
-                $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
+                $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
             } elseif ($class_property->isProtected()) {
-                $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PROTECTED;
+                $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
             } elseif ($class_property->isPrivate()) {
-                $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PRIVATE;
+                $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
             }
 
             $property_id = (string)$class_property->class . '::$' . $property_name;
@@ -129,7 +129,7 @@ class Reflection
         foreach ($public_mapped_properties as $property_name => $type) {
             if (!isset($storage->properties[$property_name])) {
                 $storage->properties[$property_name] = new PropertyStorage();
-                $storage->properties[$property_name]->visibility = ClassLikeChecker::VISIBILITY_PUBLIC;
+                $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
 
                 $property_id = $class_name . '::$' . $property_name;
 
@@ -145,7 +145,7 @@ class Reflection
         $class_constants = $reflected_class->getConstants();
 
         foreach ($class_constants as $name => $value) {
-            $storage->public_class_constants[$name] = ClassLikeChecker::getTypeFromValue($value);
+            $storage->public_class_constants[$name] = ClassLikeAnalyzer::getTypeFromValue($value);
         }
 
         if ($reflected_class->isInterface()) {
@@ -254,8 +254,8 @@ class Reflection
         }
 
         $storage->visibility = $method->isPrivate()
-            ? ClassLikeChecker::VISIBILITY_PRIVATE
-            : ($method->isProtected() ? ClassLikeChecker::VISIBILITY_PROTECTED : ClassLikeChecker::VISIBILITY_PUBLIC);
+            ? ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            : ($method->isProtected() ? ClassLikeAnalyzer::VISIBILITY_PROTECTED : ClassLikeAnalyzer::VISIBILITY_PUBLIC);
 
         $possible_params = CallMap::getParamsFromCallMap($method_id);
 
@@ -425,7 +425,7 @@ class Reflection
         foreach ($parent_storage->appearing_property_ids as $property_name => $appearing_property_id) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
@@ -437,7 +437,7 @@ class Reflection
         foreach ($parent_storage->declaring_property_ids as $property_name => $declaring_property_class) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
@@ -449,7 +449,7 @@ class Reflection
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }

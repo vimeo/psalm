@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
 
@@ -31,20 +31,20 @@ class StubTest extends TestCase
      */
     public function setUp()
     {
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
     /**
      * @param  Config $config
      *
-     * @return \Psalm\Checker\ProjectChecker
+     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
      */
-    private function getProjectCheckerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config)
     {
-        $project_checker = new \Psalm\Checker\ProjectChecker(
+        $project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -63,7 +63,7 @@ class StubTest extends TestCase
      */
     public function testNonexistentStubFile()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -85,7 +85,7 @@ class StubTest extends TestCase
      */
     public function testStubFile()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -121,7 +121,7 @@ class StubTest extends TestCase
      */
     public function testNamespacedStubClass()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -159,7 +159,7 @@ class StubTest extends TestCase
      */
     public function testStubFunction()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -191,7 +191,7 @@ class StubTest extends TestCase
      */
     public function testPolyfilledFunction()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -222,7 +222,7 @@ class StubTest extends TestCase
      */
     public function testStubFunctionWithFunctionExists()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -255,7 +255,7 @@ class StubTest extends TestCase
      */
     public function testNamespacedStubFunctionWithFunctionExists()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -292,7 +292,7 @@ class StubTest extends TestCase
      */
     public function testNoStubFunction()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -320,7 +320,7 @@ class StubTest extends TestCase
      */
     public function testNamespacedStubFunction()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -352,7 +352,7 @@ class StubTest extends TestCase
      */
     public function testConditionalNamespacedStubFunction()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -384,7 +384,7 @@ class StubTest extends TestCase
      */
     public function testStubFileWithExistingClassDefinition()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -416,7 +416,7 @@ class StubTest extends TestCase
      */
     public function testStubFileWithPartialClassDefinitionWithMoreMethods()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -468,7 +468,7 @@ class StubTest extends TestCase
      */
     public function testStubFileWithPartialClassDefinitionWithCoercion()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -515,7 +515,7 @@ class StubTest extends TestCase
      */
     public function testStubFileWithPartialClassDefinitionGeneralReturnType()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>

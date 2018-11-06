@@ -5,7 +5,7 @@ use Psalm\Context;
 
 class VariadicTest extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
@@ -34,7 +34,7 @@ class VariadicTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'variadic' => [

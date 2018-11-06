@@ -2,7 +2,7 @@
 namespace Psalm;
 
 use LSS\Array2XML;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\MethodIssue;
@@ -135,7 +135,7 @@ class IssueBuffer
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
-        $project_checker = ProjectChecker::getInstance();
+        $project_checker = ProjectAnalyzer::getInstance();
 
         if (!$project_checker->show_issues) {
             return false;
@@ -309,7 +309,7 @@ class IssueBuffer
     }
 
     /**
-     * @param  ProjectChecker                   $project_checker
+     * @param  ProjectAnalyzer                   $project_checker
      * @param  bool                             $is_full
      * @param  float                            $start_time
      * @param  bool                             $add_stats
@@ -318,13 +318,13 @@ class IssueBuffer
      * @return void
      */
     public static function finish(
-        ProjectChecker $project_checker,
+        ProjectAnalyzer $project_checker,
         bool $is_full,
         float $start_time,
         bool $add_stats = false,
         array $issue_baseline = []
     ) {
-        if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
+        if ($project_checker->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo "\n";
         }
 
@@ -401,7 +401,7 @@ class IssueBuffer
             );
         }
 
-        if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
+        if ($project_checker->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
@@ -429,14 +429,15 @@ class IssueBuffer
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
 
+                $codebase = $project_checker->getCodebase();
                 if ($is_full) {
-                    $analysis_summary = $project_checker->codebase->analyzer->getTypeInferenceSummary();
+                    $analysis_summary = $codebase->analyzer->getTypeInferenceSummary();
                     echo $analysis_summary . "\n";
                 }
 
                 if ($add_stats) {
                     echo '-----------------' . "\n";
-                    echo $project_checker->codebase->analyzer->getNonMixedStats();
+                    echo $codebase->analyzer->getNonMixedStats();
                     echo "\n";
                 }
             }
@@ -465,20 +466,20 @@ class IssueBuffer
      */
     public static function getOutput($format, $use_color, $show_snippet = true, $show_info = true)
     {
-        if ($format === ProjectChecker::TYPE_JSON) {
+        if ($format === ProjectAnalyzer::TYPE_JSON) {
             return json_encode(self::$issues_data) . "\n";
-        } elseif ($format === ProjectChecker::TYPE_XML) {
+        } elseif ($format === ProjectAnalyzer::TYPE_XML) {
             $xml = Array2XML::createXML('report', ['item' => self::$issues_data]);
 
             return $xml->saveXML();
-        } elseif ($format === ProjectChecker::TYPE_EMACS) {
+        } elseif ($format === ProjectAnalyzer::TYPE_EMACS) {
             $output = '';
             foreach (self::$issues_data as $issue_data) {
                 $output .= self::getEmacsOutput($issue_data) . "\n";
             }
 
             return $output;
-        } elseif ($format === ProjectChecker::TYPE_PYLINT) {
+        } elseif ($format === ProjectAnalyzer::TYPE_PYLINT) {
             $output = '';
             foreach (self::$issues_data as $issue_data) {
                 $output .= self::getPylintOutput($issue_data) . "\n";

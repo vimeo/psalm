@@ -2,10 +2,10 @@
 namespace Psalm\Codebase;
 
 use PhpParser;
-use Psalm\Checker\MethodChecker;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\CodeLocation;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;

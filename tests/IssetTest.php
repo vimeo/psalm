@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class IssetTest extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'issetWithSimpleAssignment' => [
@@ -401,7 +401,7 @@ class IssetTest extends TestCase
                 '<?php
                     $foo = [
                         "one" => rand(0,1) ? new DateTime : null,
-                        "two" => rand(0,1) ? new DateTime : null, 
+                        "two" => rand(0,1) ? new DateTime : null,
                         "three" => new DateTime
                     ];
 
@@ -417,7 +417,7 @@ class IssetTest extends TestCase
                 '<?php
                     $foo = [
                         "one" => rand(0,1) ? new DateTime : null,
-                        "two" => rand(0,1) ? new DateTime : null, 
+                        "two" => rand(0,1) ? new DateTime : null,
                         "three" => new DateTime
                     ];
 
@@ -431,7 +431,7 @@ class IssetTest extends TestCase
                 '<?php
                     $foo = [
                         "one" => rand(0,1) ? new DateTime : null,
-                        "two" => rand(0,1) ? new DateTime : null, 
+                        "two" => rand(0,1) ? new DateTime : null,
                         "three" => new DateTime
                     ];
 
@@ -447,7 +447,7 @@ class IssetTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'complainAboutBadCallInIsset' => [

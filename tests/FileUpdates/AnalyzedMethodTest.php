@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Provider\Providers;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
 use Psalm\Tests\Provider;
 
@@ -16,7 +16,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
         $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
 
@@ -30,17 +30,17 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_checker = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->infer_types_from_usage = true;
+        $this->project_checker->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -64,7 +64,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        $this->project_checker->diff_methods = true;
+        $this->project_checker->getCodebase()->diff_methods = true;
 
         $codebase = $this->project_checker->getCodebase();
 

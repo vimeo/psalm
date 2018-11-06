@@ -5,13 +5,13 @@ use Psalm\Tests\Traits;
 
 class WhileTest extends \Psalm\Tests\TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'whileVar' => [
@@ -334,7 +334,7 @@ class WhileTest extends \Psalm\Tests\TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'whileTrueNoBreak' => [

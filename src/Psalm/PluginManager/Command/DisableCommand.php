@@ -49,9 +49,11 @@ class DisableCommand extends Command
 
         $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
-        /** @psalm-suppress MixedAssignment */
+        /** @var string|string[]|bool|null */
         $config_file_path = $i->getOption('config');
-        assert(null === $config_file_path || is_string($config_file_path));
+        if ($config_file_path !== null && !is_string($config_file_path)) {
+            throw new \UnexpectedValueException('Config file path should be a string');
+        }
 
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 

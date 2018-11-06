@@ -3,7 +3,7 @@ namespace Psalm\Codebase;
 
 use PhpParser;
 use Psalm\Aliases;
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -14,7 +14,7 @@ use Psalm\Issue\UnusedClass;
 use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
-use Psalm\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
@@ -383,7 +383,7 @@ class ClassLikes
      */
     public function classExists($fq_class_name)
     {
-        if (isset(ClassLikeChecker::$SPECIAL_TYPES[$fq_class_name])) {
+        if (isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
 
@@ -441,8 +441,8 @@ class ClassLikes
             return true;
         }
 
-        if (isset(ClassLikeChecker::$SPECIAL_TYPES[$interface_id])
-            || isset(ClassLikeChecker::$SPECIAL_TYPES[$fq_class_name])
+        if (isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$interface_id])
+            || isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$fq_class_name])
         ) {
             return false;
         }
@@ -459,7 +459,7 @@ class ClassLikes
      */
     public function interfaceExists($fq_interface_name)
     {
-        if (isset(ClassLikeChecker::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
+        if (isset(ClassLikeAnalyzer::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 
@@ -727,7 +727,7 @@ class ClassLikes
 
                 $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 
-                if ($method_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
                     $method_name_lc = strtolower($method_name);
 
                     $has_parent_references = false;
@@ -821,7 +821,7 @@ class ClassLikes
             ) {
                 $property_id = $classlike_storage->name . '::$' . $property_name;
 
-                if ($property_storage->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                if ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
                     if (IssueBuffer::accepts(
                         new PossiblyUnusedProperty(
                             'Cannot find uses of public property ' . $property_id,

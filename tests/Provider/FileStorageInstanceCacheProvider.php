@@ -3,7 +3,7 @@ namespace Psalm\Tests\Provider;
 
 use Psalm\Storage\FileStorage;
 
-class FileStorageInstanceCacheProvider extends \Psalm\Provider\FileStorageCacheProvider
+class FileStorageInstanceCacheProvider extends \Psalm\Internal\Provider\FileStorageCacheProvider
 {
     /** @var array<string, FileStorage> */
     private $cache = [];

@@ -2,12 +2,12 @@
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
-use Psalm\Scanner\FileScanner;
+use Psalm\Internal\Scanner\FileScanner;
 use SimpleXMLElement;
 use Psalm\PluginRegistrationSocket;
 
@@ -334,7 +334,7 @@ class Config
         $config_path = self::locateConfigFile($path);
 
         if (!$config_path) {
-            if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+            if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
                 exit(
                     'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
                     PHP_EOL
@@ -800,7 +800,7 @@ class Config
      * @psalm-suppress MixedArrayOffset
      * @psalm-suppress MixedTypeCoercion
      */
-    public function initializePlugins(ProjectChecker $project_checker)
+    public function initializePlugins(ProjectAnalyzer $project_checker)
     {
         $codebase = $project_checker->getCodebase();
 
@@ -819,7 +819,11 @@ class Config
         }
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Scanner\\FileScanner');
+            $fq_class_name = $this->getPluginClassForPath(
+                $codebase,
+                $path,
+                \Psalm\Internal\Scanner\FileScanner::class
+            );
 
             $this->filetype_scanners[$extension] = $fq_class_name;
 
@@ -828,7 +832,11 @@ class Config
         }
 
         foreach ($this->filetype_checker_paths as $extension => $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Checker\\FileChecker');
+            $fq_class_name = $this->getPluginClassForPath(
+                $codebase,
+                $path,
+                \Psalm\Internal\Analyzer\FileAnalyzer::class
+            );
 
             $this->filetype_checkers[$extension] = $fq_class_name;
 
@@ -838,7 +846,7 @@ class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $plugin_object = new FileBasedPluginAdapter($path, $this, $project_checker);
+                $plugin_object = new FileBasedPluginAdapter($path, $this, $codebase);
                 $plugin_object($socket);
             } catch (\Throwable $e) {
                 throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
@@ -861,7 +869,7 @@ class Config
             $file_storage
         );
 
-        $declared_classes = ClassLikeChecker::getClassesForFile($codebase, $path);
+        $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
         if (count($declared_classes) !== 1) {
             throw new \InvalidArgumentException(
@@ -912,7 +920,7 @@ class Config
                 return false;
             }
 
-            $codebase = ProjectChecker::getInstance()->codebase;
+            $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
             $dependent_files = [strtolower($file_path) => $file_path];
 
@@ -1089,7 +1097,7 @@ class Config
     /**
      * @return array<string, string>
      */
-    public function getFiletypeCheckers()
+    public function getFiletypeAnalyzers()
     {
         return $this->filetype_checkers;
     }
@@ -1112,14 +1120,14 @@ class Config
         $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
-        $generic_stubs_path = __DIR__ . '/Stubs/CoreGenericFunctions.php';
+        $generic_stubs_path = __DIR__ . '/Internal/Stubs/CoreGenericFunctions.php';
 
         if (!file_exists($generic_stubs_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
         // note: don't realpath $generic_classes_path, or phar version will fail
-        $generic_classes_path = __DIR__ . '/Stubs/CoreGenericClasses.php';
+        $generic_classes_path = __DIR__ . '/Internal/Stubs/CoreGenericClasses.php';
 
         if (!file_exists($generic_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic classes');
@@ -1216,7 +1224,7 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectChecker $project_checker, $debug = false)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_checker, $debug = false)
     {
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
@@ -1266,7 +1274,7 @@ class Config
         $autoload_files_files = array_unique($autoload_files_files);
 
         if ($autoload_files_files) {
-            $codebase = $project_checker->codebase;
+            $codebase = $project_checker->getCodebase();
             $codebase->register_autoload_files = true;
 
             foreach ($autoload_files_files as $file_path) {
@@ -1283,7 +1291,7 @@ class Config
                 echo 'Finished registering autoloaded files' . "\n";
             }
 
-            $project_checker->codebase->register_autoload_files = false;
+            $codebase->register_autoload_files = false;
         }
 
         if ($this->autoloader) {

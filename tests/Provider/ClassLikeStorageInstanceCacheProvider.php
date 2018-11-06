@@ -4,7 +4,7 @@ namespace Psalm\Tests\Provider;
 use Psalm\Config;
 use Psalm\Storage\ClassLikeStorage;
 
-class ClassLikeStorageInstanceCacheProvider extends \Psalm\Provider\ClassLikeStorageCacheProvider
+class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\ClassLikeStorageCacheProvider
 {
     /** @var array<string, ClassLikeStorage> */
     private $cache = [];

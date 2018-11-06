@@ -3,12 +3,12 @@ namespace Psalm\Tests;
 
 class Php55Test extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'generator' => [

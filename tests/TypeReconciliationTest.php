@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TypeChecker;
-use Psalm\Clause;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Algebra;
@@ -12,13 +12,13 @@ use Psalm\Type\Reconciler;
 
 class TypeReconciliationTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
-    /** @var FileChecker */
+    /** @var FileAnalyzer */
     protected $file_checker;
 
-    /** @var StatementsChecker */
+    /** @var StatementsAnalyzer */
     protected $statements_checker;
 
     /**
@@ -28,9 +28,9 @@ class TypeReconciliationTest extends TestCase
     {
         parent::setUp();
 
-        $this->file_checker = new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
+        $this->file_checker = new FileAnalyzer($this->project_checker, 'somefile.php', 'somefile.php');
         $this->file_checker->context = new Context();
-        $this->statements_checker = new StatementsChecker($this->file_checker);
+        $this->statements_checker = new StatementsAnalyzer($this->file_checker);
     }
 
     /**
@@ -72,8 +72,8 @@ class TypeReconciliationTest extends TestCase
     public function testTypeIsContainedBy($input, $container)
     {
         $this->assertTrue(
-            TypeChecker::isContainedBy(
-                $this->project_checker->codebase,
+            TypeAnalyzer::isContainedBy(
+                $this->project_checker->getCodebase(),
                 Type::parseString($input),
                 Type::parseString($container)
             )
@@ -250,7 +250,7 @@ class TypeReconciliationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'intIsMixed' => [
@@ -1072,7 +1072,7 @@ class TypeReconciliationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'makeNonNullableNull' => [

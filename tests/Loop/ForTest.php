@@ -5,13 +5,13 @@ use Psalm\Tests\Traits;
 
 class ForTest extends \Psalm\Tests\TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'implicitFourthLoop' => [
@@ -114,7 +114,7 @@ class ForTest extends \Psalm\Tests\TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'possiblyUndefinedArrayInWhileAndForeach' => [
