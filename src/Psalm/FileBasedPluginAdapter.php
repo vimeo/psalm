@@ -7,7 +7,7 @@ use Psalm\Scanner\FileScanner;
 use Psalm\PluginApi;
 use SimpleXMLElement;
 
-class LegacyPlugin implements PluginApi\PluginEntryPointInterface
+class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
 {
     /** @var string */
     private $path;
@@ -26,37 +26,14 @@ class LegacyPlugin implements PluginApi\PluginEntryPointInterface
     }
 
     /** @return void */
-    public function __invoke(PluginApi\RegistrationInterface $api, SimpleXMLElement $config = null)
+    public function __invoke(PluginApi\RegistrationInterface $registration, SimpleXMLElement $config = null)
     {
-        $codebase = $this->project_checker->codebase;
         $fq_class_name = $this->getPluginClassForPath($this->path, Plugin::class);
 
         /** @psalm-suppress UnresolvableInclude */
         require_once($this->path);
 
-        if ($codebase->methods->methodExists($fq_class_name . '::afterMethodCallCheck')) {
-            $this->config->after_method_checks[$fq_class_name] = $fq_class_name;
-        }
-
-        if ($codebase->methods->methodExists($fq_class_name . '::afterFunctionCallCheck')) {
-            $this->config->after_function_checks[$fq_class_name] = $fq_class_name;
-        }
-
-        if ($codebase->methods->methodExists($fq_class_name . '::afterExpressionCheck')) {
-            $this->config->after_expression_checks[$fq_class_name] = $fq_class_name;
-        }
-
-        if ($codebase->methods->methodExists($fq_class_name . '::afterStatementCheck')) {
-            $this->config->after_statement_checks[$fq_class_name] = $fq_class_name;
-        }
-
-        if ($codebase->methods->methodExists($fq_class_name . '::afterClassLikeExistsCheck')) {
-            $this->config->after_classlike_exists_checks[$fq_class_name] = $fq_class_name;
-        }
-
-        if ($codebase->methods->methodExists($fq_class_name . '::afterVisitClassLike')) {
-            $this->config->after_visit_classlikes[$fq_class_name] = $fq_class_name;
-        }
+        $registration->registerHooksFromClass($fq_class_name);
     }
 
     private function getPluginClassForPath(string $path, string $must_extend): string

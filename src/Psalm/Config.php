@@ -838,11 +838,10 @@ class Config
 
         foreach ($this->plugin_paths as $path) {
             try {
-                $plugin_object = new LegacyPlugin($path, $this, $project_checker);
+                $plugin_object = new FileBasedPluginAdapter($path, $this, $project_checker);
                 $plugin_object($socket);
             } catch (\Throwable $e) {
-                // todo: ???
-                throw $e;
+                throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
     }
