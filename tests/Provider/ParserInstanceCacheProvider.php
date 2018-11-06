@@ -3,7 +3,7 @@ namespace Psalm\Tests\Provider;
 
 use PhpParser;
 
-class ParserInstanceCacheProvider extends \Psalm\Provider\ParserCacheProvider
+class ParserInstanceCacheProvider extends \Psalm\Internal\Provider\ParserCacheProvider
 {
     /**
      * @var array<string, string>

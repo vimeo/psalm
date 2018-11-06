@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Codebase;
 
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Config;
 use Psalm\Issue\CircularReference;
 use Psalm\IssueBuffer;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileReferenceProvider;
-use Psalm\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -122,7 +122,7 @@ class Populator
 
             if ($class_storage->aliases) {
                 foreach ($class_storage->public_class_constant_nodes as $const_name => $node) {
-                    $const_type = \Psalm\Checker\StatementsChecker::getSimpleType(
+                    $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(
                         $codebase,
                         $node,
                         $class_storage->aliases,
@@ -135,7 +135,7 @@ class Populator
                 }
 
                 foreach ($class_storage->protected_class_constant_nodes as $const_name => $node) {
-                    $const_type = \Psalm\Checker\StatementsChecker::getSimpleType(
+                    $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(
                         $codebase,
                         $node,
                         $class_storage->aliases,
@@ -148,7 +148,7 @@ class Populator
                 }
 
                 foreach ($class_storage->private_class_constant_nodes as $const_name => $node) {
-                    $const_type = \Psalm\Checker\StatementsChecker::getSimpleType(
+                    $const_type = \Psalm\Internal\Analyzer\StatementsAnalyzer::getSimpleType(
                         $codebase,
                         $node,
                         $class_storage->aliases,
@@ -422,7 +422,7 @@ class Populator
             }
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
-                if ($method->visibility === ClassLikeChecker::VISIBILITY_PUBLIC) {
+                if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
                     $mentioned_method_id = $implemented_interface . '::' . $method_name;
                     $interface_method_implementers[$method_name][] = $mentioned_method_id;
                 }
@@ -681,7 +681,7 @@ class Populator
 
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
@@ -700,7 +700,7 @@ class Populator
 
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }
@@ -712,7 +712,7 @@ class Populator
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
             if (!$parent_storage->is_trait
                 && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeChecker::VISIBILITY_PRIVATE
+                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
             ) {
                 continue;
             }

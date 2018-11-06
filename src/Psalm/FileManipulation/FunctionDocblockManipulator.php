@@ -5,8 +5,9 @@ use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
-use Psalm\Checker\CommentChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\DocComment;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 class FunctionDocblockManipulator
 {
@@ -88,7 +89,7 @@ class FunctionDocblockManipulator
      * @return self
      */
     public static function getForFunction(
-        ProjectChecker $project_checker,
+        ProjectAnalyzer $project_checker,
         $file_path,
         $function_id,
         FunctionLike $stmt
@@ -109,7 +110,7 @@ class FunctionDocblockManipulator
      * @param string $file_path
      * @param Closure|Function_|ClassMethod $stmt
      */
-    private function __construct($file_path, FunctionLike $stmt, ProjectChecker $project_checker)
+    private function __construct($file_path, FunctionLike $stmt, ProjectAnalyzer $project_checker)
     {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
@@ -117,7 +118,9 @@ class FunctionDocblockManipulator
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
-        $file_contents = $project_checker->codebase->getFileContents($file_path);
+        $codebase = $project_checker->getCodebase();
+
+        $file_contents = $codebase->getFileContents($file_path);
 
         $last_arg_position = $stmt->params
             ? (int) $stmt->params[count($stmt->params) - 1]->getAttribute('endFilePos') + 1
@@ -287,7 +290,7 @@ class FunctionDocblockManipulator
         $docblock = $this->stmt->getDocComment();
 
         if ($docblock) {
-            $parsed_docblock = CommentChecker::parseDocComment((string)$docblock, null, true);
+            $parsed_docblock = DocComment::parse((string)$docblock, null, true);
         } else {
             $parsed_docblock = ['description' => '', 'specials' => []];
         }
@@ -298,7 +301,7 @@ class FunctionDocblockManipulator
 
             if (isset($parsed_docblock['specials']['param'])) {
                 foreach ($parsed_docblock['specials']['param'] as &$param_block) {
-                    $doc_parts = CommentChecker::splitDocLine($param_block);
+                    $doc_parts = CommentAnalyzer::splitDocLine($param_block);
 
                     if ($doc_parts[1] === '$' . $param_name) {
                         $param_block = $new_param_block;
@@ -324,7 +327,7 @@ class FunctionDocblockManipulator
             $parsed_docblock['specials']['psalm-return'] = [$this->new_psalm_return_type];
         }
 
-        return CommentChecker::renderDocComment($parsed_docblock, $this->indentation);
+        return DocComment::render($parsed_docblock, $this->indentation);
     }
 
     /**

@@ -1,9 +1,9 @@
 <?php
 namespace Psalm;
 
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Scanner\FileScanner;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Scanner\FileScanner;
 use Psalm\PluginApi;
 use SimpleXMLElement;
 
@@ -12,17 +12,17 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
     /** @var string */
     private $path;
 
-    /** @var ProjectChecker */
-    private $project_checker;
+    /** @var Codebase */
+    private $codebase;
 
     /** @var Config */
     private $config;
 
-    public function __construct(string $path, Config $config, ProjectChecker $project_checker)
+    public function __construct(string $path, Config $config, Codebase $codebase)
     {
         $this->path = $path;
         $this->config = $config;
-        $this->project_checker = $project_checker;
+        $this->codebase = $codebase;
     }
 
     /** @return void */
@@ -38,7 +38,7 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
 
     private function getPluginClassForPath(string $path, string $must_extend): string
     {
-        $codebase = $this->project_checker->codebase;
+        $codebase = $this->codebase;
 
         $file_storage = $codebase->createFileStorageForPath($path);
         $file_to_scan = new FileScanner($path, $this->config->shortenFileName($path), true);
@@ -47,7 +47,7 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
             $file_storage
         );
 
-        $declared_classes = ClassLikeChecker::getClassesForFile($codebase, $path);
+        $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
         if (count($declared_classes) !== 1) {
             throw new \InvalidArgumentException(

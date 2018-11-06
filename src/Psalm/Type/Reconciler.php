@@ -1,11 +1,12 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Checker\AlgebraChecker;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TraitChecker;
-use Psalm\Checker\TypeChecker;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
@@ -46,7 +47,7 @@ class Reconciler
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string>             $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  StatementsChecker         $statements_checker
+     * @param  StatementsAnalyzer         $statements_checker
      * @param  CodeLocation|null         $code_location
      * @param  array<string>             $suppressed_issues
      *
@@ -57,7 +58,7 @@ class Reconciler
         array $existing_types,
         array &$changed_var_ids,
         array $referenced_var_ids,
-        StatementsChecker $statements_checker,
+        StatementsAnalyzer $statements_checker,
         CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
@@ -128,12 +129,12 @@ class Reconciler
             return $existing_types;
         }
 
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
+        $codebase = $statements_checker->getCodebase();
 
         foreach ($new_types as $key => $new_type_parts) {
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
-                : self::getValueForKey($project_checker, $key, $existing_types);
+                : self::getValueForKey($codebase, $key, $existing_types);
 
             if ($result_type && empty($result_type->getTypes())) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -256,7 +257,7 @@ class Reconciler
      * @param   string              $new_var_type
      * @param   Type\Union|null     $existing_var_type
      * @param   string|null         $key
-     * @param   StatementsChecker   $statements_checker
+     * @param   StatementsAnalyzer   $statements_checker
      * @param   CodeLocation        $code_location
      * @param   string[]            $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
@@ -267,13 +268,12 @@ class Reconciler
         $new_var_type,
         $existing_var_type,
         $key,
-        StatementsChecker $statements_checker,
+        StatementsAnalyzer $statements_checker,
         CodeLocation $code_location = null,
         array $suppressed_issues = [],
         &$failed_reconciliation = false
     ) {
-        $project_checker = $statements_checker->getFileChecker()->project_checker;
-        $codebase = $project_checker->codebase;
+        $codebase = $statements_checker->getCodebase();
 
         $is_strict_equality = false;
         $is_loose_equality = false;
@@ -753,14 +753,14 @@ class Reconciler
 
         if ($new_type_part instanceof TNamedObject
             && (($new_type_has_interface
-                    && !TypeChecker::isContainedBy(
+                    && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $existing_var_type,
                         $new_type
                     )
                 )
                 || ($old_type_has_interface
-                    && !TypeChecker::isContainedBy(
+                    && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $new_type,
                         $existing_var_type
@@ -770,7 +770,7 @@ class Reconciler
             $acceptable_atomic_types = [];
 
             foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
-                if (TypeChecker::isAtomicContainedBy(
+                if (TypeAnalyzer::isAtomicContainedBy(
                     $codebase,
                     $existing_var_type_part,
                     $new_type_part,
@@ -837,8 +837,8 @@ class Reconciler
                     $type_coerced_from_mixed = false;
                     $atomic_to_string_cast = false;
 
-                    if (TypeChecker::isAtomicContainedBy(
-                        $project_checker->codebase,
+                    if (TypeAnalyzer::isAtomicContainedBy(
+                        $codebase,
                         $new_type_part,
                         $existing_var_type_part,
                         false,
@@ -912,7 +912,7 @@ class Reconciler
                         }
                     }
                 } elseif ($key !== '$this'
-                    || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
+                    || !($statements_checker->getSource()->getSource() instanceof TraitAnalyzer)
                 ) {
                     if ($existing_var_type->from_docblock) {
                         if (IssueBuffer::accepts(
@@ -966,7 +966,7 @@ class Reconciler
      * @return Type\Union
      */
     private static function handleNegatedType(
-        StatementsChecker $statements_checker,
+        StatementsAnalyzer $statements_checker,
         $new_var_type,
         $is_strict_equality,
         $is_loose_equality,
@@ -1364,7 +1364,7 @@ class Reconciler
         } elseif (!$is_equality) {
             $new_type_part = new TNamedObject($new_var_type);
 
-            $codebase = $statements_checker->getFileChecker()->project_checker->codebase;
+            $codebase = $statements_checker->getCodebase();
 
             // if there wasn't a direct hit, go deeper, eliminating subtypes
             if (!$existing_var_type->removeType($new_var_type)) {
@@ -1373,7 +1373,7 @@ class Reconciler
                         continue;
                     }
 
-                    if (TypeChecker::isAtomicContainedBy(
+                    if (TypeAnalyzer::isAtomicContainedBy(
                         $codebase,
                         $existing_var_type_part,
                         $new_type_part,
@@ -1391,7 +1391,7 @@ class Reconciler
 
         if (empty($existing_var_type->getTypes())) {
             if ($key !== '$this'
-                || !($statements_checker->getSource()->getSource() instanceof TraitChecker)
+                || !($statements_checker->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
                 if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
@@ -1853,13 +1853,12 @@ class Reconciler
     /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
-     * @param  ProjectChecker            $project_checker
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
      *
      * @return Type\Union|null
      */
-    private static function getValueForKey(ProjectChecker $project_checker, $key, array &$existing_keys)
+    private static function getValueForKey(Codebase $codebase, $key, array &$existing_keys)
     {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -1872,8 +1871,6 @@ class Reconciler
         if (!isset($existing_keys[$base_key])) {
             return null;
         }
-
-        $codebase = $project_checker->codebase;
 
         while ($key_parts) {
             $divider = array_shift($key_parts);
@@ -1952,7 +1949,7 @@ class Reconciler
                                 $property_id
                             );
 
-                            $class_storage = $project_checker->classlike_storage_provider->get(
+                            $class_storage = $codebase->classlike_storage_provider->get(
                                 (string)$declaring_property_class
                             );
 

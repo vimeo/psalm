@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
 
 class DocumentationTest extends TestCase
 {
-    /** @var \Psalm\Checker\ProjectChecker */
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_checker;
 
     /**
@@ -63,14 +63,14 @@ class DocumentationTest extends TestCase
      */
     public function setUp()
     {
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
         \Psalm\FileManipulation\FunctionDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -98,7 +98,7 @@ class DocumentationTest extends TestCase
     }
 
     /**
-     * @dataProvider providerFileCheckerInvalidCodeParse
+     * @dataProvider providerInvalidCodeParse
      * @small
      *
      * @param string $code
@@ -119,7 +119,7 @@ class DocumentationTest extends TestCase
         }
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_checker->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
@@ -142,7 +142,7 @@ class DocumentationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         $invalid_code_data = [];
 

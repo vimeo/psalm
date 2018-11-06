@@ -1,7 +1,7 @@
 <?php
 namespace Psalm;
 
-use Psalm\Provider\FileProvider;
+use Psalm\Internal\Provider\FileProvider;
 
 class ErrorBaseline
 {

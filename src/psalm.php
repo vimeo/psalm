@@ -2,7 +2,7 @@
 require_once('command_functions.php');
 
 use Psalm\ErrorBaseline;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
 
@@ -241,7 +241,7 @@ if (array_key_exists('v', $options)) {
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
-$ini_handler = new \Psalm\Fork\PsalmRestarter('PSALM');
+$ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
 if (isset($options['disable-extension'])) {
     if (is_array($options['disable-extension'])) {
@@ -353,7 +353,7 @@ if (isset($options['i'])) {
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
-    : ProjectChecker::TYPE_CONSOLE;
+    : ProjectAnalyzer::TYPE_CONSOLE;
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
@@ -420,20 +420,20 @@ if (isset($options['clear-global-cache'])) {
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
 if (isset($options['no-cache'])) {
-    $providers = new Psalm\Provider\Providers(
-        new Psalm\Provider\FileProvider
+    $providers = new Psalm\Internal\Provider\Providers(
+        new Psalm\Internal\Provider\FileProvider
     );
 } else {
-    $providers = new Psalm\Provider\Providers(
-        new Psalm\Provider\FileProvider,
-        new Psalm\Provider\ParserCacheProvider($config),
-        new Psalm\Provider\FileStorageCacheProvider($config),
-        new Psalm\Provider\ClassLikeStorageCacheProvider($config),
-        new Psalm\Provider\FileReferenceCacheProvider($config)
+    $providers = new Psalm\Internal\Provider\Providers(
+        new Psalm\Internal\Provider\FileProvider,
+        new Psalm\Internal\Provider\ParserCacheProvider($config),
+        new Psalm\Internal\Provider\FileStorageCacheProvider($config),
+        new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+        new Psalm\Internal\Provider\FileReferenceCacheProvider($config)
     );
 }
 
-$project_checker = new ProjectChecker(
+$project_checker = new ProjectAnalyzer(
     $config,
     $providers,
     !array_key_exists('m', $options),
@@ -445,7 +445,7 @@ $project_checker = new ProjectChecker(
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
-$project_checker->diff_methods = isset($options['diff-methods']);
+$project_checker->getCodebase()->diff_methods = isset($options['diff-methods']);
 
 $start_time = microtime(true);
 
@@ -488,7 +488,7 @@ if ($find_references_to) {
     $project_checker->findReferencesTo($find_references_to);
 } elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
     if ($threads > 1) {
-        if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;
         }
     } else {
@@ -500,7 +500,7 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
     echo 'Writing error baseline to file...', PHP_EOL;
 
     ErrorBaseline::create(
-        new \Psalm\Provider\FileProvider,
+        new \Psalm\Internal\Provider\FileProvider,
         $options['set-baseline'],
         IssueBuffer::getIssuesData()
     );
@@ -555,7 +555,7 @@ if (isset($options['update-baseline'])) {
 
     try {
         $issue_baseline = ErrorBaseline::update(
-            new \Psalm\Provider\FileProvider,
+            new \Psalm\Internal\Provider\FileProvider,
             $baselineFile,
             IssueBuffer::getIssuesData()
         );
@@ -567,7 +567,7 @@ if (isset($options['update-baseline'])) {
 if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-baseline'])) {
     try {
         $issue_baseline = ErrorBaseline::read(
-            new \Psalm\Provider\FileProvider,
+            new \Psalm\Internal\Provider\FileProvider,
             (string)Config::getInstance()->error_baseline
         );
     } catch (\Psalm\Exception\ConfigException $exception) {

@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 
@@ -13,23 +13,23 @@ class JsonOutputTest extends TestCase
      */
     public function setUp()
     {
-        // `TestCase::setUp()` creates its own ProjectChecker and Config instance, but we don't want to do that in this
+        // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_checker = new ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
             false,
             true,
-            ProjectChecker::TYPE_JSON
+            ProjectAnalyzer::TYPE_JSON
         );
 
         $this->project_checker->getCodebase()->reportUnusedCode();

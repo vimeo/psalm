@@ -5,13 +5,13 @@ use Psalm\Tests\Traits;
 
 class ForeachTest extends \Psalm\Tests\TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'switchVariableWithContinue' => [
@@ -771,7 +771,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'switchVariableWithContinueOnce' => [

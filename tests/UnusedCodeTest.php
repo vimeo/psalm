@@ -1,13 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
 
 class UnusedCodeTest extends TestCase
 {
-    /** @var \Psalm\Checker\ProjectChecker */
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_checker;
 
     /**
@@ -15,13 +15,13 @@ class UnusedCodeTest extends TestCase
      */
     public function setUp()
     {
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -31,7 +31,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @dataProvider providerFileCheckerValidCodeParse
+     * @dataProvider providerValidCodeParse
      *
      * @param string $code
      * @param array<string> $error_levels
@@ -59,7 +59,7 @@ class UnusedCodeTest extends TestCase
         );
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_checker->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $context = new Context();
@@ -71,7 +71,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @dataProvider providerFileCheckerInvalidCodeParse
+     * @dataProvider providerInvalidCodeParse
      *
      * @param string $code
      * @param string $error_message
@@ -91,7 +91,7 @@ class UnusedCodeTest extends TestCase
         $file_path = self::$src_dir_path . 'somefile.php';
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_checker->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $this->addFile(
@@ -110,7 +110,7 @@ class UnusedCodeTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'magicCall' => [
@@ -327,7 +327,7 @@ class UnusedCodeTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'unusedClass' => [

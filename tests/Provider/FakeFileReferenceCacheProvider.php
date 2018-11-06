@@ -7,7 +7,7 @@ use Psalm\Config;
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
  */
-class FakeFileReferenceCacheProvider extends \Psalm\Provider\FileReferenceCacheProvider
+class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileReferenceCacheProvider
 {
     /** @var ?array */
     private $cached_file_references;

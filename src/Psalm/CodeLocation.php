@@ -2,7 +2,7 @@
 namespace Psalm;
 
 use PhpParser;
-use Psalm\Checker\CommentChecker;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 
 class CodeLocation
 {
@@ -129,9 +129,11 @@ class CodeLocation
         $this->selection_start = $this->file_start;
         $this->selection_end = $this->file_end + 1;
 
-        $project_checker = Checker\ProjectChecker::getInstance();
+        $project_checker = Internal\Analyzer\ProjectAnalyzer::getInstance();
 
-        $file_contents = $project_checker->codebase->getFileContents($this->file_path);
+        $codebase = $project_checker->getCodebase();
+
+        $file_contents = $codebase->getFileContents($this->file_path);
 
         $preview_end = strpos(
             $file_contents,
@@ -180,7 +182,7 @@ class CodeLocation
         if ($this->regex_type !== null) {
             switch ($this->regex_type) {
                 case self::VAR_TYPE:
-                    $regex = '/@(psalm-)?var[ \t]+' . CommentChecker::TYPE_REGEX . '/';
+                    $regex = '/@(psalm-)?var[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
                     $match_offset = 2;
                     break;
 
@@ -195,12 +197,12 @@ class CodeLocation
                     break;
 
                 case self::FUNCTION_PHPDOC_RETURN_TYPE:
-                    $regex = '/@(psalm-)?return[ \t]+' . CommentChecker::TYPE_REGEX . '/';
+                    $regex = '/@(psalm-)?return[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
                     $match_offset = 2;
                     break;
 
                 case self::FUNCTION_PHPDOC_PARAM_TYPE:
-                    $regex = '/@(psalm-)?param[ \t]+' . CommentChecker::TYPE_REGEX . '/';
+                    $regex = '/@(psalm-)?param[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
                     $match_offset = 2;
                     break;
 

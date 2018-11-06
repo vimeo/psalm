@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 
 class IncludeTest extends TestCase
 {
@@ -43,7 +43,7 @@ class IncludeTest extends TestCase
         $config->hoist_constants = $hoist_constants;
 
         foreach ($files_to_check as $file_path) {
-            $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
+            $file_checker = new FileAnalyzer($this->project_checker, $file_path, $config->shortenFileName($file_path));
             $file_checker->analyze();
         }
     }
@@ -86,7 +86,7 @@ class IncludeTest extends TestCase
         $codebase->scanFiles();
 
         foreach ($files_to_check as $file_path) {
-            $file_checker = new FileChecker($this->project_checker, $file_path, $config->shortenFileName($file_path));
+            $file_checker = new FileAnalyzer($this->project_checker, $file_path, $config->shortenFileName($file_path));
             $file_checker->analyze();
         }
     }

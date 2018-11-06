@@ -1,7 +1,7 @@
 <?php
 require_once('command_functions.php');
 
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
 
@@ -122,22 +122,22 @@ if ($path_to_config === false) {
 if ($path_to_config) {
     $config = Config::loadFromXMLFile($path_to_config, $current_dir);
 } else {
-    $config = Config::getConfigForPath($current_dir, $current_dir, ProjectChecker::TYPE_CONSOLE);
+    $config = Config::getConfigForPath($current_dir, $current_dir, ProjectAnalyzer::TYPE_CONSOLE);
 }
 
 $config->setComposerClassLoader($first_autoloader);
 
-$project_checker = new ProjectChecker(
+$project_checker = new ProjectAnalyzer(
     $config,
-    new Psalm\Provider\Providers(
-        new Psalm\Provider\FileProvider(),
-        new Psalm\Provider\ParserCacheProvider($config),
-        new Psalm\Provider\FileStorageCacheProvider($config),
-        new Psalm\Provider\ClassLikeStorageCacheProvider($config)
+    new Psalm\Internal\Provider\Providers(
+        new Psalm\Internal\Provider\FileProvider(),
+        new Psalm\Internal\Provider\ParserCacheProvider($config),
+        new Psalm\Internal\Provider\FileStorageCacheProvider($config),
+        new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config)
     ),
     !array_key_exists('m', $options),
     false,
-    ProjectChecker::TYPE_CONSOLE,
+    ProjectAnalyzer::TYPE_CONSOLE,
     1,
     array_key_exists('debug', $options)
 );

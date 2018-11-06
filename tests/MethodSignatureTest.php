@@ -5,8 +5,8 @@ use Psalm\Context;
 
 class MethodSignatureTest extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return void
@@ -92,7 +92,7 @@ class MethodSignatureTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'privateArgs' => [
@@ -341,7 +341,7 @@ class MethodSignatureTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'moreArguments' => [

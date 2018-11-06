@@ -1,12 +1,12 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Context;
 
 class FileManipulationTest extends TestCase
 {
-    /** @var \Psalm\Checker\ProjectChecker */
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_checker;
 
     /**
@@ -14,14 +14,14 @@ class FileManipulationTest extends TestCase
      */
     public function setUp()
     {
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
         \Psalm\FileManipulation\FunctionDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
     /**
-     * @dataProvider providerFileCheckerValidCodeParse
+     * @dataProvider providerValidCodeParse
      *
      * @param string $input_code
      * @param string $output_code
@@ -46,16 +46,16 @@ class FileManipulationTest extends TestCase
 
         $config = new TestConfig();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
         );
 
         if (empty($issues_to_fix)) {
-            $config->addPluginPath('examples/ClassUnqualifier.php');
+            $config->addPluginPath('examples/plugins/ClassUnqualifier.php');
             $config->initializePlugins($this->project_checker);
         }
 
@@ -93,7 +93,7 @@ class FileManipulationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'addMissingVoidReturnType56' => [

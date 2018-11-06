@@ -1,9 +1,10 @@
 <?php
 namespace Psalm\Codebase;
 
-use Psalm\Checker\ProjectChecker;
-use Psalm\Checker\StatementsChecker;
-use Psalm\Provider\FileStorageProvider;
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
@@ -33,7 +34,7 @@ class Functions
     }
 
     /**
-     * @param  StatementsChecker|null $statements_checker
+     * @param  StatementsAnalyzer|null $statements_checker
      * @param  string $function_id
      *
      * @return FunctionLikeStorage
@@ -56,7 +57,7 @@ class Functions
         $checked_file_path = $statements_checker->getFilePath();
         $file_storage = $this->file_storage_provider->get($file_path);
 
-        $function_checkers = $statements_checker->getFunctionCheckers();
+        $function_checkers = $statements_checker->getFunctionAnalyzers();
 
         if (isset($function_checkers[$function_id])) {
             $function_id = $function_checkers[$function_id]->getMethodId();
@@ -124,7 +125,7 @@ class Functions
      *
      * @return bool
      */
-    public function functionExists(StatementsChecker $statements_checker, $function_id)
+    public function functionExists(StatementsAnalyzer $statements_checker, $function_id)
     {
         $file_storage = $this->file_storage_provider->get($statements_checker->getRootFilePath());
 
@@ -140,7 +141,7 @@ class Functions
             return true;
         }
 
-        if (isset($statements_checker->getFunctionCheckers()[$function_id])) {
+        if (isset($statements_checker->getFunctionAnalyzers()[$function_id])) {
             return true;
         }
 
@@ -204,9 +205,9 @@ class Functions
      *
      * @return bool
      */
-    public static function isVariadic(ProjectChecker $project_checker, $function_id, $file_path)
+    public static function isVariadic(Codebase $codebase, $function_id, $file_path)
     {
-        $file_storage = $project_checker->file_storage_provider->get($file_path);
+        $file_storage = $codebase->file_storage_provider->get($file_path);
 
         if (!isset($file_storage->declaring_function_ids[$function_id])) {
             return false;
@@ -216,7 +217,7 @@ class Functions
 
         $file_storage = $declaring_file_path === $file_path
             ? $file_storage
-            : $project_checker->file_storage_provider->get($declaring_file_path);
+            : $codebase->file_storage_provider->get($declaring_file_path);
 
         return isset($file_storage->functions[$function_id]) && $file_storage->functions[$function_id]->variadic;
     }
