@@ -108,13 +108,6 @@ class ParseTree
                     }
 
                     do {
-                        if ($current_leaf->parent === null
-                            || $current_leaf->parent instanceof ParseTree\CallableWithReturnTypeTree
-                            || $current_leaf->parent instanceof ParseTree\MethodWithReturnTypeTree
-                        ) {
-                            break;
-                        }
-
                         $current_leaf = $current_leaf->parent;
                     } while (!$current_leaf instanceof ParseTree\EncapsulationTree
                         && !$current_leaf instanceof ParseTree\CallableTree
