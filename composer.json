@@ -72,5 +72,11 @@
     },
     "provide": {
         "psalm/psalm": "self.version"
-    }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "examples/composer-based/echo-checker"
+        }
+    ]
 }
