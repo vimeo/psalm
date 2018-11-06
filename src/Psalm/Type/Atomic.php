@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Issue\ReservedWord;
@@ -215,7 +215,7 @@ abstract class Atomic
 
         if ($this instanceof TNamedObject) {
             if (!isset($phantom_classes[strtolower($this->value)]) &&
-                ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $source,
                     $this->value,
                     $code_location,
@@ -229,7 +229,7 @@ abstract class Atomic
             if ($this->extra_types) {
                 foreach ($this->extra_types as $extra_type) {
                     if (!isset($phantom_classes[strtolower($extra_type->value)]) &&
-                        ClassLikeChecker::checkFullyQualifiedClassLikeName(
+                        ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $source,
                             $extra_type->value,
                             $code_location,
@@ -244,7 +244,7 @@ abstract class Atomic
         }
 
         if ($this instanceof TScalarClassConstant) {
-            if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $source,
                 $this->fq_classlike_name,
                 $code_location,

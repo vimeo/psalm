@@ -6,7 +6,7 @@ use Psalm\Type\TypeCombination;
 
 class TypeCombinationTest extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @dataProvider providerTestValidTypeCombination
@@ -32,7 +32,7 @@ class TypeCombinationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'multipleValuedArray' => [

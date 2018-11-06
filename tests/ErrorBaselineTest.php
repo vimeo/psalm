@@ -5,7 +5,7 @@ use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
-use Psalm\Provider\FileProvider;
+use Psalm\Internal\Provider\FileProvider;
 
 class ErrorBaselineTest extends TestCase
 {

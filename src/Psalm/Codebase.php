@@ -3,17 +3,17 @@ namespace Psalm;
 
 use LanguageServerProtocol\{Position, Range};
 use PhpParser;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileProvider;
-use Psalm\Provider\FileReferenceProvider;
-use Psalm\Provider\FileStorageProvider;
-use Psalm\Provider\Providers;
-use Psalm\Provider\StatementsProvider;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 class Codebase
 {
@@ -143,6 +143,23 @@ class Codebase
     public $server_mode = false;
 
     /**
+     * Whether or not to infer types from usage. Computationally expensive, so turned off by default
+     *
+     * @var bool
+     */
+    public $infer_types_from_usage = false;
+
+    /**
+     * @var bool
+     */
+    public $alter_code = false;
+
+    /**
+     * @var bool
+     */
+    public $diff_methods = false;
+
+    /**
      * @param bool $collect_references
      * @param bool $debug_output
      */
@@ -223,7 +240,7 @@ class Codebase
      *
      * @return void
      */
-    public function reloadFiles(ProjectChecker $project_checker, array $candidate_files)
+    public function reloadFiles(ProjectAnalyzer $project_checker, array $candidate_files)
     {
         $this->loadAnalyzer();
 

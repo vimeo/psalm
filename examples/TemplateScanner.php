@@ -5,9 +5,10 @@ use PhpParser;
 use Psalm;
 use Psalm\Checker\CommentChecker;
 use Psalm\Codebase;
+use Psalm\DocComment;
 use Psalm\Storage\FileStorage;
 
-class TemplateScanner extends Psalm\Scanner\FileScanner
+class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
@@ -36,7 +37,7 @@ class TemplateScanner extends Psalm\Scanner\FileScanner
         $first_stmt = $stmts[0];
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-            $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
+            $comment_block = DocComment::parse(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {
                 $variables_from = trim($comment_block['specials']['variablesfrom'][0]);

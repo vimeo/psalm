@@ -2,9 +2,7 @@
 namespace Psalm;
 
 use PhpParser;
-use Psalm\Checker\StatementsChecker;
 use Psalm\FileManipulation\FileManipulation;
-use Psalm\Scanner\FileScanner;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Union;
 
@@ -13,21 +11,19 @@ abstract class Plugin
     /**
      * Called after an expression has been checked
      *
-     * @param  StatementsChecker    $statements_checker
-     * @param  PhpParser\Node\Expr  $stmt
+     * @param  PhpParser\Node\Expr  $expr
      * @param  Context              $context
-     * @param  CodeLocation         $code_location
+     * @param  StatementsSource           $file_soure
      * @param  string[]             $suppressed_issues
      * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false
      */
-    public static function afterExpressionCheck(
-        StatementsChecker $statements_checker,
-        PhpParser\Node\Expr $stmt,
+    public static function afterExpressionAnalysis(
+        PhpParser\Node\Expr $expr,
         Context $context,
-        CodeLocation $code_location,
-        array $suppressed_issues,
+        StatementsSource $statements_source,
+        Codebase $codebase,
         array &$file_replacements = []
     ) {
         return null;
@@ -36,21 +32,16 @@ abstract class Plugin
     /**
      * Called after a statement has been checked
      *
-     * @param  StatementsChecker                        $statements_checker
-     * @param  PhpParser\Node\Stmt|PhpParser\Node\Expr  $stmt
-     * @param  Context                                  $context
-     * @param  CodeLocation                             $code_location
-     * @param  string[]                                 $suppressed_issues
-     * @param  FileManipulation[]                       $file_replacements
+     * @param  string[]             $suppressed_issues
+     * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false
      */
-    public static function afterStatementCheck(
-        StatementsChecker $statements_checker,
-        PhpParser\Node $stmt,
+    public static function afterStatementAnalysis(
+        PhpParser\Node\Stmt $stmt,
         Context $context,
-        CodeLocation $code_location,
-        array $suppressed_issues,
+        StatementsSource $statements_source,
+        Codebase $codebase,
         array &$file_replacements = []
     ) {
         return null;
@@ -61,11 +52,11 @@ abstract class Plugin
      *
      * @return void
      */
-    public static function afterVisitClassLike(
+    public static function afterClassLikeVisit(
         PhpParser\Node\Stmt\ClassLike $stmt,
         ClassLikeStorage $storage,
-        FileScanner $file,
-        Aliases $aliases,
+        StatementsSource $statements_source,
+        Codebase $codebase,
         array &$file_replacements = []
     ) {
     }
@@ -76,15 +67,17 @@ abstract class Plugin
      *
      * @return void
      */
-    public static function afterClassLikeExistsCheck(
-        StatementsSource $statements_source,
-        $fq_class_name,
+    public static function afterClassLikeExistenceCheck(
+        string $fq_class_name,
         CodeLocation $code_location,
+        StatementsSource $statements_source,
+        Codebase $codebase,
         array &$file_replacements = []
     ) {
     }
 
     /**
+     * @param  PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @param  string $method_id - the method id being checked
      * @param  string $appearing_method_id - the method id of the class that the method appears in
      * @param  string $declaring_method_id - the method id of the class or trait that declares the method
@@ -94,17 +87,16 @@ abstract class Plugin
      *
      * @return void
      */
-    public static function afterMethodCallCheck(
-        StatementsSource $statements_source,
-        $method_id,
-        $appearing_method_id,
-        $declaring_method_id,
-        $var_id,
-        array $args,
-        CodeLocation $code_location,
+    public static function afterMethodCallAnalysis(
+        PhpParser\Node\Expr $expr,
+        string $method_id,
+        string $appearing_method_id,
+        string $declaring_method_id,
         Context $context,
+        StatementsSource $statements_source,
+        Codebase $codebase,
         array &$file_replacements = [],
-        Union &$return_type_candidate = null
+        Union $return_type_candidate = null
     ) {
     }
 
@@ -115,12 +107,12 @@ abstract class Plugin
      *
      * @return void
      */
-    public static function afterFunctionCallCheck(
-        StatementsSource $statements_source,
-        $function_id,
-        array $args,
-        CodeLocation $code_location,
+    public static function afterFunctionCallAnalysis(
+        PhpParser\Node\Expr\FuncCall $expr,
+        string $function_id,
         Context $context,
+        StatementsSource $statements_source,
+        Codebase $codebase,
         array &$file_replacements = [],
         Union &$return_type_candidate = null
     ) {

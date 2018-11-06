@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class ConstantTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'constantInFunction' => [
@@ -254,7 +254,7 @@ class ConstantTest extends TestCase
 
                     class B extends A {
                         public const C = [5];
-                      
+
                         public function getA(): array {
                             return self::C;
                         }
@@ -266,7 +266,7 @@ class ConstantTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'constantDefinedInFunctionButNotCalled' => [
@@ -349,7 +349,7 @@ class ConstantTest extends TestCase
 
                     class B extends A {
                         public const C = [5];
-                      
+
                         public function getC(): string {
                             return self::C;
                         }

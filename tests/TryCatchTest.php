@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class TryCatchTest extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'PHP7-addThrowableInterfaceType' => [
@@ -150,7 +150,7 @@ class TryCatchTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'invalidCatchClass' => [

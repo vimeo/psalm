@@ -5,8 +5,8 @@ use Psalm\Context;
 
 class ArrayAssignmentTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return void
@@ -33,7 +33,7 @@ class ArrayAssignmentTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'genericArrayCreationWithSingleIntValue' => [
@@ -960,7 +960,7 @@ class ArrayAssignmentTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'objectAssignment' => [

@@ -136,7 +136,7 @@ class CallMap
         }
 
         /** @var array<string, array<int|string, string>> */
-        $call_map = require_once(__DIR__ . '/../CallMap.php');
+        $call_map = require_once(__DIR__ . '/../Internal/CallMap.php');
 
         self::$call_map = [];
 

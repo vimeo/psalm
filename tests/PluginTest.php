@@ -2,7 +2,7 @@
 namespace Psalm\Tests;
 
 use Prophecy\Argument;
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Plugin;
@@ -15,7 +15,7 @@ class PluginTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /** @var \Psalm\Checker\ProjectChecker */
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_checker;
 
     /**
@@ -39,20 +39,20 @@ class PluginTest extends TestCase
      */
     public function setUp()
     {
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
     /**
      * @param  Config $config
      *
-     * @return \Psalm\Checker\ProjectChecker
+     * @return \Psalm\Internal\Analyzer\ProjectAnalyzer
      */
-    private function getProjectCheckerWithConfig(Config $config)
+    private function getProjectAnalyzerWithConfig(Config $config)
     {
-        return new \Psalm\Checker\ProjectChecker(
+        return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -65,9 +65,9 @@ class PluginTest extends TestCase
      *
      * @return                   void
      */
-    public function testStringCheckerPlugin()
+    public function testStringAnalyzerPlugin()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -76,20 +76,20 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/StringChecker.php" />
+                        <plugin filename="examples/plugins/StringChecker.php" />
                     </plugins>
                 </psalm>'
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
             '<?php
-                $a = "Psalm\Checker\ProjectChecker";'
+                $a = "Psalm\Internal\Analyzer\ProjectAnalyzer";'
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -101,9 +101,9 @@ class PluginTest extends TestCase
      *
      * @return                   void
      */
-    public function testStringCheckerPluginWithClassConstant()
+    public function testStringAnalyzerPluginWithClassConstant()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -112,13 +112,13 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/StringChecker.php" />
+                        <plugin filename="examples/plugins/StringChecker.php" />
                     </plugins>
                 </psalm>'
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -127,7 +127,7 @@ class PluginTest extends TestCase
             '<?php
                 class A {
                     const C = [
-                        "foo" => "Psalm\Checker\ProjectChecker",
+                        "foo" => "Psalm\Internal\Analyzer\ProjectAnalyzer",
                     ];
                 }'
         );
@@ -141,9 +141,9 @@ class PluginTest extends TestCase
      *
      * @return                   void
      */
-    public function testStringCheckerPluginWithClassConstantConcat()
+    public function testStringAnalyzerPluginWithClassConstantConcat()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -152,13 +152,13 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/StringChecker.php" />
+                        <plugin filename="examples/plugins/StringChecker.php" />
                     </plugins>
                 </psalm>'
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -167,7 +167,7 @@ class PluginTest extends TestCase
             '<?php
                 class A {
                     const C = [
-                        "foo" => \Psalm\Checker\ProjectChecker::class . "::foo",
+                        "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",
                     ];
                 }'
         );
@@ -178,9 +178,9 @@ class PluginTest extends TestCase
     /**
      * @return                   void
      */
-    public function testEchoCheckerPluginWithJustHtml()
+    public function testEchoAnalyzerPluginWithJustHtml()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -189,13 +189,13 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/EchoChecker.php" />
+                        <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
                     </plugins>
                 </psalm>'
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -213,9 +213,9 @@ class PluginTest extends TestCase
      *
      * @return                   void
      */
-    public function testEchoCheckerPluginWithUnescapedConcatenatedString()
+    public function testEchoAnalyzerPluginWithUnescapedConcatenatedString()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -224,7 +224,7 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/EchoChecker.php" />
+                        <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
                     </plugins>
                     <issueHandlers>
                         <UndefinedGlobalVariable errorLevel="suppress" />
@@ -235,7 +235,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -253,9 +253,9 @@ class PluginTest extends TestCase
      *
      * @return                   void
      */
-    public function testEchoCheckerPluginWithUnescapedString()
+    public function testEchoAnalyzerPluginWithUnescapedString()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -264,7 +264,7 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/EchoChecker.php" />
+                        <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
                     </plugins>
                     <issueHandlers>
                         <UndefinedGlobalVariable errorLevel="suppress" />
@@ -274,7 +274,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -289,9 +289,9 @@ class PluginTest extends TestCase
     /**
      * @return                   void
      */
-    public function testEchoCheckerPluginWithEscapedString()
+    public function testEchoAnalyzerPluginWithEscapedString()
     {
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -300,7 +300,7 @@ class PluginTest extends TestCase
                         <directory name="src" />
                     </projectFiles>
                     <plugins>
-                        <plugin filename="examples/EchoChecker.php" />
+                        <plugin filename="examples/plugins/composer-based/echo-checker/EchoChecker.php" />
                     </plugins>
                     <issueHandlers>
                         <UndefinedGlobalVariable errorLevel="suppress" />
@@ -310,7 +310,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -335,12 +335,13 @@ class PluginTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
     /** @return void */
     public function testInheritedHookHandlersAreCalled()
     {
         require_once __DIR__ . '/stubs/extending_plugin_entrypoint.php';
 
-        $this->project_checker = $this->getProjectCheckerWithConfig(
+        $this->project_checker = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -355,10 +356,10 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
         $this->assertContains(
             'ExtendingPlugin',
-            $this->project_checker->config->after_function_checks
+            $this->project_checker->getCodebase()->config->after_function_checks
         );
     }
 }

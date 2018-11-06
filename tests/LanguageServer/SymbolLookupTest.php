@@ -2,12 +2,12 @@
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;
 use Psalm\Tests\TestConfig;
 use Psalm\Tests\Provider;
-use Psalm\Provider\Providers;
+use Psalm\Internal\Provider\Providers;
 
 class SymbolLookupTest extends \Psalm\Tests\TestCase
 {
@@ -19,7 +19,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
         $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
 
@@ -33,17 +33,17 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_checker = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->codebase->server_mode = true;
+        $this->project_checker->getCodebase()->server_mode = true;
     }
 
     /**
@@ -73,7 +73,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
+        new FileAnalyzer($this->project_checker, 'somefile.php', 'somefile.php');
 
         $codebase = $this->project_checker->getCodebase();
 
@@ -110,7 +110,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
+        new FileAnalyzer($this->project_checker, 'somefile.php', 'somefile.php');
 
         $codebase = $this->project_checker->getCodebase();
 

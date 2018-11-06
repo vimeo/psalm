@@ -3,10 +3,10 @@ namespace Psalm\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Config;
-use Psalm\Provider\FileProvider;
-use Psalm\Provider\FileReferenceProvider;
-use Psalm\Provider\FileStorageProvider;
-use Psalm\Scanner\FileScanner;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Scanner\FileScanner;
 
 /**
  * @psalm-type  IssueData = array{
@@ -381,16 +381,17 @@ class Scanner
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
-            $pool = new \Psalm\Fork\Pool(
+            $pool = new \Psalm\Internal\Fork\Pool(
                 $process_file_paths,
                 /** @return void */
                 function () {
-                    $project_checker = \Psalm\Checker\ProjectChecker::getInstance();
-                    $statements_provider = $project_checker->codebase->statements_provider;
+                    $project_checker = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $codebase = $project_checker->getCodebase();
+                    $statements_provider = $codebase->statements_provider;
 
-                    $project_checker->codebase->scanner->isForked();
-                    $project_checker->codebase->file_storage_provider->deleteAll();
-                    $project_checker->codebase->classlike_storage_provider->deleteAll();
+                    $codebase->scanner->isForked();
+                    $codebase->file_storage_provider->deleteAll();
+                    $codebase->classlike_storage_provider->deleteAll();
 
                     $statements_provider->resetDiffs();
                 },
@@ -399,12 +400,13 @@ class Scanner
                  * @return PoolData
                 */
                 function () {
-                    $project_checker = \Psalm\Checker\ProjectChecker::getInstance();
-                    $statements_provider = $project_checker->codebase->statements_provider;
+                    $project_checker = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $codebase = $project_checker->getCodebase();
+                    $statements_provider = $codebase->statements_provider;
 
                     return [
-                        'classlikes_data' => $project_checker->codebase->classlikes->getThreadData(),
-                        'scanner_data' => $project_checker->codebase->scanner->getThreadData(),
+                        'classlikes_data' => $codebase->classlikes->getThreadData(),
+                        'scanner_data' => $codebase->scanner->getThreadData(),
                         'issues' => \Psalm\IssueBuffer::getIssuesData(),
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),

@@ -6,8 +6,8 @@ use Psalm\Context;
 
 class MagicMethodAnnotationTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return void
@@ -108,7 +108,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'validSimpleAnnotations' => [
@@ -250,7 +250,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'annotationWithoutCall' => [

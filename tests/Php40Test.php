@@ -3,12 +3,12 @@ namespace Psalm\Tests;
 
 class Php40Test extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'extendOldStyleConstructor' => [
@@ -21,7 +21,7 @@ class Php40Test extends TestCase
                             return "hello";
                         }
                     }
-            
+
                     class B extends A {
                         public function __construct() {
                             parent::__construct();

@@ -2,8 +2,8 @@
 namespace Psalm\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
 
 /**
  * @internal

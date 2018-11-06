@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests\Provider;
 
-class FakeFileProvider extends \Psalm\Provider\FileProvider
+class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
 {
     /**
      * @var array<string, string>

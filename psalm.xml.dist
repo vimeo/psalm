@@ -16,12 +16,12 @@
         <directory name="tests" />
         <directory name="examples" />
         <ignoreFiles>
-            <file name="src/Psalm/CallMap.php" />
-            <directory name="src/Psalm/Stubs" />
+            <file name="src/Psalm/Internal/CallMap.php" />
+            <directory name="src/Psalm/Internal/Stubs" />
             <directory name="tests/stubs" />
             <directory name="tests/DummyProject" />
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php" />
-            <file name="src/Psalm/Traverser/CustomTraverser.php" />
+            <file name="src/Psalm/Internal/Traverser/CustomTraverser.php" />
             <directory name="tests/performance/a.test" />
             <directory name="tests/performance/b.test" />
             <file name="tests/ErrorBaselineTest.php" />
@@ -39,12 +39,13 @@
         <PossiblyNullOperand errorLevel="suppress" />
         <MissingConstructor>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Scanner/FunctionDocblockComment.php" />
+                <file name="src/Psalm/Internal/Scanner/FunctionDocblockComment.php" />
+                <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php" />
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
                 <file name="src/Psalm/Storage/MethodStorage.php" />
                 <file name="src/Psalm/Storage/PropertyStorage.php" />
-                <file name="src/Psalm/Scanner/VarDocblockComment.php" />
-                <file name="src/Psalm/Scope/SwitchScope.php" />
+                <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php" />
+                <file name="src/Psalm/Internal/Scope/SwitchScope.php" />
             </errorLevel>
         </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress" />
@@ -84,7 +85,7 @@
 
         <PossiblyUnusedProperty>
             <errorLevel type="info">
-                <file name="src/Psalm/LanguageServer/LanguageClient.php" />
+                <file name="src/Psalm/Internal/LanguageServer/LanguageClient.php" />
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
                 <file name="src/Psalm/Type/Atomic/TNonEmptyArray.php" />
             </errorLevel>
@@ -97,8 +98,8 @@
                 <directory name="tests" />
                 <directory name="src/Psalm/PluginApi" />
                 <file name="src/Psalm/Plugin.php" />
-                <file name="src/Psalm/LanguageServer/Client/TextDocument.php" />
-                <file name="src/Psalm/LanguageServer/Server/TextDocument.php" />
+                <file name="src/Psalm/Internal/LanguageServer/Client/TextDocument.php" />
+                <file name="src/Psalm/Internal/LanguageServer/Server/TextDocument.php" />
                 <referencedMethod name="Psalm\Codebase::getParentInterfaces" />
                 <referencedMethod name="Psalm\Codebase::getMethodParams" />
                 <referencedMethod name="Psalm\Codebase::getMethodReturnType" />
