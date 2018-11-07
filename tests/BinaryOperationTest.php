@@ -89,10 +89,29 @@ class BinaryOperationTest extends TestCase
             'regularAddition' => [
                 '<?php
                     $a = 5 + 4;',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
             ],
             'differingNumericTypesAdditionInWeakMode' => [
                 '<?php
                     $a = 5 + 4.1;',
+                'assertions' => [
+                    '$a' => 'float',
+                ],
+            ],
+            'modulo' => [
+                '<?php
+                    $a = 25 % 2;
+                    $b = 25.4 % 2;
+                    $c = 25 % 2.5;
+                    $d = 25.5 % 2.5;',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'int',
+                    '$d' => 'int',
+                ],
             ],
             'numericAddition' => [
                 '<?php

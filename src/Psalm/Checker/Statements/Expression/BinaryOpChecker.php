@@ -1011,7 +1011,9 @@ class BinaryOpChecker
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
-                if (!$result_type) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                    $result_type = Type::getInt();
+                } elseif (!$result_type) {
                     $result_type = Type::getNumeric();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getNumeric(), $result_type);
@@ -1024,7 +1026,9 @@ class BinaryOpChecker
             }
 
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
-                if (!$result_type) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                    $result_type = Type::getInt();
+                } elseif (!$result_type) {
                     $result_type = Type::getInt(true);
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getInt(true), $result_type);
@@ -1037,7 +1041,9 @@ class BinaryOpChecker
             }
 
             if ($left_type_part instanceof TFloat && $right_type_part instanceof TFloat) {
-                if (!$result_type) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                    $result_type = Type::getInt();
+                } elseif (!$result_type) {
                     $result_type = Type::getFloat();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -1064,7 +1070,9 @@ class BinaryOpChecker
                     }
                 }
 
-                if (!$result_type) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                    $result_type = Type::getInt();
+                } elseif (!$result_type) {
                     $result_type = Type::getFloat();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
@@ -1089,7 +1097,9 @@ class BinaryOpChecker
                     }
                 }
 
-                if (!$result_type) {
+                if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+                    $result_type = Type::getInt();
+                } elseif (!$result_type) {
                     $result_type = Type::getFloat();
                 } else {
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
