@@ -35,32 +35,32 @@ class PluginRegistrationSocket implements RegistrationInterface
             );
         }
 
-        // check that handler class actually redefines specific hooks,
+        // check that handler class (or one of its ancestors, but not Plugin) actually redefines specific hooks,
         // so that we don't register empty handlers provided by Plugin
 
         $handlerClass = new \ReflectionClass($handler);
 
-        if ($handlerClass->getMethod('afterMethodCallCheck')->getDeclaringClass()->getName() === $handler) {
+        if ($handlerClass->getMethod('afterMethodCallCheck')->getDeclaringClass()->getName() !== Plugin::class) {
             $this->config->after_method_checks[$handler] = $handler;
         }
 
-        if ($handlerClass->getMethod('afterFunctionCallCheck')->getDeclaringClass()->getName() === $handler) {
+        if ($handlerClass->getMethod('afterFunctionCallCheck')->getDeclaringClass()->getName() !== Plugin::class) {
             $this->config->after_function_checks[$handler] = $handler;
         }
 
-        if ($handlerClass->getMethod('afterExpressionCheck')->getDeclaringClass()->getName() === $handler) {
+        if ($handlerClass->getMethod('afterExpressionCheck')->getDeclaringClass()->getName() !== Plugin::class) {
             $this->config->after_expression_checks[$handler] = $handler;
         }
 
-        if ($handlerClass->getMethod('afterStatementCheck')->getDeclaringClass()->getName() === $handler) {
+        if ($handlerClass->getMethod('afterStatementCheck')->getDeclaringClass()->getName() !== Plugin::class) {
             $this->config->after_statement_checks[$handler] = $handler;
         }
 
-        if ($handlerClass->getMethod('afterClassLikeExistsCheck')->getDeclaringClass()->getName() === $handler) {
+        if ($handlerClass->getMethod('afterClassLikeExistsCheck')->getDeclaringClass()->getName() !== Plugin::class) {
             $this->config->after_classlike_exists_checks[$handler] = $handler;
         }
 
-        if ($handlerClass->getMethod('afterVisitClassLike')->getDeclaringClass()->getName() === $handler) {
+        if ($handlerClass->getMethod('afterVisitClassLike')->getDeclaringClass()->getName() !== Plugin::class) {
             $this->config->after_visit_classlikes[$handler] = $handler;
         }
     }

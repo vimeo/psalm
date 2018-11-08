@@ -1,9 +1,14 @@
 <?php
 namespace Psalm\Tests;
 
+use Prophecy\Argument;
 use Psalm\Checker\FileChecker;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Plugin;
+use Psalm\PluginApi\PluginEntryPointInterface;
+use Psalm\PluginApi\RegistrationInterface;
+use SimpleXMLElement;
 
 class PluginTest extends TestCase
 {
@@ -329,5 +334,31 @@ class PluginTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+    /** @return void */
+    public function testInheritedHookHandlersAreCalled()
+    {
+        require_once __DIR__ . '/stubs/extending_plugin_entrypoint.php';
+
+        $this->project_checker = $this->getProjectCheckerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="ExtendingPluginRegistration" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_checker->config->initializePlugins($this->project_checker);
+        $this->assertContains(
+            'ExtendingPlugin',
+            $this->project_checker->config->after_function_checks
+        );
     }
 }
