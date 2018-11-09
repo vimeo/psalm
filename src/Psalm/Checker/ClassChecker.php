@@ -802,7 +802,7 @@ class ClassChecker extends ClassLikeChecker
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
-                        return false;
+                        // fall through
                     }
                 }
 

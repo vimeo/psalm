@@ -164,7 +164,7 @@ class MethodChecker extends FunctionLikeChecker
                 ),
                 $suppressed_issues
             )) {
-                return false;
+                // continue
             }
         }
 
