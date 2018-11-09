@@ -368,6 +368,7 @@ class IssueBuffer
                                 $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
                             }
                         } else {
+                            $issue_baseline[$file][$type]['s'] = [];
                             $issue_data['severity'] = Config::REPORT_INFO;
                             $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
                         }
