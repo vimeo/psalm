@@ -13,7 +13,7 @@ class IssueBuffer
     /**
      * @var array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      * file_name: string, file_path: string, snippet: string, from: int, to: int,
-     * snippet_from: int, snippet_to: int, column_from: int, column_to: int}>
+     * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}>
      */
     protected static $issues_data = [];
 
@@ -272,7 +272,7 @@ class IssueBuffer
     /**
      * @return array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column_from: int, column_to: int}>
+     *  column_from: int, column_to: int, selected_text: string}>
      */
     public static function getIssuesData()
     {
@@ -313,7 +313,7 @@ class IssueBuffer
      * @param  bool                             $is_full
      * @param  float                            $start_time
      * @param  bool                             $add_stats
-     * @param  array<string,array<string,int>>  $issue_baseline
+     * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      *
      * @return void
      */
@@ -358,9 +358,19 @@ class IssueBuffer
                     $file = $issue_data['file_name'];
                     $type = $issue_data['type'];
 
-                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type] > 0) {
-                        $issue_data['severity'] = Config::REPORT_INFO;
-                        $issue_baseline[$file][$type] = (int)$issue_baseline[$file][$type] - 1;
+                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
+                        if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
+                            $position = array_search($issue_data['selected_text'], $issue_baseline[$file][$type]['s']);
+
+                            if ($position !== false) {
+                                $issue_data['severity'] = Config::REPORT_INFO;
+                                array_splice($issue_baseline[$file][$type]['s'], $position, 1);
+                                $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
+                            }
+                        } else {
+                            $issue_data['severity'] = Config::REPORT_INFO;
+                            $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
+                        }
                     }
 
                     self::$issues_data[$key] = $issue_data;
