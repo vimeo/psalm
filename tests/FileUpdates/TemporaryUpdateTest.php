@@ -514,7 +514,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[120], [120]],
+                'error_positions' => [[127], [127]],
             ],
             'removeUseShouldInvalidate' => [
                 [

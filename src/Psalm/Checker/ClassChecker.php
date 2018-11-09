@@ -903,7 +903,7 @@ class ClassChecker extends ClassLikeChecker
             if (IssueBuffer::accepts(
                 new MissingPropertyType(
                     $message,
-                    new CodeLocation($source, $stmt)
+                    new CodeLocation($source, $stmt->props[0]->name)
                 ),
                 $this->source->getSuppressedIssues()
             )) {
