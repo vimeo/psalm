@@ -93,16 +93,20 @@ class ErrorBaseline
                 continue;
             }
 
-            foreach ($existingIssuesCount as $issueType => ['o' => $occurrences, 's' => $selections]) {
+            foreach ($existingIssuesCount as $issueType => $existingIssueType) {
+
                 if (!isset($newIssues[$file][$issueType])) {
                     unset($existingIssuesCount[$issueType]);
 
                     continue;
                 }
 
-                $existingIssuesCount[$issueType]['o'] = min($occurrences, $newIssues[$file][$issueType]['o']);
+                $existingIssuesCount[$issueType]['o'] = min(
+                    $existingIssueType['o'],
+                    $newIssues[$file][$issueType]['o']
+                );
                 $existingIssuesCount[$issueType]['s'] = array_intersect(
-                    $selections,
+                    $existingIssueType['s'],
                     $newIssues[$file][$issueType]['s']
                 );
             }
@@ -183,10 +187,10 @@ class ErrorBaseline
             $fileNode = $baselineDoc->createElement('file');
             $fileNode->setAttribute('src', $file);
 
-            foreach ($issueTypes as $issueType => ['o' => $occurrences, 's' => $selections]) {
+            foreach ($issueTypes as $issueType => $existingIssueType) {
                 $issueNode = $baselineDoc->createElement($issueType);
-                $issueNode->setAttribute('occurrences', (string)$occurrences);
-                foreach ($selections as $selection) {
+                $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
+                foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
                     $codeNode->textContent = $selection;
                     $issueNode->appendChild($codeNode);
