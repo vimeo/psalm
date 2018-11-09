@@ -85,6 +85,7 @@
             <errorLevel type="info">
                 <file name="src/Psalm/LanguageServer/LanguageClient.php" />
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
+                <file name="src/Psalm/Type/Atomic/TNonEmptyArray.php" />
             </errorLevel>
         </PossiblyUnusedProperty>
 

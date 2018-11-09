@@ -917,7 +917,7 @@ class FunctionCallTest extends TestCase
                     $d = [1, 2, 3];
                     array_splice($d, -1, 1);',
                 'assertions' => [
-                    '$a' => 'array<int, string|int>',
+                    '$a' => 'non-empty-array<int, string|int>',
                     '$b' => 'array{0:string, 1:string, 2:string}',
                     '$c' => 'array{0:int, 1:int, 2:int}',
                 ],
@@ -955,7 +955,7 @@ class FunctionCallTest extends TestCase
                     $c = array_slice($a, 1, 2, false);
                     $d = array_slice($a, 1, 2);',
                 'assertions' => [
-                    '$b' => 'array<string, int>',
+                    '$b' => 'non-empty-array<string, int>',
                     '$c' => 'array<int, int>',
                     '$d' => 'array<int, int>',
                 ],

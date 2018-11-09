@@ -787,7 +787,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'array<int, int>|null',
+                    '$a' => 'non-empty-array<int, int>|null',
                 ],
             ],
             'assignArrayOrSetNullInElseIf' => [
@@ -819,7 +819,7 @@ class ArrayAssignmentTest extends TestCase
                         $a = null;
                     }',
                 'assertions' => [
-                    '$a' => 'array<int, int>|null',
+                    '$a' => 'non-empty-array<int, int>|null',
                 ],
             ],
             'mixedMethodCallArrayAccess' => [

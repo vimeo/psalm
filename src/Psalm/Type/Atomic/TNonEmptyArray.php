@@ -13,4 +13,9 @@ class TNonEmptyArray extends TArray
      * @var int|null
      */
     public $count;
+
+    /**
+     * @var string
+     */
+    public $value = 'non-empty-array';
 }
