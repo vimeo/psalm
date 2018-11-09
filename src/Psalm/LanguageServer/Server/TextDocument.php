@@ -133,13 +133,13 @@ class TextDocument
             return;
         }
 
+        if ($this->onchange_line_limit === 0) {
+            return;
+        }
+
         $this->codebase->addTemporaryFileChanges($file_path, $contentChanges);
 
         if ($this->onchange_line_limit !== null) {
-            if ($this->onchange_line_limit === 0) {
-                return;
-            }
-
             $c = $this->codebase->getFileContents($file_path);
 
             if (substr_count($c, "\n") > $this->onchange_line_limit) {
