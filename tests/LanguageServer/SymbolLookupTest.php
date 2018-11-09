@@ -204,11 +204,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $codebase->addTemporaryFileChanges(
             'somefile.php',
-            [
-                new \LanguageServerProtocol\TextDocumentContentChangeEvent(
-                    null,
-                    null,
-                    '<?php
+            '<?php
                 namespace B;
 
                 class A {
@@ -228,9 +224,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                         echo $a;
                     }
                 }'
-                )
-            ]
         );
+        $codebase->invalidateInformationForFile('somefile.php');
+        $codebase->scanTemporaryFileChanges('somefile.php');
 
         $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
 

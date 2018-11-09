@@ -97,8 +97,10 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             foreach ($file_stage as $file_path => $contents) {
                 $codebase->addTemporaryFileChanges(
                     $file_path,
-                    [new \LanguageServerProtocol\TextDocumentContentChangeEvent(null, null, $contents)]
+                    $contents
                 );
+                $codebase->invalidateInformationForFile($file_path);
+                $codebase->scanTemporaryFileChanges($file_path);
             }
 
             foreach ($file_stage as $file_path => $contents) {

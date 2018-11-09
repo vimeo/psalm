@@ -47,18 +47,11 @@ class FileProvider
     }
 
     /**
-     * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $changes
-     * @return  void
+     * @return void
      */
-    public function addTemporaryFileChanges(string $file_path, array $changes)
+    public function addTemporaryFileChanges(string $file_path, string $new_content)
     {
-        if (count($changes) === 1 && $changes[0]->range === null) {
-            $new_content = $changes[0]->text;
-
-            $this->temp_files[strtolower($file_path)] = $new_content;
-        } else {
-            throw new \UnexpectedValueException('Incremental changes not supported');
-        }
+        $this->temp_files[strtolower($file_path)] = $new_content;
     }
 
     /**

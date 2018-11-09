@@ -137,15 +137,21 @@ class TextDocument
             return;
         }
 
-        $this->codebase->addTemporaryFileChanges($file_path, $contentChanges);
+        if (count($contentChanges) === 1 && $contentChanges[0]->range === null) {
+            $new_content = $contentChanges[0]->text;
+        } else {
+            throw new \UnexpectedValueException('Not expecting partial diff');
+        }
 
         if ($this->onchange_line_limit !== null) {
-            $c = $this->codebase->getFileContents($file_path);
-
-            if (substr_count($c, "\n") > $this->onchange_line_limit) {
+            if (substr_count($new_content, "\n") > $this->onchange_line_limit) {
                 return;
             }
         }
+
+        $this->codebase->addTemporaryFileChanges($file_path, $new_content);
+        $this->codebase->invalidateInformationForFile($file_path);
+        $this->codebase->scanTemporaryFileChanges($file_path);
 
         $this->server->analyzePath($file_path);
         $this->server->emitIssues($textDocument->uri);

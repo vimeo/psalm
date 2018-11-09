@@ -782,7 +782,7 @@ class Codebase
      *
      * @return void
      */
-    private function invalidateInformationForFile(string $file_path)
+    public function invalidateInformationForFile(string $file_path)
     {
         $this->scanner->removeFile($file_path);
 
@@ -1056,14 +1056,18 @@ class Codebase
     }
 
     /**
-     * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $changes
      * @return void
      */
-    public function addTemporaryFileChanges(string $file_path, array $changes)
+    public function addTemporaryFileChanges(string $file_path, string $new_content)
     {
-        $this->file_provider->addTemporaryFileChanges($file_path, $changes);
-        $this->invalidateInformationForFile($file_path);
+        $this->file_provider->addTemporaryFileChanges($file_path, $new_content);
+    }
 
+    /**
+     * @return void
+     */
+    public function scanTemporaryFileChanges(string $file_path)
+    {
         $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
         $this->scanner->scanFiles($this->classlikes);
         $this->populator->populateCodebase($this);
