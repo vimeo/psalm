@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
@@ -43,6 +44,9 @@ class TypeCombination
 
     /** @var array<int, bool>|null */
     private $array_counts = [];
+
+    /** @var bool */
+    private $array_always_filled = true;
 
     /** @var array<string|int, Union> */
     private $objectlike_entries = [];
@@ -240,10 +244,15 @@ class TypeCombination
                     );
                 }
 
-                $array_type = new TArray($generic_type_params);
-
-                if ($combination->array_counts && count($combination->array_counts) === 1) {
-                    $array_type->count = array_keys($combination->array_counts)[0];
+                if ($combination->array_always_filled) {
+                    if ($combination->array_counts && count($combination->array_counts) === 1) {
+                        $array_type = new TNonEmptyArray($generic_type_params);
+                        $array_type->count = array_keys($combination->array_counts)[0];
+                    } else {
+                        $array_type = new TNonEmptyArray($generic_type_params);
+                    }
+                } else {
+                    $array_type = new TArray($generic_type_params);
                 }
 
                 $new_types[] = $array_type;
@@ -325,11 +334,17 @@ class TypeCombination
                 }
             }
 
-            if ($type instanceof TArray && $combination->array_counts !== null) {
-                if ($type->count === null) {
-                    $combination->array_counts = null;
+            if ($type instanceof TArray) {
+                if ($type instanceof TNonEmptyArray) {
+                    if ($combination->array_counts !== null) {
+                        if ($type->count === null) {
+                            $combination->array_counts = null;
+                        } else {
+                            $combination->array_counts[$type->count] = true;
+                        }
+                    }
                 } else {
-                    $combination->array_counts[$type->count] = true;
+                    $combination->array_always_filled = false;
                 }
             }
         } elseif ($type instanceof ObjectLike) {

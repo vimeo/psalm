@@ -34,7 +34,9 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
 
 class CallChecker
 {
@@ -514,13 +516,41 @@ class CallChecker
                                         if ($array_atomic_type instanceof ObjectLike) {
                                             $generic_array_type = $array_atomic_type->getGenericArrayType();
 
-                                            if ($generic_array_type->count) {
-                                                $generic_array_type->count--;
+                                            if ($generic_array_type instanceof TNonEmptyArray) {
+                                                if (!$context->inside_loop && $generic_array_type->count !== null) {
+                                                    if ($generic_array_type->count === 0) {
+                                                        $generic_array_type = new TArray(
+                                                            [
+                                                                new Type\Union([new TEmpty]),
+                                                                new Type\Union([new TEmpty]),
+                                                            ]
+                                                        );
+                                                    } else {
+                                                        $generic_array_type->count--;
+                                                    }
+                                                } else {
+                                                    $generic_array_type = new TArray($generic_array_type->type_params);
+                                                }
                                             }
 
                                             $array_type->addType($generic_array_type);
-                                        } elseif ($array_atomic_type instanceof TArray && $array_atomic_type->count) {
-                                            $array_atomic_type->count--;
+                                        } elseif ($array_atomic_type instanceof TNonEmptyArray) {
+                                            if (!$context->inside_loop && $array_atomic_type->count !== null) {
+                                                if ($array_atomic_type->count === 0) {
+                                                    $array_atomic_type = new TArray(
+                                                        [
+                                                            new Type\Union([new TEmpty]),
+                                                            new Type\Union([new TEmpty]),
+                                                        ]
+                                                    );
+                                                } else {
+                                                    $array_atomic_type->count--;
+                                                }
+                                            } else {
+                                                $array_atomic_type = new TArray($array_atomic_type->type_params);
+                                            }
+
+                                            $array_type->addType($array_atomic_type);
                                         }
                                     }
 

@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TNonEmptyArray;
 
 class ArrayAssignmentChecker
 {
@@ -373,9 +374,12 @@ class ArrayAssignmentChecker
                 $atomic_root_types = $root_type->getTypes();
 
                 if (isset($atomic_root_types['array'])) {
-                    if ($atomic_root_types['array'] instanceof TArray) {
+                    if ($atomic_root_types['array'] instanceof TNonEmptyArray
+                        && $array_atomic_type instanceof TNonEmptyArray
+                    ) {
                         $array_atomic_type->count = $atomic_root_types['array']->count;
                     } elseif ($atomic_root_types['array'] instanceof ObjectLike
+                        && $array_atomic_type instanceof TNonEmptyArray
                         && $atomic_root_types['array']->sealed
                     ) {
                         $array_atomic_type->count = count($atomic_root_types['array']->properties);
@@ -397,7 +401,7 @@ class ArrayAssignmentChecker
                 $atomic_root_types = $new_child_type->getTypes();
 
                 if (isset($atomic_root_types['array'])
-                    && $atomic_root_types['array'] instanceof TArray
+                    && $atomic_root_types['array'] instanceof TNonEmptyArray
                     && $atomic_root_types['array']->count !== null
                 ) {
                     $atomic_root_types['array']->count++;

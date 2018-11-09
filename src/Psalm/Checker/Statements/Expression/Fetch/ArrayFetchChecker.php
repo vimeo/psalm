@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
@@ -402,7 +403,7 @@ class ArrayFetchChecker
                         }
                     }
 
-                    if (!$stmt->dim && $type->count !== null) {
+                    if (!$stmt->dim && $type instanceof TNonEmptyArray && $type->count !== null) {
                         $type->count++;
                     }
 
@@ -541,14 +542,20 @@ class ArrayFetchChecker
 
                                 $property_count = $type->sealed ? count($type->properties) : null;
 
-                                $type = new TArray([
-                                    $new_key_type,
-                                    $generic_params,
-                                ]);
+
 
                                 if (!$stmt->dim && $property_count) {
                                     ++$property_count;
+                                    $type = new TNonEmptyArray([
+                                        $new_key_type,
+                                        $generic_params,
+                                    ]);
                                     $type->count = $property_count;
+                                } else {
+                                    $type = new TArray([
+                                        $new_key_type,
+                                        $generic_params,
+                                    ]);
                                 }
 
                                 if (!$array_access_type) {

@@ -450,16 +450,25 @@ class Reconciler
                 }
             }
 
-            if (isset($existing_var_atomic_types['array'])
-                && $existing_var_atomic_types['array']->getId() !== 'array<empty, empty>'
-            ) {
-                $did_remove_type = true;
-                $existing_var_type->addType(new TArray(
-                    [
-                        new Type\Union([new TEmpty]),
-                        new Type\Union([new TEmpty]),
-                    ]
-                ));
+            if (isset($existing_var_atomic_types['array'])) {
+                $array_atomic_type = $existing_var_atomic_types['array'];
+
+                if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
+                    || ($array_atomic_type instanceof Type\Atomic\ObjectLike && $array_atomic_type->sealed)
+                ) {
+                    $did_remove_type = true;
+
+                    $existing_var_type->removeType('array');
+                } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
+                    $did_remove_type = true;
+
+                    $existing_var_type->addType(new TArray(
+                        [
+                            new Type\Union([new TEmpty]),
+                            new Type\Union([new TEmpty]),
+                        ]
+                    ));
+                }
             }
 
             if (isset($existing_var_atomic_types['scalar'])
@@ -1135,7 +1144,7 @@ class Reconciler
             return Type::getMixed();
         }
 
-        if (($new_var_type === 'falsy' || $new_var_type === 'empty')) {
+        if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
             if ($existing_var_type->isMixed()) {
                 if ($existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
                     if ($code_location
@@ -1234,14 +1243,24 @@ class Reconciler
             if ($existing_var_type->hasType('array')) {
                 $array_atomic_type = $existing_var_type->getTypes()['array'];
 
-                if (($array_atomic_type instanceof Type\Atomic\TArray && !$array_atomic_type->count)
-                    || ($array_atomic_type instanceof Type\Atomic\ObjectLike && !$array_atomic_type->sealed)
+                if ($array_atomic_type instanceof Type\Atomic\TArray
+                    && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
                 ) {
                     $did_remove_type = true;
 
-                    if ($existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>') {
+                    if ($array_atomic_type->getId() === 'array<empty, empty>') {
                         $existing_var_type->removeType('array');
+                    } else {
+                        $existing_var_type->addType(
+                            new Type\Atomic\TNonEmptyArray(
+                                $array_atomic_type->type_params
+                            )
+                        );
                     }
+                } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike
+                    && !$array_atomic_type->sealed
+                ) {
+                    $did_remove_type = true;
                 }
             }
 

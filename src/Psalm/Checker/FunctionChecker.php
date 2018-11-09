@@ -102,7 +102,7 @@ class FunctionChecker extends FunctionLikeChecker
                         $atomic_types = $call_args[0]->value->inferredType->getTypes();
 
                         if (count($atomic_types) === 1 && isset($atomic_types['array'])) {
-                            if ($atomic_types['array'] instanceof Type\Atomic\TArray) {
+                            if ($atomic_types['array'] instanceof Type\Atomic\TNonEmptyArray) {
                                 return new Type\Union([
                                     $atomic_types['array']->count !== null
                                         ? new Type\Atomic\TLiteralInt($atomic_types['array']->count)

@@ -896,8 +896,6 @@ abstract class Type
             ]
         );
 
-        $array_type->count = 0;
-
         return new Type\Union([
             $array_type,
         ]);

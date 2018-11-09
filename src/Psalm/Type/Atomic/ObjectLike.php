@@ -227,10 +227,11 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         $value_type->possibly_undefined = false;
 
-        $array_type = new TArray([TypeCombination::combineTypes($key_types), $value_type]);
-
         if ($this->sealed) {
+            $array_type = new TNonEmptyArray([TypeCombination::combineTypes($key_types), $value_type]);
             $array_type->count = count($this->properties);
+        } else {
+            $array_type = new TArray([TypeCombination::combineTypes($key_types), $value_type]);
         }
 
         return $array_type;
