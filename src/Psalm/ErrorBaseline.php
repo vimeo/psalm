@@ -94,7 +94,6 @@ class ErrorBaseline
             }
 
             foreach ($existingIssuesCount as $issueType => $existingIssueType) {
-
                 if (!isset($newIssues[$file][$issueType])) {
                     unset($existingIssuesCount[$issueType]);
 
