@@ -165,6 +165,8 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 $this->project_checker->codebase->scanFiles($this->project_checker->threads);
 
+                $this->project_checker->config->visitStubFiles($this->project_checker->codebase, false);
+
                 if ($this->textDocument === null) {
                     $this->textDocument = new TextDocument(
                         $this,

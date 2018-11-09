@@ -247,8 +247,6 @@ class ProjectChecker
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        $this->config->visitStubFiles($this->codebase, $this->debug_output);
-
         $cwd = getcwd();
 
         if (!$cwd) {
