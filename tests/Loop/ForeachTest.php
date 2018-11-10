@@ -70,6 +70,9 @@ class ForeachTest extends \Psalm\Tests\TestCase
 
                         $moo = $foo;
                     }',
+                'assertions' => [
+                    '$moo' => 'int',
+                ],
             ],
             'switchVariableWithFallthroughStatement' => [
                 '<?php
@@ -89,6 +92,9 @@ class ForeachTest extends \Psalm\Tests\TestCase
 
                         $moo = $foo;
                     }',
+                'assertions' => [
+                    '$moo' => 'int',
+                ],
             ],
             'secondLoopWithNotNullCheck' => [
                 '<?php

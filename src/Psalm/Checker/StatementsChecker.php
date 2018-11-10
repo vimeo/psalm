@@ -300,7 +300,11 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 $loop_scope = $context->loop_scope;
                 if ($loop_scope && $original_context) {
-                    $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+                    if ($context->switch_scope && !$stmt->num) {
+                        $loop_scope->final_actions[] = ScopeChecker::ACTION_LEAVE_SWITCH;
+                    } else {
+                        $loop_scope->final_actions[] = ScopeChecker::ACTION_BREAK;
+                    }
 
                     $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
