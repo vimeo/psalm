@@ -369,6 +369,7 @@ class ForeachChecker
         $foreach_context = clone $context;
 
         $foreach_context->inside_loop = true;
+        $foreach_context->inside_case = false;
 
         if ($project_checker->alter_code) {
             $foreach_context->branch_point =

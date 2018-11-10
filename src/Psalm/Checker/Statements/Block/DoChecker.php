@@ -24,6 +24,8 @@ class DoChecker
     ) {
         $do_context = clone $context;
 
+        $do_context->inside_case = false;
+
         $project_checker = $statements_checker->getFileChecker()->project_checker;
 
         if ($project_checker->alter_code) {
