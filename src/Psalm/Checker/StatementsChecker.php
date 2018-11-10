@@ -1016,6 +1016,8 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     continue;
                 }
 
+                $single_item_key_type = null;
+
                 if ($item->key) {
                     $single_item_key_type = self::getSimpleType(
                         $codebase,
@@ -1058,16 +1060,13 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                     || $item->key instanceof PhpParser\Node\Scalar\LNumber
                     || !$item->key
                 ) {
-                    $property_types[$item->key ? $item->key->value : $int_offset] = $single_item_value_type;
+                    if (count($property_types) <= 50) {
+                        $property_types[$item->key ? $item->key->value : $int_offset] = $single_item_value_type;
+                    } else {
+                        $can_create_objectlike = false;
+                    }
                 } else {
-                    $dim_type = self::getSimpleType(
-                        $codebase,
-                        $item->key,
-                        $aliases,
-                        $file_source,
-                        $existing_class_constants,
-                        $fq_classlike_name
-                    );
+                    $dim_type = $single_item_key_type;
 
                     if (!$dim_type) {
                         return null;
@@ -1075,7 +1074,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
 
                     $dim_atomic_types = $dim_type->getTypes();
 
-                    if (count($dim_atomic_types) > 1 || $dim_type->isMixed()) {
+                    if (count($dim_atomic_types) > 1 || $dim_type->isMixed() || count($property_types) > 50) {
                         $can_create_objectlike = false;
                     } else {
                         $atomic_type = array_shift($dim_atomic_types);
@@ -1107,7 +1106,9 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 && ($item_key_type->hasString() || $item_key_type->hasInt())
                 && $can_create_objectlike
             ) {
-                return new Type\Union([new Type\Atomic\ObjectLike($property_types, $class_strings)]);
+                $objectlike = new Type\Atomic\ObjectLike($property_types, $class_strings);
+                $objectlike->sealed = true;
+                return new Type\Union([$objectlike]);
             }
 
             if (!$item_key_type || !$item_value_type) {
@@ -1115,7 +1116,7 @@ class StatementsChecker extends SourceChecker implements StatementsSource
             }
 
             return new Type\Union([
-                new Type\Atomic\TArray([
+                new Type\Atomic\TNonEmptyArray([
                     $item_key_type,
                     $item_value_type,
                 ]),

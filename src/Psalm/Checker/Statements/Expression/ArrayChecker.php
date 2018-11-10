@@ -119,7 +119,7 @@ class ArrayChecker
             }
 
             if (isset($item->value->inferredType)) {
-                if ($item_key_value !== null) {
+                if ($item_key_value !== null && count($property_types) <= 50) {
                     $property_types[$item_key_value] = $item->value->inferredType;
                 } else {
                     $can_create_objectlike = false;
@@ -133,7 +133,7 @@ class ArrayChecker
             } else {
                 $item_value_type = Type::getMixed();
 
-                if ($item_key_value !== null) {
+                if ($item_key_value !== null && count($property_types) <= 50) {
                     $property_types[$item_key_value] = $item_value_type;
                 } else {
                     $can_create_objectlike = false;
