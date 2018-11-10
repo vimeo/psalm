@@ -73,6 +73,41 @@ class ForTest extends \Psalm\Tests\TestCase
                       }
                     }'
             ],
+            'whileTrueWithBreak' => [
+                '<?php
+                    for (;;) {
+                        $a = "hello";
+                        break;
+                    }
+                    for (;;) {
+                        $b = 5;
+                        break;
+                    }',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
+            'continueOutsideLoop' => [
+                '<?php
+                    class Node {
+                        /** @var Node|null */
+                        public $next;
+                    }
+
+                    /** @return void */
+                    function test(Node $head) {
+                        for ($node = $head; $node; $node = $next) {
+                            $next = $node->next;
+                            $node->next = null;
+                        }
+                    }',
+            ],
+            'echoAfterFor' => [
+                '<?php
+                    for ($i = 0; $i < 5; $i++);
+                    echo $i;',
+            ],
         ];
     }
 

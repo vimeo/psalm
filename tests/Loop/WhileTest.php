@@ -150,7 +150,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                       if ($a->bar) {}
                     }',
             ],
-            'whileTrue' => [
+            'whileTrueWithBreak' => [
                 '<?php
                     while (true) {
                         $a = "hello";
@@ -159,15 +159,10 @@ class WhileTest extends \Psalm\Tests\TestCase
                     while (1) {
                         $b = 5;
                         break;
-                    }
-                    for(;;) {
-                        $c = true;
-                        break;
                     }',
                 'assertions' => [
                     '$a' => 'string',
                     '$b' => 'int',
-                    '$c' => 'true',
                 ],
             ],
             'whileWithNotEmptyCheck' => [

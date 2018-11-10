@@ -7,6 +7,7 @@ use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Context;
 use Psalm\Scope\LoopScope;
+use Psalm\Type;
 
 class ForChecker
 {
@@ -40,7 +41,11 @@ class ForChecker
 
         $while_true = !$stmt->cond && !$stmt->init && !$stmt->loop;
 
-        $pre_context = $while_true ? clone $context : null;
+        $pre_context = null;
+
+        if ($while_true) {
+            $pre_context = clone $context;
+        }
 
         $for_context = clone $context;
 
@@ -68,33 +73,54 @@ class ForChecker
             $inner_loop_context
         );
 
-        if ($inner_loop_context && $while_true) {
-            // if we actually leave the loop
-            if (in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true)
-                || in_array(ScopeChecker::ACTION_END, $loop_scope->final_actions, true)
-            ) {
-                foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
-                    if (!isset($context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = $type;
-                    }
+        if (!$inner_loop_context) {
+            throw new \UnexpectedValueException('There should be an inner loop context');
+        }
+
+        $always_enters_loop = false;
+
+        foreach ($stmt->cond as $cond) {
+            if (isset($cond->inferredType)) {
+                foreach ($cond->inferredType->getTypes() as $iterator_type) {
+                    $always_enters_loop = $iterator_type instanceof Type\Atomic\TTrue;
+
+                    break;
                 }
             }
         }
 
-        if (!$while_true
-            || in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true)
-            || in_array(ScopeChecker::ACTION_END, $loop_scope->final_actions, true)
-            || !$pre_context
-        ) {
+        if ($while_true) {
+            $always_enters_loop = true;
+        }
+
+        $can_leave_loop = !$while_true
+            || in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true);
+
+        if ($always_enters_loop && $can_leave_loop) {
+            foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
+                // if there are break statements in the loop it's not certain
+                // that the loop has finished executing
+                if (in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true)
+                    || in_array(ScopeChecker::ACTION_CONTINUE, $loop_scope->final_actions, true)
+                ) {
+                    if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $type,
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                        );
+                    }
+                } else {
+                    $context->vars_in_scope[$var_id] = $type;
+                }
+            }
+        }
+
+        if ($can_leave_loop) {
             $context->vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,
                 $for_context->vars_possibly_in_scope
             );
-
-            $context->possibly_assigned_var_ids =
-                $for_context->possibly_assigned_var_ids + $context->possibly_assigned_var_ids;
-        } else {
-            $context->vars_in_scope = $pre_context->vars_in_scope;
+        } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
 

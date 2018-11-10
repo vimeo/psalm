@@ -307,7 +307,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     foreach (["a", "b", "c"] as $tag) {
                     }',
                 'assignments' => [
-                    '$tag' => 'string|null',
+                    '$tag' => 'string',
                 ],
             ],
             'bleedVarIntoOuterContextWithRedefinedAsNull' => [
@@ -542,7 +542,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                 '<?php
                     $a = false;
                     foreach ([1, 2, 3] as $i) {
-                      if ($i > 0) {
+                      if ($i > 1) {
                         $a = true;
                         continue;
                       }
@@ -631,6 +631,103 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     }
                     if ($i) {}',
             ],
+            'possiblyUndefinedVariableInForeach' => [
+                '<?php
+                    foreach ([1, 2, 3, 4] as $b) {
+                        $car = "Volvo";
+                    }
+
+                    echo $car;',
+            ],
+            'possiblyUndefinedVariableInForeachDueToBreakAfter' => [
+                '<?php
+                    foreach ([1, 2, 3, 4] as $b) {
+                        $car = "Volvo";
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+            ],
+            'iteratorAggregateIteration' => [
+                '<?php
+                    class C implements IteratorAggregate
+                    {
+                        public function getIterator(): Iterator
+                        {
+                            return new ArrayIterator([]);
+                        }
+                    }
+
+                    function loopT(Traversable $coll): void
+                    {
+                        foreach ($coll as $item) {}
+                    }
+
+                    function loopI(IteratorAggregate $coll): void
+                    {
+                        foreach ($coll as $item) {}
+                    }
+
+                    loopT(new C);
+                    loopI(new C);',
+                'assignments' => [],
+                'error_levels' => [
+                    'MixedAssignment', 'UndefinedThisPropertyAssignment',
+                ],
+            ],
+            'intersectionIterator' => [
+                '<?php
+                    /**
+                     * @param \Traversable<int>&\Countable $object
+                     */
+                    function doSomethingUseful($object) : void {
+                        echo count($object);
+                        foreach ($object as $foo) {}
+                    }'
+            ],
+            'arrayIteratorIteration' => [
+                '<?php
+                    class Item {
+                      /**
+                       * @var string
+                       */
+                      public $prop = "var";
+                    }
+
+                    class Collection implements IteratorAggregate {
+                      /**
+                       * @var Item[]
+                       */
+                      private $items = [];
+
+                      public function add(Item $item): void
+                      {
+                          $this->items[] = $item;
+                      }
+
+                      /**
+                        * @return \ArrayIterator<mixed, Item>
+                        */
+                      public function getIterator(): \ArrayIterator
+                      {
+                          return new \ArrayIterator($this->items);
+                      }
+                    }
+
+                    $collection = new Collection();
+                    $collection->add(new Item());
+                    foreach ($collection as $item) {
+                        echo $item->prop;
+                    }'
+            ],
+            'foreachIntersectionTraversable' => [
+                '<?php
+                    /** @var Countable&Traversable<int> */
+                    $c = null;
+                    foreach ($c as $i) {}',
+            ],
         ];
     }
 
@@ -667,16 +764,6 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     echo $array;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
-            ],
-            'possiblyUndefinedVariableInForeach' => [
-                '<?php
-                    foreach ([1, 2, 3, 4] as $b) {
-                        $car = "Volvo";
-                    }
-
-                    echo $car;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:6 - Possibly undefined ' .
-                    'global variable $car, first seen on line 3',
             ],
             'possibleUndefinedVariableInForeachAndIfWithBreak' => [
                 '<?php
@@ -778,6 +865,54 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       $list = [4, 5, 6];
                     }',
                 'error_message' => 'LoopInvalidation',
+            ],
+            'possiblyUndefinedVariableInForeachDueToBreakBefore' => [
+                '<?php
+                    foreach ([1, 2, 3, 4] as $b) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                        $car = "Volvo";
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'continueOutsideLoop' => [
+                '<?php
+                    continue;',
+                'error_message' => 'ContinueOutsideLoop',
+            ],
+            'invalidIterator' => [
+                '<?php
+                    foreach (5 as $a) {
+
+                    }',
+                'error_message' => 'InvalidIterator',
+            ],
+            'rawObjectIteration' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+                    }
+
+                    class B extends A {}
+
+                    function bar(A $a): void {}
+
+                    $arr = [];
+
+                    if (rand(0, 10) > 5) {
+                        $arr[] = new A;
+                    } else {
+                        $arr = new B;
+                    }
+
+                    foreach ($arr as $a) {
+                        bar($a);
+                    }',
+                'error_message' => 'RawObjectIteration',
             ],
         ];
     }

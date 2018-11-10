@@ -1012,8 +1012,6 @@ class Codebase
         }
 
         $recent_type = null;
-        $start_pos = null;
-        $end_pos = null;
 
         krsort($type_map);
 
@@ -1035,8 +1033,6 @@ class Codebase
 
         if (!$recent_type
             || $recent_type === 'mixed'
-            || $end_pos === null
-            || $start_pos === null
         ) {
             return null;
         }

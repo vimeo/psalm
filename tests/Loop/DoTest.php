@@ -123,20 +123,20 @@ class DoTest extends \Psalm\Tests\TestCase
             'doWhileWithNotEmptyCheck' => [
                 '<?php
                     class A {
-                      /** @var A|null */
-                      public $a;
+                        /** @var A|null */
+                        public $a;
 
-                      public function __construct() {
-                        $this->a = rand(0, 1) ? new A : null;
-                      }
+                        public function __construct() {
+                            $this->a = rand(0, 1) ? new A : null;
+                        }
                     }
 
                     function takesA(A $a): void {}
 
                     $a = new A();
                     do {
-                      takesA($a);
-                      $a = $a->a;
+                        takesA($a);
+                        $a = $a->a;
                     } while ($a);',
                 'assertions' => [
                     '$a' => 'null',
@@ -145,15 +145,15 @@ class DoTest extends \Psalm\Tests\TestCase
             'doWhileWithMethodCall' => [
                 '<?php
                     class A {
-                      public function getParent(): ?A {
-                        return rand(0, 1) ? new A() : null;
-                      }
+                        public function getParent(): ?A {
+                            return rand(0, 1) ? new A() : null;
+                        }
                     }
 
                     $a = new A();
 
                     do {
-                      $a = $a->getParent();
+                        $a = $a->getParent();
                     } while ($a);',
                 'assertions' => [
                     '$a' => 'null',

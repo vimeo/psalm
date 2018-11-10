@@ -226,10 +226,6 @@ class TypeCombination
                         }
                     }
 
-                    if (!$objectlike_generic_type) {
-                        throw new \InvalidArgumentException('Cannot be null');
-                    }
-
                     $objectlike_generic_type->possibly_undefined = false;
 
                     $objectlike_key_type = new Type\Union(array_values($objectlike_keys));

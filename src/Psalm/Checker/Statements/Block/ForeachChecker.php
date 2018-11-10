@@ -4,6 +4,7 @@ namespace Psalm\Checker\Statements\Block;
 use PhpParser;
 use Psalm\Checker\ClassLikeChecker;
 use Psalm\Checker\CommentChecker;
+use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\Expression\AssignmentChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
@@ -40,20 +41,12 @@ class ForeachChecker
             return false;
         }
 
-        $foreach_context = clone $context;
-
-        $foreach_context->inside_loop = true;
-
         $project_checker = $statements_checker->getFileChecker()->project_checker;
         $codebase = $project_checker->codebase;
 
-        if ($project_checker->alter_code) {
-            $foreach_context->branch_point =
-                $foreach_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
-        }
-
         $key_type = null;
         $value_type = null;
+        $always_non_empty_array = true;
 
         $var_id = ExpressionChecker::getVarId(
             $stmt->expr,
@@ -63,8 +56,8 @@ class ForeachChecker
 
         if (isset($stmt->expr->inferredType)) {
             $iterator_type = $stmt->expr->inferredType;
-        } elseif ($var_id && $foreach_context->hasVariable($var_id, $statements_checker)) {
-            $iterator_type = $foreach_context->vars_in_scope[$var_id];
+        } elseif ($var_id && $context->hasVariable($var_id, $statements_checker)) {
+            $iterator_type = $context->vars_in_scope[$var_id];
         } else {
             $iterator_type = null;
         }
@@ -110,11 +103,13 @@ class ForeachChecker
                 if ($iterator_type instanceof Type\Atomic\TArray
                     && $iterator_type->type_params[1]->isEmpty()
                 ) {
+                    $always_non_empty_array = false;
                     $has_valid_iterator = true;
                     continue;
                 }
 
                 if ($iterator_type instanceof Type\Atomic\TNull || $iterator_type instanceof Type\Atomic\TFalse) {
+                    $always_non_empty_array = false;
                     continue;
                 }
 
@@ -122,7 +117,12 @@ class ForeachChecker
                     || $iterator_type instanceof Type\Atomic\ObjectLike
                 ) {
                     if ($iterator_type instanceof Type\Atomic\ObjectLike) {
+                        if (!$iterator_type->sealed) {
+                            $always_non_empty_array = false;
+                        }
                         $iterator_type = $iterator_type->getGenericArrayType();
+                    } elseif (!$iterator_type instanceof Type\Atomic\TNonEmptyArray) {
+                        $always_non_empty_array = false;
                     }
 
                     if (!$value_type) {
@@ -142,6 +142,8 @@ class ForeachChecker
                     $has_valid_iterator = true;
                     continue;
                 }
+
+                $always_non_empty_array = false;
 
                 if ($iterator_type instanceof Type\Atomic\Scalar ||
                     $iterator_type instanceof Type\Atomic\TVoid
@@ -364,6 +366,15 @@ class ForeachChecker
             }
         }
 
+        $foreach_context = clone $context;
+
+        $foreach_context->inside_loop = true;
+
+        if ($project_checker->alter_code) {
+            $foreach_context->branch_point =
+                $foreach_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        }
+
         if ($stmt->keyVar && $stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
             $key_var_id = '$' . $stmt->keyVar->name;
             $foreach_context->vars_in_scope[$key_var_id] = $key_type ?: Type::getMixed();
@@ -457,7 +468,31 @@ class ForeachChecker
         }
         $loop_scope->protected_var_ids = $protected_var_ids;
 
-        LoopChecker::analyze($statements_checker, $stmt->stmts, [], [], $loop_scope);
+        LoopChecker::analyze($statements_checker, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
+
+        if (!$inner_loop_context) {
+            throw new \UnexpectedValueException('There should be an inner loop context');
+        }
+
+        if ($always_non_empty_array) {
+            foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
+                // if there are break statements in the loop it's not certain
+                // that the loop has finished executing, so the assertions at the end
+                // the loop in the while conditional may not hold
+                if (in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true)
+                    || in_array(ScopeChecker::ACTION_CONTINUE, $loop_scope->final_actions, true)
+                ) {
+                    if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $type,
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                        );
+                    }
+                } else {
+                    $context->vars_in_scope[$var_id] = $type;
+                }
+            }
+        }
 
         $context->vars_possibly_in_scope = array_merge(
             $foreach_context->vars_possibly_in_scope,
