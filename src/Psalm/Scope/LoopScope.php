@@ -8,6 +8,11 @@ use Psalm\Type;
 class LoopScope
 {
     /**
+     * @var int
+     */
+    public $iteration_count = 0;
+
+    /**
      * @var Context
      */
     public $loop_context;
@@ -31,6 +36,11 @@ class LoopScope
      * @var array<string, Type\Union>|null
      */
     public $possibly_redefined_loop_parent_vars = null;
+
+    /**
+     * @var array<string, Type\Union>
+     */
+    public $possibly_defined_loop_parent_vars = [];
 
     /**
      * @var array<string, bool>

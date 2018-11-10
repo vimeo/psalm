@@ -5,6 +5,7 @@ use Psalm\Tests\Traits;
 
 class DoTest extends \Psalm\Tests\TestCase
 {
+    use Traits\FileCheckerInvalidCodeParseTestTrait;
     use Traits\FileCheckerValidCodeParseTestTrait;
 
     /**
@@ -22,14 +23,88 @@ class DoTest extends \Psalm\Tests\TestCase
                     }
                     while (rand(0,100) === 10);',
                 'assertions' => [
-                    '$worked' => 'bool',
+                    '$worked' => 'true',
+                ],
+            ],
+            'doWhileVarWithPossibleBreak' => [
+                '<?php
+                    $a = false;
+
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                        if (rand(0, 1)) {
+                            $a = true;
+                            break;
+                        }
+                        $a = true;
+                    }
+                    while (rand(0,100) === 10);',
+                'assertions' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'SKIPPED-doWhileVarWithPossibleBreakThatSetsToTrue' => [
+                '<?php
+                    $a = false;
+                    $b = false;
+
+                    do {
+                        $b = true;
+                        if (rand(0, 1)) {
+                            $a = true;
+                            break;
+                        }
+                        $a = true;
+                    }
+                    while (rand(0,1));',
+                'assertions' => [
+                    '$a' => 'true',
+                    '$b' => 'true',
+                ],
+            ],
+            'doWhileVarWithPossibleBreakThatMaybeSetsToTrue' => [
+                '<?php
+                    $a = false;
+
+                    do {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                            }
+
+                            break;
+                        }
+                        $a = true;
+                    }
+                    while (rand(0,1));',
+                'assertions' => [
+                    '$a' => 'bool',
+                ],
+            ],
+            'doWhileVarWithPossibleInitialisingBreakNoInitialDefinition' => [
+                '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            $worked = true;
+                            break;
+                        }
+                        $worked = true;
+                    }
+                    while (rand(0,100) === 10);',
+                'assertions' => [
+                    '$worked' => 'true',
                 ],
             ],
             'doWhileUndefinedVar' => [
                 '<?php
                     do {
-                        $result = rand(0,1);
+                        $result = (bool) rand(0,1);
                     } while (!$result);',
+                'assertions' => [
+                    '$result' => 'true',
+                ],
             ],
             'doWhileVarAndBreak' => [
                 '<?php
@@ -140,6 +215,17 @@ class DoTest extends \Psalm\Tests\TestCase
                         $value = 6;
                     } while ($count);',
             ],
+            'doWhileDefinedVarWithPossibleBreak' => [
+                '<?php
+                    $value = null;
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                        $count = rand(0, 1);
+                        $value = 6;
+                    } while ($count);',
+            ],
             'invalidateBothByRefAssignmentsInDo' => [
                 '<?php
                     function foo(?string &$i) : void {}
@@ -185,6 +271,74 @@ class DoTest extends \Psalm\Tests\TestCase
                         if (isset($foo["bar"])) {}
                         $foo["bar"] = "bat";
                     } while (rand(0, 1));',
+            ],
+            'noRedundantConditionAfterDoWhile' => [
+                '<?php
+                    $i = 5;
+                    do {} while (--$i > 0);
+                    echo $i === 0;',
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function providerFileCheckerInvalidCodeParse()
+    {
+        return [
+            'doWhileVarWithPossibleBreakWithoutDefining' => [
+                '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                        $worked = true;
+                    }
+                    while (rand(0,1));
+
+                    echo $worked;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'doWhileVarWithPossibleBreakThatMaybeSetsToTrueWithoutDefining' => [
+                '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                            }
+
+                            break;
+                        }
+                        $a = true;
+                    }
+                    while (rand(0,1));
+
+                    echo $a;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'SKIPPED-doWhileVarWithPossibleContinueWithoutDefining' => [
+                '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        $worked = true;
+                    }
+                    while (rand(0,1));
+
+                    echo $worked;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'possiblyUndefinedArrayInDo' => [
+                '<?php
+                    do {
+                        $array[] = "hello";
+                    } while (rand(0, 1));
+
+                    echo $array;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Possibly undefined ' .
+                    'global variable $array, first seen on line 3',
             ],
         ];
     }

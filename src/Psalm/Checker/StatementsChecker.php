@@ -321,6 +321,21 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                         }
                     }
 
+                    if ($loop_scope->iteration_count === 0) {
+                        foreach ($context->vars_in_scope as $var_id => $type) {
+                            if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
+                                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                                    $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
+                                        $type,
+                                        $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                                    );
+                                } else {
+                                    $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type;
+                                }
+                            }
+                        }
+                    }
+
                     if ($context->collect_references && (!$context->switch_scope || $stmt->num)) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($loop_scope->unreferenced_vars[$var_id])) {

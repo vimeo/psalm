@@ -3,12 +3,14 @@ namespace Psalm\Checker\Statements\Block;
 
 use PhpParser;
 use Psalm\Checker\AlgebraChecker;
+use Psalm\Checker\ScopeChecker;
 use Psalm\Checker\Statements\ExpressionChecker;
 use Psalm\Checker\StatementsChecker;
 use Psalm\Clause;
 use Psalm\Context;
 use Psalm\Scope\LoopScope;
 use Psalm\Type;
+use Psalm\Type\Algebra;
 
 class DoChecker
 {
@@ -57,25 +59,17 @@ class DoChecker
             $statements_checker->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
 
+        $loop_scope->iteration_count++;
+
         foreach ($context->vars_in_scope as $var => $type) {
             if ($type->isMixed()) {
                 continue;
             }
 
             if ($do_context->hasVariable($var)) {
-                if ($context->vars_in_scope[$var]->isMixed()) {
-                    $do_context->vars_in_scope[$var] = $do_context->vars_in_scope[$var];
-                }
-
                 if ($do_context->vars_in_scope[$var]->getId() !== $type->getId()) {
                     $do_context->vars_in_scope[$var] = Type::combineUnionTypes($do_context->vars_in_scope[$var], $type);
                 }
-            }
-        }
-
-        foreach ($do_context->vars_in_scope as $var_id => $type) {
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = clone $type;
             }
         }
 
@@ -87,7 +81,7 @@ class DoChecker
             }
         }
 
-        $while_clauses = \Psalm\Type\Algebra::getFormula(
+        $while_clauses = Algebra::getFormula(
             $stmt->cond,
             $context->self,
             $statements_checker
@@ -173,19 +167,48 @@ class DoChecker
             true
         );
 
-        foreach ($do_context->vars_in_scope as $var_id => $type) {
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = $type;
-            }
-        }
-
         // because it's a do {} while, inner loop vars belong to the main context
         if (!$inner_loop_context) {
             throw new \UnexpectedValueException('Should never be null');
         }
 
+        $negated_while_clauses = Algebra::negateFormula($while_clauses);
+
+        $negated_while_types = Algebra::getTruthsFromFormula(
+            Algebra::simplifyCNF(
+                array_merge($context->clauses, $negated_while_clauses)
+            )
+        );
+
+        ExpressionChecker::analyze($statements_checker, $stmt->cond, $inner_loop_context);
+
+        if ($negated_while_types) {
+            $changed_var_ids = [];
+
+            $inner_loop_context->vars_in_scope =
+                Type\Reconciler::reconcileKeyedTypes(
+                    $negated_while_types,
+                    $inner_loop_context->vars_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_checker,
+                    new \Psalm\CodeLocation($statements_checker->getSource(), $stmt->cond),
+                    $statements_checker->getSuppressedIssues()
+                );
+        }
+
         foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
-            if (!isset($context->vars_in_scope[$var_id])) {
+            // if there are break statements in the loop it's not certain
+            // that the loop has finished executing, so the assertions at the end
+            // the loop in the while conditional may not hold
+            if (in_array(ScopeChecker::ACTION_BREAK, $loop_scope->final_actions, true)) {
+                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                    );
+                }
+            } else {
                 $context->vars_in_scope[$var_id] = $type;
             }
         }
@@ -199,8 +222,6 @@ class DoChecker
             $context->referenced_var_ids,
             $do_context->referenced_var_ids
         );
-
-        ExpressionChecker::analyze($statements_checker, $stmt->cond, $inner_loop_context);
 
         if ($context->collect_references) {
             $context->unreferenced_vars = $do_context->unreferenced_vars;

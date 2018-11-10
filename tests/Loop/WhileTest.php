@@ -327,6 +327,12 @@ class WhileTest extends \Psalm\Tests\TestCase
                         if ($a === $foo) {}
                     }',
             ],
+            'noRedundantConditionAfterWhile' => [
+                '<?php
+                    $i = 5;
+                    while (--$i > 0) {}
+                    echo $i === 0;',
+            ],
         ];
     }
 

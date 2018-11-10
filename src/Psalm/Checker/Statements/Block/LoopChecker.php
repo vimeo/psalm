@@ -189,6 +189,8 @@ class LoopChecker
             for ($i = 0; $i < $assignment_depth; ++$i) {
                 $vars_to_remove = [];
 
+                $loop_scope->iteration_count++;
+
                 $has_changes = false;
 
                 // reset the $inner_context to what it was before we started the analysis,
@@ -235,7 +237,12 @@ class LoopChecker
                         if ($recorded_issues) {
                             $has_changes = true;
                         }
-                        $vars_to_remove[] = $var_id;
+
+                        // if we're in a do block we don't want to remove vars before evaluating
+                        // the where conditional
+                        if (!$is_do) {
+                            $vars_to_remove[] = $var_id;
+                        }
                     }
                 }
 
