@@ -531,12 +531,12 @@ class Union
     /**
      * @return bool
      */
-    public function hasDefinitelyNumericType()
+    public function hasDefinitelyNumericType(bool $include_literal_int = true)
     {
         return isset($this->types['int'])
             || isset($this->types['float'])
             || isset($this->types['numeric-string'])
-            || $this->literal_int_types
+            || ($include_literal_int && $this->literal_int_types)
             || $this->literal_float_types;
     }
 

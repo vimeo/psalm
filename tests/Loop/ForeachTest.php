@@ -749,6 +749,22 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         }
                     }'
             ],
+            'ifSpecificMaybeEmptyValues' => [
+                '<?php
+                    foreach ([0, 1, 2, 3] as $i) {
+                        $a = $i;
+                    }
+
+                    if ($a) {}',
+            ],
+            'ifSpecificMaybeEmptyStringValues' => [
+                '<?php
+                    foreach (["", "1", "2", "3"] as $i) {
+                        $a = $i;
+                    }
+
+                    if ($a) {}',
+            ],
         ];
     }
 
@@ -934,6 +950,24 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         bar($a);
                     }',
                 'error_message' => 'RawObjectIteration',
+            ],
+            'ifSpecificNonEmptyValues' => [
+                '<?php
+                    foreach ([1, 2, 3] as $i) {
+                        $a = $i;
+                    }
+
+                    if ($a) {}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'ifSpecificNonEmptyStringValues' => [
+                '<?php
+                    foreach (["1", "2", "3"] as $i) {
+                        $a = $i;
+                    }
+
+                    if ($a) {}',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
