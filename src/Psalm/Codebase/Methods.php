@@ -285,7 +285,15 @@ class Methods
         $appearing_method_id = $this->getAppearingMethodId($method_id);
 
         if (!$appearing_method_id) {
-            return null;
+            list($fq_class_name, $method_name) = explode('::', $method_id);
+
+            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+            if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+                $appearing_method_id = $class_storage->overridden_method_ids[$method_name][0];
+            } else {
+                return null;
+            }
         }
 
         list($appearing_fq_class_name, $appearing_method_name) = explode('::', $appearing_method_id);

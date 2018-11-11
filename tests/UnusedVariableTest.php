@@ -276,7 +276,7 @@ class UnusedVariableTest extends TestCase
                 '<?php
                     $a = 5;
 
-                    if ($a) {}
+                    echo $a;
 
                     while (rand(0, 1)) {
                         if (rand(0, 1)) {
@@ -354,7 +354,7 @@ class UnusedVariableTest extends TestCase
                         echo "cool";
                     }',
             ],
-            'switchVarConditionalAssignment' => [
+            'switchVarConditionalAssignmentWithReference' => [
                 '<?php
                     switch (rand(0, 4)) {
                         case 0:
@@ -367,7 +367,7 @@ class UnusedVariableTest extends TestCase
                             $a = 1;
                     }
 
-                    if ($a) {}'
+                    echo $a;'
             ],
             'throwWithMessageCall' => [
                 '<?php
@@ -1221,7 +1221,7 @@ class UnusedVariableTest extends TestCase
                 '<?php
                     $a = 3;
 
-                    if ($a) {}
+                    echo $a;
 
                     while (rand(0, 1)) {
                         if (rand(0, 1)) {
