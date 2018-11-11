@@ -50,22 +50,14 @@
         </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress" />
 
-        <LessSpecificReturnType>
-            <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
-            </errorLevel>
-        </LessSpecificReturnType>
-
         <UnusedParam>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
                 <directory name="examples" />
             </errorLevel>
         </UnusedParam>
 
         <PossiblyUnusedParam>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
                 <directory name="examples" />
             </errorLevel>
         </PossiblyUnusedParam>
@@ -97,7 +89,6 @@
             <errorLevel type="suppress">
                 <directory name="tests" />
                 <directory name="src/Psalm/PluginApi" />
-                <file name="src/Psalm/Plugin.php" />
                 <file name="src/Psalm/Internal/LanguageServer/Client/TextDocument.php" />
                 <file name="src/Psalm/Internal/LanguageServer/Server/TextDocument.php" />
                 <referencedMethod name="Psalm\Codebase::getParentInterfaces" />

@@ -5,7 +5,6 @@ use Prophecy\Argument;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Plugin;
 use Psalm\PluginApi\PluginEntryPointInterface;
 use Psalm\PluginApi\RegistrationInterface;
 use SimpleXMLElement;
