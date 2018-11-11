@@ -5,10 +5,11 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\FileSource;
+use Psalm\PluginApi\Hook\AfterClassLikeExistenceCheckInterface;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
-class ClassUnqualifier extends \Psalm\Plugin
+class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
     /**
      * @param  string             $fq_class_name

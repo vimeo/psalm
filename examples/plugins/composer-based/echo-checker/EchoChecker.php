@@ -8,9 +8,10 @@ use Psalm\Context;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TypeCoercion;
+use Psalm\PluginApi\Hook\AfterStatementAnalysisInterface;
 use Psalm\StatementsSource;
 
-class EchoChecker extends \Psalm\Plugin
+class EchoChecker implements AfterStatementAnalysisInterface
 {
     /**
      * Called after a statement has been checked
