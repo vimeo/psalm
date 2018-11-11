@@ -17,20 +17,20 @@
             <directory suffix=".php">src</directory>
             <exclude>
                 <directory suffix=".php">src/Psalm/Issue/</directory>
-                <directory suffix=".php">src/Psalm/Stubs/</directory>
-                <directory suffix=".php">src/Psalm/LanguageServer/</directory>
+                <directory suffix=".php">src/Psalm/Internal/Stubs/</directory>
+                <directory suffix=".php">src/Psalm/Internal/LanguageServer/</directory>
                 <file>src/command_functions.php</file>
                 <file>src/psalm.php</file>
                 <file>src/psalm-language-server.php</file>
                 <file>src/psalter.php</file>
                 <file>src/psalm_plugin.php</file>
-                <file>src/Psalm/CallMap.php</file>
-                <file>src/Psalm/Fork/Pool.php</file>
-                <file>src/Psalm/PropertyMap.php</file>
-                <file>src/Psalm/Provider/ClassLikeStorageCacheProvider.php</file>
-                <file>src/Psalm/Provider/FileReferenceCacheProvider.php</file>
-                <file>src/Psalm/Provider/FileStorageCacheProvider.php</file>
-                <file>src/Psalm/Provider/ParserCacheProvider.php</file>
+                <file>src/Psalm/Internal/CallMap.php</file>
+                <file>src/Psalm/Internal/Fork/Pool.php</file>
+                <file>src/Psalm/Internal/PropertyMap.php</file>
+                <file>src/Psalm/Internal/Provider/ClassLikeStorageCacheProvider.php</file>
+                <file>src/Psalm/Internal/Provider/FileReferenceCacheProvider.php</file>
+                <file>src/Psalm/Internal/Provider/FileStorageCacheProvider.php</file>
+                <file>src/Psalm/Internal/Provider/ParserCacheProvider.php</file>
             </exclude>
         </whitelist>
     </filter>
