@@ -59,10 +59,10 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if ($filePath === 'src/Psalm/PropertyMap.php'
-                || $filePath === 'src/Psalm/CallMap.php'
-                || $filePath === 'src/Psalm/Stubs/CoreGenericFunctions.php'
-                || $filePath === 'src/Psalm/Stubs/CoreGenericClasses.php'
+            if ($filePath === 'src/Psalm/Internal/PropertyMap.php'
+                || $filePath === 'src/Psalm/Internal/CallMap.php'
+                || $filePath === 'src/Psalm/Internal/Stubs/CoreGenericFunctions.php'
+                || $filePath === 'src/Psalm/Internal/Stubs/CoreGenericClasses.php'
             ) {
                 $contents = str_replace(
                     ['namespace ' . $prefix . ';', $prefix . '\\\\', $prefix . '\\'],
@@ -82,7 +82,7 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if ($filePath === 'src/Psalm/Checker/Statements/Expression/Call/MethodCallChecker.php') {
+            if ($filePath === 'src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php') {
                 return str_replace(
                     'case \'Psalm\\\\',
                     'case \'' . $prefix . '\\\\Psalm\\\\',
