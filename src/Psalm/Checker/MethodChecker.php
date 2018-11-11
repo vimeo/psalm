@@ -303,21 +303,8 @@ class MethodChecker extends FunctionLikeChecker
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
-            $method_name = explode('::', $method_id)[1];
-
-            if ($method_name === '__construct') {
-                return true;
-            }
-
-            if ($method_id === 'Closure::__invoke') {
-                return true;
-            }
-
-            if ($method_id === 'ReflectionType::getname') {
-                return true;
-            }
-
-            throw new \UnexpectedValueException('$declaring_method_id not expected to be null for ' . $method_id);
+            // this can happen for methods in the callmap that were not reflected
+            return true;
         }
 
         $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
