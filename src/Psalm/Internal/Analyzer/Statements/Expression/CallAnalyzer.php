@@ -54,7 +54,7 @@ class CallAnalyzer
     ) {
         $fq_class_name = (string)$source->getFQCLN();
 
-        $project_checker = $source->getFileAnalyzer()->project_checker;
+        $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
         $codebase = $source->getCodebase();
 
         if ($context->collect_mutations &&
@@ -82,7 +82,7 @@ class CallAnalyzer
                     $context->initialized_methods[$method_id] = true;
                 }
 
-                $project_checker->getMethodMutations($method_id, $context);
+                $project_analyzer->getMethodMutations($method_id, $context);
             }
         } elseif ($context->collect_initializations &&
             $context->self &&
@@ -111,9 +111,9 @@ class CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-            $class_checker = $source->getSource();
+            $class_analyzer = $source->getSource();
 
-            if ($class_checker instanceof ClassLikeAnalyzer &&
+            if ($class_analyzer instanceof ClassLikeAnalyzer &&
                 ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE || $method_storage->final)
             ) {
                 $local_vars_in_scope = [];
@@ -131,7 +131,7 @@ class CallAnalyzer
                     }
                 }
 
-                $class_checker->getMethodMutations(strtolower($method_name), $context);
+                $class_analyzer->getMethodMutations(strtolower($method_name), $context);
 
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
@@ -150,7 +150,7 @@ class CallAnalyzer
      * @param  array<string, Type\Union>|null   &$generic_params
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
-     * @param  StatementsAnalyzer                $statements_checker
+     * @param  StatementsAnalyzer                $statements_analyzer
      *
      * @return false|null
      */
@@ -160,16 +160,16 @@ class CallAnalyzer
         &$generic_params,
         Context $context,
         CodeLocation $code_location,
-        StatementsAnalyzer $statements_checker
+        StatementsAnalyzer $statements_analyzer
     ) {
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
 
         $method_params = $method_id
-            ? FunctionLikeAnalyzer::getMethodParamsById($project_checker, $method_id, $args)
+            ? FunctionLikeAnalyzer::getMethodParamsById($project_analyzer, $method_id, $args)
             : null;
 
         if (self::checkFunctionArguments(
-            $statements_checker,
+            $statements_analyzer,
             $args,
             $method_params,
             $method_id,
@@ -184,7 +184,7 @@ class CallAnalyzer
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
 
         $method_storage = null;
 
@@ -194,7 +194,7 @@ class CallAnalyzer
             list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
 
             if ($declaring_fq_class_name !== $fq_class_name) {
-                $declaring_class_storage = $project_checker->classlike_storage_provider->get($declaring_fq_class_name);
+                $declaring_class_storage = $project_analyzer->classlike_storage_provider->get($declaring_fq_class_name);
             } else {
                 $declaring_class_storage = $class_storage;
             }
@@ -213,14 +213,14 @@ class CallAnalyzer
         if (!$class_storage->user_defined) {
             // check again after we've processed args
             $method_params = FunctionLikeAnalyzer::getMethodParamsById(
-                $project_checker,
+                $project_analyzer,
                 $method_id,
                 $args
             );
         }
 
         if (self::checkFunctionLikeArgumentsMatch(
-            $statements_checker,
+            $statements_analyzer,
             $args,
             $method_id,
             $method_params,
@@ -237,7 +237,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                       $statements_checker
+     * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   array<int, FunctionLikeParameter>|null  $function_params
      * @param   string|null                             $method_id
@@ -246,7 +246,7 @@ class CallAnalyzer
      * @return  false|null
      */
     protected static function checkFunctionArguments(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         array $args,
         $function_params,
         $method_id,
@@ -261,7 +261,7 @@ class CallAnalyzer
             $array_arg = $args[0]->value;
 
             if (ExpressionAnalyzer::analyze(
-                $statements_checker,
+                $statements_analyzer,
                 $array_arg,
                 $context
             ) === false) {
@@ -284,7 +284,7 @@ class CallAnalyzer
                     }
 
                     if (ExpressionAnalyzer::analyze(
-                        $statements_checker,
+                        $statements_analyzer,
                         $arg->value,
                         $context
                     ) === false) {
@@ -337,7 +337,7 @@ class CallAnalyzer
                 }
 
                 ExpressionAnalyzer::assignByRefParam(
-                    $statements_checker,
+                    $statements_analyzer,
                     $array_arg,
                     $by_ref_type,
                     $context,
@@ -352,7 +352,7 @@ class CallAnalyzer
             $array_arg = $args[0]->value;
 
             if (ExpressionAnalyzer::analyze(
-                $statements_checker,
+                $statements_analyzer,
                 $array_arg,
                 $context
             ) === false) {
@@ -362,7 +362,7 @@ class CallAnalyzer
             $offset_arg = $args[1]->value;
 
             if (ExpressionAnalyzer::analyze(
-                $statements_checker,
+                $statements_analyzer,
                 $offset_arg,
                 $context
             ) === false) {
@@ -376,7 +376,7 @@ class CallAnalyzer
             $length_arg = $args[2]->value;
 
             if (ExpressionAnalyzer::analyze(
-                $statements_checker,
+                $statements_analyzer,
                 $length_arg,
                 $context
             ) === false) {
@@ -390,7 +390,7 @@ class CallAnalyzer
             $replacement_arg = $args[3]->value;
 
             if (ExpressionAnalyzer::analyze(
-                $statements_checker,
+                $statements_analyzer,
                 $replacement_arg,
                 $context
             ) === false) {
@@ -429,7 +429,7 @@ class CallAnalyzer
                 $by_ref_type = Type\TypeCombination::combineTypes([$array_type, $replacement_array_type]);
 
                 ExpressionAnalyzer::assignByRefParam(
-                    $statements_checker,
+                    $statements_analyzer,
                     $array_arg,
                     $by_ref_type,
                     $context,
@@ -440,7 +440,7 @@ class CallAnalyzer
             }
 
             ExpressionAnalyzer::assignByRefParam(
-                $statements_checker,
+                $statements_analyzer,
                 $array_arg,
                 Type::getArray(),
                 $context,
@@ -490,7 +490,7 @@ class CallAnalyzer
                         )
                     ) {
                         if (ExpressionAnalyzer::analyze(
-                            $statements_checker,
+                            $statements_analyzer,
                             $arg->value,
                             $context
                         ) === false) {
@@ -500,12 +500,12 @@ class CallAnalyzer
                         if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
                             $var_id = ExpressionAnalyzer::getVarId(
                                 $arg->value,
-                                $statements_checker->getFQCLN(),
-                                $statements_checker
+                                $statements_analyzer->getFQCLN(),
+                                $statements_analyzer
                             );
 
                             if ($var_id) {
-                                $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
+                                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
                                 if (isset($context->vars_in_scope[$var_id])) {
                                     $array_type = clone $context->vars_in_scope[$var_id];
@@ -584,7 +584,7 @@ class CallAnalyzer
                             }
 
                             ExpressionAnalyzer::assignByRefParam(
-                                $statements_checker,
+                                $statements_analyzer,
                                 $arg->value,
                                 $by_ref_type,
                                 $context,
@@ -597,7 +597,7 @@ class CallAnalyzer
 
                     if ($method_id === 'socket_select') {
                         if (ExpressionAnalyzer::analyze(
-                            $statements_checker,
+                            $statements_analyzer,
                             $arg->value,
                             $context
                         ) === false) {
@@ -615,7 +615,7 @@ class CallAnalyzer
                         $toggled_class_exists = true;
                     }
 
-                    if (ExpressionAnalyzer::analyze($statements_checker, $arg->value, $context) === false) {
+                    if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                         return false;
                     }
 
@@ -626,12 +626,12 @@ class CallAnalyzer
                     ) {
                         $var_id = ExpressionAnalyzer::getVarId(
                             $arg->value->var,
-                            $statements_checker->getFQCLN(),
-                            $statements_checker
+                            $statements_analyzer->getFQCLN(),
+                            $statements_analyzer
                         );
 
                         if ($var_id) {
-                            $context->hasVariable($var_id, $statements_checker);
+                            $context->hasVariable($var_id, $statements_analyzer);
                         }
                     }
 
@@ -645,7 +645,7 @@ class CallAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall) {
-                    if (ExpressionAnalyzer::analyze($statements_checker, $arg->value, $context) === false) {
+                    if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                         return false;
                     }
                 }
@@ -657,13 +657,13 @@ class CallAnalyzer
                 } else {
                     $var_id = ExpressionAnalyzer::getVarId(
                         $arg->value,
-                        $statements_checker->getFQCLN(),
-                        $statements_checker
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer
                     );
                 }
 
                 if ($var_id) {
-                    if (!$context->hasVariable($var_id, $statements_checker)
+                    if (!$context->hasVariable($var_id, $statements_analyzer)
                         || $context->vars_in_scope[$var_id]->isNull()
                     ) {
                         // we don't know if it exists, assume it's passed by reference
@@ -672,22 +672,22 @@ class CallAnalyzer
 
                         if (strpos($var_id, '-') === false
                             && strpos($var_id, '[') === false
-                            && !$statements_checker->hasVariable($var_id)
+                            && !$statements_analyzer->hasVariable($var_id)
                         ) {
-                            $location = new CodeLocation($statements_checker, $arg->value);
-                            $statements_checker->registerVariable(
+                            $location = new CodeLocation($statements_analyzer, $arg->value);
+                            $statements_analyzer->registerVariable(
                                 $var_id,
                                 $location,
                                 null
                             );
 
-                            $statements_checker->registerVariableUses([$location->getHash() => $location]);
+                            $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
                         }
                     } else {
                         $context->removeVarFromConflictingClauses(
                             $var_id,
                             $context->vars_in_scope[$var_id],
-                            $statements_checker
+                            $statements_analyzer
                         );
 
                         foreach ($context->vars_in_scope[$var_id]->getTypes() as $type) {
@@ -709,7 +709,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                       $statements_checker
+     * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg>          $args
      * @param   string|null                             $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
@@ -722,7 +722,7 @@ class CallAnalyzer
      * @return  false|null
      */
     protected static function checkFunctionLikeArgumentsMatch(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         array $args,
         $method_id,
         array $function_params,
@@ -740,15 +740,15 @@ class CallAnalyzer
 
         $fq_class_name = null;
 
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
             if ($in_call_map || !strpos($method_id, '::')) {
                 $is_variadic = $codebase->functions->isVariadic(
                     $codebase,
                     strtolower($method_id),
-                    $statements_checker->getRootFilePath()
+                    $statements_analyzer->getRootFilePath()
                 );
             } else {
                 $fq_class_name = explode('::', $method_id)[0];
@@ -767,7 +767,7 @@ class CallAnalyzer
 
             if ($declaring_method_id && $declaring_method_id !== $method_id) {
                 list($fq_class_name) = explode('::', $declaring_method_id);
-                $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+                $class_storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
             }
         }
 
@@ -830,7 +830,7 @@ class CallAnalyzer
                             'Parameter ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects a variable',
                             $code_location
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -871,7 +871,7 @@ class CallAnalyzer
                     $by_ref_type = $by_ref_type ?: Type::getMixed();
 
                     ExpressionAnalyzer::assignByRefParam(
-                        $statements_checker,
+                        $statements_analyzer,
                         $arg->value,
                         $by_ref_type,
                         $context,
@@ -912,7 +912,7 @@ class CallAnalyzer
                                 $offset_value_type = Type::parseString(
                                     ClassLikeAnalyzer::getFQCLNFromNameObject(
                                         $arg->value->class,
-                                        $statements_checker->getAliases()
+                                        $statements_analyzer->getAliases()
                                     )
                                 );
 
@@ -935,10 +935,10 @@ class CallAnalyzer
                                     // register class if the class exists
                                     if ($offset_value_type_part instanceof TNamedObject) {
                                         ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                            $statements_checker,
+                                            $statements_analyzer,
                                             $offset_value_type_part->value,
-                                            new CodeLocation($statements_checker->getSource(), $arg->value),
-                                            $statements_checker->getSuppressedIssues()
+                                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                            $statements_analyzer->getSuppressedIssues()
                                         );
                                     }
                                 }
@@ -1016,12 +1016,12 @@ class CallAnalyzer
                             }
 
                             if (self::checkFunctionArgumentType(
-                                $statements_checker,
+                                $statements_analyzer,
                                 $array_atomic_type->type_params[1],
                                 $fleshed_out_type,
                                 $cased_method_id,
                                 $argument_offset,
-                                new CodeLocation($statements_checker->getSource(), $arg->value),
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
                                 $arg->value,
                                 $context,
                                 $function_param->by_ref,
@@ -1030,7 +1030,7 @@ class CallAnalyzer
                                 return false;
                             }
                         } elseif ($arg->value->inferredType->isMixed()) {
-                            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                             if (IssueBuffer::accepts(
                                 new MixedArgument(
@@ -1038,7 +1038,7 @@ class CallAnalyzer
                                         . ' cannot be mixed, expecting array',
                                     $code_location
                                 ),
-                                $statements_checker->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues()
                             )) {
                                 // fall through
                             }
@@ -1051,7 +1051,7 @@ class CallAnalyzer
                                                 . ' expects array, ' . $atomic_type . ' provided',
                                             $code_location
                                         ),
-                                        $statements_checker->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues()
                                     )) {
                                         return false;
                                     }
@@ -1063,12 +1063,12 @@ class CallAnalyzer
                     }
 
                     if (self::checkFunctionArgumentType(
-                        $statements_checker,
+                        $statements_analyzer,
                         $arg->value->inferredType,
                         $fleshed_out_type,
                         $cased_method_id,
                         $argument_offset,
-                        new CodeLocation($statements_checker->getSource(), $arg->value),
+                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         $arg->value,
                         $context,
                         $function_param->by_ref,
@@ -1078,16 +1078,16 @@ class CallAnalyzer
                     }
                 }
             } elseif ($function_param) {
-                $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if ($function_param->type && !$function_param->type->isMixed()) {
                     if (IssueBuffer::accepts(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                 . ' cannot be mixed, expecting ' . $function_param->type,
-                            new CodeLocation($statements_checker->getSource(), $arg->value)
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1103,7 +1103,7 @@ class CallAnalyzer
                         $code_location,
                         $method_id
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -1114,14 +1114,14 @@ class CallAnalyzer
                         $code_location,
                         $method_id
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
             }
 
             if (self::checkArrayFunctionArgumentsMatch(
-                $statements_checker,
+                $statements_analyzer,
                 $args,
                 $method_id
             ) === false
@@ -1141,7 +1141,7 @@ class CallAnalyzer
                     $code_location,
                     $method_id ?: ''
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -1161,7 +1161,7 @@ class CallAnalyzer
                             $code_location,
                             $method_id ?: ''
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -1173,14 +1173,14 @@ class CallAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer              $statements_checker
+     * @param   StatementsAnalyzer              $statements_analyzer
      * @param   array<int, PhpParser\Node\Arg> $args
      * @param   string                         $method_id
      *
      * @return  false|null
      */
     protected static function checkArrayFunctionArgumentsMatch(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         array $args,
         $method_id
     ) {
@@ -1230,7 +1230,7 @@ class CallAnalyzer
 
             foreach ($closure_arg_type->getTypes() as $closure_type) {
                 if (self::checkArrayFunctionClosureType(
-                    $statements_checker,
+                    $statements_analyzer,
                     $method_id,
                     $closure_type,
                     $closure_arg,
@@ -1253,7 +1253,7 @@ class CallAnalyzer
      * @return false|null
      */
     private static function checkArrayFunctionClosureType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $method_id,
         Type\Atomic $closure_type,
         PhpParser\Node\Arg $closure_arg,
@@ -1261,9 +1261,9 @@ class CallAnalyzer
         $max_closure_param_count,
         array $array_arg_types
     ) {
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if (!$closure_type instanceof Type\Atomic\Fn) {
             if (!$closure_arg->value instanceof PhpParser\Node\Scalar\String_
@@ -1274,7 +1274,7 @@ class CallAnalyzer
             }
 
             $function_ids = self::getFunctionIdsFromCallableArg(
-                $statements_checker,
+                $statements_analyzer,
                 $closure_arg->value
             );
 
@@ -1293,10 +1293,10 @@ class CallAnalyzer
                             case 'self':
                             case 'static':
                             case 'parent':
-                                $container_class = $statements_checker->getFQCLN();
+                                $container_class = $statements_analyzer->getFQCLN();
 
                                 if ($callable_fq_class_name === 'parent') {
-                                    $container_class = $statements_checker->getParentFQCLN();
+                                    $container_class = $statements_analyzer->getParentFQCLN();
                                 }
 
                                 if (!$container_class) {
@@ -1327,7 +1327,7 @@ class CallAnalyzer
                     }
                 } else {
                     $function_storage = $codebase->functions->getStorage(
-                        $statements_checker,
+                        $statements_analyzer,
                         $function_id
                     );
 
@@ -1388,7 +1388,7 @@ class CallAnalyzer
             }
 
             if (self::checkArrayFunctionClosureTypeArgs(
-                $statements_checker,
+                $statements_analyzer,
                 $method_id,
                 $closure_type,
                 $closure_arg,
@@ -1410,7 +1410,7 @@ class CallAnalyzer
      * @return false|null
      */
     private static function checkArrayFunctionClosureTypeArgs(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $method_id,
         Type\Atomic\Fn $closure_type,
         PhpParser\Node\Arg $closure_arg,
@@ -1418,7 +1418,7 @@ class CallAnalyzer
         $max_closure_param_count,
         array $array_arg_types
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $closure_params = $closure_type->params;
 
@@ -1441,10 +1441,10 @@ class CallAnalyzer
                 new TooManyArguments(
                     'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
-                    new CodeLocation($statements_checker->getSource(), $closure_arg),
+                    new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                     $method_id
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -1455,10 +1455,10 @@ class CallAnalyzer
                 new TooFewArguments(
                     'The callable passed to ' . $method_id . ' will be called with ' . $argument_text . ', expecting '
                         . $required_param_count,
-                    new CodeLocation($statements_checker->getSource(), $closure_arg),
+                    new CodeLocation($statements_analyzer->getSource(), $closure_arg),
                     $method_id
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -1511,9 +1511,9 @@ class CallAnalyzer
                         new MixedTypeCoercion(
                             'First parameter of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_checker->getSource(), $closure_arg)
+                            new CodeLocation($statements_analyzer->getSource(), $closure_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // keep soldiering on
                     }
@@ -1522,9 +1522,9 @@ class CallAnalyzer
                         new TypeCoercion(
                             'First parameter of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type->getId() . ', parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_checker->getSource(), $closure_arg)
+                            new CodeLocation($statements_analyzer->getSource(), $closure_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // keep soldiering on
                     }
@@ -1543,9 +1543,9 @@ class CallAnalyzer
                         new InvalidScalarArgument(
                             'First parameter of closure passed to function ' . $method_id . ' expects ' .
                                 $closure_param_type . ', ' . $input_type . ' provided',
-                            new CodeLocation($statements_checker->getSource(), $closure_arg)
+                            new CodeLocation($statements_analyzer->getSource(), $closure_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -1555,9 +1555,9 @@ class CallAnalyzer
                             'First parameter of closure passed to function ' . $method_id . ' expects '
                                 . $closure_param_type->getId() . ', possibly different type '
                                 . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_checker->getSource(), $closure_arg)
+                            new CodeLocation($statements_analyzer->getSource(), $closure_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -1565,9 +1565,9 @@ class CallAnalyzer
                     new InvalidArgument(
                         'First parameter of closure passed to function ' . $method_id . ' expects ' .
                             $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
-                        new CodeLocation($statements_checker->getSource(), $closure_arg)
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -1578,7 +1578,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer   $statements_checker
+     * @param   StatementsAnalyzer   $statements_analyzer
      * @param   Type\Union          $input_type
      * @param   Type\Union          $param_type
      * @param   string|null         $cased_method_id
@@ -1590,7 +1590,7 @@ class CallAnalyzer
      * @return  null|false
      */
     public static function checkFunctionArgumentType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         Type\Union $input_type,
         Type\Union $param_type,
         $cased_method_id,
@@ -1605,24 +1605,24 @@ class CallAnalyzer
             return null;
         }
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
         if ($codebase->infer_types_from_usage && $input_expr->inferredType) {
-            $source_checker = $statements_checker->getSource();
+            $source_analyzer = $statements_analyzer->getSource();
 
-            if ($source_checker instanceof FunctionLikeAnalyzer) {
+            if ($source_analyzer instanceof FunctionLikeAnalyzer) {
                 $context->inferType(
                     $input_expr,
-                    $source_checker->getFunctionLikeStorage($statements_checker),
+                    $source_analyzer->getFunctionLikeStorage($statements_analyzer),
                     $param_type
                 );
             }
         }
 
         if ($input_type->isMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedArgument(
@@ -1630,7 +1630,7 @@ class CallAnalyzer
                         $param_type,
                     $code_location
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -1638,7 +1638,7 @@ class CallAnalyzer
             return null;
         }
 
-        $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
         $param_type = TypeAnalyzer::simplifyUnionType(
             $codebase,
@@ -1674,7 +1674,7 @@ class CallAnalyzer
                             ', parent type ' . $input_type->getId() . ' provided',
                         $code_location
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // keep soldiering on
                 }
@@ -1685,7 +1685,7 @@ class CallAnalyzer
                             ', parent type ' . $input_type->getId() . ' provided',
                         $code_location
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // keep soldiering on
                 }
@@ -1699,7 +1699,7 @@ class CallAnalyzer
                         $param_type . ', ' . $input_type . ' provided with a __toString method',
                     $code_location
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -1722,7 +1722,7 @@ class CallAnalyzer
                                 $param_type . ', ' . $input_type . ' provided',
                             $code_location
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -1734,7 +1734,7 @@ class CallAnalyzer
                             ', possibly different type ' . $input_type->getId() . ' provided',
                         $code_location
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -1744,7 +1744,7 @@ class CallAnalyzer
                         ', ' . $input_type->getId() . ' provided',
                     $code_location
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -1757,10 +1757,10 @@ class CallAnalyzer
                     && $input_expr instanceof PhpParser\Node\Scalar\String_
                 ) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                        $statements_checker,
+                        $statements_analyzer,
                         $input_expr->value,
                         $code_location,
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     ) === false
                     ) {
                         return false;
@@ -1773,10 +1773,10 @@ class CallAnalyzer
                             foreach ($input_expr->items as $item) {
                                 if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                        $statements_checker,
+                                        $statements_analyzer,
                                         $item->value->value,
                                         $code_location,
-                                        $statements_checker->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
                                         return false;
@@ -1787,7 +1787,7 @@ class CallAnalyzer
                     }
                 } elseif ($param_type_part instanceof TCallable) {
                     $function_ids = self::getFunctionIdsFromCallableArg(
-                        $statements_checker,
+                        $statements_analyzer,
                         $input_expr
                     );
 
@@ -1805,10 +1805,10 @@ class CallAnalyzer
                                     case 'self':
                                     case 'static':
                                     case 'parent':
-                                        $container_class = $statements_checker->getFQCLN();
+                                        $container_class = $statements_analyzer->getFQCLN();
 
                                         if ($callable_fq_class_name === 'parent') {
-                                            $container_class = $statements_checker->getParentFQCLN();
+                                            $container_class = $statements_analyzer->getParentFQCLN();
                                         }
 
                                         if (!$container_class) {
@@ -1821,10 +1821,10 @@ class CallAnalyzer
                                 $function_id_part = $callable_fq_class_name . '::' . $method_name;
 
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                    $statements_checker,
+                                    $statements_analyzer,
                                     $callable_fq_class_name,
                                     $code_location,
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues()
                                 ) === false
                                 ) {
                                     return false;
@@ -1848,7 +1848,7 @@ class CallAnalyzer
                                     $codebase,
                                     $non_existent_method_ids[0],
                                     $code_location,
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues()
                                 ) === false
                                 ) {
                                     return false;
@@ -1856,7 +1856,7 @@ class CallAnalyzer
                             }
                         } else {
                             if (!$param_type->hasString() && !$param_type->hasArray() && self::checkFunctionExists(
-                                $statements_checker,
+                                $statements_analyzer,
                                 $function_id,
                                 $code_location,
                                 false
@@ -1878,7 +1878,7 @@ class CallAnalyzer
                             'null value provided to parameter with type ' . $param_type,
                         $code_location
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -1893,7 +1893,7 @@ class CallAnalyzer
                             'null value provided',
                         $code_location
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -1911,7 +1911,7 @@ class CallAnalyzer
                         'false value provided',
                     $code_location
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -1925,8 +1925,8 @@ class CallAnalyzer
         ) {
             $var_id = ExpressionAnalyzer::getVarId(
                 $input_expr,
-                $statements_checker->getFQCLN(),
-                $statements_checker
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
             );
 
             if ($var_id) {
@@ -1942,7 +1942,7 @@ class CallAnalyzer
                     }
                 }
 
-                $context->removeVarFromConflictingClauses($var_id, null, $statements_checker);
+                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
 
                 $context->vars_in_scope[$var_id] = $input_type;
             }
@@ -2041,7 +2041,7 @@ class CallAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer    $statements_checker
+     * @param  StatementsAnalyzer    $statements_analyzer
      * @param  string               $function_id
      * @param  CodeLocation         $code_location
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
@@ -2049,7 +2049,7 @@ class CallAnalyzer
      * @return bool
      */
     protected static function checkFunctionExists(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         &$function_id,
         CodeLocation $code_location,
         $can_be_in_root_scope
@@ -2057,14 +2057,14 @@ class CallAnalyzer
         $cased_function_id = $function_id;
         $function_id = strtolower($function_id);
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->functions->functionExists($statements_checker, $function_id)) {
+        if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
             $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
             if ($can_be_in_root_scope
                 && $function_id !== $root_function_id
-                && $codebase->functions->functionExists($statements_checker, $root_function_id)
+                && $codebase->functions->functionExists($statements_analyzer, $root_function_id)
             ) {
                 $function_id = $root_function_id;
             } else {
@@ -2073,7 +2073,7 @@ class CallAnalyzer
                         'Function ' . $cased_function_id . ' does not exist',
                         $code_location
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -2086,22 +2086,22 @@ class CallAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer    $statements_checker
+     * @param  StatementsAnalyzer    $statements_analyzer
      * @param  string               $function_id
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      *
      * @return string
      */
     protected static function getExistingFunctionId(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $function_id,
         $can_be_in_root_scope
     ) {
         $function_id = strtolower($function_id);
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
-        if ($codebase->functions->functionExists($statements_checker, $function_id)) {
+        if ($codebase->functions->functionExists($statements_analyzer, $function_id)) {
             return $function_id;
         }
 
@@ -2112,7 +2112,7 @@ class CallAnalyzer
         $root_function_id = preg_replace('/.*\\\/', '', $function_id);
 
         if ($function_id !== $root_function_id
-            && $codebase->functions->functionExists($statements_checker, $root_function_id)
+            && $codebase->functions->functionExists($statements_analyzer, $root_function_id)
         ) {
             return $root_function_id;
         }
@@ -2125,7 +2125,7 @@ class CallAnalyzer
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
      * @param  array<int, string> $template_typeof_params
-     * @param  StatementsAnalyzer $statements_checker
+     * @param  StatementsAnalyzer $statements_analyzer
      *
      * @return void
      */
@@ -2134,7 +2134,7 @@ class CallAnalyzer
         array $args,
         array $template_typeof_params,
         Context $context,
-        StatementsAnalyzer $statements_checker
+        StatementsAnalyzer $statements_analyzer
     ) {
         $type_assertions = [];
 
@@ -2148,7 +2148,7 @@ class CallAnalyzer
 
                 $arg_value = $args[$assertion->var_id]->value;
 
-                $arg_var_id = ExpressionAnalyzer::getArrayVarId($arg_value, null, $statements_checker);
+                $arg_var_id = ExpressionAnalyzer::getArrayVarId($arg_value, null, $statements_analyzer);
 
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;
@@ -2183,7 +2183,7 @@ class CallAnalyzer
             $context->vars_in_scope,
             $changed_vars,
             [],
-            $statements_checker,
+            $statements_analyzer,
             null
         );
 

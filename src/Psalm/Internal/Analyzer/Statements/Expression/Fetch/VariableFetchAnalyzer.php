@@ -18,7 +18,7 @@ use Psalm\Type;
 class VariableFetchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\Variable    $stmt
      * @param   Context                         $context
      * @param   bool                            $passed_by_reference
@@ -29,7 +29,7 @@ class VariableFetchAnalyzer
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Variable $stmt,
         Context $context,
         $passed_by_reference = false,
@@ -37,17 +37,17 @@ class VariableFetchAnalyzer
         $array_assignment = false,
         $from_global = false
     ) {
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->name === 'this') {
-            if ($statements_checker->isStatic()) {
+            if ($statements_analyzer->isStatic()) {
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Invalid reference to $this in a static context',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -59,9 +59,9 @@ class VariableFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Invalid reference to $this in a non-class context',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -80,13 +80,13 @@ class VariableFetchAnalyzer
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt,
                     (string) $stmt->inferredType
                 );
 
                 $codebase->analyzer->addNodeReference(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt,
                     (string) $stmt->inferredType
                 );
@@ -99,7 +99,7 @@ class VariableFetchAnalyzer
             if (is_string($stmt->name)) {
                 $var_name = '$' . $stmt->name;
 
-                if (!$context->hasVariable($var_name, $statements_checker)) {
+                if (!$context->hasVariable($var_name, $statements_analyzer)) {
                     $context->vars_in_scope[$var_name] = Type::getMixed();
                     $context->vars_possibly_in_scope[$var_name] = true;
                     $stmt->inferredType = Type::getMixed();
@@ -139,7 +139,7 @@ class VariableFetchAnalyzer
         if ($context->is_global && ($stmt->name === 'argv' || $stmt->name === 'argc')) {
             $var_name = '$' . $stmt->name;
 
-            if (!$context->hasVariable($var_name, $statements_checker)) {
+            if (!$context->hasVariable($var_name, $statements_analyzer)) {
                 if ($stmt->name === 'argv') {
                     $context->vars_in_scope[$var_name] = new Type\Union([
                         new Type\Atomic\TArray([
@@ -158,20 +158,20 @@ class VariableFetchAnalyzer
         }
 
         if (!is_string($stmt->name)) {
-            return ExpressionAnalyzer::analyze($statements_checker, $stmt->name, $context);
+            return ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
         }
 
         if ($passed_by_reference && $by_ref_type) {
-            ExpressionAnalyzer::assignByRefParam($statements_checker, $stmt, $by_ref_type, $context);
+            ExpressionAnalyzer::assignByRefParam($statements_analyzer, $stmt, $by_ref_type, $context);
 
             return null;
         }
 
         $var_name = '$' . $stmt->name;
 
-        if (!$context->hasVariable($var_name, $statements_checker)) {
+        if (!$context->hasVariable($var_name, $statements_analyzer)) {
             if (!isset($context->vars_possibly_in_scope[$var_name]) ||
-                !$statements_checker->getFirstAppearance($var_name)
+                !$statements_analyzer->getFirstAppearance($var_name)
             ) {
                 if ($array_assignment) {
                     // if we're in an array assignment, let's assign the variable
@@ -181,23 +181,23 @@ class VariableFetchAnalyzer
                     $context->vars_possibly_in_scope[$var_name] = true;
 
                     // it might have been defined first in another if/else branch
-                    if (!$statements_checker->hasVariable($var_name)) {
-                        $statements_checker->registerVariable(
+                    if (!$statements_analyzer->hasVariable($var_name)) {
+                        $statements_analyzer->registerVariable(
                             $var_name,
-                            new CodeLocation($statements_checker, $stmt),
+                            new CodeLocation($statements_analyzer, $stmt),
                             $context->branch_point
                         );
                     }
                 } elseif (!$context->inside_isset
-                    || $statements_checker->getSource() instanceof FunctionLikeAnalyzer
+                    || $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 ) {
                     if ($context->is_global || $from_global) {
                         if (IssueBuffer::accepts(
                             new UndefinedGlobalVariable(
                                 'Cannot find referenced variable ' . $var_name . ' in global scope',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -210,9 +210,9 @@ class VariableFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $var_name,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -223,19 +223,19 @@ class VariableFetchAnalyzer
                 }
             }
 
-            $first_appearance = $statements_checker->getFirstAppearance($var_name);
+            $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
 
             if ($first_appearance && !$context->inside_isset && !$context->inside_unset) {
                 if ($context->is_global) {
                     if ($codebase->alter_code) {
-                        if (!isset($project_checker->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
+                        if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
                             return;
                         }
 
-                        $branch_point = $statements_checker->getBranchPoint($var_name);
+                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
                         if ($branch_point) {
-                            $statements_checker->addVariableInitialization($var_name, $branch_point);
+                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
                         }
 
                         return;
@@ -245,22 +245,22 @@ class VariableFetchAnalyzer
                         new PossiblyUndefinedGlobalVariable(
                             'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
                 } else {
                     if ($codebase->alter_code) {
-                        if (!isset($project_checker->getIssuesToFix()['PossiblyUndefinedVariable'])) {
+                        if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])) {
                             return;
                         }
 
-                        $branch_point = $statements_checker->getBranchPoint($var_name);
+                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
                         if ($branch_point) {
-                            $statements_checker->addVariableInitialization($var_name, $branch_point);
+                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
                         }
 
                         return;
@@ -270,15 +270,15 @@ class VariableFetchAnalyzer
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
                 }
 
-                $statements_checker->registerVariableUses([$first_appearance->getHash() => $first_appearance]);
+                $statements_analyzer->registerVariableUses([$first_appearance->getHash() => $first_appearance]);
             }
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
@@ -289,7 +289,7 @@ class VariableFetchAnalyzer
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt,
                     (string) $stmt->inferredType
                 );
@@ -301,7 +301,7 @@ class VariableFetchAnalyzer
 
                     if ($reference_type instanceof Type\Atomic\TNamedObject) {
                         $codebase->analyzer->addNodeReference(
-                            $statements_checker->getFilePath(),
+                            $statements_analyzer->getFilePath(),
                             $stmt,
                             $reference_type->value
                         );

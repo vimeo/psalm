@@ -42,18 +42,18 @@ class IfAnalyzer
      *   (x: null)
      *   throw new Exception -- effects: remove null from the type of x
      *
-     * @param  StatementsAnalyzer       $statements_checker
+     * @param  StatementsAnalyzer       $statements_analyzer
      * @param  PhpParser\Node\Stmt\If_ $stmt
      * @param  Context                 $context
      *
      * @return null|false
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
         Context $context
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         // get the first expression in the if, which should be evaluated on its own
         // this allows us to update the context of $matches in
@@ -74,7 +74,7 @@ class IfAnalyzer
         $context->assigned_var_ids = [];
 
         if ($first_if_cond_expr &&
-            ExpressionAnalyzer::analyze($statements_checker, $first_if_cond_expr, $context) === false
+            ExpressionAnalyzer::analyze($statements_analyzer, $first_if_cond_expr, $context) === false
         ) {
             return false;
         }
@@ -113,7 +113,7 @@ class IfAnalyzer
             $referenced_var_ids = $context->referenced_var_ids;
             $if_context->referenced_var_ids = [];
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->cond, $if_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $if_context) === false) {
                 return false;
             }
 
@@ -201,7 +201,7 @@ class IfAnalyzer
         $if_clauses = Algebra::getFormula(
             $stmt->cond,
             $context->self,
-            $statements_checker,
+            $statements_analyzer,
             $codebase
         );
 
@@ -231,7 +231,7 @@ class IfAnalyzer
         AlgebraAnalyzer::checkForParadox(
             $context->clauses,
             $if_clauses,
-            $statements_checker,
+            $statements_analyzer,
             $stmt->cond,
             $cond_assigned_var_ids
         );
@@ -269,14 +269,14 @@ class IfAnalyzer
                     $if_context->vars_in_scope,
                     $changed_var_ids,
                     $cond_referenced_var_ids,
-                    $statements_checker,
+                    $statements_analyzer,
                     $context->check_variables
                         ? new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $stmt->cond,
                             $context->include_location
                         ) : null,
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
@@ -313,14 +313,14 @@ class IfAnalyzer
                 $temp_else_context->vars_in_scope,
                 $changed_var_ids,
                 $stmt->else || $stmt->elseifs ? $cond_referenced_var_ids : [],
-                $statements_checker,
+                $statements_analyzer,
                 $context->check_variables
                     ? new CodeLocation(
-                        $statements_checker->getSource(),
+                        $statements_analyzer->getSource(),
                         $stmt->cond,
                         $context->include_location
                     ) : null,
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $temp_else_context->vars_in_scope = $else_vars_reconciled;
@@ -358,7 +358,7 @@ class IfAnalyzer
 
         // check the if
         if (self::analyzeIfBlock(
-            $statements_checker,
+            $statements_analyzer,
             $stmt,
             $if_scope,
             $if_context,
@@ -379,7 +379,7 @@ class IfAnalyzer
             }
 
             if (self::analyzeElseIfBlock(
-                $statements_checker,
+                $statements_analyzer,
                 $elseif,
                 $if_scope,
                 $elseif_context,
@@ -401,7 +401,7 @@ class IfAnalyzer
         }
 
         if (self::analyzeElseBlock(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->else,
             $if_scope,
             $else_context,
@@ -451,7 +451,7 @@ class IfAnalyzer
                         isset($context->vars_in_scope[$var_id])
                             ? $context->vars_in_scope[$var_id]
                             : null,
-                        $statements_checker
+                        $statements_analyzer
                     );
                 }
             }
@@ -509,7 +509,7 @@ class IfAnalyzer
                         $context->unreferenced_vars[$var_id] += $locations;
                     }
                 } else {
-                    $statements_checker->registerVariableUses($locations);
+                    $statements_analyzer->registerVariableUses($locations);
                 }
             }
 
@@ -520,7 +520,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer        $statements_checker
+     * @param  StatementsAnalyzer        $statements_analyzer
      * @param  PhpParser\Node\Stmt\If_  $stmt
      * @param  IfScope                  $if_scope
      * @param  Context                  $if_context
@@ -531,7 +531,7 @@ class IfAnalyzer
      * @return false|null
      */
     protected static function analyzeIfBlock(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
         IfScope $if_scope,
         Context $if_context,
@@ -539,7 +539,7 @@ class IfAnalyzer
         Context $outer_context,
         array $pre_assignment_else_redefined_vars
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $final_actions = ScopeAnalyzer::getFinalControlActions(
             $stmt->stmts,
@@ -567,7 +567,7 @@ class IfAnalyzer
         $if_context->assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
-        if ($statements_checker->analyze(
+        if ($statements_analyzer->analyze(
             $stmt->stmts,
             $if_context
         ) === false
@@ -601,9 +601,9 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by-reference constraint on ' . $var_id,
-                            new CodeLocation($statements_checker, $stmt, $outer_context->include_location, true)
+                            new CodeLocation($statements_analyzer, $stmt, $outer_context->include_location, true)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -648,7 +648,7 @@ class IfAnalyzer
                         $var_id,
                         $if_scope->reasonable_clauses,
                         isset($if_context->vars_in_scope[$var_id]) ? $if_context->vars_in_scope[$var_id] : null,
-                        $statements_checker
+                        $statements_analyzer
                     );
                 }
             }
@@ -671,14 +671,14 @@ class IfAnalyzer
                     $outer_context->vars_in_scope,
                     $changed_var_ids,
                     [],
-                    $statements_checker,
+                    $statements_analyzer,
                     new CodeLocation(
-                        $statements_checker->getSource(),
+                        $statements_analyzer->getSource(),
                         $stmt->cond,
                         $outer_context->include_location,
                         false
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
                 foreach ($changed_var_ids as $changed_var_id) {
@@ -803,7 +803,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer           $statements_checker
+     * @param  StatementsAnalyzer           $statements_analyzer
      * @param  PhpParser\Node\Stmt\ElseIf_ $elseif
      * @param  IfScope                     $if_scope
      * @param  Context                     $elseif_context
@@ -812,7 +812,7 @@ class IfAnalyzer
      * @return false|null
      */
     protected static function analyzeElseIfBlock(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\ElseIf_ $elseif,
         IfScope $if_scope,
         Context $elseif_context,
@@ -831,14 +831,14 @@ class IfAnalyzer
                 $elseif_context->vars_in_scope,
                 $changed_var_ids,
                 [],
-                $statements_checker,
+                $statements_analyzer,
                 new CodeLocation(
-                    $statements_checker->getSource(),
+                    $statements_analyzer->getSource(),
                     $elseif->cond,
                     $outer_context->include_location,
                     false
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
@@ -866,7 +866,7 @@ class IfAnalyzer
         $elseif_context->referenced_var_ids = [];
 
         // check the elseif
-        if (ExpressionAnalyzer::analyze($statements_checker, $elseif->cond, $elseif_context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $elseif->cond, $elseif_context) === false) {
             return false;
         }
 
@@ -902,8 +902,8 @@ class IfAnalyzer
 
         $elseif_clauses = Algebra::getFormula(
             $elseif->cond,
-            $statements_checker->getFQCLN(),
-            $statements_checker,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
             $codebase
         );
 
@@ -951,7 +951,7 @@ class IfAnalyzer
         AlgebraAnalyzer::checkForParadox(
             $entry_clauses,
             $elseif_clauses,
-            $statements_checker,
+            $statements_analyzer,
             $elseif->cond,
             $new_assigned_var_ids
         );
@@ -995,9 +995,9 @@ class IfAnalyzer
                 $elseif_context->vars_in_scope,
                 $changed_var_ids,
                 $new_referenced_var_ids,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $elseif->cond, $outer_context->include_location),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $elseif->cond, $outer_context->include_location),
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
@@ -1014,7 +1014,7 @@ class IfAnalyzer
         $pre_stmts_possibly_assigned_var_ids = $elseif_context->possibly_assigned_var_ids;
         $elseif_context->possibly_assigned_var_ids = [];
 
-        if ($statements_checker->analyze(
+        if ($statements_analyzer->analyze(
             $elseif->stmts,
             $elseif_context
         ) === false
@@ -1046,9 +1046,9 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by-reference constraint on ' . $var_id,
-                            new CodeLocation($statements_checker, $elseif, $outer_context->include_location, true)
+                            new CodeLocation($statements_analyzer, $elseif, $outer_context->include_location, true)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1082,7 +1082,7 @@ class IfAnalyzer
                 $if_scope->new_vars = array_diff_key($elseif_context->vars_in_scope, $outer_context->vars_in_scope);
             } else {
                 foreach ($if_scope->new_vars as $new_var => $type) {
-                    if (!$elseif_context->hasVariable($new_var, $statements_checker)) {
+                    if (!$elseif_context->hasVariable($new_var, $statements_analyzer)) {
                         unset($if_scope->new_vars[$new_var]);
                     } else {
                         $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
@@ -1194,9 +1194,9 @@ class IfAnalyzer
                     $pre_conditional_context->vars_in_scope,
                     $changed_var_ids,
                     [],
-                    $statements_checker,
-                    new CodeLocation($statements_checker->getSource(), $elseif, $outer_context->include_location),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location),
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
                 $implied_outer_context = clone $elseif_context;
@@ -1299,7 +1299,7 @@ class IfAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer         $statements_checker
+     * @param  StatementsAnalyzer         $statements_analyzer
      * @param  PhpParser\Node\Stmt\Else_|null $else
      * @param  IfScope                   $if_scope
      * @param  Context                   $else_context
@@ -1308,13 +1308,13 @@ class IfAnalyzer
      * @return false|null
      */
     protected static function analyzeElseBlock(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $else,
         IfScope $if_scope,
         Context $else_context,
         Context $outer_context
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if (!$else && !$if_scope->negated_clauses && !$else_context->clauses) {
             $if_scope->final_actions = array_merge([ScopeAnalyzer::ACTION_NONE], $if_scope->final_actions);
@@ -1355,11 +1355,11 @@ class IfAnalyzer
                 $else_context->vars_in_scope,
                 $changed_var_ids,
                 [],
-                $statements_checker,
+                $statements_analyzer,
                 $else
-                    ? new CodeLocation($statements_checker->getSource(), $else, $outer_context->include_location)
+                    ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)
                     : null,
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $else_context->vars_in_scope = $else_vars_reconciled;
@@ -1376,7 +1376,7 @@ class IfAnalyzer
         $else_context->possibly_assigned_var_ids = [];
 
         if ($else) {
-            if ($statements_checker->analyze(
+            if ($statements_analyzer->analyze(
                 $else->stmts,
                 $else_context
             ) === false
@@ -1408,9 +1408,9 @@ class IfAnalyzer
                     if (IssueBuffer::accepts(
                         new ConflictingReferenceConstraint(
                             'There is more than one pass-by-reference constraint on ' . $var_id,
-                            new CodeLocation($statements_checker, $else, $outer_context->include_location, true)
+                            new CodeLocation($statements_analyzer, $else, $outer_context->include_location, true)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }

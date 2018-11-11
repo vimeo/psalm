@@ -34,12 +34,12 @@ class Functions
     }
 
     /**
-     * @param  StatementsAnalyzer|null $statements_checker
+     * @param  StatementsAnalyzer|null $statements_analyzer
      * @param  string $function_id
      *
      * @return FunctionLikeStorage
      */
-    public function getStorage($statements_checker, $function_id)
+    public function getStorage($statements_analyzer, $function_id)
     {
         if (isset(self::$stubbed_functions[strtolower($function_id)])) {
             return self::$stubbed_functions[strtolower($function_id)];
@@ -49,18 +49,18 @@ class Functions
             return $this->reflection->getFunctionStorage($function_id);
         }
 
-        if (!$statements_checker) {
-            throw new \UnexpectedValueException('$statements_checker must not be null here');
+        if (!$statements_analyzer) {
+            throw new \UnexpectedValueException('$statements_analyzer must not be null here');
         }
 
-        $file_path = $statements_checker->getRootFilePath();
-        $checked_file_path = $statements_checker->getFilePath();
+        $file_path = $statements_analyzer->getRootFilePath();
+        $checked_file_path = $statements_analyzer->getFilePath();
         $file_storage = $this->file_storage_provider->get($file_path);
 
-        $function_checkers = $statements_checker->getFunctionAnalyzers();
+        $function_analyzers = $statements_analyzer->getFunctionAnalyzers();
 
-        if (isset($function_checkers[$function_id])) {
-            $function_id = $function_checkers[$function_id]->getMethodId();
+        if (isset($function_analyzers[$function_id])) {
+            $function_id = $function_analyzers[$function_id]->getMethodId();
 
             if (isset($file_storage->functions[$function_id])) {
                 return $file_storage->functions[$function_id];
@@ -125,9 +125,9 @@ class Functions
      *
      * @return bool
      */
-    public function functionExists(StatementsAnalyzer $statements_checker, $function_id)
+    public function functionExists(StatementsAnalyzer $statements_analyzer, $function_id)
     {
-        $file_storage = $this->file_storage_provider->get($statements_checker->getRootFilePath());
+        $file_storage = $this->file_storage_provider->get($statements_analyzer->getRootFilePath());
 
         if (isset($file_storage->declaring_function_ids[$function_id])) {
             return true;
@@ -141,7 +141,7 @@ class Functions
             return true;
         }
 
-        if (isset($statements_checker->getFunctionAnalyzers()[$function_id])) {
+        if (isset($statements_analyzer->getFunctionAnalyzers()[$function_id])) {
             return true;
         }
 

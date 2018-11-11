@@ -31,7 +31,7 @@ class ReturnAnalyzer
      * @return false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
         Context $context
     ) {
@@ -40,9 +40,9 @@ class ReturnAnalyzer
         $var_comments = [];
         $var_comment_type = null;
 
-        $source = $statements_checker->getSource();
+        $source = $statements_analyzer->getSource();
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($doc_comment_text) {
             try {
@@ -80,7 +80,7 @@ class ReturnAnalyzer
         }
 
         if ($stmt->expr) {
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->expr, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
             }
 
@@ -104,7 +104,7 @@ class ReturnAnalyzer
         ) {
             $source->addReturnTypes($stmt->expr ? (string) $stmt->inferredType : '', $context);
 
-            $storage = $source->getFunctionLikeStorage($statements_checker);
+            $storage = $source->getFunctionLikeStorage($statements_analyzer);
 
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 
@@ -130,20 +130,20 @@ class ReturnAnalyzer
                                     'No return values are expected for ' . $cased_method_id,
                                     new CodeLocation($source, $stmt)
                                 ),
-                                $statements_checker->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues()
                             )) {
                                 return false;
                             }
                         }
 
-                        $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
                                 'Could not infer a return type',
                                 new CodeLocation($source, $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -151,7 +151,7 @@ class ReturnAnalyzer
                         return null;
                     }
 
-                    $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+                    $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
                     if ($local_return_type->isVoid()) {
                         if (IssueBuffer::accepts(
@@ -159,7 +159,7 @@ class ReturnAnalyzer
                                 'No return values are expected for ' . $cased_method_id,
                                 new CodeLocation($source, $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -189,7 +189,7 @@ class ReturnAnalyzer
                                             . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt)
                                     ),
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues()
                                 )) {
                                     return false;
                                 }
@@ -200,7 +200,7 @@ class ReturnAnalyzer
                                             . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt)
                                     ),
-                                    $statements_checker->getSuppressedIssues()
+                                    $statements_analyzer->getSuppressedIssues()
                                 )) {
                                     return false;
                                 }
@@ -211,10 +211,10 @@ class ReturnAnalyzer
                                     && $stmt->expr instanceof PhpParser\Node\Scalar\String_
                                 ) {
                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                        $statements_checker,
+                                        $statements_analyzer,
                                         $stmt->expr->value,
                                         new CodeLocation($source, $stmt->expr),
-                                        $statements_checker->getSuppressedIssues()
+                                        $statements_analyzer->getSuppressedIssues()
                                     ) === false
                                     ) {
                                         return false;
@@ -227,10 +227,10 @@ class ReturnAnalyzer
                                             foreach ($stmt->expr->items as $item) {
                                                 if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
                                                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                                        $statements_checker,
+                                                        $statements_analyzer,
                                                         $item->value->value,
                                                         new CodeLocation($source, $item->value),
-                                                        $statements_checker->getSuppressedIssues()
+                                                        $statements_analyzer->getSuppressedIssues()
                                                     ) === false
                                                     ) {
                                                         return false;
@@ -249,7 +249,7 @@ class ReturnAnalyzer
                                         . 'type \'' . $local_return_type->getId() . '\' for ' . $cased_method_id,
                                     new CodeLocation($source, $stmt)
                                 ),
-                                $statements_checker->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues()
                             )) {
                                 return false;
                             }
@@ -267,7 +267,7 @@ class ReturnAnalyzer
                                         . $inferred_type . '\'',
                                 new CodeLocation($source, $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -285,7 +285,7 @@ class ReturnAnalyzer
                                         . $inferred_type . '\'',
                                 new CodeLocation($source, $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -301,7 +301,7 @@ class ReturnAnalyzer
                             'Empty return statement is not expected in ' . $cased_method_id,
                             new CodeLocation($source, $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }

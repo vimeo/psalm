@@ -30,7 +30,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
@@ -40,7 +40,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->getCodebase()->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -64,9 +64,9 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        $this->project_checker->getCodebase()->diff_methods = true;
+        $this->project_analyzer->getCodebase()->diff_methods = true;
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $config = $codebase->config;
         $config->throw_exception = false;
@@ -84,7 +84,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 
         $this->assertSame([], $codebase->analyzer->getAnalyzedMethods());
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $this->assertSame(
             $initial_analyzed_methods,
@@ -95,14 +95,14 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $codebase->reloadFiles($this->project_checker, array_keys($end_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 
         foreach ($end_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
         $codebase->scanFiles();
-        $codebase->analyzer->loadCachedResults($this->project_checker);
+        $codebase->analyzer->loadCachedResults($this->project_analyzer);
 
         $this->assertSame(
             $unaffected_analyzed_methods,

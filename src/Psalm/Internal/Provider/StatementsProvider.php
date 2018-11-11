@@ -352,17 +352,17 @@ class StatementsProvider
 
         if ($existing_statements && $file_changes && $existing_file_contents) {
             $clashing_traverser = new \Psalm\Internal\Traverser\CustomTraverser;
-            $offset_checker = new \Psalm\Internal\Visitor\PartialParserVisitor(
+            $offset_analyzer = new \Psalm\Internal\Visitor\PartialParserVisitor(
                 self::$parser,
                 $error_handler,
                 $file_changes,
                 $existing_file_contents,
                 $file_contents
             );
-            $clashing_traverser->addVisitor($offset_checker);
+            $clashing_traverser->addVisitor($offset_analyzer);
             $clashing_traverser->traverse($existing_statements);
 
-            if (!$offset_checker->mustRescan()) {
+            if (!$offset_analyzer->mustRescan()) {
                 $used_cached_statements = true;
                 $stmts = $existing_statements;
             } else {

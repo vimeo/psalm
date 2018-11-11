@@ -11,7 +11,7 @@ class ProjectAnalyzerTest extends TestCase
     protected static $config;
 
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @return void
@@ -95,7 +95,7 @@ class ProjectAnalyzerTest extends TestCase
      */
     public function testCheck()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -108,7 +108,7 @@ class ProjectAnalyzerTest extends TestCase
         );
 
         ob_start();
-        $this->project_checker->check('tests/DummyProject');
+        $this->project_analyzer->check('tests/DummyProject');
         $output = ob_get_clean();
 
         $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
@@ -117,7 +117,7 @@ class ProjectAnalyzerTest extends TestCase
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (2 files)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
     }
 
@@ -126,7 +126,7 @@ class ProjectAnalyzerTest extends TestCase
      */
     public function testCheckAfterNoChange()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -138,25 +138,25 @@ class ProjectAnalyzerTest extends TestCase
             )
         );
 
-        $this->project_checker->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
 
-        $this->project_checker->check('tests/DummyProject', true);
-        \Psalm\IssueBuffer::finish($this->project_checker, true, microtime(true));
+        $this->project_analyzer->check('tests/DummyProject', true);
+        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (2 files)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
 
-        $this->project_checker->getCodebase()->reloadFiles($this->project_checker, []);
+        $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, []);
 
-        $this->project_checker->check('tests/DummyProject', true);
+        $this->project_analyzer->check('tests/DummyProject', true);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
         $this->assertSame(
             'No files analyzed',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
     }
 
@@ -165,7 +165,7 @@ class ProjectAnalyzerTest extends TestCase
      */
     public function testCheckAfterFileChange()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -177,14 +177,14 @@ class ProjectAnalyzerTest extends TestCase
             )
         );
 
-        $this->project_checker->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
 
-        $this->project_checker->check('tests/DummyProject', true);
-        \Psalm\IssueBuffer::finish($this->project_checker, true, microtime(true));
+        $this->project_analyzer->check('tests/DummyProject', true);
+        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (2 files)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
 
         $bat_file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'DummyProject' . DIRECTORY_SEPARATOR . 'Bat.php';
@@ -204,15 +204,15 @@ class Bat
 
         $this->file_provider->registerFile($bat_file_path, $bat_replacement_contents);
 
-        $this->project_checker->getCodebase()->reloadFiles($this->project_checker, []);
+        $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, []);
 
-        $this->project_checker->check('tests/DummyProject', true);
+        $this->project_analyzer->check('tests/DummyProject', true);
 
         $this->assertSame(0, \Psalm\IssueBuffer::getErrorCount());
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (1 file)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
     }
 
@@ -221,7 +221,7 @@ class Bat
      */
     public function testCheckDir()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -234,7 +234,7 @@ class Bat
         );
 
         ob_start();
-        $this->project_checker->checkDir('tests/DummyProject');
+        $this->project_analyzer->checkDir('tests/DummyProject');
         $output = ob_get_clean();
 
         $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
@@ -243,7 +243,7 @@ class Bat
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (2 files)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
     }
 
@@ -252,7 +252,7 @@ class Bat
      */
     public function testCheckPaths()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -265,7 +265,7 @@ class Bat
         );
 
         ob_start();
-        $this->project_checker->checkPaths(['tests/DummyProject/Bar.php']);
+        $this->project_analyzer->checkPaths(['tests/DummyProject/Bar.php']);
         $output = ob_get_clean();
 
         $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
@@ -274,7 +274,7 @@ class Bat
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (1 file)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
     }
 
@@ -283,7 +283,7 @@ class Bat
      */
     public function testCheckFile()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -296,7 +296,7 @@ class Bat
         );
 
         ob_start();
-        $this->project_checker->checkFile('tests/DummyProject/Bar.php');
+        $this->project_analyzer->checkFile('tests/DummyProject/Bar.php');
         $output = ob_get_clean();
 
         $this->assertSame('Scanning files...' . "\n" . 'Analyzing files...' . "\n", $output);
@@ -305,7 +305,7 @@ class Bat
 
         $this->assertSame(
             'Psalm was able to infer types for 100.000% of analyzed code (1 file)',
-            $this->project_checker->getCodebase()->analyzer->getTypeInferenceSummary()
+            $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
     }
 }

@@ -30,14 +30,14 @@ use Psalm\Type\Reconciler;
 class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\FuncCall    $stmt
      * @param   Context                         $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context
     ) {
@@ -51,9 +51,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
         $function_storage = null;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
-        $code_location = new CodeLocation($statements_checker->getSource(), $stmt);
+        $code_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
         $codebase_functions = $codebase->functions;
         $config = $codebase->config;
         $defined_constants = [];
@@ -62,7 +62,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         $function_exists = false;
 
         if ($stmt->name instanceof PhpParser\Node\Expr) {
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->name, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
             }
 
@@ -71,9 +71,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     if (IssueBuffer::accepts(
                         new NullFunctionCall(
                             'Cannot call function on null value',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -85,9 +85,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     if (IssueBuffer::accepts(
                         new PossiblyNullFunctionCall(
                             'Cannot call function on possibly null value',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -137,8 +137,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                             $stmt->args,
                             $class_template_params,
                             $context,
-                            new CodeLocation($statements_checker->getSource(), $stmt),
-                            $statements_checker
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $statements_analyzer
                         ) === false) {
                             return false;
                         }
@@ -166,9 +166,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         if (IssueBuffer::accepts(
                             new PossiblyInvalidFunctionCall(
                                 'Cannot treat type ' . $var_type_part . ' as callable',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -176,9 +176,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         if (IssueBuffer::accepts(
                             new InvalidFunctionCall(
                                 'Cannot treat type ' . $var_type_part . ' as callable',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -208,14 +208,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
                 $function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
                     $function_id,
-                    $statements_checker
+                    $statements_analyzer
                 );
             }
 
             if (!$in_call_map) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
-                        $statements_checker,
+                        $statements_analyzer,
                         $function_id,
                         $code_location,
                         $is_maybe_root_function
@@ -225,14 +225,14 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
                 } else {
                     $function_id = self::getExistingFunctionId(
-                        $statements_checker,
+                        $statements_analyzer,
                         $function_id,
                         $is_maybe_root_function
                     );
                 }
 
                 $function_exists = $is_stubbed || $codebase_functions->functionExists(
-                    $statements_checker,
+                    $statements_analyzer,
                     strtolower($function_id)
                 );
             } else {
@@ -242,7 +242,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if ($function_exists) {
                 if (!$in_call_map || $is_stubbed) {
                     $function_storage = $codebase_functions->getStorage(
-                        $statements_checker,
+                        $statements_analyzer,
                         strtolower($function_id)
                     );
 
@@ -256,7 +256,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 if ($in_call_map && !$is_stubbed) {
                     $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
-                        $statements_checker->getFileAnalyzer()->project_checker,
+                        $statements_analyzer->getFileAnalyzer()->project_analyzer,
                         $function_id,
                         $stmt->args
                     );
@@ -264,7 +264,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 if ($codebase->server_mode) {
                     $codebase->analyzer->addNodeReference(
-                        $statements_checker->getFilePath(),
+                        $statements_analyzer->getFilePath(),
                         $stmt->name,
                         $function_id . '()'
                     );
@@ -273,7 +273,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
         }
 
         if (self::checkFunctionArguments(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->args,
             $function_params,
             $function_id,
@@ -288,7 +288,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
                     $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
-                        $statements_checker->getFileAnalyzer()->project_checker,
+                        $statements_analyzer->getFileAnalyzer()->project_analyzer,
                         $function_id,
                         $stmt->args
                     );
@@ -298,7 +298,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             // do this here to allow closure param checks
             if ($function_params !== null
                 && self::checkFunctionLikeArgumentsMatch(
-                    $statements_checker,
+                    $statements_analyzer,
                     $stmt->args,
                     $function_id,
                     $function_params,
@@ -345,7 +345,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                         $stmt,
                                         $function_id,
                                         $context,
-                                        $statements_checker->getSource(),
+                                        $statements_analyzer->getSource(),
                                         $file_manipulations,
                                         $return_type
                                     );
@@ -354,7 +354,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                 if ($file_manipulations) {
                                     /** @psalm-suppress MixedTypeCoercion */
                                     FileManipulationBuffer::add(
-                                        $statements_checker->getFilePath(),
+                                        $statements_analyzer->getFilePath(),
                                         $file_manipulations
                                     );
                                 }
@@ -369,9 +369,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                 !$config->isInProjectDirs($return_type_location->file_path)
                             ) {
                                 $return_type->check(
-                                    $statements_checker,
-                                    new CodeLocation($statements_checker->getSource(), $stmt),
-                                    $statements_checker->getSuppressedIssues(),
+                                    $statements_analyzer,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $statements_analyzer->getSuppressedIssues(),
                                     $context->phantom_classes
                                 );
                             }
@@ -382,12 +382,12 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
                 } else {
                     $stmt->inferredType = FunctionAnalyzer::getReturnTypeFromCallMapWithArgs(
-                        $statements_checker,
+                        $statements_analyzer,
                         $function_id,
                         $stmt->args,
                         $context,
                         $code_location,
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     );
                 }
             }
@@ -409,8 +409,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             ) {
                 $assert_clauses = \Psalm\Type\Algebra::getFormula(
                     $stmt->args[0]->value,
-                    $statements_checker->getFQCLN(),
-                    $statements_checker,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
                     $codebase
                 );
 
@@ -427,9 +427,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $context->vars_in_scope,
                     $changed_vars,
                     [],
-                    $statements_checker,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
                 foreach ($changed_vars as $changed_var) {
@@ -470,7 +470,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(
-                $statements_checker->getFilePath(),
+                $statements_analyzer->getFilePath(),
                 $stmt,
                 (string) $stmt->inferredType
             );
@@ -483,7 +483,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $stmt->args,
                     $function_storage->template_typeof_params ?: [],
                     $context,
-                    $statements_checker
+                    $statements_analyzer
                 );
             }
 
@@ -534,9 +534,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
                         'Unsafe ' . implode('', $function->parts),
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -544,19 +544,19 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
                         'You have forbidden the use of ' . $function,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
             } elseif ($function->parts === ['define']) {
                 if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     $second_arg = $stmt->args[1];
-                    ExpressionAnalyzer::analyze($statements_checker, $second_arg->value, $context);
+                    ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
                     $const_name = $first_arg->value->value;
 
-                    $statements_checker->setConstType(
+                    $statements_analyzer->setConstType(
                         $const_name,
                         isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed(),
                         $context

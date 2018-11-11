@@ -26,8 +26,8 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($this->class->extends) {
-            $project_checker = $this->file_checker->project_checker;
-            $codebase = $project_checker->getCodebase();
+            $project_analyzer = $this->file_analyzer->project_analyzer;
+            $codebase = $project_analyzer->getCodebase();
 
             foreach ($this->class->extends as $extended_interface) {
                 $extended_interface_name = self::getFQCLNFromNameObject(

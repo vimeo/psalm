@@ -31,7 +31,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
@@ -41,7 +41,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->getCodebase()->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -62,9 +62,9 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
         array $error_counts,
         array $error_levels = []
     ) {
-        $this->project_checker->getCodebase()->diff_methods = true;
+        $this->project_analyzer->getCodebase()->diff_methods = true;
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $config = $codebase->config;
 
@@ -80,7 +80,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 
@@ -91,7 +91,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $codebase->reloadFiles($this->project_checker, array_keys($middle_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($middle_files));
 
         foreach ($middle_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -99,7 +99,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 
@@ -110,7 +110,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $codebase->reloadFiles($this->project_checker, array_keys($end_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 
         foreach ($end_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -118,7 +118,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 

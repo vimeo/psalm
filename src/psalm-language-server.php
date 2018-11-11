@@ -216,20 +216,20 @@ $providers = new Psalm\Internal\Provider\Providers(
     new Psalm\Internal\Provider\FileReferenceCacheProvider($config)
 );
 
-$project_checker = new ProjectAnalyzer(
+$project_analyzer = new ProjectAnalyzer(
     $config,
     $providers
 );
 
 if (isset($options['disable-on-change'])) {
-    $project_checker->onchange_line_limit = (int) $options['disable-on-change'];
+    $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
 }
 
-$config->visitComposerAutoloadFiles($project_checker);
+$config->visitComposerAutoloadFiles($project_analyzer);
 
 if ($find_dead_code) {
-    $project_checker->getCodebase()->collectReferences();
-    $project_checker->getCodebase()->reportUnusedCode();
+    $project_analyzer->getCodebase()->collectReferences();
+    $project_analyzer->getCodebase()->reportUnusedCode();
 }
 
-$project_checker->server($options['tcp'] ?? null);
+$project_analyzer->server($options['tcp'] ?? null);

@@ -45,30 +45,30 @@ use Psalm\Type\Atomic\TString;
 class ArrayFetchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                   $statements_checker
+     * @param   StatementsAnalyzer                   $statements_analyzer
      * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
      * @param   Context                             $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context
     ) {
         $array_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt->var,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
         $keyed_array_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
-        if ($stmt->dim && ExpressionAnalyzer::analyze($statements_checker, $stmt->dim, $context) === false) {
+        if ($stmt->dim && ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
             return false;
         }
 
@@ -84,15 +84,15 @@ class ArrayFetchAnalyzer
 
             $dim_var_id = ExpressionAnalyzer::getArrayVarId(
                 $stmt->dim,
-                $statements_checker->getFQCLN(),
-                $statements_checker
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
             );
         } else {
             $used_key_type = Type::getInt();
         }
 
         if (ExpressionAnalyzer::analyze(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->var,
             $context
         ) === false) {
@@ -108,7 +108,7 @@ class ArrayFetchAnalyzer
             return;
         }
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if (isset($stmt->var->inferredType)) {
             $var_type = $stmt->var->inferredType;
@@ -118,9 +118,9 @@ class ArrayFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new NullArrayAccess(
                             'Cannot access array value on null variable ' . $array_var_id,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -136,7 +136,7 @@ class ArrayFetchAnalyzer
             }
 
             $stmt->inferredType = self::getArrayAccessTypeGivenOffset(
-                $statements_checker,
+                $statements_analyzer,
                 $stmt,
                 $stmt->var->inferredType,
                 $used_key_type,
@@ -191,7 +191,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id, $statements_checker)) {
+        if ($keyed_array_var_id && $context->hasVariable($keyed_array_var_id, $statements_analyzer)) {
             $stmt->inferredType = $context->vars_in_scope[$keyed_array_var_id];
         }
 
@@ -202,9 +202,9 @@ class ArrayFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -220,7 +220,7 @@ class ArrayFetchAnalyzer
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 
             // reference the variable too
-            $context->hasVariable($keyed_array_var_id, $statements_checker);
+            $context->hasVariable($keyed_array_var_id, $statements_analyzer);
         }
 
         return null;
@@ -236,7 +236,7 @@ class ArrayFetchAnalyzer
      * @return Type\Union
      */
     public static function getArrayAccessTypeGivenOffset(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Type\Union $array_type,
         Type\Union $offset_type,
@@ -245,7 +245,7 @@ class ArrayFetchAnalyzer
         Type\Union $replacement_type = null,
         $inside_isset = false
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $has_array_access = false;
         $non_array_types = [];
@@ -285,9 +285,9 @@ class ArrayFetchAnalyzer
             if (IssueBuffer::accepts(
                 new NullArrayOffset(
                     'Cannot access value on variable ' . $array_var_id . ' using null offset',
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -300,9 +300,9 @@ class ArrayFetchAnalyzer
                 new PossiblyNullArrayOffset(
                     'Cannot access value on variable ' . $array_var_id
                         . ' using possibly null offset ' . $offset_type,
-                    new CodeLocation($statements_checker->getSource(), $stmt->var)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -326,9 +326,9 @@ class ArrayFetchAnalyzer
                             new PossiblyNullArrayAssignment(
                                 'Cannot access array value on possibly null variable ' . $array_var_id .
                                     ' of type ' . $array_type,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -341,9 +341,9 @@ class ArrayFetchAnalyzer
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' . $array_var_id .
                                     ' of type ' . $array_type,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -430,9 +430,9 @@ class ArrayFetchAnalyzer
                         if (IssueBuffer::accepts(
                             new EmptyArrayAccess(
                                 'Cannot access value on empty array variable ' . $array_var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return Type::getMixed(true);
                         }
@@ -593,19 +593,19 @@ class ArrayFetchAnalyzer
             if ($type instanceof TString) {
                 if ($in_assignment && $replacement_type) {
                     if ($replacement_type->isMixed()) {
-                        $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                         if (IssueBuffer::accepts(
                             new MixedStringOffsetAssignment(
                                 'Right-hand-side of string offset assignment cannot be mixed',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
                     } else {
-                        $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+                        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
                     }
                 }
 
@@ -647,16 +647,16 @@ class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TMixed || $type instanceof TGenericParam || $type instanceof TEmpty) {
-                $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if (!$inside_isset) {
                     if ($in_assignment) {
                         if (IssueBuffer::accepts(
                             new MixedArrayAssignment(
                                 'Cannot access array value on mixed variable ' . $array_var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -664,9 +664,9 @@ class ArrayFetchAnalyzer
                         if (IssueBuffer::accepts(
                             new MixedArrayAccess(
                                 'Cannot access array value on mixed variable ' . $array_var_id,
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -677,7 +677,7 @@ class ArrayFetchAnalyzer
                 break;
             }
 
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
             if ($type instanceof Type\Atomic\TFalse && $array_type->ignore_falsable_issues) {
                 continue;
@@ -708,9 +708,9 @@ class ArrayFetchAnalyzer
                         new PossiblyInvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
                             $array_var_id . ' of type ' . $non_array_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )
                     ) {
                         // do nothing
@@ -720,9 +720,9 @@ class ArrayFetchAnalyzer
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
                             $array_var_id . ' of type ' . $non_array_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )
                     ) {
                         // do nothing
@@ -734,9 +734,9 @@ class ArrayFetchAnalyzer
                         new InvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
                             $array_var_id . ' of type ' . $non_array_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -745,9 +745,9 @@ class ArrayFetchAnalyzer
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
                             $array_var_id . ' of type ' . $non_array_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -758,19 +758,19 @@ class ArrayFetchAnalyzer
         }
 
         if ($offset_type->isMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedArrayOffset(
                     'Cannot access value on variable ' . $array_var_id . ' using mixed offset',
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
         } else {
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
             if ($expected_offset_types) {
                 $invalid_offset_type = $expected_offset_types[0];
@@ -787,9 +787,9 @@ class ArrayFetchAnalyzer
                         new PossiblyInvalidArrayOffset(
                             'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
                                 . ', expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -798,9 +798,9 @@ class ArrayFetchAnalyzer
                         new InvalidArrayOffset(
                             'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset
                                 . ', expecting ' . $invalid_offset_type,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }

@@ -13,14 +13,14 @@ use Psalm\Type\Reconciler;
 class TernaryAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_checker
+     * @param   StatementsAnalyzer           $statements_analyzer
      * @param   PhpParser\Node\Expr\Ternary $stmt
      * @param   Context                     $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Ternary $stmt,
         Context $context
     ) {
@@ -28,7 +28,7 @@ class TernaryAnalyzer
         $context->referenced_var_ids = [];
 
         $context->inside_conditional = true;
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->cond, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
             return false;
         }
 
@@ -37,14 +37,14 @@ class TernaryAnalyzer
 
         $context->inside_conditional = false;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $t_if_context = clone $context;
 
         $if_clauses = \Psalm\Type\Algebra::getFormula(
             $stmt->cond,
-            $statements_checker->getFQCLN(),
-            $statements_checker,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
             $codebase
         );
 
@@ -104,16 +104,16 @@ class TernaryAnalyzer
             $t_if_context->vars_in_scope,
             $changed_var_ids,
             $new_referenced_var_ids,
-            $statements_checker,
-            new CodeLocation($statements_checker->getSource(), $stmt->cond),
-            $statements_checker->getSuppressedIssues()
+            $statements_analyzer,
+            new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
+            $statements_analyzer->getSuppressedIssues()
         );
 
         $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
         $t_else_context = clone $context;
 
         if ($stmt->if) {
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->if, $t_if_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $t_if_context) === false) {
                 return false;
             }
 
@@ -140,15 +140,15 @@ class TernaryAnalyzer
                 $t_else_context->vars_in_scope,
                 $changed_var_ids,
                 $new_referenced_var_ids,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt->else),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->else),
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
         }
 
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->else, $t_else_context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {
             return false;
         }
 
@@ -193,9 +193,9 @@ class TernaryAnalyzer
                 '!falsy',
                 $stmt->cond->inferredType,
                 '',
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $lhs_type = $if_return_type_reconciled;

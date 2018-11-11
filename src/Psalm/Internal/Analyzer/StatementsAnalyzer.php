@@ -48,7 +48,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @var FileAnalyzer
      */
-    protected $file_checker;
+    protected $file_analyzer;
 
     /**
      * @var Codebase
@@ -75,7 +75,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @var array<string, FunctionAnalyzer>
      */
-    private $function_checkers = [];
+    private $function_analyzers = [];
 
     /**
      * @var array<string, array{0: string, 1: CodeLocation}>
@@ -93,7 +93,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     public function __construct(SourceAnalyzer $source)
     {
         $this->source = $source;
-        $this->file_checker = $source->getFileAnalyzer();
+        $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
     }
 
@@ -118,13 +118,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         // hoist functions to the top
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
-                $function_checker = new FunctionAnalyzer($stmt, $this->source);
-                $this->function_checkers[strtolower($stmt->name->name)] = $function_checker;
+                $function_analyzer = new FunctionAnalyzer($stmt, $this->source);
+                $this->function_analyzers[strtolower($stmt->name->name)] = $function_analyzer;
             }
         }
 
-        $project_checker = $this->getFileAnalyzer()->project_checker;
-        $codebase = $project_checker->getCodebase();
+        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
 
         if ($codebase->config->hoist_constants) {
             foreach ($stmts as $stmt) {
@@ -182,7 +182,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 break;
             }
 
-            if ($project_checker->debug_lines) {
+            if ($project_analyzer->debug_lines) {
                 echo $this->getFilePath() . ':' . $stmt->getLine() . "\n";
             }
 
@@ -534,10 +534,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $config = Config::getInstance();
                     $function_context->collect_references = $codebase->collect_references;
                     $function_context->collect_exceptions = $config->check_for_throws_docblock;
-                    $this->function_checkers[$function_id]->analyze($function_context, $context);
+                    $this->function_analyzers[$function_id]->analyze($function_context, $context);
 
                     if ($config->reportIssueInFile('InvalidReturnType', $this->getFilePath())) {
-                        $method_id = $this->function_checkers[$function_id]->getMethodId();
+                        $method_id = $this->function_analyzers[$function_id]->getMethodId();
 
                         $function_storage = $codebase->functions->getStorage(
                             $this,
@@ -547,7 +547,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $return_type = $function_storage->return_type;
                         $return_type_location = $function_storage->return_type_location;
 
-                        $this->function_checkers[$function_id]->verifyReturnType(
+                        $this->function_analyzers[$function_id]->verifyReturnType(
                             $this,
                             $return_type,
                             $this->getFQCLN(),
@@ -655,8 +655,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
                 try {
-                    $class_checker = new ClassAnalyzer($stmt, $this->source, $stmt->name ? $stmt->name->name : null);
-                    $class_checker->analyze(null, $global_context);
+                    $class_analyzer = new ClassAnalyzer($stmt, $this->source, $stmt->name ? $stmt->name->name : null);
+                    $class_analyzer->analyze(null, $global_context);
                 } catch (\InvalidArgumentException $e) {
                     // disregard this exception, we'll likely see it elsewhere in the form
                     // of an issue
@@ -1232,7 +1232,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @return  Type\Union|null
      */
     public function getConstType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $const_name,
         $is_fully_qualified,
         Context $context
@@ -1263,12 +1263,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
-        if ($context->hasVariable($const_name, $statements_checker)) {
+        if ($context->hasVariable($const_name, $statements_analyzer)) {
             return $context->vars_in_scope[$const_name];
         }
 
-        $file_path = $statements_checker->getRootFilePath();
-        $codebase = $statements_checker->getCodebase();
+        $file_path = $statements_analyzer->getRootFilePath();
+        $codebase = $statements_analyzer->getCodebase();
 
         $file_storage_provider = $codebase->file_storage_provider;
 
@@ -1394,7 +1394,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
     public function getFileAnalyzer() : FileAnalyzer
     {
-        return $this->file_checker;
+        return $this->file_analyzer;
     }
 
     public function getCodebase() : Codebase
@@ -1407,6 +1407,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     public function getFunctionAnalyzers()
     {
-        return $this->function_checkers;
+        return $this->function_analyzers;
     }
 }

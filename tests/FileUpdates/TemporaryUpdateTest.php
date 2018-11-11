@@ -31,7 +31,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
@@ -41,7 +41,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->getCodebase()->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -58,9 +58,9 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
         array $error_positions,
         array $error_levels = []
     ) {
-        $this->project_checker->getCodebase()->diff_methods = true;
+        $this->project_analyzer->getCodebase()->diff_methods = true;
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $config = $codebase->config;
 
@@ -79,7 +79,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 
@@ -107,7 +107,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 $codebase->addFilesToAnalyze([$file_path => $file_path]);
             }
 
-            $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
             $data = \Psalm\IssueBuffer::clear();
 

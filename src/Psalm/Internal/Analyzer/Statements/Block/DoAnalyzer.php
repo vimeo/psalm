@@ -18,7 +18,7 @@ class DoAnalyzer
      * @return void
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context
     ) {
@@ -26,7 +26,7 @@ class DoAnalyzer
 
         $do_context->inside_case = false;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->alter_code) {
             $do_context->branch_point = $do_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
@@ -35,30 +35,30 @@ class DoAnalyzer
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        $suppressed_issues = $statements_checker->getSuppressedIssues();
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_checker->addSuppressedIssues(['RedundantCondition']);
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
         }
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
         if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_checker->addSuppressedIssues(['TypeDoesNotContainType']);
+            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         $do_context->loop_scope = $loop_scope;
 
-        $statements_checker->analyze($stmt->stmts, $do_context);
+        $statements_analyzer->analyze($stmt->stmts, $do_context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
         }
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
         if (!in_array('TypeDoesNotContainType', $suppressed_issues, true)) {
-            $statements_checker->removeSuppressedIssues(['TypeDoesNotContainType']);
+            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
 
         $loop_scope->iteration_count++;
@@ -86,7 +86,7 @@ class DoAnalyzer
         $while_clauses = Algebra::getFormula(
             $stmt->cond,
             $context->self,
-            $statements_checker,
+            $statements_analyzer,
             $codebase
         );
 
@@ -124,9 +124,9 @@ class DoAnalyzer
                     $do_context->vars_in_scope,
                     $changed_var_ids,
                     [],
-                    $statements_checker,
-                    new \Psalm\CodeLocation($statements_checker->getSource(), $stmt->cond),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond),
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
             $do_context->vars_in_scope = $while_vars_in_scope_reconciled;
@@ -135,19 +135,19 @@ class DoAnalyzer
         $do_cond_context = clone $do_context;
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_checker->addSuppressedIssues(['RedundantCondition']);
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
         }
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
-        ExpressionAnalyzer::analyze($statements_checker, $stmt->cond, $do_cond_context);
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $do_cond_context);
 
         if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
         }
         if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
         if ($context->collect_references) {
@@ -161,7 +161,7 @@ class DoAnalyzer
         }
 
         LoopAnalyzer::analyze(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->stmts,
             [$stmt->cond],
             [],
@@ -183,7 +183,7 @@ class DoAnalyzer
             )
         );
 
-        ExpressionAnalyzer::analyze($statements_checker, $stmt->cond, $inner_loop_context);
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $inner_loop_context);
 
         if ($negated_while_types) {
             $changed_var_ids = [];
@@ -194,9 +194,9 @@ class DoAnalyzer
                     $inner_loop_context->vars_in_scope,
                     $changed_var_ids,
                     [],
-                    $statements_checker,
-                    new \Psalm\CodeLocation($statements_checker->getSource(), $stmt->cond),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond),
+                    $statements_analyzer->getSuppressedIssues()
                 );
         }
 
