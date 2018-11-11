@@ -30,24 +30,24 @@ use Psalm\Type\Atomic\TObject;
 class PropertyFetchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                   $statements_checker
+     * @param   StatementsAnalyzer                   $statements_analyzer
      * @param   PhpParser\Node\Expr\PropertyFetch   $stmt
      * @param   Context                             $context
      *
      * @return  false|null
      */
     public static function analyzeInstance(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         Context $context
     ) {
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->name, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
                 return false;
             }
         }
 
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->var, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
             return false;
         }
 
@@ -61,36 +61,36 @@ class PropertyFetchAnalyzer
             $prop_name = null;
         }
 
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         $stmt_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt->var,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
         $var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
         $stmt_var_type = null;
         $stmt->inferredType = null;
 
-        if ($var_id && $context->hasVariable($var_id, $statements_checker)) {
+        if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
             // we don't need to check anything
             $stmt->inferredType = $context->vars_in_scope[$var_id];
 
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
             if ($codebase->server_mode
                 && (!$context->collect_initializations
                     && !$context->collect_mutations)
             ) {
                 $codebase->analyzer->addNodeType(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->name,
                     (string) $stmt->inferredType
                 );
@@ -113,13 +113,13 @@ class PropertyFetchAnalyzer
                             $property_id,
                             $context->calling_method_id,
                             $context->collect_references
-                                ? new CodeLocation($statements_checker->getSource(), $stmt)
+                                ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                                 : null
                         );
 
                         if ($codebase->server_mode) {
                             $codebase->analyzer->addNodeReference(
-                                $statements_checker->getFilePath(),
+                                $statements_analyzer->getFilePath(),
                                 $stmt->name,
                                 $property_id
                             );
@@ -131,7 +131,7 @@ class PropertyFetchAnalyzer
             return null;
         }
 
-        if ($stmt_var_id && $context->hasVariable($stmt_var_id, $statements_checker)) {
+        if ($stmt_var_id && $context->hasVariable($stmt_var_id, $statements_analyzer)) {
             $stmt_var_type = $context->vars_in_scope[$stmt_var_id];
         } elseif (isset($stmt->var->inferredType)) {
             $stmt_var_type = $stmt->var->inferredType;
@@ -145,9 +145,9 @@ class PropertyFetchAnalyzer
             if (IssueBuffer::accepts(
                 new NullPropertyFetch(
                     'Cannot get property on null variable ' . $stmt_var_id,
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -159,9 +159,9 @@ class PropertyFetchAnalyzer
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -170,14 +170,14 @@ class PropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on mixed var ' . $stmt_var_id,
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -189,7 +189,7 @@ class PropertyFetchAnalyzer
                     && !$context->collect_mutations)
             ) {
                 $codebase->analyzer->addNodeType(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->name,
                     (string) $stmt->inferredType
                 );
@@ -198,15 +198,15 @@ class PropertyFetchAnalyzer
             return null;
         }
 
-        $codebase->analyzer->incrementNonMixedCount($statements_checker->getRootFilePath());
+        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
 
         if ($stmt_var_type->isNullable() && !$stmt_var_type->ignore_nullable_issues && !$context->inside_isset) {
             if (IssueBuffer::accepts(
                 new PossiblyNullPropertyFetch(
                     'Cannot get property on possibly null variable ' . $stmt_var_id . ' of type ' . $stmt_var_type,
-                    new CodeLocation($statements_checker->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -258,9 +258,9 @@ class PropertyFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -271,10 +271,10 @@ class PropertyFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedClass(
                         'Cannot get properties of undefined class ' . $lhs_type_part->value,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $lhs_type_part->value
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -286,17 +286,17 @@ class PropertyFetchAnalyzer
 
             if ($codebase->server_mode) {
                 $codebase->analyzer->addNodeReference(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->name,
                     $property_id
                 );
             }
 
-            $statements_checker_source = $statements_checker->getSource();
+            $statements_analyzer_source = $statements_analyzer->getSource();
 
             if ($codebase->methodExists($lhs_type_part->value . '::__get')
-                && (!$statements_checker_source instanceof FunctionLikeAnalyzer
-                    || $statements_checker_source->getMethodId() !== $lhs_type_part->value . '::__get')
+                && (!$statements_analyzer_source instanceof FunctionLikeAnalyzer
+                    || $statements_analyzer_source->getMethodId() !== $lhs_type_part->value . '::__get')
                 && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
                 && (!$codebase->properties->propertyExists($property_id)
                     || ($stmt_var_id !== '$this'
@@ -304,14 +304,14 @@ class PropertyFetchAnalyzer
                         && ClassLikeAnalyzer::checkPropertyVisibility(
                             $property_id,
                             $context->self,
-                            $statements_checker,
-                            new CodeLocation($statements_checker->getSource(), $stmt),
-                            $statements_checker->getSuppressedIssues(),
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
                             false
                         ) !== true)
                 )
             ) {
-                $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
+                $class_storage = $project_analyzer->classlike_storage_provider->get((string)$lhs_type_part);
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                     $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
@@ -331,7 +331,7 @@ class PropertyFetchAnalyzer
             if (!$codebase->properties->propertyExists(
                 $property_id,
                 $context->calling_method_id,
-                $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
+                $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )
             ) {
                 if ($context->inside_isset) {
@@ -346,10 +346,10 @@ class PropertyFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedThisPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -357,10 +357,10 @@ class PropertyFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedPropertyFetch(
                             'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -378,16 +378,16 @@ class PropertyFetchAnalyzer
             if (ClassLikeAnalyzer::checkPropertyVisibility(
                 $property_id,
                 $context->self,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues()
             ) === false) {
                 return false;
             }
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
 
-            $declaring_class_storage = $project_checker->classlike_storage_provider->get(
+            $declaring_class_storage = $project_analyzer->classlike_storage_provider->get(
                 (string)$declaring_property_class
             );
 
@@ -397,10 +397,10 @@ class PropertyFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -413,9 +413,9 @@ class PropertyFetchAnalyzer
                     new MissingPropertyType(
                         'Property ' . $lhs_type_part->value . '::$' . $prop_name
                             . ' does not have a declared type',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -430,7 +430,7 @@ class PropertyFetchAnalyzer
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
-                    $class_storage = $project_checker->classlike_storage_provider->get($lhs_type_part->value);
+                    $class_storage = $project_analyzer->classlike_storage_provider->get($lhs_type_part->value);
 
                     if ($class_storage->template_types) {
                         $class_template_params = [];
@@ -474,7 +474,7 @@ class PropertyFetchAnalyzer
             && isset($stmt->inferredType)
         ) {
             $codebase->analyzer->addNodeType(
-                $statements_checker->getFilePath(),
+                $statements_analyzer->getFilePath(),
                 $stmt->name,
                 (string) $stmt->inferredType
             );
@@ -487,9 +487,9 @@ class PropertyFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyInvalidPropertyFetch(
                         'Cannot fetch property on possible non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -497,9 +497,9 @@ class PropertyFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -512,14 +512,14 @@ class PropertyFetchAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                       $statements_checker
+     * @param   StatementsAnalyzer                       $statements_analyzer
      * @param   PhpParser\Node\Expr\StaticPropertyFetch $stmt
      * @param   Context                                 $context
      *
      * @return  null|false
      */
     public static function analyzeStatic(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         Context $context
     ) {
@@ -532,23 +532,23 @@ class PropertyFetchAnalyzer
 
         $fq_class_name = null;
 
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (count($stmt->class->parts) === 1
                 && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
             ) {
                 if ($stmt->class->parts[0] === 'parent') {
-                    $fq_class_name = $statements_checker->getParentFQCLN();
+                    $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                     if ($fq_class_name === null) {
                         if (IssueBuffer::accepts(
                             new ParentNotFound(
                                 'Cannot check property fetch on parent as this class does not extend another',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -563,14 +563,14 @@ class PropertyFetchAnalyzer
                     return null;
                 }
             } else {
-                $aliases = $statements_checker->getAliases();
+                $aliases = $statements_analyzer->getAliases();
 
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $codebase->file_reference_provider->addReferenceToClassMethod(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_checker->getFilePath())
+                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
                 }
 
@@ -585,10 +585,10 @@ class PropertyFetchAnalyzer
 
                 if ($context->check_classes) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                        $statements_checker,
+                        $statements_analyzer,
                         $fq_class_name,
-                        new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $statements_analyzer->getSuppressedIssues(),
                         false
                     ) !== true) {
                         return false;
@@ -617,21 +617,21 @@ class PropertyFetchAnalyzer
         ) {
             $var_id = ExpressionAnalyzer::getVarId(
                 $stmt,
-                $statements_checker->getFQCLN(),
-                $statements_checker
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
             );
 
             $property_id = $fq_class_name . '::$' . $prop_name;
 
             if ($codebase->server_mode) {
                 $codebase->analyzer->addNodeReference(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->name,
                     $property_id
                 );
             }
 
-            if ($var_id && $context->hasVariable($var_id, $statements_checker)) {
+            if ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
                 // we don't need to check anything
                 $stmt->inferredType = $context->vars_in_scope[$var_id];
 
@@ -640,7 +640,7 @@ class PropertyFetchAnalyzer
                     $codebase->properties->propertyExists(
                         $property_id,
                         $context->calling_method_id,
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     );
                 }
 
@@ -650,7 +650,7 @@ class PropertyFetchAnalyzer
                     && isset($stmt->inferredType)
                 ) {
                     $codebase->analyzer->addNodeType(
-                        $statements_checker->getFilePath(),
+                        $statements_analyzer->getFilePath(),
                         $stmt->name,
                         (string) $stmt->inferredType
                     );
@@ -662,16 +662,16 @@ class PropertyFetchAnalyzer
             if (!$codebase->properties->propertyExists(
                 $property_id,
                 $context->calling_method_id,
-                $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
+                $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )
             ) {
                 if (IssueBuffer::accepts(
                     new UndefinedPropertyFetch(
                         'Static property ' . $property_id . ' is not defined',
-                        new CodeLocation($statements_checker->getSource(), $stmt),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -682,9 +682,9 @@ class PropertyFetchAnalyzer
             if (ClassLikeAnalyzer::checkPropertyVisibility(
                 $property_id,
                 $context->self,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues()
             ) === false) {
                 return false;
             }
@@ -693,7 +693,7 @@ class PropertyFetchAnalyzer
                 $fq_class_name . '::$' . $prop_name
             );
 
-            $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
+            $class_storage = $project_analyzer->classlike_storage_provider->get((string)$declaring_property_class);
             $property = $class_storage->properties[$prop_name];
 
             if ($var_id) {
@@ -708,7 +708,7 @@ class PropertyFetchAnalyzer
                         && !$context->collect_mutations)
                 ) {
                     $codebase->analyzer->addNodeType(
-                        $statements_checker->getFilePath(),
+                        $statements_analyzer->getFilePath(),
                         $stmt->name,
                         (string) $stmt->inferredType
                     );

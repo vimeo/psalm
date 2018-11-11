@@ -19,27 +19,27 @@ use Psalm\Type\Reconciler;
 class SwitchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Stmt\Switch_     $stmt
      * @param   Context                         $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Switch_ $stmt,
         Context $context
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->cond, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $context) === false) {
             return false;
         }
 
         $switch_var_id = ExpressionAnalyzer::getArrayVarId(
             $stmt->cond,
             null,
-            $statements_checker
+            $statements_analyzer
         );
 
         $original_context = clone $context;
@@ -117,7 +117,7 @@ class SwitchAnalyzer
             $case_equality_expr = null;
 
             if ($case->cond) {
-                if (ExpressionAnalyzer::analyze($statements_checker, $case->cond, $case_context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
                     return false;
                 }
 
@@ -252,7 +252,7 @@ class SwitchAnalyzer
                 $case_clauses = Algebra::getFormula(
                     $case_equality_expr,
                     $context->self,
-                    $statements_checker,
+                    $statements_analyzer,
                     $codebase
                 );
             }
@@ -268,7 +268,7 @@ class SwitchAnalyzer
                 AlgebraAnalyzer::checkForParadox(
                     $entry_clauses,
                     $case_clauses,
-                    $statements_checker,
+                    $statements_analyzer,
                     $case->cond,
                     []
                 );
@@ -284,14 +284,14 @@ class SwitchAnalyzer
             if ($reconcilable_if_types) {
                 $changed_var_ids = [];
 
-                $suppressed_issues = $statements_checker->getSuppressedIssues();
+                $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
                 if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                    $statements_checker->addSuppressedIssues(['RedundantCondition']);
+                    $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
                 }
 
                 if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                    $statements_checker->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+                    $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
                 }
 
                 $case_vars_in_scope_reconciled =
@@ -300,21 +300,21 @@ class SwitchAnalyzer
                         $case_context->vars_in_scope,
                         $changed_var_ids,
                         $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
-                        $statements_checker,
+                        $statements_analyzer,
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $case->cond ? $case->cond : $case,
                             $context->include_location
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     );
 
                 if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                    $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+                    $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
                 }
 
                 if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                    $statements_checker->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+                    $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
                 }
 
                 $case_context->vars_in_scope = $case_vars_in_scope_reconciled;
@@ -340,7 +340,7 @@ class SwitchAnalyzer
             $pre_assigned_var_ids = $case_context->assigned_var_ids;
             $case_context->assigned_var_ids = [];
 
-            $statements_checker->analyze($case_stmts, $case_context);
+            $statements_analyzer->analyze($case_stmts, $case_context);
 
             /** @var array<string, bool> */
             $new_case_assigned_var_ids = $case_context->assigned_var_ids;
@@ -365,7 +365,7 @@ class SwitchAnalyzer
                     if (IssueBuffer::accepts(
                         new ParadoxicalCondition(
                             'All possible case statements have been met, default is impossible here',
-                            new CodeLocation($statements_checker->getSource(), $case)
+                            new CodeLocation($statements_analyzer->getSource(), $case)
                         )
                     )) {
                         return false;
@@ -388,7 +388,7 @@ class SwitchAnalyzer
                         if (IssueBuffer::accepts(
                             new ContinueOutsideLoop(
                                 'Continue called when not in loop',
-                                new CodeLocation($statements_checker->getSource(), $case)
+                                new CodeLocation($statements_analyzer->getSource(), $case)
                             )
                         )) {
                             return false;
@@ -437,7 +437,7 @@ class SwitchAnalyzer
                         );
                     } else {
                         foreach ($new_vars_in_scope as $new_var => $type) {
-                            if (!$case_context->hasVariable($new_var, $statements_checker)) {
+                            if (!$case_context->hasVariable($new_var, $statements_analyzer)) {
                                 unset($new_vars_in_scope[$new_var]);
                             } else {
                                 $new_vars_in_scope[$new_var] =
@@ -588,7 +588,7 @@ class SwitchAnalyzer
                         $original_context->vars_in_scope,
                         $changed_var_ids,
                         [],
-                        $statements_checker
+                        $statements_analyzer
                     );
 
                 if (isset($case_vars_in_scope_reconciled[$switch_var_id])
@@ -646,7 +646,7 @@ class SwitchAnalyzer
                         $context->unreferenced_vars[$var_id] += $locations;
                     }
                 } else {
-                    $statements_checker->registerVariableUses($locations);
+                    $statements_analyzer->registerVariableUses($locations);
                 }
             }
         }

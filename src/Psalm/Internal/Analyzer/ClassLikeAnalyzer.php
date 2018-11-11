@@ -70,7 +70,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     protected $source;
 
     /** @var FileAnalyzer */
-    public $file_checker;
+    public $file_analyzer;
 
     /**
      * @var string
@@ -101,10 +101,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     {
         $this->class = $class;
         $this->source = $source;
-        $this->file_checker = $source->getFileAnalyzer();
+        $this->file_analyzer = $source->getFileAnalyzer();
         $this->fq_class_name = $fq_class_name;
 
-        $this->storage = $this->file_checker->project_checker->classlike_storage_provider->get($fq_class_name);
+        $this->storage = $this->file_analyzer->project_analyzer->classlike_storage_provider->get($fq_class_name);
     }
 
     /**
@@ -117,16 +117,16 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $method_name,
         Context $context
     ) {
-        $project_checker = $this->getFileAnalyzer()->project_checker;
-        $codebase = $project_checker->getCodebase();
+        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name->name) === strtolower($method_name)
             ) {
-                $method_checker = new MethodAnalyzer($stmt, $this);
+                $method_analyzer = new MethodAnalyzer($stmt, $this);
 
-                $method_checker->analyze($context, null, true);
+                $method_analyzer->analyze($context, null, true);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -134,12 +134,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                         $this->source->getAliases()
                     );
 
-                    $trait_file_checker = $project_checker->getFileAnalyzerForClassLike($fq_trait_name);
+                    $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
                     $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
                     $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
-                    $trait_checker = new TraitAnalyzer(
+                    $trait_analyzer = new TraitAnalyzer(
                         $trait_node,
-                        $trait_file_checker,
+                        $trait_file_analyzer,
                         $fq_trait_name,
                         $trait_aliases
                     );
@@ -148,12 +148,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                             strtolower($trait_stmt->name->name) === strtolower($method_name)
                         ) {
-                            $method_checker = new MethodAnalyzer($trait_stmt, $trait_checker);
+                            $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
-                            $actual_method_id = (string)$method_checker->getMethodId();
+                            $actual_method_id = (string)$method_analyzer->getMethodId();
 
                             if ($context->self && $context->self !== $this->fq_class_name) {
-                                $analyzed_method_id = (string)$method_checker->getMethodId($context->self);
+                                $analyzed_method_id = (string)$method_analyzer->getMethodId($context->self);
                                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
                                 if ($actual_method_id !== $declaring_method_id) {
@@ -161,7 +161,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                                 }
                             }
 
-                            $method_checker->analyze($context, null, true);
+                            $method_analyzer->analyze($context, null, true);
                         }
                     }
                 }
@@ -466,7 +466,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         array $suppressed_issues,
         $emit_issues = true
     ) {
-        $project_checker = $source->getFileAnalyzer()->project_checker;
+        $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
         $codebase = $source->getCodebase();
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
@@ -489,7 +489,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             return $emit_issues ? null : true;
         }
 
-        $class_storage = $project_checker->classlike_storage_provider->get($declaring_property_class);
+        $class_storage = $project_analyzer->classlike_storage_provider->get($declaring_property_class);
 
         if (!isset($class_storage->properties[$property_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $property_id);
@@ -575,6 +575,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
     public function getFileAnalyzer() : FileAnalyzer
     {
-        return $this->file_checker;
+        return $this->file_analyzer;
     }
 }

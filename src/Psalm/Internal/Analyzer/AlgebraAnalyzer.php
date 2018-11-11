@@ -23,7 +23,7 @@ class AlgebraAnalyzer
      *
      * @param  array<int, Clause>   $formula1
      * @param  array<int, Clause>   $formula2
-     * @param  StatementsAnalyzer    $statements_checker,
+     * @param  StatementsAnalyzer    $statements_analyzer,
      * @param  PhpParser\Node       $stmt
      * @param  array<string, bool>  $new_assigned_var_ids
      *
@@ -32,7 +32,7 @@ class AlgebraAnalyzer
     public static function checkForParadox(
         array $formula1,
         array $formula2,
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
         array $new_assigned_var_ids
     ) {
@@ -56,9 +56,9 @@ class AlgebraAnalyzer
                 if (IssueBuffer::accepts(
                     new RedundantCondition(
                         $formula2_clause . ' has already been asserted',
-                        new CodeLocation($statements_checker, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -73,9 +73,9 @@ class AlgebraAnalyzer
                     if (IssueBuffer::accepts(
                         new ParadoxicalCondition(
                             'Found a redundant condition when evaluating assertion (' . $formula2_clause . ')',
-                            new CodeLocation($statements_checker, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -96,9 +96,9 @@ class AlgebraAnalyzer
                         if (IssueBuffer::accepts(
                             new RedundantCondition(
                                 'Found a redundant condition when evaluating ' . $key,
-                                new CodeLocation($statements_checker, $stmt)
+                                new CodeLocation($statements_analyzer, $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -134,9 +134,9 @@ class AlgebraAnalyzer
                         new ParadoxicalCondition(
                             'Encountered a paradox when evaluating the conditionals ('
                                 . $clause_a . ') and (' . $clause_b . ')',
-                            new CodeLocation($statements_checker, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }

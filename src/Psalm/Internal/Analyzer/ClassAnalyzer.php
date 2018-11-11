@@ -116,10 +116,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return null;
         }
 
-        $project_checker = $this->file_checker->project_checker;
+        $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $this->getCodebase();
 
-        $classlike_storage_provider = $project_checker->classlike_storage_provider;
+        $classlike_storage_provider = $project_analyzer->classlike_storage_provider;
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
@@ -412,12 +412,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $constructor_checker = null;
+        $constructor_analyzer = null;
         $member_stmts = [];
 
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_checker = $this->analyzeClassMethod(
+                $method_analyzer = $this->analyzeClassMethod(
                     $stmt,
                     $storage,
                     $this,
@@ -426,17 +426,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 if ($stmt->name->name === '__construct') {
-                    $constructor_checker = $method_checker;
+                    $constructor_analyzer = $method_analyzer;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 if ($this->analyzeTraitUse(
                     $this->source->getAliases(),
                     $stmt,
-                    $project_checker,
+                    $project_analyzer,
                     $storage,
                     $class_context,
                     $global_context,
-                    $constructor_checker
+                    $constructor_analyzer
                 ) === false) {
                     return false;
                 }
@@ -452,8 +452,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $statements_checker = new StatementsAnalyzer($this);
-        $statements_checker->analyze($member_stmts, $class_context, $global_context, true);
+        $statements_analyzer = new StatementsAnalyzer($this);
+        $statements_analyzer->analyze($member_stmts, $class_context, $global_context, true);
 
         $config = Config::getInstance();
 
@@ -463,12 +463,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $storage,
             $class_context,
             $global_context,
-            $constructor_checker
+            $constructor_analyzer
         );
 
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                $this->checkForMissingPropertyType($project_checker, $this, $stmt);
+                $this->checkForMissingPropertyType($project_analyzer, $this, $stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -476,19 +476,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $this->source->getAliases()
                     );
 
-                    $trait_file_checker = $project_checker->getFileAnalyzerForClassLike($fq_trait_name);
+                    $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
                     $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
                     $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
-                    $trait_checker = new TraitAnalyzer(
+                    $trait_analyzer = new TraitAnalyzer(
                         $trait_node,
-                        $trait_file_checker,
+                        $trait_file_analyzer,
                         $fq_trait_name,
                         $trait_aliases
                     );
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($project_checker, $trait_checker, $trait_stmt);
+                            $this->checkForMissingPropertyType($project_analyzer, $trait_analyzer, $trait_stmt);
                         }
                     }
                 }
@@ -505,7 +505,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         Context $class_context,
         Context $global_context = null,
-        MethodAnalyzer $constructor_checker = null
+        MethodAnalyzer $constructor_analyzer = null
     ) {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -580,7 +580,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if (!$storage->abstract
-            && !$constructor_checker
+            && !$constructor_analyzer
             && isset($storage->declaring_method_ids['__construct'])
             && $class->extends
         ) {
@@ -644,7 +644,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $codebase->analyzer->disableMixedCounts();
 
-                $constructor_checker = $this->analyzeClassMethod(
+                $constructor_analyzer = $this->analyzeClassMethod(
                     $fake_stmt,
                     $storage,
                     $this,
@@ -657,14 +657,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if ($constructor_checker) {
+        if ($constructor_analyzer) {
             $method_context = clone $class_context;
             $method_context->collect_initializations = true;
             $method_context->self = $fq_class_name;
             $method_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
             $method_context->vars_possibly_in_scope['$this'] = true;
 
-            $constructor_checker->analyze($method_context, $global_context, true);
+            $constructor_analyzer->analyze($method_context, $global_context, true);
 
             foreach ($uninitialized_properties as $property_name => $property_storage) {
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
@@ -749,11 +749,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     private function analyzeTraitUse(
         Aliases $aliases,
         PhpParser\Node\Stmt\TraitUse $stmt,
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         ClassLikeStorage $storage,
         Context $class_context,
         Context $global_context = null,
-        MethodAnalyzer &$constructor_checker = null
+        MethodAnalyzer &$constructor_analyzer = null
     ) {
         $codebase = $this->getCodebase();
 
@@ -806,12 +806,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                $trait_file_checker = $project_checker->getFileAnalyzerForClassLike($fq_trait_name);
+                $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
                 $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
                 $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
-                $trait_checker = new TraitAnalyzer(
+                $trait_analyzer = new TraitAnalyzer(
                     $trait_node,
-                    $trait_file_checker,
+                    $trait_file_analyzer,
                     $fq_trait_name,
                     $trait_aliases
                 );
@@ -825,26 +825,26 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $traverser->traverse($trait_stmt->stmts);
                         }
 
-                        $trait_method_checker = $this->analyzeClassMethod(
+                        $trait_method_analyzer = $this->analyzeClassMethod(
                             $trait_stmt,
                             $storage,
-                            $trait_checker,
+                            $trait_analyzer,
                             $class_context,
                             $global_context
                         );
 
                         if ($trait_stmt->name->name === '__construct') {
-                            $constructor_checker = $trait_method_checker;
+                            $constructor_analyzer = $trait_method_analyzer;
                         }
                     } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                         if ($this->analyzeTraitUse(
                             $trait_aliases,
                             $trait_stmt,
-                            $project_checker,
+                            $project_analyzer,
                             $storage,
                             $class_context,
                             $global_context,
-                            $constructor_checker
+                            $constructor_analyzer
                         ) === false) {
                             return false;
                         }
@@ -862,7 +862,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      * @return  void
      */
     private function checkForMissingPropertyType(
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         StatementsSource $source,
         PhpParser\Node\Stmt\Property $stmt
     ) {
@@ -888,7 +888,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $message = 'Property ' . $fq_class_name . '::$' . $property_name . ' does not have a declared type';
 
-            $class_storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+            $class_storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
 
             $property_storage = $class_storage->properties[$property_name];
 
@@ -931,9 +931,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     ) {
         $config = Config::getInstance();
 
-        $method_checker = new MethodAnalyzer($stmt, $source);
+        $method_analyzer = new MethodAnalyzer($stmt, $source);
 
-        $actual_method_id = (string)$method_checker->getMethodId();
+        $actual_method_id = (string)$method_analyzer->getMethodId();
 
         $project_analyzer = $source->getProjectAnalyzer();
         $codebase = $source->getCodebase();
@@ -949,14 +949,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($class_context->self && $class_context->self !== $source->getFQCLN()) {
-            $analyzed_method_id = (string)$method_checker->getMethodId($class_context->self);
+            $analyzed_method_id = (string)$method_analyzer->getMethodId($class_context->self);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
 
             if ($actual_method_id !== $declaring_method_id) {
                 // the method is an abstract trait method
 
-                $implementer_method_storage = $method_checker->getFunctionLikeStorage();
+                $implementer_method_storage = $method_analyzer->getFunctionLikeStorage();
 
                 if (!$implementer_method_storage instanceof \Psalm\Storage\MethodStorage) {
                     throw new \LogicException('This should never happen');
@@ -1020,7 +1020,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             IssueBuffer::addIssues($existing_issues);
 
-            return $method_checker;
+            return $method_analyzer;
         }
 
         $codebase->analyzer->removeExistingDataForFile(
@@ -1032,7 +1032,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $method_context = clone $class_context;
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
 
-        $method_checker->analyze(
+        $method_analyzer->analyze(
             $method_context,
             $global_context ? clone $global_context : null
         );
@@ -1084,7 +1084,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         ReturnTypeAnalyzer::verifyReturnType(
                             $stmt,
                             $source,
-                            $method_checker,
+                            $method_analyzer,
                             $interface_return_type,
                             $interface_class,
                             $interface_return_type_location,
@@ -1096,7 +1096,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 ReturnTypeAnalyzer::verifyReturnType(
                     $stmt,
                     $source,
-                    $method_checker,
+                    $method_analyzer,
                     $return_type,
                     $self_class,
                     $return_type_location,
@@ -1113,6 +1113,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
 
-        return $method_checker;
+        return $method_analyzer;
     }
 }

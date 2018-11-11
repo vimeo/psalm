@@ -129,9 +129,9 @@ class CodeLocation
         $this->selection_start = $this->file_start;
         $this->selection_end = $this->file_end + 1;
 
-        $project_checker = Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $project_analyzer = Internal\Analyzer\ProjectAnalyzer::getInstance();
 
-        $codebase = $project_checker->getCodebase();
+        $codebase = $project_analyzer->getCodebase();
 
         $file_contents = $codebase->getFileContents($this->file_path);
 

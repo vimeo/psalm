@@ -49,22 +49,22 @@ class ReturnTypeAnalyzer
     public static function verifyReturnType(
         FunctionLike $function,
         SourceAnalyzer $source,
-        FunctionLikeAnalyzer $function_like_checker,
+        FunctionLikeAnalyzer $function_like_analyzer,
         Type\Union $return_type = null,
         $fq_class_name = null,
         CodeLocation $return_type_location = null,
         array $compatible_method_ids = []
     ) {
-        $suppressed_issues = $function_like_checker->getSuppressedIssues();
+        $suppressed_issues = $function_like_analyzer->getSuppressedIssues();
         $codebase = $source->getCodebase();
-        $project_checker = $source->getProjectAnalyzer();
+        $project_analyzer = $source->getProjectAnalyzer();
 
         $function_like_storage = null;
 
         if ($source instanceof StatementsAnalyzer) {
-            $function_like_storage = $function_like_checker->getFunctionLikeStorage($source);
+            $function_like_storage = $function_like_analyzer->getFunctionLikeStorage($source);
         } elseif ($source instanceof \Psalm\Internal\Analyzer\ClassAnalyzer) {
-            $function_like_storage = $function_like_checker->getFunctionLikeStorage();
+            $function_like_storage = $function_like_analyzer->getFunctionLikeStorage();
         }
 
         if (!$function->getStmts() &&
@@ -87,11 +87,11 @@ class ReturnTypeAnalyzer
             return null;
         }
 
-        $cased_method_id = $function_like_checker->getCorrectlyCasedMethodId();
+        $cased_method_id = $function_like_analyzer->getCorrectlyCasedMethodId();
 
         if (!$return_type_location) {
             $return_type_location = new CodeLocation(
-                $function_like_checker,
+                $function_like_analyzer,
                 $function instanceof Closure ? $function : $function->name
             );
         }
@@ -217,7 +217,7 @@ class ReturnTypeAnalyzer
         if (!$return_type) {
             if ($function instanceof Closure) {
                 if ($codebase->alter_code
-                    && isset($project_checker->getIssuesToFix()['MissingClosureReturnType'])
+                    && isset($project_analyzer->getIssuesToFix()['MissingClosureReturnType'])
                 ) {
                     if ($inferred_return_type->isMixed() || $inferred_return_type->isNull()) {
                         return null;
@@ -225,11 +225,11 @@ class ReturnTypeAnalyzer
 
                     self::addOrUpdateReturnType(
                         $function,
-                        $project_checker,
+                        $project_analyzer,
                         $inferred_return_type,
                         $source,
-                        $function_like_checker,
-                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                        $function_like_analyzer,
+                        ($project_analyzer->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
                         $function_like_storage
@@ -241,7 +241,7 @@ class ReturnTypeAnalyzer
                 if (IssueBuffer::accepts(
                     new MissingClosureReturnType(
                         'Closure does not have a return type, expecting ' . $inferred_return_type,
-                        new CodeLocation($function_like_checker, $function, null, true)
+                        new CodeLocation($function_like_analyzer, $function, null, true)
                     ),
                     $suppressed_issues
                 )) {
@@ -252,7 +252,7 @@ class ReturnTypeAnalyzer
             }
 
             if ($codebase->alter_code
-                && isset($project_checker->getIssuesToFix()['MissingReturnType'])
+                && isset($project_analyzer->getIssuesToFix()['MissingReturnType'])
             ) {
                 if ($inferred_return_type->isMixed() || $inferred_return_type->isNull()) {
                     return null;
@@ -260,12 +260,12 @@ class ReturnTypeAnalyzer
 
                 self::addOrUpdateReturnType(
                     $function,
-                    $project_checker,
+                    $project_analyzer,
                     $inferred_return_type,
                     $source,
-                    $function_like_checker,
+                    $function_like_analyzer,
                     $compatible_method_ids
-                    || (($project_checker->only_replace_php_types_with_non_docblock_types
+                    || (($project_analyzer->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
                         && $inferred_return_type->from_docblock),
                     $function_like_storage
@@ -278,7 +278,7 @@ class ReturnTypeAnalyzer
                 new MissingReturnType(
                     'Method ' . $cased_method_id . ' does not have a return type' .
                       (!$inferred_return_type->isMixed() ? ', expecting ' . $inferred_return_type : ''),
-                    new CodeLocation($function_like_checker, $function->name, null, true)
+                    new CodeLocation($function_like_analyzer, $function->name, null, true)
                 ),
                 $suppressed_issues
             )) {
@@ -309,13 +309,13 @@ class ReturnTypeAnalyzer
                 return null;
             }
 
-            if ($codebase->alter_code && isset($project_checker->getIssuesToFix()['InvalidReturnType'])) {
+            if ($codebase->alter_code && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])) {
                 self::addOrUpdateReturnType(
                     $function,
-                    $project_checker,
+                    $project_analyzer,
                     Type::getVoid(),
                     $source,
-                    $function_like_checker
+                    $function_like_analyzer
                 );
 
                 return null;
@@ -394,15 +394,15 @@ class ReturnTypeAnalyzer
                     }
                 } else {
                     if ($codebase->alter_code
-                        && isset($project_checker->getIssuesToFix()['InvalidReturnType'])
+                        && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
                     ) {
                         self::addOrUpdateReturnType(
                             $function,
-                            $project_checker,
+                            $project_analyzer,
                             $inferred_return_type,
                             $source,
-                            $function_like_checker,
-                            ($project_checker->only_replace_php_types_with_non_docblock_types
+                            $function_like_analyzer,
+                            ($project_analyzer->only_replace_php_types_with_non_docblock_types
                                 || $unsafe_return_type)
                                 && $inferred_return_type->from_docblock,
                             $function_like_storage
@@ -423,7 +423,7 @@ class ReturnTypeAnalyzer
                     }
                 }
             } elseif ($codebase->alter_code
-                    && isset($project_checker->getIssuesToFix()['LessSpecificReturnType'])
+                    && isset($project_analyzer->getIssuesToFix()['LessSpecificReturnType'])
             ) {
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,
@@ -434,12 +434,12 @@ class ReturnTypeAnalyzer
                 )) {
                     self::addOrUpdateReturnType(
                         $function,
-                        $project_checker,
+                        $project_analyzer,
                         $inferred_return_type,
                         $source,
-                        $function_like_checker,
+                        $function_like_analyzer,
                         $compatible_method_ids
-                        || (($project_checker->only_replace_php_types_with_non_docblock_types
+                        || (($project_analyzer->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
                         && $inferred_return_type->from_docblock),
                         $function_like_storage
@@ -485,16 +485,16 @@ class ReturnTypeAnalyzer
                 && !$declared_return_type->isVoid()
             ) {
                 if ($codebase->alter_code
-                    && isset($project_checker->getIssuesToFix()['InvalidNullableReturnType'])
+                    && isset($project_analyzer->getIssuesToFix()['InvalidNullableReturnType'])
                     && !$inferred_return_type->isNull()
                 ) {
                     self::addOrUpdateReturnType(
                         $function,
-                        $project_checker,
+                        $project_analyzer,
                         $inferred_return_type,
                         $source,
-                        $function_like_checker,
-                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                        $function_like_analyzer,
+                        ($project_analyzer->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
                         $function_like_storage
@@ -521,15 +521,15 @@ class ReturnTypeAnalyzer
                 && !$declared_return_type->hasBool()
             ) {
                 if ($codebase->alter_code
-                    && isset($project_checker->getIssuesToFix()['InvalidFalsableReturnType'])
+                    && isset($project_analyzer->getIssuesToFix()['InvalidFalsableReturnType'])
                 ) {
                     self::addOrUpdateReturnType(
                         $function,
-                        $project_checker,
+                        $project_analyzer,
                         $inferred_return_type,
                         $source,
-                        $function_like_checker,
-                        ($project_checker->only_replace_php_types_with_non_docblock_types
+                        $function_like_analyzer,
+                        ($project_analyzer->only_replace_php_types_with_non_docblock_types
                             || $unsafe_return_type)
                             && $inferred_return_type->from_docblock,
                         $function_like_storage
@@ -561,12 +561,12 @@ class ReturnTypeAnalyzer
      */
     public static function checkSignatureReturnType(
         FunctionLike $function,
-        ProjectAnalyzer $project_checker,
-        FunctionLikeAnalyzer $function_like_checker,
+        ProjectAnalyzer $project_analyzer,
+        FunctionLikeAnalyzer $function_like_analyzer,
         FunctionLikeStorage $storage,
         Context $context
     ) {
-        $codebase = $project_checker->getCodebase();
+        $codebase = $project_analyzer->getCodebase();
 
         if (!$storage->return_type || !$storage->return_type_location || $storage->has_template_return_type) {
             return;
@@ -581,7 +581,7 @@ class ReturnTypeAnalyzer
             );
 
             $fleshed_out_return_type->check(
-                $function_like_checker,
+                $function_like_analyzer,
                 $storage->return_type_location,
                 $storage->suppressed_issues,
                 [],
@@ -599,7 +599,7 @@ class ReturnTypeAnalyzer
         );
 
         $fleshed_out_signature_type->check(
-            $function_like_checker,
+            $function_like_analyzer,
             $storage->signature_return_type_location ?: $storage->return_type_location,
             $storage->suppressed_issues,
             [],
@@ -631,14 +631,14 @@ class ReturnTypeAnalyzer
         )
         ) {
             if ($codebase->alter_code
-                && isset($project_checker->getIssuesToFix()['MismatchingDocblockReturnType'])
+                && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockReturnType'])
             ) {
                 self::addOrUpdateReturnType(
                     $function,
-                    $project_checker,
+                    $project_analyzer,
                     $storage->signature_return_type,
-                    $function_like_checker->getSource(),
-                    $function_like_checker
+                    $function_like_analyzer->getSource(),
+                    $function_like_analyzer
                 );
 
                 return null;
@@ -665,27 +665,27 @@ class ReturnTypeAnalyzer
      */
     private static function addOrUpdateReturnType(
         FunctionLike $function,
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         Type\Union $inferred_return_type,
         StatementsSource $source,
-        FunctionLikeAnalyzer $function_like_checker,
+        FunctionLikeAnalyzer $function_like_analyzer,
         $docblock_only = false,
         FunctionLikeStorage $function_like_storage = null
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
-            $project_checker,
+            $project_analyzer,
             $source->getFilePath(),
-            $function_like_checker->getMethodId(),
+            $function_like_analyzer->getMethodId(),
             $function
         );
         $manipulator->setReturnType(
-            !$docblock_only && $project_checker->php_major_version >= 7
+            !$docblock_only && $project_analyzer->php_major_version >= 7
                 ? $inferred_return_type->toPhpString(
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $project_checker->php_major_version,
-                    $project_checker->php_minor_version
+                    $project_analyzer->php_major_version,
+                    $project_analyzer->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),

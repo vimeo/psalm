@@ -15,14 +15,14 @@ use Psalm\Type\Atomic\TString;
 class ArrayAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_checker
+     * @param   StatementsAnalyzer           $statements_analyzer
      * @param   PhpParser\Node\Expr\Array_  $stmt
      * @param   Context                     $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Array_ $stmt,
         Context $context
     ) {
@@ -55,7 +55,7 @@ class ArrayAnalyzer
             $item_key_value = null;
 
             if ($item->key) {
-                if (ExpressionAnalyzer::analyze($statements_checker, $item->key, $context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $item->key, $context) === false) {
                     return false;
                 }
 
@@ -99,9 +99,9 @@ class ArrayAnalyzer
                     if (IssueBuffer::accepts(
                         new DuplicateArrayKey(
                             'Key \'' . $item_key_value . '\' already exists on array',
-                            new CodeLocation($statements_checker->getSource(), $item)
+                            new CodeLocation($statements_analyzer->getSource(), $item)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -110,7 +110,7 @@ class ArrayAnalyzer
                 $array_keys[$item_key_value] = true;
             }
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $item->value, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
                 return false;
             }
 

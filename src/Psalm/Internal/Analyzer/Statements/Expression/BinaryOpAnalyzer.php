@@ -41,7 +41,7 @@ use Psalm\Type\Union;
 class BinaryOpAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\BinaryOp    $stmt
      * @param   Context                         $context
      * @param   int                             $nesting
@@ -49,12 +49,12 @@ class BinaryOpAnalyzer
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
         $nesting = 0
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 20) {
             // ignore deeply-nested string concatenation
@@ -63,8 +63,8 @@ class BinaryOpAnalyzer
         ) {
             $left_clauses = Algebra::getFormula(
                 $stmt->left,
-                $statements_checker->getFQCLN(),
-                $statements_checker,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
                 $codebase
             );
 
@@ -74,7 +74,7 @@ class BinaryOpAnalyzer
 
             $pre_assigned_var_ids = $context->assigned_var_ids;
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->left, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
                 return false;
             }
 
@@ -112,9 +112,9 @@ class BinaryOpAnalyzer
                 $context->vars_in_scope,
                 $changed_var_ids,
                 $new_referenced_var_ids,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $op_context = clone $context;
@@ -122,7 +122,7 @@ class BinaryOpAnalyzer
 
             $op_context->removeReconciledClauses($changed_var_ids);
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->right, $op_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $op_context) === false) {
                 return false;
             }
 
@@ -172,7 +172,7 @@ class BinaryOpAnalyzer
             $pre_op_context = clone $context;
             $pre_op_context->parent_context = $context;
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->left, $pre_op_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $pre_op_context) === false) {
                 return false;
             }
 
@@ -196,8 +196,8 @@ class BinaryOpAnalyzer
 
             $left_clauses = Algebra::getFormula(
                 $stmt->left,
-                $statements_checker->getFQCLN(),
-                $statements_checker,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
                 $codebase
             );
 
@@ -221,9 +221,9 @@ class BinaryOpAnalyzer
                 $pre_op_context->vars_in_scope,
                 $changed_var_ids,
                 $new_referenced_var_ids,
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $op_context = clone $pre_op_context;
@@ -235,7 +235,7 @@ class BinaryOpAnalyzer
                 $context->removeReconciledClauses($changed_var_ids);
             }
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->right, $op_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $op_context) === false) {
                 return false;
             }
 
@@ -256,9 +256,9 @@ class BinaryOpAnalyzer
                         '!falsy',
                         $pre_op_context->vars_in_scope[$var_id],
                         '',
-                        $statements_checker,
-                        new CodeLocation($statements_checker->getSource(), $stmt->left),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                        $statements_analyzer->getSuppressedIssues()
                     );
 
                     $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
@@ -293,11 +293,11 @@ class BinaryOpAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
             $stmt->inferredType = Type::getString();
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->left, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
                 return false;
             }
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->right, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context) === false) {
                 return false;
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce) {
@@ -305,8 +305,8 @@ class BinaryOpAnalyzer
 
             $if_clauses = Algebra::getFormula(
                 $stmt,
-                $statements_checker->getFQCLN(),
-                $statements_checker,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
                 $codebase
             );
 
@@ -361,15 +361,15 @@ class BinaryOpAnalyzer
                 $t_if_context->vars_in_scope,
                 $changed_var_ids,
                 [],
-                $statements_checker,
-                new CodeLocation($statements_checker->getSource(), $stmt->left),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
+                $statements_analyzer->getSuppressedIssues()
             );
 
             $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
             $t_if_context->inside_isset = true;
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->left, $t_if_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $t_if_context) === false) {
                 return false;
             }
 
@@ -403,15 +403,15 @@ class BinaryOpAnalyzer
                     $t_else_context->vars_in_scope,
                     $changed_var_ids,
                     [],
-                    $statements_checker,
-                    new CodeLocation($statements_checker->getSource(), $stmt->right),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->right),
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
                 $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;
             }
 
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->right, $t_else_context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $t_else_context) === false) {
                 return false;
             }
 
@@ -434,9 +434,9 @@ class BinaryOpAnalyzer
                     '!null',
                     $stmt->left->inferredType,
                     '',
-                    $statements_checker,
-                    new CodeLocation($statements_checker->getSource(), $stmt),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
                 $lhs_type = $if_return_type_reconciled;
@@ -449,21 +449,21 @@ class BinaryOpAnalyzer
             }
         } else {
             if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp) {
-                if (self::analyze($statements_checker, $stmt->left, $context, ++$nesting) === false) {
+                if (self::analyze($statements_analyzer, $stmt->left, $context, ++$nesting) === false) {
                     return false;
                 }
             } else {
-                if (ExpressionAnalyzer::analyze($statements_checker, $stmt->left, $context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $context) === false) {
                     return false;
                 }
             }
 
             if ($stmt->right instanceof PhpParser\Node\Expr\BinaryOp) {
-                if (self::analyze($statements_checker, $stmt->right, $context, ++$nesting) === false) {
+                if (self::analyze($statements_analyzer, $stmt->right, $context, ++$nesting) === false) {
                     return false;
                 }
             } else {
-                if (ExpressionAnalyzer::analyze($statements_checker, $stmt->right, $context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $context) === false) {
                     return false;
                 }
             }
@@ -494,7 +494,7 @@ class BinaryOpAnalyzer
                 )
             ) {
                 self::analyzeNonDivArithmenticOp(
-                    $statements_checker,
+                    $statements_analyzer,
                     $stmt->left,
                     $stmt->right,
                     $stmt,
@@ -519,10 +519,10 @@ class BinaryOpAnalyzer
                     && isset($stmt->right->inferredType)
                     && ($stmt->left->inferredType->isMixed() || $stmt->right->inferredType->isMixed())
                 ) {
-                    $source_checker = $statements_checker->getSource();
+                    $source_analyzer = $statements_analyzer->getSource();
 
-                    if ($source_checker instanceof FunctionLikeAnalyzer) {
-                        $function_storage = $source_checker->getFunctionLikeStorage($statements_checker);
+                    if ($source_analyzer instanceof FunctionLikeAnalyzer) {
+                        $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
 
                         $context->inferType($stmt->left, $function_storage, new Type\Union([new TInt, new TFloat]));
                         $context->inferType($stmt->right, $function_storage, new Type\Union([new TInt, new TFloat]));
@@ -530,7 +530,7 @@ class BinaryOpAnalyzer
                 }
 
                 self::analyzeNonDivArithmenticOp(
-                    $statements_checker,
+                    $statements_analyzer,
                     $stmt->left,
                     $stmt->right,
                     $stmt,
@@ -547,7 +547,7 @@ class BinaryOpAnalyzer
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
                 self::analyzeConcatOp(
-                    $statements_checker,
+                    $statements_analyzer,
                     $stmt->left,
                     $stmt->right,
                     $context,
@@ -615,11 +615,11 @@ class BinaryOpAnalyzer
             && ($left_type->isVanillaMixed() || $right_type->isVanillaMixed())
             && ($left_type->hasDefinitelyNumericType() || $right_type->hasDefinitelyNumericType())
         ) {
-            $source_checker = $statements_source->getSource();
-            if ($source_checker instanceof FunctionLikeAnalyzer
+            $source_analyzer = $statements_source->getSource();
+            if ($source_analyzer instanceof FunctionLikeAnalyzer
                 && $statements_source instanceof StatementsAnalyzer
             ) {
-                $function_storage = $source_checker->getFunctionLikeStorage($statements_source);
+                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_source);
 
                 $context->inferType($left, $function_storage, new Type\Union([new TInt, new TFloat]));
                 $context->inferType($right, $function_storage, new Type\Union([new TInt, new TFloat]));
@@ -1127,7 +1127,7 @@ class BinaryOpAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer     $statements_checker
+     * @param  StatementsAnalyzer     $statements_analyzer
      * @param  PhpParser\Node\Expr   $left
      * @param  PhpParser\Node\Expr   $right
      * @param  Type\Union|null       &$result_type
@@ -1135,13 +1135,13 @@ class BinaryOpAnalyzer
      * @return void
      */
     public static function analyzeConcatOp(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         Context $context,
         Type\Union &$result_type = null
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $left_type = isset($left->inferredType) ? $left->inferredType : null;
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
@@ -1152,10 +1152,10 @@ class BinaryOpAnalyzer
             && $right_type
             && ($left_type->isMixed() || $right_type->isMixed())
         ) {
-            $source_checker = $statements_checker->getSource();
+            $source_analyzer = $statements_analyzer->getSource();
 
-            if ($source_checker instanceof FunctionLikeAnalyzer) {
-                $function_storage = $source_checker->getFunctionLikeStorage($statements_checker);
+            if ($source_analyzer instanceof FunctionLikeAnalyzer) {
+                $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
 
                 $context->inferType($left, $function_storage, Type::getString());
                 $context->inferType($right, $function_storage, Type::getString());
@@ -1166,15 +1166,15 @@ class BinaryOpAnalyzer
             $result_type = Type::getString();
 
             if ($left_type->isMixed() || $right_type->isMixed()) {
-                $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if ($left_type->isMixed()) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Left operand cannot be mixed',
-                            new CodeLocation($statements_checker->getSource(), $left)
+                            new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1182,9 +1182,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Right operand cannot be mixed',
-                            new CodeLocation($statements_checker->getSource(), $right)
+                            new CodeLocation($statements_analyzer->getSource(), $right)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1193,15 +1193,15 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
             if ($left_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullOperand(
                         'Cannot concatenate with a ' . $left_type,
-                        new CodeLocation($statements_checker->getSource(), $left)
+                        new CodeLocation($statements_analyzer->getSource(), $left)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1213,9 +1213,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new NullOperand(
                         'Cannot concatenate with a ' . $right_type,
-                        new CodeLocation($statements_checker->getSource(), $right)
+                        new CodeLocation($statements_analyzer->getSource(), $right)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1227,9 +1227,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new FalseOperand(
                         'Cannot concatenate with a ' . $left_type,
-                        new CodeLocation($statements_checker->getSource(), $left)
+                        new CodeLocation($statements_analyzer->getSource(), $left)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1241,9 +1241,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new FalseOperand(
                         'Cannot concatenate with a ' . $right_type,
-                        new CodeLocation($statements_checker->getSource(), $right)
+                        new CodeLocation($statements_analyzer->getSource(), $right)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1255,9 +1255,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Cannot concatenate with a possibly null ' . $left_type,
-                        new CodeLocation($statements_checker->getSource(), $left)
+                        new CodeLocation($statements_analyzer->getSource(), $left)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1267,9 +1267,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyNullOperand(
                         'Cannot concatenate with a possibly null ' . $right_type,
-                        new CodeLocation($statements_checker->getSource(), $right)
+                        new CodeLocation($statements_analyzer->getSource(), $right)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1279,9 +1279,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyFalseOperand(
                         'Cannot concatenate with a possibly false ' . $left_type,
-                        new CodeLocation($statements_checker->getSource(), $left)
+                        new CodeLocation($statements_analyzer->getSource(), $left)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1291,9 +1291,9 @@ class BinaryOpAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyFalseOperand(
                         'Cannot concatenate with a possibly false ' . $right_type,
-                        new CodeLocation($statements_checker->getSource(), $right)
+                        new CodeLocation($statements_analyzer->getSource(), $right)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -1313,9 +1313,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Left operand cannot be mixed',
-                            new CodeLocation($statements_checker->getSource(), $left)
+                            new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1347,9 +1347,9 @@ class BinaryOpAnalyzer
                         new ImplicitToStringCast(
                             'Left side of concat op expects string, '
                                 . '\'' . $left_type . '\' provided with a __toString method',
-                            new CodeLocation($statements_checker->getSource(), $left)
+                            new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1361,9 +1361,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Right operand cannot be a template param',
-                            new CodeLocation($statements_checker->getSource(), $right)
+                            new CodeLocation($statements_analyzer->getSource(), $right)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1395,9 +1395,9 @@ class BinaryOpAnalyzer
                         new ImplicitToStringCast(
                             'Right side of concat op expects string, '
                                 . '\'' . $right_type . '\' provided with a __toString method',
-                            new CodeLocation($statements_checker->getSource(), $right)
+                            new CodeLocation($statements_analyzer->getSource(), $right)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1409,9 +1409,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(
                             'Cannot concatenate with a ' . $left_type,
-                            new CodeLocation($statements_checker->getSource(), $left)
+                            new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1419,9 +1419,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidOperand(
                             'Cannot concatenate with a ' . $left_type,
-                            new CodeLocation($statements_checker->getSource(), $left)
+                            new CodeLocation($statements_analyzer->getSource(), $left)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1433,9 +1433,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidOperand(
                             'Cannot concatenate with a ' . $right_type,
-                            new CodeLocation($statements_checker->getSource(), $right)
+                            new CodeLocation($statements_analyzer->getSource(), $right)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1443,9 +1443,9 @@ class BinaryOpAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidOperand(
                             'Cannot concatenate with a ' . $right_type,
-                            new CodeLocation($statements_checker->getSource(), $right)
+                            new CodeLocation($statements_analyzer->getSource(), $right)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }

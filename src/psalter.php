@@ -127,7 +127,7 @@ if ($path_to_config) {
 
 $config->setComposerClassLoader($first_autoloader);
 
-$project_checker = new ProjectAnalyzer(
+$project_analyzer = new ProjectAnalyzer(
     $config,
     new Psalm\Internal\Provider\Providers(
         new Psalm\Internal\Provider\FileProvider(),
@@ -142,7 +142,7 @@ $project_checker = new ProjectAnalyzer(
     array_key_exists('debug', $options)
 );
 
-$config->visitComposerAutoloadFiles($project_checker);
+$config->visitComposerAutoloadFiles($project_analyzer);
 
 if (array_key_exists('issues', $options)) {
     if (!is_string($options['issues']) || !$options['issues']) {
@@ -186,26 +186,26 @@ foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
 }
 
-$project_checker->alterCodeAfterCompletion(
+$project_analyzer->alterCodeAfterCompletion(
     (int) $php_major_version,
     (int) $php_minor_version,
     array_key_exists('dry-run', $options),
     array_key_exists('safe-types', $options)
 );
-$project_checker->setIssuesToFix($keyed_issues);
+$project_analyzer->setIssuesToFix($keyed_issues);
 
 $start_time = microtime(true);
 
 if ($paths_to_check === null) {
-    $project_checker->check($current_dir);
+    $project_analyzer->check($current_dir);
 } elseif ($paths_to_check) {
     foreach ($paths_to_check as $path_to_check) {
         if (is_dir($path_to_check)) {
-            $project_checker->checkDir($path_to_check);
+            $project_analyzer->checkDir($path_to_check);
         } else {
-            $project_checker->checkFile($path_to_check);
+            $project_analyzer->checkFile($path_to_check);
         }
     }
 }
 
-IssueBuffer::finish($project_checker, false, $start_time);
+IssueBuffer::finish($project_analyzer, false, $start_time);

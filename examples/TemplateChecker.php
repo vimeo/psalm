@@ -19,7 +19,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
     public function analyze(Context $context = null, $update_docblocks = false, Context $global_context = null)
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $stmts = $codebase->getStatementsForFile($this->file_path);
 
         if (empty($stmts)) {
@@ -96,12 +96,12 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $constructor_id = $class . '::__construct';
 
-        $this->project_checker->getMethodMutations($constructor_id, $this_context);
+        $this->project_analyzer->getMethodMutations($constructor_id, $this_context);
 
         $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic\TNamedObject($class)]);
 
         // check the actual method
-        $this->project_checker->getMethodMutations($method_id, $this_context);
+        $this->project_analyzer->getMethodMutations($method_id, $this_context);
 
         $view_context = new Context();
         $view_context->self = self::VIEW_CLASS;
@@ -142,15 +142,15 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $class = new PhpParser\Node\Stmt\Class_(self::VIEW_CLASS);
 
-        $class_checker = new ClassAnalyzer($class, $this, self::VIEW_CLASS);
+        $class_analyzer = new ClassAnalyzer($class, $this, self::VIEW_CLASS);
 
-        $view_method_checker = new MethodAnalyzer($class_method, $class_checker);
+        $view_method_analyzer = new MethodAnalyzer($class_method, $class_analyzer);
 
         if (!$context->check_variables) {
-            $view_method_checker->addSuppressedIssue('UndefinedVariable');
+            $view_method_analyzer->addSuppressedIssue('UndefinedVariable');
         }
 
-        $statements_source = new StatementsAnalyzer($view_method_checker);
+        $statements_source = new StatementsAnalyzer($view_method_analyzer);
 
         $statements_source->analyze($pseudo_method_stmts, $context);
     }

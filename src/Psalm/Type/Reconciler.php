@@ -47,7 +47,7 @@ class Reconciler
      * @param  array<string, Type\Union> $existing_types
      * @param  array<string>             $changed_var_ids
      * @param  array<string, bool>       $referenced_var_ids
-     * @param  StatementsAnalyzer         $statements_checker
+     * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
      * @param  array<string>             $suppressed_issues
      *
@@ -58,7 +58,7 @@ class Reconciler
         array $existing_types,
         array &$changed_var_ids,
         array $referenced_var_ids,
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location = null,
         array $suppressed_issues = []
     ) {
@@ -129,7 +129,7 @@ class Reconciler
             return $existing_types;
         }
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         foreach ($new_types as $key => $new_type_parts) {
             $result_type = isset($existing_types[$key])
@@ -168,7 +168,7 @@ class Reconciler
                         $new_type_part_part,
                         $result_type ? clone $result_type : null,
                         $key,
-                        $statements_checker,
+                        $statements_analyzer,
                         $code_location && isset($referenced_var_ids[$key]) ? $code_location : null,
                         $suppressed_issues,
                         $failed_reconciliation
@@ -257,7 +257,7 @@ class Reconciler
      * @param   string              $new_var_type
      * @param   Type\Union|null     $existing_var_type
      * @param   string|null         $key
-     * @param   StatementsAnalyzer   $statements_checker
+     * @param   StatementsAnalyzer   $statements_analyzer
      * @param   CodeLocation        $code_location
      * @param   string[]            $suppressed_issues
      * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
@@ -268,12 +268,12 @@ class Reconciler
         $new_var_type,
         $existing_var_type,
         $key,
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location = null,
         array $suppressed_issues = [],
         &$failed_reconciliation = false
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $is_strict_equality = false;
         $is_loose_equality = false;
@@ -327,7 +327,7 @@ class Reconciler
 
         if ($is_negation) {
             return self::handleNegatedType(
-                $statements_checker,
+                $statements_analyzer,
                 $new_var_type,
                 $is_strict_equality,
                 $is_loose_equality,
@@ -912,7 +912,7 @@ class Reconciler
                         }
                     }
                 } elseif ($key !== '$this'
-                    || !($statements_checker->getSource()->getSource() instanceof TraitAnalyzer)
+                    || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
                 ) {
                     if ($existing_var_type->from_docblock) {
                         if (IssueBuffer::accepts(
@@ -966,7 +966,7 @@ class Reconciler
      * @return Type\Union
      */
     private static function handleNegatedType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $new_var_type,
         $is_strict_equality,
         $is_loose_equality,
@@ -1364,7 +1364,7 @@ class Reconciler
         } elseif (!$is_equality) {
             $new_type_part = new TNamedObject($new_var_type);
 
-            $codebase = $statements_checker->getCodebase();
+            $codebase = $statements_analyzer->getCodebase();
 
             // if there wasn't a direct hit, go deeper, eliminating subtypes
             if (!$existing_var_type->removeType($new_var_type)) {
@@ -1391,7 +1391,7 @@ class Reconciler
 
         if (empty($existing_var_type->getTypes())) {
             if ($key !== '$this'
-                || !($statements_checker->getSource()->getSource() instanceof TraitAnalyzer)
+                || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
                 if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(

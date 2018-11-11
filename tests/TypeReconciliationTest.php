@@ -16,10 +16,10 @@ class TypeReconciliationTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /** @var FileAnalyzer */
-    protected $file_checker;
+    protected $file_analyzer;
 
     /** @var StatementsAnalyzer */
-    protected $statements_checker;
+    protected $statements_analyzer;
 
     /**
      * @return void
@@ -28,9 +28,9 @@ class TypeReconciliationTest extends TestCase
     {
         parent::setUp();
 
-        $this->file_checker = new FileAnalyzer($this->project_checker, 'somefile.php', 'somefile.php');
-        $this->file_checker->context = new Context();
-        $this->statements_checker = new StatementsAnalyzer($this->file_checker);
+        $this->file_analyzer = new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
+        $this->file_analyzer->context = new Context();
+        $this->statements_analyzer = new StatementsAnalyzer($this->file_analyzer);
     }
 
     /**
@@ -48,7 +48,7 @@ class TypeReconciliationTest extends TestCase
             $type,
             Type::parseString($string),
             null,
-            $this->statements_checker
+            $this->statements_analyzer
         );
 
         $this->assertSame(
@@ -73,7 +73,7 @@ class TypeReconciliationTest extends TestCase
     {
         $this->assertTrue(
             TypeAnalyzer::isContainedBy(
-                $this->project_checker->getCodebase(),
+                $this->project_analyzer->getCodebase(),
                 Type::parseString($input),
                 Type::parseString($container)
             )

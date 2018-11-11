@@ -17,21 +17,21 @@ use Psalm\Type\Union;
 class TryAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Stmt\TryCatch    $stmt
      * @param   Context                         $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\TryCatch $stmt,
         Context $context
     ) {
         $catch_actions = [];
         $all_catches_leave = true;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
@@ -66,7 +66,7 @@ class TryAnalyzer
         $newly_unreferenced_vars = [];
         $reassigned_vars = [];
 
-        if ($statements_checker->analyze($stmt->stmts, $context) === false) {
+        if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
 
@@ -152,15 +152,15 @@ class TryAnalyzer
             foreach ($catch->types as $catch_type) {
                 $fq_catch_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $catch_type,
-                    $statements_checker->getAliases()
+                    $statements_analyzer->getAliases()
                 );
 
                 if ($original_context->check_classes) {
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                        $statements_checker,
+                        $statements_analyzer,
                         $fq_catch_class,
-                        new CodeLocation($statements_checker->getSource(), $catch_type, $context->include_location),
-                        $statements_checker->getSuppressedIssues(),
+                        new CodeLocation($statements_analyzer->getSource(), $catch_type, $context->include_location),
+                        $statements_analyzer->getSuppressedIssues(),
                         false
                     ) === false) {
                         return false;
@@ -178,10 +178,10 @@ class TryAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidCatch(
                             'Class/interface ' . $fq_catch_class . ' cannot be caught',
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $fq_catch_class
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -257,13 +257,13 @@ class TryAnalyzer
 
             $catch_context->vars_possibly_in_scope[$catch_var_id] = true;
 
-            if (!$statements_checker->hasVariable($catch_var_id)) {
+            if (!$statements_analyzer->hasVariable($catch_var_id)) {
                 $location = new CodeLocation(
-                    $statements_checker,
+                    $statements_analyzer,
                     $catch->var,
                     $context->include_location
                 );
-                $statements_checker->registerVariable(
+                $statements_analyzer->registerVariable(
                     $catch_var_id,
                     $location,
                     $try_context->branch_point
@@ -272,18 +272,18 @@ class TryAnalyzer
             }
 
             // this registers the variable to avoid unfair deadcode issues
-            $catch_context->hasVariable($catch_var_id, $statements_checker);
+            $catch_context->hasVariable($catch_var_id, $statements_analyzer);
 
-            $suppressed_issues = $statements_checker->getSuppressedIssues();
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
             if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_checker->addSuppressedIssues(['RedundantCondition']);
+                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
             }
 
-            $statements_checker->analyze($catch->stmts, $catch_context);
+            $statements_analyzer->analyze($catch->stmts, $catch_context);
 
             if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_checker->removeSuppressedIssues(['RedundantCondition']);
+                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
             }
 
             $context->referenced_var_ids = array_merge(
@@ -311,11 +311,11 @@ class TryAnalyzer
                         && (isset($context->unreferenced_vars[$var_id])
                             || isset($newly_assigned_var_ids[$var_id]))
                     ) {
-                        $statements_checker->registerVariableUses($locations);
+                        $statements_analyzer->registerVariableUses($locations);
                     } elseif (isset($old_unreferenced_vars[$var_id])
                         && $old_unreferenced_vars[$var_id] !== $locations
                     ) {
-                        $statements_checker->registerVariableUses($locations);
+                        $statements_analyzer->registerVariableUses($locations);
                     }
                 }
             }
@@ -354,7 +354,7 @@ class TryAnalyzer
         }
 
         if ($stmt->finally) {
-            $statements_checker->analyze($stmt->finally->stmts, $context);
+            $statements_analyzer->analyze($stmt->finally->stmts, $context);
         }
 
         if ($context->collect_references) {
@@ -362,7 +362,7 @@ class TryAnalyzer
                 if (isset($context->unreferenced_vars[$var_id])
                     && $context->unreferenced_vars[$var_id] !== $locations
                 ) {
-                    $statements_checker->registerVariableUses($locations);
+                    $statements_analyzer->registerVariableUses($locations);
                 }
             }
         }

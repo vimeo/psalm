@@ -89,7 +89,7 @@ class FunctionDocblockManipulator
      * @return self
      */
     public static function getForFunction(
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         $file_path,
         $function_id,
         FunctionLike $stmt
@@ -101,7 +101,7 @@ class FunctionDocblockManipulator
         $manipulator
             = self::$manipulators[$file_path][$function_id]
             = self::$ordered_manipulators[$file_path][$stmt->getLine()]
-            = new self($file_path, $stmt, $project_checker);
+            = new self($file_path, $stmt, $project_analyzer);
 
         return $manipulator;
     }
@@ -110,7 +110,7 @@ class FunctionDocblockManipulator
      * @param string $file_path
      * @param Closure|Function_|ClassMethod $stmt
      */
-    private function __construct($file_path, FunctionLike $stmt, ProjectAnalyzer $project_checker)
+    private function __construct($file_path, FunctionLike $stmt, ProjectAnalyzer $project_analyzer)
     {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
@@ -118,7 +118,7 @@ class FunctionDocblockManipulator
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
         $function_end = (int)$stmt->getAttribute('endFilePos');
 
-        $codebase = $project_checker->getCodebase();
+        $codebase = $project_analyzer->getCodebase();
 
         $file_contents = $codebase->getFileContents($file_path);
 

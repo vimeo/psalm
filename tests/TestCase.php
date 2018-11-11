@@ -13,7 +13,7 @@ class TestCase extends BaseTestCase
     protected static $src_dir_path;
 
     /** @var ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /** @var Provider\FakeFileProvider */
     protected $file_provider;
@@ -55,7 +55,7 @@ class TestCase extends BaseTestCase
             new Provider\FakeParserCacheProvider()
         );
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
@@ -65,7 +65,7 @@ class TestCase extends BaseTestCase
             false
         );
 
-        $this->project_checker->getCodebase()->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -77,7 +77,7 @@ class TestCase extends BaseTestCase
     public function addFile($file_path, $contents)
     {
         $this->file_provider->registerFile($file_path, $contents);
-        $this->project_checker->getCodeBase()->scanner->addFileToShallowScan($file_path);
+        $this->project_analyzer->getCodeBase()->scanner->addFileToShallowScan($file_path);
     }
 
     /**
@@ -88,19 +88,19 @@ class TestCase extends BaseTestCase
      */
     public function analyzeFile($file_path, \Psalm\Context $context)
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
 
         $codebase->scanFiles();
 
         $codebase->config->visitStubFiles($codebase);
 
-        $file_checker = new FileAnalyzer(
-            $this->project_checker,
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
             $file_path,
             $codebase->config->shortenFileName($file_path)
         );
-        $file_checker->analyze($context);
+        $file_analyzer->analyze($context);
     }
 
     /**

@@ -11,14 +11,14 @@ use Psalm\Type;
 class WhileAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_checker
+     * @param   StatementsAnalyzer           $statements_analyzer
      * @param   PhpParser\Node\Stmt\While_  $stmt
      * @param   Context                     $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\While_ $stmt,
         Context $context
     ) {
@@ -36,7 +36,7 @@ class WhileAnalyzer
         $while_context->inside_loop = true;
         $while_context->inside_case = false;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->alter_code) {
             $while_context->branch_point = $while_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
@@ -46,7 +46,7 @@ class WhileAnalyzer
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
         if (LoopAnalyzer::analyze(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->stmts,
             [$stmt->cond],
             [],

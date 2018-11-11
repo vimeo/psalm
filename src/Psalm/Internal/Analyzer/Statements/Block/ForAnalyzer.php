@@ -12,14 +12,14 @@ use Psalm\Type;
 class ForAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_checker
+     * @param   StatementsAnalyzer           $statements_analyzer
      * @param   PhpParser\Node\Stmt\For_    $stmt
      * @param   Context                     $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\For_ $stmt,
         Context $context
     ) {
@@ -27,7 +27,7 @@ class ForAnalyzer
         $context->assigned_var_ids = [];
 
         foreach ($stmt->init as $init) {
-            if (ExpressionAnalyzer::analyze($statements_checker, $init, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $init, $context) === false) {
                 return false;
             }
         }
@@ -52,7 +52,7 @@ class ForAnalyzer
         $for_context->inside_loop = true;
         $for_context->inside_case = false;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($codebase->alter_code) {
             $for_context->branch_point = $for_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
@@ -66,7 +66,7 @@ class ForAnalyzer
         );
 
         LoopAnalyzer::analyze(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->stmts,
             $stmt->cond,
             $stmt->loop,

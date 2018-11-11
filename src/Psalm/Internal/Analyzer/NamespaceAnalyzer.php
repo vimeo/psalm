@@ -79,11 +79,11 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($leftover_stmts) {
-            $statements_checker = new StatementsAnalyzer($this);
+            $statements_analyzer = new StatementsAnalyzer($this);
             $context = new Context();
             $context->collect_references = $codebase->collect_references;
             $context->is_global = true;
-            $statements_checker->analyze($leftover_stmts, $context);
+            $statements_analyzer->analyze($leftover_stmts, $context);
         }
     }
 

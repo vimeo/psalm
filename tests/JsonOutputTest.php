@@ -21,7 +21,7 @@ class JsonOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
@@ -32,7 +32,7 @@ class JsonOutputTest extends TestCase
             ProjectAnalyzer::TYPE_JSON
         );
 
-        $this->project_checker->getCodebase()->reportUnusedCode();
+        $this->project_analyzer->getCodebase()->reportUnusedCode();
     }
 
     /**
@@ -87,7 +87,7 @@ echo $a;';
             $file_contents
         );
 
-        $this->project_checker->getCodebase()->classlikes->checkClassReferences();
+        $this->project_analyzer->getCodebase()->classlikes->checkClassReferences();
 
         $this->analyzeFile('somefile.php', new Context());
 

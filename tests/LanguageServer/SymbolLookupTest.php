@@ -33,7 +33,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
@@ -43,7 +43,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->getCodebase()->server_mode = true;
+        $this->project_analyzer->getCodebase()->server_mode = true;
     }
 
     /**
@@ -73,9 +73,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        new FileAnalyzer($this->project_checker, 'somefile.php', 'somefile.php');
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
@@ -110,9 +110,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        new FileAnalyzer($this->project_checker, 'somefile.php', 'somefile.php');
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
@@ -171,7 +171,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
      */
     public function testSymbolLookupAfterAlteration()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -230,7 +230,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(10, 30));
 

@@ -19,14 +19,14 @@ use Psalm\Type;
 class ConstFetchAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Expr\ConstFetch  $stmt
      * @param   Context                         $context
      *
      * @return  void
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
     ) {
@@ -50,8 +50,8 @@ class ConstFetchAnalyzer
                 break;
 
             default:
-                $const_type = $statements_checker->getConstType(
-                    $statements_checker,
+                $const_type = $statements_analyzer->getConstType(
+                    $statements_analyzer,
                     $const_name,
                     $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
                     $context
@@ -63,9 +63,9 @@ class ConstFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedConstant(
                             'Const ' . $const_name . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -74,19 +74,19 @@ class ConstFetchAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                   $statements_checker
+     * @param   StatementsAnalyzer                   $statements_analyzer
      * @param   PhpParser\Node\Expr\ClassConstFetch $stmt
      * @param   Context                             $context
      *
      * @return  null|false
      */
     public static function analyzeClassConst(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
     ) {
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($context->check_consts
             && $stmt->class instanceof PhpParser\Node\Name
@@ -100,15 +100,15 @@ class ConstFetchAnalyzer
 
                 $fq_class_name = (string)$context->self;
             } elseif ($first_part_lc === 'parent') {
-                $fq_class_name = $statements_checker->getParentFQCLN();
+                $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
                     if (IssueBuffer::accepts(
                         new ParentNotFound(
                             'Cannot check property fetch on parent as this class does not extend another',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -118,16 +118,16 @@ class ConstFetchAnalyzer
             } else {
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_checker->getAliases()
+                    $statements_analyzer->getAliases()
                 );
 
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
                     if (!$context->inside_class_exists || $stmt->name->name !== 'class') {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                            $statements_checker,
+                            $statements_analyzer,
                             $fq_class_name,
-                            new CodeLocation($statements_checker->getSource(), $stmt->class),
-                            $statements_checker->getSuppressedIssues(),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                            $statements_analyzer->getSuppressedIssues(),
                             false
                         ) === false) {
                             return false;
@@ -151,7 +151,7 @@ class ConstFetchAnalyzer
 
             if ($codebase->server_mode) {
                 $codebase->analyzer->addNodeReference(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->class,
                     $fq_class_name
                 );
@@ -165,7 +165,7 @@ class ConstFetchAnalyzer
 
             if ($codebase->server_mode) {
                 $codebase->analyzer->addNodeReference(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->name,
                     $const_id
                 );
@@ -173,8 +173,8 @@ class ConstFetchAnalyzer
 
             if ($fq_class_name === $context->self
                 || (
-                    $statements_checker->getSource()->getSource() instanceof TraitAnalyzer &&
-                    $fq_class_name === $statements_checker->getSource()->getFQCLN()
+                    $statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer &&
+                    $fq_class_name === $statements_analyzer->getSource()->getFQCLN()
                 )
             ) {
                 $class_visibility = \ReflectionProperty::IS_PRIVATE;
@@ -205,9 +205,9 @@ class ConstFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new InaccessibleClassConstant(
                             'Constant ' . $const_id . ' is not visible in this context',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -215,9 +215,9 @@ class ConstFetchAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedConstant(
                             'Constant ' . $const_id . ' is not defined',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -227,7 +227,7 @@ class ConstFetchAnalyzer
             }
 
             if ($context->calling_method_id) {
-                $project_checker->file_reference_provider->addReferenceToClassMethod(
+                $project_analyzer->file_reference_provider->addReferenceToClassMethod(
                     $context->calling_method_id,
                     strtolower($fq_class_name) . '::' . $stmt->name->name
                 );
@@ -239,9 +239,9 @@ class ConstFetchAnalyzer
                 if (IssueBuffer::accepts(
                     new DeprecatedConstant(
                         'Constant ' . $const_id . ' is deprecated',
-                        new CodeLocation($statements_checker->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -259,7 +259,7 @@ class ConstFetchAnalyzer
         $stmt->inferredType = Type::getMixed();
 
         if ($stmt->class instanceof PhpParser\Node\Expr) {
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->class, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
                 return false;
             }
         }

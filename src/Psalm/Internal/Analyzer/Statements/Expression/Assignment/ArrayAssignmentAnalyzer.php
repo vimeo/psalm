@@ -14,7 +14,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 class ArrayAssignmentAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                   $statements_checker
+     * @param   StatementsAnalyzer                   $statements_analyzer
      * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
      * @param   Context                             $context
      * @param   Type\Union                          $assignment_value_type
@@ -23,7 +23,7 @@ class ArrayAssignmentAnalyzer
      * @psalm-suppress MixedMethodCall - some funky logic here
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         Type\Union $assignment_value_type
@@ -31,13 +31,13 @@ class ArrayAssignmentAnalyzer
         $nesting = 0;
         $var_id = ExpressionAnalyzer::getVarId(
             $stmt->var,
-            $statements_checker->getFQCLN(),
-            $statements_checker,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
             $nesting
         );
 
         self::updateArrayType(
-            $statements_checker,
+            $statements_analyzer,
             $stmt,
             $assignment_value_type,
             $context
@@ -49,7 +49,7 @@ class ArrayAssignmentAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer                 $statements_checker
+     * @param  StatementsAnalyzer                 $statements_analyzer
      * @param  PhpParser\Node\Expr\ArrayDimFetch $stmt
      * @param  Type\Union                        $assignment_type
      * @param  Context                           $context
@@ -59,7 +59,7 @@ class ArrayAssignmentAnalyzer
      * @psalm-suppress UnusedVariable due to Psalm bug
      */
     public static function updateArrayType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Type\Union $assignment_type,
         Context $context
@@ -77,7 +77,7 @@ class ArrayAssignmentAnalyzer
         $root_array_expr = $root_array_expr->var;
 
         if (ExpressionAnalyzer::analyze(
-            $statements_checker,
+            $statements_analyzer,
             $root_array_expr,
             $context,
             true
@@ -102,8 +102,8 @@ class ArrayAssignmentAnalyzer
         // gets a variable id that *may* contain array keys
         $root_var_id = ExpressionAnalyzer::getRootVarId(
             $root_array_expr,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
         $var_id_additions = [];
@@ -125,7 +125,7 @@ class ArrayAssignmentAnalyzer
 
             if ($child_stmt->dim) {
                 if (ExpressionAnalyzer::analyze(
-                    $statements_checker,
+                    $statements_analyzer,
                     $child_stmt->dim,
                     $context
                 ) === false) {
@@ -191,7 +191,7 @@ class ArrayAssignmentAnalyzer
             $parent_var_id = $array_var_id;
 
             $child_stmt->inferredType = ArrayFetchAnalyzer::getArrayAccessTypeGivenOffset(
-                $statements_checker,
+                $statements_analyzer,
                 $child_stmt,
                 $child_stmt->var->inferredType,
                 isset($child_stmt->dim->inferredType) ? $child_stmt->dim->inferredType : Type::getInt(),
@@ -422,7 +422,7 @@ class ArrayAssignmentAnalyzer
         if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
             if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
                 PropertyAssignmentAnalyzer::analyzeInstance(
-                    $statements_checker,
+                    $statements_analyzer,
                     $root_array_expr,
                     $root_array_expr->name->name,
                     null,
@@ -431,16 +431,16 @@ class ArrayAssignmentAnalyzer
                     false
                 );
             } else {
-                if (ExpressionAnalyzer::analyze($statements_checker, $root_array_expr->name, $context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
                 }
 
-                if (ExpressionAnalyzer::analyze($statements_checker, $root_array_expr->var, $context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->var, $context) === false) {
                     return false;
                 }
             }
         } elseif ($root_var_id) {
-            if ($context->hasVariable($root_var_id, $statements_checker)) {
+            if ($context->hasVariable($root_var_id, $statements_analyzer)) {
                 $context->vars_in_scope[$root_var_id] = $root_type;
             } else {
                 $context->vars_in_scope[$root_var_id] = $root_type;

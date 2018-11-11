@@ -22,35 +22,35 @@ use Psalm\Type\Atomic\TNamedObject;
 class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer           $statements_checker
+     * @param   StatementsAnalyzer           $statements_analyzer
      * @param   PhpParser\Node\Expr\New_    $stmt
      * @param   Context                     $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context
     ) {
         $fq_class_name = null;
 
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
         $late_static = false;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
-                $aliases = $statements_checker->getAliases();
+                $aliases = $statements_analyzer->getAliases();
 
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
                     $codebase->file_reference_provider->addReferenceToClassMethod(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_checker->getFilePath())
+                        'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
                 }
 
@@ -65,10 +65,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
 
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                        $statements_checker,
+                        $statements_analyzer,
                         $fq_class_name,
-                        new CodeLocation($statements_checker->getSource(), $stmt->class),
-                        $statements_checker->getSuppressedIssues(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        $statements_analyzer->getSuppressedIssues(),
                         false
                     ) === false) {
                         return false;
@@ -78,9 +78,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if (IssueBuffer::accepts(
                             new InterfaceInstantiation(
                                 'Interface ' . $fq_class_name . ' cannot be instantiated',
-                                new CodeLocation($statements_checker->getSource(), $stmt->class)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt->class)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -108,16 +108,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
             if ($codebase->server_mode && $fq_class_name) {
                 $codebase->analyzer->addNodeReference(
-                    $statements_checker->getFilePath(),
+                    $statements_analyzer->getFilePath(),
                     $stmt->class,
                     $fq_class_name
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
-            $statements_checker->analyze([$stmt->class], $context);
-            $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_checker->getFilePath());
+            $statements_analyzer->analyze([$stmt->class], $context);
+            $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_analyzer->getFilePath());
         } else {
-            ExpressionAnalyzer::analyze($statements_checker, $stmt->class, $context);
+            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
 
             $generic_params = null;
 
@@ -126,8 +126,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $stmt->args,
                 $generic_params,
                 $context,
-                new CodeLocation($statements_checker->getSource(), $stmt),
-                $statements_checker
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer
             ) === false) {
                 return false;
             }
@@ -166,9 +166,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         } elseif (IssueBuffer::accepts(
                             new InvalidStringClass(
                                 'String cannot be used as a class',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -187,10 +187,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     } elseif (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Type ' . $lhs_type_part . ' cannot be called as a class',
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             (string)$lhs_type_part
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -220,16 +220,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $context->check_classes &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
-                $storage = $project_checker->classlike_storage_provider->get($fq_class_name);
+                $storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
 
                 // if we're not calling this constructor via new static()
                 if ($storage->abstract && !$late_static) {
                     if (IssueBuffer::accepts(
                         new AbstractInstantiation(
                             'Unable to instantiate a abstract class ' . $fq_class_name,
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -239,9 +239,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $fq_class_name . ' is marked deprecated',
-                            new CodeLocation($statements_checker->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -250,7 +250,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($codebase->methods->methodExists(
                     $fq_class_name . '::__construct',
                     $context->calling_method_id,
-                    $context->collect_references ? new CodeLocation($statements_checker->getSource(), $stmt) : null
+                    $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
                 )) {
                     $method_id = $fq_class_name . '::__construct';
 
@@ -259,8 +259,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->args,
                         $found_generic_params,
                         $context,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $statements_analyzer
                     ) === false) {
                         return false;
                     }
@@ -268,9 +268,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if (MethodAnalyzer::checkMethodVisibility(
                         $method_id,
                         $context->self,
-                        $statements_checker->getSource(),
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSource(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $statements_analyzer->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }
@@ -343,10 +343,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if (IssueBuffer::accepts(
                         new TooManyArguments(
                             'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $fq_class_name . '::__construct'
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }

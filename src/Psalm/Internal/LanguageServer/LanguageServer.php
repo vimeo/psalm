@@ -57,7 +57,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @var ProjectAnalyzer
      */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @param ProtocolReader  $reader
@@ -66,10 +66,10 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
-        ProjectAnalyzer $project_checker
+        ProjectAnalyzer $project_analyzer
     ) {
         parent::__construct($this, '/');
-        $this->project_checker = $project_checker;
+        $this->project_analyzer = $project_analyzer;
 
         $this->protocolWriter = $writer;
 
@@ -167,9 +167,9 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     yield true;
                 }
 
-                $codebase = $this->project_checker->getCodebase();
+                $codebase = $this->project_analyzer->getCodebase();
 
-                $codebase->scanFiles($this->project_checker->threads);
+                $codebase->scanFiles($this->project_analyzer->threads);
 
                 $codebase->config->visitStubFiles($codebase, false);
 
@@ -177,7 +177,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                     $this->textDocument = new TextDocument(
                         $this,
                         $codebase,
-                        $this->project_checker->onchange_line_limit
+                        $this->project_analyzer->onchange_line_limit
                     );
                 }
 
@@ -232,7 +232,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     public function invalidateFileAndDependents(string $uri)
     {
         $file_path = self::uriToPath($uri);
-        $this->project_checker->getCodebase()->reloadFiles($this->project_checker, [$file_path]);
+        $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, [$file_path]);
     }
 
     /**
@@ -240,10 +240,10 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function analyzePath(string $file_path)
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
     }
 
     /**
@@ -320,7 +320,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public function shutdown()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->updateReferenceCache(
             $codebase,

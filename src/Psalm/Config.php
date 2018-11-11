@@ -120,7 +120,7 @@ class Config
     /**
      * @var array<string, string>
      */
-    private $filetype_checkers = [];
+    private $filetype_analyzers = [];
 
     /**
      * @var array<string, string>
@@ -130,7 +130,7 @@ class Config
     /**
      * @var array<string, string>
      */
-    private $filetype_checker_paths = [];
+    private $filetype_analyzer_paths = [];
 
     /**
      * @var array<string, IssueHandler>
@@ -759,7 +759,7 @@ class Config
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
-                $this->filetype_checker_paths[$extension_name] = $path;
+                $this->filetype_analyzer_paths[$extension_name] = $path;
             }
         }
     }
@@ -800,9 +800,9 @@ class Config
      * @psalm-suppress MixedArrayOffset
      * @psalm-suppress MixedTypeCoercion
      */
-    public function initializePlugins(ProjectAnalyzer $project_checker)
+    public function initializePlugins(ProjectAnalyzer $project_analyzer)
     {
-        $codebase = $project_checker->getCodebase();
+        $codebase = $project_analyzer->getCodebase();
 
         $socket = new PluginRegistrationSocket($this);
         // initialize plugin classes earlier to let them hook into subsequent load process
@@ -831,14 +831,14 @@ class Config
             require_once($path);
         }
 
-        foreach ($this->filetype_checker_paths as $extension => $path) {
+        foreach ($this->filetype_analyzer_paths as $extension => $path) {
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
                 \Psalm\Internal\Analyzer\FileAnalyzer::class
             );
 
-            $this->filetype_checkers[$extension] = $fq_class_name;
+            $this->filetype_analyzers[$extension] = $fq_class_name;
 
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
@@ -1099,7 +1099,7 @@ class Config
      */
     public function getFiletypeAnalyzers()
     {
-        return $this->filetype_checkers;
+        return $this->filetype_analyzers;
     }
 
     /**
@@ -1224,7 +1224,7 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_checker, $debug = false)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, $debug = false)
     {
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
@@ -1274,7 +1274,7 @@ class Config
         $autoload_files_files = array_unique($autoload_files_files);
 
         if ($autoload_files_files) {
-            $codebase = $project_checker->getCodebase();
+            $codebase = $project_analyzer->getCodebase();
             $codebase->register_autoload_files = true;
 
             foreach ($autoload_files_files as $file_path) {
