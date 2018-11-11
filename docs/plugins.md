@@ -2,24 +2,25 @@
 
 Psalm can be extended through plugins to find domain-specific issues.
 
-All plugins must extend `Psalm\Plugin`
+Plugins may implement one of (or more than one of) `Psalm\PluginApi\Hook\*` interface(s).
 
 ```php
 <?php
-class SomePlugin extends \Psalm\Plugin
+class SomePlugin implements \Psalm\PluginApi\Hook\AfterStatementAnalysisInterface
 {
 }
 ```
 
-`Psalm\Plugin` offers six methods that you can override:
- - `afterStatementAnalysis` - called after Psalm evaluates each statement
- - `afterExpressionAnalysis` - called after Psalm evaluates each expression
- - `afterClassLikeVisit` - called after Psalm crawls the parsed Abstract Syntax Tree for a class-like (class, interface, trait). Due to caching the AST is crawled the first time Psalm sees the file, and is only re-crawled if the file changes, the cache is cleared, or you're disabling cache with `--no-cache`
- - `afterClassLikeExistenceCheck` - called after Psalm analyzes a reference to a class-like
- - `afterMethodCallAnalysis` - called after Psalm analyzes a method call
- - `afterFunctionCallAnalysis` - called after Psalm analyzes a function call
+`Psalm\PluginApi\Hook\*` offers six interfaces that you can implement:
 
-An example plugin that checks class references in strings is provided [here](https://github.com/vimeo/psalm/blob/master/examples/StringChecker.php).
+ - `AfterStatementAnalysisInterface` - called after Psalm evaluates each statement
+ - `AfterExpressionAnalysisInterface` - called after Psalm evaluates each expression
+ - `AfterClassLikeVisitInterface` - called after Psalm crawls the parsed Abstract Syntax Tree for a class-like (class, interface, trait). Due to caching the AST is crawled the first time Psalm sees the file, and is only re-crawled if the file changes, the cache is cleared, or you're disabling cache with `--no-cache`
+ - `AfterClassLikeExistenceCheckInterface` - called after Psalm analyzes a reference to a class-like
+ - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call
+ - `AfterFunctionCallAnalysisInterface` - called after Psalm analyzes a function call
+
+An example plugin that checks class references in strings is provided [here](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php).
 
 To ensure your plugin runs when Psalm does, add it to your [config](Configuration):
 ```php
@@ -63,7 +64,7 @@ Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugi
 
 ### Upgrading file-based plugin to composer-based version
 
-Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\PluginApi\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/examples/composer-based/echo-checker/).
+Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\PluginApi\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/examples/plugins/composer-based/echo-checker/).
 
 ### Registering stub files
 
