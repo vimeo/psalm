@@ -35,7 +35,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
     ) {
         $fq_class_name = null;
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
@@ -220,7 +219,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $context->check_classes &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
-                $storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
+                $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 // if we're not calling this constructor via new static()
                 if ($storage->abstract && !$late_static) {

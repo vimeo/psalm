@@ -61,7 +61,6 @@ class PropertyFetchAnalyzer
             $prop_name = null;
         }
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         $stmt_var_id = ExpressionAnalyzer::getArrayVarId(
@@ -311,7 +310,7 @@ class PropertyFetchAnalyzer
                         ) !== true)
                 )
             ) {
-                $class_storage = $project_analyzer->classlike_storage_provider->get((string)$lhs_type_part);
+                $class_storage = $codebase->classlike_storage_provider->get((string)$lhs_type_part);
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                     $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
@@ -387,7 +386,7 @@ class PropertyFetchAnalyzer
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
 
-            $declaring_class_storage = $project_analyzer->classlike_storage_provider->get(
+            $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 (string)$declaring_property_class
             );
 
@@ -430,7 +429,7 @@ class PropertyFetchAnalyzer
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
-                    $class_storage = $project_analyzer->classlike_storage_provider->get($lhs_type_part->value);
+                    $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
                     if ($class_storage->template_types) {
                         $class_template_params = [];
@@ -532,7 +531,6 @@ class PropertyFetchAnalyzer
 
         $fq_class_name = null;
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
@@ -693,7 +691,7 @@ class PropertyFetchAnalyzer
                 $fq_class_name . '::$' . $prop_name
             );
 
-            $class_storage = $project_analyzer->classlike_storage_provider->get((string)$declaring_property_class);
+            $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
             $property = $class_storage->properties[$prop_name];
 
             if ($var_id) {

@@ -256,7 +256,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 if ($in_call_map && !$is_stubbed) {
                     $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
-                        $statements_analyzer->getFileAnalyzer()->project_analyzer,
+                        $codebase,
                         $function_id,
                         $stmt->args
                     );
@@ -288,7 +288,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
                     $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
-                        $statements_analyzer->getFileAnalyzer()->project_analyzer,
+                        $codebase,
                         $function_id,
                         $stmt->args
                     );

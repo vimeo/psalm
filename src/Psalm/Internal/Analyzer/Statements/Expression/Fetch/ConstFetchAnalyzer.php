@@ -85,7 +85,6 @@ class ConstFetchAnalyzer
         PhpParser\Node\Expr\ClassConstFetch $stmt,
         Context $context
     ) {
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($context->check_consts
@@ -227,7 +226,7 @@ class ConstFetchAnalyzer
             }
 
             if ($context->calling_method_id) {
-                $project_analyzer->file_reference_provider->addReferenceToClassMethod(
+                $codebase->file_reference_provider->addReferenceToClassMethod(
                     $context->calling_method_id,
                     strtolower($fq_class_name) . '::' . $stmt->name->name
                 );

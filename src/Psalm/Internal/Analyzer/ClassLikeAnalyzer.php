@@ -103,8 +103,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->fq_class_name = $fq_class_name;
-
-        $this->storage = $this->file_analyzer->project_analyzer->classlike_storage_provider->get($fq_class_name);
+        $codebase = $source->getCodebase();
+        $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
     }
 
     /**
@@ -466,7 +466,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         array $suppressed_issues,
         $emit_issues = true
     ) {
-        $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
         $codebase = $source->getCodebase();
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
@@ -489,7 +488,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             return $emit_issues ? null : true;
         }
 
-        $class_storage = $project_analyzer->classlike_storage_provider->get($declaring_property_class);
+        $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
         if (!isset($class_storage->properties[$property_name])) {
             throw new \UnexpectedValueException('$storage should not be null for ' . $property_id);

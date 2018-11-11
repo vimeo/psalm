@@ -244,7 +244,7 @@ class Codebase
     {
         $this->loadAnalyzer();
 
-        $project_analyzer->file_reference_provider->loadReferenceCache();
+        $this->file_reference_provider->loadReferenceCache();
 
         if (!$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -289,7 +289,7 @@ class Codebase
         $this->scanner->addFilesToDeepScan($referenced_files);
         $this->scanner->scanFiles($this->classlikes);
 
-        $project_analyzer->file_reference_provider->updateReferenceCache($this, $referenced_files);
+        $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
         $this->populator->populateCodebase($this);
     }

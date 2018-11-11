@@ -328,6 +328,8 @@ class IssueBuffer
             echo "\n";
         }
 
+        $codebase = $project_analyzer->getCodebase();
+
         $error_count = 0;
         $info_count = 0;
 
@@ -429,7 +431,6 @@ class IssueBuffer
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
 
-                $codebase = $project_analyzer->getCodebase();
                 if ($is_full) {
                     $analysis_summary = $codebase->analyzer->getTypeInferenceSummary();
                     echo $analysis_summary . "\n";
@@ -448,10 +449,10 @@ class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            $project_analyzer->file_reference_provider->removeDeletedFilesFromReferences();
+            $codebase->file_reference_provider->removeDeletedFilesFromReferences();
 
-            if ($project_analyzer->parser_cache_provider) {
-                $project_analyzer->parser_cache_provider->processSuccessfulRun($start_time);
+            if ($codebase->statements_provider->parser_cache_provider) {
+                $codebase->statements_provider->parser_cache_provider->processSuccessfulRun($start_time);
             }
         }
     }

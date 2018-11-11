@@ -188,6 +188,7 @@ class Analyzer
         $this->loadCachedResults($project_analyzer);
 
         $filetype_analyzers = $this->config->getFiletypeAnalyzers();
+        $codebase = $project_analyzer->getCodebase();
 
         $analysis_worker =
             /**
@@ -252,11 +253,11 @@ class Analyzer
                 IssueBuffer::addIssues($pool_data['issues']);
 
                 foreach ($pool_data['issues'] as $issue_data) {
-                    $project_analyzer->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
+                    $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
                 }
 
-                $project_analyzer->file_reference_provider->addFileReferences($pool_data['file_references']);
-                $project_analyzer->file_reference_provider->addClassMethodReferences($pool_data['method_references']);
+                $codebase->file_reference_provider->addFileReferences($pool_data['file_references']);
+                $codebase->file_reference_provider->addClassMethodReferences($pool_data['method_references']);
                 $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
 
                 foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
@@ -286,15 +287,15 @@ class Analyzer
             }
 
             foreach (IssueBuffer::getIssuesData() as $issue_data) {
-                $project_analyzer->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
+                $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
             }
         }
 
         $codebase = $project_analyzer->getCodebase();
         $scanned_files = $codebase->scanner->getScannedFiles();
-        $project_analyzer->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
-        $project_analyzer->file_reference_provider->setFileMaps($this->getFileMaps());
-        $project_analyzer->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
+        $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
+        $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
+        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->diff_methods) {
             $codebase->statements_provider->resetDiffs();
@@ -316,9 +317,9 @@ class Analyzer
         if ($codebase->diff_methods
             && (!$codebase->collect_references || $codebase->server_mode)
         ) {
-            $this->analyzed_methods = $project_analyzer->file_reference_provider->getAnalyzedMethods();
-            $this->existing_issues = $project_analyzer->file_reference_provider->getExistingIssues();
-            $file_maps = $project_analyzer->file_reference_provider->getFileMaps();
+            $this->analyzed_methods = $codebase->file_reference_provider->getAnalyzedMethods();
+            $this->existing_issues = $codebase->file_reference_provider->getExistingIssues();
+            $file_maps = $codebase->file_reference_provider->getFileMaps();
 
             foreach ($file_maps as $file_path => list($reference_map, $type_map)) {
                 $this->reference_map[$file_path] = $reference_map;
@@ -333,7 +334,7 @@ class Analyzer
 
         $diff_map = $statements_provider->getDiffMap();
 
-        $all_referencing_methods = $project_analyzer->file_reference_provider->getMethodsReferencing();
+        $all_referencing_methods = $codebase->file_reference_provider->getMethodsReferencing();
 
         $classlikes = $codebase->classlikes;
 
@@ -415,8 +416,8 @@ class Analyzer
         $this->shiftFileOffsets($diff_map);
 
         foreach ($this->files_to_analyze as $file_path) {
-            $project_analyzer->file_reference_provider->clearExistingIssuesForFile($file_path);
-            $project_analyzer->file_reference_provider->clearExistingFileMapsForFile($file_path);
+            $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
+            $codebase->file_reference_provider->clearExistingFileMapsForFile($file_path);
         }
     }
 
