@@ -1454,7 +1454,7 @@ class Reconciler
                     $did_remove_type = false;
 
                     foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($key !== $new_var_type) {
+                        if ($atomic_key !== $new_var_type) {
                             $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {
@@ -1497,7 +1497,7 @@ class Reconciler
                     $did_remove_type = false;
 
                     foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($key !== $new_var_type) {
+                        if ($atomic_key !== $new_var_type) {
                             $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {
@@ -1542,7 +1542,7 @@ class Reconciler
                     $did_remove_type = false;
 
                     foreach ($existing_var_atomic_types as $atomic_key => $_) {
-                        if ($key !== $new_var_type) {
+                        if ($atomic_key !== $new_var_type) {
                             $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {

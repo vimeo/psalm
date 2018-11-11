@@ -556,14 +556,12 @@ class SwitchChecker
                 if ($redefined_vars !== null) {
                     foreach ($redefined_vars as $var_id => $type) {
                         if (isset($case_context->switch_scope->break_vars[$var_id])) {
-                            if (!isset($case_context->switch_scope->break_vars[$var_id])) {
-                                unset($redefined_vars[$var_id]);
-                            } else {
-                                $redefined_vars[$var_id] = Type::combineUnionTypes(
-                                    $case_context->switch_scope->break_vars[$var_id],
-                                    $type
-                                );
-                            }
+                            $redefined_vars[$var_id] = Type::combineUnionTypes(
+                                $case_context->switch_scope->break_vars[$var_id],
+                                $type
+                            );
+                        } else {
+                            unset($redefined_vars[$var_id]);
                         }
                     }
                 }
