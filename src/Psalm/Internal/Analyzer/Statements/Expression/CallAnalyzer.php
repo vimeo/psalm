@@ -162,10 +162,10 @@ class CallAnalyzer
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer
     ) {
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         $method_params = $method_id
-            ? FunctionLikeAnalyzer::getMethodParamsById($project_analyzer, $method_id, $args)
+            ? FunctionLikeAnalyzer::getMethodParamsById($codebase, $method_id, $args)
             : null;
 
         if (self::checkFunctionArguments(
@@ -184,7 +184,7 @@ class CallAnalyzer
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        $class_storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         $method_storage = null;
 
@@ -194,7 +194,7 @@ class CallAnalyzer
             list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
 
             if ($declaring_fq_class_name !== $fq_class_name) {
-                $declaring_class_storage = $project_analyzer->classlike_storage_provider->get($declaring_fq_class_name);
+                $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_fq_class_name);
             } else {
                 $declaring_class_storage = $class_storage;
             }
@@ -213,7 +213,7 @@ class CallAnalyzer
         if (!$class_storage->user_defined) {
             // check again after we've processed args
             $method_params = FunctionLikeAnalyzer::getMethodParamsById(
-                $project_analyzer,
+                $codebase,
                 $method_id,
                 $args
             );
@@ -740,7 +740,6 @@ class CallAnalyzer
 
         $fq_class_name = null;
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($method_id) {
@@ -767,7 +766,7 @@ class CallAnalyzer
 
             if ($declaring_method_id && $declaring_method_id !== $method_id) {
                 list($fq_class_name) = explode('::', $declaring_method_id);
-                $class_storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
+                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             }
         }
 

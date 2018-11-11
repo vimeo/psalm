@@ -411,8 +411,8 @@ class Scanner
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
                         'diff_map' => $statements_provider->getDiffMap(),
-                        'classlike_storage' => $project_analyzer->classlike_storage_provider->getAll(),
-                        'file_storage' => $project_analyzer->file_storage_provider->getAll(),
+                        'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
+                        'file_storage' => $codebase->file_storage_provider->getAll(),
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
                             ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                             : [],

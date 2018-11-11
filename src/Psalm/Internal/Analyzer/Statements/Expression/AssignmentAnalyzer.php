@@ -66,7 +66,7 @@ class AssignmentAnalyzer
             $file_path = $statements_analyzer->getRootFilePath();
             $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
 
-            $file_storage_provider = $project_analyzer->file_storage_provider;
+            $file_storage_provider = $codebase->file_storage_provider;
 
             $file_storage = $file_storage_provider->get($file_path);
 
