@@ -352,12 +352,32 @@ class StatementsChecker extends SourceChecker implements StatementsSource
                 }
 
                 $switch_scope = $context->switch_scope;
-                if ($switch_scope && $context->collect_references) {
-                    foreach ($context->unreferenced_vars as $var_id => $locations) {
-                        if (isset($switch_scope->unreferenced_vars[$var_id])) {
-                            $switch_scope->unreferenced_vars[$var_id] += $locations;
-                        } else {
-                            $switch_scope->unreferenced_vars[$var_id] = $locations;
+                if ($switch_scope) {
+                    foreach ($context->vars_in_scope as $var_id => $type) {
+                        if ($switch_scope->parent_context !== $context) {
+                            if ($switch_scope->break_vars === null) {
+                                $switch_scope->break_vars = [];
+                            }
+
+                            foreach ($context->vars_in_scope as $var_id => $type) {
+                                if (isset($switch_scope->break_vars[$var_id])) {
+                                    $switch_scope->break_vars[$var_id] = Type::combineUnionTypes(
+                                        $type,
+                                        $switch_scope->break_vars[$var_id]
+                                    );
+                                } else {
+                                    $switch_scope->break_vars[$var_id] = $type;
+                                }
+                            }
+                        }
+                    }
+                    if ($context->collect_references) {
+                        foreach ($context->unreferenced_vars as $var_id => $locations) {
+                            if (isset($switch_scope->unreferenced_vars[$var_id])) {
+                                $switch_scope->unreferenced_vars[$var_id] += $locations;
+                            } else {
+                                $switch_scope->unreferenced_vars[$var_id] = $locations;
+                            }
                         }
                     }
                 }

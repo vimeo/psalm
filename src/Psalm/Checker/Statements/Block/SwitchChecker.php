@@ -112,6 +112,7 @@ class SwitchChecker
             }
             $case_context->parent_context = $context;
             $case_context->switch_scope = new SwitchScope();
+            $case_context->switch_scope->parent_context = $case_context;
 
             $case_equality_expr = null;
 
@@ -514,6 +515,59 @@ class SwitchChecker
                     }
                 }
             }
+
+            // augment the information with data from break statements
+            if ($case_context->switch_scope->break_vars !== null) {
+                if ($possibly_redefined_vars === null) {
+                    $possibly_redefined_vars = array_intersect_key(
+                        $case_context->switch_scope->break_vars,
+                        $context->vars_in_scope
+                    );
+                } else {
+                    foreach ($case_context->switch_scope->break_vars as $var_id => $type) {
+                        if (isset($context->vars_in_scope[$var_id])) {
+                            if (!isset($possibly_redefined_vars[$var_id])) {
+                                $possibly_redefined_vars[$var_id] = $type;
+                            } else {
+                                $possibly_redefined_vars[$var_id] = Type::combineUnionTypes(
+                                    $type,
+                                    $possibly_redefined_vars[$var_id]
+                                );
+                            }
+                        }
+                    }
+                }
+
+                if ($new_vars_in_scope !== null) {
+                    foreach ($new_vars_in_scope as $var_id => $type) {
+                        if (isset($case_context->switch_scope->break_vars[$var_id])) {
+                            if (!isset($case_context->vars_in_scope[$var_id])) {
+                                unset($new_vars_in_scope[$var_id]);
+                            } else {
+                                $new_vars_in_scope[$var_id] = Type::combineUnionTypes(
+                                    $case_context->switch_scope->break_vars[$var_id],
+                                    $type
+                                );
+                            }
+                        }
+                    }
+                }
+
+                if ($redefined_vars !== null) {
+                    foreach ($redefined_vars as $var_id => $type) {
+                        if (isset($case_context->switch_scope->break_vars[$var_id])) {
+                            if (!isset($case_context->switch_scope->break_vars[$var_id])) {
+                                unset($redefined_vars[$var_id]);
+                            } else {
+                                $redefined_vars[$var_id] = Type::combineUnionTypes(
+                                    $case_context->switch_scope->break_vars[$var_id],
+                                    $type
+                                );
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         $all_options_matched = $has_default;
@@ -558,8 +612,10 @@ class SwitchChecker
             if ($possibly_redefined_vars) {
                 foreach ($possibly_redefined_vars as $var_id => $type) {
                     if (!isset($redefined_vars[$var_id]) && !isset($new_vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id]
-                            = Type::combineUnionTypes($type, $context->vars_in_scope[$var_id]);
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $type,
+                            $context->vars_in_scope[$var_id]
+                        );
                     }
                 }
             }

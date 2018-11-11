@@ -480,6 +480,42 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchVarConditionalAssignment' => [
+                '<?php
+                    switch (rand(0, 4)) {
+                        case 0:
+                            if (rand(0, 1)) {
+                                $a = false;
+                                break;
+                            }
+
+                        default:
+                            $a = true;
+                            $b = 1;
+                    }',
+                'assertions' => [
+                    '$a' => 'bool',
+                    '$b' => 'int',
+                ],
+            ],
+            'switchVarConditionalReAssignment' => [
+                '<?php
+                    $a = false;
+                    switch (rand(0, 4)) {
+                        case 0:
+                            $b = 1;
+                            if (rand(0, 1)) {
+                                $a = false;
+                                break;
+                            }
+
+                        default:
+                            $a = true;
+                    }',
+                'assertions' => [
+                    '$a' => 'bool',
+                ],
+            ],
         ];
     }
 
