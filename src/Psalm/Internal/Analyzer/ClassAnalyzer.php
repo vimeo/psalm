@@ -119,7 +119,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $project_analyzer = $this->file_analyzer->project_analyzer;
         $codebase = $this->getCodebase();
 
-        $classlike_storage_provider = $project_analyzer->classlike_storage_provider;
+        $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
@@ -468,7 +468,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
-                $this->checkForMissingPropertyType($project_analyzer, $this, $stmt);
+                $this->checkForMissingPropertyType($this, $stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -488,7 +488,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($project_analyzer, $trait_analyzer, $trait_stmt);
+                            $this->checkForMissingPropertyType($trait_analyzer, $trait_stmt);
                         }
                     }
                 }
@@ -862,7 +862,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      * @return  void
      */
     private function checkForMissingPropertyType(
-        ProjectAnalyzer $project_analyzer,
         StatementsSource $source,
         PhpParser\Node\Stmt\Property $stmt
     ) {
@@ -888,7 +887,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $message = 'Property ' . $fq_class_name . '::$' . $property_name . ' does not have a declared type';
 
-            $class_storage = $project_analyzer->classlike_storage_provider->get($fq_class_name);
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
             $property_storage = $class_storage->properties[$property_name];
 

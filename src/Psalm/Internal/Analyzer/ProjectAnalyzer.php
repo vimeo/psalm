@@ -42,17 +42,14 @@ class ProjectAnalyzer
     /** @var FileProvider */
     private $file_provider;
 
-    /** @var FileStorageProvider */
-    public $file_storage_provider;
-
     /** @var ClassLikeStorageProvider */
-    public $classlike_storage_provider;
+    private $classlike_storage_provider;
 
     /** @var ?ParserCacheProvider */
-    public $parser_cache_provider;
+    private $parser_cache_provider;
 
     /** @var FileReferenceProvider */
-    public $file_reference_provider;
+    private $file_reference_provider;
 
     /**
      * Whether or not to use colors in error output
@@ -171,7 +168,6 @@ class ProjectAnalyzer
     ) {
         $this->parser_cache_provider = $providers->parser_cache_provider;
         $this->file_provider = $providers->file_provider;
-        $this->file_storage_provider = $providers->file_storage_provider;
         $this->classlike_storage_provider = $providers->classlike_storage_provider;
         $this->file_reference_provider = $providers->file_reference_provider;
 

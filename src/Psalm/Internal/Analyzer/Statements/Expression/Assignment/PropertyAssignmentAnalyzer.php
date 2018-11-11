@@ -60,7 +60,6 @@ class PropertyAssignmentAnalyzer
     ) {
         $class_property_types = [];
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         $property_exists = false;
@@ -276,7 +275,7 @@ class PropertyAssignmentAnalyzer
                             ) !== true)
                     )
                 ) {
-                    $class_storage = $project_analyzer->classlike_storage_provider->get((string)$lhs_type_part);
+                    $class_storage = $codebase->classlike_storage_provider->get((string)$lhs_type_part);
 
                     if ($var_id) {
                         if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
@@ -388,7 +387,7 @@ class PropertyAssignmentAnalyzer
                     $property_id
                 );
 
-                $class_storage = $project_analyzer->classlike_storage_provider->get((string)$declaring_property_class);
+                $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
 
                 $property_storage = $class_storage->properties[$prop_name];
 
@@ -705,7 +704,6 @@ class PropertyAssignmentAnalyzer
 
         $fq_class_name = (string)$stmt->class->inferredType;
 
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         $prop_name = $stmt->name;
@@ -745,7 +743,7 @@ class PropertyAssignmentAnalyzer
             $fq_class_name . '::$' . $prop_name->name
         );
 
-        $class_storage = $project_analyzer->classlike_storage_provider->get((string)$declaring_property_class);
+        $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
 
         $property_storage = $class_storage->properties[$prop_name->name];
 

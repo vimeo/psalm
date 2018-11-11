@@ -111,7 +111,7 @@ class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $referenced_methods = $this->project_analyzer->file_reference_provider->getClassMethodReferences();
+        $referenced_methods = $this->project_analyzer->getCodebase()->file_reference_provider->getClassMethodReferences();
 
         $this->assertSame($expected_referenced_methods, $referenced_methods);
     }

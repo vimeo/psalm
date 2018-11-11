@@ -997,11 +997,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getMethodParamsById(ProjectAnalyzer $project_analyzer, $method_id, array $args)
+    public static function getMethodParamsById(Codebase $codebase, $method_id, array $args)
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
-
-        $codebase = $project_analyzer->getCodebase();
 
         if ($fq_class_name) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -1024,7 +1022,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 );
             }
 
-            return self::getMatchingParamsFromCallMapOptions($project_analyzer, $function_param_options, $args);
+            return self::getMatchingParamsFromCallMapOptions($codebase, $function_param_options, $args);
         }
 
         return $codebase->methods->getMethodParams($method_id);
@@ -1036,7 +1034,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getFunctionParamsFromCallMapById(ProjectAnalyzer $project_analyzer, $method_id, array $args)
+    public static function getFunctionParamsFromCallMapById(Codebase $codebase, $method_id, array $args)
     {
         $function_param_options = CallMap::getParamsFromCallMap($method_id);
 
@@ -1046,7 +1044,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         }
 
-        return self::getMatchingParamsFromCallMapOptions($project_analyzer, $function_param_options, $args);
+        return self::getMatchingParamsFromCallMapOptions($codebase, $function_param_options, $args);
     }
 
     /**
@@ -1056,7 +1054,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      * @return array<int, FunctionLikeParameter>
      */
     protected static function getMatchingParamsFromCallMapOptions(
-        ProjectAnalyzer $project_analyzer,
+        Codebase $codebase,
         array $function_param_options,
         array $args
     ) {
@@ -1108,7 +1106,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
 
                 if (TypeAnalyzer::isContainedBy(
-                    $project_analyzer->getCodebase(),
+                    $codebase,
                     $arg->value->inferredType,
                     $param_type,
                     true,
