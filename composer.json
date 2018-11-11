@@ -22,11 +22,13 @@
         "sabre/event": "^5.0.1",
         "sabre/uri": "^2.0",
         "webmozart/glob": "^4.1",
-        "webmozart/path-util": "^2.3"
+        "webmozart/path-util": "^2.3",
+        "symfony/console": "^3.0||^4.0"
     },
     "bin": ["psalm", "psalter", "psalm-language-server"],
     "autoload": {
         "psr-4": {
+            "Psalm\\PluginApi\\": "src/Psalm/PluginApi",
             "Psalm\\": "src/Psalm"
         }
     },
@@ -70,5 +72,11 @@
     },
     "provide": {
         "psalm/psalm": "self.version"
-    }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "examples/composer-based/echo-checker"
+        }
+    ]
 }

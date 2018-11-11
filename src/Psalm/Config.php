@@ -9,6 +9,7 @@ use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Scanner\FileScanner;
 use SimpleXMLElement;
+use Psalm\PluginRegistrationSocket;
 
 class Config
 {
@@ -237,6 +238,11 @@ class Config
      * @var string[]
      */
     public $plugin_paths = [];
+
+    /**
+     * @var array<array{class:string,config:?SimpleXmlElement}>
+     */
+    private $plugin_classes = [];
 
     /**
      * Static methods to be called after method checks have completed
@@ -637,19 +643,34 @@ class Config
                     );
                 }
 
-                $config->stub_files[] = $file_path;
+                $config->addStubFile($file_path);
             }
         }
 
         // this plugin loading system borrows heavily from etsy/phan
-        if (isset($config_xml->plugins) && isset($config_xml->plugins->plugin)) {
-            /** @var \SimpleXMLElement $plugin */
-            foreach ($config_xml->plugins->plugin as $plugin) {
-                $plugin_file_name = $plugin['filename'];
+        if (isset($config_xml->plugins)) {
+            if (isset($config_xml->plugins->plugin)) {
+                /** @var \SimpleXMLElement $plugin */
+                foreach ($config_xml->plugins->plugin as $plugin) {
+                    $plugin_file_name = $plugin['filename'];
 
-                $path = $config->base_dir . $plugin_file_name;
+                    $path = $config->base_dir . $plugin_file_name;
 
-                $config->addPluginPath($path);
+                    $config->addPluginPath($path);
+                }
+            }
+            if (isset($config_xml->plugins->pluginClass)) {
+                /** @var \SimpleXMLElement $plugin */
+                foreach ($config_xml->plugins->pluginClass as $plugin) {
+                    $plugin_class_name = $plugin['class'];
+                    // any child elements are used as plugin configuration
+                    $plugin_config = null;
+                    if ($plugin->count()) {
+                        $plugin_config = $plugin->children();
+                    }
+
+                    $config->addPluginClass($plugin_class_name, $plugin_config);
+                }
             }
         }
 
@@ -757,6 +778,18 @@ class Config
         $this->plugin_paths[] = $path;
     }
 
+    /** @return void */
+    public function addPluginClass(string $class_name, SimpleXmlElement $plugin_config = null)
+    {
+        $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
+    }
+
+    /** @return array<array{class:string, config:?SimpleXmlElement}> */
+    public function getPluginClasses(): array
+    {
+        return $this->plugin_classes;
+    }
+
     /**
      * Initialises all the plugins (done once the config is fully loaded)
      *
@@ -769,7 +802,21 @@ class Config
      */
     public function initializePlugins(ProjectChecker $project_checker)
     {
-        $codebase = $project_checker->codebase;
+        $codebase = $project_checker->getCodebase();
+
+        $socket = new PluginRegistrationSocket($this);
+        // initialize plugin classes earlier to let them hook into subsequent load process
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin_config = $plugin_class_entry['config'];
+            try {
+                /** @var PluginApi\PluginEntryPointInterface $plugin_object */
+                $plugin_object = new $plugin_class_name;
+                $plugin_object($socket, $plugin_config);
+            } catch (\Throwable $e) {
+                throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
+            }
+        }
 
         foreach ($this->filetype_scanner_paths as $extension => $path) {
             $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Scanner\\FileScanner');
@@ -790,33 +837,11 @@ class Config
         }
 
         foreach ($this->plugin_paths as $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Plugin');
-
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($path);
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterMethodCallCheck')) {
-                $this->after_method_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterFunctionCallCheck')) {
-                $this->after_function_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterExpressionCheck')) {
-                $this->after_expression_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterStatementCheck')) {
-                $this->after_statement_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterClassLikeExistsCheck')) {
-                $this->after_classlike_exists_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterVisitClassLike')) {
-                $this->after_visit_classlikes[$fq_class_name] = $fq_class_name;
+            try {
+                $plugin_object = new FileBasedPluginAdapter($path, $this, $project_checker);
+                $plugin_object($socket);
+            } catch (\Throwable $e) {
+                throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
     }
@@ -1319,5 +1344,11 @@ class Config
     public function setServerMode()
     {
         $this->cache_directory .= '-s';
+    }
+
+    /** @return void */
+    public function addStubFile(string $stub_file)
+    {
+        $this->stub_files[] = $stub_file;
     }
 }

@@ -95,6 +95,7 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
+                <directory name="src/Psalm/PluginApi" />
                 <file name="src/Psalm/Plugin.php" />
                 <file name="src/Psalm/LanguageServer/Client/TextDocument.php" />
                 <file name="src/Psalm/LanguageServer/Server/TextDocument.php" />
