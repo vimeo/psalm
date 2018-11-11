@@ -385,8 +385,8 @@ class Scanner
                 $process_file_paths,
                 /** @return void */
                 function () {
-                    $project_checker = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
-                    $codebase = $project_checker->getCodebase();
+                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     $codebase->scanner->isForked();
@@ -400,8 +400,8 @@ class Scanner
                  * @return PoolData
                 */
                 function () {
-                    $project_checker = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
-                    $codebase = $project_checker->getCodebase();
+                    $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+                    $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
 
                     return [
@@ -411,8 +411,8 @@ class Scanner
                         'changed_members' => $statements_provider->getChangedMembers(),
                         'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
                         'diff_map' => $statements_provider->getDiffMap(),
-                        'classlike_storage' => $project_checker->classlike_storage_provider->getAll(),
-                        'file_storage' => $project_checker->file_storage_provider->getAll(),
+                        'classlike_storage' => $project_analyzer->classlike_storage_provider->getAll(),
+                        'file_storage' => $project_analyzer->file_storage_provider->getAll(),
                         'new_file_content_hashes' => $statements_provider->parser_cache_provider
                             ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
                             : [],

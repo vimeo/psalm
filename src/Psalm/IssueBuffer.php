@@ -135,9 +135,9 @@ class IssueBuffer
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
-        $project_checker = ProjectAnalyzer::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
-        if (!$project_checker->show_issues) {
+        if (!$project_analyzer->show_issues) {
             return false;
         }
 
@@ -309,7 +309,7 @@ class IssueBuffer
     }
 
     /**
-     * @param  ProjectAnalyzer                   $project_checker
+     * @param  ProjectAnalyzer                   $project_analyzer
      * @param  bool                             $is_full
      * @param  float                            $start_time
      * @param  bool                             $add_stats
@@ -318,13 +318,13 @@ class IssueBuffer
      * @return void
      */
     public static function finish(
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         bool $is_full,
         float $start_time,
         bool $add_stats = false,
         array $issue_baseline = []
     ) {
-        if ($project_checker->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+        if ($project_analyzer->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo "\n";
         }
 
@@ -387,25 +387,25 @@ class IssueBuffer
             }
 
             echo self::getOutput(
-                $project_checker->output_format,
-                $project_checker->use_color,
-                $project_checker->show_snippet,
-                $project_checker->show_info
+                $project_analyzer->output_format,
+                $project_analyzer->use_color,
+                $project_analyzer->show_snippet,
+                $project_analyzer->show_info
             );
         }
 
-        foreach ($project_checker->reports as $format => $path) {
+        foreach ($project_analyzer->reports as $format => $path) {
             file_put_contents(
                 $path,
-                self::getOutput($format, $project_checker->use_color)
+                self::getOutput($format, $project_analyzer->use_color)
             );
         }
 
-        if ($project_checker->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+        if ($project_analyzer->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
-                echo ($project_checker->use_color
+                echo ($project_analyzer->use_color
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
@@ -413,12 +413,12 @@ class IssueBuffer
                 echo 'No errors found!' . "\n";
             }
 
-            if ($info_count && $project_checker->show_info) {
+            if ($info_count && $project_analyzer->show_info) {
                 echo str_repeat('-', 30) . "\n";
 
                 echo $info_count . ' other issues found.' . "\n"
                     . 'You can hide them with ' .
-                    ($project_checker->use_color
+                    ($project_analyzer->use_color
                         ? "\e[30;48;5;195m--show-info=false\e[0m"
                         : '--show-info=false') . "\n";
             }
@@ -429,7 +429,7 @@ class IssueBuffer
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
 
-                $codebase = $project_checker->getCodebase();
+                $codebase = $project_analyzer->getCodebase();
                 if ($is_full) {
                     $analysis_summary = $codebase->analyzer->getTypeInferenceSummary();
                     echo $analysis_summary . "\n";
@@ -448,10 +448,10 @@ class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            $project_checker->file_reference_provider->removeDeletedFilesFromReferences();
+            $project_analyzer->file_reference_provider->removeDeletedFilesFromReferences();
 
-            if ($project_checker->parser_cache_provider) {
-                $project_checker->parser_cache_provider->processSuccessfulRun($start_time);
+            if ($project_analyzer->parser_cache_provider) {
+                $project_analyzer->parser_cache_provider->processSuccessfulRun($start_time);
             }
         }
     }

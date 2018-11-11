@@ -39,7 +39,7 @@ use Psalm\Type\Atomic\TObject;
 class PropertyAssignmentAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PropertyFetch|PropertyProperty  $stmt
      * @param   string                          $prop_name
      * @param   PhpParser\Node\Expr|null        $assignment_value
@@ -50,7 +50,7 @@ class PropertyAssignmentAnalyzer
      * @return  false|null
      */
     public static function analyzeInstance(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $stmt,
         $prop_name,
         $assignment_value,
@@ -60,8 +60,8 @@ class PropertyAssignmentAnalyzer
     ) {
         $class_property_types = [];
 
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         $property_exists = false;
 
@@ -91,7 +91,7 @@ class PropertyAssignmentAnalyzer
 
             $var_id = '$this->' . $prop_name;
         } else {
-            if (ExpressionAnalyzer::analyze($statements_checker, $stmt->var, $context) === false) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context) === false) {
                 return false;
             }
 
@@ -103,14 +103,14 @@ class PropertyAssignmentAnalyzer
 
             $lhs_var_id = ExpressionAnalyzer::getVarId(
                 $stmt->var,
-                $statements_checker->getFQCLN(),
-                $statements_checker
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
             );
 
             $var_id = ExpressionAnalyzer::getVarId(
                 $stmt,
-                $statements_checker->getFQCLN(),
-                $statements_checker
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
             );
 
             if ($var_id) {
@@ -120,9 +120,9 @@ class PropertyAssignmentAnalyzer
                     if (IssueBuffer::accepts(
                         new LoopInvalidation(
                             'Variable ' . $var_id . ' has already been assigned in a for/foreach loop',
-                            new CodeLocation($statements_checker->getSource(), $stmt->var)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -130,14 +130,14 @@ class PropertyAssignmentAnalyzer
             }
 
             if ($lhs_type->isMixed()) {
-                $codebase->analyzer->incrementMixedCount($statements_checker->getFilePath());
+                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
                         $lhs_var_id . ' of type mixed cannot be assigned to',
-                        new CodeLocation($statements_checker->getSource(), $stmt->var)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -145,15 +145,15 @@ class PropertyAssignmentAnalyzer
                 return null;
             }
 
-            $codebase->analyzer->incrementNonMixedCount($statements_checker->getFilePath());
+            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
             if ($lhs_type->isNull()) {
                 if (IssueBuffer::accepts(
                     new NullPropertyAssignment(
                         $lhs_var_id . ' of type null cannot be assigned to',
-                        new CodeLocation($statements_checker->getSource(), $stmt->var)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -165,9 +165,9 @@ class PropertyAssignmentAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyNullPropertyAssignment(
                         $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
-                        new CodeLocation($statements_checker->getSource(), $stmt->var)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -230,9 +230,9 @@ class PropertyAssignmentAnalyzer
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -243,10 +243,10 @@ class PropertyAssignmentAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $lhs_type_part->value
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -257,11 +257,11 @@ class PropertyAssignmentAnalyzer
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
                 $property_ids[] = $property_id;
 
-                $statements_checker_source = $statements_checker->getSource();
+                $statements_analyzer_source = $statements_analyzer->getSource();
 
                 if ($codebase->methodExists($lhs_type_part->value . '::__set')
-                    && (!$statements_checker_source instanceof FunctionLikeAnalyzer
-                        || $statements_checker_source->getMethodId() !== $lhs_type_part->value . '::__set')
+                    && (!$statements_analyzer_source instanceof FunctionLikeAnalyzer
+                        || $statements_analyzer_source->getMethodId() !== $lhs_type_part->value . '::__set')
                     && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
                     && (!$codebase->properties->propertyExists($property_id)
                         || ($lhs_var_id !== '$this'
@@ -269,14 +269,14 @@ class PropertyAssignmentAnalyzer
                             && ClassLikeAnalyzer::checkPropertyVisibility(
                                 $property_id,
                                 $context->self,
-                                $statements_checker,
-                                new CodeLocation($statements_checker->getSource(), $stmt),
-                                $statements_checker->getSuppressedIssues(),
+                                $statements_analyzer,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $statements_analyzer->getSuppressedIssues(),
                                 false
                             ) !== true)
                     )
                 ) {
-                    $class_storage = $project_checker->classlike_storage_provider->get((string)$lhs_type_part);
+                    $class_storage = $project_analyzer->classlike_storage_provider->get((string)$lhs_type_part);
 
                     if ($var_id) {
                         if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
@@ -325,10 +325,10 @@ class PropertyAssignmentAnalyzer
                         if (IssueBuffer::accepts(
                             new UndefinedThisPropertyAssignment(
                                 'Instance property ' . $property_id . ' is not defined',
-                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $property_id
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -336,10 +336,10 @@ class PropertyAssignmentAnalyzer
                         if (IssueBuffer::accepts(
                             new UndefinedPropertyAssignment(
                                 'Instance property ' . $property_id . ' is not defined',
-                                new CodeLocation($statements_checker->getSource(), $stmt),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 $property_id
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -353,7 +353,7 @@ class PropertyAssignmentAnalyzer
                         && !$context->collect_mutations)
                 ) {
                     $codebase->analyzer->addNodeReference(
-                        $statements_checker->getFilePath(),
+                        $statements_analyzer->getFilePath(),
                         $stmt->name,
                         $property_id
                     );
@@ -365,9 +365,9 @@ class PropertyAssignmentAnalyzer
                     if (ClassLikeAnalyzer::checkPropertyVisibility(
                         $property_id,
                         $context->self,
-                        $statements_checker,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $statements_analyzer->getSuppressedIssues()
                     ) === false) {
                         return false;
                     }
@@ -375,9 +375,9 @@ class PropertyAssignmentAnalyzer
                     if (ClassLikeAnalyzer::checkPropertyVisibility(
                         $property_id,
                         $context->self,
-                        $statements_checker,
-                        new CodeLocation($statements_checker->getSource(), $stmt),
-                        $statements_checker->getSuppressedIssues(),
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $statements_analyzer->getSuppressedIssues(),
                         false
                     ) !== true) {
                         continue;
@@ -388,7 +388,7 @@ class PropertyAssignmentAnalyzer
                     $property_id
                 );
 
-                $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
+                $class_storage = $project_analyzer->classlike_storage_provider->get((string)$declaring_property_class);
 
                 $property_storage = $class_storage->properties[$prop_name];
 
@@ -396,10 +396,10 @@ class PropertyAssignmentAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedProperty(
                             $property_id . ' is marked deprecated',
-                            new CodeLocation($statements_checker->getSource(), $stmt),
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -436,9 +436,9 @@ class PropertyAssignmentAnalyzer
                         if (IssueBuffer::accepts(
                             new MixedAssignment(
                                 'Cannot assign ' . $var_id . ' to a mixed type',
-                                new CodeLocation($statements_checker->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             // fall through
                         }
@@ -456,9 +456,9 @@ class PropertyAssignmentAnalyzer
                         new InvalidPropertyAssignment(
                             $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
                             '\' cannot treated as an object',
-                            new CodeLocation($statements_checker->getSource(), $stmt->var)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -467,9 +467,9 @@ class PropertyAssignmentAnalyzer
                         new PossiblyInvalidPropertyAssignment(
                             $lhs_var_id . ' with possible non-object type \'' . $invalid_assignment_type .
                             '\' cannot treated as an object',
-                            new CodeLocation($statements_checker->getSource(), $stmt->var)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->var)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -504,7 +504,7 @@ class PropertyAssignmentAnalyzer
             && count($class_property_types) === 1
         ) {
             $codebase->analyzer->addNodeType(
-                $statements_checker->getFilePath(),
+                $statements_analyzer->getFilePath(),
                 $stmt->name,
                 (string) $class_property_types[0]
             );
@@ -534,12 +534,12 @@ class PropertyAssignmentAnalyzer
                             $var_id . ' expects \'' . $class_property_type . '\', '
                                 . ' parent type `' . $assignment_value_type . '` provided',
                             new CodeLocation(
-                                $statements_checker->getSource(),
+                                $statements_analyzer->getSource(),
                                 $assignment_value ?: $stmt,
                                 $context->include_location
                             )
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // keep soldiering on
                     }
@@ -549,12 +549,12 @@ class PropertyAssignmentAnalyzer
                             $var_id . ' expects \'' . $class_property_type . '\', '
                                 . ' parent type \'' . $assignment_value_type . '\' provided',
                             new CodeLocation(
-                                $statements_checker->getSource(),
+                                $statements_analyzer->getSource(),
                                 $assignment_value ?: $stmt,
                                 $context->include_location
                             )
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // keep soldiering on
                     }
@@ -567,12 +567,12 @@ class PropertyAssignmentAnalyzer
                         $var_id . ' expects \'' . $class_property_type . '\', '
                             . '\'' . $assignment_value_type . '\' provided with a __toString method',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
                         )
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // fall through
                 }
@@ -604,13 +604,13 @@ class PropertyAssignmentAnalyzer
                             $var_id . ' with non-nullable declared type \'' . $class_property_type .
                                 '\' cannot be assigned nullable type \'' . $assignment_value_type . '\'',
                             new CodeLocation(
-                                $statements_checker->getSource(),
+                                $statements_analyzer->getSource(),
                                 $assignment_value ?: $stmt,
                                 $context->include_location
                             ),
                             $property_ids[0]
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -625,13 +625,13 @@ class PropertyAssignmentAnalyzer
                             $var_id . ' with non-falsable declared type \'' . $class_property_type .
                                 '\' cannot be assigned possibly false type \'' . $assignment_value_type . '\'',
                             new CodeLocation(
-                                $statements_checker->getSource(),
+                                $statements_analyzer->getSource(),
                                 $assignment_value ?: $stmt,
                                 $context->include_location
                             ),
                             $property_ids[0]
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -648,13 +648,13 @@ class PropertyAssignmentAnalyzer
                         $var_id . ' with declared type \'' . $invalid_class_property_type .
                             '\' cannot be assigned type \'' . $assignment_value_type->getId() . '\'',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
                         ),
                         $property_ids[0]
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -665,13 +665,13 @@ class PropertyAssignmentAnalyzer
                             '\' cannot be assigned possibly different type \'' .
                             $assignment_value_type->getId() . '\'',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
                         ),
                         $property_ids[0]
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -682,7 +682,7 @@ class PropertyAssignmentAnalyzer
     }
 
     /**
-     * @param   StatementsAnalyzer                         $statements_checker
+     * @param   StatementsAnalyzer                         $statements_analyzer
      * @param   PhpParser\Node\Expr\StaticPropertyFetch   $stmt
      * @param   PhpParser\Node\Expr|null                  $assignment_value
      * @param   Type\Union                                $assignment_value_type
@@ -691,7 +691,7 @@ class PropertyAssignmentAnalyzer
      * @return  false|null
      */
     public static function analyzeStatic(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
         $assignment_value,
         Type\Union $assignment_value_type,
@@ -699,14 +699,14 @@ class PropertyAssignmentAnalyzer
     ) {
         $var_id = ExpressionAnalyzer::getVarId(
             $stmt,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
         $fq_class_name = (string)$stmt->class->inferredType;
 
-        $project_checker = $statements_checker->getFileAnalyzer()->project_checker;
-        $codebase = $statements_checker->getCodebase();
+        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
+        $codebase = $statements_analyzer->getCodebase();
 
         $prop_name = $stmt->name;
 
@@ -720,10 +720,10 @@ class PropertyAssignmentAnalyzer
             if (IssueBuffer::accepts(
                 new UndefinedPropertyAssignment(
                     'Static property ' . $property_id . ' is not defined',
-                    new CodeLocation($statements_checker->getSource(), $stmt),
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $property_id
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 return false;
             }
@@ -734,9 +734,9 @@ class PropertyAssignmentAnalyzer
         if (ClassLikeAnalyzer::checkPropertyVisibility(
             $property_id,
             $context->self,
-            $statements_checker,
-            new CodeLocation($statements_checker->getSource(), $stmt),
-            $statements_checker->getSuppressedIssues()
+            $statements_analyzer,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+            $statements_analyzer->getSuppressedIssues()
         ) === false) {
             return false;
         }
@@ -745,7 +745,7 @@ class PropertyAssignmentAnalyzer
             $fq_class_name . '::$' . $prop_name->name
         );
 
-        $class_storage = $project_checker->classlike_storage_provider->get((string)$declaring_property_class);
+        $class_storage = $project_analyzer->classlike_storage_provider->get((string)$declaring_property_class);
 
         $property_storage = $class_storage->properties[$prop_name->name];
 
@@ -809,12 +809,12 @@ class PropertyAssignmentAnalyzer
                         $var_id . ' expects \'' . $class_property_type . '\', '
                             . ' parent type `' . $assignment_value_type . '` provided',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
                         )
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // keep soldiering on
                 }
@@ -824,12 +824,12 @@ class PropertyAssignmentAnalyzer
                         $var_id . ' expects \'' . $class_property_type . '\', '
                             . ' parent type \'' . $assignment_value_type . '\' provided',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt,
                             $context->include_location
                         )
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     // keep soldiering on
                 }
@@ -842,12 +842,12 @@ class PropertyAssignmentAnalyzer
                     $var_id . ' expects \'' . $class_property_type . '\', '
                         . '\'' . $assignment_value_type . '\' provided with a __toString method',
                     new CodeLocation(
-                        $statements_checker->getSource(),
+                        $statements_analyzer->getSource(),
                         $assignment_value ?: $stmt,
                         $context->include_location
                     )
                 ),
-                $statements_checker->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
             }
@@ -860,12 +860,12 @@ class PropertyAssignmentAnalyzer
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
                             $assignment_value_type . '\'',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt
                         ),
                         $property_id
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -875,12 +875,12 @@ class PropertyAssignmentAnalyzer
                         $var_id . ' with declared type \'' . $class_property_type . '\' cannot be assigned type \'' .
                             $assignment_value_type . '\'',
                         new CodeLocation(
-                            $statements_checker->getSource(),
+                            $statements_analyzer->getSource(),
                             $assignment_value ?: $stmt
                         ),
                         $property_id
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }

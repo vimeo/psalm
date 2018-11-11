@@ -433,7 +433,7 @@ if (isset($options['no-cache'])) {
     );
 }
 
-$project_checker = new ProjectAnalyzer(
+$project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
     !array_key_exists('m', $options),
@@ -445,11 +445,11 @@ $project_checker = new ProjectAnalyzer(
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
-$project_checker->getCodebase()->diff_methods = isset($options['diff-methods']);
+$project_analyzer->getCodebase()->diff_methods = isset($options['diff-methods']);
 
 $start_time = microtime(true);
 
-$config->visitComposerAutoloadFiles($project_checker, $debug);
+$config->visitComposerAutoloadFiles($project_analyzer, $debug);
 
 $now_time = microtime(true);
 
@@ -458,19 +458,19 @@ if ($debug) {
 }
 
 if (array_key_exists('debug-by-line', $options)) {
-    $project_checker->debug_lines = true;
+    $project_analyzer->debug_lines = true;
 }
 
 if ($find_dead_code || $find_references_to !== null) {
-    $project_checker->getCodebase()->collectReferences();
+    $project_analyzer->getCodebase()->collectReferences();
 
     if ($find_references_to) {
-        $project_checker->show_issues = false;
+        $project_analyzer->show_issues = false;
     }
 }
 
 if ($find_dead_code) {
-    $project_checker->getCodebase()->reportUnusedCode();
+    $project_analyzer->getCodebase()->reportUnusedCode();
 }
 
 /** @var string $plugin_path */
@@ -479,20 +479,20 @@ foreach ($plugins as $plugin_path) {
 }
 
 if ($paths_to_check === null) {
-    $project_checker->check($current_dir, $is_diff);
+    $project_analyzer->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
-    $project_checker->checkPaths($paths_to_check);
+    $project_analyzer->checkPaths($paths_to_check);
 }
 
 if ($find_references_to) {
-    $project_checker->findReferencesTo($find_references_to);
+    $project_analyzer->findReferencesTo($find_references_to);
 } elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
     if ($threads > 1) {
         if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;
         }
     } else {
-        $project_checker->checkClassReferences();
+        $project_analyzer->checkClassReferences();
     }
 }
 
@@ -576,7 +576,7 @@ if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-bas
 }
 
 IssueBuffer::finish(
-    $project_checker,
+    $project_analyzer,
     !$paths_to_check,
     $start_time,
     isset($options['stats']),

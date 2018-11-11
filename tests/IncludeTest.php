@@ -21,7 +21,7 @@ class IncludeTest extends TestCase
         $hoist_constants = false,
         array $error_levels = []
     ) {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
             $this->addFile($file_path, $contents);
@@ -43,8 +43,8 @@ class IncludeTest extends TestCase
         $config->hoist_constants = $hoist_constants;
 
         foreach ($files_to_check as $file_path) {
-            $file_checker = new FileAnalyzer($this->project_checker, $file_path, $config->shortenFileName($file_path));
-            $file_checker->analyze();
+            $file_analyzer = new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path));
+            $file_analyzer->analyze();
         }
     }
 
@@ -67,7 +67,7 @@ class IncludeTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
             $this->addFile($file_path, $contents);
@@ -86,8 +86,8 @@ class IncludeTest extends TestCase
         $codebase->scanFiles();
 
         foreach ($files_to_check as $file_path) {
-            $file_checker = new FileAnalyzer($this->project_checker, $file_path, $config->shortenFileName($file_path));
-            $file_checker->analyze();
+            $file_analyzer = new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path));
+            $file_analyzer->analyze();
         }
     }
 

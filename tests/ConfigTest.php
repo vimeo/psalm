@@ -11,7 +11,7 @@ class ConfigTest extends TestCase
     protected static $config;
 
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @return void
@@ -92,7 +92,7 @@ class ConfigTest extends TestCase
      */
     public function testBarebonesConfig()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 (string)getcwd(),
                 '<?xml version="1.0"?>
@@ -104,7 +104,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
@@ -115,7 +115,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreProjectDirectory()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -130,7 +130,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
@@ -142,7 +142,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreWildcardProjectDirectory()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -157,7 +157,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
@@ -170,7 +170,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreWildcardFiles()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -185,7 +185,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
@@ -198,7 +198,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreWildcardFilesInWildcardFolder()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -215,7 +215,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Visitor/DependencyFinderVisitor.php')));
@@ -229,7 +229,7 @@ class ConfigTest extends TestCase
      */
     public function testIgnoreWildcardFilesInAllPossibleWildcardFolders()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -247,7 +247,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Visitor/DependencyFinderVisitor.php')));
@@ -261,7 +261,7 @@ class ConfigTest extends TestCase
      */
     public function testIssueHandler()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -278,7 +278,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('tests/ConfigTest.php')));
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
@@ -289,7 +289,7 @@ class ConfigTest extends TestCase
      */
     public function testIssueHandlerWithCustomErrorLevels()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -328,7 +328,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $config = $this->project_checker->getConfig();
+        $config = $this->project_analyzer->getConfig();
 
         $this->assertSame(
             'info',
@@ -411,7 +411,7 @@ class ConfigTest extends TestCase
             )
         );
 
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -436,7 +436,7 @@ class ConfigTest extends TestCase
      */
     public function testImpossibleIssue()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -461,7 +461,7 @@ class ConfigTest extends TestCase
      */
     public function testRequireVoidReturnTypeExists()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -490,7 +490,7 @@ class ConfigTest extends TestCase
      */
     public function testDoNotRequireVoidReturnTypeExists()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -519,7 +519,7 @@ class ConfigTest extends TestCase
      */
     public function testMethodCallMemoize()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -567,7 +567,7 @@ class ConfigTest extends TestCase
      */
     public function testExitFunctions()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -637,7 +637,7 @@ class ConfigTest extends TestCase
      */
     public function testAllowedEchoFunction()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -663,7 +663,7 @@ class ConfigTest extends TestCase
      */
     public function testForbiddenEchoFunctionViaFunctions()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -693,7 +693,7 @@ class ConfigTest extends TestCase
      */
     public function testForbiddenEchoFunctionViaFlag()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -717,7 +717,7 @@ class ConfigTest extends TestCase
      */
     public function testAllowedVarExportFunction()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -744,7 +744,7 @@ class ConfigTest extends TestCase
      */
     public function testForbiddenVarExportFunction()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -775,7 +775,7 @@ class ConfigTest extends TestCase
      */
     public function testValidThrowInvalidCatch()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -826,7 +826,7 @@ class ConfigTest extends TestCase
      */
     public function testInvalidThrowValidCatch()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>
@@ -875,7 +875,7 @@ class ConfigTest extends TestCase
      */
     public function testValidThrowValidCatch()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
                 '<?xml version="1.0"?>

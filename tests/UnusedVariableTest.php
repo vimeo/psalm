@@ -8,7 +8,7 @@ use Psalm\Context;
 class UnusedVariableTest extends TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @return void
@@ -19,7 +19,7 @@ class UnusedVariableTest extends TestCase
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
@@ -27,7 +27,7 @@ class UnusedVariableTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->reportUnusedCode();
+        $this->project_analyzer->getCodebase()->reportUnusedCode();
     }
 
     /**
@@ -59,7 +59,7 @@ class UnusedVariableTest extends TestCase
         );
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $context = new Context();
@@ -67,7 +67,7 @@ class UnusedVariableTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $this->project_checker->checkClassReferences();
+        $this->project_analyzer->checkClassReferences();
     }
 
     /**
@@ -91,7 +91,7 @@ class UnusedVariableTest extends TestCase
         $file_path = self::$src_dir_path . 'somefile.php';
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $this->addFile(
@@ -104,7 +104,7 @@ class UnusedVariableTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $this->project_checker->checkClassReferences();
+        $this->project_analyzer->checkClassReferences();
     }
 
     /**

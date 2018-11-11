@@ -26,22 +26,22 @@ use Psalm\Type;
 class ForeachAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer               $statements_checker
+     * @param   StatementsAnalyzer               $statements_analyzer
      * @param   PhpParser\Node\Stmt\Foreach_    $stmt
      * @param   Context                         $context
      *
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Foreach_ $stmt,
         Context $context
     ) {
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $key_type = null;
         $value_type = null;
@@ -49,13 +49,13 @@ class ForeachAnalyzer
 
         $var_id = ExpressionAnalyzer::getVarId(
             $stmt->expr,
-            $statements_checker->getFQCLN(),
-            $statements_checker
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
         );
 
         if (isset($stmt->expr->inferredType)) {
             $iterator_type = $stmt->expr->inferredType;
-        } elseif ($var_id && $context->hasVariable($var_id, $statements_checker)) {
+        } elseif ($var_id && $context->hasVariable($var_id, $statements_analyzer)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
             $iterator_type = null;
@@ -66,9 +66,9 @@ class ForeachAnalyzer
                 if (IssueBuffer::accepts(
                     new NullIterator(
                         'Cannot iterate over null',
-                        new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -76,9 +76,9 @@ class ForeachAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyNullIterator(
                         'Cannot iterate over nullable var ' . $iterator_type,
-                        new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -86,9 +86,9 @@ class ForeachAnalyzer
                 if (IssueBuffer::accepts(
                     new PossiblyFalseIterator(
                         'Cannot iterate over falsable var ' . $iterator_type,
-                        new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
                     ),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues()
                 )) {
                     return false;
                 }
@@ -158,13 +158,13 @@ class ForeachAnalyzer
                     $value_type = Type::getMixed();
                 } elseif ($iterator_type instanceof Type\Atomic\TNamedObject) {
                     if ($iterator_type->value !== 'Traversable' &&
-                        $iterator_type->value !== $statements_checker->getClassName()
+                        $iterator_type->value !== $statements_analyzer->getClassName()
                     ) {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                            $statements_checker,
+                            $statements_analyzer,
                             $iterator_type->value,
-                            new CodeLocation($statements_checker->getSource(), $stmt->expr),
-                            $statements_checker->getSuppressedIssues()
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                            $statements_analyzer->getSuppressedIssues()
                         ) === false) {
                             return false;
                         }
@@ -330,9 +330,9 @@ class ForeachAnalyzer
                         if (IssueBuffer::accepts(
                             new RawObjectIteration(
                                 'Possibly undesired iteration over regular object ' . $iterator_type->value,
-                                new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
                             ),
-                            $statements_checker->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues()
                         )) {
                             return false;
                         }
@@ -345,9 +345,9 @@ class ForeachAnalyzer
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidIterator(
                             'Cannot iterate over ' . $invalid_iterator_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -355,9 +355,9 @@ class ForeachAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidIterator(
                             'Cannot iterate over ' . $invalid_iterator_types[0],
-                            new CodeLocation($statements_checker->getSource(), $stmt->expr)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
@@ -380,27 +380,27 @@ class ForeachAnalyzer
             $foreach_context->vars_in_scope[$key_var_id] = $key_type ?: Type::getMixed();
             $foreach_context->vars_possibly_in_scope[$key_var_id] = true;
 
-            $location = new CodeLocation($statements_checker, $stmt->keyVar);
+            $location = new CodeLocation($statements_analyzer, $stmt->keyVar);
 
             if ($context->collect_references && !isset($foreach_context->byref_constraints[$key_var_id])) {
                 $foreach_context->unreferenced_vars[$key_var_id] = [$location->getHash() => $location];
             }
 
-            if (!$statements_checker->hasVariable($key_var_id)) {
-                $statements_checker->registerVariable(
+            if (!$statements_analyzer->hasVariable($key_var_id)) {
+                $statements_analyzer->registerVariable(
                     $key_var_id,
                     $location,
                     $foreach_context->branch_point
                 );
             } else {
-                $statements_checker->registerVariableAssignment(
+                $statements_analyzer->registerVariableAssignment(
                     $key_var_id,
                     $location
                 );
             }
 
             if ($stmt->byRef && $context->collect_references) {
-                $statements_checker->registerVariableUses([$location->getHash() => $location]);
+                $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
             }
         }
 
@@ -414,7 +414,7 @@ class ForeachAnalyzer
         }
 
         AssignmentAnalyzer::analyze(
-            $statements_checker,
+            $statements_analyzer,
             $stmt->valueVar,
             null,
             $value_type ?: Type::getMixed(),
@@ -430,14 +430,14 @@ class ForeachAnalyzer
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $doc_comment_text,
-                    $statements_checker->getSource(),
-                    $statements_checker->getSource()->getAliases()
+                    $statements_analyzer->getSource(),
+                    $statements_analyzer->getSource()->getAliases()
                 );
             } catch (DocblockParseException $e) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         (string)$e->getMessage(),
-                        new CodeLocation($statements_checker, $stmt)
+                        new CodeLocation($statements_analyzer, $stmt)
                     )
                 )) {
                     // fall through
@@ -468,7 +468,7 @@ class ForeachAnalyzer
         }
         $loop_scope->protected_var_ids = $protected_var_ids;
 
-        LoopAnalyzer::analyze($statements_checker, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
+        LoopAnalyzer::analyze($statements_analyzer, $stmt->stmts, [], [], $loop_scope, $inner_loop_context);
 
         if (!$inner_loop_context) {
             throw new \UnexpectedValueException('There should be an inner loop context');

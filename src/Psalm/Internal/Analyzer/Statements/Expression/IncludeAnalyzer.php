@@ -18,12 +18,12 @@ class IncludeAnalyzer
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
         Context $global_context = null
     ) {
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
         if (!$config->allow_includes) {
@@ -32,7 +32,7 @@ class IncludeAnalyzer
             );
         }
 
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
 
@@ -48,7 +48,7 @@ class IncludeAnalyzer
             $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $path_to_file);
 
             // attempts to resolve using get_include_path dirs
-            $include_path = self::resolveIncludePath($path_to_file, dirname($statements_checker->getFileName()));
+            $include_path = self::resolveIncludePath($path_to_file, dirname($statements_analyzer->getFileName()));
             $path_to_file = $include_path ? $include_path : $path_to_file;
 
             if (DIRECTORY_SEPARATOR === '/') {
@@ -61,7 +61,7 @@ class IncludeAnalyzer
                 $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = self::getPathTo($stmt->expr, $statements_checker->getFileName());
+            $path_to_file = self::getPathTo($stmt->expr, $statements_analyzer->getFileName());
         }
 
         if ($path_to_file) {
@@ -81,49 +81,49 @@ class IncludeAnalyzer
                 return null;
             }
 
-            $current_file_checker = $statements_checker->getFileAnalyzer();
+            $current_file_analyzer = $statements_analyzer->getFileAnalyzer();
 
-            if ($current_file_checker->project_checker->fileExists($path_to_file)) {
-                if ($statements_checker->hasParentFilePath($path_to_file)
-                    || ($statements_checker->hasAlreadyRequiredFilePath($path_to_file)
+            if ($current_file_analyzer->project_analyzer->fileExists($path_to_file)) {
+                if ($statements_analyzer->hasParentFilePath($path_to_file)
+                    || ($statements_analyzer->hasAlreadyRequiredFilePath($path_to_file)
                         && !$codebase->file_storage_provider->get($path_to_file)->has_extra_statements)
                 ) {
                     return null;
                 }
 
-                $current_file_checker->addRequiredFilePath($path_to_file);
+                $current_file_analyzer->addRequiredFilePath($path_to_file);
 
                 $file_name = $config->shortenFileName($path_to_file);
 
-                if ($current_file_checker->project_checker->debug_output) {
-                    $nesting = $statements_checker->getRequireNesting() + 1;
+                if ($current_file_analyzer->project_analyzer->debug_output) {
+                    $nesting = $statements_analyzer->getRequireNesting() + 1;
                     echo (str_repeat('  ', $nesting) . 'checking ' . $file_name . PHP_EOL);
                 }
 
-                $include_file_checker = new \Psalm\Internal\Analyzer\FileAnalyzer(
-                    $current_file_checker->project_checker,
+                $include_file_analyzer = new \Psalm\Internal\Analyzer\FileAnalyzer(
+                    $current_file_analyzer->project_analyzer,
                     $path_to_file,
                     $file_name
                 );
 
-                $include_file_checker->setRootFilePath(
-                    $current_file_checker->getRootFilePath(),
-                    $current_file_checker->getRootFileName()
+                $include_file_analyzer->setRootFilePath(
+                    $current_file_analyzer->getRootFilePath(),
+                    $current_file_analyzer->getRootFileName()
                 );
 
-                $include_file_checker->addParentFilePath($current_file_checker->getFilePath());
-                $include_file_checker->addRequiredFilePath($current_file_checker->getFilePath());
+                $include_file_analyzer->addParentFilePath($current_file_analyzer->getFilePath());
+                $include_file_analyzer->addRequiredFilePath($current_file_analyzer->getFilePath());
 
-                foreach ($current_file_checker->getRequiredFilePaths() as $required_file_path) {
-                    $include_file_checker->addRequiredFilePath($required_file_path);
+                foreach ($current_file_analyzer->getRequiredFilePaths() as $required_file_path) {
+                    $include_file_analyzer->addRequiredFilePath($required_file_path);
                 }
 
-                foreach ($current_file_checker->getParentFilePaths() as $parent_file_path) {
-                    $include_file_checker->addParentFilePath($parent_file_path);
+                foreach ($current_file_analyzer->getParentFilePaths() as $parent_file_path) {
+                    $include_file_analyzer->addParentFilePath($parent_file_path);
                 }
 
                 try {
-                    $include_file_checker->analyze(
+                    $include_file_analyzer->analyze(
                         $context,
                         false,
                         $global_context
@@ -134,14 +134,14 @@ class IncludeAnalyzer
                     $context->check_functions = false;
                 }
 
-                foreach ($include_file_checker->getRequiredFilePaths() as $required_file_path) {
-                    $current_file_checker->addRequiredFilePath($required_file_path);
+                foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path) {
+                    $current_file_analyzer->addRequiredFilePath($required_file_path);
                 }
 
                 return null;
             }
 
-            $source = $statements_checker->getSource();
+            $source = $statements_analyzer->getSource();
 
             if (IssueBuffer::accepts(
                 new MissingFile(
@@ -156,7 +156,7 @@ class IncludeAnalyzer
             $var_id = ExpressionAnalyzer::getArrayVarId($stmt->expr, null);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
-                $source = $statements_checker->getSource();
+                $source = $statements_analyzer->getSource();
 
                 if (IssueBuffer::accepts(
                     new UnresolvableInclude(

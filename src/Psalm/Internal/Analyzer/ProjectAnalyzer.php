@@ -799,13 +799,13 @@ class ProjectAnalyzer
 
         $file_path = $this->codebase->scanner->getClassLikeFilePath($fq_class_name_lc);
 
-        $file_checker = new FileAnalyzer(
+        $file_analyzer = new FileAnalyzer(
             $this,
             $file_path,
             $this->config->shortenFileName($file_path)
         );
 
-        return $file_checker;
+        return $file_analyzer;
     }
 
     /**
@@ -818,7 +818,7 @@ class ProjectAnalyzer
     {
         list($fq_class_name) = explode('::', $original_method_id);
 
-        $file_checker = $this->getFileAnalyzerForClassLike($fq_class_name);
+        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
 
         $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);
 
@@ -836,21 +836,21 @@ class ProjectAnalyzer
         }
 
         if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
-            $file_checker = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
+            $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
 
         $stmts = $this->codebase->getStatementsForFile(
-            $file_checker->getFilePath()
+            $file_analyzer->getFilePath()
         );
 
-        $file_checker->populateCheckers($stmts);
+        $file_analyzer->populateCheckers($stmts);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
             $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
         }
 
-        $file_checker->getMethodMutations($appearing_method_id, $this_context);
+        $file_analyzer->getMethodMutations($appearing_method_id, $this_context);
     }
 
     /**

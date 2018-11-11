@@ -16,7 +16,7 @@ class PluginTest extends TestCase
     protected static $config;
 
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @return void
@@ -67,7 +67,7 @@ class PluginTest extends TestCase
      */
     public function testStringAnalyzerPlugin()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -82,7 +82,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -103,7 +103,7 @@ class PluginTest extends TestCase
      */
     public function testStringAnalyzerPluginWithClassConstant()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -118,7 +118,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -143,7 +143,7 @@ class PluginTest extends TestCase
      */
     public function testStringAnalyzerPluginWithClassConstantConcat()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -158,7 +158,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -180,7 +180,7 @@ class PluginTest extends TestCase
      */
     public function testEchoAnalyzerPluginWithJustHtml()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -195,7 +195,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -215,7 +215,7 @@ class PluginTest extends TestCase
      */
     public function testEchoAnalyzerPluginWithUnescapedConcatenatedString()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -235,7 +235,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -255,7 +255,7 @@ class PluginTest extends TestCase
      */
     public function testEchoAnalyzerPluginWithUnescapedString()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -274,7 +274,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -291,7 +291,7 @@ class PluginTest extends TestCase
      */
     public function testEchoAnalyzerPluginWithEscapedString()
     {
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -310,7 +310,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -341,7 +341,7 @@ class PluginTest extends TestCase
     {
         require_once __DIR__ . '/stubs/extending_plugin_entrypoint.php';
 
-        $this->project_checker = $this->getProjectAnalyzerWithConfig(
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
                 '<?xml version="1.0"?>
@@ -356,10 +356,10 @@ class PluginTest extends TestCase
             )
         );
 
-        $this->project_checker->getCodebase()->config->initializePlugins($this->project_checker);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
         $this->assertContains(
             'ExtendingPlugin',
-            $this->project_checker->getCodebase()->config->after_function_checks
+            $this->project_analyzer->getCodebase()->config->after_function_checks
         );
     }
 }

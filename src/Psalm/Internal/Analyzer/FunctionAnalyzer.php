@@ -30,7 +30,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      * @return Type\Union
      */
     public static function getReturnTypeFromCallMapWithArgs(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $function_id,
         array $call_args,
         Context $context,
@@ -192,14 +192,14 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 case 'array_map':
                     return self::getArrayMapReturnType(
-                        $statements_checker,
+                        $statements_analyzer,
                         $context,
                         $call_args
                     );
 
                 case 'array_filter':
                     return self::getArrayFilterReturnType(
-                        $statements_checker,
+                        $statements_analyzer,
                         $call_args,
                         $code_location,
                         $suppressed_issues
@@ -207,7 +207,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 case 'array_reduce':
                     return self::getArrayReduceReturnType(
-                        $statements_checker,
+                        $statements_analyzer,
                         $context,
                         $call_args
                     );
@@ -361,7 +361,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $operator_type = $call_args[2]->value->inferredType;
 
                             if (!$operator_type->isMixed()) {
-                                $codebase = $statements_checker->getCodebase();
+                                $codebase = $statements_analyzer->getCodebase();
 
                                 $acceptable_operator_type = new Type\Union([
                                     new Type\Atomic\TLiteralString('<'),
@@ -408,7 +408,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $component_type = $call_args[1]->value->inferredType;
 
                             if (!$component_type->isMixed()) {
-                                $codebase = $statements_checker->getCodebase();
+                                $codebase = $statements_analyzer->getCodebase();
 
                                 $acceptable_string_component_type = new Type\Union([
                                     new Type\Atomic\TLiteralInt(PHP_URL_SCHEME),
@@ -826,7 +826,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      * @return Type\Union
      */
     private static function getArrayMapReturnType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         Context $context,
         $call_args
     ) {
@@ -900,7 +900,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
             ) {
                 $mapping_function_ids = Statements\Expression\CallAnalyzer::getFunctionIdsFromCallableArg(
-                    $statements_checker,
+                    $statements_analyzer,
                     $function_call_arg->value
                 );
 
@@ -908,7 +908,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 $mapping_return_type = null;
 
-                $codebase = $statements_checker->getCodebase();
+                $codebase = $statements_analyzer->getCodebase();
 
                 foreach ($mapping_function_ids as $mapping_function_id) {
                     $mapping_function_id = strtolower($mapping_function_id);
@@ -946,7 +946,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     $mapping_function_id_part,
                                     $context->calling_method_id,
                                     new CodeLocation(
-                                        $statements_checker->getSource(),
+                                        $statements_analyzer->getSource(),
                                         $function_call_arg->value
                                     )
                                 )) {
@@ -972,7 +972,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 }
                             } else {
                                 if (!$codebase->functions->functionExists(
-                                    $statements_checker,
+                                    $statements_analyzer,
                                     $mapping_function_id_part
                                 )) {
                                     $mapping_return_type = Type::getMixed();
@@ -982,7 +982,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 $part_match_found = true;
 
                                 $function_storage = $codebase->functions->getStorage(
-                                    $statements_checker,
+                                    $statements_analyzer,
                                     $mapping_function_id_part
                                 );
 
@@ -1043,7 +1043,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      * @return Type\Union
      */
     private static function getArrayReduceReturnType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         Context $context,
         array $call_args
     ) {
@@ -1051,7 +1051,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             return Type::getMixed();
         }
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         $array_arg = $call_args[0]->value;
         $function_call_arg = $call_args[1]->value;
@@ -1111,9 +1111,9 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidArgument(
                             'The closure passed to array_reduce needs two params',
-                            new CodeLocation($statements_checker->getSource(), $function_call_arg)
+                            new CodeLocation($statements_analyzer->getSource(), $function_call_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1143,9 +1143,9 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             'The first param of the closure passed to array_reduce must take '
                                 . $reduce_return_type . ' but only accepts ' . $carry_param->type,
                             $carry_param->type_location
-                                ?: new CodeLocation($statements_checker->getSource(), $function_call_arg)
+                                ?: new CodeLocation($statements_analyzer->getSource(), $function_call_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1167,9 +1167,9 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             'The second param of the closure passed to array_reduce must take '
                                 . $array_arg_type->type_params[1] . ' but only accepts ' . $item_param->type,
                             $item_param->type_location
-                                ?: new CodeLocation($statements_checker->getSource(), $function_call_arg)
+                                ?: new CodeLocation($statements_analyzer->getSource(), $function_call_arg)
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -1186,7 +1186,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
             || $function_call_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat
         ) {
             $mapping_function_ids = Statements\Expression\CallAnalyzer::getFunctionIdsFromCallableArg(
-                $statements_checker,
+                $statements_analyzer,
                 $function_call_arg
             );
 
@@ -1224,7 +1224,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 $mapping_function_id_part,
                                 $context->calling_method_id,
                                 new CodeLocation(
-                                    $statements_checker->getSource(),
+                                    $statements_analyzer->getSource(),
                                     $function_call_arg
                                 )
                             )) {
@@ -1246,7 +1246,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             );
                         } else {
                             if (!$codebase->functions->functionExists(
-                                $statements_checker,
+                                $statements_analyzer,
                                 $mapping_function_id_part
                             )) {
                                 return Type::getMixed();
@@ -1255,7 +1255,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $part_match_found = true;
 
                             $function_storage = $codebase->functions->getStorage(
-                                $statements_checker,
+                                $statements_analyzer,
                                 $mapping_function_id_part
                             );
 
@@ -1288,7 +1288,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
      * @return Type\Union
      */
     private static function getArrayFilterReturnType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         $call_args,
         CodeLocation $code_location,
         array $suppressed_issues
@@ -1351,9 +1351,9 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         && $stmt instanceof PhpParser\Node\Stmt\Return_
                         && $stmt->expr
                     ) {
-                        $codebase = $statements_checker->getCodebase();
+                        $codebase = $statements_analyzer->getCodebase();
 
-                        AssertionFinder::scrapeAssertions($stmt->expr, null, $statements_checker, $codebase);
+                        AssertionFinder::scrapeAssertions($stmt->expr, null, $statements_analyzer, $codebase);
 
                         $assertions = isset($stmt->expr->assertions) ? $stmt->expr->assertions : null;
 
@@ -1365,9 +1365,9 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 ['$inner_type' => $inner_type],
                                 $changed_var_ids,
                                 ['$inner_type' => true],
-                                $statements_checker,
-                                new CodeLocation($statements_checker->getSource(), $stmt),
-                                $statements_checker->getSuppressedIssues()
+                                $statements_analyzer,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $statements_analyzer->getSuppressedIssues()
                             );
 
                             if (isset($reconciled_types['$inner_type'])) {

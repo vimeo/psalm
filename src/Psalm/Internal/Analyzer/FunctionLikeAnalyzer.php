@@ -114,7 +114,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         }
 
         $codebase = $this->codebase;
-        $project_checker = $this->getProjectAnalyzer();
+        $project_analyzer = $this->getProjectAnalyzer();
 
         $file_storage_provider = $codebase->file_storage_provider;
 
@@ -269,7 +269,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $this->is_static = true;
         }
 
-        $statements_checker = new StatementsAnalyzer($this);
+        $statements_analyzer = new StatementsAnalyzer($this);
 
         $template_types = $storage->template_types;
 
@@ -367,9 +367,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 ) && !$type_coerced_from_mixed
                 ) {
                     if ($codebase->alter_code
-                        && isset($project_checker->getIssuesToFix()['MismatchingDocblockParamType'])
+                        && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockParamType'])
                     ) {
-                        $this->addOrUpdateParamType($project_checker, $function_param->name, $signature_type, true);
+                        $this->addOrUpdateParamType($project_analyzer, $function_param->name, $signature_type, true);
 
                         continue;
                     }
@@ -398,7 +398,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             if ($parser_param->default) {
-                ExpressionAnalyzer::analyze($statements_checker, $parser_param->default, $context);
+                ExpressionAnalyzer::analyze($statements_analyzer, $parser_param->default, $context);
 
                 $default_type = isset($parser_param->default->inferredType)
                     ? $parser_param->default->inferredType
@@ -486,7 +486,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $context->hasVariable('$' . $function_param->name);
             }
 
-            $statements_checker->registerVariable(
+            $statements_analyzer->registerVariable(
                 '$' . $function_param->name,
                 $function_param->location,
                 null
@@ -495,7 +495,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         if (ReturnTypeAnalyzer::checkSignatureReturnType(
             $this->function,
-            $project_checker,
+            $project_analyzer,
             $this,
             $storage,
             $context
@@ -503,7 +503,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             return false;
         }
 
-        $statements_checker->analyze($function_stmts, $context, $global_context, true);
+        $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
         foreach ($storage->params as $offset => $function_param) {
             // only complain if there's no type defined by a parent type
@@ -554,7 +554,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         if ($this->function instanceof Closure) {
             $this->verifyReturnType(
-                $statements_checker,
+                $statements_analyzer,
                 $storage->return_type,
                 $this->source->getFQCLN(),
                 $storage->return_type_location
@@ -595,7 +595,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             && $codebase->find_unused_code
             && $context->check_variables
         ) {
-            foreach ($statements_checker->getUnusedVarLocations() as list($var_name, $original_location)) {
+            foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
                 if (!array_key_exists(substr($var_name, 1), $storage->param_types)) {
                     continue;
                 }
@@ -758,14 +758,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      * @return  false|null
      */
     public function verifyReturnType(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         Type\Union $return_type = null,
         $fq_class_name = null,
         CodeLocation $return_type_location = null
     ) {
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
-            $statements_checker,
+            $statements_analyzer,
             $this,
             $return_type,
             $fq_class_name,
@@ -780,26 +780,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      * @return void
      */
     private function addOrUpdateParamType(
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         $param_name,
         Type\Union $inferred_return_type,
         $docblock_only = false
     ) {
         $manipulator = FunctionDocblockManipulator::getForFunction(
-            $project_checker,
+            $project_analyzer,
             $this->source->getFilePath(),
             $this->getMethodId(),
             $this->function
         );
         $manipulator->setParamType(
             $param_name,
-            !$docblock_only && $project_checker->php_major_version >= 7
+            !$docblock_only && $project_analyzer->php_major_version >= 7
                 ? $inferred_return_type->toPhpString(
                     $this->source->getNamespace(),
                     $this->source->getAliasedClassesFlipped(),
                     $this->source->getFQCLN(),
-                    $project_checker->php_major_version,
-                    $project_checker->php_minor_version
+                    $project_analyzer->php_major_version,
+                    $project_analyzer->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $this->source->getNamespace(),
@@ -906,7 +906,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     /**
      * @return FunctionLikeStorage
      */
-    public function getFunctionLikeStorage(StatementsAnalyzer $statements_checker = null)
+    public function getFunctionLikeStorage(StatementsAnalyzer $statements_analyzer = null)
     {
         $codebase = $this->codebase;
 
@@ -928,7 +928,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
-        return $codebase->functions->getStorage($statements_checker, (string) $this->getMethodId());
+        return $codebase->functions->getStorage($statements_analyzer, (string) $this->getMethodId());
     }
 
     /**
@@ -997,11 +997,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getMethodParamsById(ProjectAnalyzer $project_checker, $method_id, array $args)
+    public static function getMethodParamsById(ProjectAnalyzer $project_analyzer, $method_id, array $args)
     {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
-        $codebase = $project_checker->getCodebase();
+        $codebase = $project_analyzer->getCodebase();
 
         if ($fq_class_name) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -1024,7 +1024,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 );
             }
 
-            return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);
+            return self::getMatchingParamsFromCallMapOptions($project_analyzer, $function_param_options, $args);
         }
 
         return $codebase->methods->getMethodParams($method_id);
@@ -1036,7 +1036,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getFunctionParamsFromCallMapById(ProjectAnalyzer $project_checker, $method_id, array $args)
+    public static function getFunctionParamsFromCallMapById(ProjectAnalyzer $project_analyzer, $method_id, array $args)
     {
         $function_param_options = CallMap::getParamsFromCallMap($method_id);
 
@@ -1046,7 +1046,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         }
 
-        return self::getMatchingParamsFromCallMapOptions($project_checker, $function_param_options, $args);
+        return self::getMatchingParamsFromCallMapOptions($project_analyzer, $function_param_options, $args);
     }
 
     /**
@@ -1056,7 +1056,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      * @return array<int, FunctionLikeParameter>
      */
     protected static function getMatchingParamsFromCallMapOptions(
-        ProjectAnalyzer $project_checker,
+        ProjectAnalyzer $project_analyzer,
         array $function_param_options,
         array $args
     ) {
@@ -1108,7 +1108,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
 
                 if (TypeAnalyzer::isContainedBy(
-                    $project_checker->getCodebase(),
+                    $project_analyzer->getCodebase(),
                     $arg->value->inferredType,
                     $param_type,
                     true,

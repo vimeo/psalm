@@ -8,7 +8,7 @@ use Psalm\Context;
 class DocumentationTest extends TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @return array<string, array<int, string>>
@@ -68,7 +68,7 @@ class DocumentationTest extends TestCase
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
@@ -115,11 +115,11 @@ class DocumentationTest extends TestCase
         }
 
         if ($check_references) {
-            $this->project_checker->getCodebase()->reportUnusedCode();
+            $this->project_analyzer->getCodebase()->reportUnusedCode();
         }
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
@@ -135,7 +135,7 @@ class DocumentationTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         if ($check_references) {
-            $this->project_checker->getCodebase()->classlikes->checkClassReferences();
+            $this->project_analyzer->getCodebase()->classlikes->checkClassReferences();
         }
     }
 

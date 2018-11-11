@@ -30,7 +30,7 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
@@ -40,7 +40,7 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
             false
         );
 
-        $this->project_checker->getCodebase()->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -53,9 +53,9 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
-        $this->project_checker->getCodebase()->diff_methods = true;
+        $this->project_analyzer->getCodebase()->diff_methods = true;
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $vendor_files = [
             getcwd() . DIRECTORY_SEPARATOR . 'V1.php' => '<?php
@@ -100,9 +100,9 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $codebase->reloadFiles($this->project_checker, array_keys($analyzable_files + $vendor_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($analyzable_files + $vendor_files));
 
         foreach ($analyzable_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -110,6 +110,6 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
     }
 }

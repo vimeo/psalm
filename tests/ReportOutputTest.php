@@ -22,7 +22,7 @@ class ReportOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        $this->project_checker = new ProjectAnalyzer(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
@@ -30,7 +30,7 @@ class ReportOutputTest extends TestCase
             ),
             false
         );
-        $this->project_checker->reports['json'] = __DIR__ . '/test-report.json';
+        $this->project_analyzer->reports['json'] = __DIR__ . '/test-report.json';
     }
 
     /**
@@ -235,7 +235,7 @@ somefile.php:15:6:error - Possibly undefined global variable $a, first seen on l
         );
 
         ob_start();
-        IssueBuffer::finish($this->project_checker, true, 0);
+        IssueBuffer::finish($this->project_analyzer, true, 0);
         ob_end_clean();
         $this->assertFileExists(__DIR__ . '/test-report.json');
         $this->assertSame('[]

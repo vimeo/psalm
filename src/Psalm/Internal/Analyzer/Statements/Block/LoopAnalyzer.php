@@ -30,7 +30,7 @@ class LoopAnalyzer
      * @return false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         array $stmts,
         array $pre_conditions,
         array $post_expressions,
@@ -55,7 +55,7 @@ class LoopAnalyzer
 
         $original_protected_var_ids = $loop_scope->loop_parent_context->protected_var_ids;
 
-        $codebase = $statements_checker->getCodebase();
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $pre_condition) {
@@ -64,7 +64,7 @@ class LoopAnalyzer
                     Algebra::getFormula(
                         $pre_condition,
                         $loop_scope->loop_context->self,
-                        $statements_checker,
+                        $statements_analyzer,
                         $codebase
                     )
                 );
@@ -98,7 +98,7 @@ class LoopAnalyzer
             if (!$is_do) {
                 foreach ($pre_conditions as $pre_condition) {
                     self::applyPreConditionToLoopContext(
-                        $statements_checker,
+                        $statements_analyzer,
                         $pre_condition,
                         $pre_condition_clauses,
                         $inner_context,
@@ -109,12 +109,12 @@ class LoopAnalyzer
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-            $statements_checker->analyze($stmts, $inner_context);
+            $statements_analyzer->analyze($stmts, $inner_context);
             self::updateLoopScopeContexts($loop_scope, $loop_scope->loop_parent_context);
 
             foreach ($post_expressions as $post_expression) {
                 if (ExpressionAnalyzer::analyze(
-                    $statements_checker,
+                    $statements_analyzer,
                     $post_expression,
                     $loop_scope->loop_context
                 ) === false
@@ -133,9 +133,9 @@ class LoopAnalyzer
         } else {
             $pre_outer_context = clone $loop_scope->loop_parent_context;
 
-            $analyzer = $statements_checker->getCodebase()->analyzer;
+            $analyzer = $statements_analyzer->getCodebase()->analyzer;
 
-            $original_mixed_counts = $analyzer->getMixedCountsForFile($statements_checker->getFilePath());
+            $original_mixed_counts = $analyzer->getMixedCountsForFile($statements_analyzer->getFilePath());
 
             IssueBuffer::startRecording();
 
@@ -143,7 +143,7 @@ class LoopAnalyzer
                 foreach ($pre_conditions as $pre_condition) {
                     $asserted_var_ids = array_merge(
                         self::applyPreConditionToLoopContext(
-                            $statements_checker,
+                            $statements_analyzer,
                             $pre_condition,
                             $pre_condition_clauses,
                             $loop_scope->loop_context,
@@ -168,14 +168,14 @@ class LoopAnalyzer
 
             $inner_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-            $statements_checker->analyze($stmts, $inner_context);
+            $statements_analyzer->analyze($stmts, $inner_context);
 
             self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
             $inner_context->protected_var_ids = $original_protected_var_ids;
 
             foreach ($post_expressions as $post_expression) {
-                if (ExpressionAnalyzer::analyze($statements_checker, $post_expression, $inner_context) === false) {
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $inner_context) === false) {
                     return false;
                 }
             }
@@ -274,12 +274,12 @@ class LoopAnalyzer
                     unset($inner_context->vars_in_scope[$var_id]);
                 }
 
-                $analyzer->setMixedCountsForFile($statements_checker->getFilePath(), $original_mixed_counts);
+                $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
                 foreach ($pre_conditions as $pre_condition) {
                     self::applyPreConditionToLoopContext(
-                        $statements_checker,
+                        $statements_analyzer,
                         $pre_condition,
                         $pre_condition_clauses,
                         $inner_context,
@@ -307,14 +307,14 @@ class LoopAnalyzer
                 $traverser->addVisitor(new \Psalm\Internal\Visitor\NodeCleanerVisitor());
                 $traverser->traverse($stmts);
 
-                $statements_checker->analyze($stmts, $inner_context);
+                $statements_analyzer->analyze($stmts, $inner_context);
 
                 self::updateLoopScopeContexts($loop_scope, $pre_outer_context);
 
                 $inner_context->protected_var_ids = $original_protected_var_ids;
 
                 foreach ($post_expressions as $post_expression) {
-                    if (ExpressionAnalyzer::analyze($statements_checker, $post_expression, $inner_context) === false) {
+                    if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $inner_context) === false) {
                         return false;
                     }
                 }
@@ -405,9 +405,9 @@ class LoopAnalyzer
                     $inner_context->vars_in_scope,
                     $changed_var_ids,
                     [],
-                    $statements_checker,
-                    new CodeLocation($statements_checker->getSource(), $pre_conditions[0]),
-                    $statements_checker->getSuppressedIssues()
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
+                    $statements_analyzer->getSuppressedIssues()
                 );
 
                 foreach ($changed_var_ids as $var_id) {
@@ -444,7 +444,7 @@ class LoopAnalyzer
                         $loop_scope->loop_context->unreferenced_vars[$var_id] += $locations;
                     }
                 } else {
-                    $statements_checker->registerVariableUses($locations);
+                    $statements_analyzer->registerVariableUses($locations);
                 }
             }
 
@@ -510,7 +510,7 @@ class LoopAnalyzer
      * @return string[]
      */
     private static function applyPreConditionToLoopContext(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $pre_condition,
         array $pre_condition_clauses,
         Context $loop_context,
@@ -521,7 +521,7 @@ class LoopAnalyzer
 
         $loop_context->inside_conditional = true;
 
-        if (ExpressionAnalyzer::analyze($statements_checker, $pre_condition, $loop_context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $pre_condition, $loop_context) === false) {
             return [];
         }
 
@@ -548,9 +548,9 @@ class LoopAnalyzer
             $loop_context->vars_in_scope,
             $changed_var_ids,
             $new_referenced_var_ids,
-            $statements_checker,
-            new CodeLocation($statements_checker->getSource(), $pre_condition),
-            $statements_checker->getSuppressedIssues()
+            $statements_analyzer,
+            new CodeLocation($statements_analyzer->getSource(), $pre_condition),
+            $statements_analyzer->getSuppressedIssues()
         );
 
         $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
@@ -560,7 +560,7 @@ class LoopAnalyzer
                 $var_id,
                 $loop_context->clauses,
                 null,
-                $statements_checker
+                $statements_analyzer
             );
         }
 

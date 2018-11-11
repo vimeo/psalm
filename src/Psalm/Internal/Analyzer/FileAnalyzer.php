@@ -62,12 +62,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @var array<string, InterfaceAnalyzer>
      */
-    protected $interface_checkers_to_analyze = [];
+    protected $interface_analyzers_to_analyze = [];
 
     /**
      * @var array<string, ClassAnalyzer>
      */
-    protected $class_checkers_to_analyze = [];
+    protected $class_analyzers_to_analyze = [];
 
     /**
      * @var null|Context
@@ -77,7 +77,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @var ProjectAnalyzer
      */
-    public $project_checker;
+    public $project_analyzer;
 
     /**
      * @var Codebase
@@ -88,26 +88,26 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      * @param string  $file_path
      * @param string  $file_name
      */
-    public function __construct(ProjectAnalyzer $project_checker, $file_path, $file_name)
+    public function __construct(ProjectAnalyzer $project_analyzer, $file_path, $file_name)
     {
         $this->source = $this;
         $this->file_path = $file_path;
         $this->file_name = $file_name;
-        $this->project_checker = $project_checker;
-        $this->codebase = $project_checker->getCodebase();
+        $this->project_analyzer = $project_analyzer;
+        $this->codebase = $project_analyzer->getCodebase();
     }
 
     /**
-     * @param  bool $preserve_checkers
+     * @param  bool $preserve_analyzers
      *
      * @return void
      */
     public function analyze(
         Context $file_context = null,
-        $preserve_checkers = false,
+        $preserve_analyzers = false,
         Context $global_context = null
     ) {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $file_storage = $codebase->file_storage_provider->get($this->file_path);
 
@@ -136,29 +136,29 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             return;
         }
 
-        $statements_checker = new StatementsAnalyzer($this);
+        $statements_analyzer = new StatementsAnalyzer($this);
 
         $leftover_stmts = $this->populateCheckers($stmts);
 
         // if there are any leftover statements, evaluate them,
         // in turn causing the classes/interfaces be evaluated
         if ($leftover_stmts) {
-            $statements_checker->analyze($leftover_stmts, $this->context, $global_context, true);
+            $statements_analyzer->analyze($leftover_stmts, $this->context, $global_context, true);
         }
 
         // check any leftover interfaces not already evaluated
-        foreach ($this->interface_checkers_to_analyze as $interface_checker) {
-            $interface_checker->analyze();
+        foreach ($this->interface_analyzers_to_analyze as $interface_analyzer) {
+            $interface_analyzer->analyze();
         }
 
         // check any leftover classes not already evaluated
 
-        foreach ($this->class_checkers_to_analyze as $class_checker) {
-            $class_checker->analyze(null, $this->context);
+        foreach ($this->class_analyzers_to_analyze as $class_analyzer) {
+            $class_analyzer->analyze(null, $this->context);
         }
 
-        if (!$preserve_checkers) {
-            $this->class_checkers_to_analyze = [];
+        if (!$preserve_analyzers) {
+            $this->class_analyzers_to_analyze = [];
         }
     }
 
@@ -177,12 +177,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
                 $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
 
-                $namespace_checker = new NamespaceAnalyzer($stmt, $this);
-                $namespace_checker->collectAnalyzableInformation();
+                $namespace_analyzer = new NamespaceAnalyzer($stmt, $this);
+                $namespace_analyzer->collectAnalyzableInformation();
 
-                $this->namespace_aliased_classes[$namespace_name] = $namespace_checker->getAliases()->uses;
+                $this->namespace_aliased_classes[$namespace_name] = $namespace_analyzer->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =
-                    $namespace_checker->getAliasedClassesFlipped();
+                    $namespace_analyzer->getAliasedClassesFlipped();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
@@ -213,40 +213,40 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         if ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-            $class_checker = new ClassAnalyzer($stmt, $this, $stmt->name->name);
+            $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
 
-            $fq_class_name = $class_checker->getFQCLN();
+            $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->class_checkers_to_analyze[strtolower($fq_class_name)] = $class_checker;
+            $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
-            $class_checker = new InterfaceAnalyzer($stmt, $this, $stmt->name->name);
+            $class_analyzer = new InterfaceAnalyzer($stmt, $this, $stmt->name->name);
 
-            $fq_class_name = $class_checker->getFQCLN();
+            $fq_class_name = $class_analyzer->getFQCLN();
 
-            $this->interface_checkers_to_analyze[$fq_class_name] = $class_checker;
+            $this->interface_analyzers_to_analyze[$fq_class_name] = $class_analyzer;
         }
     }
 
     /**
      * @param string       $fq_class_name
-     * @param ClassAnalyzer $class_checker
+     * @param ClassAnalyzer $class_analyzer
      *
      * @return  void
      */
-    public function addNamespacedClassAnalyzer($fq_class_name, ClassAnalyzer $class_checker)
+    public function addNamespacedClassAnalyzer($fq_class_name, ClassAnalyzer $class_analyzer)
     {
-        $this->class_checkers_to_analyze[strtolower($fq_class_name)] = $class_checker;
+        $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
 
     /**
      * @param string            $fq_class_name
-     * @param InterfaceAnalyzer  $interface_checker
+     * @param InterfaceAnalyzer  $interface_analyzer
      *
      * @return  void
      */
-    public function addNamespacedInterfaceAnalyzer($fq_class_name, InterfaceAnalyzer $interface_checker)
+    public function addNamespacedInterfaceAnalyzer($fq_class_name, InterfaceAnalyzer $interface_analyzer)
     {
-        $this->interface_checkers_to_analyze[strtolower($fq_class_name)] = $interface_checker;
+        $this->interface_analyzers_to_analyze[strtolower($fq_class_name)] = $interface_analyzer;
     }
 
     /**
@@ -259,10 +259,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
-        if (isset($this->class_checkers_to_analyze[strtolower($fq_class_name)])) {
-            $class_checker_to_examine = $this->class_checkers_to_analyze[strtolower($fq_class_name)];
+        if (isset($this->class_analyzers_to_analyze[strtolower($fq_class_name)])) {
+            $class_analyzer_to_examine = $this->class_analyzers_to_analyze[strtolower($fq_class_name)];
         } else {
-            $this->project_checker->getMethodMutations($method_id, $this_context);
+            $this->project_analyzer->getMethodMutations($method_id, $this_context);
 
             return;
         }
@@ -287,7 +287,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
         $call_context->vars_in_scope['$this'] = $this_context->vars_in_scope['$this'];
 
-        $class_checker_to_examine->getMethodMutations($method_name, $call_context);
+        $class_analyzer_to_examine->getMethodMutations($method_name, $call_context);
 
         foreach ($call_context->vars_possibly_in_scope as $var => $_) {
             $this_context->vars_possibly_in_scope[$var] = true;
@@ -500,7 +500,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
     public function getProjectAnalyzer() : ProjectAnalyzer
     {
-        return $this->project_checker;
+        return $this->project_analyzer;
     }
 
     public function getCodebase() : Codebase

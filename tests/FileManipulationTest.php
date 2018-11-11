@@ -7,7 +7,7 @@ use Psalm\Context;
 class FileManipulationTest extends TestCase
 {
     /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
-    protected $project_checker;
+    protected $project_analyzer;
 
     /**
      * @return void
@@ -46,7 +46,7 @@ class FileManipulationTest extends TestCase
 
         $config = new TestConfig();
 
-        $this->project_checker = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
@@ -56,7 +56,7 @@ class FileManipulationTest extends TestCase
 
         if (empty($issues_to_fix)) {
             $config->addPluginPath('examples/plugins/ClassUnqualifier.php');
-            $config->initializePlugins($this->project_checker);
+            $config->initializePlugins($this->project_analyzer);
         }
 
         $context = new Context();
@@ -76,8 +76,8 @@ class FileManipulationTest extends TestCase
             $keyed_issues_to_fix[$issue] = true;
         }
 
-        $this->project_checker->setIssuesToFix($keyed_issues_to_fix);
-        $this->project_checker->alterCodeAfterCompletion(
+        $this->project_analyzer->setIssuesToFix($keyed_issues_to_fix);
+        $this->project_analyzer->alterCodeAfterCompletion(
             (int) $php_major_version,
             (int) $php_minor_version,
             false,
@@ -86,8 +86,8 @@ class FileManipulationTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $this->project_checker->getCodebase()->analyzer->updateFile($file_path, false);
-        $this->assertSame($output_code, $this->project_checker->getCodebase()->getFileContents($file_path));
+        $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
+        $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));
     }
 
     /**

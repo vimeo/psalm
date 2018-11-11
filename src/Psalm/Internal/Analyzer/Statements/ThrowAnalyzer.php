@@ -17,11 +17,11 @@ class ThrowAnalyzer
      * @return  false|null
      */
     public static function analyze(
-        StatementsAnalyzer $statements_checker,
+        StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Throw_ $stmt,
         Context $context
     ) {
-        if (ExpressionAnalyzer::analyze($statements_checker, $stmt->expr, $context) === false) {
+        if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
 
@@ -30,8 +30,8 @@ class ThrowAnalyzer
 
             $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
-            $file_checker = $statements_checker->getFileAnalyzer();
-            $codebase = $statements_checker->getCodebase();
+            $file_analyzer = $statements_analyzer->getFileAnalyzer();
+            $codebase = $statements_analyzer->getCodebase();
 
             foreach ($throw_type->getTypes() as $throw_type_part) {
                 $throw_type_candidate = new Union([$throw_type_part]);
@@ -41,10 +41,10 @@ class ThrowAnalyzer
                         new InvalidThrow(
                             'Cannot throw ' . $throw_type_part
                                 . ' as it does not extend Exception or implement Throwable',
-                            new CodeLocation($file_checker, $stmt),
+                            new CodeLocation($file_analyzer, $stmt),
                             (string) $throw_type_part
                         ),
-                        $statements_checker->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues()
                     )) {
                         return false;
                     }
