@@ -396,9 +396,9 @@ class Reconciler
                 $existing_string_types = $existing_var_type->getLiteralStrings();
 
                 if ($existing_string_types) {
-                    foreach ($existing_string_types as $key => $literal_type) {
+                    foreach ($existing_string_types as $string_key => $literal_type) {
                         if ($literal_type->value) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($string_key);
                             $did_remove_type = true;
                         }
                     }
@@ -420,9 +420,9 @@ class Reconciler
                 $existing_int_types = $existing_var_type->getLiteralInts();
 
                 if ($existing_int_types) {
-                    foreach ($existing_int_types as $key => $literal_type) {
+                    foreach ($existing_int_types as $int_key => $literal_type) {
                         if ($literal_type->value) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($int_key);
                             $did_remove_type = true;
                         }
                     }
@@ -437,9 +437,9 @@ class Reconciler
                 $existing_float_types = $existing_var_type->getLiteralFloats();
 
                 if ($existing_float_types) {
-                    foreach ($existing_float_types as $key => $literal_type) {
+                    foreach ($existing_float_types as $float_key => $literal_type) {
                         if ($literal_type->value) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($float_key);
                             $did_remove_type = true;
                         }
                     }
@@ -1214,9 +1214,9 @@ class Reconciler
                 $existing_string_types = $existing_var_type->getLiteralStrings();
 
                 if ($existing_string_types) {
-                    foreach ($existing_string_types as $key => $literal_type) {
+                    foreach ($existing_string_types as $string_key => $literal_type) {
                         if (!$literal_type->value) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($string_key);
                             $did_remove_type = true;
                         }
                     }
@@ -1229,9 +1229,9 @@ class Reconciler
                 $existing_int_types = $existing_var_type->getLiteralInts();
 
                 if ($existing_int_types) {
-                    foreach ($existing_int_types as $key => $literal_type) {
+                    foreach ($existing_int_types as $int_key => $literal_type) {
                         if (!$literal_type->value) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($int_key);
                             $did_remove_type = true;
                         }
                     }
@@ -1453,9 +1453,9 @@ class Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $key => $_) {
+                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
                         if ($key !== $new_var_type) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {
                             $can_be_equal = true;
@@ -1496,9 +1496,9 @@ class Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $key => $_) {
+                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
                         if ($key !== $new_var_type) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {
                             $can_be_equal = true;
@@ -1541,9 +1541,9 @@ class Reconciler
                     $can_be_equal = false;
                     $did_remove_type = false;
 
-                    foreach ($existing_var_atomic_types as $key => $_) {
+                    foreach ($existing_var_atomic_types as $atomic_key => $_) {
                         if ($key !== $new_var_type) {
-                            $existing_var_type->removeType($key);
+                            $existing_var_type->removeType($atomic_key);
                             $did_remove_type = true;
                         } else {
                             $can_be_equal = true;
