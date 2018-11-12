@@ -25,7 +25,7 @@
         "webmozart/path-util": "^2.3",
         "symfony/console": "^3.0||^4.0"
     },
-    "bin": ["psalm", "psalter", "psalm-language-server"],
+    "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin"],
     "autoload": {
         "psr-4": {
             "Psalm\\Plugin\\": "src/Psalm/Plugin",
