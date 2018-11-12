@@ -549,6 +549,8 @@ class SwitchChecker
                                     $type
                                 );
                             }
+                        } else {
+                            unset($new_vars_in_scope[$var_id]);
                         }
                     }
                 }
