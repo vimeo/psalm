@@ -689,6 +689,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                         try {
                             $pseudo_property_type = Type::parseTokens($pseudo_property_type_tokens);
                             $pseudo_property_type->setFromDocblock();
+                            $pseudo_property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
                             if ($property['tag'] !== 'property-read') {
                                 $storage->pseudo_property_set_types[$property['name']] = $pseudo_property_type;
