@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\PluginApi;
+namespace Psalm\Plugin;
 
 interface RegistrationInterface
 {

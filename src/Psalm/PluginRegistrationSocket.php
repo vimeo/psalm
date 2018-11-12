@@ -1,8 +1,8 @@
 <?php
 namespace Psalm;
 
-use Psalm\PluginApi\Hook;
-use Psalm\PluginApi\RegistrationInterface;
+use Psalm\Plugin\Hook;
+use Psalm\Plugin\RegistrationInterface;
 
 class PluginRegistrationSocket implements RegistrationInterface
 {

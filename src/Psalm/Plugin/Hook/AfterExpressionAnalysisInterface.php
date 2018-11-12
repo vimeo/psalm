@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\PluginApi\Hook;
+namespace Psalm\Plugin\Hook;
 
 use PhpParser\Node\Expr;
 use Psalm\Codebase;

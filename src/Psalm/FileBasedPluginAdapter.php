@@ -4,10 +4,9 @@ namespace Psalm;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\PluginApi;
 use SimpleXMLElement;
 
-class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
+class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 {
     /** @var string */
     private $path;
@@ -26,7 +25,7 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
     }
 
     /** @return void */
-    public function __invoke(PluginApi\RegistrationInterface $registration, SimpleXMLElement $config = null)
+    public function __invoke(Plugin\RegistrationInterface $registration, SimpleXMLElement $config = null)
     {
         $fq_class_name = $this->getPluginClassForPath($this->path);
 

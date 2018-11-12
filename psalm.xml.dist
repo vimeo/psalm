@@ -88,7 +88,7 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="tests" />
-                <directory name="src/Psalm/PluginApi" />
+                <directory name="src/Psalm/Plugin" />
                 <file name="src/Psalm/Internal/LanguageServer/Client/TextDocument.php" />
                 <file name="src/Psalm/Internal/LanguageServer/Server/TextDocument.php" />
                 <referencedMethod name="Psalm\Codebase::getParentInterfaces" />

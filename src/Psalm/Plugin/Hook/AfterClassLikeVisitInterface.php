@@ -1,21 +1,22 @@
 <?php
-namespace Psalm\PluginApi\Hook;
+namespace Psalm\Plugin\Hook;
 
-use Psalm\CodeLocation;
+use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 
-interface AfterClassLikeExistenceCheckInterface
+interface AfterClassLikeVisitInterface
 {
     /**
      * @param  FileManipulation[] $file_replacements
      *
      * @return void
      */
-    public static function afterClassLikeExistenceCheck(
-        string $fq_class_name,
-        CodeLocation $code_location,
+    public static function afterClassLikeVisit(
+        ClassLike $stmt,
+        ClassLikeStorage $storage,
         StatementsSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
