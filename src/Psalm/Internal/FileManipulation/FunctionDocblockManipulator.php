@@ -1,5 +1,7 @@
 <?php
-namespace Psalm\FileManipulation;
+namespace Psalm\Internal\FileManipulation;
+
+use Psalm\FileManipulation;
 
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;

@@ -7,7 +7,7 @@ use Psalm\Checker\StatementsChecker;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\FileManipulation\FileManipulation;
+use Psalm\FileManipulation;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TypeCoercion;
 use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;

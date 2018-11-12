@@ -6,7 +6,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\FileManipulation\FileManipulation;
+use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Type\Union;
 

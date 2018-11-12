@@ -4,7 +4,7 @@ namespace Psalm\Plugin\Hook;
 use PhpParser\Node\Stmt;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\FileManipulation\FileManipulation;
+use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
 interface AfterStatementAnalysisInterface

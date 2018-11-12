@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Codebase;
+namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;

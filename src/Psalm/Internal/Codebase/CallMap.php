@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Codebase;
+namespace Psalm\Internal\Codebase;
 
 use Psalm\Type;
 use Psalm\Storage\FunctionLikeParameter;
@@ -136,7 +136,7 @@ class CallMap
         }
 
         /** @var array<string, array<int|string, string>> */
-        $call_map = require_once(__DIR__ . '/../Internal/CallMap.php');
+        $call_map = require_once(__DIR__ . '/../CallMap.php');
 
         self::$call_map = [];
 

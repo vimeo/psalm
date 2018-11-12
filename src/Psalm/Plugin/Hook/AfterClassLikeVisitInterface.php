@@ -3,7 +3,7 @@ namespace Psalm\Plugin\Hook;
 
 use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
-use Psalm\FileManipulation\FileManipulation;
+use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 

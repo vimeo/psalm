@@ -3,7 +3,7 @@ namespace Psalm\Plugin\Hook;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
-use Psalm\FileManipulation\FileManipulation;
+use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 
 interface AfterClassLikeExistenceCheckInterface

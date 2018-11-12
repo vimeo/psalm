@@ -10,7 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\ParentNotFound;

@@ -5,7 +5,7 @@ use PhpParser;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
-use Psalm\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;

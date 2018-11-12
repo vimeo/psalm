@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Codebase;
+namespace Psalm\Internal\Codebase;
 
 class PropertyMap
 {
@@ -22,7 +22,7 @@ class PropertyMap
         }
 
         /** @var array<string, array<string, string>> */
-        $property_map = require_once(__DIR__ . '/../Internal/PropertyMap.php');
+        $property_map = require_once(__DIR__ . '/../PropertyMap.php');
 
         self::$property_map = [];
 

@@ -7,7 +7,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
