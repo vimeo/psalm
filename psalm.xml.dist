@@ -71,7 +71,7 @@
 
         <UnusedProperty>
             <errorLevel type="info">
-                <file name="src/Psalm/FileManipulation/FunctionDocblockManipulator.php" />
+                <file name="src/Psalm/Internal/FileManipulation/FunctionDocblockManipulator.php" />
             </errorLevel>
         </UnusedProperty>
 

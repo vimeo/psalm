@@ -3,7 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
-use Psalm\Codebase\CallMap;
+use Psalm\Internal\Codebase\CallMap;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Issue\InvalidArgument;

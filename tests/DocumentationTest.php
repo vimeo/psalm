@@ -64,7 +64,7 @@ class DocumentationTest extends TestCase
     public function setUp()
     {
         FileAnalyzer::clearCache();
-        \Psalm\FileManipulation\FunctionDocblockManipulator::clearCache();
+        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
 

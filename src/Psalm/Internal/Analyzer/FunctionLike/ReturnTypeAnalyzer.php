@@ -16,7 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidReturnType;

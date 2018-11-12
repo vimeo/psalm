@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\FileManipulation;
+namespace Psalm;
 
 class FileManipulation
 {

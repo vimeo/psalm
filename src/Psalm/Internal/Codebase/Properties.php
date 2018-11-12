@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Codebase;
+namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;

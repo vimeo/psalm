@@ -731,6 +731,6 @@ class TypeParseTest extends TestCase
      */
     public function providerTestValidCallMapType()
     {
-        return \Psalm\Codebase\CallMap::getCallMap();
+        return \Psalm\Internal\Codebase\CallMap::getCallMap();
     }
 }

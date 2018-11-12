@@ -1,13 +1,13 @@
 <?php
-namespace Psalm\Codebase;
+namespace Psalm\Internal\Codebase;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
-use Psalm\FileManipulation\FileManipulation;
-use Psalm\FileManipulation\FileManipulationBuffer;
-use Psalm\FileManipulation\FunctionDocblockManipulator;
+use Psalm\FileManipulation;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;

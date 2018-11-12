@@ -98,42 +98,42 @@ class Codebase
     public $find_unused_code = false;
 
     /**
-     * @var Codebase\Reflection
+     * @var Internal\Codebase\Reflection
      */
     private $reflection;
 
     /**
-     * @var Codebase\Scanner
+     * @var Internal\Codebase\Scanner
      */
     public $scanner;
 
     /**
-     * @var Codebase\Analyzer
+     * @var Internal\Codebase\Analyzer
      */
     public $analyzer;
 
     /**
-     * @var Codebase\Functions
+     * @var Internal\Codebase\Functions
      */
     public $functions;
 
     /**
-     * @var Codebase\ClassLikes
+     * @var Internal\Codebase\ClassLikes
      */
     public $classlikes;
 
     /**
-     * @var Codebase\Methods
+     * @var Internal\Codebase\Methods
      */
     public $methods;
 
     /**
-     * @var Codebase\Properties
+     * @var Internal\Codebase\Properties
      */
     public $properties;
 
     /**
-     * @var Codebase\Populator
+     * @var Internal\Codebase\Populator
      */
     public $populator;
 
@@ -179,9 +179,9 @@ class Codebase
 
         self::$stubbed_constants = [];
 
-        $this->reflection = new Codebase\Reflection($providers->classlike_storage_provider, $this);
+        $this->reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
 
-        $this->scanner = new Codebase\Scanner(
+        $this->scanner = new Internal\Codebase\Scanner(
             $this,
             $config,
             $providers->file_storage_provider,
@@ -193,24 +193,24 @@ class Codebase
 
         $this->loadAnalyzer();
 
-        $this->functions = new Codebase\Functions($providers->file_storage_provider, $this->reflection);
-        $this->methods = new Codebase\Methods(
+        $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $this->reflection);
+        $this->methods = new Internal\Codebase\Methods(
             $config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider
         );
-        $this->properties = new Codebase\Properties(
+        $this->properties = new Internal\Codebase\Properties(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider
         );
 
-        $this->classlikes = new Codebase\ClassLikes(
+        $this->classlikes = new Internal\Codebase\ClassLikes(
             $this->config,
             $providers->classlike_storage_provider,
             $this->scanner,
             $this->methods
         );
-        $this->populator = new Codebase\Populator(
+        $this->populator = new Internal\Codebase\Populator(
             $config,
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
@@ -227,7 +227,7 @@ class Codebase
      */
     private function loadAnalyzer()
     {
-        $this->analyzer = new Codebase\Analyzer(
+        $this->analyzer = new Internal\Codebase\Analyzer(
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,

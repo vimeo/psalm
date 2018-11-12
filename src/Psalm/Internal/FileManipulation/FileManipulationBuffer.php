@@ -1,5 +1,7 @@
 <?php
-namespace Psalm\FileManipulation;
+namespace Psalm\Internal\FileManipulation;
+
+use Psalm\FileManipulation;
 
 class FileManipulationBuffer
 {

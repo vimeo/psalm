@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Codebase;
+namespace Psalm\Internal\Codebase;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\MethodAnalyzer;

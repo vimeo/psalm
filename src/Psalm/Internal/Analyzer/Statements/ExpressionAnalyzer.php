@@ -28,7 +28,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
-use Psalm\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\FileSource;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;

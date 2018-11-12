@@ -238,7 +238,6 @@ class ConfigTest extends TestCase
                         <directory name="src" />
                         <directory name="examples" />
                         <ignoreFiles>
-                            <file name="**/**/**/*Analyzer.php" />
                             <file name="**/**/**/**/*Analyzer.php" />
                             <file name="**/**/**/**/**/*Analyzer.php" />
                         </ignoreFiles>
