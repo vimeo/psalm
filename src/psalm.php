@@ -3,6 +3,7 @@ require_once('command_functions.php');
 
 use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\IssueBuffer;
 
@@ -35,6 +36,7 @@ $valid_long_options = [
     'init',
     'monochrome',
     'no-cache',
+    'no-reflection-cache',
     'output-format:',
     'plugin:',
     'report:',
@@ -181,6 +183,10 @@ Options:
 
     --no-cache
         Runs Psalm without using cache
+
+    --no-reflection-cache
+        Runs Psalm without using cached representations of unchanged classes and files.
+        Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
 
     --plugin=PATH
         Executes a plugin, an alternative to using the Psalm config
@@ -420,16 +426,26 @@ if (isset($options['clear-global-cache'])) {
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
 if (isset($options['no-cache'])) {
-    $providers = new Psalm\Internal\Provider\Providers(
-        new Psalm\Internal\Provider\FileProvider
+    $providers = new Provider\Providers(
+        new Provider\FileProvider
     );
 } else {
-    $providers = new Psalm\Internal\Provider\Providers(
-        new Psalm\Internal\Provider\FileProvider,
-        new Psalm\Internal\Provider\ParserCacheProvider($config),
-        new Psalm\Internal\Provider\FileStorageCacheProvider($config),
-        new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
-        new Psalm\Internal\Provider\FileReferenceCacheProvider($config)
+    $no_reflection_cache = isset($options['no-reflection-cache']);
+
+    $file_storage_cache_provider = $no_reflection_cache
+        ? null
+        : new Provider\FileStorageCacheProvider($config);
+
+    $classlike_storage_cache_provider = $no_reflection_cache
+        ? null
+        : new Provider\ClassLikeStorageCacheProvider($config);
+
+    $providers = new Provider\Providers(
+        new Provider\FileProvider,
+        new Provider\ParserCacheProvider($config),
+        $file_storage_cache_provider,
+        $classlike_storage_cache_provider,
+        new Provider\FileReferenceCacheProvider($config)
     );
 }
 
