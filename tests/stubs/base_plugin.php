@@ -1,6 +1,8 @@
 <?php
 
-class BasePlugin extends \Psalm\Plugin
+use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
+
+class BasePlugin implements Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface
 {
     public static function afterFunctionCallAnalysis(
         \PhpParser\Node\Expr\FuncCall $expr,

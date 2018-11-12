@@ -810,7 +810,7 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
-                /** @var PluginApi\PluginEntryPointInterface $plugin_object */
+                /** @var Plugin\PluginEntryPointInterface $plugin_object */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);
             } catch (\Throwable $e) {

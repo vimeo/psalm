@@ -4,10 +4,9 @@ namespace Psalm;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\PluginApi;
 use SimpleXMLElement;
 
-class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
+class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 {
     /** @var string */
     private $path;
@@ -26,9 +25,9 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
     }
 
     /** @return void */
-    public function __invoke(PluginApi\RegistrationInterface $registration, SimpleXMLElement $config = null)
+    public function __invoke(Plugin\RegistrationInterface $registration, SimpleXMLElement $config = null)
     {
-        $fq_class_name = $this->getPluginClassForPath($this->path, Plugin::class);
+        $fq_class_name = $this->getPluginClassForPath($this->path);
 
         /** @psalm-suppress UnresolvableInclude */
         require_once($this->path);
@@ -36,7 +35,7 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
         $registration->registerHooksFromClass($fq_class_name);
     }
 
-    private function getPluginClassForPath(string $path, string $must_extend): string
+    private function getPluginClassForPath(string $path): string
     {
         $codebase = $this->codebase;
 
@@ -57,16 +56,6 @@ class FileBasedPluginAdapter implements PluginApi\PluginEntryPointInterface
         }
 
         $fq_class_name = reset($declared_classes);
-
-        if (!$codebase->classExtends(
-            $fq_class_name,
-            $must_extend
-        )
-        ) {
-            throw new \InvalidArgumentException(
-                'This plugin must extend ' . $must_extend . ' - ' . $path . ' does not'
-            );
-        }
 
         return $fq_class_name;
     }

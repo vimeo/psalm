@@ -28,7 +28,7 @@
     "bin": ["psalm", "psalter", "psalm-language-server"],
     "autoload": {
         "psr-4": {
-            "Psalm\\PluginApi\\": "src/Psalm/PluginApi",
+            "Psalm\\Plugin\\": "src/Psalm/Plugin",
             "Psalm\\": "src/Psalm"
         }
     },
