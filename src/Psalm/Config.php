@@ -800,7 +800,7 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
-                if (!class_exists($plugin_class_name, false)) {
+                if (!class_exists($plugin_class_name, true)) {
                     throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
                 }
 
