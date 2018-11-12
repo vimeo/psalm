@@ -729,9 +729,7 @@ class TypeAnalyzer
         if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
             && $input_type_part instanceof TString
         ) {
-            if (\Psalm\Config::getInstance()->allow_coercion_from_string_to_class_const) {
-                $type_coerced = true;
-            }
+            $type_coerced = true;
 
             return false;
         }

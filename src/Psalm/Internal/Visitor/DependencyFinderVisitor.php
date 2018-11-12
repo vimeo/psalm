@@ -81,7 +81,7 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
     /** @var ClassLikeStorage[] */
     private $classlike_storages = [];
 
-    /** @var string[] */
+    /** @var class-string[] */
     private $after_classlike_check_plugins;
 
     /**

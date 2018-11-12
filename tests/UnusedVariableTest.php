@@ -147,6 +147,7 @@ class UnusedVariableTest extends TestCase
                     'MixedArrayAccess',
                     'MixedOperand',
                     'MixedAssignment',
+                    'InvalidStringClass',
                 ],
             ],
             'varDefinedInIfWithReference' => [

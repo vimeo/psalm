@@ -150,7 +150,7 @@ class Analyzer
 
     /**
      * @param  string $file_path
-     * @param  array<string, string> $filetype_analyzers
+     * @param  array<string, class-string> $filetype_analyzers
      *
      * @return FileAnalyzer
      *

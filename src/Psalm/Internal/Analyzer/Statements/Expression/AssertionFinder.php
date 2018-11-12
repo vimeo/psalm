@@ -1378,6 +1378,10 @@ class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[$prefix . 'iterable']];
             }
+        } elseif (self::hasClassExistsCheck($expr)) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[$prefix . 'class-string']];
+            }
         } elseif (self::hasInArrayCheck($expr)) {
             if ($first_var_name && isset($expr->args[1]->value->inferredType)) {
                 foreach ($expr->args[1]->value->inferredType->getTypes() as $atomic_type) {
@@ -1842,6 +1846,20 @@ class AssertionFinder
     protected static function hasIterableCheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'is_iterable') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param   PhpParser\Node\Expr\FuncCall    $stmt
+     *
+     * @return  bool
+     */
+    protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt)
+    {
+        if ($stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'class_exists') {
             return true;
         }
 

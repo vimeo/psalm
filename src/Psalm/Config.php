@@ -113,12 +113,12 @@ class Config
     private $file_extensions = ['php'];
 
     /**
-     * @var array<string, string>
+     * @var array<string, class-string>
      */
     private $filetype_scanners = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, class-string>
      */
     private $filetype_analyzers = [];
 
@@ -187,12 +187,7 @@ class Config
     /**
      * @var bool
      */
-    public $allow_coercion_from_string_to_class_const = true;
-
-    /**
-     * @var bool
-     */
-    public $allow_string_standin_for_class = true;
+    public $allow_string_standin_for_class = false;
 
     /**
      * @var bool
@@ -247,42 +242,42 @@ class Config
     /**
      * Static methods to be called after method checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_method_checks = [];
 
     /**
      * Static methods to be called after function checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_function_checks = [];
 
     /**
      * Static methods to be called after expression checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_expression_checks = [];
 
     /**
      * Static methods to be called after statement checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_statement_checks = [];
 
     /**
      * Static methods to be called after classlike exists checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_classlike_exists_checks = [];
 
     /**
      * Static methods to be called after classlikes have been scanned
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_visit_classlikes = [];
 
@@ -549,11 +544,6 @@ class Config
             $config->allow_phpstorm_generics = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['allowCoercionFromStringToClassConst'])) {
-            $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
-            $config->allow_coercion_from_string_to_class_const = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
         if (isset($config_xml['allowStringToStandInForClass'])) {
             $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
             $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
@@ -810,6 +800,10 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
+                if (!class_exists($plugin_class_name, false)) {
+                    throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
+                }
+
                 /** @var Plugin\PluginEntryPointInterface $plugin_object */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);
@@ -825,10 +819,14 @@ class Config
                 \Psalm\Internal\Scanner\FileScanner::class
             );
 
-            $this->filetype_scanners[$extension] = $fq_class_name;
-
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
+
+            if (!class_exists($fq_class_name)) {
+                throw new \UnexpectedValueException($fq_class_name . ' is expected in ' . $path);
+            }
+
+            $this->filetype_scanners[$extension] = $fq_class_name;
         }
 
         foreach ($this->filetype_analyzer_paths as $extension => $path) {
@@ -838,10 +836,14 @@ class Config
                 \Psalm\Internal\Analyzer\FileAnalyzer::class
             );
 
-            $this->filetype_analyzers[$extension] = $fq_class_name;
-
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
+
+            if (!class_exists($fq_class_name)) {
+                throw new \UnexpectedValueException($fq_class_name . ' is expected in ' . $path);
+            }
+
+            $this->filetype_analyzers[$extension] = $fq_class_name;
         }
 
         foreach ($this->plugin_paths as $path) {
@@ -1087,7 +1089,7 @@ class Config
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, class-string>
      */
     public function getFiletypeScanners()
     {
@@ -1095,7 +1097,7 @@ class Config
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, class-string>
      */
     public function getFiletypeAnalyzers()
     {

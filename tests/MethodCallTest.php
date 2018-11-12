@@ -298,7 +298,7 @@ class MethodCallTest extends TestCase
 
                     class NullableBug {
                         /**
-                         * @param string $className
+                         * @param class-string|null $className
                          * @return object|null
                          */
                         public static function mock($className) {
@@ -314,7 +314,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement'],
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'TypeCoercion'],
             ],
             'undefinedVariableStaticCall' => [
                 '<?php
@@ -329,6 +329,7 @@ class MethodCallTest extends TestCase
                         }
                     }
                     $foo = "A";
+                    /** @psalm-suppress InvalidStringClass */
                     $b = $foo::bar();',
                 'error_message' => 'MixedAssignment',
             ],

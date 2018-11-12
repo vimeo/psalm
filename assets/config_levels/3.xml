@@ -43,5 +43,7 @@
         <UnresolvableInclude errorLevel="info" />
 
         <RawObjectIteration errorLevel="info" />
+
+        <InvalidStringClass errorLevel="info" />
     </issueHandlers>
 </psalm>

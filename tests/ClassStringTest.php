@@ -11,32 +11,6 @@ class ClassStringTest extends TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage InvalidArgument
-     *
-     * @return                   void
-     */
-    public function testDontAllowStringConstCoercion()
-    {
-        Config::getInstance()->allow_coercion_from_string_to_class_const = false;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                /**
-                 * @param class-string $s
-                 */
-                function takesClassConstants(string $s) : void {}
-
-                class A {}
-
-                takesClassConstants("A");'
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage InvalidStringClass
      *
      * @return                   void

@@ -641,6 +641,14 @@ class FunctionCallTest extends TestCase
                 '<?php
                     if (class_exists(Foo::class)) {}'
             ],
+            'allowConstructorAfterClassExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (class_exists($s)) {
+                            new $s();
+                        }
+                    }'
+            ],
             'next' => [
                 '<?php
                     $arr = ["one", "two", "three"];
