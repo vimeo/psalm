@@ -1,7 +1,7 @@
 <?php
 
-use Psalm\PluginApi\PluginEntryPointInterface;
-use Psalm\PluginApi\RegistrationInterface;
+use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\RegistrationInterface;
 
 require_once __DIR__ . '/extending_plugin.php';
 

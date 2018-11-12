@@ -10,9 +10,10 @@ use Psalm\Context;
 use Psalm\FileManipulation\FileManipulation;
 use Psalm\IssueBuffer;
 use Psalm\Issue\TypeCoercion;
+use Psalm\Plugin\Hook\AfterExpressionAnalysisInterface;
 use Psalm\StatementsSource;
 
-class StringChecker extends \Psalm\Plugin
+class StringChecker implements AfterExpressionAnalysisInterface
 {
     /**
      * Called after an expression has been checked

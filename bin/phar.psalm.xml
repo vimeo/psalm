@@ -23,12 +23,6 @@
         <MissingConstructor errorLevel="suppress" />
         <DeprecatedProperty errorLevel="suppress" />
 
-        <LessSpecificReturnType>
-            <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
-            </errorLevel>
-        </LessSpecificReturnType>
-
         <UnusedProperty>
             <errorLevel type="info">
                 <file name="src/Psalm/FileManipulation/FunctionDocblockManipulator.php" />
@@ -44,7 +38,6 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <file name="src/Psalm/Type/Atomic/GenericTrait.php" />
-                <file name="src/Psalm/Plugin.php" />
             </errorLevel>
             <errorLevel type="info">
                 <file name="src/Psalm/Codebase.php" />

@@ -5,9 +5,8 @@ use Prophecy\Argument;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Plugin;
-use Psalm\PluginApi\PluginEntryPointInterface;
-use Psalm\PluginApi\RegistrationInterface;
+use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\RegistrationInterface;
 use SimpleXMLElement;
 
 class PluginTest extends TestCase

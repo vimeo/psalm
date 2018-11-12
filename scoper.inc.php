@@ -116,8 +116,8 @@ return [
         },
         function ($filePath, $prefix, $contents) {
             $ret = str_replace(
-                $prefix . '\Psalm\PluginApi',
-                'Psalm\PluginApi',
+                $prefix . '\Psalm\Plugin\\',
+                'Psalm\Plugin\\',
                 $contents
             );
             return $ret;
@@ -125,6 +125,6 @@ return [
     ],
     'whitelist' => [
         \Composer\Autoload\ClassLoader::class,
-        'Psalm\PluginApi\*',
+        'Psalm\Plugin\*',
     ]
 ];
