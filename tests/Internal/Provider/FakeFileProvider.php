@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests\Provider;
+namespace Psalm\Tests\Internal\Provider;
 
 class FakeFileProvider extends \Psalm\Internal\Provider\FileProvider
 {

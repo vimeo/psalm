@@ -3,6 +3,7 @@ namespace Psalm\Tests;
 
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Context;
+use Psalm\Tests\Internal\Provider;
 
 class FileReferenceTest extends TestCase
 {

@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;
 use Psalm\IssueBuffer;
+use Psalm\Tests\Internal\Provider;
 
 class ReportOutputTest extends TestCase
 {

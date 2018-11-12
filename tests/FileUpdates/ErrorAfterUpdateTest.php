@@ -5,7 +5,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
-use Psalm\Tests\Provider;
+use Psalm\Tests\Internal\Provider;
 
 class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 {
@@ -18,13 +18,13 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
         FileAnalyzer::clearCache();
 
-        $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Provider\ParserInstanceCacheProvider(),
+            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider()

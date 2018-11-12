@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Tests\Provider;
+namespace Psalm\Tests\Internal\Provider;
 
 use Psalm\Storage\FileStorage;
 

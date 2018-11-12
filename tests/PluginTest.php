@@ -7,6 +7,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\RegistrationInterface;
+use Psalm\Tests\Internal\Provider;
 use SimpleXMLElement;
 
 class PluginTest extends TestCase
