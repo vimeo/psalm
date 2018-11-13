@@ -8851,7 +8851,7 @@ return [
 'PDO::pgsqlLOBCreate' => ['string'],
 'PDO::pgsqlLOBOpen' => ['resource', 'oid'=>'string', 'mode='=>'string'],
 'PDO::pgsqlLOBUnlink' => ['bool', 'oid'=>'string'],
-'PDO::prepare' => ['PDOStatement', 'statement'=>'string', 'options='=>'array'],
+'PDO::prepare' => ['PDOStatement|false', 'statement'=>'string', 'options='=>'array'],
 'PDO::query' => ['PDOStatement|false', 'sql'=>'string'],
 'PDO::query\'1' => ['PDOStatement|false', 'sql'=>'string', 'fetch_column'=>'int', 'colno'=>'int'],
 'PDO::query\'2' => ['PDOStatement|false', 'sql'=>'string', 'fetch_class'=>'int', 'classname'=>'string', 'ctorargs'=>'array'],
