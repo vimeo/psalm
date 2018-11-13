@@ -35,7 +35,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 
-class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor, FileSource
+class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor, FileSource
 {
     /** @var Aliases */
     private $aliases;
@@ -526,7 +526,8 @@ class DependencyFinderVisitor extends PhpParser\NodeVisitorAbstract implements P
                     $plugin_fq_class_name::afterClassLikeVisit(
                         $node,
                         $classlike_storage,
-                        $this->flle_source,
+                        $this,
+                        $this->codebase,
                         $file_manipulations
                     );
                 }

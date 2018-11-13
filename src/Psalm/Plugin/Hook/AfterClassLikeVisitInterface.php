@@ -4,7 +4,7 @@ namespace Psalm\Plugin\Hook;
 use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\FileManipulation;
-use Psalm\StatementsSource;
+use Psalm\FileSource;
 use Psalm\Storage\ClassLikeStorage;
 
 interface AfterClassLikeVisitInterface
@@ -17,7 +17,7 @@ interface AfterClassLikeVisitInterface
     public static function afterClassLikeVisit(
         ClassLike $stmt,
         ClassLikeStorage $storage,
-        StatementsSource $statements_source,
+        FileSource $statements_source,
         Codebase $codebase,
         array &$file_replacements = []
     );

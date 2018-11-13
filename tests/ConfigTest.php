@@ -219,7 +219,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Visitor/DependencyFinderVisitor.php')));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Visitor/ReflectorVisitor.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
         $this->assertTrue($config->isInProjectDirs(realpath('examples/plugins/StringChecker.php')));
@@ -250,7 +250,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Visitor/DependencyFinderVisitor.php')));
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Visitor/ReflectorVisitor.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));

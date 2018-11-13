@@ -6,7 +6,7 @@ use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\FileSource;
 use Psalm\Storage\FileStorage;
-use Psalm\Internal\Visitor\DependencyFinderVisitor;
+use Psalm\Internal\Visitor\ReflectorVisitor;
 
 class FileScanner implements FileSource
 {
@@ -83,7 +83,7 @@ class FileScanner implements FileSource
         }
 
         $traverser = new NodeTraverser();
-        $traverser->addVisitor(new DependencyFinderVisitor($codebase, $file_storage, $this));
+        $traverser->addVisitor(new ReflectorVisitor($codebase, $file_storage, $this));
         $traverser->traverse($stmts);
 
         $file_storage->deep_scan = $this->will_analyze;
