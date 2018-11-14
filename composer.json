@@ -76,7 +76,7 @@
     "repositories": [
         {
             "type": "path",
-            "url": "examples/composer-based/echo-checker"
+            "url": "examples/plugins/composer-based/echo-checker"
         }
     ]
 }
