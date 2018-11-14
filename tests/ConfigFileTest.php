@@ -44,18 +44,26 @@ class ConfigFileTest extends TestCase
      */
     public function addCanAddPluginClassToExistingPluginsNode()
     {
-        file_put_contents($this->file_path, trim('
-            <?xml version="1.0"?>
-            <psalm>
+        file_put_contents(
+            $this->file_path,
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <psalm
+                name="bar"
+            >
                 <plugins></plugins>
-            </psalm>
-        '));
+            </psalm>' . PHP_EOL
+        );
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->addPlugin('a\b\c');
 
-        $this->assertXmlStringEqualsXmlString(
-            '<?xml version="1.0"?><psalm><plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins></psalm>',
+        $this->assertSame(
+            '<?xml version="1.0" encoding="UTF-8"?>
+            <psalm
+                name="bar"
+            >
+                <plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins>
+            </psalm>' . PHP_EOL,
             file_get_contents($this->file_path)
         );
     }
@@ -66,16 +74,18 @@ class ConfigFileTest extends TestCase
      */
     public function addCanCreateMissingPluginsNode()
     {
-        file_put_contents($this->file_path, trim('
-            <?xml version="1.0"?>
-            <psalm></psalm>
-        '));
+        file_put_contents(
+            $this->file_path,
+            '<?xml version="1.0"?>
+            <psalm></psalm>' . PHP_EOL
+        );
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->addPlugin('a\b\c');
 
-        $this->assertXmlStringEqualsXmlString(
-            '<?xml version="1.0"?><psalm><plugins xmlns="' . ConfigFile::NS . '"><pluginClass class="a\b\c"/></plugins></psalm>',
+        $this->assertSame(
+            '<?xml version="1.0"?>
+            <psalm><plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins></psalm>' . PHP_EOL,
             file_get_contents($this->file_path)
         );
     }
@@ -86,16 +96,15 @@ class ConfigFileTest extends TestCase
      */
     public function removeDoesNothingWhenThereIsNoPluginsNode()
     {
-        $noPlugins = trim('
-            <?xml version="1.0"?>
-            <psalm></psalm>
-        ');
+        $noPlugins = '<?xml version="1.0"?>
+            <psalm></psalm>' . PHP_EOL;
+
         file_put_contents($this->file_path, $noPlugins);
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->removePlugin('a\b\c');
 
-        $this->assertXmlStringEqualsXmlString(
+        $this->assertSame(
             $noPlugins,
             file_get_contents($this->file_path)
         );
@@ -107,10 +116,8 @@ class ConfigFileTest extends TestCase
      */
     public function removeKillsEmptyPluginsNode()
     {
-        $noPlugins = trim('
-            <?xml version="1.0"?>
-            <psalm></psalm>
-        ');
+        $noPlugins = '<?xml version="1.0" encoding="UTF-8"?>
+            <psalm/>' . PHP_EOL;
 
         $emptyPlugins = trim('
             <?xml version="1.0"?>
@@ -136,12 +143,52 @@ class ConfigFileTest extends TestCase
     {
         $noPlugins = trim('
             <?xml version="1.0"?>
-            <psalm></psalm>
+            <psalm/>
         ');
 
         $abcEnabled = trim('
             <?xml version="1.0"?>
             <psalm><plugins><pluginClass class="a\b\c"/></plugins></psalm>
+        ');
+
+        file_put_contents($this->file_path, $abcEnabled);
+
+        $config_file = new ConfigFile((string)getcwd(), $this->file_path);
+        $config_file->removePlugin('a\b\c');
+
+        $this->assertXmlStringEqualsXmlString(
+            $noPlugins,
+            file_get_contents($this->file_path)
+        );
+    }
+
+    /**
+     * @return void
+     * @test
+     */
+    public function removeKillsSpecifiedPluginWithOneRemaining()
+    {
+        $noPlugins = trim('
+            <?xml version="1.0"?>
+            <psalm
+                totallyTyped="false"
+            >
+                <plugins>
+                    <pluginClass class="d\e\f"/>
+                </plugins>
+            </psalm>
+        ');
+
+        $abcEnabled = trim('
+            <?xml version="1.0"?>
+            <psalm
+                totallyTyped="false"
+            >
+                <plugins>
+                    <pluginClass class="a\b\c"/>
+                    <pluginClass class="d\e\f"/>
+                </plugins>
+            </psalm>
         ');
 
         file_put_contents($this->file_path, $abcEnabled);
