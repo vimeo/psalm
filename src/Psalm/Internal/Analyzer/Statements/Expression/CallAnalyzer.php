@@ -2120,6 +2120,7 @@ class CallAnalyzer
     }
 
     /**
+     * @param PhpParser\Node\Identifier|PhpParser\Node\Name $expr
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
@@ -2129,6 +2130,7 @@ class CallAnalyzer
      * @return void
      */
     protected static function applyAssertionsToContext(
+        $expr,
         array $assertions,
         array $args,
         array $template_typeof_params,
@@ -2175,15 +2177,21 @@ class CallAnalyzer
 
         $changed_vars = [];
 
+        $asserted_keys = [];
+
+        foreach ($type_assertions as $var_id => $_) {
+            $asserted_keys[$var_id] = true;
+        }
+
         // while in an and, we allow scope to boil over to support
         // statements of the form if ($x && $x->foo())
         $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
             $type_assertions,
             $context->vars_in_scope,
             $changed_vars,
-            [],
+            $asserted_keys,
             $statements_analyzer,
-            null
+            new CodeLocation($statements_analyzer->getSource(), $expr)
         );
 
         foreach ($changed_vars as $changed_var) {

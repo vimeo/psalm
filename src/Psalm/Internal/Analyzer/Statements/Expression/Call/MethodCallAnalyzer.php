@@ -706,6 +706,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         if ($method_storage) {
                             if ($method_storage->assertions) {
                                 self::applyAssertionsToContext(
+                                    $stmt->name,
                                     $method_storage->assertions,
                                     $args,
                                     $method_storage->template_typeof_params ?: [],

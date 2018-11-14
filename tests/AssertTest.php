@@ -373,6 +373,29 @@ class AssertTest extends TestCase
                     $bar->sayHello();',
                 'error_message' => 'UndefinedClass',
             ],
+            'detectRedundantCondition' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param class-string $expected
+                     * @param mixed  $actual
+                     * @param string $message
+                     *
+                     * @template T
+                     * @template-typeof T $expected
+                     * @psalm-assert T $actual
+                     */
+                    function assertInstanceOf($expected, $actual) : void {
+                    }
+
+                    function takesA(A $a) : void {
+                        if (assertInstanceOf(A::class, $a)) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition'
+            ],
         ];
     }
 }
