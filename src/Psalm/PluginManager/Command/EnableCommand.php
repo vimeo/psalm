@@ -57,6 +57,8 @@ class EnableCommand extends Command
 
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
+        $plugin_name = null;
+
         try {
             /** @psalm-suppress MixedAssignment */
             $plugin_name = $i->getArgument('pluginName');
@@ -64,7 +66,7 @@ class EnableCommand extends Command
 
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
         } catch (InvalidArgumentException $e) {
-            $io->error('Unknown plugin class');
+            $io->error('Unknown plugin class ' . $plugin_name);
             return 2;
         }
 
