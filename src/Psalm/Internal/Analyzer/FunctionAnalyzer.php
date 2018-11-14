@@ -1366,8 +1366,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 $changed_var_ids,
                                 ['$inner_type' => true],
                                 $statements_analyzer,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $statements_analyzer->getSuppressedIssues()
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
                             );
 
                             if (isset($reconciled_types['$inner_type'])) {

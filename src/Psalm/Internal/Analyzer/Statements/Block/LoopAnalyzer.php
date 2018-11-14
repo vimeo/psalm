@@ -406,8 +406,7 @@ class LoopAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
-                    $statements_analyzer->getSuppressedIssues()
+                    new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0])
                 );
 
                 foreach ($changed_var_ids as $var_id) {
@@ -549,8 +548,7 @@ class LoopAnalyzer
             $changed_var_ids,
             $new_referenced_var_ids,
             $statements_analyzer,
-            new CodeLocation($statements_analyzer->getSource(), $pre_condition),
-            $statements_analyzer->getSuppressedIssues()
+            new CodeLocation($statements_analyzer->getSource(), $pre_condition)
         );
 
         $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;

@@ -59,9 +59,10 @@ class Reconciler
         array &$changed_var_ids,
         array $referenced_var_ids,
         StatementsAnalyzer $statements_analyzer,
-        CodeLocation $code_location = null,
-        array $suppressed_issues = []
+        CodeLocation $code_location = null
     ) {
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
         foreach ($new_types as $nk => $type) {
             if ((strpos($nk, '[') || strpos($nk, '->'))
                 && ($type[0][0] === '^isset'

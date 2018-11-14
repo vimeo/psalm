@@ -113,8 +113,7 @@ class BinaryOpAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
+                new CodeLocation($statements_analyzer->getSource(), $stmt)
             );
 
             $op_context = clone $context;
@@ -222,8 +221,7 @@ class BinaryOpAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
+                new CodeLocation($statements_analyzer->getSource(), $stmt)
             );
 
             $op_context = clone $pre_op_context;
@@ -362,8 +360,7 @@ class BinaryOpAnalyzer
                 $changed_var_ids,
                 [],
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                $statements_analyzer->getSuppressedIssues()
+                new CodeLocation($statements_analyzer->getSource(), $stmt->left)
             );
 
             $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
@@ -404,8 +401,7 @@ class BinaryOpAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->right),
-                    $statements_analyzer->getSuppressedIssues()
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->right)
                 );
 
                 $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;

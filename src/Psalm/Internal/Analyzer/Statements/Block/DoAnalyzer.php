@@ -125,8 +125,7 @@ class DoAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond),
-                    $statements_analyzer->getSuppressedIssues()
+                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
 
             $do_context->vars_in_scope = $while_vars_in_scope_reconciled;
@@ -195,8 +194,7 @@ class DoAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond),
-                    $statements_analyzer->getSuppressedIssues()
+                    new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
         }
 

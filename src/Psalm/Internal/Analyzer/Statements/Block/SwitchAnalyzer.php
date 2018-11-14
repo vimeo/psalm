@@ -305,8 +305,7 @@ class SwitchAnalyzer
                             $statements_analyzer->getSource(),
                             $case->cond ? $case->cond : $case,
                             $context->include_location
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
+                        )
                     );
 
                 if (!in_array('RedundantCondition', $suppressed_issues, true)) {

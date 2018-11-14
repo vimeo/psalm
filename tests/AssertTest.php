@@ -243,6 +243,29 @@ class AssertTest extends TestCase
                         assertFalse($a->bar());
                     }'
             ],
+            'suppressRedundantCondition' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param class-string $expected
+                     * @param mixed  $actual
+                     * @param string $message
+                     *
+                     * @template T
+                     * @template-typeof T $expected
+                     * @psalm-assert T $actual
+                     */
+                    function assertInstanceOf($expected, $actual) : void {
+                    }
+
+                    /**
+                     * @psalm-suppress RedundantCondition
+                     */
+                    function takesA(A $a) : void {
+                        assertInstanceOf(A::class, $a);
+                    }',
+            ],
         ];
     }
 

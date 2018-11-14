@@ -428,8 +428,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $changed_vars,
                     [],
                     $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer->getSuppressedIssues()
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
 
                 foreach ($changed_vars as $changed_var) {

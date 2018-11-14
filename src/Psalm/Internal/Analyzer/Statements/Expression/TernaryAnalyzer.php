@@ -105,8 +105,7 @@ class TernaryAnalyzer
             $changed_var_ids,
             $new_referenced_var_ids,
             $statements_analyzer,
-            new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
-            $statements_analyzer->getSuppressedIssues()
+            new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
         );
 
         $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
@@ -141,8 +140,7 @@ class TernaryAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->else),
-                $statements_analyzer->getSuppressedIssues()
+                new CodeLocation($statements_analyzer->getSource(), $stmt->else)
             );
 
             $t_else_context->vars_in_scope = $t_else_vars_in_scope_reconciled;

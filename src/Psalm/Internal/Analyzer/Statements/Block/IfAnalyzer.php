@@ -275,8 +275,7 @@ class IfAnalyzer
                             $statements_analyzer->getSource(),
                             $stmt->cond,
                             $context->include_location
-                        ) : null,
-                    $statements_analyzer->getSuppressedIssues()
+                        ) : null
                 );
 
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
@@ -319,8 +318,7 @@ class IfAnalyzer
                         $statements_analyzer->getSource(),
                         $stmt->cond,
                         $context->include_location
-                    ) : null,
-                $statements_analyzer->getSuppressedIssues()
+                    ) : null
             );
 
             $temp_else_context->vars_in_scope = $else_vars_reconciled;
@@ -677,8 +675,7 @@ class IfAnalyzer
                         $stmt->cond,
                         $outer_context->include_location,
                         false
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
+                    )
                 );
 
                 foreach ($changed_var_ids as $changed_var_id) {
@@ -837,8 +834,7 @@ class IfAnalyzer
                     $elseif->cond,
                     $outer_context->include_location,
                     false
-                ),
-                $statements_analyzer->getSuppressedIssues()
+                )
             );
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
@@ -996,8 +992,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $elseif->cond, $outer_context->include_location),
-                $statements_analyzer->getSuppressedIssues()
+                new CodeLocation($statements_analyzer->getSource(), $elseif->cond, $outer_context->include_location)
             );
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;
@@ -1195,8 +1190,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location),
-                    $statements_analyzer->getSuppressedIssues()
+                    new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location)
                 );
 
                 $implied_outer_context = clone $elseif_context;
@@ -1358,8 +1352,7 @@ class IfAnalyzer
                 $statements_analyzer,
                 $else
                     ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)
-                    : null,
-                $statements_analyzer->getSuppressedIssues()
+                    : null
             );
 
             $else_context->vars_in_scope = $else_vars_reconciled;
