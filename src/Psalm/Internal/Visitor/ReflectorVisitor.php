@@ -1003,7 +1003,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     );
 
                     if ($final_actions !== [\Psalm\Internal\Analyzer\ScopeAnalyzer::ACTION_END]) {
-                        continue;
+                        $var_assertions = [];
+                        break;
                     }
 
                     $if_clauses = \Psalm\Type\Algebra::getFormula(
@@ -1040,6 +1041,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             );
                         }
                     }
+                } else {
+                    $var_assertions = [];
+                    break;
                 }
             }
 
