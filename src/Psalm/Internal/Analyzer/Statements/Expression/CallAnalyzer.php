@@ -2139,6 +2139,8 @@ class CallAnalyzer
     ) {
         $type_assertions = [];
 
+        $asserted_keys = [];
+
         foreach ($assertions as $assertion) {
             $assertion_var_id = null;
 
@@ -2154,7 +2156,7 @@ class CallAnalyzer
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;
                 }
-            } else {
+            } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
                 $assertion_var_id = $assertion->var_id;
             }
 
@@ -2176,8 +2178,6 @@ class CallAnalyzer
         }
 
         $changed_vars = [];
-
-        $asserted_keys = [];
 
         foreach ($type_assertions as $var_id => $_) {
             $asserted_keys[$var_id] = true;

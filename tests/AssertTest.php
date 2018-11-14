@@ -124,24 +124,6 @@ class AssertTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-assertInstanceOfClass' => [
-                '<?php
-                    class A {}
-                    class B extends A {
-                        public function foo(): void {}
-                    }
-
-                    function assertInstanceOfClass(A $var, string $class): void {
-                        if (!$var instanceof $class) {
-                            throw new \Exception();
-                        }
-                    }
-
-                    function takesA(A $a): void {
-                        assertInstanceOfClass($a, B::class);
-                        $a->foo();
-                    }',
-            ],
             'assertInstanceOfBAnnotation' => [
                 '<?php
                     class A {}
@@ -234,6 +216,32 @@ class AssertTest extends TestCase
                     assertInstanceOf($bar, Bar::class);
 
                     $bar->sayHello();'
+            ],
+            'dontBleedBadAssertVarIntoContext' => [
+                '<?php
+                    class A {
+                        public function foo() : bool {
+                            return (bool) rand(0, 1);
+                        }
+                        public function bar() : bool {
+                            return (bool) rand(0, 1);
+                        }
+                    }
+
+                    /**
+                     * Asserts that a condition is false.
+                     *
+                     * @param bool   $condition
+                     * @param string $message
+                     *
+                     * @psalm-assert false $actual
+                     */
+                    function assertFalse($condition, $message = "") : void {}
+
+                    function takesA(A $a) : void {
+                        assertFalse($a->foo());
+                        assertFalse($a->bar());
+                    }'
             ],
         ];
     }
@@ -390,9 +398,7 @@ class AssertTest extends TestCase
                     }
 
                     function takesA(A $a) : void {
-                        if (assertInstanceOf(A::class, $a)) {
-                            return;
-                        }
+                        assertInstanceOf(A::class, $a);
                     }',
                 'error_message' => 'RedundantCondition'
             ],
