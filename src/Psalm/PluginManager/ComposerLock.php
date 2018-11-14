@@ -16,7 +16,7 @@ class ComposerLock
 
     /**
      * @param mixed $package
-     * @psalm-assert-if-true array{type:'psalm-plugin',name:string,extra:array{pluginClass:string}}
+     * @psalm-assert-if-true array{type:'psalm-plugin',name:string,extra:array{psalm:array{pluginClass:string}}}
      *                        $package
      */
     public function isPlugin($package): bool
@@ -26,8 +26,8 @@ class ComposerLock
             && is_string($package['name'])
             && isset($package['type'])
             && $package['type'] === 'psalm-plugin'
-            && isset($package['extra']['pluginClass'])
-            && is_string($package['extra']['pluginClass']);
+            && isset($package['extra']['psalm']['pluginClass'])
+            && is_string($package['extra']['psalm']['pluginClass']);
     }
 
     /**
@@ -38,7 +38,7 @@ class ComposerLock
         $pluginPackages = $this->getAllPluginPackages();
         $ret = [];
         foreach ($pluginPackages as $package) {
-            $ret[$package['name']] = $package['extra']['pluginClass'];
+            $ret[$package['name']] = $package['extra']['psalm']['pluginClass'];
         }
         return $ret;
     }
@@ -60,7 +60,7 @@ class ComposerLock
     }
 
     /**
-     * @return array<mixed,array{name:string,type:string,extra:array{pluginClass:string}}>
+     * @return array<mixed,array{name:string,type:string,extra:array{psalm:array{pluginClass:string}}}>
      */
     private function getAllPluginPackages(): array
     {
