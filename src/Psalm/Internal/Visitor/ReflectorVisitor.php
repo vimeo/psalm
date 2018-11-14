@@ -1245,7 +1245,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->assertions[] = new \Psalm\Storage\Assertion(
-                    $assertion['param_name'],
+                    '$' . $assertion['param_name'],
                     [[$assertion['type']]]
                 );
             }
@@ -1266,7 +1266,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->if_true_assertions[] = new \Psalm\Storage\Assertion(
-                    $assertion['param_name'],
+                    '$' . $assertion['param_name'],
                     [[$assertion['type']]]
                 );
             }
@@ -1287,7 +1287,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->if_false_assertions[] = new \Psalm\Storage\Assertion(
-                    $assertion['param_name'],
+                    '$' . $assertion['param_name'],
                     [[$assertion['type']]]
                 );
             }

@@ -2156,8 +2156,8 @@ class CallAnalyzer
                 if ($arg_var_id) {
                     $assertion_var_id = $arg_var_id;
                 }
-            } elseif (isset($context->vars_in_scope['$' . $assertion->var_id])) {
-                $assertion_var_id = '$' . $assertion->var_id;
+            } elseif (isset($context->vars_in_scope[$assertion->var_id])) {
+                $assertion_var_id = $assertion->var_id;
             }
 
             if ($assertion_var_id) {
