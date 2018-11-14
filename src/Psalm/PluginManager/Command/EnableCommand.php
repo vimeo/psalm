@@ -57,8 +57,6 @@ class EnableCommand extends Command
 
         $plugin_list = ($this->plugin_list_factory)($current_dir, $config_file_path);
 
-        $plugin_name = null;
-
         try {
             /** @psalm-suppress MixedAssignment */
             $plugin_name = $i->getArgument('pluginName');
