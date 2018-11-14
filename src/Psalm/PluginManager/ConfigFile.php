@@ -115,7 +115,8 @@ class ConfigFile
         return $doc;
     }
 
-    private function saveXml(DomDocument $config_xml): void
+    /** @return void */
+    private function saveXml(DomDocument $config_xml)
     {
         $new_file_contents = $config_xml->saveXML($config_xml);
 
