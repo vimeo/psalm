@@ -162,10 +162,6 @@ class FileDiffTest extends TestCase
 
                 $this->assertNotNull($b_doc, var_export($a_doc, true));
 
-                if (!$b_doc) {
-                    throw new \UnexpectedValueException('');
-                }
-
                 $this->assertNotSame($a_doc, $b_doc);
 
                 $this->assertSame($a_doc->getLine(), $b_doc->getLine());

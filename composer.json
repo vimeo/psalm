@@ -46,7 +46,8 @@
         "phpunit/phpunit": "^6.0 || ^7.0",
         "squizlabs/php_codesniffer": "^3.0",
         "php-coveralls/php-coveralls": "^2.0",
-        "bamarni/composer-bin-plugin": "^1.2"
+        "bamarni/composer-bin-plugin": "^1.2",
+        "psalm/plugin-phpunit": "dev-master"
     },
     "suggest": {
         "ext-igbinary": "^2.0.5"
