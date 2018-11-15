@@ -1112,7 +1112,6 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
-                        'foo\a::bar' => 1,
                     ],
                 ]
             ],
