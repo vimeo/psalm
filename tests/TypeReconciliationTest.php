@@ -859,9 +859,12 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     function foo(int $i) : void {
                         if ($i == "5") {}
+                        if ("5" == $i) {}
                     }
                     function bar(float $f) : void {
-                      if ($f == 0) {}
+                      if ($f === 0) {}
+
+                      if (0 === $f) {}
                     }',
             ],
             'filterSubclassBasedOnParentInstanceof' => [

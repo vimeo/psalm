@@ -511,6 +511,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $stmt->name,
                             $method_storage->assertions,
                             $stmt->args,
+                            $found_generic_params ?: [],
                             $method_storage->template_typeof_params ?: [],
                             $context,
                             $statements_analyzer

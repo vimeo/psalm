@@ -282,9 +282,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             // fall through
         }
 
-        if ($function_exists) {
-            $generic_params = null;
+        $generic_params = null;
 
+        if ($function_exists) {
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
                 if (!$is_stubbed && $in_call_map) {
                     $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
@@ -481,6 +481,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $stmt->name,
                     $function_storage->assertions,
                     $stmt->args,
+                    $generic_params ?: [],
                     $function_storage->template_typeof_params ?: [],
                     $context,
                     $statements_analyzer

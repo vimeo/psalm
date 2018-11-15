@@ -709,6 +709,7 @@ class Reconciler
                 return self::handleLiteralEquality(
                     $new_var_type,
                     $bracket_pos,
+                    $is_loose_equality,
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
@@ -1418,6 +1419,7 @@ class Reconciler
     /**
      * @param  string     $new_var_type
      * @param  int        $bracket_pos
+     * @param  bool       $is_loose_equality
      * @param  string     $old_var_type_string
      * @param  string|null $var_id
      * @param  CodeLocation|null $code_location
@@ -1428,6 +1430,7 @@ class Reconciler
     private static function handleLiteralEquality(
         $new_var_type,
         $bracket_pos,
+        $is_loose_equality,
         Type\Union $existing_var_type,
         $old_var_type_string,
         $var_id,
@@ -1480,6 +1483,16 @@ class Reconciler
                 } else {
                     $existing_var_type = new Type\Union([new Type\Atomic\TLiteralInt($value)]);
                 }
+            } elseif (!$existing_var_type->hasFloat() && $var_id && $code_location && !$is_loose_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    $new_var_type,
+                    false,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         } elseif ($scalar_type === 'string' || $scalar_type === 'class-string') {
             if ($existing_var_type->isMixed()) {
@@ -1527,6 +1540,16 @@ class Reconciler
                         $existing_var_type = new Type\Union([new Type\Atomic\TLiteralString($value)]);
                     }
                 }
+            } elseif ($var_id && $code_location && !$is_loose_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    $new_var_type,
+                    false,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         } elseif ($scalar_type === 'float') {
             $value = (float) $value;
@@ -1568,6 +1591,16 @@ class Reconciler
                 } else {
                     $existing_var_type = new Type\Union([new Type\Atomic\TLiteralFloat($value)]);
                 }
+            } elseif ($var_id && $code_location && !$is_loose_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $var_id,
+                    $new_var_type,
+                    false,
+                    $code_location,
+                    $suppressed_issues
+                );
             }
         }
 

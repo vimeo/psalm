@@ -2124,6 +2124,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
+     * @param  array<string, Type\Union> $generic_params,
      * @param  array<int, string> $template_typeof_params
      * @param  StatementsAnalyzer $statements_analyzer
      *
@@ -2133,6 +2134,7 @@ class CallAnalyzer
         $expr,
         array $assertions,
         array $args,
+        array $generic_params,
         array $template_typeof_params,
         Context $context,
         StatementsAnalyzer $statements_analyzer
@@ -2161,16 +2163,54 @@ class CallAnalyzer
             }
 
             if ($assertion_var_id) {
-                $offset = array_search($assertion->rule[0][0], $template_typeof_params, true);
+                $rule = $assertion->rule[0][0];
 
-                if ($offset !== false) {
+                $prefix = '';
+                if ($rule[0] === '!') {
+                    $prefix .= '!';
+                    $rule = substr($rule, 1);
+                }
+                if ($rule[0] === '^') {
+                    $prefix .= '^';
+                    $rule = substr($rule, 1);
+                }
+                if ($rule[0] === '~') {
+                    $prefix .= '~';
+                    $rule = substr($rule, 1);
+                }
+
+                if (($offset = array_search($rule, $template_typeof_params, true)) !== false) {
                     if (isset($args[$offset]->value->inferredType)) {
                         $templated_type = $args[$offset]->value->inferredType;
 
                         if ($templated_type->isSingleStringLiteral()) {
-                            $type_assertions[$assertion_var_id] = [[$templated_type->getSingleStringLiteral()->value]];
+                            $type_assertions[$assertion_var_id] = [
+                                [$prefix . $templated_type->getSingleStringLiteral()->value]
+                            ];
                         }
                     }
+                } elseif (isset($generic_params[$rule])) {
+                    $replacement_atomic_types = $generic_params[$rule]->getTypes();
+
+                    $ored_type_assertions = [];
+
+                    foreach ($replacement_atomic_types as $replacement_atomic_type) {
+                        if ($replacement_atomic_type instanceof Type\Atomic\TMixed) {
+                            continue 2;
+                        }
+
+                        if ($replacement_atomic_type instanceof Type\Atomic\TArray
+                            || $replacement_atomic_type instanceof Type\Atomic\ObjectLike
+                        ) {
+                            $ored_type_assertions[] = $prefix . 'array';
+                        } elseif ($replacement_atomic_type instanceof Type\Atomic\TNamedObject) {
+                            $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
+                        } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
+                            $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
+                        }
+                    }
+
+                    $type_assertions[$assertion_var_id] = [$ored_type_assertions];
                 } else {
                     $type_assertions[$assertion_var_id] = $assertion->rule;
                 }

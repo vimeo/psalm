@@ -425,6 +425,24 @@ class AssertTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition'
             ],
+            'detectAssertSameTypeDoesNotContainType' => [
+                '<?php
+
+                    /**
+                     * Asserts that two variables are the same.
+                     *
+                     * @template T
+                     * @param T      $expected
+                     * @param mixed  $actual
+                     * @psalm-assert ^T $actual
+                     */
+                    function assertSame($expected, $actual) : void {}
+
+                    $a = 5;
+                    $b = "hello";
+                    assertSame($a, $b);',
+                'error_message' => 'TypeDoesNotContainType'
+            ],
         ];
     }
 }
