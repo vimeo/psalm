@@ -759,6 +759,33 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[197], []],
             ],
+            'fixMissingProperty' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {
+                                    echo $this->bar;
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                private $bar = "hello";
+                                public function foo() : void {
+                                    echo $this->bar;
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[192, 192], []],
+            ],
         ];
     }
 }

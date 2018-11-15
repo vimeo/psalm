@@ -80,6 +80,13 @@ class Properties
             return true;
         }
 
+        if ($calling_method_id) {
+            $this->file_reference_provider->addReferenceToClassMethod(
+                $calling_method_id,
+                strtolower($fq_class_name) . '::$' . $property_name
+            );
+        }
+
         return false;
     }
 
