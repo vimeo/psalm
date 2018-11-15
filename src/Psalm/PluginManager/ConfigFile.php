@@ -48,7 +48,7 @@ class ConfigFile
         /** @var \DomElement */
         $psalm_root = $config_xml->getElementsByTagName('psalm')[0];
         $plugins_elements = $psalm_root->getElementsByTagName('plugins');
-        if (!$plugins_elements->count()) {
+        if (!$plugins_elements->length) {
             // no plugins, nothing to remove
             return;
         }
@@ -65,7 +65,7 @@ class ConfigFile
             }
         }
 
-        if (!$plugin_elements->count()) {
+        if (!$plugin_elements->length) {
             // avoid breaking old psalm binaries, whose schema did not allow empty plugins
             $psalm_root->removeChild($plugins_element);
         }
@@ -80,7 +80,7 @@ class ConfigFile
         /** @var \DomElement */
         $psalm_root = $config_xml->getElementsByTagName('psalm')->item(0);
         $plugins_elements = $psalm_root->getElementsByTagName('plugins');
-        if (!$plugins_elements->count()) {
+        if (!$plugins_elements->length) {
             $plugins_element = $config_xml->createElement('plugins');
             $psalm_root->appendChild($plugins_element);
         } else {
