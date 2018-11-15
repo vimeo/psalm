@@ -2,7 +2,7 @@
 
 ### AbstractInstantiation
 
-Emitted when an attempt is made to instatiate an abstract class:
+Emitted when an attempt is made to instantiate an abstract class:
 
 ```php
 abstract class A {}
@@ -295,7 +295,7 @@ echo (new A)->foo();
 
 ### InterfaceInstantiation
 
-Emitted when an attempt is made to instatiate an interface:
+Emitted when an attempt is made to instantiate an interface:
 
 ```php
 interface I {}
@@ -475,7 +475,7 @@ function foo() : string {
 
 ### InvalidOperand
 
-Emitted when using something as an operand that is unexected
+Emitted when using something as an operand that is unexpected
 
 ```php
 class A {}
