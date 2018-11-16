@@ -2215,10 +2215,14 @@ class CallAnalyzer
                             $ored_type_assertions[] = $prefix . $replacement_atomic_type->value;
                         } elseif ($replacement_atomic_type instanceof Type\Atomic\Scalar) {
                             $ored_type_assertions[] = $prefix . $replacement_atomic_type->getId();
+                        } elseif ($replacement_atomic_type instanceof Type\Atomic\TNull) {
+                            $ored_type_assertions[] = $prefix . 'null';
                         }
                     }
 
-                    $type_assertions[$assertion_var_id] = [$ored_type_assertions];
+                    if ($ored_type_assertions) {
+                        $type_assertions[$assertion_var_id] = [$ored_type_assertions];
+                    }
                 } else {
                     $type_assertions[$assertion_var_id] = $assertion->rule;
                 }

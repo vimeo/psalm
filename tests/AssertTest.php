@@ -295,6 +295,9 @@ class AssertTest extends TestCase
                     $d = rand(0, 1) ? 4 : 5;
                     assertSame($d, $c);
 
+                    $d = rand(0, 1) ? 4 : null;
+                    assertSame(null, $d);
+
                     function foo(string $a, string $b) : void {
                         assertSame($a, $b);
                     }',
