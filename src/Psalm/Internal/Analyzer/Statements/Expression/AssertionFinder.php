@@ -138,7 +138,7 @@ class AssertionFinder
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['^isset']];
+                    $if_types[$var_name] = [['=isset']];
                 }
 
                 $conditional->assertions = $if_types;
@@ -167,7 +167,7 @@ class AssertionFinder
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['^isset']];
+                    $if_types[$var_name] = [['=isset']];
                 }
 
                 $conditional->assertions = $if_types;
@@ -212,7 +212,7 @@ class AssertionFinder
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['^empty']];
+                    $if_types[$var_name] = [['=empty']];
                 }
             }
 
@@ -245,7 +245,7 @@ class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [['^isset']];
+                        $if_types[$var_name] = [['=isset']];
                     }
                 }
             }
@@ -278,7 +278,7 @@ class AssertionFinder
                 }
 
                 if ($var_name) {
-                    $if_types[$var_name] = [['^isset']];
+                    $if_types[$var_name] = [['=isset']];
                 }
             }
 
@@ -648,7 +648,7 @@ class AssertionFinder
                 // fall through
             } else {
                 if ($var_name && $var_type) {
-                    $if_types[$var_name] = [['^getclass-' . $var_type]];
+                    $if_types[$var_name] = [['=getclass-' . $var_type]];
                 }
             }
 
@@ -691,7 +691,7 @@ class AssertionFinder
                     );
 
                 if ($identical) {
-                    $if_types[$var_name] = [['^' . $var_type->getId()]];
+                    $if_types[$var_name] = [['=' . $var_type->getId()]];
                 } else {
                     $if_types[$var_name] = [['~' . $var_type->getId()]];
                 }
@@ -1138,7 +1138,7 @@ class AssertionFinder
                 // fall through
             } else {
                 if ($var_name && $var_type) {
-                    $if_types[$var_name] = [['!^getclass-' . $var_type]];
+                    $if_types[$var_name] = [['!=getclass-' . $var_type]];
                 }
             }
 
@@ -1182,7 +1182,7 @@ class AssertionFinder
                         );
 
                     if ($not_identical) {
-                        $if_types[$var_name] = [['!^' . $var_type->getId()]];
+                        $if_types[$var_name] = [['!=' . $var_type->getId()]];
                     } else {
                         $if_types[$var_name] = [['!~' . $var_type->getId()]];
                     }
@@ -1402,7 +1402,7 @@ class AssertionFinder
                             $literal_assertions = [];
 
                             foreach ($array_literal_types as $array_literal_type) {
-                                $literal_assertions[] = '^' . $array_literal_type->getId();
+                                $literal_assertions[] = '=' . $array_literal_type->getId();
                             }
 
                             if ($negate) {

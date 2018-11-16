@@ -275,7 +275,7 @@ class AssertTest extends TestCase
                      * @template T
                      * @param T      $expected
                      * @param mixed  $actual
-                     * @psalm-assert ^T $actual
+                     * @psalm-assert =T $actual
                      */
                     function assertSame($expected, $actual) : void {}
 
@@ -467,7 +467,7 @@ class AssertTest extends TestCase
                      * @template T
                      * @param T      $expected
                      * @param mixed  $actual
-                     * @psalm-assert ^T $actual
+                     * @psalm-assert =T $actual
                      */
                     function assertSame($expected, $actual) : void {}
 
@@ -485,7 +485,7 @@ class AssertTest extends TestCase
                      * @template T
                      * @param T      $expected
                      * @param mixed  $actual
-                     * @psalm-assert ^T $actual
+                     * @psalm-assert =T $actual
                      */
                     function assertSame($expected, $actual) : void {}
 
@@ -503,7 +503,7 @@ class AssertTest extends TestCase
                      * @template T
                      * @param T      $expected
                      * @param mixed  $actual
-                     * @psalm-assert ^T $actual
+                     * @psalm-assert =T $actual
                      */
                     function assertSame($expected, $actual) : void {}
 

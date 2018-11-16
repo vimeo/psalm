@@ -2170,8 +2170,8 @@ class CallAnalyzer
                     $prefix .= '!';
                     $rule = substr($rule, 1);
                 }
-                if ($rule[0] === '^') {
-                    $prefix .= '^';
+                if ($rule[0] === '=') {
+                    $prefix .= '=';
                     $rule = substr($rule, 1);
                 }
                 if ($rule[0] === '~') {

@@ -65,25 +65,25 @@ class Reconciler
 
         foreach ($new_types as $nk => $type) {
             if ((strpos($nk, '[') || strpos($nk, '->'))
-                && ($type[0][0] === '^isset'
-                    || $type[0][0] === '!^empty'
+                && ($type[0][0] === '=isset'
+                    || $type[0][0] === '!=empty'
                     || $type[0][0] === 'isset'
                     || $type[0][0] === '!empty')
             ) {
-                $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '^isset'
-                    ? '^isset'
-                    : '!^empty';
+                $isset_or_empty = $type[0][0] === 'isset' || $type[0][0] === '=isset'
+                    ? '=isset'
+                    : '!=empty';
 
                 $key_parts = Reconciler::breakUpPathIntoParts($nk);
 
                 $base_key = array_shift($key_parts);
 
                 if (!isset($new_types[$base_key])) {
-                    $new_types[$base_key] = [['!^bool'], ['!^int'], ['^isset']];
+                    $new_types[$base_key] = [['!=bool'], ['!=int'], ['=isset']];
                 } else {
-                    $new_types[$base_key][] = ['!^bool'];
-                    $new_types[$base_key][] = ['!^int'];
-                    $new_types[$base_key][] = ['^isset'];
+                    $new_types[$base_key][] = ['!=bool'];
+                    $new_types[$base_key][] = ['!=int'];
+                    $new_types[$base_key][] = ['=isset'];
                 }
 
                 while ($key_parts) {
@@ -110,11 +110,11 @@ class Reconciler
                     }
 
                     if (!isset($new_types[$base_key])) {
-                        $new_types[$base_key] = [['!^bool'], ['!^int'], ['^isset']];
+                        $new_types[$base_key] = [['!=bool'], ['!=int'], ['=isset']];
                     } else {
-                        $new_types[$base_key][] = ['!^bool'];
-                        $new_types[$base_key][] = ['!^int'];
-                        $new_types[$base_key][] = ['^isset'];
+                        $new_types[$base_key][] = ['!=bool'];
+                        $new_types[$base_key][] = ['!=int'];
+                        $new_types[$base_key][] = ['=isset'];
                     }
                 }
 
@@ -156,7 +156,7 @@ class Reconciler
                         case '!':
                             $has_negation = true;
                             break;
-                        case '^':
+                        case '=':
                         case '~':
                             $has_equality = true;
                     }
@@ -286,7 +286,7 @@ class Reconciler
             $is_negation = true;
         }
 
-        if ($new_var_type[0] === '^') {
+        if ($new_var_type[0] === '=') {
             $new_var_type = substr($new_var_type, 1);
             $is_strict_equality = true;
             $is_equality = true;

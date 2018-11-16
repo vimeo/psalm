@@ -142,10 +142,10 @@ class Algebra
                         [$var => $orred_types],
                         false,
                         true,
-                        $orred_types[0][0] === '^'
+                        $orred_types[0][0] === '='
                             || $orred_types[0][0] === '~'
                             || (strlen($orred_types[0]) > 1
-                                && ($orred_types[0][1] === '^'
+                                && ($orred_types[0][1] === '='
                                     || $orred_types[0][1] === '~'))
                     );
                 }
@@ -525,8 +525,8 @@ class Algebra
             $impossibility = [];
 
             foreach ($possiblity as $type) {
-                if (($type[0] !== '^' && $type[0] !== '~'
-                        && (!isset($type[1]) || ($type[1] !== '^' && $type[1] !== '~')))
+                if (($type[0] !== '=' && $type[0] !== '~'
+                        && (!isset($type[1]) || ($type[1] !== '=' && $type[1] !== '~')))
                     || strpos($type, '(')
                     || strpos($type, 'getclass-')
                 ) {
