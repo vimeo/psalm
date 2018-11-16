@@ -48,7 +48,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
      * @dataProvider providerTestErrorFix
      *
      * @param array<int, array<string, string>> $file_stages
-     * @param array<int, int> $error_positions
+     * @param array<int, array<int>> $error_positions
      * @param array<string, string> $error_levels
      *
      * @return void
