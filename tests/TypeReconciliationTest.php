@@ -860,6 +860,33 @@ class TypeReconciliationTest extends TestCase
                     function foo(int $i) : void {
                         if ($i == "5") {}
                         if ("5" == $i) {}
+                        if ($i == 5.0) {}
+                        if (5.0 == $i) {}
+                        if ($i == 0) {}
+                        if (0 == $i) {}
+                        if ($i == 0.0) {}
+                        if (0.0 == $i) {}
+                    }
+                    function foo(float $i) : void {
+                        $i = $i / 100.0;
+                        if ($i == "5") {}
+                        if ("5" == $i) {}
+                        if ($i == 5) {}
+                        if (5 == $i) {}
+                        if ($i == "0") {}
+                        if ("0" == $i) {}
+                        if ($i == 0) {}
+                        if (0 == $i) {}
+                    }
+                    function foo(string $i) : void {
+                        if ($i == 5) {}
+                        if (5 == $i) {}
+                        if ($i == 5.0) {}
+                        if (5.0 == $i) {}
+                        if ($i == 0) {}
+                        if (0 == $i) {}
+                        if ($i == 0.0) {}
+                        if (0.0 == $i) {}
                     }',
             ],
             'filterSubclassBasedOnParentInstanceof' => [
@@ -1284,14 +1311,14 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'preventWeakEqualityScalarType' => [
+            'preventStrongEqualityScalarType' => [
                 '<?php
                     function bar(float $f) : void {
                         if ($f === 0) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'preventYodaWeakEqualityScalarType' => [
+            'preventYodaStrongEqualityScalarType' => [
                 '<?php
                     function bar(float $f) : void {
                         if (0 === $f) {}

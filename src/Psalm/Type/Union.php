@@ -910,7 +910,7 @@ class Union
             return false;
         }
 
-        return isset($this->types['float']) || $this->literal_int_types;
+        return isset($this->types['int']) || $this->literal_int_types;
     }
 
     /**
