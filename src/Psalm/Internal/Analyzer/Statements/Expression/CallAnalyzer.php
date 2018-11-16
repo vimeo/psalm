@@ -2190,7 +2190,15 @@ class CallAnalyzer
                         }
                     }
                 } elseif (isset($generic_params[$rule])) {
+                    if ($generic_params[$rule]->isMixed()) {
+                        continue;
+                    }
+
                     $replacement_atomic_types = $generic_params[$rule]->getTypes();
+
+                    if (count($replacement_atomic_types) > 1) {
+                        continue;
+                    }
 
                     $ored_type_assertions = [];
 
