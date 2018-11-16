@@ -509,7 +509,10 @@ class Union
      */
     public function hasString()
     {
-        return isset($this->types['string']) || isset($this->types['class-string']) || $this->literal_string_types;
+        return isset($this->types['string'])
+            || isset($this->types['class-string'])
+            || isset($this->types['numeric-string'])
+            || $this->literal_string_types;
     }
 
     /**
@@ -934,7 +937,10 @@ class Union
             return false;
         }
 
-        return isset($this->types['string']) || $this->literal_string_types;
+        return isset($this->types['string'])
+            || isset($this->types['class-string'])
+            || isset($this->types['numeric-string'])
+            || $this->literal_string_types;
     }
 
     /**
