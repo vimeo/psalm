@@ -703,7 +703,7 @@ class AssertionFinder
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
                 && $source instanceof StatementsSource
             ) {
-                if (!TypeAnalyzer::canBeIdenticalTo(
+                if (!TypeAnalyzer::canExpressionTypesBeIdentical(
                     $codebase,
                     $other_type,
                     $var_type
@@ -745,7 +745,7 @@ class AssertionFinder
             && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
             && $source instanceof StatementsSource
         ) {
-            if (!TypeAnalyzer::canBeIdenticalTo($codebase, $var_type, $other_type)) {
+            if (!TypeAnalyzer::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)) {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
                         $var_type . ' does not contain ' . $other_type,

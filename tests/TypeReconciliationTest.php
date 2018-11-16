@@ -860,11 +860,6 @@ class TypeReconciliationTest extends TestCase
                     function foo(int $i) : void {
                         if ($i == "5") {}
                         if ("5" == $i) {}
-                    }
-                    function bar(float $f) : void {
-                      if ($f === 0) {}
-
-                      if (0 === $f) {}
                     }',
             ],
             'filterSubclassBasedOnParentInstanceof' => [
@@ -1288,6 +1283,20 @@ class TypeReconciliationTest extends TestCase
                         return (object) ["a" => 1, "b" => 2];
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'preventWeakEqualityScalarType' => [
+                '<?php
+                    function bar(float $f) : void {
+                        if ($f === 0) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'preventYodaWeakEqualityScalarType' => [
+                '<?php
+                    function bar(float $f) : void {
+                        if (0 === $f) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

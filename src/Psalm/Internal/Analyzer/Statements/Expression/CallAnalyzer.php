@@ -1531,7 +1531,7 @@ class CallAnalyzer
             }
 
             if (!$type_coerced && !$type_match_found) {
-                $types_can_be_identical = TypeAnalyzer::canBeIdenticalTo(
+                $types_can_be_identical = TypeAnalyzer::canExpressionTypesBeIdentical(
                     $codebase,
                     $input_type,
                     $closure_param_type

@@ -95,6 +95,7 @@ class TypeAnalyzer
                     $input_type_part,
                     $container_type_part,
                     $allow_interface_equality,
+                    true,
                     $scalar_type_match_found,
                     $type_coerced,
                     $type_coerced_from_mixed,
@@ -178,10 +179,6 @@ class TypeAnalyzer
      * @param  Type\Union   $container_type
      * @param  bool         $ignore_null
      * @param  bool         $ignore_false
-     * @param  bool         &$has_scalar_match
-     * @param  bool         &$type_coerced    whether or not there was type coercion involved
-     * @param  bool         &$type_coerced_from_mixed
-     * @param  bool         &$to_string_cast
      *
      * @return bool
      */
@@ -218,6 +215,7 @@ class TypeAnalyzer
                     $input_type_part,
                     $container_type_part,
                     false,
+                    false,
                     $scalar_type_match_found,
                     $type_coerced,
                     $type_coerced_from_mixed,
@@ -238,7 +236,7 @@ class TypeAnalyzer
      *
      * @return bool
      */
-    public static function canBeIdenticalTo(
+    public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
         Type\Union $type1,
         Type\Union $type2
@@ -252,25 +250,19 @@ class TypeAnalyzer
         }
 
         foreach ($type1->getTypes() as $type1_part) {
-            if ($type1_part instanceof TNull) {
-                continue;
-            }
-
             foreach ($type2->getTypes() as $type2_part) {
-                if ($type2_part instanceof TNull) {
-                    continue;
-                }
-
                 $either_contains = self::isAtomicContainedBy(
                     $codebase,
                     $type1_part,
                     $type2_part,
-                    true
+                    true,
+                    false
                 ) || self::isAtomicContainedBy(
                     $codebase,
                     $type2_part,
                     $type1_part,
-                    true
+                    true,
+                    false
                 );
 
                 if ($either_contains) {
@@ -380,6 +372,7 @@ class TypeAnalyzer
      * @param  bool         &$to_string_cast
      * @param  bool         &$type_coerced_from_scalar
      * @param  bool         $allow_interface_equality
+     * @param  bool         $allow_float_int_equality  whether or not floats and its can be equal
      *
      * @return bool
      */
@@ -388,6 +381,7 @@ class TypeAnalyzer
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
         $allow_interface_equality = false,
+        $allow_float_int_equality = true,
         &$has_scalar_match = null,
         &$type_coerced = null,
         &$type_coerced_from_mixed = null,
@@ -463,7 +457,10 @@ class TypeAnalyzer
         // from https://wiki.php.net/rfc/scalar_type_hints_v5:
         //
         // > int types can resolve a parameter type of float
-        if ($input_type_part instanceof TInt && $container_type_part instanceof TFloat) {
+        if ($input_type_part instanceof TInt
+            && $container_type_part instanceof TFloat
+            && $allow_float_int_equality
+        ) {
             return true;
         }
 
@@ -1157,6 +1154,7 @@ class TypeAnalyzer
                         $codebase,
                         $type_part,
                         $container_type_part,
+                        false,
                         false,
                         $has_scalar_match,
                         $type_coerced,
