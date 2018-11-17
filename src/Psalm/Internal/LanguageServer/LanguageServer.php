@@ -9,6 +9,7 @@ use LanguageServerProtocol\{
     ServerCapabilities,
     ClientCapabilities,
     TextDocumentSyncKind,
+    TextDocumentSyncOptions,
     InitializeResult,
     CompletionOptions,
     SignatureHelpOptions
@@ -52,12 +53,22 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @var LanguageClient
      */
-    protected $client;
+    public $client;
 
     /**
      * @var ProjectAnalyzer
      */
     protected $project_analyzer;
+
+    /**
+     * @var array<string, string>
+     */
+    protected $onsave_paths_to_analyze = [];
+
+    /**
+     * @var array<string, string>
+     */
+    protected $onchange_paths_to_analyze = [];
 
     /**
      * @param ProtocolReader  $reader
@@ -140,6 +151,14 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             }
         );
 
+        $this->protocolReader->on(
+            'readMessageGroup',
+            /** @return void */
+            function () {
+                $this->doAnalysis();
+            }
+        );
+
         $this->client = new LanguageClient($reader, $writer);
     }
 
@@ -183,7 +202,15 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
 
                 $serverCapabilities = new ServerCapabilities();
 
-                $serverCapabilities->textDocumentSync = TextDocumentSyncKind::FULL;
+                $textDocumentSyncOptions = new TextDocumentSyncOptions();
+
+                if ($this->project_analyzer->onchange_line_limit === 0) {
+                    $textDocumentSyncOptions->change = TextDocumentSyncKind::NONE;
+                } else {
+                    $textDocumentSyncOptions->change = TextDocumentSyncKind::FULL;
+                }
+
+                $serverCapabilities->textDocumentSync = $textDocumentSyncOptions;
 
                 // Support "Find all symbols"
                 $serverCapabilities->documentSymbolProvider = false;
@@ -229,86 +256,117 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
     /**
      * @return void
      */
-    public function invalidateFileAndDependents(string $uri)
+    public function queueTemporaryFileAnalysis(string $file_path, string $uri)
     {
-        $file_path = self::uriToPath($uri);
-        $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, [$file_path]);
+        $this->onchange_paths_to_analyze[$file_path] = $uri;
     }
 
     /**
      * @return void
      */
-    public function analyzePath(string $file_path)
+    public function queueFileAnalysis(string $file_path, string $uri)
+    {
+        $this->onsave_paths_to_analyze[$file_path] = $uri;
+    }
+
+    /**
+     * @return void
+     */
+    public function doAnalysis()
     {
         $codebase = $this->project_analyzer->getCodebase();
 
-        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $all_files_to_analyze = $this->onchange_paths_to_analyze + $this->onsave_paths_to_analyze;
+
+        if (!$all_files_to_analyze) {
+            return;
+        }
+
+        if ($this->onsave_paths_to_analyze) {
+            $onsave_paths_to_analyze = array_keys($this->onsave_paths_to_analyze);
+            $codebase->reloadFiles($this->project_analyzer, $onsave_paths_to_analyze);
+        }
+
+        if ($this->onchange_paths_to_analyze) {
+            foreach ($this->onchange_paths_to_analyze as $file_path => $_) {
+                $codebase->invalidateInformationForFile($file_path);
+                $codebase->scanTemporaryFileChanges($file_path);
+            }
+        }
+
+        $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
+        $codebase->analyzer->addFiles(array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze));
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        $this->emitIssues($all_files_to_analyze);
+
+        $this->onchange_paths_to_analyze = [];
+        $this->onsave_paths_to_analyze = [];
     }
 
     /**
+     * @param array<string, string> $uris
      * @return void
      */
-    public function emitIssues(string $uri)
+    public function emitIssues(array $uris)
     {
         $data = \Psalm\IssueBuffer::clear();
 
-        $file_path = self::uriToPath($uri);
-
-        $data = array_values(array_filter(
-            $data,
-            function (array $issue_data) use ($file_path) : bool {
-                return $issue_data['file_path'] === $file_path;
-            }
-        ));
-
-        $diagnostics = array_map(
-            /**
-             * @param array{
-             *     severity: string,
-             *     message: string,
-             *     line_from: int,
-             *     line_to: int,
-             *     column_from: int,
-             *     column_to: int
-             * } $issue_data
-             */
-            function (array $issue_data) use ($file_path) : Diagnostic {
-                //$check_name = $issue['check_name'];
-                $description = $issue_data['message'];
-                $severity = $issue_data['severity'];
-
-                $start_line = max($issue_data['line_from'], 1);
-                $end_line = $issue_data['line_to'];
-                $start_column = $issue_data['column_from'];
-                $end_column = $issue_data['column_to'];
-                // Language server has 0 based lines and columns, phan has 1-based lines and columns.
-                $range = new Range(
-                    new Position($start_line - 1, $start_column - 1),
-                    new Position($end_line - 1, $end_column - 1)
-                );
-                switch ($severity) {
-                    case \Psalm\Config::REPORT_INFO:
-                        $diagnostic_severity = DiagnosticSeverity::WARNING;
-                        break;
-                    case \Psalm\Config::REPORT_ERROR:
-                    default:
-                        $diagnostic_severity = DiagnosticSeverity::ERROR;
-                        break;
+        foreach ($uris as $file_path => $uri) {
+            $data = array_values(array_filter(
+                $data,
+                function (array $issue_data) use ($file_path) : bool {
+                    return $issue_data['file_path'] === $file_path;
                 }
-                // TODO: copy issue code in 'json' format
-                return new Diagnostic(
-                    $description,
-                    $range,
-                    null,
-                    $diagnostic_severity,
-                    'Psalm'
-                );
-            },
-            $data
-        );
+            ));
 
-        $this->client->textDocument->publishDiagnostics($uri, $diagnostics);
+            $diagnostics = array_map(
+                /**
+                 * @param array{
+                 *     severity: string,
+                 *     message: string,
+                 *     line_from: int,
+                 *     line_to: int,
+                 *     column_from: int,
+                 *     column_to: int
+                 * } $issue_data
+                 */
+                function (array $issue_data) use ($file_path) : Diagnostic {
+                    //$check_name = $issue['check_name'];
+                    $description = $issue_data['message'];
+                    $severity = $issue_data['severity'];
+
+                    $start_line = max($issue_data['line_from'], 1);
+                    $end_line = $issue_data['line_to'];
+                    $start_column = $issue_data['column_from'];
+                    $end_column = $issue_data['column_to'];
+                    // Language server has 0 based lines and columns, phan has 1-based lines and columns.
+                    $range = new Range(
+                        new Position($start_line - 1, $start_column - 1),
+                        new Position($end_line - 1, $end_column - 1)
+                    );
+                    switch ($severity) {
+                        case \Psalm\Config::REPORT_INFO:
+                            $diagnostic_severity = DiagnosticSeverity::WARNING;
+                            break;
+                        case \Psalm\Config::REPORT_ERROR:
+                        default:
+                            $diagnostic_severity = DiagnosticSeverity::ERROR;
+                            break;
+                    }
+                    // TODO: copy issue code in 'json' format
+                    return new Diagnostic(
+                        $description,
+                        $range,
+                        null,
+                        $diagnostic_severity,
+                        'Psalm'
+                    );
+                },
+                $data
+            );
+
+            $this->client->textDocument->publishDiagnostics($uri, $diagnostics);
+        }
     }
 
     /**

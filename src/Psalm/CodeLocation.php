@@ -135,11 +135,19 @@ class CodeLocation
 
         $file_contents = $codebase->getFileContents($this->file_path);
 
-        $preview_end = strpos(
-            $file_contents,
-            "\n",
-            $this->single_line ? $this->selection_start : $this->selection_end
-        );
+        $file_length = strlen($file_contents);
+
+        $search_limit = $this->single_line ? $this->selection_start : $this->selection_end;
+
+        if ($search_limit <= $file_length) {
+            $preview_end = strpos(
+                $file_contents,
+                "\n",
+                $search_limit
+            );
+        } else {
+            $preview_end = false;
+        }
 
         // if the string didn't contain a newline
         if ($preview_end === false) {

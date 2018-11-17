@@ -91,12 +91,9 @@ class TextDocument
             return;
         }
 
-        $this->server->invalidateFileAndDependents($textDocument->uri);
-
         $this->codebase->file_provider->openFile($file_path);
 
-        $this->server->analyzePath($file_path);
-        $this->server->emitIssues($textDocument->uri);
+        $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
 
     /**
@@ -112,10 +109,8 @@ class TextDocument
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
-        $this->server->invalidateFileAndDependents($textDocument->uri);
 
-        $this->server->analyzePath($file_path);
-        $this->server->emitIssues($textDocument->uri);
+        $this->server->queueFileAnalysis($file_path, $textDocument->uri);
     }
 
     /**
@@ -150,11 +145,7 @@ class TextDocument
         }
 
         $this->codebase->addTemporaryFileChanges($file_path, $new_content);
-        $this->codebase->invalidateInformationForFile($file_path);
-        $this->codebase->scanTemporaryFileChanges($file_path);
-
-        $this->server->analyzePath($file_path);
-        $this->server->emitIssues($textDocument->uri);
+        $this->server->queueTemporaryFileAnalysis($file_path, $textDocument->uri);
     }
 
     /**
@@ -170,6 +161,7 @@ class TextDocument
         $file_path = LanguageServer::uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
+        $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
     }
 
 
