@@ -12,7 +12,7 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombination;
 
 class FunctionAnalyzer extends FunctionLikeAnalyzer
 {

@@ -1,7 +1,7 @@
 <?php
-namespace Psalm\Type\ParseTree;
+namespace Psalm\Internal\Type\ParseTree;
 
-class MethodParamTree extends \Psalm\Type\ParseTree
+class MethodParamTree extends \Psalm\Internal\Type\ParseTree
 {
     /**
      * @var bool
@@ -28,9 +28,9 @@ class MethodParamTree extends \Psalm\Type\ParseTree
      * @param bool $byref
      * @param bool $variadic
      *
-     * @param \Psalm\Type\ParseTree|null $parent
+     * @param \Psalm\Internal\Type\ParseTree|null $parent
      */
-    public function __construct($name, $byref, $variadic, \Psalm\Type\ParseTree $parent = null)
+    public function __construct($name, $byref, $variadic, \Psalm\Internal\Type\ParseTree $parent = null)
     {
         $this->name = $name;
         $this->byref = $byref;

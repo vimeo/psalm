@@ -2,7 +2,7 @@
 namespace Psalm\Tests;
 
 use DOMDocument;
-use Psalm\PluginManager\ConfigFile;
+use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Config;
 
 /** @group PluginManager */

@@ -3,9 +3,9 @@ namespace Psalm\Tests;
 
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\Config;
-use Psalm\PluginManager\ComposerLock;
-use Psalm\PluginManager\ConfigFile;
-use Psalm\PluginManager\PluginList;
+use Psalm\Internal\PluginManager\ComposerLock;
+use Psalm\Internal\PluginManager\ConfigFile;
+use Psalm\Internal\PluginManager\PluginList;
 
 /** @group PluginManager */
 class PluginListTest extends TestCase

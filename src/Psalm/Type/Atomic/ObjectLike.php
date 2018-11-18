@@ -3,7 +3,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 
 /**

@@ -35,7 +35,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Reconciler;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 
 class BinaryOpAnalyzer

@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Type;
+namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
 

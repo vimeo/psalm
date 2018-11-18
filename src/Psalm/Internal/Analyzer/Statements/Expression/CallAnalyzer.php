@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Internal\Type\TypeCombination;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\ImplicitToStringCast;
@@ -426,7 +427,7 @@ class CallAnalyzer
                     $replacement_array_type = $replacement_array_type->getGenericArrayType();
                 }
 
-                $by_ref_type = Type\TypeCombination::combineTypes([$array_type, $replacement_array_type]);
+                $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
 
                 ExpressionAnalyzer::assignByRefParam(
                     $statements_analyzer,

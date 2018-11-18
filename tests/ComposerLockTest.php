@@ -1,7 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\PluginManager\ComposerLock;
+use Psalm\Internal\PluginManager\ComposerLock;
 
 /** @group PluginManager */
 class ComposerLockTest extends TestCase

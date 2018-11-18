@@ -3,11 +3,11 @@ namespace Psalm\Tests;
 
 use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
-use Psalm\PluginManager\Command\DisableCommand;
-use Psalm\PluginManager\Command\EnableCommand;
-use Psalm\PluginManager\Command\ShowCommand;
-use Psalm\PluginManager\PluginList;
-use Psalm\PluginManager\PluginListFactory;
+use Psalm\Internal\PluginManager\Command\DisableCommand;
+use Psalm\Internal\PluginManager\Command\EnableCommand;
+use Psalm\Internal\PluginManager\Command\ShowCommand;
+use Psalm\Internal\PluginManager\PluginList;
+use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Tester\CommandTester;

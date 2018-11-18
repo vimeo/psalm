@@ -288,12 +288,10 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         }
 
         if ($this->onchange_paths_to_analyze) {
-            $time = microtime(true);
             foreach ($this->onchange_paths_to_analyze as $file_path => $_) {
                 $codebase->invalidateInformationForFile($file_path);
                 $codebase->scanTemporaryFileChanges($file_path);
             }
-            error_log(number_format(microtime(true) - $time, 3));
         }
 
         $all_file_paths_to_analyze = array_keys($all_files_to_analyze);

@@ -51,7 +51,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombination;
 
 class ExpressionAnalyzer
 {

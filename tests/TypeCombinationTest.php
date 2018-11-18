@@ -2,7 +2,7 @@
 namespace Psalm\Tests;
 
 use Psalm\Type;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombination;
 
 class TypeCombinationTest extends TestCase
 {

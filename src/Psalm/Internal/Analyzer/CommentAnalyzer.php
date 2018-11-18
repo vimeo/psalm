@@ -10,6 +10,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\VarDocblockComment;
+use Psalm\Internal\Type\ParseTree;
 use Psalm\Type;
 
 class CommentAnalyzer
@@ -542,29 +543,29 @@ class CommentAnalyzer
                 $method_entry = preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
 
                 try {
-                    $method_tree = Type\ParseTree::createFromTokens(Type::tokenize($method_entry, false));
+                    $method_tree = ParseTree::createFromTokens(Type::tokenize($method_entry, false));
                 } catch (TypeParseTreeException $e) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
-                if (!$method_tree instanceof Type\ParseTree\MethodWithReturnTypeTree
-                    && !$method_tree instanceof Type\ParseTree\MethodTree) {
+                if (!$method_tree instanceof ParseTree\MethodWithReturnTypeTree
+                    && !$method_tree instanceof ParseTree\MethodTree) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
-                if ($method_tree instanceof Type\ParseTree\MethodWithReturnTypeTree) {
+                if ($method_tree instanceof ParseTree\MethodWithReturnTypeTree) {
                     $docblock_lines[] = '@return ' . Type::getTypeFromTree($method_tree->children[1]);
                     $method_tree = $method_tree->children[0];
                 }
 
-                if (!$method_tree instanceof Type\ParseTree\MethodTree) {
+                if (!$method_tree instanceof ParseTree\MethodTree) {
                     throw new DocblockParseException($method_entry . ' is not a valid method');
                 }
 
                 $args = [];
 
                 foreach ($method_tree->children as $method_tree_child) {
-                    if (!$method_tree_child instanceof Type\ParseTree\MethodParamTree) {
+                    if (!$method_tree_child instanceof ParseTree\MethodParamTree) {
                         throw new DocblockParseException($method_entry . ' is not a valid method');
                     }
 

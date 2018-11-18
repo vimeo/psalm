@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\Type;
+namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Storage\FunctionLikeParameter;
@@ -30,8 +30,8 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
-use Psalm\Type\ParseTree;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 
 class TypeCombination

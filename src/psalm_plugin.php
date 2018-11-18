@@ -1,10 +1,10 @@
 <?php
 require_once __DIR__ . '/command_functions.php';
 use Psalm\Config;
-use Psalm\PluginManager\Command\DisableCommand;
-use Psalm\PluginManager\Command\EnableCommand;
-use Psalm\PluginManager\Command\ShowCommand;
-use Psalm\PluginManager\PluginListFactory;
+use Psalm\Internal\PluginManager\Command\DisableCommand;
+use Psalm\Internal\PluginManager\Command\EnableCommand;
+use Psalm\Internal\PluginManager\Command\ShowCommand;
+use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Input\InputOption;
 use Muglug\PackageVersions\Versions;

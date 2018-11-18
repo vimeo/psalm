@@ -1,8 +1,8 @@
 <?php
-namespace Psalm\PluginManager\Command;
+namespace Psalm\Internal\PluginManager\Command;
 
-use Psalm\PluginManager\PluginList;
-use Psalm\PluginManager\PluginListFactory;
+use Psalm\Internal\PluginManager\PluginList;
+use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;

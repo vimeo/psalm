@@ -13,7 +13,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\TypeCombination;
 
 class Union
 {

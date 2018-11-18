@@ -1,7 +1,7 @@
 <?php
-namespace Psalm\Type\ParseTree;
+namespace Psalm\Internal\Type\ParseTree;
 
-class CallableParamTree extends \Psalm\Type\ParseTree
+class CallableParamTree extends \Psalm\Internal\Type\ParseTree
 {
     /**
      * @var bool

@@ -1,5 +1,5 @@
 <?php
-namespace Psalm\PluginManager;
+namespace Psalm\Internal\PluginManager;
 
 use RuntimeException;
 
