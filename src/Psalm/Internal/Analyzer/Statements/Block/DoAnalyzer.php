@@ -214,6 +214,8 @@ class DoAnalyzer
             }
         }
 
+        $do_context->loop_scope = null;
+
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
             $do_context->vars_possibly_in_scope

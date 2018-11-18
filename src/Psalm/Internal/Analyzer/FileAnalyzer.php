@@ -37,37 +37,37 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     /**
      * @var array<string, bool>
      */
-    protected $required_file_paths = [];
+    private $required_file_paths = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $parent_file_paths = [];
+    private $parent_file_paths = [];
 
     /**
      * @var array<int, string>
      */
-    protected $suppressed_issues = [];
+    private $suppressed_issues = [];
 
     /**
      * @var array<string, array<string, string>>
      */
-    protected $namespace_aliased_classes = [];
+    private $namespace_aliased_classes = [];
 
     /**
      * @var array<string, array<string, string>>
      */
-    protected $namespace_aliased_classes_flipped = [];
+    private $namespace_aliased_classes_flipped = [];
 
     /**
      * @var array<string, InterfaceAnalyzer>
      */
-    protected $interface_analyzers_to_analyze = [];
+    public $interface_analyzers_to_analyze = [];
 
     /**
      * @var array<string, ClassAnalyzer>
      */
-    protected $class_analyzers_to_analyze = [];
+    public $class_analyzers_to_analyze = [];
 
     /**
      * @var null|Context
@@ -95,6 +95,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         $this->file_name = $file_name;
         $this->project_analyzer = $project_analyzer;
         $this->codebase = $project_analyzer->getCodebase();
+    }
+
+    public function __destruct()
+    {
+        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
+        $this->source = null;
     }
 
     /**
@@ -159,6 +165,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
         if (!$preserve_analyzers) {
             $this->class_analyzers_to_analyze = [];
+            $this->interface_analyzers_to_analyze = [];
         }
     }
 

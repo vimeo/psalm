@@ -116,6 +116,8 @@ class ForAnalyzer
             }
         }
 
+        $for_context->loop_scope = null;
+
         if ($can_leave_loop) {
             $context->vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,

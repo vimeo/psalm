@@ -847,6 +847,9 @@ class ProjectAnalyzer
         }
 
         $file_analyzer->getMethodMutations($appearing_method_id, $this_context);
+
+        $file_analyzer->class_analyzers_to_analyze = [];
+        $file_analyzer->interface_analyzers_to_analyze = [];
     }
 
     /**

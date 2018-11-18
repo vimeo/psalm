@@ -494,6 +494,8 @@ class ForeachAnalyzer
             }
         }
 
+        $foreach_context->loop_scope = null;
+
         $context->vars_possibly_in_scope = array_merge(
             $foreach_context->vars_possibly_in_scope,
             $context->vars_possibly_in_scope

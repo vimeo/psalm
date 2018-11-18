@@ -34,7 +34,7 @@
                 <file name="src/Psalm/Storage/MethodStorage.php"/>
                 <file name="src/Psalm/Storage/PropertyStorage.php"/>
                 <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php"/>
-                <file name="src/Psalm/Internal/Scope/SwitchScope.php"/>
+                <file name="src/Psalm/Internal/Scope/CaseScope.php"/>
             </errorLevel>
         </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress"/>

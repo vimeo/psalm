@@ -51,6 +51,9 @@ $valid_long_options = [
     'version',
 ];
 
+gc_collect_cycles();
+gc_disable();
+
 $args = array_slice($argv, 1);
 
 array_map(

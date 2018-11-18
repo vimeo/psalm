@@ -251,9 +251,9 @@ class Context
     public $loop_scope = null;
 
     /**
-     * @var Internal\Scope\SwitchScope|null
+     * @var Internal\Scope\CaseScope|null
      */
-    public $switch_scope = null;
+    public $case_scope = null;
 
     /**
      * @var bool

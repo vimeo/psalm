@@ -5,6 +5,8 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
 
+gc_disable();
+
 // show all errors
 error_reporting(-1);
 

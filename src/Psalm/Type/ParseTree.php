@@ -28,6 +28,11 @@ class ParseTree
         $this->parent = $parent;
     }
 
+    public function __destruct()
+    {
+        $this->parent = null;
+    }
+
     /**
      * Create a parse tree from a tokenised type
      *

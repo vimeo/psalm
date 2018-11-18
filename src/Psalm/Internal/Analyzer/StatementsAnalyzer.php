@@ -348,7 +348,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
                     }
 
-                    if ($context->collect_references && (!$context->switch_scope || $stmt->num)) {
+                    if ($context->collect_references && (!$context->case_scope || $stmt->num)) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($loop_scope->unreferenced_vars[$var_id])) {
                                 $loop_scope->unreferenced_vars[$var_id] += $locations;
@@ -359,32 +359,32 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
                 }
 
-                $switch_scope = $context->switch_scope;
-                if ($switch_scope) {
+                $case_scope = $context->case_scope;
+                if ($case_scope) {
                     foreach ($context->vars_in_scope as $var_id => $type) {
-                        if ($switch_scope->parent_context !== $context) {
-                            if ($switch_scope->break_vars === null) {
-                                $switch_scope->break_vars = [];
+                        if ($case_scope->parent_context !== $context) {
+                            if ($case_scope->break_vars === null) {
+                                $case_scope->break_vars = [];
                             }
 
                             foreach ($context->vars_in_scope as $var_id => $type) {
-                                if (isset($switch_scope->break_vars[$var_id])) {
-                                    $switch_scope->break_vars[$var_id] = Type::combineUnionTypes(
+                                if (isset($case_scope->break_vars[$var_id])) {
+                                    $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
                                         $type,
-                                        $switch_scope->break_vars[$var_id]
+                                        $case_scope->break_vars[$var_id]
                                     );
                                 } else {
-                                    $switch_scope->break_vars[$var_id] = $type;
+                                    $case_scope->break_vars[$var_id] = $type;
                                 }
                             }
                         }
                     }
                     if ($context->collect_references) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
-                            if (isset($switch_scope->unreferenced_vars[$var_id])) {
-                                $switch_scope->unreferenced_vars[$var_id] += $locations;
+                            if (isset($case_scope->unreferenced_vars[$var_id])) {
+                                $case_scope->unreferenced_vars[$var_id] += $locations;
                             } else {
-                                $switch_scope->unreferenced_vars[$var_id] = $locations;
+                                $case_scope->unreferenced_vars[$var_id] = $locations;
                             }
                         }
                     }
@@ -442,7 +442,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         }
                     }
 
-                    if ($context->collect_references && (!$context->switch_scope || $stmt->num)) {
+                    if ($context->collect_references && (!$context->case_scope || $stmt->num)) {
                         foreach ($context->unreferenced_vars as $var_id => $locations) {
                             if (isset($loop_scope->possibly_unreferenced_vars[$var_id])) {
                                 $loop_scope->possibly_unreferenced_vars[$var_id] += $locations;
@@ -453,13 +453,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
                 }
 
-                $switch_scope = $context->switch_scope;
-                if ($switch_scope && $context->collect_references) {
+                $case_scope = $context->case_scope;
+                if ($case_scope && $context->collect_references) {
                     foreach ($context->unreferenced_vars as $var_id => $locations) {
-                        if (isset($switch_scope->unreferenced_vars[$var_id])) {
-                            $switch_scope->unreferenced_vars[$var_id] += $locations;
+                        if (isset($case_scope->unreferenced_vars[$var_id])) {
+                            $case_scope->unreferenced_vars[$var_id] += $locations;
                         } else {
-                            $switch_scope->unreferenced_vars[$var_id] = $locations;
+                            $case_scope->unreferenced_vars[$var_id] = $locations;
                         }
                     }
                 }
