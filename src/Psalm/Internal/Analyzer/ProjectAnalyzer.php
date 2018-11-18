@@ -226,12 +226,6 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        $cwd = getcwd();
-
-        if (!$cwd) {
-            throw new \InvalidArgumentException('Cannot work with empty cwd');
-        }
-
         $cpu_count = self::getCpuCount();
 
         // let's not go crazy

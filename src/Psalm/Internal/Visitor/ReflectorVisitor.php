@@ -1897,10 +1897,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if ($path_to_file[0] !== DIRECTORY_SEPARATOR
                 && !preg_match('~\A[A-Z]:(?![^/\\\\])~i', $path_to_file)
             ) {
-                $path_to_file = getcwd() . DIRECTORY_SEPARATOR . $path_to_file;
+                $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
-            $path_to_file = IncludeAnalyzer::getPathTo($stmt->expr, $this->file_path);
+            $path_to_file = IncludeAnalyzer::getPathTo($stmt->expr, $this->file_path, $this->config);
         }
 
         if ($path_to_file) {
