@@ -1908,15 +1908,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         if ($path_to_file) {
-            $slash = preg_quote(DIRECTORY_SEPARATOR, '/');
-            $reduce_pattern = '/' . $slash . '[^' . $slash . ']+' . $slash . '\.\.' . $slash . '/';
-
-            while (preg_match($reduce_pattern, $path_to_file)) {
-                $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
-            }
-
-            $path_to_file = preg_replace('/\/[\/]+/', DIRECTORY_SEPARATOR, $path_to_file);
-            $path_to_file = str_replace('/./', DIRECTORY_SEPARATOR, $path_to_file);
+            $path_to_file = IncludeAnalyzer::normalizeFilePath($path_to_file);
 
             if ($this->file_path === $path_to_file) {
                 return;

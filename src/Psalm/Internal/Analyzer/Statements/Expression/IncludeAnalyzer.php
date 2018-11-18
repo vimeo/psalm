@@ -65,20 +65,7 @@ class IncludeAnalyzer
         }
 
         if ($path_to_file) {
-            $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
-            $path_to_file = str_replace('/./', '/', $path_to_file);
-            $slash = preg_quote(DIRECTORY_SEPARATOR, '/');
-            $reduce_pattern = '/' . $slash . '[^' . $slash . ']+' . $slash . '\.\.' . $slash . '/';
-
-            while (preg_match($reduce_pattern, $path_to_file)) {
-                $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
-            }
-
-            $path_to_file = str_replace(
-                DIRECTORY_SEPARATOR . '.' . DIRECTORY_SEPARATOR,
-                DIRECTORY_SEPARATOR,
-                $path_to_file
-            );
+            $path_to_file = self::normalizeFilePath($path_to_file);
 
             // if the file is already included, we can't check much more
             if (in_array(realpath($path_to_file), get_included_files(), true)) {
@@ -308,5 +295,31 @@ class IncludeAnalyzer
         }
 
         return null;
+    }
+
+    public static function normalizeFilePath(string $path_to_file) : string
+    {
+        // replace all \ with / for normalization
+        $path_to_file = str_replace('\\', '/', $path_to_file);
+        $path_to_file = str_replace('/./', '/', $path_to_file);
+
+        // first remove unnecessary / duplicates
+        $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
+
+        $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
+
+        $reduce_pattern = '/\/[^\/]+\/\.\.\//';
+
+        while (preg_match($reduce_pattern, $path_to_file)) {
+            $path_to_file = preg_replace($reduce_pattern, DIRECTORY_SEPARATOR, $path_to_file);
+        }
+
+        $path_to_file = str_replace('/./', '/', $path_to_file);
+
+        if (DIRECTORY_SEPARATOR !== '/') {
+            $path_to_file = str_replace('/', DIRECTORY_SEPARATOR, $path_to_file);
+        }
+
+        return $path_to_file;
     }
 }
