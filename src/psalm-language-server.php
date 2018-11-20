@@ -26,6 +26,7 @@ $valid_long_options = [
     'use-ini-defaults',
     'version',
     'tcp:',
+    'tcp-server',
     'disable-on-change::'
 ];
 
@@ -117,6 +118,9 @@ Options:
 
     --tcp=url
         Use TCP mode (by default Psalm uses STDIO)
+
+    --tcp-server
+        Use TCP in server mode (default is client)
 
     --disable-on-change[=line-number-threshold]
         If added, the language server will not respond to onChange events.
@@ -234,4 +238,4 @@ if ($find_dead_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
 }
 
-$project_analyzer->server($options['tcp'] ?? null);
+$project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']) ? true : false);
