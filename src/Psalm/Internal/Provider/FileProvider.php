@@ -12,6 +12,11 @@ class FileProvider
     protected $temp_files = [];
 
     /**
+     * @var array<string, string>
+     */
+    protected $open_files = [];
+
+    /**
      * @param  string  $file_path
      *
      * @return string
@@ -20,6 +25,10 @@ class FileProvider
     {
         if (!$go_to_source && isset($this->temp_files[strtolower($file_path)])) {
             return $this->temp_files[strtolower($file_path)];
+        }
+
+        if (isset($this->temp_files[strtolower($file_path)])) {
+            return $this->open_files[strtolower($file_path)];
         }
 
         return (string)file_get_contents($file_path);
@@ -33,6 +42,14 @@ class FileProvider
      */
     public function setContents($file_path, $file_contents)
     {
+        if (isset($this->open_files[strtolower($file_path)])) {
+            $this->open_files[strtolower($file_path)] = $file_contents;
+        }
+
+        if (isset($this->temp_files[strtolower($file_path)])) {
+            $this->temp_files[strtolower($file_path)] = $file_contents;
+        }
+
         file_put_contents($file_path, $file_contents);
     }
 
@@ -55,11 +72,19 @@ class FileProvider
     }
 
     /**
+     * @return void
+     */
+    public function removeTemporaryFileChanges(string $file_path)
+    {
+        unset($this->temp_files[strtolower($file_path)]);
+    }
+
+    /**
      * @return  void
      */
     public function openFile(string $file_path)
     {
-        $this->temp_files[strtolower($file_path)] = $this->getContents($file_path, true);
+        $this->open_files[strtolower($file_path)] = $this->getContents($file_path, true);
     }
 
     /**
@@ -68,6 +93,7 @@ class FileProvider
     public function closeFile(string $file_path)
     {
         unset($this->temp_files[strtolower($file_path)]);
+        unset($this->open_files[strtolower($file_path)]);
     }
 
     /**

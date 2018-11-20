@@ -215,6 +215,66 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]
             ],
+            'traitMethodRename' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bar() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'middle_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bat() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bar() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'error_positions' => [0, 1, 0],
+            ],
         ];
     }
 }

@@ -205,8 +205,8 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                     }
                 }'
         );
-        $codebase->invalidateInformationForFile('somefile.php');
-        $codebase->scanTemporaryFileChanges('somefile.php');
+
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
 
         $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
 

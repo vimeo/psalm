@@ -87,6 +87,8 @@ class FileScanner implements FileSource
         $traverser->traverse($stmts);
 
         $file_storage->deep_scan = $this->will_analyze;
+
+        error_log($file_storage->file_path);
     }
 
     /**

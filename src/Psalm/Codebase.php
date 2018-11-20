@@ -1079,22 +1079,8 @@ class Codebase
     /**
      * @return void
      */
-    public function scanTemporaryFileChanges(string $file_path)
-    {
-        $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
-        $this->scanner->scanFiles($this->classlikes);
-        $this->populator->populateCodebase($this);
-    }
-
-    /**
-     * @return void
-     */
     public function removeTemporaryFileChanges(string $file_path)
     {
-        $this->file_provider->openFile($file_path);
-        $this->invalidateInformationForFile($file_path);
-        $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
-        $this->scanner->scanFiles($this->classlikes);
-        $this->populator->populateCodebase($this);
+        $this->file_provider->removeTemporaryFileChanges($file_path);
     }
 }

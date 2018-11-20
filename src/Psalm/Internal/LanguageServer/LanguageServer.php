@@ -283,15 +283,11 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         }
 
         if ($this->onsave_paths_to_analyze) {
-            $onsave_paths_to_analyze = array_keys($this->onsave_paths_to_analyze);
-            $codebase->reloadFiles($this->project_analyzer, $onsave_paths_to_analyze);
+            $codebase->reloadFiles($this->project_analyzer, array_keys($this->onsave_paths_to_analyze));
         }
 
         if ($this->onchange_paths_to_analyze) {
-            foreach ($this->onchange_paths_to_analyze as $file_path => $_) {
-                $codebase->invalidateInformationForFile($file_path);
-                $codebase->scanTemporaryFileChanges($file_path);
-            }
+            $codebase->reloadFiles($this->project_analyzer, array_keys($this->onchange_paths_to_analyze));
         }
 
         $all_file_paths_to_analyze = array_keys($all_files_to_analyze);

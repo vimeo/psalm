@@ -73,7 +73,6 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
         // first batch
         foreach ($start_files as $file_path => $contents) {
             $this->file_provider->registerFile($file_path, $contents);
-            $codebase->file_provider->openFile($file_path);
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
@@ -99,9 +98,9 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     $file_path,
                     $contents
                 );
-                $codebase->invalidateInformationForFile($file_path);
-                $codebase->scanTemporaryFileChanges($file_path);
             }
+
+            $codebase->reloadFiles($this->project_analyzer, array_keys($file_stage));
 
             foreach ($file_stage as $file_path => $contents) {
                 $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -785,6 +784,196 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_positions' => [[192, 192], []],
+            ],
+            'traitMethodRenameDifferentFiles' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bat();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bat();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }',
+                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            namespace Foo;
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [238], [], [238], []],
+            ],
+            'traitMethodRenameSameFile' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }
+
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bat();
+                                }
+                            }
+
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bat();
+                                }
+                            }
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [238], [], [238], []],
             ],
         ];
     }

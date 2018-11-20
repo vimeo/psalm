@@ -254,7 +254,7 @@ class Populator
                 );
             }
 
-            foreach ($storage->used_traits as $used_trait_lc) {
+            foreach ($storage->used_traits as $used_trait_lc => $_) {
                 $this->file_reference_provider->addFileInheritanceToClass($file_path, $used_trait_lc);
             }
         }
