@@ -956,6 +956,12 @@ class Codebase
      */
     public function getReferenceAtPosition(string $file_path, Position $position)
     {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+        }
+
         $file_contents = $this->getFileContents($file_path);
 
         $offset = $position->toOffset($file_contents);
@@ -1018,6 +1024,12 @@ class Codebase
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position)
     {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+        }
+
         $file_contents = $this->getFileContents($file_path);
 
         $offset = $position->toOffset($file_contents);

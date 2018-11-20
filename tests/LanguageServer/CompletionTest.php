@@ -69,6 +69,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
@@ -101,6 +102,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
@@ -133,6 +135,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
@@ -195,6 +198,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 

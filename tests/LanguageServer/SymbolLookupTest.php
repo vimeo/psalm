@@ -179,6 +179,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 

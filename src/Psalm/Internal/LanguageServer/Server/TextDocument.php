@@ -186,7 +186,13 @@ class TextDocument
 
                 $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-                $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+                try {
+                    $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+                } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+                    $this->codebase->file_provider->openFile($file_path);
+                    $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+                    return new Hover([]);
+                }
 
                 if ($reference_location === null) {
                     return new Hover([]);
@@ -232,7 +238,13 @@ class TextDocument
 
                 $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-                $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+                try {
+                    $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+                } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+                    $this->codebase->file_provider->openFile($file_path);
+                    $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+                    return new Hover([]);
+                }
 
                 if ($reference_location === null) {
                     return new Hover([]);

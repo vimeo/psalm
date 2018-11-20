@@ -88,6 +88,14 @@ class FileProvider
     }
 
     /**
+     * @return bool
+     */
+    public function isOpen(string $file_path)
+    {
+        return isset($this->open_files[strtolower($file_path)]);
+    }
+
+    /**
      * @return  void
      */
     public function closeFile(string $file_path)
