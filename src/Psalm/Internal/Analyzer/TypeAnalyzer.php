@@ -825,10 +825,10 @@ class TypeAnalyzer
      * @param  Codebase    $codebase
      * @param  Type\Atomic $input_type_part
      * @param  Type\Atomic $container_type_part
-     * @param  bool        &$has_scalar_match
-     * @param  bool        &$type_coerced
-     * @param  bool        &$type_coerced_from_mixed
-     * @param  bool        &$to_string_cast
+     * @param  ?bool       &$has_scalar_match
+     * @param  ?bool       &$type_coerced
+     * @param  ?bool       &$type_coerced_from_mixed
+     * @param  ?bool       &$to_string_cast
      * @param  bool        $allow_interface_equality
      *
      * @return bool
@@ -837,10 +837,10 @@ class TypeAnalyzer
         Codebase $codebase,
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
-        &$has_scalar_match = null,
-        &$type_coerced = null,
-        &$type_coerced_from_mixed = null,
-        &$to_string_cast = null,
+        &$has_scalar_match,
+        &$type_coerced,
+        &$type_coerced_from_mixed,
+        &$to_string_cast,
         $allow_interface_equality
     ) {
         $all_types_contain = true;
