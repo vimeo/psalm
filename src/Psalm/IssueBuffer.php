@@ -2,7 +2,7 @@
 namespace Psalm;
 
 use LSS\Array2XML;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\MethodIssue;
@@ -13,7 +13,7 @@ class IssueBuffer
     /**
      * @var array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      * file_name: string, file_path: string, snippet: string, from: int, to: int,
-     * snippet_from: int, snippet_to: int, column_from: int, column_to: int}>
+     * snippet_from: int, snippet_to: int, column_from: int, column_to: int, selected_text: string}>
      */
     protected static $issues_data = [];
 
@@ -135,9 +135,9 @@ class IssueBuffer
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
-        $project_checker = ProjectChecker::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
 
-        if (!$project_checker->show_issues) {
+        if (!$project_analyzer->show_issues) {
             return false;
         }
 
@@ -272,7 +272,7 @@ class IssueBuffer
     /**
      * @return array<int, array{severity: string, line_from: int, line_to: int, type: string, message: string,
      *  file_name: string, file_path: string, snippet: string, from: int, to: int, snippet_from: int, snippet_to: int,
-     *  column_from: int, column_to: int}>
+     *  column_from: int, column_to: int, selected_text: string}>
      */
     public static function getIssuesData()
     {
@@ -309,24 +309,26 @@ class IssueBuffer
     }
 
     /**
-     * @param  ProjectChecker                   $project_checker
+     * @param  ProjectAnalyzer                   $project_analyzer
      * @param  bool                             $is_full
      * @param  float                            $start_time
      * @param  bool                             $add_stats
-     * @param  array<string,array<string,int>>  $issue_baseline
+     * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
      *
      * @return void
      */
     public static function finish(
-        ProjectChecker $project_checker,
+        ProjectAnalyzer $project_analyzer,
         bool $is_full,
         float $start_time,
         bool $add_stats = false,
         array $issue_baseline = []
     ) {
-        if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
+        if ($project_analyzer->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo "\n";
         }
+
+        $codebase = $project_analyzer->getCodebase();
 
         $error_count = 0;
         $info_count = 0;
@@ -358,9 +360,20 @@ class IssueBuffer
                     $file = $issue_data['file_name'];
                     $type = $issue_data['type'];
 
-                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type] > 0) {
-                        $issue_data['severity'] = Config::REPORT_INFO;
-                        $issue_baseline[$file][$type] = (int)$issue_baseline[$file][$type] - 1;
+                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
+                        if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
+                            $position = array_search($issue_data['selected_text'], $issue_baseline[$file][$type]['s']);
+
+                            if ($position !== false) {
+                                $issue_data['severity'] = Config::REPORT_INFO;
+                                array_splice($issue_baseline[$file][$type]['s'], $position, 1);
+                                $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
+                            }
+                        } else {
+                            $issue_baseline[$file][$type]['s'] = [];
+                            $issue_data['severity'] = Config::REPORT_INFO;
+                            $issue_baseline[$file][$type]['o'] = $issue_baseline[$file][$type]['o'] - 1;
+                        }
                     }
 
                     self::$issues_data[$key] = $issue_data;
@@ -376,25 +389,25 @@ class IssueBuffer
             }
 
             echo self::getOutput(
-                $project_checker->output_format,
-                $project_checker->use_color,
-                $project_checker->show_snippet,
-                $project_checker->show_info
+                $project_analyzer->output_format,
+                $project_analyzer->use_color,
+                $project_analyzer->show_snippet,
+                $project_analyzer->show_info
             );
         }
 
-        foreach ($project_checker->reports as $format => $path) {
+        foreach ($project_analyzer->reports as $format => $path) {
             file_put_contents(
                 $path,
-                self::getOutput($format, $project_checker->use_color)
+                self::getOutput($format, $project_analyzer->use_color)
             );
         }
 
-        if ($project_checker->output_format === ProjectChecker::TYPE_CONSOLE) {
+        if ($project_analyzer->output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
-                echo ($project_checker->use_color
+                echo ($project_analyzer->use_color
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
@@ -402,12 +415,12 @@ class IssueBuffer
                 echo 'No errors found!' . "\n";
             }
 
-            if ($info_count && $project_checker->show_info) {
+            if ($info_count && $project_analyzer->show_info) {
                 echo str_repeat('-', 30) . "\n";
 
                 echo $info_count . ' other issues found.' . "\n"
                     . 'You can hide them with ' .
-                    ($project_checker->use_color
+                    ($project_analyzer->use_color
                         ? "\e[30;48;5;195m--show-info=false\e[0m"
                         : '--show-info=false') . "\n";
             }
@@ -419,13 +432,13 @@ class IssueBuffer
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1024 * 1024), 3) . 'MB of memory' . "\n";
 
                 if ($is_full) {
-                    $analysis_summary = $project_checker->codebase->analyzer->getTypeInferenceSummary();
+                    $analysis_summary = $codebase->analyzer->getTypeInferenceSummary();
                     echo $analysis_summary . "\n";
                 }
 
                 if ($add_stats) {
                     echo '-----------------' . "\n";
-                    echo $project_checker->codebase->analyzer->getNonMixedStats();
+                    echo $codebase->analyzer->getNonMixedStats();
                     echo "\n";
                 }
             }
@@ -436,10 +449,10 @@ class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            $project_checker->file_reference_provider->removeDeletedFilesFromReferences();
+            $codebase->file_reference_provider->removeDeletedFilesFromReferences();
 
-            if ($project_checker->parser_cache_provider) {
-                $project_checker->parser_cache_provider->processSuccessfulRun($start_time);
+            if ($codebase->statements_provider->parser_cache_provider) {
+                $codebase->statements_provider->parser_cache_provider->processSuccessfulRun($start_time);
             }
         }
     }
@@ -454,20 +467,20 @@ class IssueBuffer
      */
     public static function getOutput($format, $use_color, $show_snippet = true, $show_info = true)
     {
-        if ($format === ProjectChecker::TYPE_JSON) {
+        if ($format === ProjectAnalyzer::TYPE_JSON) {
             return json_encode(self::$issues_data) . "\n";
-        } elseif ($format === ProjectChecker::TYPE_XML) {
+        } elseif ($format === ProjectAnalyzer::TYPE_XML) {
             $xml = Array2XML::createXML('report', ['item' => self::$issues_data]);
 
             return $xml->saveXML();
-        } elseif ($format === ProjectChecker::TYPE_EMACS) {
+        } elseif ($format === ProjectAnalyzer::TYPE_EMACS) {
             $output = '';
             foreach (self::$issues_data as $issue_data) {
                 $output .= self::getEmacsOutput($issue_data) . "\n";
             }
 
             return $output;
-        } elseif ($format === ProjectChecker::TYPE_PYLINT) {
+        } elseif ($format === ProjectAnalyzer::TYPE_PYLINT) {
             $output = '';
             foreach (self::$issues_data as $issue_data) {
                 $output .= self::getPylintOutput($issue_data) . "\n";

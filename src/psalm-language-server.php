@@ -1,9 +1,11 @@
 <?php
 require_once('command_functions.php');
 
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
 use Psalm\IssueBuffer;
+
+gc_disable();
 
 // show all errors
 error_reporting(-1);
@@ -24,6 +26,7 @@ $valid_long_options = [
     'use-ini-defaults',
     'version',
     'tcp:',
+    'tcp-server',
     'disable-on-change::'
 ];
 
@@ -116,6 +119,9 @@ Options:
     --tcp=url
         Use TCP mode (by default Psalm uses STDIO)
 
+    --tcp-server
+        Use TCP in server mode (default is client)
+
     --disable-on-change[=line-number-threshold]
         If added, the language server will not respond to onChange events.
         You can also specify a line count over which Psalm will not run on-change events.
@@ -155,7 +161,7 @@ if (array_key_exists('v', $options)) {
     exit;
 }
 
-$ini_handler = new \Psalm\Fork\PsalmRestarter('PSALM');
+$ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
 $ini_handler->disableExtension('grpc');
 
@@ -166,7 +172,7 @@ setlocale(LC_CTYPE, 'C');
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
-    : ProjectChecker::TYPE_CONSOLE;
+    : ProjectAnalyzer::TYPE_CONSOLE;
 
 $path_to_config = isset($options['c']) && is_string($options['c']) ? realpath($options['c']) : null;
 
@@ -208,28 +214,28 @@ if (isset($options['clear-cache'])) {
     exit;
 }
 
-$providers = new Psalm\Provider\Providers(
-    new Psalm\Provider\FileProvider,
-    new Psalm\Provider\ParserCacheProvider($config),
-    new Psalm\Provider\FileStorageCacheProvider($config),
-    new Psalm\Provider\ClassLikeStorageCacheProvider($config),
-    new Psalm\Provider\FileReferenceCacheProvider($config)
+$providers = new Psalm\Internal\Provider\Providers(
+    new Psalm\Internal\Provider\FileProvider,
+    new Psalm\Internal\Provider\ParserCacheProvider($config),
+    new Psalm\Internal\Provider\FileStorageCacheProvider($config),
+    new Psalm\Internal\Provider\ClassLikeStorageCacheProvider($config),
+    new Psalm\Internal\Provider\FileReferenceCacheProvider($config)
 );
 
-$project_checker = new ProjectChecker(
+$project_analyzer = new ProjectAnalyzer(
     $config,
     $providers
 );
 
 if (isset($options['disable-on-change'])) {
-    $project_checker->onchange_line_limit = (int) $options['disable-on-change'];
+    $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
 }
 
-$config->visitComposerAutoloadFiles($project_checker);
+$config->visitComposerAutoloadFiles($project_analyzer);
 
 if ($find_dead_code) {
-    $project_checker->getCodebase()->collectReferences();
-    $project_checker->getCodebase()->reportUnusedCode();
+    $project_analyzer->getCodebase()->collectReferences();
+    $project_analyzer->getCodebase()->reportUnusedCode();
 }
 
-$project_checker->server($options['tcp'] ?? null);
+$project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']) ? true : false);

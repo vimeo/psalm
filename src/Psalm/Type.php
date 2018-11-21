@@ -29,8 +29,8 @@ use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
-use Psalm\Type\ParseTree;
-use Psalm\Type\TypeCombination;
+use Psalm\Internal\Type\ParseTree;
+use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 
 abstract class Type
@@ -895,8 +895,6 @@ abstract class Type
                 new Type\Union([new TEmpty]),
             ]
         );
-
-        $array_type->count = 0;
 
         return new Type\Union([
             $array_type,

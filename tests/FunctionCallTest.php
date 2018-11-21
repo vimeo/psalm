@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class FunctionCallTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'arrayFilter' => [
@@ -641,6 +641,14 @@ class FunctionCallTest extends TestCase
                 '<?php
                     if (class_exists(Foo::class)) {}'
             ],
+            'allowConstructorAfterClassExists' => [
+                '<?php
+                    function foo(string $s) : void {
+                        if (class_exists($s)) {
+                            new $s();
+                        }
+                    }'
+            ],
             'next' => [
                 '<?php
                     $arr = ["one", "two", "three"];
@@ -917,7 +925,7 @@ class FunctionCallTest extends TestCase
                     $d = [1, 2, 3];
                     array_splice($d, -1, 1);',
                 'assertions' => [
-                    '$a' => 'array<int, string|int>',
+                    '$a' => 'non-empty-array<int, string|int>',
                     '$b' => 'array{0:string, 1:string, 2:string}',
                     '$c' => 'array{0:int, 1:int, 2:int}',
                 ],
@@ -955,7 +963,7 @@ class FunctionCallTest extends TestCase
                     $c = array_slice($a, 1, 2, false);
                     $d = array_slice($a, 1, 2);',
                 'assertions' => [
-                    '$b' => 'array<string, int>',
+                    '$b' => 'non-empty-array<string, int>',
                     '$c' => 'array<int, int>',
                     '$d' => 'array<int, int>',
                 ],
@@ -1023,7 +1031,7 @@ class FunctionCallTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'arrayFilterWithoutTypes' => [

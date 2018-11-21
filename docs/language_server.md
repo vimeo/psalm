@@ -64,6 +64,11 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
 
 LSP support was recently added to [ALE](https://github.com/w0rp/ale)'s master branch, but not yet in a tagged release.
 
+Remember to specify Psalm as a PHP linter:
+```
+let g:ale_linters = { 'php': ['php', 'psalm'] }
+```
+
 **vim-lsp**
 
 I got it working with [vim-lsp](https://github.com/prabirshrestha/vim-lsp)

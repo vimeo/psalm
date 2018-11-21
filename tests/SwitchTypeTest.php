@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class SwitchTypeTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'getClassArg' => [
@@ -480,13 +480,50 @@ class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchVarConditionalAssignment' => [
+                '<?php
+                    switch (rand(0, 4)) {
+                        case 0:
+                            $b = 2;
+                            if (rand(0, 1)) {
+                                $a = false;
+                                break;
+                            }
+
+                        default:
+                            $a = true;
+                            $b = 1;
+                    }',
+                'assertions' => [
+                    '$a' => 'bool',
+                    '$b' => 'int',
+                ],
+            ],
+            'switchVarConditionalReAssignment' => [
+                '<?php
+                    $a = false;
+                    switch (rand(0, 4)) {
+                        case 0:
+                            $b = 1;
+                            if (rand(0, 1)) {
+                                $a = false;
+                                break;
+                            }
+
+                        default:
+                            $a = true;
+                    }',
+                'assertions' => [
+                    '$a' => 'bool',
+                ],
+            ],
         ];
     }
 
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'switchReturnTypeWithFallthroughAndBreak' => [
@@ -704,6 +741,23 @@ class SwitchTypeTest extends TestCase
                             echo "impossible";
                     }',
                 'error_message' => 'ParadoxicalCondition - src/somefile.php:11',
+            ],
+            'breakWithoutSettingVar' => [
+                '<?php
+                    function foo(int $i) : void {
+                        switch ($i) {
+                            case 0:
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+
+                            default:
+                                $a = true;
+                        }
+
+                        if ($a) {}
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable'
             ],
         ];
     }

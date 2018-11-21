@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class Php56Test extends TestCase
 {
-    use Traits\FileCheckerValidCodeParseTestTrait;
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'constArray' => [
@@ -246,7 +246,7 @@ class Php56Test extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'arrayPushArgumentUnpackingWithBadArg' => [

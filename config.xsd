@@ -108,13 +108,21 @@
     </xs:complexType>
 
     <xs:complexType name="PluginsType">
-        <xs:sequence>
-            <xs:element name="plugin" maxOccurs="unbounded">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="plugin">
                 <xs:complexType>
                     <xs:attribute name="filename" type="xs:string" use="required" />
                 </xs:complexType>
             </xs:element>
-        </xs:sequence>
+            <xs:element name="pluginClass">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:any minOccurs="0" maxOccurs="unbounded" processContents="skip"/>
+                    </xs:sequence>
+                    <xs:attribute name="class" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:choice>
     </xs:complexType>
 
     <xs:complexType name="IssueHandlersType">

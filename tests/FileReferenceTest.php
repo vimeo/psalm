@@ -1,33 +1,34 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Context;
+use Psalm\Tests\Internal\Provider;
 
 class FileReferenceTest extends TestCase
 {
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    protected $project_analyzer;
 
     /**
      * @return void
      */
     public function setUp()
     {
-        FileChecker::clearCache();
-        \Psalm\FileManipulation\FunctionDocblockManipulator::clearCache();
+        FileAnalyzer::clearCache();
+        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
         );
 
-        $this->project_checker->getCodebase()->collectReferences();
+        $this->project_analyzer->getCodebase()->collectReferences();
     }
 
     /**
@@ -60,7 +61,7 @@ class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $found_references = $this->project_checker->getCodebase()->findReferencesToSymbol($symbol);
+        $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
 
         if (!isset($found_references[$file_path])) {
             throw new \UnexpectedValueException('No file references found in this file');
@@ -111,7 +112,7 @@ class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $referenced_methods = $this->project_checker->file_reference_provider->getClassMethodReferences();
+        $referenced_methods = $this->project_analyzer->getCodebase()->file_reference_provider->getClassMethodReferences();
 
         $this->assertSame($expected_referenced_methods, $referenced_methods);
     }

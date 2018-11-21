@@ -1,14 +1,14 @@
 <?php
 namespace Psalm;
 
-use Psalm\Provider\FileProvider;
+use Psalm\Internal\Provider\FileProvider;
 
 class ErrorBaseline
 {
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<array{file_name: string, type: string, severity: string}> $issues
+     * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
      *
      * @return void
      */
@@ -22,7 +22,7 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @return array<string,array<string,int>>
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      * @throws Exception\ConfigException
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
@@ -58,7 +58,16 @@ class ErrorBaseline
             foreach ($file->childNodes as $issue) {
                 $issueType = $issue->tagName;
 
-                $files[$fileName][$issueType] = (int)$issue->getAttribute('occurrences');
+                $files[$fileName][$issueType] = [
+                    'o' => (int)$issue->getAttribute('occurrences'),
+                    's' => [],
+                ];
+                $codeSamples = $issue->getElementsByTagName('code');
+
+                /** @var \DOMElement $codeSample */
+                foreach ($codeSamples as $codeSample) {
+                    $files[$fileName][$issueType]['s'][] = (string) $codeSample->textContent;
+                }
             }
         }
 
@@ -68,8 +77,8 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<array{file_name: string, type: string, severity: string}> $issues
-     * @return array<string,array<string,int>>
+     * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      * @throws Exception\ConfigException
      */
     public static function update(FileProvider $fileProvider, string $baselineFile, array $issues)
@@ -84,14 +93,21 @@ class ErrorBaseline
                 continue;
             }
 
-            foreach ($existingIssuesCount as $issueType => $count) {
+            foreach ($existingIssuesCount as $issueType => $existingIssueType) {
                 if (!isset($newIssues[$file][$issueType])) {
                     unset($existingIssuesCount[$issueType]);
 
                     continue;
                 }
 
-                $existingIssuesCount[$issueType] = min($count, $newIssues[$file][$issueType]);
+                $existingIssuesCount[$issueType]['o'] = min(
+                    $existingIssueType['o'],
+                    $newIssues[$file][$issueType]['o']
+                );
+                $existingIssuesCount[$issueType]['s'] = array_intersect(
+                    $existingIssueType['s'],
+                    $newIssues[$file][$issueType]['s']
+                );
             }
         }
 
@@ -103,17 +119,17 @@ class ErrorBaseline
     }
 
     /**
-     * @param array<array{file_name: string, type: string, severity: string}> $issues
-     * @return array<string,array<string,int>>
+     * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues
+     * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
     {
         $groupedIssues = array_reduce(
             $issues,
             /**
-             * @param array<string,array<string,int>> $carry
-             * @param array{type: string, file_name: string, severity: string} $issue
-             * @return array<string,array<string,int>>
+             * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
+             * @param array{type: string, file_name: string, severity: string, selected_text: string} $issue
+             * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
             function (array $carry, array $issue): array {
                 if ($issue['severity'] !== Config::REPORT_ERROR) {
@@ -128,10 +144,14 @@ class ErrorBaseline
                 }
 
                 if (!isset($carry[$fileName][$issueType])) {
-                    $carry[$fileName][$issueType] = 0;
+                    $carry[$fileName][$issueType] = ['o' => 0, 's' => []];
                 }
 
-                $carry[$fileName][$issueType]++;
+                $carry[$fileName][$issueType]['o']++;
+
+                if (!strpos($issue['selected_text'], "\n")) {
+                    $carry[$fileName][$issueType]['s'][] = $issue['selected_text'];
+                }
 
                 return $carry;
             },
@@ -151,7 +171,7 @@ class ErrorBaseline
     /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
-     * @param array<string,array<string,int>> $groupedIssues
+     * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
      * @return void
      */
     private static function writeToFile(
@@ -166,9 +186,14 @@ class ErrorBaseline
             $fileNode = $baselineDoc->createElement('file');
             $fileNode->setAttribute('src', $file);
 
-            foreach ($issueTypes as $issueType => $count) {
+            foreach ($issueTypes as $issueType => $existingIssueType) {
                 $issueNode = $baselineDoc->createElement($issueType);
-                $issueNode->setAttribute('occurrences', (string)$count);
+                $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
+                foreach ($existingIssueType['s'] as $selection) {
+                    $codeNode = $baselineDoc->createElement('code');
+                    $codeNode->textContent = $selection;
+                    $issueNode->appendChild($codeNode);
+                }
                 $fileNode->appendChild($issueNode);
             }
 

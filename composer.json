@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": "^7.0",
-        "nikic/PHP-Parser": "^4.0.3 || ^4.1",
+        "nikic/PHP-Parser": "^4.0.2 || ^4.1",
         "openlss/lib-array2xml": "^0.0.10||^0.5.1",
         "muglug/package-versions-56": "1.2.4",
         "php-cs-fixer/diff": "^1.2",
@@ -22,11 +22,13 @@
         "sabre/event": "^5.0.1",
         "sabre/uri": "^2.0",
         "webmozart/glob": "^4.1",
-        "webmozart/path-util": "^2.3"
+        "webmozart/path-util": "^2.3",
+        "symfony/console": "^3.0||^4.0"
     },
-    "bin": ["psalm", "psalter", "psalm-language-server"],
+    "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin"],
     "autoload": {
         "psr-4": {
+            "Psalm\\Plugin\\": "src/Psalm/Plugin",
             "Psalm\\": "src/Psalm"
         }
     },
@@ -44,7 +46,8 @@
         "phpunit/phpunit": "^6.0 || ^7.0",
         "squizlabs/php_codesniffer": "^3.0",
         "php-coveralls/php-coveralls": "^2.0",
-        "bamarni/composer-bin-plugin": "^1.2"
+        "bamarni/composer-bin-plugin": "^1.2",
+        "psalm/plugin-phpunit": "dev-master"
     },
     "suggest": {
         "ext-igbinary": "^2.0.5"
@@ -64,11 +67,18 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "2.x-dev",
+            "dev-master": "3.x-dev",
+            "dev-2.x": "2.x-dev",
             "dev-1.x": "1.x-dev"
         }
     },
     "provide": {
         "psalm/psalm": "self.version"
-    }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "examples/plugins/composer-based/echo-checker"
+        }
+    ]
 }

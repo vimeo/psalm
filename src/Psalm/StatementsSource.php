@@ -1,8 +1,6 @@
 <?php
 namespace Psalm;
 
-use Psalm\Checker\FileChecker;
-
 interface StatementsSource extends FileSource
 {
     /**
@@ -24,11 +22,6 @@ interface StatementsSource extends FileSource
      * @return string|null
      */
     public function getClassName();
-
-    /**
-     * @return FileChecker
-     */
-    public function getFileChecker();
 
     /**
      * @return string|null
@@ -71,6 +64,8 @@ interface StatementsSource extends FileSource
      * @return StatementsSource|null
      */
     public function getSource();
+
+    public function getCodebase() : Codebase;
 
     /**
      * Get a list of suppressed issues

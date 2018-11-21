@@ -6,13 +6,13 @@ use Psalm\Context;
 
 class EnumTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'enumStringOrEnumIntCorrect' => [
@@ -108,7 +108,7 @@ class EnumTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'enumStringOrEnumIntIncorrectString' => [

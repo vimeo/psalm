@@ -2,13 +2,14 @@
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
-use Psalm\Scanner\FileScanner;
+use Psalm\Internal\Scanner\FileScanner;
 use SimpleXMLElement;
+use Psalm\PluginRegistrationSocket;
 
 class Config
 {
@@ -112,14 +113,14 @@ class Config
     private $file_extensions = ['php'];
 
     /**
-     * @var array<string, string>
+     * @var array<string, class-string>
      */
     private $filetype_scanners = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, class-string>
      */
-    private $filetype_checkers = [];
+    private $filetype_analyzers = [];
 
     /**
      * @var array<string, string>
@@ -129,7 +130,7 @@ class Config
     /**
      * @var array<string, string>
      */
-    private $filetype_checker_paths = [];
+    private $filetype_analyzer_paths = [];
 
     /**
      * @var array<string, IssueHandler>
@@ -186,12 +187,7 @@ class Config
     /**
      * @var bool
      */
-    public $allow_coercion_from_string_to_class_const = true;
-
-    /**
-     * @var bool
-     */
-    public $allow_string_standin_for_class = true;
+    public $allow_string_standin_for_class = false;
 
     /**
      * @var bool
@@ -239,44 +235,49 @@ class Config
     public $plugin_paths = [];
 
     /**
+     * @var array<array{class:string,config:?SimpleXmlElement}>
+     */
+    private $plugin_classes = [];
+
+    /**
      * Static methods to be called after method checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_method_checks = [];
 
     /**
      * Static methods to be called after function checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_function_checks = [];
 
     /**
      * Static methods to be called after expression checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_expression_checks = [];
 
     /**
      * Static methods to be called after statement checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_statement_checks = [];
 
     /**
      * Static methods to be called after classlike exists checks have completed
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_classlike_exists_checks = [];
 
     /**
      * Static methods to be called after classlikes have been scanned
      *
-     * @var string[]
+     * @var class-string[]
      */
     public $after_visit_classlikes = [];
 
@@ -328,7 +329,7 @@ class Config
         $config_path = self::locateConfigFile($path);
 
         if (!$config_path) {
-            if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+            if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
                 exit(
                     'Could not locate a config XML file in path ' . $path . '. Have you run \'psalm --init\' ?' .
                     PHP_EOL
@@ -543,11 +544,6 @@ class Config
             $config->allow_phpstorm_generics = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['allowCoercionFromStringToClassConst'])) {
-            $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
-            $config->allow_coercion_from_string_to_class_const = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
         if (isset($config_xml['allowStringToStandInForClass'])) {
             $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
             $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
@@ -637,19 +633,34 @@ class Config
                     );
                 }
 
-                $config->stub_files[] = $file_path;
+                $config->addStubFile($file_path);
             }
         }
 
         // this plugin loading system borrows heavily from etsy/phan
-        if (isset($config_xml->plugins) && isset($config_xml->plugins->plugin)) {
-            /** @var \SimpleXMLElement $plugin */
-            foreach ($config_xml->plugins->plugin as $plugin) {
-                $plugin_file_name = $plugin['filename'];
+        if (isset($config_xml->plugins)) {
+            if (isset($config_xml->plugins->plugin)) {
+                /** @var \SimpleXMLElement $plugin */
+                foreach ($config_xml->plugins->plugin as $plugin) {
+                    $plugin_file_name = $plugin['filename'];
 
-                $path = $config->base_dir . $plugin_file_name;
+                    $path = $config->base_dir . $plugin_file_name;
 
-                $config->addPluginPath($path);
+                    $config->addPluginPath($path);
+                }
+            }
+            if (isset($config_xml->plugins->pluginClass)) {
+                /** @var \SimpleXMLElement $plugin */
+                foreach ($config_xml->plugins->pluginClass as $plugin) {
+                    $plugin_class_name = $plugin['class'];
+                    // any child elements are used as plugin configuration
+                    $plugin_config = null;
+                    if ($plugin->count()) {
+                        $plugin_config = $plugin->children();
+                    }
+
+                    $config->addPluginClass($plugin_class_name, $plugin_config);
+                }
             }
         }
 
@@ -738,7 +749,7 @@ class Config
                     throw new Exception\ConfigException('Error parsing config: cannot find file ' . $path);
                 }
 
-                $this->filetype_checker_paths[$extension_name] = $path;
+                $this->filetype_analyzer_paths[$extension_name] = $path;
             }
         }
     }
@@ -757,6 +768,18 @@ class Config
         $this->plugin_paths[] = $path;
     }
 
+    /** @return void */
+    public function addPluginClass(string $class_name, SimpleXmlElement $plugin_config = null)
+    {
+        $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
+    }
+
+    /** @return array<array{class:string, config:?SimpleXmlElement}> */
+    public function getPluginClasses(): array
+    {
+        return $this->plugin_classes;
+    }
+
     /**
      * Initialises all the plugins (done once the config is fully loaded)
      *
@@ -767,56 +790,68 @@ class Config
      * @psalm-suppress MixedArrayOffset
      * @psalm-suppress MixedTypeCoercion
      */
-    public function initializePlugins(ProjectChecker $project_checker)
+    public function initializePlugins(ProjectAnalyzer $project_analyzer)
     {
-        $codebase = $project_checker->codebase;
+        $codebase = $project_analyzer->getCodebase();
 
-        foreach ($this->filetype_scanner_paths as $extension => $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Scanner\\FileScanner');
+        $socket = new PluginRegistrationSocket($this);
+        // initialize plugin classes earlier to let them hook into subsequent load process
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin_config = $plugin_class_entry['config'];
+            try {
+                if (!class_exists($plugin_class_name, true)) {
+                    throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
+                }
 
-            $this->filetype_scanners[$extension] = $fq_class_name;
-
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($path);
+                /** @var Plugin\PluginEntryPointInterface $plugin_object */
+                $plugin_object = new $plugin_class_name;
+                $plugin_object($socket, $plugin_config);
+            } catch (\Throwable $e) {
+                throw new ConfigException('Failed to load plugin ' . $plugin_class_name, 0, $e);
+            }
         }
 
-        foreach ($this->filetype_checker_paths as $extension => $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Checker\\FileChecker');
-
-            $this->filetype_checkers[$extension] = $fq_class_name;
+        foreach ($this->filetype_scanner_paths as $extension => $path) {
+            $fq_class_name = $this->getPluginClassForPath(
+                $codebase,
+                $path,
+                \Psalm\Internal\Scanner\FileScanner::class
+            );
 
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
+
+            if (!class_exists($fq_class_name)) {
+                throw new \UnexpectedValueException($fq_class_name . ' is expected in ' . $path);
+            }
+
+            $this->filetype_scanners[$extension] = $fq_class_name;
+        }
+
+        foreach ($this->filetype_analyzer_paths as $extension => $path) {
+            $fq_class_name = $this->getPluginClassForPath(
+                $codebase,
+                $path,
+                \Psalm\Internal\Analyzer\FileAnalyzer::class
+            );
+
+            /** @psalm-suppress UnresolvableInclude */
+            require_once($path);
+
+            if (!class_exists($fq_class_name)) {
+                throw new \UnexpectedValueException($fq_class_name . ' is expected in ' . $path);
+            }
+
+            $this->filetype_analyzers[$extension] = $fq_class_name;
         }
 
         foreach ($this->plugin_paths as $path) {
-            $fq_class_name = $this->getPluginClassForPath($codebase, $path, 'Psalm\\Plugin');
-
-            /** @psalm-suppress UnresolvableInclude */
-            require_once($path);
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterMethodCallCheck')) {
-                $this->after_method_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterFunctionCallCheck')) {
-                $this->after_function_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterExpressionCheck')) {
-                $this->after_expression_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterStatementCheck')) {
-                $this->after_statement_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterClassLikeExistsCheck')) {
-                $this->after_classlike_exists_checks[$fq_class_name] = $fq_class_name;
-            }
-
-            if ($codebase->methods->methodExists($fq_class_name . '::afterVisitClassLike')) {
-                $this->after_visit_classlikes[$fq_class_name] = $fq_class_name;
+            try {
+                $plugin_object = new FileBasedPluginAdapter($path, $this, $codebase);
+                $plugin_object($socket);
+            } catch (\Throwable $e) {
+                throw new ConfigException('Failed to load plugin ' . $path, 0, $e);
             }
         }
     }
@@ -836,7 +871,7 @@ class Config
             $file_storage
         );
 
-        $declared_classes = ClassLikeChecker::getClassesForFile($codebase, $path);
+        $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
         if (count($declared_classes) !== 1) {
             throw new \InvalidArgumentException(
@@ -887,7 +922,7 @@ class Config
                 return false;
             }
 
-            $codebase = ProjectChecker::getInstance()->codebase;
+            $codebase = ProjectAnalyzer::getInstance()->getCodebase();
 
             $dependent_files = [strtolower($file_path) => $file_path];
 
@@ -1054,7 +1089,7 @@ class Config
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, class-string>
      */
     public function getFiletypeScanners()
     {
@@ -1062,11 +1097,11 @@ class Config
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, class-string>
      */
-    public function getFiletypeCheckers()
+    public function getFiletypeAnalyzers()
     {
-        return $this->filetype_checkers;
+        return $this->filetype_analyzers;
     }
 
     /**
@@ -1087,14 +1122,14 @@ class Config
         $codebase->register_stub_files = true;
 
         // note: don't realpath $generic_stubs_path, or phar version will fail
-        $generic_stubs_path = __DIR__ . '/Stubs/CoreGenericFunctions.php';
+        $generic_stubs_path = __DIR__ . '/Internal/Stubs/CoreGenericFunctions.php';
 
         if (!file_exists($generic_stubs_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic stubs');
         }
 
         // note: don't realpath $generic_classes_path, or phar version will fail
-        $generic_classes_path = __DIR__ . '/Stubs/CoreGenericClasses.php';
+        $generic_classes_path = __DIR__ . '/Internal/Stubs/CoreGenericClasses.php';
 
         if (!file_exists($generic_classes_path)) {
             throw new \UnexpectedValueException('Cannot locate core generic classes');
@@ -1191,7 +1226,7 @@ class Config
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArrayAccess
      */
-    public function visitComposerAutoloadFiles(ProjectChecker $project_checker, $debug = false)
+    public function visitComposerAutoloadFiles(ProjectAnalyzer $project_analyzer, $debug = false)
     {
         $this->collectPredefinedConstants();
         $this->collectPredefinedFunctions();
@@ -1241,7 +1276,7 @@ class Config
         $autoload_files_files = array_unique($autoload_files_files);
 
         if ($autoload_files_files) {
-            $codebase = $project_checker->codebase;
+            $codebase = $project_analyzer->getCodebase();
             $codebase->register_autoload_files = true;
 
             foreach ($autoload_files_files as $file_path) {
@@ -1258,7 +1293,7 @@ class Config
                 echo 'Finished registering autoloaded files' . "\n";
             }
 
-            $project_checker->codebase->register_autoload_files = false;
+            $codebase->register_autoload_files = false;
         }
 
         if ($this->autoloader) {
@@ -1319,5 +1354,11 @@ class Config
     public function setServerMode()
     {
         $this->cache_directory .= '-s';
+    }
+
+    /** @return void */
+    public function addStubFile(string $stub_file)
+    {
+        $this->stub_files[] = $stub_file;
     }
 }

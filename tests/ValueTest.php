@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class ValueTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'whileCountUpdate' => [
@@ -407,18 +407,6 @@ class ValueTest extends TestCase
                         takesString($f[$i]);
                     }'
             ],
-            'noRedundantConditionAfterWhile' => [
-                '<?php
-                    $i = 5;
-                    while (--$i > 0) {}
-                    echo $i === 0;',
-            ],
-            'noRedundantConditionAfterDoWhile' => [
-                '<?php
-                    $i = 5;
-                    do {} while (--$i > 0);
-                    echo $i === 0;',
-            ],
             'coerceFromMixed' => [
                 '<?php
                     function type(int $b): void {}
@@ -475,7 +463,7 @@ class ValueTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'neverEqualsType' => [

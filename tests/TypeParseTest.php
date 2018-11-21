@@ -399,6 +399,17 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testCallableThatReturnsACallableThatReturnsACallable()
+    {
+        $this->assertSame(
+            'callable():callable():callable():string',
+            (string)Type::parseString('callable() : callable() : callable() : string')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testCallableOrInt()
     {
         $this->assertSame(
@@ -581,6 +592,17 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testNestedCallable()
+    {
+        $this->assertSame(
+            'callable(callable(A):B):C',
+            (string)Type::parseString('callable(callable(A):B):C')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testCallableWithoutReturn()
     {
         $this->assertSame(
@@ -709,6 +731,6 @@ class TypeParseTest extends TestCase
      */
     public function providerTestValidCallMapType()
     {
-        return \Psalm\Codebase\CallMap::getCallMap();
+        return \Psalm\Internal\Codebase\CallMap::getCallMap();
     }
 }

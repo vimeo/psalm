@@ -3,22 +3,23 @@ namespace Psalm\Examples\Template;
 
 use PhpParser;
 use Psalm;
-use Psalm\Checker\ClassChecker;
-use Psalm\Checker\ClassLikeChecker;
-use Psalm\Checker\CommentChecker;
-use Psalm\Checker\MethodChecker;
-use Psalm\Checker\StatementsChecker;
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\DocComment;
 use Psalm\Type;
 
-class TemplateChecker extends Psalm\Checker\FileChecker
+class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 
     public function analyze(Context $context = null, $update_docblocks = false, Context $global_context = null)
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $stmts = $codebase->getStatementsForFile($this->file_path);
 
         if (empty($stmts)) {
@@ -30,7 +31,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
         $this_params = null;
 
         if (($first_stmt instanceof PhpParser\Node\Stmt\Nop) && ($doc_comment = $first_stmt->getDocComment())) {
-            $comment_block = CommentChecker::parseDocComment(trim($doc_comment->getText()));
+            $comment_block = DocComment::parse(trim($doc_comment->getText()));
 
             if (isset($comment_block['specials']['variablesfrom'])) {
                 $variables_from = trim($comment_block['specials']['variablesfrom'][0]);
@@ -44,7 +45,7 @@ class TemplateChecker extends Psalm\Checker\FileChecker
                 }
 
                 /** @psalm-suppress MixedArgument */
-                $this_params = $this->checkMethod($matches[1], $first_stmt);
+                $this_params = $this->checkMethod($matches[1], $first_stmt, $codebase);
 
                 if ($this_params === false) {
                     return;
@@ -74,11 +75,11 @@ class TemplateChecker extends Psalm\Checker\FileChecker
      *
      * @return Context|false
      */
-    private function checkMethod($method_id, PhpParser\Node $stmt)
+    private function checkMethod($method_id, PhpParser\Node $stmt, Codebase $codebase)
     {
         $class = explode('::', $method_id)[0];
 
-        if (ClassLikeChecker::checkFullyQualifiedClassLikeName(
+        if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
             $this,
             $class,
             new CodeLocation($this, $stmt),
@@ -95,12 +96,12 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
         $constructor_id = $class . '::__construct';
 
-        $this->project_checker->getMethodMutations($constructor_id, $this_context);
+        $this->project_analyzer->getMethodMutations($constructor_id, $this_context);
 
         $this_context->vars_in_scope['$this'] = new Type\Union([new Type\Atomic\TNamedObject($class)]);
 
         // check the actual method
-        $this->project_checker->getMethodMutations($method_id, $this_context);
+        $this->project_analyzer->getMethodMutations($method_id, $this_context);
 
         $view_context = new Context();
         $view_context->self = self::VIEW_CLASS;
@@ -141,16 +142,16 @@ class TemplateChecker extends Psalm\Checker\FileChecker
 
         $class = new PhpParser\Node\Stmt\Class_(self::VIEW_CLASS);
 
-        $class_checker = new ClassChecker($class, $this, self::VIEW_CLASS);
+        $class_analyzer = new ClassAnalyzer($class, $this, self::VIEW_CLASS);
 
-        $view_method_checker = new MethodChecker($class_method, $class_checker);
+        $view_method_analyzer = new MethodAnalyzer($class_method, $class_analyzer);
 
         if (!$context->check_variables) {
-            $view_method_checker->addSuppressedIssue('UndefinedVariable');
+            $view_method_analyzer->addSuppressedIssue('UndefinedVariable');
         }
 
-        $statements_checker = new StatementsChecker($view_method_checker);
+        $statements_source = new StatementsAnalyzer($view_method_analyzer);
 
-        $statements_checker->analyze($pseudo_method_stmts, $context);
+        $statements_source->analyze($pseudo_method_stmts, $context);
     }
 }

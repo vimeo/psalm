@@ -2,10 +2,11 @@
 namespace Psalm\Tests;
 
 use LSS\XML2Array;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;
 use Psalm\IssueBuffer;
+use Psalm\Tests\Internal\Provider;
 
 class ReportOutputTest extends TestCase
 {
@@ -14,23 +15,23 @@ class ReportOutputTest extends TestCase
      */
     public function setUp()
     {
-        // `TestCase::setUp()` creates its own ProjectChecker and Config instance, but we don't want to do that in this
+        // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
         // case, so don't run a `parent::setUp()` call here.
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
         $this->file_provider = new Provider\FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
             false
         );
-        $this->project_checker->reports['json'] = __DIR__ . '/test-report.json';
+        $this->project_analyzer->reports['json'] = __DIR__ . '/test-report.json';
     }
 
     /**
@@ -43,15 +44,15 @@ class ReportOutputTest extends TestCase
 
         // No exception
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
-            new ProjectChecker(
+            new ProjectAnalyzer(
                 $config,
-                new \Psalm\Provider\Providers(
+                new \Psalm\Internal\Provider\Providers(
                     $this->file_provider,
                     new Provider\FakeParserCacheProvider()
                 ),
                 false,
                 true,
-                ProjectChecker::TYPE_CONSOLE,
+                ProjectAnalyzer::TYPE_CONSOLE,
                 1,
                 false,
                 '/tmp/report' . $extension
@@ -69,15 +70,15 @@ class ReportOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        new ProjectChecker(
+        new ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             ),
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false,
             '/tmp/report.log'
@@ -192,16 +193,16 @@ somefile.php:15:6:error - Possibly undefined global variable $a, first seen on l
 ';
         $this->assertSame(
             $issue_data,
-            json_decode(IssueBuffer::getOutput(ProjectChecker::TYPE_JSON, false), true)
+            json_decode(IssueBuffer::getOutput(ProjectAnalyzer::TYPE_JSON, false), true)
         );
         $this->assertSame(
             $emacs,
-            IssueBuffer::getOutput(ProjectChecker::TYPE_EMACS, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_EMACS, false)
         );
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
         //$this->assertSame(
         //    ['report' => ['item' => $issue_data]],
-        //    XML2Array::createArray(IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false), LIBXML_NOCDATA)
+        //    XML2Array::createArray(IssueBuffer::getOutput(ProjectAnalyzer::TYPE_XML, false), LIBXML_NOCDATA)
         //);
     }
 
@@ -219,11 +220,11 @@ somefile.php:15:6:error - Possibly undefined global variable $a, first seen on l
         $this->assertSame(
             '[]
 ',
-            IssueBuffer::getOutput(ProjectChecker::TYPE_JSON, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_JSON, false)
         );
         $this->assertSame(
             '',
-            IssueBuffer::getOutput(ProjectChecker::TYPE_EMACS, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_EMACS, false)
         );
         $this->assertSame(
             '<?xml version="1.0" encoding="UTF-8"?>
@@ -231,11 +232,11 @@ somefile.php:15:6:error - Possibly undefined global variable $a, first seen on l
   <item/>
 </report>
 ',
-            IssueBuffer::getOutput(ProjectChecker::TYPE_XML, false)
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_XML, false)
         );
 
         ob_start();
-        IssueBuffer::finish($this->project_checker, true, 0);
+        IssueBuffer::finish($this->project_analyzer, true, 0);
         ob_end_clean();
         $this->assertFileExists(__DIR__ . '/test-report.json');
         $this->assertSame('[]

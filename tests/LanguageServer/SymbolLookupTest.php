@@ -2,12 +2,12 @@
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;
 use Psalm\Tests\TestConfig;
-use Psalm\Tests\Provider;
-use Psalm\Provider\Providers;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Internal\Provider\Providers;
 
 class SymbolLookupTest extends \Psalm\Tests\TestCase
 {
@@ -19,31 +19,31 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
-        $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Provider\ParserInstanceCacheProvider(),
+            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->codebase->server_mode = true;
+        $this->project_analyzer->getCodebase()->server_mode = true;
     }
 
     /**
@@ -73,9 +73,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
@@ -110,9 +110,9 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
+        new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
@@ -121,11 +121,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $method_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::foo()');
 
         $this->assertNotNull($method_symbol_location);
-
-        if ($method_symbol_location === null) {
-            throw new \UnexpectedValueException();
-        }
-
         $this->assertSame(10, $method_symbol_location->getLineNumber());
         $this->assertSame(21, $method_symbol_location->getColumn());
 
@@ -133,11 +128,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $property_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::$a');
 
         $this->assertNotNull($property_symbol_location);
-
-        if ($property_symbol_location === null) {
-            throw new \UnexpectedValueException();
-        }
-
         $this->assertSame(6, $property_symbol_location->getLineNumber());
         $this->assertSame(31, $property_symbol_location->getColumn());
 
@@ -145,11 +135,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $constant_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::BANANA');
 
         $this->assertNotNull($constant_symbol_location);
-
-        if ($constant_symbol_location === null) {
-            throw new \UnexpectedValueException();
-        }
-
         $this->assertSame(8, $constant_symbol_location->getLineNumber());
         $this->assertSame(27, $constant_symbol_location->getColumn());
 
@@ -157,11 +142,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $function_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\bar()');
 
         $this->assertNotNull($function_symbol_location);
-
-        if ($function_symbol_location === null) {
-            throw new \UnexpectedValueException();
-        }
-
         $this->assertSame(13, $function_symbol_location->getLineNumber());
         $this->assertSame(17, $function_symbol_location->getColumn());
     }
@@ -171,7 +151,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
      */
     public function testSymbolLookupAfterAlteration()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -199,16 +179,13 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
         $codebase->addTemporaryFileChanges(
             'somefile.php',
-            [
-                new \LanguageServerProtocol\TextDocumentContentChangeEvent(
-                    null,
-                    null,
-                    '<?php
+            '<?php
                 namespace B;
 
                 class A {
@@ -228,21 +205,17 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
                         echo $a;
                     }
                 }'
-                )
-            ]
         );
+
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
 
         $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(10, 30));
 
         $this->assertNotNull($symbol_at_position);
-
-        if ($symbol_at_position === null) {
-            throw new \UnexpectedValueException();
-        }
 
         $this->assertSame('type: int|null', $symbol_at_position[0]);
 
@@ -250,19 +223,11 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($symbol_at_position);
 
-        if ($symbol_at_position === null) {
-            throw new \UnexpectedValueException();
-        }
-
         $this->assertSame('type: int', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(17, 30));
 
         $this->assertNotNull($symbol_at_position);
-
-        if ($symbol_at_position === null) {
-            throw new \UnexpectedValueException();
-        }
 
         $this->assertSame('type: int', $symbol_at_position[0]);
     }

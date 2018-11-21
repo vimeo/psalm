@@ -5,7 +5,7 @@ use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
-use Psalm\Provider\FileProvider;
+use Psalm\Internal\Provider\FileProvider;
 
 class ErrorBaselineTest extends TestCase
 {
@@ -32,22 +32,28 @@ class ErrorBaselineTest extends TestCase
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
-                <MixedAssignment occurrences="2"/>
+                <MixedAssignment occurrences="2">
+                  <code>foo</code>
+                  <code>bar</code>
+                </MixedAssignment>
                 <InvalidReturnStatement occurrences="1"/>
               </file>
               <file src="sample/sample-file2.php">
-                <PossiblyUnusedMethod occurrences="2"/>
+                <PossiblyUnusedMethod occurrences="2">
+                  <code>foo</code>
+                  <code>bar</code>
+                </PossiblyUnusedMethod>
               </file>
             </files>'
         );
 
         $expectedParsedBaseline = [
             'sample/sample-file.php' => [
-                'MixedAssignment' => 2,
-                'InvalidReturnStatement' => 1,
+                'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
+                'InvalidReturnStatement' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [
-                'PossiblyUnusedMethod' => 2,
+                'PossiblyUnusedMethod' => ['o' => 2, 's' => ['foo', 'bar']],
             ],
         ];
 
@@ -114,46 +120,55 @@ class ErrorBaselineTest extends TestCase
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'foo',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'bar',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'bat',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedOperand',
                 'severity' => 'error',
+                'selected_text' => 'bing',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'AssignmentToVoid',
                 'severity' => 'info',
+                'selected_text' => 'bong',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'CircularReference',
                 'severity' => 'suppress',
+                'selected_text' => 'birdy',
             ],
             [
                 'file_name' => 'sample/sample-file2.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'boardy',
             ],
             [
                 'file_name' => 'sample/sample-file2.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'bardy',
             ],
             [
                 'file_name' => 'sample/sample-file2.php',
                 'type' => 'TypeCoercion',
                 'severity' => 'error',
+                'selected_text' => 'hardy' . "\n",
             ],
         ]);
 
@@ -196,7 +211,10 @@ class ErrorBaselineTest extends TestCase
             '<?xml version="1.0" encoding="UTF-8"?>
             <files>
               <file src="sample/sample-file.php">
-                <MixedAssignment occurrences="3"/>
+                <MixedAssignment occurrences="3">
+                    <code>bar</code>
+                    <code>bat</code>
+                </MixedAssignment>
                 <MixedOperand occurrences="1"/>
               </file>
               <file src="sample/sample-file2.php">
@@ -215,26 +233,31 @@ class ErrorBaselineTest extends TestCase
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'foo',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedAssignment',
                 'severity' => 'error',
+                'selected_text' => 'bar',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedOperand',
                 'severity' => 'error',
+                'selected_text' => 'bat',
             ],
             [
                 'file_name' => 'sample/sample-file.php',
                 'type' => 'MixedOperand',
                 'severity' => 'error',
+                'selected_text' => 'bam',
             ],
             [
                 'file_name' => 'sample/sample-file2.php',
                 'type' => 'TypeCoercion',
                 'severity' => 'error',
+                'selected_text' => 'tar',
             ],
         ];
 
@@ -246,11 +269,11 @@ class ErrorBaselineTest extends TestCase
 
         $this->assertEquals([
             'sample/sample-file.php' => [
-                'MixedAssignment' => 2,
-                'MixedOperand' => 1,
+                'MixedAssignment' => ['o' => 2, 's' => ['bar']],
+                'MixedOperand' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [
-                'TypeCoercion' => 1,
+                'TypeCoercion' => ['o' => 1, 's' => []],
             ],
         ], $remainingBaseline);
     }

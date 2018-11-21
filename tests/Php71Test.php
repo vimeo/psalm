@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class Php71Test extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'nullableReturnType' => [
@@ -148,17 +148,14 @@ class Php71Test extends TestCase
                         ["id" => 2, "name" => "Fred"],
                     ];
 
-                    $last_id = null;
-                    $last_name = null;
-
                     // list() style
                     foreach ($data as list("id" => $id, "name" => $name)) {
                         $last_id = $id;
                         $last_name = $name;
                     }',
                 'assertions' => [
-                    '$last_id' => 'int|null',
-                    '$last_name' => 'string|null',
+                    '$last_id' => 'int',
+                    '$last_name' => 'string',
                 ],
             ],
             'arrayDestructuringInForeachWithKeys' => [
@@ -168,17 +165,14 @@ class Php71Test extends TestCase
                         ["id" => 2, "name" => "Fred"],
                     ];
 
-                    $last_id = null;
-                    $last_name = null;
-
                     // [] style
                     foreach ($data as ["id" => $id, "name" => $name]) {
                         $last_id = $id;
                         $last_name = $name;
                     }',
                 'assertions' => [
-                    '$last_id' => 'int|null',
-                    '$last_name' => 'string|null',
+                    '$last_id' => 'int',
+                    '$last_name' => 'string',
                 ],
             ],
             'iterableArg' => [
@@ -237,7 +231,7 @@ class Php71Test extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'invalidPrivateClassConstFetch' => [

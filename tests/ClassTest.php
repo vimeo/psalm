@@ -3,8 +3,8 @@ namespace Psalm\Tests;
 
 class ClassTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return void
@@ -47,7 +47,7 @@ class ClassTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'overrideProtectedAccessLevelToPublic' => [
@@ -295,13 +295,26 @@ class ClassTest extends TestCase
                     '$b' => 'string',
                 ],
             ],
+            'abstractCallToInterfaceMethod' => [
+                '<?php
+                    interface I {
+                        public function fooBar(): array;
+                    }
+
+                    abstract class A implements I
+                    {
+                        public function g(): array {
+                            return $this->fooBar();
+                        }
+                    }',
+            ],
         ];
     }
 
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'undefinedClass' => [

@@ -17,11 +17,6 @@ class TArray extends \Psalm\Type\Atomic
     public $value = 'array';
 
     /**
-     * @var int|null
-     */
-    public $count;
-
-    /**
      * Constructs a new instance of a generic type
      *
      * @param array<int, \Psalm\Type\Union> $type_params
@@ -72,7 +67,11 @@ class TArray extends \Psalm\Type\Atomic
             return false;
         }
 
-        if ($this->count !== $other_type->count) {
+        if ($this instanceof TNonEmptyArray !== $other_type instanceof TNonEmptyArray
+            || ($this instanceof TNonEmptyArray
+                && $other_type instanceof TNonEmptyArray
+                && $this->count !== $other_type->count
+        )) {
             return false;
         }
 

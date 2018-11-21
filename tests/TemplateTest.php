@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class TemplateTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'classTemplate' => [
@@ -23,11 +23,11 @@ class TemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var string */
+                        /** @var class-string */
                         public $T;
 
                         /**
-                         * @param string $T
+                         * @param class-string $T
                          * @template-typeof T $T
                          */
                         public function __construct(string $T) {
@@ -76,6 +76,7 @@ class TemplateTest extends TestCase
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
                     'RedundantConditionGivenDocblockType',
+                    'TypeCoercion'
                 ],
             ],
             'classTemplateSelfs' => [
@@ -84,11 +85,11 @@ class TemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var string */
+                        /** @var class-string */
                         public $T;
 
                         /**
-                         * @param string $T
+                         * @param class-string $T
                          * @template-typeof T $T
                          */
                         public function __construct(string $T) {
@@ -156,11 +157,11 @@ class TemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var string */
+                        /** @var class-string */
                         public $T;
 
                         /**
-                         * @param string $T
+                         * @param class-string $T
                          * @template-typeof T $T
                          */
                         public function __construct(string $T) {
@@ -188,7 +189,7 @@ class TemplateTest extends TestCase
                     '$ffoo' => 'Foo<LogicException>',
                     '$ffoo_bar' => 'LogicException',
                 ],
-                'error_levels' => ['MixedReturnStatement', 'LessSpecificReturnStatement'],
+                'error_levels' => ['MixedReturnStatement', 'LessSpecificReturnStatement', 'TypeCoercion'],
             ],
             'classTemplateContainer' => [
                 '<?php
@@ -731,7 +732,7 @@ class TemplateTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'invalidTemplatedType' => [

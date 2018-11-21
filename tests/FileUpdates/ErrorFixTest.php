@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Provider\Providers;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
-use Psalm\Tests\Provider;
+use Psalm\Tests\Internal\Provider;
 
 class ErrorFixTest extends \Psalm\Tests\TestCase
 {
@@ -16,32 +16,32 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
-        $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();
         $config->throw_exception = false;
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Provider\ParserInstanceCacheProvider(),
+            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -62,9 +62,9 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
         array $error_counts,
         array $error_levels = []
     ) {
-        $this->project_checker->diff_methods = true;
+        $this->project_analyzer->getCodebase()->diff_methods = true;
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $config = $codebase->config;
 
@@ -80,7 +80,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 
@@ -91,7 +91,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $codebase->reloadFiles($this->project_checker, array_keys($middle_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($middle_files));
 
         foreach ($middle_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -99,7 +99,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 
@@ -110,7 +110,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $codebase->reloadFiles($this->project_checker, array_keys($end_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 
         foreach ($end_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -118,7 +118,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->scanFiles();
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
 
@@ -214,6 +214,66 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]
+            ],
+            'traitMethodRename' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bar() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'middle_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bat() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bar() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'error_positions' => [0, 1, 0],
             ],
         ];
     }

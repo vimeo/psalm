@@ -1,27 +1,28 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Context;
+use Psalm\Tests\Internal\Provider;
 
 class FileManipulationTest extends TestCase
 {
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    protected $project_analyzer;
 
     /**
      * @return void
      */
     public function setUp()
     {
-        FileChecker::clearCache();
-        \Psalm\FileManipulation\FunctionDocblockManipulator::clearCache();
+        FileAnalyzer::clearCache();
+        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
     }
 
     /**
-     * @dataProvider providerFileCheckerValidCodeParse
+     * @dataProvider providerValidCodeParse
      *
      * @param string $input_code
      * @param string $output_code
@@ -46,17 +47,17 @@ class FileManipulationTest extends TestCase
 
         $config = new TestConfig();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
         );
 
         if (empty($issues_to_fix)) {
-            $config->addPluginPath('examples/ClassUnqualifier.php');
-            $config->initializePlugins($this->project_checker);
+            $config->addPluginPath('examples/plugins/ClassUnqualifier.php');
+            $config->initializePlugins($this->project_analyzer);
         }
 
         $context = new Context();
@@ -76,8 +77,8 @@ class FileManipulationTest extends TestCase
             $keyed_issues_to_fix[$issue] = true;
         }
 
-        $this->project_checker->setIssuesToFix($keyed_issues_to_fix);
-        $this->project_checker->alterCodeAfterCompletion(
+        $this->project_analyzer->setIssuesToFix($keyed_issues_to_fix);
+        $this->project_analyzer->alterCodeAfterCompletion(
             (int) $php_major_version,
             (int) $php_minor_version,
             false,
@@ -86,14 +87,14 @@ class FileManipulationTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $this->project_checker->getCodebase()->analyzer->updateFile($file_path, false);
-        $this->assertSame($output_code, $this->project_checker->getCodebase()->getFileContents($file_path));
+        $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
+        $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));
     }
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'addMissingVoidReturnType56' => [

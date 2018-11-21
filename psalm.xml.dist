@@ -1,173 +1,158 @@
 <?xml version="1.0"?>
-<psalm
-    name="Psalm for Psalm"
-    useDocblockTypes="true"
-    totallyTyped="true"
-    strictBinaryOperands="false"
-    rememberPropertyAssignmentsAfterCall="true"
-    checkForThrowsDocblock="false"
-    throwExceptionOnError="0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns="https://getpsalm.org/schema/config"
-    xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
->
+<psalm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="https://getpsalm.org/schema/config" name="Psalm for Psalm" useDocblockTypes="true" totallyTyped="true" strictBinaryOperands="false" rememberPropertyAssignmentsAfterCall="true" checkForThrowsDocblock="false" throwExceptionOnError="0" xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd">
     <projectFiles>
-        <directory name="src" />
-        <directory name="tests" />
-        <directory name="examples" />
+        <directory name="src"/>
+        <directory name="tests"/>
+        <directory name="examples"/>
         <ignoreFiles>
-            <file name="src/Psalm/CallMap.php" />
-            <directory name="src/Psalm/Stubs" />
-            <directory name="tests/stubs" />
-            <directory name="tests/DummyProject" />
-            <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php" />
-            <file name="src/Psalm/Traverser/CustomTraverser.php" />
-            <directory name="tests/performance/a.test" />
-            <directory name="tests/performance/b.test" />
-            <file name="tests/ErrorBaselineTest.php" />
+            <file name="src/Psalm/Internal/CallMap.php"/>
+            <directory name="src/Psalm/Internal/Stubs"/>
+            <directory name="tests/stubs"/>
+            <directory name="tests/DummyProject"/>
+            <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php"/>
+            <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
+            <directory name="tests/performance/a.test"/>
+            <directory name="tests/performance/b.test"/>
+            <file name="tests/ErrorBaselineTest.php"/>
         </ignoreFiles>
     </projectFiles>
 
     <ignoreExceptions>
-        <class name="UnexpectedValueException" />
-        <class name="InvalidArgumentException" />
-        <class name="LogicException" />
+        <class name="UnexpectedValueException"/>
+        <class name="InvalidArgumentException"/>
+        <class name="LogicException"/>
     </ignoreExceptions>
 
     <issueHandlers>
-        <MisplacedRequiredParam errorLevel="suppress" />
-        <PossiblyNullOperand errorLevel="suppress" />
+        <MisplacedRequiredParam errorLevel="suppress"/>
+        <PossiblyNullOperand errorLevel="suppress"/>
         <MissingConstructor>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Scanner/FunctionDocblockComment.php" />
-                <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
-                <file name="src/Psalm/Storage/MethodStorage.php" />
-                <file name="src/Psalm/Storage/PropertyStorage.php" />
-                <file name="src/Psalm/Scanner/VarDocblockComment.php" />
+                <file name="src/Psalm/Internal/Scanner/FunctionDocblockComment.php"/>
+                <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php"/>
+                <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
+                <file name="src/Psalm/Storage/MethodStorage.php"/>
+                <file name="src/Psalm/Storage/PropertyStorage.php"/>
+                <file name="src/Psalm/Internal/Scanner/VarDocblockComment.php"/>
+                <file name="src/Psalm/Internal/Scope/CaseScope.php"/>
             </errorLevel>
         </MissingConstructor>
-        <DeprecatedProperty errorLevel="suppress" />
-
-        <LessSpecificReturnType>
-            <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
-            </errorLevel>
-        </LessSpecificReturnType>
+        <DeprecatedProperty errorLevel="suppress"/>
 
         <UnusedParam>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
-                <directory name="examples" />
+                <directory name="examples"/>
             </errorLevel>
         </UnusedParam>
 
         <PossiblyUnusedParam>
             <errorLevel type="suppress">
-                <file name="src/Psalm/Plugin.php" />
-                <directory name="examples" />
+                <directory name="examples"/>
             </errorLevel>
         </PossiblyUnusedParam>
 
         <UnusedClass>
             <errorLevel type="suppress">
-                <directory name="examples" />
-                <directory name="tests" />
+                <directory name="examples"/>
+                <directory name="tests"/>
             </errorLevel>
         </UnusedClass>
 
         <UnusedProperty>
             <errorLevel type="info">
-                <file name="src/Psalm/FileManipulation/FunctionDocblockManipulator.php" />
+                <file name="src/Psalm/Internal/FileManipulation/FunctionDocblockManipulator.php"/>
             </errorLevel>
         </UnusedProperty>
 
         <PossiblyUnusedProperty>
             <errorLevel type="info">
-                <file name="src/Psalm/LanguageServer/LanguageClient.php" />
-                <file name="src/Psalm/Storage/FunctionLikeStorage.php" />
+                <file name="src/Psalm/Internal/LanguageServer/LanguageClient.php"/>
+                <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
+                <file name="src/Psalm/Type/Atomic/TNonEmptyArray.php"/>
             </errorLevel>
         </PossiblyUnusedProperty>
 
-        <MissingThrowsDocblock errorLevel="info" />
+        <MissingThrowsDocblock errorLevel="info"/>
 
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
-                <directory name="tests" />
-                <file name="src/Psalm/Plugin.php" />
-                <file name="src/Psalm/LanguageServer/Client/TextDocument.php" />
-                <file name="src/Psalm/LanguageServer/Server/TextDocument.php" />
-                <referencedMethod name="Psalm\Codebase::getParentInterfaces" />
-                <referencedMethod name="Psalm\Codebase::getMethodParams" />
-                <referencedMethod name="Psalm\Codebase::getMethodReturnType" />
-                <referencedMethod name="Psalm\Codebase::getMethodReturnTypeLocation" />
-                <referencedMethod name="Psalm\Codebase::getDeclaringMethodId" />
-                <referencedMethod name="Psalm\Codebase::getAppearingMethodId" />
-                <referencedMethod name="Psalm\Codebase::getOverriddenMethodIds" />
-                <referencedMethod name="Psalm\Codebase::getCasedMethodId" />
-                <referencedMethod name="Psalm\Codebase::isVariadic" />
-                <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef" />
+                <directory name="tests"/>
+                <directory name="src/Psalm/Plugin"/>
+                <file name="src/Psalm/Internal/LanguageServer/Client/TextDocument.php"/>
+                <file name="src/Psalm/Internal/LanguageServer/Server/TextDocument.php"/>
+                <referencedMethod name="Psalm\Codebase::getParentInterfaces"/>
+                <referencedMethod name="Psalm\Codebase::getMethodParams"/>
+                <referencedMethod name="Psalm\Codebase::getMethodReturnType"/>
+                <referencedMethod name="Psalm\Codebase::getMethodReturnTypeLocation"/>
+                <referencedMethod name="Psalm\Codebase::getDeclaringMethodId"/>
+                <referencedMethod name="Psalm\Codebase::getAppearingMethodId"/>
+                <referencedMethod name="Psalm\Codebase::getOverriddenMethodIds"/>
+                <referencedMethod name="Psalm\Codebase::getCasedMethodId"/>
+                <referencedMethod name="Psalm\Codebase::isVariadic"/>
+                <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef"/>
             </errorLevel>
         </PossiblyUnusedMethod>
 
         <PropertyNotSetInConstructor>
             <errorLevel type="suppress">
-                <directory name="tests" />
-                <file name="src/Psalm/Config.php" />
+                <directory name="tests"/>
+                <file name="src/Psalm/Config.php"/>
             </errorLevel>
         </PropertyNotSetInConstructor>
 
         <MixedArgument>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </MixedArgument>
 
         <MixedOperand>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </MixedOperand>
 
         <MixedPropertyFetch>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </MixedPropertyFetch>
 
         <NoInterfaceProperties>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </NoInterfaceProperties>
 
         <NullArrayAccess>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </NullArrayAccess>
 
         <NullPropertyFetch>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </NullPropertyFetch>
 
         <NullArgument>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </NullArgument>
 
         <PossiblyFalseArgument>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </PossiblyFalseArgument>
 
         <TypeCoercion>
             <errorLevel type="suppress">
-                <directory name="tests" />
+                <directory name="tests"/>
             </errorLevel>
         </TypeCoercion>
     </issueHandlers>
-</psalm>
+<plugins>
+<pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>

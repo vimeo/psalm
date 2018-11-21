@@ -1,14 +1,15 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Tests\Internal\Provider;
 
 class DocumentationTest extends TestCase
 {
-    /** @var \Psalm\Checker\ProjectChecker */
-    protected $project_checker;
+    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    protected $project_analyzer;
 
     /**
      * @return array<string, array<int, string>>
@@ -63,14 +64,14 @@ class DocumentationTest extends TestCase
      */
     public function setUp()
     {
-        FileChecker::clearCache();
-        \Psalm\FileManipulation\FunctionDocblockManipulator::clearCache();
+        FileAnalyzer::clearCache();
+        \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::clearCache();
 
         $this->file_provider = new Provider\FakeFileProvider();
 
-        $this->project_checker = new \Psalm\Checker\ProjectChecker(
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             new TestConfig(),
-            new \Psalm\Provider\Providers(
+            new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
@@ -98,7 +99,7 @@ class DocumentationTest extends TestCase
     }
 
     /**
-     * @dataProvider providerFileCheckerInvalidCodeParse
+     * @dataProvider providerInvalidCodeParse
      * @small
      *
      * @param string $code
@@ -115,11 +116,11 @@ class DocumentationTest extends TestCase
         }
 
         if ($check_references) {
-            $this->project_checker->getCodebase()->reportUnusedCode();
+            $this->project_analyzer->getCodebase()->reportUnusedCode();
         }
 
         foreach ($error_levels as $error_level) {
-            $this->project_checker->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
+            $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
@@ -135,14 +136,14 @@ class DocumentationTest extends TestCase
         $this->analyzeFile($file_path, $context);
 
         if ($check_references) {
-            $this->project_checker->getCodebase()->classlikes->checkClassReferences();
+            $this->project_analyzer->getCodebase()->classlikes->checkClassReferences();
         }
     }
 
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         $invalid_code_data = [];
 

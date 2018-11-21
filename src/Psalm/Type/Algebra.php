@@ -2,8 +2,9 @@
 namespace Psalm\Type;
 
 use PhpParser;
-use Psalm\Checker\Statements\Expression\AssertionFinder;
-use Psalm\Clause;
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 use Psalm\IssueBuffer;
@@ -75,7 +76,8 @@ class Algebra
     public static function getFormula(
         PhpParser\Node\Expr $conditional,
         $this_class_name,
-        FileSource $source
+        FileSource $source,
+        Codebase $codebase = null
     ) {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
@@ -83,13 +85,15 @@ class Algebra
             $left_assertions = self::getFormula(
                 $conditional->left,
                 $this_class_name,
-                $source
+                $source,
+                $codebase
             );
 
             $right_assertions = self::getFormula(
                 $conditional->right,
                 $this_class_name,
-                $source
+                $source,
+                $codebase
             );
 
             return array_merge(
@@ -106,13 +110,15 @@ class Algebra
             $left_clauses = self::getFormula(
                 $conditional->left,
                 $this_class_name,
-                $source
+                $source,
+                $codebase
             );
 
             $right_clauses = self::getFormula(
                 $conditional->right,
                 $this_class_name,
-                $source
+                $source,
+                $codebase
             );
 
             return self::combineOredClauses($left_clauses, $right_clauses);
@@ -121,7 +127,8 @@ class Algebra
         AssertionFinder::scrapeAssertions(
             $conditional,
             $this_class_name,
-            $source
+            $source,
+            $codebase
         );
 
         if (isset($conditional->assertions) && $conditional->assertions) {
@@ -135,10 +142,10 @@ class Algebra
                         [$var => $orred_types],
                         false,
                         true,
-                        $orred_types[0][0] === '^'
+                        $orred_types[0][0] === '='
                             || $orred_types[0][0] === '~'
                             || (strlen($orred_types[0]) > 1
-                                && ($orred_types[0][1] === '^'
+                                && ($orred_types[0][1] === '='
                                     || $orred_types[0][1] === '~'))
                     );
                 }
@@ -518,8 +525,8 @@ class Algebra
             $impossibility = [];
 
             foreach ($possiblity as $type) {
-                if (($type[0] !== '^' && $type[0] !== '~'
-                        && (!isset($type[1]) || ($type[1] !== '^' && $type[1] !== '~')))
+                if (($type[0] !== '=' && $type[0] !== '~'
+                        && (!isset($type[1]) || ($type[1] !== '=' && $type[1] !== '~')))
                     || strpos($type, '(')
                     || strpos($type, 'getclass-')
                 ) {

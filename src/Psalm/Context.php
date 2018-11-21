@@ -2,7 +2,8 @@
 namespace Psalm;
 
 use PhpParser;
-use Psalm\Checker\StatementsChecker;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -178,7 +179,7 @@ class Context
     /**
      * A list of variables that have been passed by reference (where we know their type)
      *
-     * @var array<string, \Psalm\ReferenceConstraint>|null
+     * @var array<string, \Psalm\Internal\ReferenceConstraint>|null
      */
     public $byref_constraints;
 
@@ -245,14 +246,14 @@ class Context
     public $inside_loop = false;
 
     /**
-     * @var Scope\LoopScope|null
+     * @var Internal\Scope\LoopScope|null
      */
     public $loop_scope = null;
 
     /**
-     * @var Scope\SwitchScope|null
+     * @var Internal\Scope\CaseScope|null
      */
-    public $switch_scope = null;
+    public $case_scope = null;
 
     /**
      * @var bool
@@ -474,7 +475,7 @@ class Context
      * @param  string                 $remove_var_id
      * @param  Clause[]               $clauses
      * @param  Union|null             $new_type
-     * @param  StatementsChecker|null $statements_checker
+     * @param  StatementsAnalyzer|null $statements_analyzer
      *
      * @return array<int, Clause>
      */
@@ -482,7 +483,7 @@ class Context
         $remove_var_id,
         array $clauses,
         Union $new_type = null,
-        StatementsChecker $statements_checker = null
+        StatementsAnalyzer $statements_analyzer = null
     ) {
         $new_type_string = $new_type ? $new_type->getId() : '';
 
@@ -503,7 +504,7 @@ class Context
                 $clause->possibilities[$remove_var_id] === [$new_type_string]
             ) {
                 $clauses_to_keep[] = $clause;
-            } elseif ($statements_checker &&
+            } elseif ($statements_analyzer &&
                 $new_type &&
                 !$new_type->isMixed()
             ) {
@@ -524,7 +525,7 @@ class Context
                         $type,
                         clone $new_type,
                         null,
-                        $statements_checker,
+                        $statements_analyzer,
                         null,
                         [],
                         $failed_reconciliation
@@ -548,16 +549,16 @@ class Context
     /**
      * @param  string               $remove_var_id
      * @param  Union|null           $new_type
-     * @param  null|StatementsChecker   $statements_checker
+     * @param  null|StatementsAnalyzer   $statements_analyzer
      *
      * @return void
      */
     public function removeVarFromConflictingClauses(
         $remove_var_id,
         Union $new_type = null,
-        StatementsChecker $statements_checker = null
+        StatementsAnalyzer $statements_analyzer = null
     ) {
-        $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_checker);
+        $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
 
         if ($this->parent_context) {
             $this->parent_context->removeVarFromConflictingClauses($remove_var_id);
@@ -568,7 +569,7 @@ class Context
      * @param  string                 $remove_var_id
      * @param  \Psalm\Type\Union|null $existing_type
      * @param  \Psalm\Type\Union|null $new_type
-     * @param  null|StatementsChecker     $statements_checker
+     * @param  null|StatementsAnalyzer     $statements_analyzer
      *
      * @return void
      */
@@ -576,7 +577,7 @@ class Context
         $remove_var_id,
         Union $existing_type = null,
         Union $new_type = null,
-        StatementsChecker $statements_checker = null
+        StatementsAnalyzer $statements_analyzer = null
     ) {
         if (!$existing_type && isset($this->vars_in_scope[$remove_var_id])) {
             $existing_type = $this->vars_in_scope[$remove_var_id];
@@ -593,7 +594,7 @@ class Context
                     || ($new_type && $existing_type->from_docblock !== $new_type->from_docblock)
                     ? null
                     : $new_type,
-                $statements_checker
+                $statements_analyzer
             );
         }
 
@@ -680,7 +681,7 @@ class Context
      *
      * @return bool
      */
-    public function hasVariable($var_name, StatementsChecker $statements_checker = null)
+    public function hasVariable($var_name, StatementsAnalyzer $statements_analyzer = null)
     {
         if (!$var_name ||
             (!isset($this->vars_possibly_in_scope[$var_name]) &&
@@ -694,9 +695,9 @@ class Context
         if ($stripped_var[0] === '$' && ($stripped_var !== '$this' || $var_name !== $stripped_var)) {
             $this->referenced_var_ids[$var_name] = true;
 
-            if ($this->collect_references && $statements_checker) {
+            if ($this->collect_references && $statements_analyzer) {
                 if (isset($this->unreferenced_vars[$var_name])) {
-                    $statements_checker->registerVariableUses($this->unreferenced_vars[$var_name]);
+                    $statements_analyzer->registerVariableUses($this->unreferenced_vars[$var_name]);
                 }
 
                 unset($this->unreferenced_vars[$var_name]);

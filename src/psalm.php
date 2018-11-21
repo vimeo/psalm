@@ -2,7 +2,8 @@
 require_once('command_functions.php');
 
 use Psalm\ErrorBaseline;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\IssueBuffer;
 
@@ -35,6 +36,7 @@ $valid_long_options = [
     'init',
     'monochrome',
     'no-cache',
+    'no-reflection-cache',
     'output-format:',
     'plugin:',
     'report:',
@@ -48,6 +50,9 @@ $valid_long_options = [
     'use-ini-defaults',
     'version',
 ];
+
+gc_collect_cycles();
+gc_disable();
 
 $args = array_slice($argv, 1);
 
@@ -182,6 +187,10 @@ Options:
     --no-cache
         Runs Psalm without using cache
 
+    --no-reflection-cache
+        Runs Psalm without using cached representations of unchanged classes and files.
+        Useful if you want the afterClassLikeVisit plugin hook to run every time you visit a file.
+
     --plugin=PATH
         Executes a plugin, an alternative to using the Psalm config
 
@@ -241,7 +250,7 @@ if (array_key_exists('v', $options)) {
 
 $threads = isset($options['threads']) ? (int)$options['threads'] : 1;
 
-$ini_handler = new \Psalm\Fork\PsalmRestarter('PSALM');
+$ini_handler = new \Psalm\Internal\Fork\PsalmRestarter('PSALM');
 
 if (isset($options['disable-extension'])) {
     if (is_array($options['disable-extension'])) {
@@ -353,7 +362,7 @@ if (isset($options['i'])) {
 
 $output_format = isset($options['output-format']) && is_string($options['output-format'])
     ? $options['output-format']
-    : ProjectChecker::TYPE_CONSOLE;
+    : ProjectAnalyzer::TYPE_CONSOLE;
 
 $paths_to_check = getPathsToCheck(isset($options['f']) ? $options['f'] : null);
 
@@ -420,20 +429,30 @@ if (isset($options['clear-global-cache'])) {
 $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
 if (isset($options['no-cache'])) {
-    $providers = new Psalm\Provider\Providers(
-        new Psalm\Provider\FileProvider
+    $providers = new Provider\Providers(
+        new Provider\FileProvider
     );
 } else {
-    $providers = new Psalm\Provider\Providers(
-        new Psalm\Provider\FileProvider,
-        new Psalm\Provider\ParserCacheProvider($config),
-        new Psalm\Provider\FileStorageCacheProvider($config),
-        new Psalm\Provider\ClassLikeStorageCacheProvider($config),
-        new Psalm\Provider\FileReferenceCacheProvider($config)
+    $no_reflection_cache = isset($options['no-reflection-cache']);
+
+    $file_storage_cache_provider = $no_reflection_cache
+        ? null
+        : new Provider\FileStorageCacheProvider($config);
+
+    $classlike_storage_cache_provider = $no_reflection_cache
+        ? null
+        : new Provider\ClassLikeStorageCacheProvider($config);
+
+    $providers = new Provider\Providers(
+        new Provider\FileProvider,
+        new Provider\ParserCacheProvider($config),
+        $file_storage_cache_provider,
+        $classlike_storage_cache_provider,
+        new Provider\FileReferenceCacheProvider($config)
     );
 }
 
-$project_checker = new ProjectChecker(
+$project_analyzer = new ProjectAnalyzer(
     $config,
     $providers,
     !array_key_exists('m', $options),
@@ -445,11 +464,11 @@ $project_checker = new ProjectChecker(
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
 
-$project_checker->diff_methods = isset($options['diff-methods']);
+$project_analyzer->getCodebase()->diff_methods = isset($options['diff-methods']);
 
 $start_time = microtime(true);
 
-$config->visitComposerAutoloadFiles($project_checker, $debug);
+$config->visitComposerAutoloadFiles($project_analyzer, $debug);
 
 $now_time = microtime(true);
 
@@ -458,19 +477,19 @@ if ($debug) {
 }
 
 if (array_key_exists('debug-by-line', $options)) {
-    $project_checker->debug_lines = true;
+    $project_analyzer->debug_lines = true;
 }
 
 if ($find_dead_code || $find_references_to !== null) {
-    $project_checker->getCodebase()->collectReferences();
+    $project_analyzer->getCodebase()->collectReferences();
 
     if ($find_references_to) {
-        $project_checker->show_issues = false;
+        $project_analyzer->show_issues = false;
     }
 }
 
 if ($find_dead_code) {
-    $project_checker->getCodebase()->reportUnusedCode();
+    $project_analyzer->getCodebase()->reportUnusedCode();
 }
 
 /** @var string $plugin_path */
@@ -479,20 +498,20 @@ foreach ($plugins as $plugin_path) {
 }
 
 if ($paths_to_check === null) {
-    $project_checker->check($current_dir, $is_diff);
+    $project_analyzer->check($current_dir, $is_diff);
 } elseif ($paths_to_check) {
-    $project_checker->checkPaths($paths_to_check);
+    $project_analyzer->checkPaths($paths_to_check);
 }
 
 if ($find_references_to) {
-    $project_checker->findReferencesTo($find_references_to);
+    $project_analyzer->findReferencesTo($find_references_to);
 } elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
     if ($threads > 1) {
-        if ($output_format === ProjectChecker::TYPE_CONSOLE) {
+        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;
         }
     } else {
-        $project_checker->checkClassReferences();
+        $project_analyzer->checkClassReferences();
     }
 }
 
@@ -500,7 +519,7 @@ if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
     echo 'Writing error baseline to file...', PHP_EOL;
 
     ErrorBaseline::create(
-        new \Psalm\Provider\FileProvider,
+        new \Psalm\Internal\Provider\FileProvider,
         $options['set-baseline'],
         IssueBuffer::getIssuesData()
     );
@@ -555,7 +574,7 @@ if (isset($options['update-baseline'])) {
 
     try {
         $issue_baseline = ErrorBaseline::update(
-            new \Psalm\Provider\FileProvider,
+            new \Psalm\Internal\Provider\FileProvider,
             $baselineFile,
             IssueBuffer::getIssuesData()
         );
@@ -567,7 +586,7 @@ if (isset($options['update-baseline'])) {
 if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-baseline'])) {
     try {
         $issue_baseline = ErrorBaseline::read(
-            new \Psalm\Provider\FileProvider,
+            new \Psalm\Internal\Provider\FileProvider,
             (string)Config::getInstance()->error_baseline
         );
     } catch (\Psalm\Exception\ConfigException $exception) {
@@ -576,7 +595,7 @@ if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-bas
 }
 
 IssueBuffer::finish(
-    $project_checker,
+    $project_analyzer,
     !$paths_to_check,
     $start_time,
     isset($options['stats']),

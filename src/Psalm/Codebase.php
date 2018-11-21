@@ -3,17 +3,17 @@ namespace Psalm;
 
 use LanguageServerProtocol\{Position, Range};
 use PhpParser;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Provider\ClassLikeStorageProvider;
-use Psalm\Provider\FileProvider;
-use Psalm\Provider\FileReferenceProvider;
-use Psalm\Provider\FileStorageProvider;
-use Psalm\Provider\Providers;
-use Psalm\Provider\StatementsProvider;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Checker\ClassLikeChecker;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 class Codebase
 {
@@ -98,42 +98,42 @@ class Codebase
     public $find_unused_code = false;
 
     /**
-     * @var Codebase\Reflection
+     * @var Internal\Codebase\Reflection
      */
     private $reflection;
 
     /**
-     * @var Codebase\Scanner
+     * @var Internal\Codebase\Scanner
      */
     public $scanner;
 
     /**
-     * @var Codebase\Analyzer
+     * @var Internal\Codebase\Analyzer
      */
     public $analyzer;
 
     /**
-     * @var Codebase\Functions
+     * @var Internal\Codebase\Functions
      */
     public $functions;
 
     /**
-     * @var Codebase\ClassLikes
+     * @var Internal\Codebase\ClassLikes
      */
     public $classlikes;
 
     /**
-     * @var Codebase\Methods
+     * @var Internal\Codebase\Methods
      */
     public $methods;
 
     /**
-     * @var Codebase\Properties
+     * @var Internal\Codebase\Properties
      */
     public $properties;
 
     /**
-     * @var Codebase\Populator
+     * @var Internal\Codebase\Populator
      */
     public $populator;
 
@@ -141,6 +141,23 @@ class Codebase
      * @var bool
      */
     public $server_mode = false;
+
+    /**
+     * Whether or not to infer types from usage. Computationally expensive, so turned off by default
+     *
+     * @var bool
+     */
+    public $infer_types_from_usage = false;
+
+    /**
+     * @var bool
+     */
+    public $alter_code = false;
+
+    /**
+     * @var bool
+     */
+    public $diff_methods = false;
 
     /**
      * @param bool $collect_references
@@ -162,9 +179,9 @@ class Codebase
 
         self::$stubbed_constants = [];
 
-        $this->reflection = new Codebase\Reflection($providers->classlike_storage_provider, $this);
+        $this->reflection = new Internal\Codebase\Reflection($providers->classlike_storage_provider, $this);
 
-        $this->scanner = new Codebase\Scanner(
+        $this->scanner = new Internal\Codebase\Scanner(
             $this,
             $config,
             $providers->file_storage_provider,
@@ -176,24 +193,24 @@ class Codebase
 
         $this->loadAnalyzer();
 
-        $this->functions = new Codebase\Functions($providers->file_storage_provider, $this->reflection);
-        $this->methods = new Codebase\Methods(
+        $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $this->reflection);
+        $this->methods = new Internal\Codebase\Methods(
             $config,
             $providers->classlike_storage_provider,
             $providers->file_reference_provider
         );
-        $this->properties = new Codebase\Properties(
+        $this->properties = new Internal\Codebase\Properties(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider
         );
 
-        $this->classlikes = new Codebase\ClassLikes(
+        $this->classlikes = new Internal\Codebase\ClassLikes(
             $this->config,
             $providers->classlike_storage_provider,
             $this->scanner,
             $this->methods
         );
-        $this->populator = new Codebase\Populator(
+        $this->populator = new Internal\Codebase\Populator(
             $config,
             $providers->classlike_storage_provider,
             $providers->file_storage_provider,
@@ -210,7 +227,7 @@ class Codebase
      */
     private function loadAnalyzer()
     {
-        $this->analyzer = new Codebase\Analyzer(
+        $this->analyzer = new Internal\Codebase\Analyzer(
             $this->config,
             $this->file_provider,
             $this->file_storage_provider,
@@ -223,11 +240,11 @@ class Codebase
      *
      * @return void
      */
-    public function reloadFiles(ProjectChecker $project_checker, array $candidate_files)
+    public function reloadFiles(ProjectAnalyzer $project_analyzer, array $candidate_files)
     {
         $this->loadAnalyzer();
 
-        $project_checker->file_reference_provider->loadReferenceCache();
+        $this->file_reference_provider->loadReferenceCache();
 
         if (!$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -245,7 +262,7 @@ class Codebase
             }
         }
 
-        $referenced_files = $project_checker->getReferencedFilesFromDiff($diff_files, false);
+        $referenced_files = $project_analyzer->getReferencedFilesFromDiff($diff_files, false);
 
         foreach ($diff_files as $diff_file_path) {
             $this->invalidateInformationForFile($diff_file_path);
@@ -272,7 +289,7 @@ class Codebase
         $this->scanner->addFilesToDeepScan($referenced_files);
         $this->scanner->scanFiles($this->classlikes);
 
-        $project_checker->file_reference_provider->updateReferenceCache($this, $referenced_files);
+        $this->file_reference_provider->updateReferenceCache($this, $referenced_files);
 
         $this->populator->populateCodebase($this);
     }
@@ -782,7 +799,7 @@ class Codebase
      *
      * @return void
      */
-    private function invalidateInformationForFile(string $file_path)
+    public function invalidateInformationForFile(string $file_path)
     {
         $this->scanner->removeFile($file_path);
 
@@ -939,6 +956,12 @@ class Codebase
      */
     public function getReferenceAtPosition(string $file_path, Position $position)
     {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+        }
+
         $file_contents = $this->getFileContents($file_path);
 
         $offset = $position->toOffset($file_contents);
@@ -1001,6 +1024,12 @@ class Codebase
      */
     public function getCompletionDataAtPosition(string $file_path, Position $position)
     {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new \Psalm\Exception\UnanalyzedFileException($file_path . ' is not open');
+        }
+
         $file_contents = $this->getFileContents($file_path);
 
         $offset = $position->toOffset($file_contents);
@@ -1012,8 +1041,6 @@ class Codebase
         }
 
         $recent_type = null;
-        $start_pos = null;
-        $end_pos = null;
 
         krsort($type_map);
 
@@ -1035,8 +1062,6 @@ class Codebase
 
         if (!$recent_type
             || $recent_type === 'mixed'
-            || $end_pos === null
-            || $start_pos === null
         ) {
             return null;
         }
@@ -1056,17 +1081,11 @@ class Codebase
     }
 
     /**
-     * @param \LanguageServerProtocol\TextDocumentContentChangeEvent[] $changes
      * @return void
      */
-    public function addTemporaryFileChanges(string $file_path, array $changes)
+    public function addTemporaryFileChanges(string $file_path, string $new_content)
     {
-        $this->file_provider->addTemporaryFileChanges($file_path, $changes);
-        $this->invalidateInformationForFile($file_path);
-
-        $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
-        $this->scanner->scanFiles($this->classlikes);
-        $this->populator->populateCodebase($this);
+        $this->file_provider->addTemporaryFileChanges($file_path, $new_content);
     }
 
     /**
@@ -1074,10 +1093,6 @@ class Codebase
      */
     public function removeTemporaryFileChanges(string $file_path)
     {
-        $this->file_provider->openFile($file_path);
-        $this->invalidateInformationForFile($file_path);
-        $this->scanner->addFilesToDeepScan([$file_path => $file_path]);
-        $this->scanner->scanFiles($this->classlikes);
-        $this->populator->populateCodebase($this);
+        $this->file_provider->removeTemporaryFileChanges($file_path);
     }
 }

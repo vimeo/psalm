@@ -2,12 +2,12 @@
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;
 use Psalm\Tests\TestConfig;
-use Psalm\Tests\Provider;
-use Psalm\Provider\Providers;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Internal\Provider\Providers;
 
 class CompletionTest extends \Psalm\Tests\TestCase
 {
@@ -18,31 +18,31 @@ class CompletionTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
-        $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Provider\ParserInstanceCacheProvider(),
+            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->codebase->server_mode = true;
+        $this->project_analyzer->getCodebase()->server_mode = true;
     }
 
     /**
@@ -50,7 +50,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
      */
     public function testCompletionOnThisWithNoAssignment()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -69,6 +69,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
@@ -80,7 +81,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
      */
     public function testCompletionOnThisWithAssignmentBelow()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -101,6 +102,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
@@ -112,7 +114,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
      */
     public function testCompletionOnThisWithIfBelow()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -133,16 +135,13 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
         $codebase->addTemporaryFileChanges(
             'somefile.php',
-            [
-                new \LanguageServerProtocol\TextDocumentContentChangeEvent(
-                    null,
-                    null,
-                    '<?php
+            '<?php
                 namespace B;
 
                 class A {
@@ -155,13 +154,12 @@ class CompletionTest extends \Psalm\Tests\TestCase
                         if(rand(0, 1)) {}
                     }
                 }'
-                )
-            ]
         );
+        $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
 
         $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));
     }
@@ -171,7 +169,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
      */
     public function testCompletionOnThisProperty()
     {
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
@@ -198,8 +196,9 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
+        $codebase->file_provider->openFile('somefile.php');
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 

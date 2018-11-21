@@ -1,11 +1,11 @@
 <?php
 namespace Psalm\Tests\FileUpdates;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\ProjectChecker;
-use Psalm\Provider\Providers;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
-use Psalm\Tests\Provider;
+use Psalm\Tests\Internal\Provider;
 
 class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 {
@@ -16,31 +16,31 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
     {
         parent::setUp();
 
-        FileChecker::clearCache();
+        FileAnalyzer::clearCache();
 
-        $this->file_provider = new \Psalm\Tests\Provider\FakeFileProvider();
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
 
         $config = new TestConfig();
 
         $providers = new Providers(
             $this->file_provider,
-            new \Psalm\Tests\Provider\ParserInstanceCacheProvider(),
+            new \Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider(),
             null,
             null,
             new Provider\FakeFileReferenceCacheProvider()
         );
 
-        $this->project_checker = new ProjectChecker(
+        $this->project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
             false,
             true,
-            ProjectChecker::TYPE_CONSOLE,
+            ProjectAnalyzer::TYPE_CONSOLE,
             1,
             false
         );
 
-        $this->project_checker->infer_types_from_usage = true;
+        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**
@@ -56,9 +56,9 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         string $error_message,
         array $error_levels = []
     ) {
-        $this->project_checker->diff_methods = true;
+        $this->project_analyzer->getCodebase()->diff_methods = true;
 
-        $codebase = $this->project_checker->getCodebase();
+        $codebase = $this->project_analyzer->getCodebase();
 
         $config = $codebase->config;
 
@@ -73,7 +73,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                 $this->file_provider->registerFile($file_path, $contents);
             }
 
-            $codebase->reloadFiles($this->project_checker, array_keys($files));
+            $codebase->reloadFiles($this->project_analyzer, array_keys($files));
 
             foreach ($files as $file_path => $contents) {
                 $this->file_provider->registerFile($file_path, $contents);
@@ -82,14 +82,14 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
             $codebase->scanFiles();
 
-            $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+            $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
         }
 
         foreach ($end_files as $file_path => $contents) {
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $codebase->reloadFiles($this->project_checker, array_keys($end_files));
+        $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 
         foreach ($end_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
@@ -100,7 +100,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
 
-        $codebase->analyzer->analyzeFiles($this->project_checker, 1, false);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
     }
 
     /**

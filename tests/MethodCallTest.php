@@ -3,13 +3,13 @@ namespace Psalm\Tests;
 
 class MethodCallTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'notInCallMapTest' => [
@@ -193,13 +193,22 @@ class MethodCallTest extends TestCase
                         return $type->getName();
                     }'
             ],
+            'PDOMethod' => [
+                '<?php
+                    function md5_and_reverse(string $string) : string {
+                        return strrev(md5($string));
+                    }
+
+                    $db = new PDO("sqlite:sqlitedb");
+                    $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
+            ],
         ];
     }
 
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'staticInvocation' => [
@@ -289,7 +298,7 @@ class MethodCallTest extends TestCase
 
                     class NullableBug {
                         /**
-                         * @param string $className
+                         * @param class-string|null $className
                          * @return object|null
                          */
                         public static function mock($className) {
@@ -305,7 +314,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement'],
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'TypeCoercion'],
             ],
             'undefinedVariableStaticCall' => [
                 '<?php
@@ -320,6 +329,7 @@ class MethodCallTest extends TestCase
                         }
                     }
                     $foo = "A";
+                    /** @psalm-suppress InvalidStringClass */
                     $b = $foo::bar();',
                 'error_message' => 'MixedAssignment',
             ],

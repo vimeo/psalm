@@ -1,10 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Checker\FileChecker;
-use Psalm\Checker\StatementsChecker;
-use Psalm\Checker\TypeChecker;
-use Psalm\Clause;
+use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Context;
 use Psalm\Type;
 use Psalm\Type\Algebra;
@@ -12,14 +12,14 @@ use Psalm\Type\Reconciler;
 
 class TypeReconciliationTest extends TestCase
 {
-    use Traits\FileCheckerInvalidCodeParseTestTrait;
-    use Traits\FileCheckerValidCodeParseTestTrait;
+    use Traits\InvalidCodeAnalysisTestTrait;
+    use Traits\ValidCodeAnalysisTestTrait;
 
-    /** @var FileChecker */
-    protected $file_checker;
+    /** @var FileAnalyzer */
+    protected $file_analyzer;
 
-    /** @var StatementsChecker */
-    protected $statements_checker;
+    /** @var StatementsAnalyzer */
+    protected $statements_analyzer;
 
     /**
      * @return void
@@ -28,9 +28,9 @@ class TypeReconciliationTest extends TestCase
     {
         parent::setUp();
 
-        $this->file_checker = new FileChecker($this->project_checker, 'somefile.php', 'somefile.php');
-        $this->file_checker->context = new Context();
-        $this->statements_checker = new StatementsChecker($this->file_checker);
+        $this->file_analyzer = new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
+        $this->file_analyzer->context = new Context();
+        $this->statements_analyzer = new StatementsAnalyzer($this->file_analyzer);
     }
 
     /**
@@ -48,7 +48,7 @@ class TypeReconciliationTest extends TestCase
             $type,
             Type::parseString($string),
             null,
-            $this->statements_checker
+            $this->statements_analyzer
         );
 
         $this->assertSame(
@@ -72,8 +72,8 @@ class TypeReconciliationTest extends TestCase
     public function testTypeIsContainedBy($input, $container)
     {
         $this->assertTrue(
-            TypeChecker::isContainedBy(
-                $this->project_checker->codebase,
+            TypeAnalyzer::isContainedBy(
+                $this->project_analyzer->getCodebase(),
                 Type::parseString($input),
                 Type::parseString($container)
             )
@@ -250,7 +250,7 @@ class TypeReconciliationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerValidCodeParse()
+    public function providerValidCodeParse()
     {
         return [
             'intIsMixed' => [
@@ -413,6 +413,8 @@ class TypeReconciliationTest extends TestCase
                     /** @return void */
                     function fooFoo(string $a) {
                         if (is_numeric($a)) { }
+
+                        if (is_numeric($a) && $a === "1") { }
                     }
 
                     $b = rand(0, 1) ? 5 : false;
@@ -859,9 +861,34 @@ class TypeReconciliationTest extends TestCase
                 '<?php
                     function foo(int $i) : void {
                         if ($i == "5") {}
+                        if ("5" == $i) {}
+                        if ($i == 5.0) {}
+                        if (5.0 == $i) {}
+                        if ($i == 0) {}
+                        if (0 == $i) {}
+                        if ($i == 0.0) {}
+                        if (0.0 == $i) {}
                     }
-                    function bar(float $f) : void {
-                      if ($f == 0) {}
+                    function foo(float $i) : void {
+                        $i = $i / 100.0;
+                        if ($i == "5") {}
+                        if ("5" == $i) {}
+                        if ($i == 5) {}
+                        if (5 == $i) {}
+                        if ($i == "0") {}
+                        if ("0" == $i) {}
+                        if ($i == 0) {}
+                        if (0 == $i) {}
+                    }
+                    function foo(string $i) : void {
+                        if ($i == 5) {}
+                        if (5 == $i) {}
+                        if ($i == 5.0) {}
+                        if (5.0 == $i) {}
+                        if ($i == 0) {}
+                        if (0 == $i) {}
+                        if ($i == 0.0) {}
+                        if (0.0 == $i) {}
                     }',
             ],
             'filterSubclassBasedOnParentInstanceof' => [
@@ -1072,7 +1099,7 @@ class TypeReconciliationTest extends TestCase
     /**
      * @return array
      */
-    public function providerFileCheckerInvalidCodeParse()
+    public function providerInvalidCodeParse()
     {
         return [
             'makeNonNullableNull' => [
@@ -1285,6 +1312,20 @@ class TypeReconciliationTest extends TestCase
                         return (object) ["a" => 1, "b" => 2];
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'preventStrongEqualityScalarType' => [
+                '<?php
+                    function bar(float $f) : void {
+                        if ($f === 0) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'preventYodaStrongEqualityScalarType' => [
+                '<?php
+                    function bar(float $f) : void {
+                        if (0 === $f) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
