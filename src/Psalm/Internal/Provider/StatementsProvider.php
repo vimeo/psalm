@@ -147,7 +147,7 @@ class StatementsProvider
                 $file_changes
             );
 
-            if ($existing_file_contents && $existing_statements && $existing_statements[0] instanceof PhpParser\Node\Stmt) {
+            if ($existing_file_contents && $existing_statements) {
                 list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
                     = \Psalm\Internal\Diff\FileStatementsDiffer::diff(
                         $existing_statements,
