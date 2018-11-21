@@ -479,12 +479,12 @@ class ForeachAnalyzer
                 return;
             }
 
-            if ($codebase->classImplements(
-                $iterator_atomic_type->value,
-                'IteratorAggregate'
-            ) ||
-                (
-                    $codebase->interfaceExists($iterator_atomic_type->value)
+            if (strtolower($iterator_atomic_type->value) === 'iteratoraggregate'
+                || $codebase->classImplements(
+                    $iterator_atomic_type->value,
+                    'IteratorAggregate'
+                )
+                || ($codebase->interfaceExists($iterator_atomic_type->value)
                     && $codebase->interfaceExtends(
                         $iterator_atomic_type->value,
                         'IteratorAggregate'
