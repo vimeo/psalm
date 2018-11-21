@@ -102,6 +102,10 @@ class StatementsProvider
 
             $existing_statements = $this->parser_cache_provider->loadExistingStatementsFromCache($file_path);
 
+            if ($existing_statements && !$existing_statements[0] instanceof PhpParser\Node\Stmt) {
+                $existing_statements = null;
+            }
+
             $existing_file_contents = $this->parser_cache_provider->loadExistingFileContentsFromCache($file_path);
 
             // this happens after editing temporary file
@@ -143,7 +147,7 @@ class StatementsProvider
                 $file_changes
             );
 
-            if ($existing_file_contents && $existing_statements) {
+            if ($existing_file_contents && $existing_statements && $existing_statements[0] instanceof PhpParser\Node\Stmt) {
                 list($unchanged_members, $unchanged_signature_members, $changed_members, $diff_map)
                     = \Psalm\Internal\Diff\FileStatementsDiffer::diff(
                         $existing_statements,

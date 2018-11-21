@@ -108,6 +108,7 @@ class ClassLikeStorageCacheProvider
     /**
      * @param  string  $fq_classlike_name_lc
      * @param  string|null  $file_path
+     * @psalm-suppress MixedAssignment
      *
      * @return ClassLikeStorage|null
      */
@@ -117,11 +118,22 @@ class ClassLikeStorageCacheProvider
 
         if (file_exists($cache_location)) {
             if ($this->config->use_igbinary) {
-                /** @var ClassLikeStorage */
-                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+                $storage = igbinary_unserialize((string)file_get_contents($cache_location));
+
+                if ($storage instanceof ClassLikeStorage) {
+                    return $storage;
+                }
+
+                return null;
             }
-            /** @var ClassLikeStorage */
-            return unserialize((string)file_get_contents($cache_location)) ?: null;
+
+            $storage = unserialize((string)file_get_contents($cache_location));
+
+            if ($storage instanceof ClassLikeStorage) {
+                return $storage;
+            }
+
+            return null;
         }
 
         return null;

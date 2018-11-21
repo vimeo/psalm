@@ -122,6 +122,7 @@ class FileStorageCacheProvider
 
     /**
      * @param  string  $file_path
+     * @psalm-suppress MixedAssignment
      *
      * @return FileStorage|null
      */
@@ -131,11 +132,22 @@ class FileStorageCacheProvider
 
         if (file_exists($cache_location)) {
             if ($this->config->use_igbinary) {
-                /** @var FileStorage */
-                return igbinary_unserialize((string)file_get_contents($cache_location)) ?: null;
+                $storage = igbinary_unserialize((string)file_get_contents($cache_location));
+
+                if ($storage instanceof FileStorage) {
+                    return $storage;
+                }
+
+                return null;
             }
-            /** @var FileStorage */
-            return unserialize((string)file_get_contents($cache_location)) ?: null;
+
+            $storage = unserialize((string)file_get_contents($cache_location));
+
+            if ($storage instanceof FileStorage) {
+                return $storage;
+            }
+
+            return null;
         }
 
         return null;
