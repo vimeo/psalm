@@ -1075,7 +1075,7 @@ class Codebase
     {
         $file_contents = substr($file_contents, 0, $offset);
         return new Position(
-            substr_count("\n", $file_contents),
+            substr_count($file_contents, "\n"),
             $offset - (int)strrpos($file_contents, "\n", strlen($file_contents))
         );
     }
