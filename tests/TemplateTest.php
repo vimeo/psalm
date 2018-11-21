@@ -809,7 +809,67 @@ class TemplateTest extends TestCase
                     function fNoRef(array $_arr) {
                         return array_shift($_arr);
                     }',
-            ]
+            ],
+            'templatedInterfaceIteration' => [
+                '<?php
+                    namespace NS;
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    interface ICollection extends \IteratorAggregate {
+                        /** @return \Traversable<TKey,TValue> */
+                        public function getIterator();
+                    }
+
+                    class Collection implements ICollection {
+                        /** @var array */
+                        private $data;
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+                        /** @psalm-suppress LessSpecificImplementedReturnType */
+                        public function getIterator(): \Traversable {
+                            return new \ArrayIterator($this->data);
+                        }
+                    }
+
+                    /** @var ICollection<string, int> */
+                    $c = new Collection(["a" => 1]);
+
+                    foreach ($c as $k => $v) { atan($v); strlen($k); }'
+            ],
+            'templatedInterfaceGetIteratorIteration' => [
+                '<?php
+                    namespace NS;
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     */
+                    interface ICollection extends \IteratorAggregate {
+                        /** @return \Traversable<TKey,TValue> */
+                        public function getIterator();
+                    }
+
+                    class Collection implements ICollection {
+                        /** @var array */
+                        private $data;
+                        public function __construct(array $data) {
+                            $this->data = $data;
+                        }
+                        /** @psalm-suppress LessSpecificImplementedReturnType */
+                        public function getIterator(): \Traversable {
+                            return new \ArrayIterator($this->data);
+                        }
+                    }
+
+                    /** @var ICollection<string, int> */
+                    $c = new Collection(["a" => 1]);
+
+                    foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }'
+            ],
         ];
     }
 

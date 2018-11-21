@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -62,306 +63,18 @@ class ForeachAnalyzer
         }
 
         if ($iterator_type) {
-            if ($iterator_type->isNull()) {
-                if (IssueBuffer::accepts(
-                    new NullIterator(
-                        'Cannot iterate over null',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } elseif ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyNullIterator(
-                        'Cannot iterate over nullable var ' . $iterator_type,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
-                if (IssueBuffer::accepts(
-                    new PossiblyFalseIterator(
-                        'Cannot iterate over falsable var ' . $iterator_type,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-            }
-
-            $has_valid_iterator = false;
-            $invalid_iterator_types = [];
-
-            foreach ($iterator_type->getTypes() as $iterator_type) {
-                // if it's an empty array, we cannot iterate over it
-                if ($iterator_type instanceof Type\Atomic\TArray
-                    && $iterator_type->type_params[1]->isEmpty()
-                ) {
-                    $always_non_empty_array = false;
-                    $has_valid_iterator = true;
-                    continue;
-                }
-
-                if ($iterator_type instanceof Type\Atomic\TNull || $iterator_type instanceof Type\Atomic\TFalse) {
-                    $always_non_empty_array = false;
-                    continue;
-                }
-
-                if ($iterator_type instanceof Type\Atomic\TArray
-                    || $iterator_type instanceof Type\Atomic\ObjectLike
-                ) {
-                    if ($iterator_type instanceof Type\Atomic\ObjectLike) {
-                        if (!$iterator_type->sealed) {
-                            $always_non_empty_array = false;
-                        }
-                        $iterator_type = $iterator_type->getGenericArrayType();
-                    } elseif (!$iterator_type instanceof Type\Atomic\TNonEmptyArray) {
-                        $always_non_empty_array = false;
-                    }
-
-                    if (!$value_type) {
-                        $value_type = $iterator_type->type_params[1];
-                    } else {
-                        $value_type = Type::combineUnionTypes($value_type, $iterator_type->type_params[1]);
-                    }
-
-                    $key_type_part = $iterator_type->type_params[0];
-
-                    if (!$key_type) {
-                        $key_type = $key_type_part;
-                    } else {
-                        $key_type = Type::combineUnionTypes($key_type, $key_type_part);
-                    }
-
-                    $has_valid_iterator = true;
-                    continue;
-                }
-
-                $always_non_empty_array = false;
-
-                if ($iterator_type instanceof Type\Atomic\Scalar ||
-                    $iterator_type instanceof Type\Atomic\TVoid
-                ) {
-                    $invalid_iterator_types[] = $iterator_type->getKey();
-
-                    $value_type = Type::getMixed();
-                } elseif ($iterator_type instanceof Type\Atomic\TObject ||
-                    $iterator_type instanceof Type\Atomic\TMixed ||
-                    $iterator_type instanceof Type\Atomic\TEmpty
-                ) {
-                    $has_valid_iterator = true;
-                    $value_type = Type::getMixed();
-                } elseif ($iterator_type instanceof Type\Atomic\TNamedObject) {
-                    if ($iterator_type->value !== 'Traversable' &&
-                        $iterator_type->value !== $statements_analyzer->getClassName()
-                    ) {
-                        if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                            $statements_analyzer,
-                            $iterator_type->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
-                            $statements_analyzer->getSuppressedIssues()
-                        ) === false) {
-                            return false;
-                        }
-                    }
-
-                    if (TypeAnalyzer::isAtomicContainedBy(
-                        $codebase,
-                        $iterator_type,
-                        new Type\Atomic\TNamedObject('iterable')
-                    )) {
-                        if ($iterator_type->extra_types) {
-                            $iterator_type_copy = clone $iterator_type;
-                            $iterator_type_copy->extra_types = [];
-                            $iterator_types = [$iterator_type_copy];
-                            $iterator_types = array_merge($iterator_types, $iterator_type->extra_types);
-                        } else {
-                            $iterator_types = [$iterator_type];
-                        }
-
-                        foreach ($iterator_types as $iterator_type) {
-                            if ($iterator_type instanceof Type\Atomic\TGenericParam) {
-                                throw new \UnexpectedValueException('Shouldn’t get a generic param here');
-                            }
-
-                            $has_valid_iterator = true;
-
-                            if ($iterator_type instanceof Type\Atomic\TGenericObject
-                                && (strtolower($iterator_type->value) === 'iterable'
-                                    || strtolower($iterator_type->value) === 'traversable'
-                                    || $codebase->classImplements(
-                                        $iterator_type->value,
-                                        'Traversable'
-                                    ))
-                            ) {
-                                $value_index = count($iterator_type->type_params) - 1;
-                                $value_type_part = $iterator_type->type_params[$value_index];
-
-                                if (!$value_type) {
-                                    $value_type = $value_type_part;
-                                } else {
-                                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                                }
-
-                                if ($value_index) {
-                                    $key_type_part = $iterator_type->type_params[0];
-
-                                    if (!$key_type) {
-                                        $key_type = $key_type_part;
-                                    } else {
-                                        $key_type = Type::combineUnionTypes($key_type, $key_type_part);
-                                    }
-                                }
-                                continue 2;
-                            }
-
-                            if (!$codebase->classlikes->classOrInterfaceExists($iterator_type->value)) {
-                                continue 2;
-                            }
-
-                            if ($codebase->classImplements(
-                                $iterator_type->value,
-                                'IteratorAggregate'
-                            ) ||
-                                (
-                                    $codebase->interfaceExists($iterator_type->value)
-                                    && $codebase->interfaceExtends(
-                                        $iterator_type->value,
-                                        'IteratorAggregate'
-                                    )
-                                )
-                            ) {
-                                $iterator_method = $iterator_type->value . '::getIterator';
-                                $self_class = $iterator_type->value;
-                                $iterator_class_type = $codebase->methods->getMethodReturnType(
-                                    $iterator_method,
-                                    $self_class
-                                );
-
-                                if ($iterator_class_type) {
-                                    $array_type = ExpressionAnalyzer::fleshOutType(
-                                        $codebase,
-                                        $iterator_class_type,
-                                        $self_class,
-                                        $self_class
-                                    );
-
-                                    foreach ($array_type->getTypes() as $array_atomic_type) {
-                                        if ($array_atomic_type instanceof Type\Atomic\TArray
-                                            || $array_atomic_type instanceof Type\Atomic\ObjectLike
-                                        ) {
-                                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                                $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                                            }
-
-                                            $key_type_part = $array_atomic_type->type_params[0];
-                                            $value_type_part = $array_atomic_type->type_params[1];
-                                        } elseif ($array_atomic_type instanceof Type\Atomic\TGenericObject) {
-                                            $type_param_count = count($array_atomic_type->type_params);
-
-                                            $value_type_part = $array_atomic_type->type_params[$type_param_count - 1];
-                                            $key_type_part = $type_param_count > 1
-                                                ? $array_atomic_type->type_params[0]
-                                                : Type::getMixed();
-                                        } else {
-                                            $key_type = Type::getMixed();
-                                            $value_type = Type::getMixed();
-                                            break;
-                                        }
-
-                                        if (!$key_type) {
-                                            $key_type = $key_type_part;
-                                        } else {
-                                            $key_type = Type::combineUnionTypes($key_type, $key_type_part);
-                                        }
-
-                                        if (!$value_type) {
-                                            $value_type = $value_type_part;
-                                        } else {
-                                            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                                        }
-                                    }
-                                } else {
-                                    $value_type = Type::getMixed();
-                                }
-                            } elseif ($codebase->classImplements(
-                                $iterator_type->value,
-                                'Iterator'
-                            ) ||
-                                (
-                                    $codebase->interfaceExists($iterator_type->value)
-                                    && $codebase->interfaceExtends(
-                                        $iterator_type->value,
-                                        'Iterator'
-                                    )
-                                )
-                            ) {
-                                $iterator_method = $iterator_type->value . '::current';
-                                $self_class = $iterator_type->value;
-                                $iterator_class_type = $codebase->methods->getMethodReturnType(
-                                    $iterator_method,
-                                    $self_class
-                                );
-
-                                if ($iterator_class_type) {
-                                    $value_type_part = ExpressionAnalyzer::fleshOutType(
-                                        $codebase,
-                                        $iterator_class_type,
-                                        $self_class,
-                                        $self_class
-                                    );
-
-                                    if (!$value_type) {
-                                        $value_type = $value_type_part;
-                                    } else {
-                                        $value_type = Type::combineUnionTypes($value_type, $value_type_part);
-                                    }
-                                } else {
-                                    $value_type = Type::getMixed();
-                                }
-                            }
-                        }
-                    } else {
-                        if (IssueBuffer::accepts(
-                            new RawObjectIteration(
-                                'Possibly undesired iteration over regular object ' . $iterator_type->value,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-                }
-            }
-
-            if ($invalid_iterator_types) {
-                if ($has_valid_iterator) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyInvalidIterator(
-                            'Cannot iterate over ' . $invalid_iterator_types[0],
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new InvalidIterator(
-                            'Cannot iterate over ' . $invalid_iterator_types[0],
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                }
+            if (self::checkIteratorType(
+                $statements_analyzer,
+                $stmt,
+                $iterator_type,
+                $codebase,
+                $context,
+                $key_type,
+                $value_type,
+                $always_non_empty_array
+            ) === false
+            ) {
+                return false;
             }
         }
 
@@ -521,5 +234,350 @@ class ForeachAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param  ?Type\Union  $key_type
+     * @param  ?Type\Union  $value_type
+     * @return false|null
+     */
+    public static function checkIteratorType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        Type\Union $iterator_type,
+        Codebase $codebase,
+        Context $context,
+        &$key_type,
+        &$value_type,
+        bool &$always_non_empty_array
+    ) {
+        if ($iterator_type->isNull()) {
+            if (IssueBuffer::accepts(
+                new NullIterator(
+                    'Cannot iterate over null',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                return false;
+            }
+        } elseif ($iterator_type->isNullable() && !$iterator_type->ignore_nullable_issues) {
+            if (IssueBuffer::accepts(
+                new PossiblyNullIterator(
+                    'Cannot iterate over nullable var ' . $iterator_type,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                return false;
+            }
+        } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
+            if (IssueBuffer::accepts(
+                new PossiblyFalseIterator(
+                    'Cannot iterate over falsable var ' . $iterator_type,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                return false;
+            }
+        }
+
+        $has_valid_iterator = false;
+        $invalid_iterator_types = [];
+
+        foreach ($iterator_type->getTypes() as $iterator_atomic_type) {
+            // if it's an empty array, we cannot iterate over it
+            if ($iterator_atomic_type instanceof Type\Atomic\TArray
+                && $iterator_atomic_type->type_params[1]->isEmpty()
+            ) {
+                $always_non_empty_array = false;
+                $has_valid_iterator = true;
+                continue;
+            }
+
+            if ($iterator_atomic_type instanceof Type\Atomic\TNull
+                || $iterator_atomic_type instanceof Type\Atomic\TFalse
+            ) {
+                $always_non_empty_array = false;
+                continue;
+            }
+
+            if ($iterator_atomic_type instanceof Type\Atomic\TArray
+                || $iterator_atomic_type instanceof Type\Atomic\ObjectLike
+            ) {
+                if ($iterator_atomic_type instanceof Type\Atomic\ObjectLike) {
+                    if (!$iterator_atomic_type->sealed) {
+                        $always_non_empty_array = false;
+                    }
+                    $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType();
+                } elseif (!$iterator_atomic_type instanceof Type\Atomic\TNonEmptyArray) {
+                    $always_non_empty_array = false;
+                }
+
+                if (!$value_type) {
+                    $value_type = $iterator_atomic_type->type_params[1];
+                } else {
+                    $value_type = Type::combineUnionTypes($value_type, $iterator_atomic_type->type_params[1]);
+                }
+
+                $key_type_part = $iterator_atomic_type->type_params[0];
+
+                if (!$key_type) {
+                    $key_type = $key_type_part;
+                } else {
+                    $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                }
+
+                $has_valid_iterator = true;
+                continue;
+            }
+
+            $always_non_empty_array = false;
+
+            if ($iterator_atomic_type instanceof Type\Atomic\Scalar ||
+                $iterator_atomic_type instanceof Type\Atomic\TVoid
+            ) {
+                $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+
+                $value_type = Type::getMixed();
+            } elseif ($iterator_atomic_type instanceof Type\Atomic\TObject ||
+                $iterator_atomic_type instanceof Type\Atomic\TMixed ||
+                $iterator_atomic_type instanceof Type\Atomic\TEmpty
+            ) {
+                $has_valid_iterator = true;
+                $value_type = Type::getMixed();
+            } elseif ($iterator_atomic_type instanceof Type\Atomic\TNamedObject) {
+                if ($iterator_atomic_type->value !== 'Traversable' &&
+                    $iterator_atomic_type->value !== $statements_analyzer->getClassName()
+                ) {
+                    if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                        $statements_analyzer,
+                        $iterator_atomic_type->value,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                        $statements_analyzer->getSuppressedIssues()
+                    ) === false) {
+                        return false;
+                    }
+                }
+
+                if (TypeAnalyzer::isAtomicContainedBy(
+                    $codebase,
+                    $iterator_atomic_type,
+                    new Type\Atomic\TNamedObject('iterable')
+                )) {
+                    self::handleIterable(
+                        $statements_analyzer,
+                        $iterator_atomic_type,
+                        $stmt->expr,
+                        $codebase,
+                        $context,
+                        $key_type,
+                        $value_type,
+                        $has_valid_iterator
+                    );
+                } else {
+                    if (IssueBuffer::accepts(
+                        new RawObjectIteration(
+                            'Possibly undesired iteration over regular object ' . $iterator_atomic_type->value,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        if ($invalid_iterator_types) {
+            if ($has_valid_iterator) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidIterator(
+                        'Cannot iterate over ' . $invalid_iterator_types[0],
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidIterator(
+                        'Cannot iterate over ' . $invalid_iterator_types[0],
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->expr)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param  ?Type\Union  $key_type
+     * @param  ?Type\Union  $value_type
+     * @return void
+     */
+    public static function handleIterable(
+        StatementsAnalyzer $statements_analyzer,
+        Type\Atomic\TNamedObject $iterator_atomic_type,
+        PhpParser\Node\Expr $foreach_expr,
+        Codebase $codebase,
+        Context $context,
+        &$key_type,
+        &$value_type,
+        bool &$has_valid_iterator
+    ) {
+        if ($iterator_atomic_type->extra_types) {
+            $iterator_atomic_type_copy = clone $iterator_atomic_type;
+            $iterator_atomic_type_copy->extra_types = [];
+            $iterator_atomic_types = [$iterator_atomic_type_copy];
+            $iterator_atomic_types = array_merge($iterator_atomic_types, $iterator_atomic_type->extra_types);
+        } else {
+            $iterator_atomic_types = [$iterator_atomic_type];
+        }
+
+        foreach ($iterator_atomic_types as $iterator_atomic_type) {
+            if ($iterator_atomic_type instanceof Type\Atomic\TGenericParam) {
+                throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+            }
+
+            $has_valid_iterator = true;
+
+            if ($iterator_atomic_type instanceof Type\Atomic\TGenericObject
+                && (strtolower($iterator_atomic_type->value) === 'iterable'
+                    || strtolower($iterator_atomic_type->value) === 'traversable'
+                    || $codebase->classImplements(
+                        $iterator_atomic_type->value,
+                        'Traversable'
+                    ))
+            ) {
+                $value_index = count($iterator_atomic_type->type_params) - 1;
+                $value_type_part = $iterator_atomic_type->type_params[$value_index];
+
+                if (!$value_type) {
+                    $value_type = $value_type_part;
+                } else {
+                    $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                }
+
+                if ($value_index) {
+                    $key_type_part = $iterator_atomic_type->type_params[0];
+
+                    if (!$key_type) {
+                        $key_type = $key_type_part;
+                    } else {
+                        $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                    }
+                }
+                return;
+            }
+
+            if (!$codebase->classlikes->classOrInterfaceExists($iterator_atomic_type->value)) {
+                return;
+            }
+
+            if ($codebase->classImplements(
+                $iterator_atomic_type->value,
+                'IteratorAggregate'
+            ) ||
+                (
+                    $codebase->interfaceExists($iterator_atomic_type->value)
+                    && $codebase->interfaceExtends(
+                        $iterator_atomic_type->value,
+                        'IteratorAggregate'
+                    )
+                )
+            ) {
+                $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                    $foreach_expr,
+                    new PhpParser\Node\Identifier('getIterator', $foreach_expr->getAttributes())
+                );
+
+                \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                    $statements_analyzer,
+                    $fake_method_call,
+                    $context
+                );
+
+                $iterator_class_type = $fake_method_call->inferredType ?? null;
+
+                if ($iterator_class_type) {
+                    foreach ($iterator_class_type->getTypes() as $array_atomic_type) {
+                        if ($array_atomic_type instanceof Type\Atomic\TArray
+                            || $array_atomic_type instanceof Type\Atomic\ObjectLike
+                        ) {
+                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                            }
+
+                            $key_type_part = $array_atomic_type->type_params[0];
+                            $value_type_part = $array_atomic_type->type_params[1];
+                        } elseif ($array_atomic_type instanceof Type\Atomic\TGenericObject) {
+                            $type_param_count = count($array_atomic_type->type_params);
+
+                            $value_type_part = $array_atomic_type->type_params[$type_param_count - 1];
+                            $key_type_part = $type_param_count > 1
+                                ? $array_atomic_type->type_params[0]
+                                : Type::getMixed();
+                        } else {
+                            $key_type = Type::getMixed();
+                            $value_type = Type::getMixed();
+                            break;
+                        }
+
+                        if (!$key_type) {
+                            $key_type = $key_type_part;
+                        } else {
+                            $key_type = Type::combineUnionTypes($key_type, $key_type_part);
+                        }
+
+                        if (!$value_type) {
+                            $value_type = $value_type_part;
+                        } else {
+                            $value_type = Type::combineUnionTypes($value_type, $value_type_part);
+                        }
+                    }
+                } else {
+                    $value_type = Type::getMixed();
+                }
+            } elseif ($codebase->classImplements(
+                $iterator_atomic_type->value,
+                'Iterator'
+            ) ||
+                (
+                    $codebase->interfaceExists($iterator_atomic_type->value)
+                    && $codebase->interfaceExtends(
+                        $iterator_atomic_type->value,
+                        'Iterator'
+                    )
+                )
+            ) {
+                $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                    $foreach_expr,
+                    new PhpParser\Node\Identifier('current', $foreach_expr->getAttributes())
+                );
+
+                \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                    $statements_analyzer,
+                    $fake_method_call,
+                    $context
+                );
+
+                $iterator_class_type = $fake_method_call->inferredType ?? null;
+
+                if ($iterator_class_type) {
+                    if (!$value_type) {
+                        $value_type = $iterator_class_type;
+                    } else {
+                        $value_type = Type::combineUnionTypes($value_type, $iterator_class_type);
+                    }
+                } else {
+                    $value_type = Type::getMixed();
+                }
+            }
+        }
     }
 }
