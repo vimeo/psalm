@@ -246,6 +246,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     }
                 }
 
+                $has_generic_object = false;
+
                 if ($codebase->methods->methodExists(
                     $fq_class_name . '::__construct',
                     $context->calling_method_id,
@@ -320,6 +322,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                                 throw new \UnexpectedValueException('$value_type cannot be null');
                             }
 
+                            $has_generic_object = true;
+
                             $stmt->inferredType = new Type\Union([
                                 new Type\Atomic\TGenericObject(
                                     $fq_class_name,
@@ -331,6 +335,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             ]);
                         }
                     } elseif ($generic_params) {
+                        $has_generic_object = true;
                         $stmt->inferredType = new Type\Union([
                             new Type\Atomic\TGenericObject(
                                 $fq_class_name,
@@ -348,6 +353,35 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
+                    }
+                }
+
+                if (!$has_generic_object
+                    && $codebase->classlikes->classImplements(
+                        $fq_class_name,
+                        'IteratorAggregate'
+                    )
+                    && $codebase->methods->methodExists(
+                        $fq_class_name . '::getIterator',
+                        $context->calling_method_id
+                    )
+                ) {
+                    $return_type_candidate = $codebase->methods->getMethodReturnType(
+                        $fq_class_name . '::getIterator',
+                        $self_fq_class_name
+                    );
+
+                    if ($return_type_candidate && $return_type_candidate->isSingle()) {
+                        $return_type_atomic_candidate = array_values($return_type_candidate->getTypes())[0];
+
+                        if ($return_type_atomic_candidate instanceof Type\Atomic\TGenericObject) {
+                            $stmt->inferredType = new Type\Union([
+                                new Type\Atomic\TGenericObject(
+                                    $fq_class_name,
+                                    $return_type_atomic_candidate->type_params
+                                ),
+                            ]);
+                        }
                     }
                 }
             }
