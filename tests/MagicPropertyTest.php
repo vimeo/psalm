@@ -323,6 +323,22 @@ class MagicPropertyTest extends TestCase
                 'assertions' => [],
                 'error_level' => ['MixedArgument'],
             ],
+            'accessInMagicGet' => [
+                '<?php
+                    class X {
+                        public function __get(string $name) : string {
+                            switch ($name) {
+                                case "a":
+                                    return $this->other;
+                                case "other":
+                                    return "foo";
+                            }
+                            return "default";
+                        }
+                    }',
+                'assertions' => [],
+                'error_level' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
         ];
     }
 
@@ -611,22 +627,6 @@ class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'MixedTypeCoercion',
                 'error_levels' => ['MixedAssignment'],
-            ],
-            'misnamedPropertyByVariable' => [
-                '<?php
-                    class B {
-                        /** @var string|null */
-                        public $foo;
-
-                        public function __get(string $var_name) : ?string {
-                            if ($var_name === "bar") {
-                                return $this->$var_name;
-                            }
-
-                            return null;
-                        }
-                    }',
-                'error_message' => 'UndefinedThisPropertyFetch',
             ],
         ];
     }

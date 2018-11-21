@@ -256,12 +256,7 @@ class PropertyAssignmentAnalyzer
                 $property_id = $lhs_type_part->value . '::$' . $prop_name;
                 $property_ids[] = $property_id;
 
-                $statements_analyzer_source = $statements_analyzer->getSource();
-
                 if ($codebase->methodExists($lhs_type_part->value . '::__set')
-                    && (!$statements_analyzer_source instanceof FunctionLikeAnalyzer
-                        || $statements_analyzer_source->getMethodId() !== $lhs_type_part->value . '::__set')
-                    && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
                     && (!$codebase->properties->propertyExists($property_id)
                         || ($lhs_var_id !== '$this'
                             && $lhs_type_part->value !== $context->self

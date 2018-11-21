@@ -291,12 +291,7 @@ class PropertyFetchAnalyzer
                 );
             }
 
-            $statements_analyzer_source = $statements_analyzer->getSource();
-
             if ($codebase->methodExists($lhs_type_part->value . '::__get')
-                && (!$statements_analyzer_source instanceof FunctionLikeAnalyzer
-                    || $statements_analyzer_source->getMethodId() !== $lhs_type_part->value . '::__get')
-                && (!$context->self || !$codebase->classExtends($context->self, $lhs_type_part->value))
                 && (!$codebase->properties->propertyExists($property_id)
                     || ($stmt_var_id !== '$this'
                         && $lhs_type_part->value !== $context->self
