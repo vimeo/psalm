@@ -107,10 +107,31 @@ class FunctionCallTest extends TestCase
                      */
                     function f($p = false) {}',
             ],
-            'byRef' => [
+            'byRefNewString' => [
                 '<?php
                     function fooFoo(string &$v): void {}
                     fooFoo($a);',
+            ],
+            'byRefVariableFunctionExistingArray' => [
+                '<?php
+                    $arr = [];
+                    function fooFoo(array &$v): void {}
+                    $function = "fooFoo";
+                    $function($arr);
+                    if ($arr) {}',
+            ],
+            'byRefProperty' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+                    }
+
+                    $a = new A();
+
+                    function fooFoo(string &$v): void {}
+
+                    fooFoo($a->foo);',
             ],
             'namespaced' => [
                 '<?php
@@ -299,21 +320,6 @@ class FunctionCallTest extends TestCase
                     '$a3' => 'array{hi:int, bye:int}',
                 ],
             ],
-            'goodByRef' => [
-                '<?php
-                    class A {
-                        /** @var string */
-                        public $foo = "hello";
-                    }
-
-                    $a = new A();
-                    $b = "goodbye";
-
-                    function fooFoo(string &$v): void {}
-
-                    fooFoo($a->foo);
-                    fooFoo($b);',
-            ],
             'arrayRand' => [
                 '<?php
                     $vars = ["x" => "a", "y" => "b"];
@@ -490,14 +496,6 @@ class FunctionCallTest extends TestCase
                     function bat(string $s) {
                         return file_get_contents($s);
                     }',
-            ],
-            'byRefString' => [
-                '<?php
-                    $arr = [];
-                    function fooFoo(array &$v): void {}
-                    $function = "fooFoo";
-                    $function($arr);
-                    if ($arr) {}',
             ],
             'arraySumEmpty' => [
                 '<?php

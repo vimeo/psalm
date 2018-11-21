@@ -837,10 +837,10 @@ class TypeAnalyzer
         Codebase $codebase,
         Type\Atomic $input_type_part,
         Type\Atomic $container_type_part,
-        &$has_scalar_match,
-        &$type_coerced,
-        &$type_coerced_from_mixed,
-        &$to_string_cast,
+        &$has_scalar_match = null,
+        &$type_coerced = null,
+        &$type_coerced_from_mixed = null,
+        &$to_string_cast = null,
         $allow_interface_equality
     ) {
         $all_types_contain = true;
@@ -993,10 +993,10 @@ class TypeAnalyzer
         Codebase $codebase,
         $input_type_part,
         $container_type_part,
-        &$type_coerced,
-        &$type_coerced_from_mixed,
-        &$has_scalar_match,
-        &$all_types_contain
+        &$type_coerced = null,
+        &$type_coerced_from_mixed = null,
+        &$has_scalar_match = null,
+        &$all_types_contain = null
     ) {
         if ($container_type_part->params !== null && $input_type_part->params === null) {
             $type_coerced = true;

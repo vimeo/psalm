@@ -468,7 +468,38 @@ class TemplateTest extends TestCase
                     '$b' => 'array<int, string>',
                 ],
             ],
-            'genericArrayPop' => [
+            'byRefKeyValueArray' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TKey
+                     *
+                     * @param array<TKey, TValue> $arr
+                     */
+                    function byRef(array &$arr) : void {}
+
+                    $b = ["a" => 5, "c" => 6];
+                    byRef($b);',
+                'assertions' => [
+                    '$b' => 'array<string, int>',
+                ],
+            ],
+            'byRefMixedKeyArray' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     *
+                     * @param array<mixed, TValue> $arr
+                     */
+                    function byRef(array &$arr) : void {}
+
+                    $b = ["a" => 5, "c" => 6];
+                    byRef($b);',
+                'assertions' => [
+                    '$b' => 'array<mixed, int>',
+                ],
+            ],
+            'mixedArrayPop' => [
                 '<?php
                     /**
                      * @template TValue
@@ -488,6 +519,26 @@ class TemplateTest extends TestCase
                     '$b' => 'array<mixed, mixed>',
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'genericArrayPop' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     * @template TKey
+                     *
+                     * @param array<TKey, TValue> $arr
+                     * @return TValue|null
+                     */
+                    function my_array_pop(array &$arr) {
+                        return array_pop($arr);
+                    }
+
+                    $b = ["a" => 5, "c" => 6];
+                    $a = my_array_pop($b);',
+                'assertions' => [
+                    '$a' => 'null|int',
+                    '$b' => 'array<string, int>',
+                ],
             ],
             'intersectionTemplatedTypes' => [
                 '<?php
@@ -726,6 +777,39 @@ class TemplateTest extends TestCase
                     '$a' => 'array<int, int>',
                 ],
             ],
+            'passArrayByRef' => [
+                '<?php
+                    function acceptsStdClass(stdClass $_p): void {}
+
+                    $q = [new stdClass];
+                    acceptsStdClass(fNoRef($q));
+                    acceptsStdClass(fRef($q));
+                    acceptsStdClass(fNoRef($q));
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     *
+                     * @param array<TKey, TValue> $_arr
+                     * @return null|TValue
+                     * @psalm-ignore-nullable-return
+                     */
+                    function fRef(array &$_arr) {
+                        return array_shift($_arr);
+                    }
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     *
+                     * @param array<TKey, TValue> $_arr
+                     * @return null|TValue
+                     * @psalm-ignore-nullable-return
+                     */
+                    function fNoRef(array $_arr) {
+                        return array_shift($_arr);
+                    }',
+            ]
         ];
     }
 

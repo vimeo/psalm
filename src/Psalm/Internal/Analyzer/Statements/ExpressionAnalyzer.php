@@ -627,7 +627,7 @@ class ExpressionAnalyzer
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
 
-                // removes dependennt vars from $context
+                // removes dependent vars from $context
                 $context->removeDescendents(
                     $var_id,
                     $existing_type,
@@ -637,16 +637,21 @@ class ExpressionAnalyzer
 
                 if ($existing_type->getId() !== 'array<empty, empty>') {
                     $context->vars_in_scope[$var_id] = $by_ref_type;
-                    $stmt->inferredType = $context->vars_in_scope[$var_id];
+
+                    if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
+                        $stmt->inferredType = clone $by_ref_type;
+                    }
 
                     return;
                 }
             }
 
             $context->vars_in_scope[$var_id] = $by_ref_type;
-        }
 
-        $stmt->inferredType = $by_ref_type;
+            if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
+                $stmt->inferredType = clone $by_ref_type;
+            }
+        }
     }
 
     /**
