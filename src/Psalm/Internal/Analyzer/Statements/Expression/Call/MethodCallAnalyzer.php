@@ -753,6 +753,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $declaring_method_id,
                             $context,
                             $source,
+                            $codebase,
                             $file_manipulations,
                             $return_type_candidate
                         );
