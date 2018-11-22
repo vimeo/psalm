@@ -889,7 +889,18 @@ class ExpressionAnalyzer
                     );
                 }
 
-                $return_type->value = $static_class;
+                if (strpos($static_class, '&')) {
+                    $static_classes = explode('&', $static_class);
+                    $return_type->value = array_shift($static_classes);
+                    $return_type->extra_types = array_map(
+                        function (string $extra_type) : Type\Atomic\TNamedObject {
+                            return new Type\Atomic\TNamedObject($extra_type);
+                        },
+                        $static_classes
+                    );
+                } else {
+                    $return_type->value = $static_class;
+                }
             } elseif ($return_type_lc === 'self') {
                 if (!$self_class) {
                     throw new \UnexpectedValueException(

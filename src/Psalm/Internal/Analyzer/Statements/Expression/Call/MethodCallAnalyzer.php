@@ -673,7 +673,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $codebase,
                             $return_type_candidate,
                             $self_fq_class_name,
-                            $fq_class_name
+                            $fq_class_name . ($intersection_types ? '&' . implode('&', $intersection_types) : '')
                         );
 
                         $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
