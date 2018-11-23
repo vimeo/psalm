@@ -831,7 +831,7 @@ class ExpressionAnalyzer
     /**
      * @param  Type\Union   $return_type
      * @param  string|null  $self_class
-     * @param  string|null  $static_class
+     * @param  string|Type\Atomic\TNamedObject|null $static_class_type
      *
      * @return Type\Union
      */
@@ -839,7 +839,7 @@ class ExpressionAnalyzer
         Codebase $codebase,
         Type\Union $return_type,
         $self_class = null,
-        $static_class = null
+        $static_class_type = null
     ) {
         $return_type = clone $return_type;
 
@@ -850,7 +850,7 @@ class ExpressionAnalyzer
                 $codebase,
                 $return_type_part,
                 $self_class,
-                $static_class
+                $static_class_type
             );
         }
 
@@ -869,37 +869,30 @@ class ExpressionAnalyzer
     /**
      * @param  Type\Atomic  &$return_type
      * @param  string|null  $self_class
-     * @param  string|null  $static_class
+     * @param  string|Type\Atomic\TNamedObject|null $static_class_type
      *
      * @return Type\Atomic
      */
     private static function fleshOutAtomicType(
         Codebase $codebase,
-        Type\Atomic $return_type,
+        Type\Atomic &$return_type,
         $self_class,
-        $static_class
+        $static_class_type = null
     ) {
         if ($return_type instanceof TNamedObject) {
             $return_type_lc = strtolower($return_type->value);
 
             if ($return_type_lc === 'static' || $return_type_lc === '$this') {
-                if (!$static_class) {
+                if (!$static_class_type) {
                     throw new \UnexpectedValueException(
                         'Cannot handle ' . $return_type->value . ' when $static_class is empty'
                     );
                 }
 
-                if (strpos($static_class, '&')) {
-                    $static_classes = explode('&', $static_class);
-                    $return_type->value = array_shift($static_classes);
-                    $return_type->extra_types = array_map(
-                        function (string $extra_type) : Type\Atomic\TNamedObject {
-                            return new Type\Atomic\TNamedObject($extra_type);
-                        },
-                        $static_classes
-                    );
+                if (is_string($static_class_type)) {
+                    $return_type->value = $static_class_type;
                 } else {
-                    $return_type->value = $static_class;
+                    $return_type = clone $static_class_type;
                 }
             } elseif ($return_type_lc === 'self') {
                 if (!$self_class) {
@@ -947,7 +940,7 @@ class ExpressionAnalyzer
                     $codebase,
                     $type_param,
                     $self_class,
-                    $static_class
+                    $static_class_type
                 );
             }
         } elseif ($return_type instanceof Type\Atomic\ObjectLike) {
@@ -956,7 +949,7 @@ class ExpressionAnalyzer
                     $codebase,
                     $property_type,
                     $self_class,
-                    $static_class
+                    $static_class_type
                 );
             }
         }
@@ -1107,7 +1100,7 @@ class ExpressionAnalyzer
                     $codebase,
                     $var_comment->type,
                     $context->self,
-                    $context->self
+                    $context->self ? new Type\Atomic\TNamedObject($context->self) : null
                 );
 
                 if (!$var_comment->var_id) {
