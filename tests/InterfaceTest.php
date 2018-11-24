@@ -456,6 +456,41 @@ class InterfaceTest extends TestCase
                     $o = new C;
                     f($o, $o);',
             ],
+            'interfacePropertyIntersection' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $a;
+                    }
+
+                    class B extends A implements I {}
+
+                    interface I {}
+
+                    function takeI(I $i) : void {
+                        if ($i instanceof A) {
+                            echo $i->a;
+                            $i->a = "hello";
+                        }
+                    }',
+            ],
+            'interfacePropertyIntersectionMockAccess' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        private $a;
+                    }
+
+                    /** @psalm-mock-properties */
+                    interface I {}
+
+                    function takeI(I $i) : void {
+                        if ($i instanceof A) {
+                            echo $i->a;
+                            $i->a = "hello";
+                        }
+                    }',
+            ],
         ];
     }
 

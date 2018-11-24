@@ -718,6 +718,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
 
+                $storage->mocked_properties = $docblock_info->mocked_properties;
+
                 $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
                 foreach ($docblock_info->methods as $method) {

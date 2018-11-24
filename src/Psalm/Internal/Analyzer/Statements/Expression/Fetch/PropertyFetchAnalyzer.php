@@ -252,36 +252,62 @@ class PropertyFetchAnalyzer
                 continue;
             }
 
+            $intersection_types = $lhs_type_part->getIntersectionTypes() ?: [];
+
+            $fq_class_name = $lhs_type_part->value;
+
+            $mocked_properties = false;
+
             if (!$codebase->classExists($lhs_type_part->value)) {
+                $class_exists = false;
+
                 if ($codebase->interfaceExists($lhs_type_part->value)) {
+                    $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+                    $mocked_properties = $interface_storage->mocked_properties;
+
+                    foreach ($intersection_types as $intersection_type) {
+                        if ($intersection_type instanceof TNamedObject
+                            && $codebase->classExists($intersection_type->value)
+                        ) {
+                            $fq_class_name = $intersection_type->value;
+                            $class_exists = true;
+                            break;
+                        }
+                    }
+
+                    if (!$class_exists) {
+                        if (IssueBuffer::accepts(
+                            new NoInterfaceProperties(
+                                'Interfaces cannot have properties',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+
+                        return null;
+                    }
+                }
+
+                if (!$class_exists) {
                     if (IssueBuffer::accepts(
-                        new NoInterfaceProperties(
-                            'Interfaces cannot have properties',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new UndefinedClass(
+                            'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $lhs_type_part->value
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
 
-                    continue;
+                    return null;
                 }
-
-                if (IssueBuffer::accepts(
-                    new UndefinedClass(
-                        'Cannot get properties of undefined class ' . $lhs_type_part->value,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $lhs_type_part->value
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
-                }
-
-                continue;
             }
 
-            $property_id = $lhs_type_part->value . '::$' . $prop_name;
+            $property_id = $fq_class_name . '::$' . $prop_name;
 
             if ($codebase->server_mode) {
                 $codebase->analyzer->addNodeReference(
@@ -291,10 +317,10 @@ class PropertyFetchAnalyzer
                 );
             }
 
-            if ($codebase->methodExists($lhs_type_part->value . '::__get')
+            if ($codebase->methodExists($fq_class_name . '::__get')
                 && (!$codebase->properties->propertyExists($property_id)
                     || ($stmt_var_id !== '$this'
-                        && $lhs_type_part->value !== $context->self
+                        && $fq_class_name !== $context->self
                         && ClassLikeAnalyzer::checkPropertyVisibility(
                             $property_id,
                             $context->self,
@@ -305,7 +331,7 @@ class PropertyFetchAnalyzer
                         ) !== true)
                 )
             ) {
-                $class_storage = $codebase->classlike_storage_provider->get((string)$lhs_type_part);
+                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
                     $stmt->inferredType = clone $class_storage->pseudo_property_get_types['$' . $prop_name];
@@ -317,7 +343,7 @@ class PropertyFetchAnalyzer
                  * If we have an explicit list of all allowed magic properties on the class, and we're
                  * not in that list, fall through
                  */
-                if (!$class_storage->sealed_properties) {
+                if (!$class_storage->sealed_properties && !$mocked_properties) {
                     continue;
                 }
             }
@@ -369,14 +395,16 @@ class PropertyFetchAnalyzer
                 return;
             }
 
-            if (ClassLikeAnalyzer::checkPropertyVisibility(
-                $property_id,
-                $context->self,
-                $statements_analyzer,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
-            ) === false) {
-                return false;
+            if (!$mocked_properties) {
+                if (ClassLikeAnalyzer::checkPropertyVisibility(
+                    $property_id,
+                    $context->self,
+                    $statements_analyzer,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $statements_analyzer->getSuppressedIssues()
+                ) === false) {
+                    return false;
+                }
             }
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
@@ -405,7 +433,7 @@ class PropertyFetchAnalyzer
             if ($class_property_type === false) {
                 if (IssueBuffer::accepts(
                     new MissingPropertyType(
-                        'Property ' . $lhs_type_part->value . '::$' . $prop_name
+                        'Property ' . $fq_class_name . '::$' . $prop_name
                             . ' does not have a declared type',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
@@ -424,7 +452,7 @@ class PropertyFetchAnalyzer
                 );
 
                 if ($lhs_type_part instanceof TGenericObject) {
-                    $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     if ($class_storage->template_types) {
                         $class_template_params = [];

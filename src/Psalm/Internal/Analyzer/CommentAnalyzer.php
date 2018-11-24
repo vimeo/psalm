@@ -511,6 +511,10 @@ class CommentAnalyzer
             $info->sealed_methods = true;
         }
 
+        if (isset($comments['specials']['psalm-mock-properties'])) {
+            $info->mocked_properties = true;
+        }
+
         if (isset($comments['specials']['psalm-suppress'])) {
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppressed_issues[] = preg_split('/[\s]+/', $suppress_entry)[0];

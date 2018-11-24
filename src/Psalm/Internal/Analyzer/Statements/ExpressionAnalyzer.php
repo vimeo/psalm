@@ -880,6 +880,31 @@ class ExpressionAnalyzer
         $static_class_type = null
     ) {
         if ($return_type instanceof TNamedObject) {
+            if ($return_type->extra_types) {
+                $new_intersection_types = [];
+
+                foreach ($return_type->extra_types as &$extra_type) {
+                    self::fleshOutAtomicType(
+                        $codebase,
+                        $extra_type,
+                        $self_class,
+                        $static_class_type
+                    );
+
+                    if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
+                        $new_intersection_types = array_merge(
+                            $new_intersection_types,
+                            $extra_type->extra_types
+                        );
+                        $extra_type->extra_types = [];
+                    }
+                }
+
+                if ($new_intersection_types) {
+                    $return_type->extra_types = array_merge($return_type->extra_types, $new_intersection_types);
+                }
+            }
+
             $return_type_lc = strtolower($return_type->value);
 
             if ($return_type_lc === 'static' || $return_type_lc === '$this') {

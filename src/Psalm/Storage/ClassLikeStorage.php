@@ -93,6 +93,11 @@ class ClassLikeStorage
     public $sealed_methods = false;
 
     /**
+     * @var bool
+     */
+    public $mocked_properties = false;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];

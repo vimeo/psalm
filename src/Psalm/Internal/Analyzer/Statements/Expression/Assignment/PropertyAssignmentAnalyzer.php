@@ -224,42 +224,68 @@ class PropertyAssignmentAnalyzer
                     return null;
                 }
 
+                $intersection_types = $lhs_type_part->getIntersectionTypes() ?: [];
+
+                $fq_class_name = $lhs_type_part->value;
+
+                $mocked_properties = false;
+
                 if (!$codebase->classExists($lhs_type_part->value)) {
+                    $class_exists = false;
+
                     if ($codebase->interfaceExists($lhs_type_part->value)) {
+                        $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+                        $mocked_properties = $interface_storage->mocked_properties;
+
+                        foreach ($intersection_types as $intersection_type) {
+                            if ($intersection_type instanceof TNamedObject
+                                && $codebase->classExists($intersection_type->value)
+                            ) {
+                                $fq_class_name = $intersection_type->value;
+                                $class_exists = true;
+                                break;
+                            }
+                        }
+
+                        if (!$class_exists) {
+                            if (IssueBuffer::accepts(
+                                new NoInterfaceProperties(
+                                    'Interfaces cannot have properties',
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    if (!$class_exists) {
                         if (IssueBuffer::accepts(
-                            new NoInterfaceProperties(
-                                'Interfaces cannot have properties',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new UndefinedClass(
+                                'Cannot set properties of undefined class ' . $lhs_type_part->value,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $lhs_type_part->value
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
 
                         return null;
                     }
-
-                    if (IssueBuffer::accepts(
-                        new UndefinedClass(
-                            'Cannot set properties of undefined class ' . $lhs_type_part->value,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $lhs_type_part->value
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return null;
                 }
 
-                $property_id = $lhs_type_part->value . '::$' . $prop_name;
+                $property_id = $fq_class_name . '::$' . $prop_name;
                 $property_ids[] = $property_id;
 
-                if ($codebase->methodExists($lhs_type_part->value . '::__set')
+                if ($codebase->methodExists($fq_class_name . '::__set')
                     && (!$codebase->properties->propertyExists($property_id)
                         || ($lhs_var_id !== '$this'
-                            && $lhs_type_part->value !== $context->self
+                            && $fq_class_name !== $context->self
                             && ClassLikeAnalyzer::checkPropertyVisibility(
                                 $property_id,
                                 $context->self,
@@ -270,7 +296,7 @@ class PropertyAssignmentAnalyzer
                             ) !== true)
                     )
                 ) {
-                    $class_storage = $codebase->classlike_storage_provider->get((string)$lhs_type_part);
+                    $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     if ($var_id) {
                         if (isset($class_storage->pseudo_property_set_types['$' . $prop_name])) {
@@ -355,28 +381,31 @@ class PropertyAssignmentAnalyzer
 
                 $property_exists = true;
 
-                if (!$context->collect_mutations) {
-                    if (ClassLikeAnalyzer::checkPropertyVisibility(
-                        $property_id,
-                        $context->self,
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $statements_analyzer->getSuppressedIssues()
-                    ) === false) {
-                        return false;
-                    }
-                } else {
-                    if (ClassLikeAnalyzer::checkPropertyVisibility(
-                        $property_id,
-                        $context->self,
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        false
-                    ) !== true) {
-                        continue;
+                if (!$mocked_properties) {
+                    if (!$context->collect_mutations) {
+                        if (ClassLikeAnalyzer::checkPropertyVisibility(
+                            $property_id,
+                            $context->self,
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $statements_analyzer->getSuppressedIssues()
+                        ) === false) {
+                            return false;
+                        }
+                    } else {
+                        if (ClassLikeAnalyzer::checkPropertyVisibility(
+                            $property_id,
+                            $context->self,
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            false
+                        ) !== true) {
+                            continue;
+                        }
                     }
                 }
+
 
                 $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                     $property_id
@@ -422,8 +451,8 @@ class PropertyAssignmentAnalyzer
                     $class_property_type = ExpressionAnalyzer::fleshOutType(
                         $codebase,
                         $class_property_type,
-                        $lhs_type_part->value,
-                        $lhs_type_part->value
+                        $fq_class_name,
+                        $lhs_type_part
                     );
 
                     if (!$class_property_type->isMixed() && $assignment_value_type->isMixed()) {
