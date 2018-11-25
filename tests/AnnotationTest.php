@@ -338,6 +338,46 @@ class AnnotationTest extends TestCase
     }
 
     /**
+     * @return                   void
+     */
+    public function testDocumentedThrowInFunctionCallWithoutThrow()
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo
+                {
+                    /**
+                     * @throws \TypeError
+                     */
+                    public static function notReallyThrowing(int $a): string
+                    {
+                        if ($a > 0) {
+                            return "";
+                        }
+
+                        return (string) $a;
+                    }
+
+                    public function test(): string
+                    {
+                        try {
+                            return self::notReallyThrowing(2);
+                        } catch (\Throwable $E) {
+                            return "";
+                        }
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
      * @return void
      */
     public function testCaughtThrowInFunctionCall()

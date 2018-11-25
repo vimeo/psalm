@@ -1187,6 +1187,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->aliases
                 );
 
+                $this->codebase->scanner->queueClassLikeForScanning($exception_fqcln, $this->file_path);
+
                 $storage->throws[$exception_fqcln] = true;
             }
         }
