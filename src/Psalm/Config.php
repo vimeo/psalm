@@ -800,11 +800,25 @@ class Config
             $plugin_class_name = $plugin_class_entry['class'];
             $plugin_config = $plugin_class_entry['config'];
             try {
-                if (!class_exists($plugin_class_name, true)) {
-                    throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
+                if ($this->composer_class_loader) {
+                    $plugin_class_path = $this->composer_class_loader->findFile($plugin_class_name);
+
+                    if (!$plugin_class_path) {
+                        throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
+                    }
+
+                    /** @psalm-suppress UnresolvableInclude */
+                    require_once($plugin_class_path);
+                } else {
+                    if (!class_exists($plugin_class_name, true)) {
+                        throw new \UnexpectedValueException($plugin_class_name . ' is not a known class');
+                    }
                 }
 
-                /** @var Plugin\PluginEntryPointInterface $plugin_object */
+                /**
+                 * @psalm-suppress InvalidStringClass
+                 * @var Plugin\PluginEntryPointInterface $plugin_object
+                 */
                 $plugin_object = new $plugin_class_name;
                 $plugin_object($socket, $plugin_config);
             } catch (\Throwable $e) {
