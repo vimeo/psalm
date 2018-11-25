@@ -256,7 +256,7 @@ class PropertyFetchAnalyzer
 
             $fq_class_name = $lhs_type_part->value;
 
-            $mocked_properties = false;
+            $override_property_visibility = false;
 
             if (!$codebase->classExists($lhs_type_part->value)) {
                 $class_exists = false;
@@ -264,7 +264,7 @@ class PropertyFetchAnalyzer
                 if ($codebase->interfaceExists($lhs_type_part->value)) {
                     $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
-                    $mocked_properties = $interface_storage->mocked_properties;
+                    $override_property_visibility = $interface_storage->override_property_visibility;
 
                     foreach ($intersection_types as $intersection_type) {
                         if ($intersection_type instanceof TNamedObject
@@ -343,7 +343,7 @@ class PropertyFetchAnalyzer
                  * If we have an explicit list of all allowed magic properties on the class, and we're
                  * not in that list, fall through
                  */
-                if (!$class_storage->sealed_properties && !$mocked_properties) {
+                if (!$class_storage->sealed_properties && !$override_property_visibility) {
                     continue;
                 }
             }
@@ -395,7 +395,7 @@ class PropertyFetchAnalyzer
                 return;
             }
 
-            if (!$mocked_properties) {
+            if (!$override_property_visibility) {
                 if (ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
                     $context->self,

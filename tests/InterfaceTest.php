@@ -474,20 +474,35 @@ class InterfaceTest extends TestCase
                         }
                     }',
             ],
-            'interfacePropertyIntersectionMockAccess' => [
+            'interfacePropertyIntersectionMockPropertyAccess' => [
                 '<?php
                     class A {
                         /** @var ?string */
                         private $a;
                     }
 
-                    /** @psalm-mock-properties */
+                    /** @psalm-override-property-visibility */
                     interface I {}
 
                     function takeI(I $i) : void {
                         if ($i instanceof A) {
                             echo $i->a;
                             $i->a = "hello";
+                        }
+                    }',
+            ],
+            'interfacePropertyIntersectionMockMethodAccess' => [
+                '<?php
+                    class A {
+                        private function foo() : void {}
+                    }
+
+                    /** @psalm-override-method-visibility */
+                    interface I {}
+
+                    function takeI(I $i) : void {
+                        if ($i instanceof A) {
+                            $i->foo();
                         }
                     }',
             ],

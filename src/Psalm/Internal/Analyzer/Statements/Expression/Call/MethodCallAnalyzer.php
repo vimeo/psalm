@@ -413,7 +413,27 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $fq_class_name = $context->self;
                 }
 
+                $check_visibility = true;
+
+                if ($intersection_types) {
+                    foreach ($intersection_types as $intersection_type) {
+                        if ($intersection_type instanceof TNamedObject
+                            && $codebase->interfaceExists($intersection_type->value)
+                        ) {
+                            $interface_storage = $codebase->classlike_storage_provider->get($intersection_type->value);
+
+                            $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
+                        }
+                    }
+                }
+
                 if ($intersection_types && !$codebase->methodExists($method_id)) {
+                    if ($codebase->interfaceExists($fq_class_name)) {
+                        $interface_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                        $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
+                    }
+
                     foreach ($intersection_types as $intersection_type) {
                         if ($intersection_type instanceof Type\Atomic\TGenericParam) {
                             throw new \UnexpectedValueException('Shouldn’t get a generic param here');
@@ -613,14 +633,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $lhs_type_part
                     );
                 } else {
-                    if (MethodAnalyzer::checkMethodVisibility(
-                        $method_id,
-                        $context->self,
-                        $statements_analyzer->getSource(),
-                        $name_code_location,
-                        $statements_analyzer->getSuppressedIssues()
-                    ) === false) {
-                        return false;
+                    if ($check_visibility) {
+                        if (MethodAnalyzer::checkMethodVisibility(
+                            $method_id,
+                            $context->self,
+                            $statements_analyzer->getSource(),
+                            $name_code_location,
+                            $statements_analyzer->getSuppressedIssues()
+                        ) === false) {
+                            return false;
+                        }
                     }
 
                     if (MethodAnalyzer::checkMethodNotDeprecated(

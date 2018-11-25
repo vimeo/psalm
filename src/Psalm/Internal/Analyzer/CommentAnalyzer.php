@@ -511,8 +511,12 @@ class CommentAnalyzer
             $info->sealed_methods = true;
         }
 
-        if (isset($comments['specials']['psalm-mock-properties'])) {
-            $info->mocked_properties = true;
+        if (isset($comments['specials']['psalm-override-property-visibility'])) {
+            $info->override_property_visibility = true;
+        }
+
+        if (isset($comments['specials']['psalm-override-method-visibility'])) {
+            $info->override_method_visibility = true;
         }
 
         if (isset($comments['specials']['psalm-suppress'])) {

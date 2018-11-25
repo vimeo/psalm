@@ -95,7 +95,12 @@ class ClassLikeStorage
     /**
      * @var bool
      */
-    public $mocked_properties = false;
+    public $override_property_visibility = false;
+
+    /**
+     * @var bool
+     */
+    public $override_method_visibility = false;
 
     /**
      * @var array<int, string>

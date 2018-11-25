@@ -228,7 +228,7 @@ class PropertyAssignmentAnalyzer
 
                 $fq_class_name = $lhs_type_part->value;
 
-                $mocked_properties = false;
+                $override_property_visibility = false;
 
                 if (!$codebase->classExists($lhs_type_part->value)) {
                     $class_exists = false;
@@ -236,7 +236,7 @@ class PropertyAssignmentAnalyzer
                     if ($codebase->interfaceExists($lhs_type_part->value)) {
                         $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
-                        $mocked_properties = $interface_storage->mocked_properties;
+                        $override_property_visibility = $interface_storage->override_property_visibility;
 
                         foreach ($intersection_types as $intersection_type) {
                             if ($intersection_type instanceof TNamedObject
@@ -381,7 +381,7 @@ class PropertyAssignmentAnalyzer
 
                 $property_exists = true;
 
-                if (!$mocked_properties) {
+                if (!$override_property_visibility) {
                     if (!$context->collect_mutations) {
                         if (ClassLikeAnalyzer::checkPropertyVisibility(
                             $property_id,
