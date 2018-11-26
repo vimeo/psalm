@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\GetClassT;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -699,11 +700,16 @@ class TypeAnalyzer
             );
         }
 
-        if (($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
+        if (($input_type_part instanceof TClassString
+            || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
                 || get_class($container_type_part) === TSingleLetter::class
-                || get_class($container_type_part) === Type\Atomic\GetClassT::class)
+                || get_class($container_type_part) === GetClassT::class)
         ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TClassString && $input_type_part instanceof GetClassT) {
             return true;
         }
 
