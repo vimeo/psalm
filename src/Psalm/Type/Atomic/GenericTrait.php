@@ -58,7 +58,7 @@ trait GenericTrait
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
             : $this->value;
 
-        if ($base_value === 'non-empty-string') {
+        if ($base_value === 'non-empty-array') {
             $base_value = 'array';
         }
 

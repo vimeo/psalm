@@ -701,7 +701,7 @@ class UnusedVariableTest extends TestCase
 
                     echo $a;',
             ],
-            'loopAssignmentAfterReferenceWithContinueInSwitch' => [
+            'loopAssignmentAfterReferenceWithContinueInSwitch2' => [
                 '<?php
                     $a = 0;
                     while (rand(0, 1)) {
@@ -1275,7 +1275,7 @@ class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
-            'loopSetIfNullWithBreakWithoutReference' => [
+            'loopSetIfNullWithBreakWithoutReference2' => [
                 '<?php
                     $a = null;
 
@@ -1283,20 +1283,6 @@ class UnusedVariableTest extends TestCase
                         if (rand(0, 1)) {
                             $a = 4;
                             break;
-                        }
-
-                        $a = 5;
-                    }',
-                'error_message' => 'UnusedVariable',
-            ],
-            'loopSetIfNullWithContinueWithoutReference' => [
-                '<?php
-                    $a = null;
-
-                    while (rand(0, 1)) {
-                        if ($a === null) {
-                            $a = 4;
-                            continue;
                         }
 
                         $a = 5;

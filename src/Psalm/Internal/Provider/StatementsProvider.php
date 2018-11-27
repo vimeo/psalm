@@ -370,12 +370,24 @@ class StatementsProvider
                 $used_cached_statements = true;
                 $stmts = $existing_statements;
             } else {
-                /** @var array<int, \PhpParser\Node\Stmt> */
-                $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+                try {
+                    /** @var array<int, \PhpParser\Node\Stmt> */
+                    $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+                } catch (\Throwable $t) {
+                    $stmts = [];
+
+                    // hope this got caught below
+                }
             }
         } else {
-            /** @var array<int, \PhpParser\Node\Stmt> */
-            $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+            try {
+                /** @var array<int, \PhpParser\Node\Stmt> */
+                $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
+            } catch (\Throwable $t) {
+                $stmts = [];
+
+                // hope this got caught below
+            }
         }
 
         if ($error_handler->hasErrors() && $file_path) {

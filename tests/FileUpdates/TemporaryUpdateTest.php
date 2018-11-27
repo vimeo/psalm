@@ -885,6 +885,96 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [238], [], [238], []],
             ],
+            'traitMethodRenameSameFile2' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }
+
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bat();
+                                }
+                            }
+
+                            trait T {
+                                public function bat() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bat();
+                                }
+                            }
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                use T;
+                                public function foo() : void {
+                                    echo $this->bar();
+                                }
+                            }
+
+                            trait T {
+                                public function bar() : string {
+                                    return "hello";
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [238], [], [238], []],
+            ],
             'traitMethodRenameSameFile' => [
                 [
                     [
@@ -975,6 +1065,22 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [238], [], [238], []],
             ],
+            'parseErrorAfterQuoteChange' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            $a = ["a thing"];',
+
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            $a = ["a "thing"];',
+
+                    ],
+
+                ],
+                'error_possitions' => [[], [44]]
+            ]
         ];
     }
 }
