@@ -384,7 +384,7 @@ class ForeachAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 }
             }
