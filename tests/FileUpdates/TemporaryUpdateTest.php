@@ -1065,22 +1065,6 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [238], [], [238], []],
             ],
-            'parseErrorAfterQuoteChange' => [
-                [
-                    [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                            $a = ["a thing"];',
-
-                    ],
-                    [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                            $a = ["a "thing"];',
-
-                    ],
-
-                ],
-                'error_possitions' => [[], [44]]
-            ]
         ];
     }
 }
