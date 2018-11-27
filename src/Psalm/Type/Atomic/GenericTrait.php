@@ -58,6 +58,10 @@ trait GenericTrait
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
             : $this->value;
 
+        if ($base_value === 'non-empty-string') {
+            $base_value = 'array';
+        }
+
         if ($use_phpdoc_format) {
             if ($this instanceof TNamedObject) {
                 return $base_value;
@@ -66,7 +70,7 @@ trait GenericTrait
             $value_type = $this->type_params[1];
 
             if ($value_type->isMixed()) {
-                return $this->value;
+                return $base_value;
             }
 
             $value_type_string = $value_type->toNamespacedString($namespace, $aliased_classes, $this_class, true);
