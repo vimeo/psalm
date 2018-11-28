@@ -712,8 +712,8 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         if ($inner_value_types) {
             return new Type\Union([
                 new Type\Atomic\TArray([
-                    TypeCombination::combineTypes($inner_key_types),
-                    TypeCombination::combineTypes($inner_value_types),
+                    TypeCombination::combineTypes($inner_key_types, true),
+                    TypeCombination::combineTypes($inner_value_types, true),
                 ]),
             ]);
         }

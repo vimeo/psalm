@@ -947,8 +947,11 @@ abstract class Type
      *
      * @return Union
      */
-    public static function combineUnionTypes(Union $type_1, Union $type_2)
-    {
+    public static function combineUnionTypes(
+        Union $type_1,
+        Union $type_2,
+        bool $overwrite_empty_array = false
+    ) {
         if ($type_1->isVanillaMixed() || $type_2->isVanillaMixed()) {
             $combined_type = Type::getMixed();
         } else {
@@ -968,7 +971,8 @@ abstract class Type
                 array_merge(
                     array_values($type_1->getTypes()),
                     array_values($type_2->getTypes())
-                )
+                ),
+                $overwrite_empty_array
             );
 
             if (!$type_1->initialized || !$type_2->initialized) {

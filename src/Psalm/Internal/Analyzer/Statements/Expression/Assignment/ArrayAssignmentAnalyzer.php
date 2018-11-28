@@ -266,7 +266,8 @@ class ArrayAssignmentAnalyzer
 
                     $new_child_type = Type::combineUnionTypes(
                         $child_stmt->inferredType,
-                        $array_assignment_type
+                        $array_assignment_type,
+                        true
                     );
                 } else {
                     $new_child_type = $child_stmt->inferredType; // noop
@@ -281,7 +282,8 @@ class ArrayAssignmentAnalyzer
 
                 $new_child_type = Type::combineUnionTypes(
                     $child_stmt->inferredType,
-                    $array_assignment_type
+                    $array_assignment_type,
+                    true
                 );
             }
 
@@ -344,7 +346,8 @@ class ArrayAssignmentAnalyzer
 
                 $new_child_type = Type::combineUnionTypes(
                     $root_type,
-                    $array_assignment_type
+                    $array_assignment_type,
+                    true
                 );
             } else {
                 $new_child_type = $root_type; // noop
@@ -394,7 +397,8 @@ class ArrayAssignmentAnalyzer
 
             $new_child_type = Type::combineUnionTypes(
                 $root_type,
-                $array_assignment_type
+                $array_assignment_type,
+                true
             );
 
             if ($from_countable_object_like) {

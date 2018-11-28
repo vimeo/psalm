@@ -302,6 +302,38 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 true,
             ],
+            'addMissingObjectLikeReturnTypeWithEmptyArray' => [
+                '<?php
+                    function foo() {
+                        if (rand(0, 1)) {
+                            return [];
+                        }
+
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                        ];
+                    }',
+                '<?php
+                    /**
+                     * @return int[]
+                     *
+                     * @psalm-return array{a?:int, b?:int}
+                     */
+                    function foo(): array {
+                        if (rand(0, 1)) {
+                            return [];
+                        }
+
+                        return [
+                            "a" => 1,
+                            "b" => 2,
+                        ];
+                    }',
+                '7.0',
+                ['MissingReturnType'],
+                true,
+            ],
             'addMissingObjectLikeReturnTypeSeparateStatements70' => [
                 '<?php
                     function foo() {
