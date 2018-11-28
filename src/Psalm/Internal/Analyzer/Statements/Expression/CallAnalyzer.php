@@ -1606,7 +1606,7 @@ class CallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 } elseif (IssueBuffer::accepts(
                     new InvalidArgument(
@@ -1942,7 +1942,7 @@ class CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
             }
         }
@@ -1960,7 +1960,7 @@ class CallAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
         }
 

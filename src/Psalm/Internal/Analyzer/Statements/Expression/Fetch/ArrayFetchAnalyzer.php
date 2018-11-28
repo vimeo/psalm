@@ -206,7 +206,7 @@ class ArrayFetchAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
             }
         }
