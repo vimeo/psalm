@@ -19,8 +19,10 @@ env:
   global:
     - DEFAULT_COMPOSER_FLAGS="--no-interaction --no-suggest --prefer-source"
     - XDEBUG="false"
-    - secure: Ayjp10v6IWeJX3ThWvPxlv0gkuTuvu30lsdQCjop+vS0Kv+6/IEOdSOxtm0tEWacq9EFCViWRKh9zxiwPtoi0wxGdzGGws+UtIJxew6Vy8HDCEH8nY4k50eElKUWI4YhVbiSdZEZ+Bd9kO0qGEBH9iWh8Tc8MP2Hklx7lOf+zUTSm8vpv+idcCxwGCvQMaMc5NhfnkgGq95/UU3iOvCi5/wkIFnSnoccxmZE2zsxI1e355ipa0uoe8/Ml6vK0NrZ0aBZwZfItsIuhRcL4Cm5kyar+Ao/mn9Zw8CHbfESrIMomRI7ZxwPNFj+sR/wCvEasIGHRxH8B9F4d8SmAoHR1CrmM/zyWRon73CfRb56M4VGG1hyqTr1GYHpBgZKSOYA8TKyOjD8EHGvevfHpJoGVNxf0+vAfdizlVJvkYhzSz/VjpOZO8rfOct4deNcpCVuVGg5uOGeg5P7coVniGHLHTm3JozK9Ia+ZLePtr3l/NuoW5dXVF1fdroCyQS2X0VSXALnnTPzcIQYsmpCk8yJ8uXorxj4dJHhstyll1jemJjxT7HJ1ASPUOTsPu9u9EoBDHQxOGa5b2/7chyV+EhrYV899RKZ4xEPzpC619sWgtZJci3oLcebU1BY42pIr94UqtwcJKhriwV72VpKvCG/eqOKLhXq355TYRx2dK05a5w=
-# generated above with travis encrypt -r vimeo/psalm --org GITHUB_TOKEN="<secret oauth token>"
+    - secure:
+      # generated with travis encrypt -r vimeo/psalm --org GITHUB_TOKEN="<secret oauth token>"
+      - Ayjp10v6IWeJX3ThWvPxlv0gkuTuvu30lsdQCjop+vS0Kv+6/IEOdSOxtm0tEWacq9EFCViWRKh9zxiwPtoi0wxGdzGGws+UtIJxew6Vy8HDCEH8nY4k50eElKUWI4YhVbiSdZEZ+Bd9kO0qGEBH9iWh8Tc8MP2Hklx7lOf+zUTSm8vpv+idcCxwGCvQMaMc5NhfnkgGq95/UU3iOvCi5/wkIFnSnoccxmZE2zsxI1e355ipa0uoe8/Ml6vK0NrZ0aBZwZfItsIuhRcL4Cm5kyar+Ao/mn9Zw8CHbfESrIMomRI7ZxwPNFj+sR/wCvEasIGHRxH8B9F4d8SmAoHR1CrmM/zyWRon73CfRb56M4VGG1hyqTr1GYHpBgZKSOYA8TKyOjD8EHGvevfHpJoGVNxf0+vAfdizlVJvkYhzSz/VjpOZO8rfOct4deNcpCVuVGg5uOGeg5P7coVniGHLHTm3JozK9Ia+ZLePtr3l/NuoW5dXVF1fdroCyQS2X0VSXALnnTPzcIQYsmpCk8yJ8uXorxj4dJHhstyll1jemJjxT7HJ1ASPUOTsPu9u9EoBDHQxOGa5b2/7chyV+EhrYV899RKZ4xEPzpC619sWgtZJci3oLcebU1BY42pIr94UqtwcJKhriwV72VpKvCG/eqOKLhXq355TYRx2dK05a5w=
+      - BHjpjnPAgiVOjYqEkRekzVuiBVYHPejTD852wJB0uz2MpAi0/fT+s4rSPHF+nRKeIQl0uGVOXOh1pmBheS+IykTyO1rTRboDtOc5SJyYE8jk3yzwzCbUFog+cLGEoQ5So6bEnKEvqD8KdMFVGj7k8OwQGwKfYcVXyUBalCEZc1nKARHT9z/03NnyXXJWP+XpaQgjiMcyfN+gr8FWo3rDTnH+L/+Z3S0OKPtmrf3/t+u4Fv12kqb0XxSbOUQNriT5b+CtC0ZiI4GB3gupfRKG6zSYuBXRaXav48eQicvUXaYlFu04AEjjqB9gqymzArMCwba98Z3IqqoWyyagDwqNzhYwrmreB4oqWDDfbTpRJ4eXEZ5o20FJNFADRIC6FrAr7M1H6DtIkO7s4PQsJuM79pxz6HtUE7A4OAPa9BvYfPMJFYBQ4wQlO00BUy64IVMZqVsvYudREoZix3xuzyezOG+LUx9mvWZsxMJRxU382IDUsep0wJjQfUaxHm6PhcB/Zi78sLbKJ5BMcBiOzg8mkgUhm5cN8L6VUh31gAHAa444TRI1+o6qUz93oFaOXRP6KbBjM/BRPV1Py3X8huZCR1QA2vDiM7wNLl8hOZG4YEUJWDQF1Q6Wi+Sd0jCzbnGR5Xlj+L03wfuASwhz5iXzOQqY9wQv6vbfeHHqX5fzzp8=
 
 cache:
   directories:
@@ -73,11 +75,13 @@ jobs:
       php: 7.1
       env: DEPS="low"
       script:
-        - bin/build-phar.sh
+        - bin/build-phar.sh --phive
       deploy:
         skip_cleanup: true
         on:
           tags: true
         provider: releases
         api_key: $GITHUB_TOKEN
-        file: build/psalm.phar
+        file:
+          - build/psalm.phar
+          - build/psalm.phar.asc
