@@ -306,9 +306,14 @@ class SwitchAnalyzer
             }
         }
 
-        $case_stmts = $case->stmts;
+        $continue_case_equality_expr = false;
 
-        $case_stmts = array_merge($switch_scope->leftover_statements, $case_stmts);
+        if ($case->stmts) {
+            $case_stmts = array_merge($switch_scope->leftover_statements, $case->stmts);
+        } else {
+            $continue_case_equality_expr = count($switch_scope->leftover_statements) === 1;
+            $case_stmts = $switch_scope->leftover_statements;
+        }
 
         if (!$has_leaving_statements && !$is_last) {
             if (!$case_equality_expr) {
@@ -330,12 +335,19 @@ class SwitchAnalyzer
                 )
                 : $case_equality_expr;
 
-            $case_if_stmt = new PhpParser\Node\Stmt\If_(
-                $switch_scope->leftover_case_equality_expr,
-                ['stmts' => $case_stmts]
-            );
+            if ($continue_case_equality_expr
+                && $switch_scope->leftover_statements[0] instanceof PhpParser\Node\Stmt\If_
+            ) {
+                $case_if_stmt = $switch_scope->leftover_statements[0];
+                $case_if_stmt->cond = $switch_scope->leftover_case_equality_expr;
+            } else {
+                $case_if_stmt = new PhpParser\Node\Stmt\If_(
+                    $switch_scope->leftover_case_equality_expr,
+                    ['stmts' => $case_stmts]
+                );
 
-            $switch_scope->leftover_statements = [$case_if_stmt];
+                $switch_scope->leftover_statements = [$case_if_stmt];
+            }
 
             return;
         }

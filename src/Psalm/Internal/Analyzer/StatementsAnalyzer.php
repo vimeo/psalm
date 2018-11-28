@@ -1056,7 +1056,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                     if ($single_item_key_type) {
                         if ($item_key_type) {
-                            $item_key_type = Type::combineUnionTypes($single_item_key_type, $item_key_type);
+                            $item_key_type = Type::combineUnionTypes(
+                                $single_item_key_type,
+                                $item_key_type,
+                                false,
+                                30
+                            );
                         } else {
                             $item_key_type = $single_item_key_type;
                         }
@@ -1120,7 +1125,12 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 if ($item_value_type) {
-                    $item_value_type = Type::combineUnionTypes($single_item_value_type, $item_value_type);
+                    $item_value_type = Type::combineUnionTypes(
+                        $single_item_value_type,
+                        $item_value_type,
+                        false,
+                        30
+                    );
                 } else {
                     $item_value_type = $single_item_value_type;
                 }

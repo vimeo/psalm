@@ -73,12 +73,17 @@ class TypeCombination
      *  - and `array + array<string> = array<mixed>`
      *
      * @param  array<Atomic>    $types
+     * @param  int    $literal_limit any greater number of literal types than this
+     *                               will be merged to a scalar
      *
      * @return Union
      * @psalm-suppress TypeCoercion
      */
-    public static function combineTypes(array $types, bool $overwrite_empty_array = false)
-    {
+    public static function combineTypes(
+        array $types,
+        bool $overwrite_empty_array = false,
+        int $literal_limit = 500
+    ) {
         if (in_array(null, $types, true)) {
             return Type::getMixed();
         }
@@ -108,7 +113,7 @@ class TypeCombination
         foreach ($types as $type) {
             $from_docblock = $from_docblock || $type->from_docblock;
 
-            $result = self::scrapeTypeProperties($type, $combination, $overwrite_empty_array);
+            $result = self::scrapeTypeProperties($type, $combination, $overwrite_empty_array, $literal_limit);
 
             if ($type instanceof TNull) {
                 $has_null = true;
@@ -308,7 +313,8 @@ class TypeCombination
     private static function scrapeTypeProperties(
         Atomic $type,
         TypeCombination $combination,
-        bool $overwrite_empty_array
+        bool $overwrite_empty_array,
+        int $literal_limit
     ) {
         if ($type instanceof TMixed) {
             if ($type->from_isset || $type instanceof TEmptyMixed) {
@@ -395,7 +401,7 @@ class TypeCombination
         } else {
             if ($type instanceof TString) {
                 if ($type instanceof TLiteralString) {
-                    if ($combination->strings !== null && count($combination->strings) < 30) {
+                    if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                         $combination->strings[] = $type;
                     } else {
                         $combination->strings = null;
@@ -426,7 +432,7 @@ class TypeCombination
                 }
             } elseif ($type instanceof TInt) {
                 if ($type instanceof TLiteralInt) {
-                    if ($combination->ints !== null && count($combination->ints) < 30) {
+                    if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
                         $combination->ints[] = $type;
                     } else {
                         $combination->ints = null;
@@ -438,7 +444,7 @@ class TypeCombination
                 }
             } elseif ($type instanceof TFloat) {
                 if ($type instanceof TLiteralFloat) {
-                    if ($combination->floats !== null && count($combination->floats) < 30) {
+                    if ($combination->floats !== null && count($combination->floats) < $literal_limit) {
                         $combination->floats[] = $type;
                     } else {
                         $combination->floats = null;

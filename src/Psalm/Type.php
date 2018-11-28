@@ -944,13 +944,16 @@ abstract class Type
      *
      * @param  Union  $type_1
      * @param  Union  $type_2
+     * @param  int    $literal_limit any greater number of literal types than this
+     *                               will be merged to a scalar
      *
      * @return Union
      */
     public static function combineUnionTypes(
         Union $type_1,
         Union $type_2,
-        bool $overwrite_empty_array = false
+        bool $overwrite_empty_array = false,
+        int $literal_limit = 500
     ) {
         if ($type_1->isVanillaMixed() || $type_2->isVanillaMixed()) {
             $combined_type = Type::getMixed();
@@ -972,7 +975,8 @@ abstract class Type
                     array_values($type_1->getTypes()),
                     array_values($type_2->getTypes())
                 ),
-                $overwrite_empty_array
+                $overwrite_empty_array,
+                $literal_limit
             );
 
             if (!$type_1->initialized || !$type_2->initialized) {
