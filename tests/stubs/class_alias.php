@@ -12,3 +12,4 @@ class A {
 }
 
 class_alias("A", "B");
+class_alias(A::class, C::class);

@@ -245,6 +245,7 @@ class StubTest extends TestCase
                 function foo(A $a) : void {}
 
                 foo(new B());
+                foo(new C());
 
                 function bar(B $b) : void {}
 

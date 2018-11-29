@@ -83,6 +83,11 @@ class FileStorage
     public $type_aliases = [];
 
     /**
+     * @var array<string, string>
+     */
+    public $classlike_aliases = [];
+
+    /**
      * @param string $file_path
      */
     public function __construct($file_path)

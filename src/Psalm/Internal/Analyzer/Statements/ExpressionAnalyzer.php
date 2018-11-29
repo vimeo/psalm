@@ -927,6 +927,8 @@ class ExpressionAnalyzer
                 }
 
                 $return_type->value = $self_class;
+            } else {
+                $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
             }
         }
 

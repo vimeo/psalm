@@ -337,19 +337,45 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 }
 
-                if ($function_id === 'class_alias'
-                    && ($this->codebase->register_stub_files || $this->codebase->register_autoload_files)
-                ) {
-                    $first_arg_value = $node->args[0]->value ?? null;
-                    $second_arg_value = $node->args[1]->value ?? null;
+                if ($function_id === 'class_alias') {
+                    $first_arg = $node->args[0]->value ?? null;
+                    $second_arg = $node->args[1]->value ?? null;
 
-                    if ($first_arg_value instanceof PhpParser\Node\Scalar\String_
-                        && $second_arg_value instanceof PhpParser\Node\Scalar\String_
+                    if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
+                        $first_arg_value = $first_arg->value;
+                    } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $first_arg->class instanceof PhpParser\Node\Name
+                        && $first_arg->name instanceof PhpParser\Node\Identifier
+                        && strtolower($first_arg->name->name) === 'class'
                     ) {
-                        $this->codebase->classlikes->addClassAlias(
-                            $first_arg_value->value,
-                            $second_arg_value->value
-                        );
+                        /** @var string */
+                        $first_arg_value = $first_arg->class->getAttribute('resolvedName');
+                    } else {
+                        $first_arg_value = null;
+                    }
+
+                    if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
+                        $second_arg_value = $second_arg->value;
+                    } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $second_arg->class instanceof PhpParser\Node\Name
+                        && $second_arg->name instanceof PhpParser\Node\Identifier
+                        && strtolower($second_arg->name->name) === 'class'
+                    ) {
+                        /** @var string */
+                        $second_arg_value = $second_arg->class->getAttribute('resolvedName');
+                    } else {
+                        $second_arg_value = null;
+                    }
+
+                    if ($first_arg_value && $second_arg_value) {
+                        if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+                            $this->codebase->classlikes->addClassAlias(
+                                $first_arg_value,
+                                $second_arg_value
+                            );
+                        }
+
+                        $this->file_storage->classlike_aliases[strtolower($second_arg_value)] = $first_arg_value;
                     }
                 }
             }
