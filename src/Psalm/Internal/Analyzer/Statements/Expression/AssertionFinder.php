@@ -616,9 +616,7 @@ class AssertionFinder
                 $var_name = '$this';
             }
 
-            if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
-                $var_type = $whichclass_expr->value;
-            } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
+            if ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
                 && $whichclass_expr->class instanceof PhpParser\Node\Name
             ) {
                 $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -637,19 +635,22 @@ class AssertionFinder
 
             if ($source instanceof StatementsSource
                 && $var_type
-                && ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+            ) {
+                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                     $source,
                     $var_type,
                     new CodeLocation($source, $whichclass_expr),
                     $source->getSuppressedIssues(),
                     false
                 ) === false
-            ) {
-                // fall through
-            } else {
-                if ($var_name && $var_type) {
-                    $if_types[$var_name] = [['=getclass-' . $var_type]];
+                ) {
+                    $conditional->assertions = $if_types;
+                    return;
                 }
+            }
+
+            if ($var_name && $var_type) {
+                $if_types[$var_name] = [['=getclass-' . $var_type]];
             }
 
             $conditional->assertions = $if_types;
@@ -1671,11 +1672,10 @@ class AssertionFinder
             && $conditional->right->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->right->name->name) === 'class';
 
-        $left_class_string = $conditional->left instanceof PhpParser\Node\Scalar\String_
-            || ($conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-                && $conditional->left->class instanceof PhpParser\Node\Name
-                && $conditional->left->name instanceof PhpParser\Node\Identifier
-                && strtolower($conditional->left->name->name) === 'class');
+        $left_class_string = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $conditional->left->class instanceof PhpParser\Node\Name
+            && $conditional->left->name instanceof PhpParser\Node\Identifier
+            && strtolower($conditional->left->name->name) === 'class';
 
         if (($right_get_class || $right_static_class) && $left_class_string) {
             return self::ASSIGNMENT_TO_RIGHT;
@@ -1691,11 +1691,10 @@ class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->left->name->name) === 'class';
 
-        $right_class_string = $conditional->right instanceof PhpParser\Node\Scalar\String_
-            || ($conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-                && $conditional->right->class instanceof PhpParser\Node\Name
-                && $conditional->right->name instanceof PhpParser\Node\Identifier
-                && strtolower($conditional->right->name->name) === 'class');
+        $right_class_string = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $conditional->right->class instanceof PhpParser\Node\Name
+            && $conditional->right->name instanceof PhpParser\Node\Identifier
+            && strtolower($conditional->right->name->name) === 'class';
 
         if (($left_get_class || $left_static_class) && $right_class_string) {
             return self::ASSIGNMENT_TO_LEFT;

@@ -510,7 +510,7 @@ class TypeAlgebraTest extends TestCase
                     }
 
                     function takesA(A $a): void {
-                      if (get_class($a) === "B") {
+                      if (get_class($a) === B::class) {
                         $a->foo();
                       }
                     }',
@@ -523,7 +523,7 @@ class TypeAlgebraTest extends TestCase
                     }
 
                     function takesA(A $a): void {
-                      if (get_class($a) !== "B") {
+                      if (get_class($a) !== B::class) {
                         // do nothing
                       } else {
                         $a->foo();

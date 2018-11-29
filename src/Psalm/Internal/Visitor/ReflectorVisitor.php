@@ -63,9 +63,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var Config */
     private $config;
 
-    /** @var bool */
-    private $queue_strings_as_possible_type = false;
-
     /** @var array<string, string> */
     private $class_template_types = [];
 
@@ -274,10 +271,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
-                if ($function_id === 'get_class') {
-                    $this->queue_strings_as_possible_type = true;
-                }
-
                 if ($function_id === 'define') {
                     $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
                     $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
@@ -371,10 +364,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
             $this->visitInclude($node);
-        } elseif ($node instanceof PhpParser\Node\Scalar\String_ && $this->queue_strings_as_possible_type) {
-            if (preg_match('/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/', $node->value)) {
-                $this->codebase->scanner->queueClassLikeForScanning($node->value, $this->file_path, false, false);
-            }
         } elseif ($node instanceof PhpParser\Node\Expr\Assign
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
@@ -539,8 +528,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         } elseif ($node instanceof PhpParser\Node\Stmt\Function_
             || $node instanceof PhpParser\Node\Stmt\ClassMethod
         ) {
-            $this->queue_strings_as_possible_type = false;
-
             $this->function_template_types = [];
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
             $functionlike_storage = array_pop($this->functionlike_storages);

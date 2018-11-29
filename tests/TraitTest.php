@@ -282,7 +282,7 @@ class TraitTest extends TestCase
                 '<?php
                     trait T {
                         public function f(): void {
-                            if (get_class($this) === "B") {
+                            if (get_class($this) === B::class) {
                                 $this->foo();
                             }
                         }
@@ -302,7 +302,7 @@ class TraitTest extends TestCase
                 '<?php
                     trait T {
                         public function f(): void {
-                            if (static::class === "B") {
+                            if (static::class === B::class) {
                                 $this->foo();
                             }
                         }
