@@ -95,7 +95,7 @@ class RedundantConditionTest extends TestCase
                         }
 
                         switch (get_class($i)) {
-                            case "A":
+                            case A::class:
                                 if ($i->foo) {}
                                 break;
 

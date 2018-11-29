@@ -336,6 +336,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $function_like_storage->variadic = true;
                     }
                 }
+
+                if ($function_id === 'class_alias'
+                    && ($this->codebase->register_stub_files || $this->codebase->register_autoload_files)
+                ) {
+                    $first_arg_value = $node->args[0]->value ?? null;
+                    $second_arg_value = $node->args[1]->value ?? null;
+
+                    if ($first_arg_value instanceof PhpParser\Node\Scalar\String_
+                        && $second_arg_value instanceof PhpParser\Node\Scalar\String_
+                    ) {
+                        $this->codebase->classlikes->addClassAlias(
+                            $first_arg_value->value,
+                            $second_arg_value->value
+                        );
+                    }
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->classlike_storages) {

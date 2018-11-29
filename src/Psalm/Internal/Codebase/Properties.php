@@ -99,8 +99,6 @@ class Properties
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
-        $fq_class_name = strtolower($fq_class_name);
-
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
@@ -118,8 +116,6 @@ class Properties
     public function getAppearingClassForProperty($property_id)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
-
-        $fq_class_name = strtolower($fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 

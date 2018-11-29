@@ -255,8 +255,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             return null;
         }
 
+        $aliased_name_lc = $codebase->classlikes->getUnAliasedName(
+            strtolower($fq_class_name)
+        );
+
         try {
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $class_storage = $codebase->classlike_storage_provider->get($aliased_name_lc);
         } catch (\InvalidArgumentException $e) {
             if (!$inferred) {
                 throw $e;
@@ -289,7 +293,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||
             ($interface_exists && !$codebase->interfaceHasCorrectCasing($fq_class_name))
         ) {
-            if ($codebase->classlikes->isUserDefined($fq_class_name)) {
+            if ($codebase->classlikes->isUserDefined($aliased_name_lc)) {
                 if (IssueBuffer::accepts(
                     new InvalidClass(
                         'Class or interface ' . $fq_class_name . ' has wrong casing',
@@ -305,7 +309,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
         $codebase->file_reference_provider->addFileReferenceToClass(
             $code_location->file_path,
-            strtolower($fq_class_name)
+            $aliased_name_lc
         );
 
         if (!$inferred) {
@@ -476,8 +480,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     ) {
         $codebase = $source->getCodebase();
 
-        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
-        $appearing_property_class = $codebase->properties->getAppearingClassForProperty($property_id);
+        $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+            $property_id
+        );
+        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+            $property_id
+        );
 
         if (!$declaring_property_class || !$appearing_property_class) {
             throw new \UnexpectedValueException(

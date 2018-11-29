@@ -221,6 +221,48 @@ class StubTest extends TestCase
     /**
      * @return void
      */
+    public function testClassAlias()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    autoloader="tests/stubs/class_alias.php"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function foo(A $a) : void {}
+
+                foo(new B());
+
+                function bar(B $b) : void {}
+
+                bar(new A());
+
+                $a = new B();
+
+                echo $a->foo;
+
+                echo $a->bar("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testStubFunctionWithFunctionExists()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -58,6 +58,8 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     $aliases
                 );
 
+                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
                 if ($context->check_classes) {
                     if ($context->isPhantomClass($fq_class_name)) {
                         return null;

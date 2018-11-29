@@ -82,6 +82,11 @@ class ClassLikes
     private $classlike_references = [];
 
     /**
+     * @var array<string, string>
+     */
+    private $classlike_aliases = [];
+
+    /**
      * @var bool
      */
     public $collect_references = false;
@@ -246,6 +251,10 @@ class ClassLikes
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
+        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
+            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
+        }
+
         if (!isset($this->existing_classes_lc[$fq_class_name_lc])
             || !$this->existing_classes_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
@@ -288,6 +297,10 @@ class ClassLikes
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
+        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
+            $fq_class_name_lc = $this->classlike_aliases[$fq_class_name_lc];
+        }
+
         if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
@@ -329,6 +342,10 @@ class ClassLikes
     public function hasFullyQualifiedTraitName($fq_class_name)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
+
+        if (isset($this->classlike_aliases[$fq_class_name_lc])) {
+            $fq_class_name_lc = $this->classlike_aliases[$fq_class_name_lc];
+        }
 
         if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
             !$this->existing_traits_lc[$fq_class_name_lc]
@@ -410,6 +427,8 @@ class ClassLikes
             return false;
         }
 
+        $fq_class_name = $this->classlike_aliases[$fq_class_name] ?? $fq_class_name;
+
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         return isset($class_storage->parent_classes[strtolower($possible_parent)]);
@@ -445,6 +464,10 @@ class ClassLikes
             || isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$fq_class_name])
         ) {
             return false;
+        }
+
+        if (isset($this->classlike_aliases[$fq_class_name])) {
+            $fq_class_name = $this->classlike_aliases[$fq_class_name];
         }
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
@@ -518,6 +541,10 @@ class ClassLikes
             return true;
         }
 
+        if (isset($this->classlike_aliases[strtolower($fq_class_name)])) {
+            return true;
+        }
+
         return isset($this->existing_classes[$fq_class_name]);
     }
 
@@ -528,6 +555,10 @@ class ClassLikes
      */
     public function interfaceHasCorrectCasing($fq_interface_name)
     {
+        if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
+            return true;
+        }
+
         return isset($this->existing_interfaces[$fq_interface_name]);
     }
 
@@ -538,6 +569,10 @@ class ClassLikes
      */
     public function traitHasCorrectCase($fq_trait_name)
     {
+        if (isset($this->classlike_aliases[strtolower($fq_trait_name)])) {
+            return true;
+        }
+
         return isset($this->existing_traits[$fq_trait_name]);
     }
 
@@ -597,6 +632,22 @@ class ClassLikes
         throw new \UnexpectedValueException(
             'Expecting trait aliases to exist for ' . $fq_trait_name
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function addClassAlias(string $fq_class_name, string $alias_name)
+    {
+        $this->classlike_aliases[strtolower($alias_name)] = $fq_class_name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUnAliasedName(string $alias_name)
+    {
+        return $this->classlike_aliases[strtolower($alias_name)] ?? $alias_name;
     }
 
     /**
