@@ -209,7 +209,14 @@ class FileFilter
         if ($e->referencedMethod) {
             /** @var \SimpleXMLElement $referenced_method */
             foreach ($e->referencedMethod as $referenced_method) {
-                $filter->method_ids[] = strtolower((string)$referenced_method['name']);
+                $method_id = (string)$referenced_method['name'];
+
+                if (!preg_match('/^[^:]+::[^:]+$/', $method_id)) {
+                    echo 'Invalid referencedMethod ' . $method_id . PHP_EOL;
+                    exit(1);
+                }
+
+                $filter->method_ids[] = strtolower($method_id);
             }
         }
 
@@ -317,7 +324,8 @@ class FileFilter
      */
     public function allowsMethod($method_id)
     {
-        return in_array($method_id, $this->method_ids);
+        $method_stub = '*::' . explode('::', $method_id)[1];
+        return in_array($method_id, $this->method_ids) || in_array($method_stub, $this->method_ids);
     }
 
     /**

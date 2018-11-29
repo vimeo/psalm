@@ -316,6 +316,7 @@ class ConfigTest extends TestCase
                         <UndefinedMethod>
                             <errorLevel type="suppress">
                                 <referencedMethod name="Psalm\Bodger::find1" />
+                                <referencedMethod name="*::find2" />
                             </errorLevel>
                         </UndefinedMethod>
                         <UndefinedPropertyFetch>
@@ -367,6 +368,22 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForMethod(
                 'UndefinedMethod',
                 'Psalm\Bodger::find1'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Bodger::find2'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForMethod(
+                'UndefinedMethod',
+                'Psalm\Badger::find2'
             )
         );
 
