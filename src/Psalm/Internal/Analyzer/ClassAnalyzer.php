@@ -496,6 +496,39 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+
+
+
+        foreach ($storage->pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            $pseudo_method_id = $this->fq_class_name . '::' . $pseudo_method_name;
+
+            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
+
+            if ($overridden_method_ids
+                && $pseudo_method_name !== '__construct'
+                && $pseudo_method_storage->location
+            ) {
+                foreach ($overridden_method_ids as $overridden_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    list($overridden_fq_class_name) = explode('::', $overridden_method_id);
+
+                    $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
+
+                    MethodAnalyzer::compareMethods(
+                        $codebase,
+                        $storage,
+                        $parent_storage,
+                        $pseudo_method_storage,
+                        $parent_method_storage,
+                        $pseudo_method_storage->location,
+                        $storage->suppressed_issues,
+                        true,
+                        false
+                    );
+                }
+            }
+        }
     }
 
     /**

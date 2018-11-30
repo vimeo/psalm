@@ -192,7 +192,7 @@ class Config
     /**
      * @var bool
      */
-    public $use_phpdoc_methods_without_call = false;
+    public $use_phpdoc_method_without_magic_or_parent = false;
 
     /**
      * @var bool
@@ -551,7 +551,7 @@ class Config
 
         if (isset($config_xml['usePhpDocMethodsWithoutMagicCall'])) {
             $attribute_text = (string) $config_xml['usePhpDocMethodsWithoutMagicCall'];
-            $config->use_phpdoc_methods_without_call = $attribute_text === 'true' || $attribute_text === '1';
+            $config->use_phpdoc_method_without_magic_or_parent = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['memoizeMethodCallResults'])) {

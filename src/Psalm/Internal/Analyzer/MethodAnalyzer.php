@@ -362,6 +362,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
      * @param  bool             $prevent_abstract_override
+     * @param  bool             $prevent_method_signature_mismatch
      *
      * @return false|null
      */
@@ -373,7 +374,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         MethodStorage $guide_method_storage,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $prevent_abstract_override = true
+        $prevent_abstract_override = true,
+        $prevent_method_signature_mismatch = true
     ) {
         $implementer_method_id = $implementer_classlike_storage->name . '::'
             . strtolower($guide_method_storage->cased_name);
@@ -418,7 +420,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             return null;
         }
 
-        if ($guide_method_storage->signature_return_type) {
+        if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
             $guide_signature_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $guide_method_storage->signature_return_type,
@@ -539,7 +541,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
             $implementer_param = $implementer_method_storage->params[$i];
 
-            if ($guide_classlike_storage->user_defined
+            if ($prevent_method_signature_mismatch
+                && $guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
                 && !TypeAnalyzer::isContainedByInPhp($guide_param->signature_type, $implementer_param->signature_type)
             ) {

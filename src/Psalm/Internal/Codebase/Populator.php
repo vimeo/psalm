@@ -334,6 +334,8 @@ class Populator
 
             $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
             $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
+
+            $storage->pseudo_methods += $parent_storage->pseudo_methods;
         }
     }
 

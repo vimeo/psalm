@@ -753,8 +753,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
                 foreach ($docblock_info->methods as $method) {
-                    $storage->pseudo_methods[strtolower($method->name->name)]
-                        = $this->registerFunctionLike($method, true);
+                    /** @var MethodStorage */
+                    $pseudo_method_storage = $this->registerFunctionLike($method, true);
+
+                    $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
                 }
             }
         }
@@ -830,7 +832,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($fake_method && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
             $cased_function_id = '@method ' . $stmt->name->name;
 
-            $storage = new FunctionLikeStorage();
+            $storage = new MethodStorage();
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;

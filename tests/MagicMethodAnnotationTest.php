@@ -14,7 +14,7 @@ class MagicMethodAnnotationTest extends TestCase
      */
     public function testPhpDocMethodWhenUndefined()
     {
-        Config::getInstance()->use_phpdoc_methods_without_call = true;
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
         $this->addFile(
             'somefile.php',
@@ -48,7 +48,7 @@ class MagicMethodAnnotationTest extends TestCase
      */
     public function testCannotOverrideParentClassRetunTypeWhenIgnoringPhpDocMethod()
     {
-        Config::getInstance()->use_phpdoc_methods_without_call = false;
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
 
         $this->addFile(
             'somefile.php',
@@ -71,6 +71,35 @@ class MagicMethodAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
 
+        $this->assertSame('Child', (string) $context->vars_in_scope['$child']);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UndefinedMethod
+     * @return void
+     */
+    public function testAnnotationWithoutCallConfig()
+    {
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method string getString()
+                 */
+                class Child {}
+
+                $child = new Child();
+
+                $a = $child->getString();'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
         $this->assertSame('ParentClass', (string) $context->vars_in_scope['$child']);
     }
 
@@ -79,7 +108,7 @@ class MagicMethodAnnotationTest extends TestCase
      */
     public function testOverrideParentClassRetunType()
     {
-        Config::getInstance()->use_phpdoc_methods_without_call = true;
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
         $this->addFile(
             'somefile.php',
@@ -244,6 +273,67 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'magicMethodOverridesParentWithMoreSpecificType' => [
+                '<?php
+                    class C {}
+                    class D extends C {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /** @method D foo(string $s) */
+                    class B extends A {}',
+            ],
+            'complicatedMagicMethodInheritance' => [
+                '<?php
+                    class BaseActiveRecord {
+                        /**
+                         * @param string $class
+                         * @param array $link
+                         * @return ActiveQueryInterface
+                         */
+                        public function hasMany($class, $link)
+                        {
+                            return new ActiveQuery();
+                        }
+                    }
+
+                    /**
+                     * @method ActiveQuery hasMany($class, array $link)
+                     */
+                    class ActiveRecord extends BaseActiveRecord {}
+
+                    interface ActiveQueryInterface {}
+
+                    class ActiveQuery implements ActiveQueryInterface {
+                        /**
+                         * @param string $tableName
+                         * @param array $link
+                         * @param callable $callable
+                         * @return $this
+                         */
+                        public function viaTable($tableName, $link, callable $callable = null)
+                        {
+                            return $this;
+                        }
+                    }
+
+                    class Boom extends ActiveRecord {
+                        /**
+                         * @return ActiveQuery
+                         */
+                        public function getUsers()
+                        {
+                            $query = $this->hasMany("User", ["id" => "user_id"])
+                                ->viaTable("account_to_user", ["account_id" => "id"]);
+
+                            return $query;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -253,18 +343,6 @@ class MagicMethodAnnotationTest extends TestCase
     public function providerInvalidCodeParse()
     {
         return [
-            'annotationWithoutCall' => [
-                '<?php
-                    /**
-                     * @method string getString()
-                     */
-                    class Child {}
-
-                    $child = new Child();
-
-                    $a = $child->getString();',
-                'error_message' => 'UndefinedMethod',
-            ],
             'annotationWithBadDocblock' => [
                 '<?php
                     class ParentClass {
@@ -353,6 +431,36 @@ class MagicMethodAnnotationTest extends TestCase
 
                     $child->setInts([1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'magicMethodOverridesParentWithDifferentReturnType' => [
+                '<?php
+                    class C {}
+                    class D {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /** @method D foo(string $s) */
+                    class B extends A {}',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'magicMethodOverridesParentWithDifferentParamType' => [
+                '<?php
+                    class C {}
+                    class D extends C {}
+
+                    class A {
+                        public function foo(string $s) : C {
+                            return new C;
+                        }
+                    }
+
+                    /** @method D foo(int $s) */
+                    class B extends A {}',
+                'error_message' => 'MoreSpecificImplementedParamType',
             ],
         ];
     }

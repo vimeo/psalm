@@ -468,7 +468,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $context->calling_method_id,
                     $method_id !== $source_method_id ? $code_location : null
                 )) {
-                    if ($config->use_phpdoc_methods_without_call) {
+                    if ($config->use_phpdoc_method_without_magic_or_parent) {
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                         if (isset($class_storage->pseudo_methods[$method_name_lc])) {

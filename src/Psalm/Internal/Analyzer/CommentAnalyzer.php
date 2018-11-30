@@ -610,8 +610,6 @@ class CommentAnalyzer
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
-
-
                 $info->methods[] = $statements[0]->stmts[0];
             }
         }
