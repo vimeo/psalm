@@ -157,6 +157,16 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedArgument', 'MixedArrayOffset', 'MissingParamType'],
             ],
+            'suppressPossiblyUndefinedStringArrayOffet' => [
+                '<?php
+                    /** @var array{a?:string} */
+                    $entry = ["a"];
+
+                    ["a" => $elt] = $entry;
+                    strlen($elt);',
+                'assertions' => [],
+                'error_levels' => ['PossiblyUndefinedArrayOffset'],
+            ],
         ];
     }
 
@@ -276,6 +286,22 @@ class ArrayAccessTest extends TestCase
                     $a = ["Foo" => "bar"];
                     echo $a[new Foo];',
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'possiblyUndefinedIntArrayOffet' => [
+                '<?php
+                    /** @var array{0?:string} */
+                    $entry = ["a"];
+
+                    [$elt] = $entry;',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'possiblyUndefinedStringArrayOffet' => [
+                '<?php
+                    /** @var array{a?:string} */
+                    $entry = ["a"];
+
+                    ["a" => $elt] = $entry;',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }
