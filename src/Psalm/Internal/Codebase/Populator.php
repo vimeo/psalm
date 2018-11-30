@@ -584,9 +584,11 @@ class Populator
 
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
-                && isset($storage->trait_alias_map[$method_name])
             ) {
-                $aliased_method_names[] = $storage->trait_alias_map[$method_name];
+                $aliased_method_names = array_merge(
+                    $aliased_method_names,
+                    array_keys($storage->trait_alias_map, $method_name, true)
+                );
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -627,9 +629,11 @@ class Populator
 
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
-                && isset($storage->trait_alias_map[$method_name])
             ) {
-                $aliased_method_names[] = $storage->trait_alias_map[$method_name];
+                $aliased_method_names = array_merge(
+                    $aliased_method_names,
+                    array_keys($storage->trait_alias_map, $method_name, true)
+                );
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {

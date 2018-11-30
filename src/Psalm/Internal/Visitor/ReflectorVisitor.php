@@ -391,7 +391,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             foreach ($node->adaptations as $adaptation) {
                 if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
                     if ($adaptation->newName) {
-                        $method_map[strtolower($adaptation->method->name)] = strtolower($adaptation->newName->name);
+                        $method_map[strtolower($adaptation->newName->name)] = strtolower($adaptation->method->name);
                     }
                 }
             }
