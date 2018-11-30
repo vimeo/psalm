@@ -1052,6 +1052,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     $rules = \Psalm\Type\Algebra::getTruthsFromFormula($negated_formula);
 
+                    if (!$rules) {
+                        $var_assertions = [];
+                        break;
+                    }
+
                     foreach ($rules as $var_id => $rule) {
                         foreach ($rule as $rule_part) {
                             if (count($rule_part) > 1) {
