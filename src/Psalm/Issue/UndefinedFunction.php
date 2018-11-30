@@ -1,6 +1,6 @@
 <?php
 namespace Psalm\Issue;
 
-class UndefinedFunction extends CodeIssue
+class UndefinedFunction extends MethodIssue
 {
 }

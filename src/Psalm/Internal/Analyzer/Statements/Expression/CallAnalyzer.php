@@ -2118,7 +2118,8 @@ class CallAnalyzer
                 if (IssueBuffer::accepts(
                     new UndefinedFunction(
                         'Function ' . $cased_function_id . ' does not exist',
-                        $code_location
+                        $code_location,
+                        $function_id
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {

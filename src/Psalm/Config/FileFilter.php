@@ -324,8 +324,14 @@ class FileFilter
      */
     public function allowsMethod($method_id)
     {
-        $method_stub = '*::' . explode('::', $method_id)[1];
-        return in_array($method_id, $this->method_ids) || in_array($method_stub, $this->method_ids);
+        if (preg_match('/^[^:]+::[^:]+$/', $method_id)) {
+            $method_stub = '*::' . explode('::', $method_id)[1];
+
+            if (in_array($method_stub, $this->method_ids)) {
+                return true;
+            }
+        }
+        return in_array($method_id, $this->method_ids);
     }
 
     /**
