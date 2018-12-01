@@ -17,9 +17,9 @@ This is a somewhat informal list that might aid others.
   
 ## Supporting the community
 - **Supporting formal PHPDoc annotations**
-- **Supporting informal PHPDoc annotations**
+- **Supporting informal PHPDoc annotations**  
   e.g. `ArrayIterator|string[]` to denote an `ArrayIterator` over strings
-- **non-Composer projects**
+- **non-Composer projects**  
   e.g. WordPress
   
 ## Making Psalm fast
