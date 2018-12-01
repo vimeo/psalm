@@ -5,6 +5,8 @@ ini_set('html_errors', '1');
 ini_set('memory_limit', '-1');
 error_reporting(E_ALL);
 
+gc_disable();
+
 require __DIR__ . '../../../vendor/autoload.php';
 
 $a = file_get_contents(__DIR__ . '/a.test');

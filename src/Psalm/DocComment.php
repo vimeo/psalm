@@ -128,6 +128,25 @@ class DocComment
         // is one.
         $docblock = preg_replace('/^\s*\n/', '', $docblock);
 
+        foreach ($special as $special_key => $_) {
+            if (substr($special_key, 0, 6) === 'psalm-') {
+                $special_key = substr($special_key, 6);
+
+                if (!in_array(
+                    $special_key,
+                    [
+                        'return', 'param', 'template', 'var', 'type',
+                        'assert', 'assert-if-true', 'assert-if-false', 'suppress',
+                        'ignore-nullable-return', 'override-property-visibility',
+                        'override-method-visibility', 'seal-properties', 'seal-methods',
+                        'generator-return', 'ignore-falsable-return',
+                    ]
+                )) {
+                    throw new DocblockParseException('Unrecognised annotation @psalm-' . $special_key);
+                }
+            }
+        }
+
         return [
             'description' => $docblock,
             'specials' => $special,
