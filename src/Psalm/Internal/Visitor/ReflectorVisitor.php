@@ -1592,7 +1592,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($storage_param === null) {
-                continue;
+                if (!$docblock_param_variadic || $storage->params || $this->scan_deep) {
+                    continue;
+                }
+
+                $storage_param = new FunctionLikeParameter(
+                    $param_name,
+                    false,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    true,
+                    null
+                );
+
+                $storage->params[] = $storage_param;
             }
 
             $code_location = new CodeLocation(
