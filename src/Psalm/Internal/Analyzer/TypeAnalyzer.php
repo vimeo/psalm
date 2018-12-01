@@ -34,6 +34,9 @@ use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 
+/**
+ * @internal
+ */
 class TypeAnalyzer
 {
     /**

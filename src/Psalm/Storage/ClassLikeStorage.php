@@ -78,6 +78,11 @@ class ClassLikeStorage
     public $deprecated = false;
 
     /**
+     * @var bool
+     */
+    public $internal = false;
+
+    /**
      * @var array<string, bool>
      */
     public $deprecated_constants = [];

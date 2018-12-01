@@ -4,6 +4,9 @@ namespace Psalm\Internal\Visitor;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 
+/**
+ * @internal
+ */
 class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor
 {
     /**

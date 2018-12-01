@@ -22,6 +22,9 @@ use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class ReturnAnalyzer
 {
     /**

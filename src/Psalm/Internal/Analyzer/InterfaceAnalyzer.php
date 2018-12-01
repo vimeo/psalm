@@ -5,6 +5,9 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
 
+/**
+ * @internal
+ */
 class InterfaceAnalyzer extends ClassLikeAnalyzer
 {
     /**

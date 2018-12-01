@@ -6,6 +6,9 @@ namespace Psalm\Internal\LanguageServer;
 use AdvancedJsonRpc;
 use Sabre\Event\Promise;
 
+/**
+ * @internal
+ */
 class ClientHandler
 {
     /**

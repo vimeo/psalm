@@ -39,6 +39,9 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 
+/**
+ * @internal
+ */
 class CallAnalyzer
 {
     /**

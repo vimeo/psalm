@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\DeprecatedProperty;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\InternalProperty;
 use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
 use Psalm\Issue\LoopInvalidation;
@@ -36,6 +37,9 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 
+/**
+ * @internal
+ */
 class PropertyAssignmentAnalyzer
 {
     /**
@@ -407,11 +411,11 @@ class PropertyAssignmentAnalyzer
                 }
 
 
-                $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
                     $property_id
                 );
 
-                $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
+                $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
                 $property_storage = $class_storage->properties[$prop_name];
 
@@ -425,6 +429,24 @@ class PropertyAssignmentAnalyzer
                         $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
+                    }
+                }
+
+                if ($property_storage->internal && $context->self) {
+                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
+                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
+
+                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                        if (IssueBuffer::accepts(
+                            new InternalProperty(
+                                $property_id . ' is marked internal',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 

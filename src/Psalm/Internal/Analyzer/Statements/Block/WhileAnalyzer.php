@@ -8,6 +8,9 @@ use Psalm\Context;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class WhileAnalyzer
 {
     /**

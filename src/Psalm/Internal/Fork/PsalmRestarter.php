@@ -2,6 +2,9 @@
 
 namespace Psalm\Internal\Fork;
 
+/**
+ * @internal
+ */
 class PsalmRestarter extends \Composer\XdebugHandler\XdebugHandler
 {
     /**

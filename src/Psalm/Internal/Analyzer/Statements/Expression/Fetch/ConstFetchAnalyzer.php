@@ -16,6 +16,9 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class ConstFetchAnalyzer
 {
     /**

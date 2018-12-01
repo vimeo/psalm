@@ -3,6 +3,9 @@ namespace Psalm\Internal\PluginManager;
 
 use RuntimeException;
 
+/**
+ * @internal
+ */
 class ComposerLock
 {
     /** @var string */

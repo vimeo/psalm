@@ -15,6 +15,9 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeVisitorAbstract;
 
+/**
+ * @internal
+ */
 class SimpleNameResolver extends NodeVisitorAbstract
 {
     /** @var NameContext Naming context */

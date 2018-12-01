@@ -3,6 +3,9 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 
+/**
+ * @internal
+ */
 class ScopeAnalyzer
 {
     const ACTION_END = 'END';

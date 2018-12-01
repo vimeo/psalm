@@ -14,6 +14,9 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\TypeCombination;
 
+/**
+ * @internal
+ */
 class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)

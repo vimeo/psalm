@@ -3,6 +3,9 @@ namespace Psalm\Internal;
 
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class ReferenceConstraint
 {
     /** @var Type\Union|null */

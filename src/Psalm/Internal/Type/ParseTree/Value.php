@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Type\ParseTree;
 
+/**
+ * @internal
+ */
 class Value extends \Psalm\Internal\Type\ParseTree
 {
     /**

@@ -19,6 +19,9 @@ use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
+/**
+ * @internal
+ */
 class IfAnalyzer
 {
     /**

@@ -10,6 +10,9 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 {
     use CanAlias;

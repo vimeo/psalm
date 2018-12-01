@@ -6,6 +6,9 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\StatementsSource;
 
+/**
+ * @internal
+ */
 abstract class SourceAnalyzer implements StatementsSource
 {
     /**

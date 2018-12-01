@@ -314,6 +314,74 @@ class A {
 echo (new A)->foo;
 ```
 
+### InternalClass
+
+Emmitted when attempting to access a class marked as internal an unrelated namespace or class.
+
+```php
+namespace A {
+    /**
+     * @internal
+     */
+    class Foo { }
+}
+
+namespace B {
+    class Bat {
+        public function batBat() {
+            $a = new \A\Foo();
+        }
+    }
+}
+```
+
+### InternalMethod
+
+Emmitted when attempting to access a method marked as internal an unrelated namespace or class.
+
+```php
+namespace A {
+    class Foo {
+        /**
+         * @internal
+         */
+        public static function barBar(): void {
+        }
+    }
+}
+namespace B {
+    class Bat {
+        public function batBat() {
+            \A\Foo::barBar();
+        }
+    }
+}
+```
+
+### InternalProperty
+
+Emmitted when attempting to access a property marked as internal from an unrelated namespace or class.
+
+```php
+namespace A {
+    class Foo {
+        /**
+         * @internal
+         * @var ?int
+         */
+        public $foo;
+    }
+}
+
+namespace B {
+    class Bat {
+        public function batBat() : void {
+            echo (new \A\Foo)->foo;
+        }
+    }
+}
+```
+
 ### InvalidArgument
 
 Emitted when a supplied function/method argument is incompatible with the method signature or docblock one.

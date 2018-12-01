@@ -7,6 +7,9 @@ use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
 {
     use CanAlias;

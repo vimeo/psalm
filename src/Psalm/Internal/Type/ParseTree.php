@@ -3,6 +3,9 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
 
+/**
+ * @internal
+ */
 class ParseTree
 {
     /**

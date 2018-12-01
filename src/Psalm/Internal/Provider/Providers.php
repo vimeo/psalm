@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Provider;
 
+/**
+ * @internal
+ */
 class Providers
 {
     /**

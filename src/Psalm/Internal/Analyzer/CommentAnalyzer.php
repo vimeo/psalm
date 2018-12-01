@@ -13,6 +13,9 @@ use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\ParseTree;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class CommentAnalyzer
 {
     const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
@@ -124,6 +127,7 @@ class CommentAnalyzer
                 $var_comment->var_id = $var_id;
                 $var_comment->line_number = $var_line_number;
                 $var_comment->deprecated = isset($comments['specials']['deprecated']);
+                $var_comment->internal = isset($comments['specials']['internal']);
 
                 $var_comments[] = $var_comment;
             }
@@ -366,6 +370,10 @@ class CommentAnalyzer
             $info->deprecated = true;
         }
 
+        if (isset($comments['specials']['internal'])) {
+            $info->internal = true;
+        }
+
         if (isset($comments['specials']['psalm-suppress'])) {
             foreach ($comments['specials']['psalm-suppress'] as $suppress_entry) {
                 $info->suppress[] = preg_split('/[\s]+/', $suppress_entry)[0];
@@ -501,6 +509,10 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['deprecated'])) {
             $info->deprecated = true;
+        }
+
+        if (isset($comments['specials']['internal'])) {
+            $info->internal = true;
         }
 
         if (isset($comments['specials']['psalm-seal-properties'])) {

@@ -8,6 +8,9 @@ use Psalm\FileSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Internal\Visitor\ReflectorVisitor;
 
+/**
+ * @internal
+ */
 class FileScanner implements FileSource
 {
     /**

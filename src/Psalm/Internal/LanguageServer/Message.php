@@ -5,6 +5,9 @@ namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
 
+/**
+ * @internal
+ */
 class Message
 {
     /**

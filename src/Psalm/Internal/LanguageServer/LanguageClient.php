@@ -5,6 +5,9 @@ namespace Psalm\Internal\LanguageServer;
 
 use JsonMapper;
 
+/**
+ * @internal
+ */
 class LanguageClient
 {
     /**

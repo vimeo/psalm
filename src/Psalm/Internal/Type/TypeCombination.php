@@ -34,6 +34,9 @@ use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class TypeCombination
 {
     /** @var array<string, Atomic> */

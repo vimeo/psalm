@@ -13,6 +13,7 @@ use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\OverriddenPropertyAccess;
@@ -27,6 +28,9 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /**
@@ -159,6 +163,30 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
                     )) {
                         // fall through
+                    }
+                }
+
+                if ($parent_class_storage->internal) {
+                    $code_location = new CodeLocation(
+                        $this,
+                        $class->extends,
+                        $class_context ? $class_context->include_location : null,
+                        true
+                    );
+
+                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $fq_class_name);
+                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $parent_fq_class_name);
+
+                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                        if (IssueBuffer::accepts(
+                            new InternalClass(
+                                $parent_fq_class_name . ' is marked internal',
+                                $code_location
+                            ),
+                            array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                        )) {
+                            // fall through
+                        }
                     }
                 }
 

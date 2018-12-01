@@ -4,10 +4,12 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InternalMethod;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
@@ -22,6 +24,9 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
     /**
@@ -143,8 +148,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      *
      * @return false|null
      */
-    public static function checkMethodNotDeprecated(
+    public static function checkMethodNotDeprecatedOrInternal(
         Codebase $codebase,
+        Context $context,
         $method_id,
         CodeLocation $code_location,
         array $suppressed_issues
@@ -165,6 +171,30 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $suppressed_issues
             )) {
                 // continue
+            }
+        }
+
+        if ($storage->internal
+            && $context->self
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $declaring_class = explode('::', $method_id)[0];
+            $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
+            $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_class);
+
+            if (strtolower($self_root) !== strtolower($declaring_root)) {
+                if (IssueBuffer::accepts(
+                    new InternalMethod(
+                        'The method ' . $codebase_methods->getCasedMethodId($method_id) .
+                            ' has been marked as internal',
+                        $code_location,
+                        $method_id
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
             }
         }
 

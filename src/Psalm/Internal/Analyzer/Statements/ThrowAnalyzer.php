@@ -11,6 +11,9 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class ThrowAnalyzer
 {
     /**

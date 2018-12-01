@@ -33,6 +33,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 
+/**
+ * @internal
+ */
 class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
     /**
@@ -645,8 +648,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
-                    if (MethodAnalyzer::checkMethodNotDeprecated(
+                    if (MethodAnalyzer::checkMethodNotDeprecatedOrInternal(
                         $codebase,
+                        $context,
                         $method_id,
                         $name_code_location,
                         $statements_analyzer->getSuppressedIssues()

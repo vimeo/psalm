@@ -14,6 +14,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class TryAnalyzer
 {
     /**

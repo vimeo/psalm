@@ -38,6 +38,9 @@ use Psalm\Type\Reconciler;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 
+/**
+ * @internal
+ */
 class BinaryOpAnalyzer
 {
     /**

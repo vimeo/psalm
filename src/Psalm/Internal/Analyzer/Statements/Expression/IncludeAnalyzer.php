@@ -12,6 +12,9 @@ use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 
+/**
+ * @internal
+ */
 class IncludeAnalyzer
 {
     /**

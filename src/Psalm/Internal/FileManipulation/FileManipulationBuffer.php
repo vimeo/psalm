@@ -3,6 +3,9 @@ namespace Psalm\Internal\FileManipulation;
 
 use Psalm\FileManipulation;
 
+/**
+ * @internal
+ */
 class FileManipulationBuffer
 {
     /** @var array<string, FileManipulation[]> */

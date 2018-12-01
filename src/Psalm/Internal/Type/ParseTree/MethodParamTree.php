@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Type\ParseTree;
 
+/**
+ * @internal
+ */
 class MethodParamTree extends \Psalm\Internal\Type\ParseTree
 {
     /**

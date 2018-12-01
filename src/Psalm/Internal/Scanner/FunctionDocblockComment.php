@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Scanner;
 
+/**
+ * @internal
+ */
 class FunctionDocblockComment
 {
     /**
@@ -29,6 +32,13 @@ class FunctionDocblockComment
      * @var bool
      */
     public $deprecated = false;
+
+    /**
+     * Whether or not the function is internal
+     *
+     * @var bool
+     */
+    public $internal = false;
 
     /**
      * Whether or not the function uses get_args

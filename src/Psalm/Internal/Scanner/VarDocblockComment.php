@@ -3,6 +3,9 @@ namespace Psalm\Internal\Scanner;
 
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class VarDocblockComment
 {
     /**
@@ -26,9 +29,16 @@ class VarDocblockComment
     public $line_number;
 
     /**
-     * Whether or not the function is deprecated
+     * Whether or not the property is deprecated
      *
      * @var bool
      */
     public $deprecated = false;
+
+    /**
+     * Whether or not the property is internal
+     *
+     * @var bool
+     */
+    public $internal = false;
 }

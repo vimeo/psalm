@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+/**
+ * @internal
+ */
 class PropertyMap
 {
     /**

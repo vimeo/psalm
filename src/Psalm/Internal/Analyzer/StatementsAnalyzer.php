@@ -38,6 +38,9 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 {
     /**
@@ -195,7 +198,20 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             $new_issues = null;
 
             if ($docblock = $stmt->getDocComment()) {
-                $comments = DocComment::parse((string)$docblock);
+                try {
+                    $comments = DocComment::parse((string)$docblock);
+                } catch (DocblockParseException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            (string)$e->getMessage(),
+                            new CodeLocation($this->getSource(), $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    $comments = [];
+                }
                 if (isset($comments['specials']['psalm-suppress'])) {
                     $suppressed = array_filter(
                         array_map(

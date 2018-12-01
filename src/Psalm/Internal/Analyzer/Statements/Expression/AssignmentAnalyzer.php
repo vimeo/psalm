@@ -23,6 +23,9 @@ use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class AssignmentAnalyzer
 {
     /**

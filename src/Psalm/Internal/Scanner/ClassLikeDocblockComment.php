@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal\Scanner;
 
+/**
+ * @internal
+ */
 class ClassLikeDocblockComment
 {
     /**
@@ -9,6 +12,13 @@ class ClassLikeDocblockComment
      * @var bool
      */
     public $deprecated = false;
+
+    /**
+     * Whether or not the class is internal
+     *
+     * @var bool
+     */
+    public $internal = false;
 
     /**
      * @var array<int, array<int, string>>

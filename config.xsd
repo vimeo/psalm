@@ -153,6 +153,9 @@
             <xs:element name="InaccessibleMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InaccessibleProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InterfaceInstantiation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InternalMethod" type="MethodIssueHandlerType" minOccurs="0" />
+            <xs:element name="InternalProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidArrayAssignment" type="IssueHandlerType" minOccurs="0" />

@@ -53,6 +53,9 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Internal\Type\TypeCombination;
 
+/**
+ * @internal
+ */
 class ExpressionAnalyzer
 {
     /**

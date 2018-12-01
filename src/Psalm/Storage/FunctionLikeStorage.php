@@ -60,6 +60,11 @@ class FunctionLikeStorage
     /**
      * @var bool
      */
+    public $internal;
+
+    /**
+     * @var bool
+     */
     public $variadic;
 
     /**

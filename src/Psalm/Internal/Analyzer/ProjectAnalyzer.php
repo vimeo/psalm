@@ -18,6 +18,9 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Type;
 use Sabre\Event\Loop;
 
+/**
+ * @internal
+ */
 class ProjectAnalyzer
 {
     /**

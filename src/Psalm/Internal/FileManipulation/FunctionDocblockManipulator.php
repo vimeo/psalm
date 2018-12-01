@@ -11,6 +11,9 @@ use Psalm\DocComment;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
+/**
+ * @internal
+ */
 class FunctionDocblockManipulator
 {
     /** @var array<string, array<string, FunctionDocblockManipulator>> */

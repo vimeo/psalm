@@ -11,6 +11,9 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
 
+/**
+ * @internal
+ */
 class ArrayAssignmentAnalyzer
 {
     /**

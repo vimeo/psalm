@@ -4,6 +4,9 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 use Psalm\Storage\ClassLikeStorage;
 
+/**
+ * @internal
+ */
 class ClassLikeStorageCacheProvider
 {
     /**

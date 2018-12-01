@@ -4,6 +4,9 @@ namespace Psalm\Internal\Provider;
 use PhpParser;
 use Psalm\Config;
 
+/**
+ * @internal
+ */
 class ParserCacheProvider
 {
     const FILE_HASHES = 'file_hashes_json';

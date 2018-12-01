@@ -12,6 +12,9 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 
+/**
+ * @internal
+ */
 class DoAnalyzer
 {
     /**

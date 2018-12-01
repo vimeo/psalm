@@ -3,6 +3,9 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Storage\FileStorage;
 
+/**
+ * @internal
+ */
 class FileStorageProvider
 {
     /**

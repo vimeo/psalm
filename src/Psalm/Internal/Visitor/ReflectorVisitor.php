@@ -35,6 +35,9 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParser\NodeVisitor, FileSource
 {
     /** @var Aliases */
@@ -743,6 +746,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage->deprecated = $docblock_info->deprecated;
+                $storage->internal = $docblock_info->internal;
 
                 $storage->sealed_properties = $docblock_info->sealed_properties;
                 $storage->sealed_methods = $docblock_info->sealed_methods;
@@ -1200,6 +1204,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($docblock_info->deprecated) {
             $storage->deprecated = true;
+        }
+
+        if ($docblock_info->internal) {
+            $storage->internal = true;
         }
 
         if ($docblock_info->variadic) {
@@ -1834,6 +1842,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $property_storage->has_default = $property->default ? true : false;
             $property_storage->suggested_type = $property_group_type ? null : $default_type;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
+            $property_storage->internal = $var_comment ? $var_comment->internal : false;
 
             if ($stmt->isPublic()) {
                 $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;

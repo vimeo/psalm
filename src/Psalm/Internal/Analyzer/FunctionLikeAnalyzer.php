@@ -28,6 +28,9 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+/**
+ * @internal
+ */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements StatementsSource
 {
     /**

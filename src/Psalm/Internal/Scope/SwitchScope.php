@@ -7,6 +7,9 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class SwitchScope
 {
     /**

@@ -11,6 +11,9 @@ use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Type\Algebra;
 
+/**
+ * @internal
+ */
 class AlgebraAnalyzer
 {
     /**

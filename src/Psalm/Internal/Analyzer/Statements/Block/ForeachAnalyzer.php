@@ -24,6 +24,9 @@ use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class ForeachAnalyzer
 {
     /**

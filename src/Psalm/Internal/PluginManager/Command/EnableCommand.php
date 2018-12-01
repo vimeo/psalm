@@ -10,6 +10,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use InvalidArgumentException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+/**
+ * @internal
+ */
 class EnableCommand extends Command
 {
     /** @var PluginListFactory */

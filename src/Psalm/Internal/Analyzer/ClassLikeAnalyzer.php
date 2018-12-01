@@ -20,6 +20,9 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSource
 {
     const VISIBILITY_PUBLIC = 1;

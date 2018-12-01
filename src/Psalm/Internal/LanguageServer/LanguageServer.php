@@ -31,6 +31,9 @@ use function Sabre\Event\coroutine;
 use Throwable;
 use Webmozart\PathUtil\Path;
 
+/**
+ * @internal
+ */
 class LanguageServer extends AdvancedJsonRpc\Dispatcher
 {
     /**

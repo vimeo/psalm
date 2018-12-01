@@ -15,6 +15,9 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class VariableFetchAnalyzer
 {
     /**

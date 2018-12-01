@@ -259,6 +259,16 @@ class Populator
             }
         }
 
+        if ($storage->internal) {
+            foreach ($storage->methods as $method) {
+                $method->internal = true;
+            }
+
+            foreach ($storage->properties as $property) {
+                $property->internal = true;
+            }
+        }
+
         if ($this->debug_output) {
             echo 'Have populated ' . $storage->name . "\n";
         }

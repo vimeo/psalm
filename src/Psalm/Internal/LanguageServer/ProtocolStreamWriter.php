@@ -10,6 +10,9 @@ use Sabre\Event\{
 };
 use RuntimeException;
 
+/**
+ * @internal
+ */
 class ProtocolStreamWriter implements ProtocolWriter
 {
     /**

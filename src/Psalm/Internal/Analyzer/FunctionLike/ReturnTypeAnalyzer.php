@@ -35,6 +35,9 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
 
+/**
+ * @internal
+ */
 class ReturnTypeAnalyzer
 {
     /**

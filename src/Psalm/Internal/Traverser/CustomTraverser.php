@@ -5,6 +5,9 @@ namespace Psalm\Internal\Traverser;
 use PhpParser\Node;
 use PhpParser\NodeTraverserInterface;
 
+/**
+ * @internal
+ */
 class CustomTraverser extends \PhpParser\NodeTraverser implements NodeTraverserInterface
 {
     public function __construct()

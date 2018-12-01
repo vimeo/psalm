@@ -19,6 +19,9 @@ use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
 
+/**
+ * @internal
+ */
 class AssertionFinder
 {
     const ASSIGNMENT_TO_RIGHT = 1;

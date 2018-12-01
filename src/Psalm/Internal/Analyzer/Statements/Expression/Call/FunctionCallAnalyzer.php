@@ -27,6 +27,9 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;
 
+/**
+ * @internal
+ */
 class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
     /**

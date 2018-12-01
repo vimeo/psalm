@@ -48,6 +48,11 @@ class PropertyStorage
     public $deprecated = false;
 
     /**
+     * @var bool
+     */
+    public $internal = false;
+
+    /**
      * @var array<string, array<int, CodeLocation>>|null
      */
     public $referencing_locations;

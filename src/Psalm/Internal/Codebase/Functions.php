@@ -8,6 +8,9 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
+/**
+ * @internal
+ */
 class Functions
 {
     /**

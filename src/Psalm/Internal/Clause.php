@@ -1,6 +1,9 @@
 <?php
 namespace Psalm\Internal;
 
+/**
+ * @internal
+ */
 class Clause
 {
     /**

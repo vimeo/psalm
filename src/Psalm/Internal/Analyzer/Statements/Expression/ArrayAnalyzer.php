@@ -12,6 +12,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
 
+/**
+ * @internal
+ */
 class ArrayAnalyzer
 {
     /**

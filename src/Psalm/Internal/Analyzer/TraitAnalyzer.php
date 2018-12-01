@@ -5,6 +5,9 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\StatementsSource;
 
+/**
+ * @internal
+ */
 class TraitAnalyzer extends ClassLikeAnalyzer
 {
     /**

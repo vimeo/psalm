@@ -13,6 +13,7 @@ use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidStringClass;
+use Psalm\Issue\InternalClass;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMethod;
@@ -20,6 +21,9 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
+/**
+ * @internal
+ */
 class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer
 {
     /**
@@ -378,6 +382,27 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
+                if ($class_storage->internal
+                    && $context->self
+                    && !$context->collect_initializations
+                    && !$context->collect_mutations
+                ) {
+                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
+                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $fq_class_name);
+
+                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                        if (IssueBuffer::accepts(
+                            new InternalClass(
+                                $fq_class_name . ' is marked internal',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
                 if (MethodAnalyzer::checkMethodVisibility(
                     $method_id,
                     $context->self,
@@ -435,8 +460,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if (MethodAnalyzer::checkMethodNotDeprecated(
+                if (MethodAnalyzer::checkMethodNotDeprecatedOrInternal(
                     $codebase,
+                    $context,
                     $method_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues()
