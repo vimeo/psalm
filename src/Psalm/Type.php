@@ -204,8 +204,10 @@ abstract class Type
 
             $generic_type_value = self::fixScalarTerms($generic_type, false);
 
-            if (($generic_type_value === 'array' || $generic_type_value === 'Generator') &&
-                count($generic_params) === 1
+            if (($generic_type_value === 'array'
+                    || $generic_type_value === 'Generator'
+                    || $generic_type_value === 'iterable')
+                && count($generic_params) === 1
             ) {
                 array_unshift($generic_params, new Union([new TMixed]));
             }
