@@ -5,9 +5,6 @@ use Psalm\Config;
 use DomDocument;
 use RuntimeException;
 
-/**
- * @internal
- */
 class ConfigFile
 {
     const NS = 'https://getpsalm.org/schema/config';

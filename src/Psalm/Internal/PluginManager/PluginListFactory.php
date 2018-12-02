@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
-/**
- * @internal
- */
 class PluginListFactory
 {
     public function __invoke(string $current_dir, string $config_file_path = null): PluginList

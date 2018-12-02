@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Internal\PluginManager;
 
-/**
- * @internal
- */
 class PluginList
 {
     /** @var ConfigFile */
