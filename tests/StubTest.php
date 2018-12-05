@@ -357,7 +357,15 @@ class StubTest extends TestCase
 
                 echo $a->foo;
 
-                echo $a->bar("hello");'
+                echo $a->bar("hello");
+
+                function f(): A {
+                    return new A;
+                }
+
+                function getAliased(): B {
+                    return f();
+                }'
         );
 
         $this->analyzeFile($file_path, new Context());

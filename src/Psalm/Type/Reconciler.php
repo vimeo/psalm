@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ParadoxicalCondition;
+use Psalm\Issue\PsalmInternalError;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainNull;
@@ -135,7 +136,7 @@ class Reconciler
         foreach ($new_types as $key => $new_type_parts) {
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
-                : self::getValueForKey($codebase, $key, $existing_types);
+                : self::getValueForKey($codebase, $key, $existing_types, $code_location);
 
             if ($result_type && empty($result_type->getTypes())) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -1965,8 +1966,12 @@ class Reconciler
      *
      * @return Type\Union|null
      */
-    private static function getValueForKey(Codebase $codebase, $key, array &$existing_keys)
-    {
+    private static function getValueForKey(
+        Codebase $codebase,
+        $key,
+        array &$existing_keys,
+        CodeLocation $code_location = null
+    ) {
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
@@ -2080,12 +2085,30 @@ class Reconciler
 
                 $base_key = $new_base_key;
             } else {
-                throw new \InvalidArgumentException('Unexpected divider ' . $divider);
+                if ($code_location) {
+                    IssueBuffer::add(
+                        new PsalmInternalError(
+                            'Unexpected divider ' . $divider,
+                            $code_location
+                        )
+                    );
+                }
+
+                return null;
             }
         }
 
         if (!isset($existing_keys[$base_key])) {
-            throw new \UnexpectedValueException($base_key . ' should exist in list of keys');
+            if ($code_location) {
+                IssueBuffer::add(
+                    new PsalmInternalError(
+                        'Unknown key ' . $base_key,
+                        $code_location
+                    )
+                );
+            }
+
+            return null;
         }
 
         return $existing_keys[$base_key];
