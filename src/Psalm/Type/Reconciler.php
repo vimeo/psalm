@@ -2084,6 +2084,10 @@ class Reconciler
             }
         }
 
+        if (!isset($existing_keys[$base_key])) {
+            throw new \UnexpectedValueException($base_key . ' should exist in list of keys');
+        }
+
         return $existing_keys[$base_key];
     }
 }
