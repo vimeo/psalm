@@ -725,7 +725,7 @@ class AssertionFinder
                     } else {
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainType(
-                                $var_type->getId() . ' does not contain ' . $other_type->getId(),
+                                $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
                                 new CodeLocation($source, $conditional)
                             ),
                             $source->getSuppressedIssues()
@@ -752,7 +752,7 @@ class AssertionFinder
             if (!TypeAnalyzer::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)) {
                 if (IssueBuffer::accepts(
                     new TypeDoesNotContainType(
-                        $var_type . ' does not contain ' . $other_type,
+                        $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
                         new CodeLocation($source, $conditional)
                     ),
                     $source->getSuppressedIssues()

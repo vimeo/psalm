@@ -759,13 +759,9 @@ class SwitchTypeTest extends TestCase
                             case "InvalidArgumentException":
                                 $e->getMessage();
                                 break;
-
-                            case "LogicException":
-                                $e->getMessage();
-                                break;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src/somefile.php:5 - string(InvalidArgumentException) cannot be identical to class-string',
             ],
         ];
     }

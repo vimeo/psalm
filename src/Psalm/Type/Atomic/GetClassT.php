@@ -6,4 +6,8 @@ namespace Psalm\Type\Atomic;
  */
 class GetClassT extends T
 {
+    public function getId()
+    {
+        return 'class-string';
+    }
 }
