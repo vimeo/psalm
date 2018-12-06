@@ -163,7 +163,8 @@ class ArrayAccessTest extends TestCase
                     $entry = ["a"];
 
                     ["a" => $elt] = $entry;
-                    strlen($elt);',
+                    strlen($elt);
+                    strlen($entry["a"]);',
                 'assertions' => [],
                 'error_levels' => ['PossiblyUndefinedArrayOffset'],
             ],

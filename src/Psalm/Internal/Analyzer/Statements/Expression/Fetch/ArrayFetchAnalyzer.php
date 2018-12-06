@@ -212,6 +212,8 @@ class ArrayFetchAnalyzer
                     // fall through
                 }
             }
+
+            $stmt->inferredType->possibly_undefined = false;
         }
 
         if ($context->inside_isset && $dim_var_id && $new_offset_type && $new_offset_type->getTypes()) {
