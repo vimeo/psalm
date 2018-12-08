@@ -189,7 +189,8 @@ class ReturnAnalyzer
                                 if (IssueBuffer::accepts(
                                     new MixedTypeCoercion(
                                         'The type \'' . $stmt->inferredType . '\' is more general than the declared '
-                                            . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
+                                            . 'return type \'' . $local_return_type->getId() . '\''
+                                            . ' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()
@@ -200,7 +201,8 @@ class ReturnAnalyzer
                                 if (IssueBuffer::accepts(
                                     new LessSpecificReturnStatement(
                                         'The type \'' . $stmt->inferredType . '\' is more general than the declared '
-                                            . 'return type \'' . $local_return_type . '\' for ' . $cased_method_id,
+                                            . 'return type \'' . $local_return_type->getId() . '\''
+                                            . ' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt)
                                     ),
                                     $statements_analyzer->getSuppressedIssues()

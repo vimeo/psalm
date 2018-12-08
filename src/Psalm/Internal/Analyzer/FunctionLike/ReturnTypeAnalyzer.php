@@ -375,8 +375,9 @@ class ReturnTypeAnalyzer
                     if ($type_coerced_from_mixed) {
                         if (IssueBuffer::accepts(
                             new MixedTypeCoercion(
-                                'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                                    ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                                'The declared return type \'' . $declared_return_type->getId() . '\' for '
+                                    . $cased_method_id . ' is more specific than the inferred return type '
+                                    . '\'' . $inferred_return_type->getId() . '\'',
                                 $return_type_location
                             ),
                             $suppressed_issues
@@ -386,8 +387,9 @@ class ReturnTypeAnalyzer
                     } else {
                         if (IssueBuffer::accepts(
                             new MoreSpecificReturnType(
-                                'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                                    ' is more specific than the inferred return type \'' . $inferred_return_type . '\'',
+                                'The declared return type \'' . $declared_return_type->getId() . '\' for '
+                                    . $cased_method_id . ' is more specific than the inferred return type '
+                                    . '\'' . $inferred_return_type->getId() . '\'',
                                 $return_type_location
                             ),
                             $suppressed_issues
