@@ -555,7 +555,7 @@ class CallableTest extends TestCase
                     $a = function() : Closure { return function() : string { return "hello"; }; };
                     $b = $a()();',
                 'assertions' => [
-                    '$a' => 'Closure():Closure():string',
+                    '$a' => 'Closure():Closure():string(hello)',
                     '$b' => 'string',
                 ],
             ],

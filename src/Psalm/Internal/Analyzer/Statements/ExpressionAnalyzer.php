@@ -882,7 +882,9 @@ class ExpressionAnalyzer
         $self_class,
         $static_class_type = null
     ) {
-        if ($return_type instanceof TNamedObject) {
+        if ($return_type instanceof TNamedObject
+            || $return_type instanceof TGenericParam
+        ) {
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
 
@@ -908,30 +910,32 @@ class ExpressionAnalyzer
                 }
             }
 
-            $return_type_lc = strtolower($return_type->value);
+            if ($return_type instanceof TNamedObject) {
+                $return_type_lc = strtolower($return_type->value);
 
-            if ($return_type_lc === 'static' || $return_type_lc === '$this') {
-                if (!$static_class_type) {
-                    throw new \UnexpectedValueException(
-                        'Cannot handle ' . $return_type->value . ' when $static_class is empty'
-                    );
-                }
+                if ($return_type_lc === 'static' || $return_type_lc === '$this') {
+                    if (!$static_class_type) {
+                        throw new \UnexpectedValueException(
+                            'Cannot handle ' . $return_type->value . ' when $static_class is empty'
+                        );
+                    }
 
-                if (is_string($static_class_type)) {
-                    $return_type->value = $static_class_type;
+                    if (is_string($static_class_type)) {
+                        $return_type->value = $static_class_type;
+                    } else {
+                        $return_type = clone $static_class_type;
+                    }
+                } elseif ($return_type_lc === 'self') {
+                    if (!$self_class) {
+                        throw new \UnexpectedValueException(
+                            'Cannot handle ' . $return_type->value . ' when $self_class is empty'
+                        );
+                    }
+
+                    $return_type->value = $self_class;
                 } else {
-                    $return_type = clone $static_class_type;
+                    $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
                 }
-            } elseif ($return_type_lc === 'self') {
-                if (!$self_class) {
-                    throw new \UnexpectedValueException(
-                        'Cannot handle ' . $return_type->value . ' when $self_class is empty'
-                    );
-                }
-
-                $return_type->value = $self_class;
-            } else {
-                $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
             }
         }
 

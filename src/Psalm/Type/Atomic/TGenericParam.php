@@ -28,6 +28,10 @@ class TGenericParam extends \Psalm\Type\Atomic
      */
     public function getKey()
     {
+        if ($this->extra_types) {
+            return $this->param_name . '&' . implode('&', $this->extra_types);
+        }
+
         return $this->param_name;
     }
 

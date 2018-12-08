@@ -1022,6 +1022,31 @@ class TemplateTest extends TestCase
                     $foo->add(new B);',
                 'error_message' => 'InvalidArgument',
             ],
+            'templatedClosureProperty' => [
+                '<?php
+                    final class State
+                    {}
+
+                    interface Foo
+                    {}
+
+                    function type(string ...$_p): void {}
+
+                    /**
+                     * @template T
+                     */
+                    final class AlmostFooMap
+                    {
+                        /**
+                         * @param callable(State):(T&Foo) $closure
+                         */
+                        public function __construct(callable $closure)
+                        {
+                            type($closure);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src/somefile.php:20 - Argument 1 of type expects string, callable(State):T&Foo provided',
+            ]
         ];
     }
 }

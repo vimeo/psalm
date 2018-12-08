@@ -28,6 +28,9 @@ trait GenericTrait
         return $this->value . '<' . substr($s, 0, -2) . '>' . $extra_types;
     }
 
+    /**
+     * @return string
+     */
     public function getId()
     {
         $s = '';

@@ -132,6 +132,9 @@ trait CallableTrait
         return $this->value;
     }
 
+    /**
+     * @return string
+     */
     public function getId()
     {
         $param_string = '';
@@ -144,7 +147,7 @@ trait CallableTrait
         if ($this->return_type !== null) {
             $return_type_multiple = count($this->return_type->getTypes()) > 1;
             $return_type_string = ':' . ($return_type_multiple ? '(' : '')
-                . $this->return_type . ($return_type_multiple ? ')' : '');
+                . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
         }
 
         return $this->value . $param_string . $return_type_string;

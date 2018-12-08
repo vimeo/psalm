@@ -42,6 +42,11 @@ class TNamedObject extends Atomic
         return $this->value;
     }
 
+    public function getId()
+    {
+        return $this->getKey();
+    }
+
     /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes

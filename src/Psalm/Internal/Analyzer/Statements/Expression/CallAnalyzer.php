@@ -1098,7 +1098,7 @@ class CallAnalyzer
                                     if (IssueBuffer::accepts(
                                         new InvalidArgument(
                                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                                . ' expects array, ' . $atomic_type . ' provided',
+                                                . ' expects array, ' . $atomic_type->getId() . ' provided',
                                             $code_location
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
@@ -1592,7 +1592,7 @@ class CallAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
                             'First parameter of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type . ', ' . $input_type . ' provided',
+                                $closure_param_type->getId() . ', ' . $input_type->getId() . ' provided',
                             new CodeLocation($statements_analyzer->getSource(), $closure_arg)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -1746,7 +1746,7 @@ class CallAnalyzer
             if (IssueBuffer::accepts(
                 new ImplicitToStringCast(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                        $param_type . ', ' . $input_type . ' provided with a __toString method',
+                        $param_type->getId() . ', ' . $input_type->getId() . ' provided with a __toString method',
                     $code_location
                 ),
                 $statements_analyzer->getSuppressedIssues()
@@ -1925,7 +1925,7 @@ class CallAnalyzer
                 if (IssueBuffer::accepts(
                     new NullArgument(
                         'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be null, ' .
-                            'null value provided to parameter with type ' . $param_type,
+                            'null value provided to parameter with type ' . $param_type->getId(),
                         $code_location
                     ),
                     $statements_analyzer->getSuppressedIssues()
