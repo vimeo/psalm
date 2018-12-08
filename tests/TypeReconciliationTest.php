@@ -48,12 +48,13 @@ class TypeReconciliationTest extends TestCase
             $type,
             Type::parseString($string),
             null,
-            $this->statements_analyzer
+            $this->statements_analyzer,
+            false
         );
 
         $this->assertSame(
             $expected,
-            (string) $reconciled
+            $reconciled->getId()
         );
 
         if (is_array($reconciled->getTypes())) {
@@ -193,7 +194,7 @@ class TypeReconciliationTest extends TestCase
             'notEmptyWithMyObject' => ['MyObject', '!falsy', 'MyObject'],
             'notEmptyWithMyObjectPipeNull' => ['MyObject', '!falsy', 'MyObject|null'],
             'notEmptyWithMyObjectPipeFalse' => ['MyObject', '!falsy', 'MyObject|false'],
-            'notEmptyWithMixed' => ['mixed', '!falsy', 'mixed'],
+            'notEmptyWithMixed' => ['non-empty-mixed', '!falsy', 'mixed'],
             // @todo in the future this should also work
             //'notEmptyWithMyObjectFalseTrue' => ['MyObject|true', '!falsy', 'MyObject|bool'],
 
@@ -203,10 +204,10 @@ class TypeReconciliationTest extends TestCase
             'falsyWithMyObject' => ['mixed', 'falsy', 'MyObject'],
             'falsyWithMyObjectPipeFalse' => ['false', 'falsy', 'MyObject|false'],
             'falsyWithMyObjectPipeBool' => ['false', 'falsy', 'MyObject|bool'],
-            'falsyWithMixed' => ['mixed', 'falsy', 'mixed'],
+            'falsyWithMixed' => ['empty-mixed', 'falsy', 'mixed'],
             'falsyWithBool' => ['false', 'falsy', 'bool'],
-            'falsyWithStringOrNull' => ['null|string', 'falsy', 'string|null'],
-            'falsyWithScalarOrNull' => ['scalar', 'falsy', 'scalar'],
+            'falsyWithStringOrNull' => ['null|string()|string(0)', 'falsy', 'string|null'],
+            'falsyWithScalarOrNull' => ['empty-scalar', 'falsy', 'scalar'],
 
             'notMyObjectWithMyObjectPipeBool' => ['bool', '!MyObject', 'MyObject|bool'],
             'notMyObjectWithMyObjectPipeNull' => ['null', '!MyObject', 'MyObject|null'],
@@ -219,9 +220,11 @@ class TypeReconciliationTest extends TestCase
 
             '2dArray' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
 
-            'numeric' => ['string', 'numeric', 'string'],
+            'numeric' => ['numeric-string', 'numeric', 'string'],
 
             'nullableClassString' => ['null', 'falsy', '?class-string'],
+            'mixedOrNullNotFalsy' => ['non-empty-mixed', '!falsy', 'mixed|null'],
+            'mixedOrNullFalsy' => ['empty-mixed|null', 'falsy', 'mixed|null'],
         ];
     }
 

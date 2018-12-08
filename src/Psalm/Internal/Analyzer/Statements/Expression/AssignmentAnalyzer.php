@@ -198,7 +198,7 @@ class AssignmentAnalyzer
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($assign_value_type->isMixed()) {
+        if ($assign_value_type->hasMixed()) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
@@ -636,7 +636,7 @@ class AssignmentAnalyzer
                     $statements_analyzer,
                     $stmt->var,
                     $context,
-                    $result_type ?: Type::getMixed(true)
+                    $result_type ?: Type::getMixed($context->inside_loop)
                 );
             } elseif ($result_type && $array_var_id) {
                 $context->vars_in_scope[$array_var_id] = $result_type;

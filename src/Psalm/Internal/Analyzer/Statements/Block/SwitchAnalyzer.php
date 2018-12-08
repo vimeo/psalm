@@ -137,7 +137,8 @@ class SwitchAnalyzer
                         $original_context->vars_in_scope,
                         $changed_var_ids,
                         [],
-                        $statements_analyzer
+                        $statements_analyzer,
+                        $original_context->inside_loop
                     );
 
                 if (isset($case_vars_in_scope_reconciled[$switch_var_id])
@@ -441,6 +442,7 @@ class SwitchAnalyzer
                     $changed_var_ids,
                     $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
                     $statements_analyzer,
+                    $case_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
                         $case->cond ? $case->cond : $case,

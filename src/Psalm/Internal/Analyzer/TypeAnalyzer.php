@@ -70,7 +70,7 @@ class TypeAnalyzer
     ) {
         $has_scalar_match = true;
 
-        if ($container_type->isMixed() && !$container_type->isEmptyMixed()) {
+        if ($container_type->hasMixed() && !$container_type->isEmptyMixed()) {
             return true;
         }
 
@@ -193,7 +193,7 @@ class TypeAnalyzer
         $ignore_null = false,
         $ignore_false = false
     ) {
-        if ($container_type->isMixed()) {
+        if ($container_type->hasMixed()) {
             return true;
         }
 
@@ -245,7 +245,7 @@ class TypeAnalyzer
         Type\Union $type1,
         Type\Union $type2
     ) {
-        if ($type1->isMixed() || $type2->isMixed()) {
+        if ($type1->hasMixed() || $type2->hasMixed()) {
             return true;
         }
 
@@ -603,7 +603,7 @@ class TypeAnalyzer
                     $container_param = $container_type_part->type_params[$container_param_offset];
 
                     if ($i === 0
-                        && $input_param->isMixed()
+                        && $input_param->hasMixed()
                         && $container_param->hasString()
                         && $container_param->hasInt()
                     ) {
@@ -939,7 +939,7 @@ class TypeAnalyzer
                 );
 
                 if (!$input_type_part instanceof ObjectLike
-                    && !$input_type_part->type_params[0]->isMixed()
+                    && !$input_type_part->type_params[0]->hasMixed()
                     && !($input_type_part->type_params[1]->isEmpty()
                         && $container_params_can_be_undefined)
                 ) {
@@ -958,7 +958,7 @@ class TypeAnalyzer
                 $container_param = $container_type_part->type_params[$i];
 
                 if ($i === 0
-                    && $input_param->isMixed()
+                    && $input_param->hasMixed()
                     && $container_param->hasString()
                     && $container_param->hasInt()
                 ) {

@@ -132,7 +132,7 @@ class PropertyAssignmentAnalyzer
                 }
             }
 
-            if ($lhs_type->isMixed()) {
+            if ($lhs_type->hasMixed()) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if (IssueBuffer::accepts(
@@ -455,7 +455,7 @@ class PropertyAssignmentAnalyzer
                 if ($class_property_type === false) {
                     $class_property_type = Type::getMixed();
 
-                    if (!$assignment_value_type->isMixed()) {
+                    if (!$assignment_value_type->hasMixed()) {
                         if ($property_storage->suggested_type) {
                             $property_storage->suggested_type = Type::combineUnionTypes(
                                 $assignment_value_type,
@@ -477,7 +477,7 @@ class PropertyAssignmentAnalyzer
                         $lhs_type_part
                     );
 
-                    if (!$class_property_type->isMixed() && $assignment_value_type->isMixed()) {
+                    if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
                         if (IssueBuffer::accepts(
                             new MixedAssignment(
                                 'Cannot assign ' . $var_id . ' to a mixed type',
@@ -535,7 +535,7 @@ class PropertyAssignmentAnalyzer
             return null;
         }
 
-        if ($assignment_value_type->isMixed()) {
+        if ($assignment_value_type->hasMixed()) {
             return null;
         }
 
@@ -556,7 +556,7 @@ class PropertyAssignmentAnalyzer
         }
 
         foreach ($class_property_types as $class_property_type) {
-            if ($class_property_type->isMixed()) {
+            if ($class_property_type->hasMixed()) {
                 continue;
             }
 
@@ -802,7 +802,7 @@ class PropertyAssignmentAnalyzer
         if ($class_property_type === false) {
             $class_property_type = Type::getMixed();
 
-            if (!$assignment_value_type->isMixed()) {
+            if (!$assignment_value_type->hasMixed()) {
                 if ($property_storage->suggested_type) {
                     $property_storage->suggested_type = Type::combineUnionTypes(
                         $assignment_value_type,
@@ -819,11 +819,11 @@ class PropertyAssignmentAnalyzer
             $class_property_type = clone $class_property_type;
         }
 
-        if ($assignment_value_type->isMixed()) {
+        if ($assignment_value_type->hasMixed()) {
             return null;
         }
 
-        if ($class_property_type->isMixed()) {
+        if ($class_property_type->hasMixed()) {
             return null;
         }
 

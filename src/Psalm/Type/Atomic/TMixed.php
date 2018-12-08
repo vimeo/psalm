@@ -4,14 +4,14 @@ namespace Psalm\Type\Atomic;
 class TMixed extends \Psalm\Type\Atomic
 {
     /** @var bool */
-    public $from_isset = false;
+    public $from_loop_isset = false;
 
     /**
-     * @param bool $from_isset
+     * @param bool $from_loop_isset
      */
-    public function __construct($from_isset = false)
+    public function __construct($from_loop_isset = false)
     {
-        $this->from_isset = $from_isset;
+        $this->from_loop_isset = $from_loop_isset;
     }
 
     public function __toString()

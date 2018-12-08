@@ -165,7 +165,7 @@ class ArrayFetchAnalyzer
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }
 
-                if ($dim_var_id && !$const_array_key_type->isMixed() && !$stmt->dim->inferredType->isMixed()) {
+                if ($dim_var_id && !$const_array_key_type->hasMixed() && !$stmt->dim->inferredType->hasMixed()) {
                     $new_offset_type = clone $stmt->dim->inferredType;
                     $const_array_key_atomic_types = $const_array_key_type->getTypes();
 
@@ -389,7 +389,7 @@ class ArrayFetchAnalyzer
                         if ((!TypeAnalyzer::isContainedBy(
                             $codebase,
                             $offset_type,
-                            $type->type_params[0]->isMixed()
+                            $type->type_params[0]->hasMixed()
                                 ? new Type\Union([ new TInt, new TString ])
                                 : $type->type_params[0],
                             true,
@@ -501,7 +501,7 @@ class ArrayFetchAnalyzer
                             $array_access_type = Type::getMixed();
                         }
                     } else {
-                        $key_type = $generic_key_type->isMixed()
+                        $key_type = $generic_key_type->hasMixed()
                                 ? new Type\Union([ new TInt, new TString ])
                                 : $generic_key_type;
 
@@ -597,7 +597,7 @@ class ArrayFetchAnalyzer
 
             if ($type instanceof TString) {
                 if ($in_assignment && $replacement_type) {
-                    if ($replacement_type->isMixed()) {
+                    if ($replacement_type->hasMixed()) {
                         $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                         if (IssueBuffer::accepts(
@@ -762,7 +762,7 @@ class ArrayFetchAnalyzer
             }
         }
 
-        if ($offset_type->isMixed()) {
+        if ($offset_type->hasMixed()) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (IssueBuffer::accepts(

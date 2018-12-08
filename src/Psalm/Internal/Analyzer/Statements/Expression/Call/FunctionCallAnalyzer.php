@@ -431,6 +431,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $changed_vars,
                     [],
                     $statements_analyzer,
+                    $context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
 

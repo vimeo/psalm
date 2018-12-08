@@ -116,6 +116,7 @@ class BinaryOpAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             );
 
@@ -224,6 +225,7 @@ class BinaryOpAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                $pre_op_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt)
             );
 
@@ -258,6 +260,7 @@ class BinaryOpAnalyzer
                         $pre_op_context->vars_in_scope[$var_id],
                         '',
                         $statements_analyzer,
+                        $context->inside_loop,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                         $statements_analyzer->getSuppressedIssues()
                     );
@@ -314,7 +317,7 @@ class BinaryOpAnalyzer
             $mixed_var_ids = [];
 
             foreach ($context->vars_in_scope as $var_id => $type) {
-                if ($type->isMixed()) {
+                if ($type->hasMixed()) {
                     $mixed_var_ids[] = $var_id;
                 }
             }
@@ -363,6 +366,7 @@ class BinaryOpAnalyzer
                 $changed_var_ids,
                 [],
                 $statements_analyzer,
+                $t_if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left)
             );
 
@@ -404,6 +408,7 @@ class BinaryOpAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    $t_else_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->right)
                 );
 
@@ -434,6 +439,7 @@ class BinaryOpAnalyzer
                     $stmt->left->inferredType,
                     '',
                     $statements_analyzer,
+                    $context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues()
                 );
@@ -884,7 +890,7 @@ class BinaryOpAnalyzer
             }
 
             if ($left_type_part instanceof TMixed
-                && $left_type_part->from_isset
+                && $left_type_part->from_loop_isset
                 && $parent instanceof PhpParser\Node\Expr\AssignOp\Plus
                 && !$right_type_part instanceof TMixed
             ) {
@@ -899,10 +905,10 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            $from_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_isset)
-                && (!($right_type_part instanceof TMixed) || $right_type_part->from_isset);
+            $from_loop_isset = (!($left_type_part instanceof TMixed) || $left_type_part->from_loop_isset)
+                && (!($right_type_part instanceof TMixed) || $right_type_part->from_loop_isset);
 
-            $result_type = Type::getMixed($from_isset);
+            $result_type = Type::getMixed($from_loop_isset);
 
             return $result_type;
         }
@@ -1164,10 +1170,10 @@ class BinaryOpAnalyzer
         if ($left_type && $right_type) {
             $result_type = Type::getString();
 
-            if ($left_type->isMixed() || $right_type->isMixed()) {
+            if ($left_type->hasMixed() || $right_type->hasMixed()) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
-                if ($left_type->isMixed()) {
+                if ($left_type->hasMixed()) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Left operand cannot be mixed',

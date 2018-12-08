@@ -60,7 +60,10 @@ jobs:
     - stage: Code coverage analysis
       php: 7.2
       # don't disable xdebug here
-      env: DEPS="high" XDEBUG="true"
+      env: XDEBUG="true"
+      install:
+        - composer $DEFAULT_COMPOSER_FLAGS update
+        - composer require --dev php-coveralls/php-coveralls
       after_success:
         - travis_retry php vendor/bin/php-coveralls -v
 

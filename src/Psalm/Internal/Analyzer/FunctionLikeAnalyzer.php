@@ -408,7 +408,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     : null;
 
                 if ($default_type
-                    && !$default_type->isMixed()
+                    && !$default_type->hasMixed()
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $default_type,
@@ -479,7 +479,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             if ($function_param->by_ref) {
                 $context->byref_constraints['$' . $function_param->name]
-                    = new \Psalm\Internal\ReferenceConstraint(!$param_type->isMixed() ? $param_type : null);
+                    = new \Psalm\Internal\ReferenceConstraint(!$param_type->hasMixed() ? $param_type : null);
             }
 
             if ($function_param->by_ref) {
@@ -577,7 +577,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $closure_return_type = new Type\Union($closure_return_types);
 
                 if (!$storage->return_type
-                    || $storage->return_type->isMixed()
+                    || $storage->return_type->hasMixed()
                     || TypeAnalyzer::isContainedBy(
                         $codebase,
                         $closure_return_type,
@@ -1121,7 +1121,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     continue;
                 }
 
-                if ($arg->value->inferredType->isMixed()) {
+                if ($arg->value->inferredType->hasMixed()) {
                     continue;
                 }
 

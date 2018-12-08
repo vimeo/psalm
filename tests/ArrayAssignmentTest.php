@@ -585,13 +585,13 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mixedArrayAssignmentWithStringKeys' => [
                 '<?php
-                    /** @var array<mixed, mixed> */
-                    $a = [];
-                    $a["b"]["c"] = 5;
-                    echo $a["b"]["d"];',
-                'assertions' => [
-                    '$a' => 'array<mixed, mixed>',
-                ],
+                    function foo(array $a) : array {
+                        $a["b"]["c"] = 5;
+                        echo $a["b"]["d"];
+                        echo $a["a"];
+                        return $a;
+                    }',
+                'assertions' => [],
                 'error_levels' => ['MixedArrayAssignment', 'MixedArrayAccess', 'MixedArgument'],
             ],
             'mixedArrayCoercion' => [
@@ -953,6 +953,16 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$out[\'attr\'][\'bar\']' => 'int'
                 ],
+            ],
+            'arrayAssignmentOnMixedArray' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        $arr["a"] = 1;
+
+                        foreach ($arr["b"] as $b) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment'],
             ],
         ];
     }

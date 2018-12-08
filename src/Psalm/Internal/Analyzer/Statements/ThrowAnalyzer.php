@@ -28,7 +28,7 @@ class ThrowAnalyzer
             return false;
         }
 
-        if ($context->check_classes && isset($stmt->expr->inferredType) && !$stmt->expr->inferredType->isMixed()) {
+        if ($context->check_classes && isset($stmt->expr->inferredType) && !$stmt->expr->inferredType->hasMixed()) {
             $throw_type = $stmt->expr->inferredType;
 
             $exception_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);

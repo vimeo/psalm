@@ -804,13 +804,13 @@ abstract class Type
     }
 
     /**
-     * @param bool $from_isset
+     * @param bool $from_loop_isset
      *
      * @return Type\Union
      */
-    public static function getMixed($from_isset = false)
+    public static function getMixed($from_loop_isset = false)
     {
-        $type = new TMixed($from_isset);
+        $type = new TMixed($from_loop_isset);
 
         return new Union([$type]);
     }
@@ -955,12 +955,13 @@ abstract class Type
         Union $type_1,
         Union $type_2,
         bool $overwrite_empty_array = false,
+        bool $allow_mixed_union = true,
         int $literal_limit = 500
     ) {
-        if ($type_1->isVanillaMixed() || $type_2->isVanillaMixed()) {
+        if ($type_1->isVanillaMixed() && $type_2->isVanillaMixed()) {
             $combined_type = Type::getMixed();
         } else {
-             $both_failed_reconciliation = false;
+            $both_failed_reconciliation = false;
 
             if ($type_1->failed_reconciliation) {
                 if ($type_2->failed_reconciliation) {
@@ -978,6 +979,7 @@ abstract class Type
                     array_values($type_2->getTypes())
                 ),
                 $overwrite_empty_array,
+                $allow_mixed_union,
                 $literal_limit
             );
 

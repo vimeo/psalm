@@ -160,5 +160,4 @@
             </errorLevel>
         </InternalMethod>
     </issueHandlers>
-<plugins>
-<pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>
+</psalm>

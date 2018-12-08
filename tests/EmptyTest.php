@@ -12,11 +12,11 @@ class EmptyTest extends TestCase
     public function providerValidCodeParse()
     {
         return [
-            'empty' => [
+            'ifNotUndefinedAndEmpty' => [
                 '<?php
                     $a = !empty($b) ? $b : null;',
                 'assertions' => [
-                    '$a' => 'mixed',
+                    '$a' => 'mixed|null',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -205,15 +205,19 @@ class EmptyTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
-            'noReconciliationForMixed' => [
+            'canBeNonEmptyArray' => [
                 '<?php
-                    function foo(array $arr) : void {
-                        $a = empty($arr["a"]) ? "" : $arr["a"];
+                    function _processScopes($scopes) : void {
+                        if (!is_array($scopes) && !empty($scopes)) {
+                            $scopes = explode(" ", trim($scopes));
+                        } else {
+                            // false is allowed here
+                        }
 
-                        if ($a) {}
+                        if (empty($scopes)){}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+                'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
             ],
         ];
     }
@@ -232,6 +236,18 @@ class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'reconciliationForMixed' => [
+                '<?php
+                    function foo(array $arr) : void {
+                        $a = empty($arr["a"]) ? "" : $arr["a"];
+
+                        if ($a) {
+                            if ($a) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => ['MixedAssignment', 'MissingParamType'],
             ],
         ];
     }

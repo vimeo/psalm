@@ -648,7 +648,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
             if (!$guide_classlike_storage->user_defined
                 && $guide_param->type
-                && !$guide_param->type->isMixed()
+                && !$guide_param->type->hasMixed()
                 && !$guide_param->type->from_docblock
                 && (
                     !$implemeneter_param_type

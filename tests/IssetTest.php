@@ -43,7 +43,7 @@ class IssetTest extends TestCase
                 '<?php
                     $a = isset($b) ? $b : null;',
                 'assertions' => [
-                    '$a' => 'mixed',
+                    '$a' => 'mixed|null',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -51,7 +51,7 @@ class IssetTest extends TestCase
                 '<?php
                     $a = $b ?? null;',
                 'assertions' => [
-                    '$a' => 'mixed',
+                    '$a' => 'mixed|null',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -69,7 +69,7 @@ class IssetTest extends TestCase
                         $foo["a"] = "hello";
                     }',
                 'assertions' => [
-                    '$foo[\'a\']' => 'mixed',
+                    '$foo[\'a\']' => 'string|mixed',
                 ],
                 'error_levels' => [],
                 'scope_vars' => [
@@ -93,7 +93,7 @@ class IssetTest extends TestCase
                 '<?php
                     $foo["a"] = $foo["a"] ?? "hello";',
                 'assertions' => [
-                    '$foo[\'a\']' => 'mixed',
+                    '$foo[\'a\']' => 'string|mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
                 'scope_vars' => [

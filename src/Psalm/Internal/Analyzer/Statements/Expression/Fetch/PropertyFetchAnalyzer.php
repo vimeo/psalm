@@ -172,7 +172,7 @@ class PropertyFetchAnalyzer
             return null;
         }
 
-        if ($stmt_var_type->isMixed()) {
+        if ($stmt_var_type->hasMixed()) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (IssueBuffer::accepts(
@@ -185,20 +185,22 @@ class PropertyFetchAnalyzer
                 // fall through
             }
 
-            $stmt->inferredType = Type::getMixed();
+            if ($stmt_var_type->hasMixed()) {
+                $stmt->inferredType = Type::getMixed();
 
-            if ($codebase->server_mode
-                && (!$context->collect_initializations
-                    && !$context->collect_mutations)
-            ) {
-                $codebase->analyzer->addNodeType(
-                    $statements_analyzer->getFilePath(),
-                    $stmt->name,
-                    (string) $stmt->inferredType
-                );
+                if ($codebase->server_mode
+                    && (!$context->collect_initializations
+                        && !$context->collect_mutations)
+                ) {
+                    $codebase->analyzer->addNodeType(
+                        $statements_analyzer->getFilePath(),
+                        $stmt->name,
+                        (string) $stmt->inferredType
+                    );
+                }
+
+                return null;
             }
-
-            return null;
         }
 
         $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getRootFilePath());
@@ -226,6 +228,11 @@ class PropertyFetchAnalyzer
 
         foreach ($stmt_var_type->getTypes() as $lhs_type_part) {
             if ($lhs_type_part instanceof TNull) {
+                continue;
+            }
+
+            if ($lhs_type_part instanceof Type\Atomic\TMixed) {
+                $stmt->inferredType = Type::getMixed();
                 continue;
             }
 

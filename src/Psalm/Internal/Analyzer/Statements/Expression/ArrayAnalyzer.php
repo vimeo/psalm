@@ -72,7 +72,7 @@ class ArrayAnalyzer
                     }
 
                     if ($item_key_type) {
-                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type, false, 30);
+                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type, false, true, 30);
                     } else {
                         $item_key_type = $key_type;
                     }
@@ -117,7 +117,7 @@ class ArrayAnalyzer
                 return false;
             }
 
-            if ($item_value_type && $item_value_type->isMixed() && !$can_create_objectlike) {
+            if ($item_value_type && $item_value_type->hasMixed() && !$can_create_objectlike) {
                 continue;
             }
 
@@ -133,6 +133,7 @@ class ArrayAnalyzer
                         $item->value->inferredType,
                         clone $item_value_type,
                         false,
+                        true,
                         30
                     );
                 } else {

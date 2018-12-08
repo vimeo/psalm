@@ -295,7 +295,7 @@ class CallAnalyzer
                         return false;
                     }
 
-                    if (!isset($arg->value->inferredType) || $arg->value->inferredType->isMixed()) {
+                    if (!isset($arg->value->inferredType) || $arg->value->inferredType->hasMixed()) {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,
                             new Type\Union([new TArray([Type::getInt(), Type::getMixed()])])
@@ -1079,7 +1079,7 @@ class CallAnalyzer
                             ) === false) {
                                 return false;
                             }
-                        } elseif ($arg->value->inferredType->isMixed()) {
+                        } elseif ($arg->value->inferredType->hasMixed()) {
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                             if (IssueBuffer::accepts(
@@ -1130,7 +1130,7 @@ class CallAnalyzer
             } elseif ($function_param) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
-                if ($function_param->type && !$function_param->type->isMixed()) {
+                if ($function_param->type && !$function_param->type->hasMixed()) {
                     if (IssueBuffer::accepts(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
@@ -1532,7 +1532,7 @@ class CallAnalyzer
 
             $input_type = $array_arg_type->type_params[1];
 
-            if ($input_type->isMixed()) {
+            if ($input_type->hasMixed()) {
                 ++$i;
                 continue;
             }
@@ -1651,7 +1651,7 @@ class CallAnalyzer
         $by_ref = false,
         $variadic = false
     ) {
-        if ($param_type->isMixed()) {
+        if ($param_type->hasMixed()) {
             return null;
         }
 
@@ -1671,7 +1671,7 @@ class CallAnalyzer
             }
         }
 
-        if ($input_type->isMixed()) {
+        if ($input_type->hasMixed()) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
             if (IssueBuffer::accepts(
@@ -1968,7 +1968,7 @@ class CallAnalyzer
         }
 
         if ($type_match_found
-            && !$param_type->isMixed()
+            && !$param_type->hasMixed()
             && !$param_type->from_docblock
             && !$variadic
             && !$by_ref
@@ -2242,7 +2242,7 @@ class CallAnalyzer
                         }
                     }
                 } elseif (isset($generic_params[$rule])) {
-                    if ($generic_params[$rule]->isMixed()) {
+                    if ($generic_params[$rule]->hasMixed()) {
                         continue;
                     }
 
@@ -2295,6 +2295,7 @@ class CallAnalyzer
             $changed_vars,
             $asserted_keys,
             $statements_analyzer,
+            $context->inside_loop,
             new CodeLocation($statements_analyzer->getSource(), $expr)
         );
 

@@ -67,7 +67,7 @@ class DoAnalyzer
         $loop_scope->iteration_count++;
 
         foreach ($context->vars_in_scope as $var => $type) {
-            if ($type->isMixed()) {
+            if ($type->hasMixed()) {
                 continue;
             }
 
@@ -81,7 +81,7 @@ class DoAnalyzer
         $mixed_var_ids = [];
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed()) {
+            if ($type->hasMixed()) {
                 $mixed_var_ids[] = $var_id;
             }
         }
@@ -128,6 +128,7 @@ class DoAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    true,
                     new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
 
@@ -197,6 +198,7 @@ class DoAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    true,
                     new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
         }

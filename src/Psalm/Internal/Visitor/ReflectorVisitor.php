@@ -1674,15 +1674,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $existing_param_type_nullable = $storage_param->is_nullable;
 
-            if (!$storage_param->type || $storage_param->type->isMixed() || $storage->template_types) {
+            if (!$storage_param->type || $storage_param->type->hasMixed() || $storage->template_types) {
                 if ($existing_param_type_nullable && !$new_param_type->isNullable()) {
                     $new_param_type->addType(new Type\Atomic\TNull());
                 }
 
                 if ($this->config->add_param_default_to_docblock_type
                     && $storage_param->default_type
-                    && !$storage_param->default_type->isMixed()
-                    && (!$storage_param->type || !$storage_param->type->isMixed())
+                    && !$storage_param->default_type->hasMixed()
+                    && (!$storage_param->type || !$storage_param->type->hasMixed())
                 ) {
                     $new_param_type = Type::combineUnionTypes($new_param_type, $storage_param->default_type);
                 }

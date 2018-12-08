@@ -54,7 +54,7 @@ class TernaryAnalyzer
         $mixed_var_ids = [];
 
         foreach ($context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed()) {
+            if ($type->hasMixed()) {
                 $mixed_var_ids[] = $var_id;
             }
         }
@@ -108,6 +108,7 @@ class TernaryAnalyzer
             $changed_var_ids,
             $new_referenced_var_ids,
             $statements_analyzer,
+            $t_if_context->inside_loop,
             new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
         );
 
@@ -143,6 +144,7 @@ class TernaryAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                $t_else_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else)
             );
 
@@ -195,6 +197,7 @@ class TernaryAnalyzer
                 $stmt->cond->inferredType,
                 '',
                 $statements_analyzer,
+                $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer->getSuppressedIssues()
             );

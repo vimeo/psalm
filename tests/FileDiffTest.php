@@ -161,6 +161,7 @@ class FileDiffTest extends TestCase
                 $b_doc = $b_stmt->getDocComment();
 
                 $this->assertNotNull($b_doc, var_export($a_doc, true));
+                assert(!is_null($b_doc));
 
                 $this->assertNotSame($a_doc, $b_doc);
 

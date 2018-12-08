@@ -586,9 +586,17 @@ class Union
     /**
      * @return bool
      */
-    public function isMixed()
+    public function hasMixed()
     {
         return isset($this->types['mixed']);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isMixed()
+    {
+        return isset($this->types['mixed']) && count($this->types) === 1;
     }
 
     /**
@@ -609,8 +617,8 @@ class Union
          * @psalm-suppress UndefinedPropertyFetch
          */
         return isset($this->types['mixed'])
-            && !$this->types['mixed']->from_isset
-            && !$this->types['mixed'] instanceof Type\Atomic\TEmptyMixed;
+            && !$this->types['mixed']->from_loop_isset
+            && get_class($this->types['mixed']) === Type\Atomic\TMixed::class;
     }
 
     /**
@@ -658,7 +666,7 @@ class Union
      */
     public function substitute(Union $old_type, Union $new_type = null)
     {
-        if ($this->isMixed() && !$this->isEmptyMixed()) {
+        if ($this->hasMixed() && !$this->isEmptyMixed()) {
             return;
         }
 

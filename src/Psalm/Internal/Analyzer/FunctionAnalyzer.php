@@ -363,7 +363,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         if (isset($call_args[2]->value->inferredType)) {
                             $operator_type = $call_args[2]->value->inferredType;
 
-                            if (!$operator_type->isMixed()) {
+                            if (!$operator_type->hasMixed()) {
                                 $codebase = $statements_analyzer->getCodebase();
 
                                 $acceptable_operator_type = new Type\Union([
@@ -410,7 +410,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         if (isset($call_args[1]->value->inferredType)) {
                             $component_type = $call_args[1]->value->inferredType;
 
-                            if (!$component_type->isMixed()) {
+                            if (!$component_type->hasMixed()) {
                                 $codebase = $statements_analyzer->getCodebase();
 
                                 $acceptable_string_component_type = new Type\Union([
@@ -676,7 +676,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $unpacked_type_part = $unpacked_type_part->getGenericArrayType();
                         } else {
                             if ($unpacked_type_part instanceof Type\Atomic\TMixed
-                                && $unpacked_type_part->from_isset
+                                && $unpacked_type_part->from_loop_isset
                             ) {
                                 $unpacked_type_part = new Type\Atomic\TArray([
                                     Type::getMixed(),
@@ -1088,7 +1088,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
             $reduce_return_type = $call_args[2]->value->inferredType;
 
-            if ($reduce_return_type->isMixed()) {
+            if ($reduce_return_type->hasMixed()) {
                 return Type::getMixed();
             }
         }
@@ -1132,7 +1132,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         $codebase,
                         $initial_type,
                         $carry_param->type
-                    ) || (!$reduce_return_type->isMixed()
+                    ) || (!$reduce_return_type->hasMixed()
                             && !TypeAnalyzer::isContainedBy(
                                 $codebase,
                                 $reduce_return_type,
@@ -1158,7 +1158,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 if ($item_param->type
                     && $array_arg_type
-                    && !$array_arg_type->type_params[1]->isMixed()
+                    && !$array_arg_type->type_params[1]->hasMixed()
                     && !TypeAnalyzer::isContainedBy(
                         $codebase,
                         $array_arg_type->type_params[1],
@@ -1369,6 +1369,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 $changed_var_ids,
                                 ['$inner_type' => true],
                                 $statements_analyzer,
+                                false,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             );
 

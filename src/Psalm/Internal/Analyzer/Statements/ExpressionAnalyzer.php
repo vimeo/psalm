@@ -388,7 +388,7 @@ class ExpressionAnalyzer
             $container_type = Type::getString();
 
             if (isset($stmt->expr->inferredType)
-                && !$stmt->expr->inferredType->isMixed()
+                && !$stmt->expr->inferredType->hasMixed()
                 && !isset($stmt->expr->inferredType->getTypes()['resource'])
                 && !TypeAnalyzer::isContainedBy(
                     $statements_analyzer->getCodebase(),
@@ -610,7 +610,7 @@ class ExpressionAnalyzer
         );
 
         if ($var_id) {
-            if (!$by_ref_type->isMixed() && $constrain_type) {
+            if (!$by_ref_type->hasMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($by_ref_type);
             }
 

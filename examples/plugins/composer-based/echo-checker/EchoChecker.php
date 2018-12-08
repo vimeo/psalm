@@ -30,7 +30,7 @@ class EchoChecker implements AfterStatementAnalysisInterface
     ) {
         if ($stmt instanceof PhpParser\Node\Stmt\Echo_) {
             foreach ($stmt->exprs as $expr) {
-                if (!isset($expr->inferredType) || $expr->inferredType->isMixed()) {
+                if (!isset($expr->inferredType) || $expr->inferredType->hasMixed()) {
                     if (IssueBuffer::accepts(
                         new TypeCoercion(
                             'Echo requires an unescaped string, ' . $expr->inferredType . ' provided',

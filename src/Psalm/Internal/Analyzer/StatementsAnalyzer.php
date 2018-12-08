@@ -336,7 +336,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $loop_scope->possibly_redefined_loop_parent_vars = $redefined_vars;
                     } else {
                         foreach ($redefined_vars as $var => $type) {
-                            if ($type->isMixed()) {
+                            if ($type->hasMixed()) {
                                 $loop_scope->possibly_redefined_loop_parent_vars[$var] = $type;
                             } elseif (isset($loop_scope->possibly_redefined_loop_parent_vars[$var])) {
                                 $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
@@ -446,7 +446,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
 
                     foreach ($redefined_vars as $var => $type) {
-                        if ($type->isMixed()) {
+                        if ($type->hasMixed()) {
                             $loop_scope->possibly_redefined_loop_vars[$var] = $type;
                         } elseif (isset($loop_scope->possibly_redefined_loop_vars[$var])) {
                             $loop_scope->possibly_redefined_loop_vars[$var] = Type::combineUnionTypes(
@@ -660,7 +660,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 foreach ($stmt->consts as $const) {
                     ExpressionAnalyzer::analyze($this, $const->value, $context);
 
-                    if (isset($const->value->inferredType) && !$const->value->inferredType->isMixed()) {
+                    if (isset($const->value->inferredType) && !$const->value->inferredType->hasMixed()) {
                         $codebase->classlikes->setConstantType(
                             (string)$this->getFQCLN(),
                             $const->name->name,
@@ -1076,6 +1076,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $single_item_key_type,
                                 $item_key_type,
                                 false,
+                                true,
                                 30
                             );
                         } else {
@@ -1121,7 +1122,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
                     $dim_atomic_types = $dim_type->getTypes();
 
-                    if (count($dim_atomic_types) > 1 || $dim_type->isMixed() || count($property_types) > 50) {
+                    if (count($dim_atomic_types) > 1 || $dim_type->hasMixed() || count($property_types) > 50) {
                         $can_create_objectlike = false;
                     } else {
                         $atomic_type = array_shift($dim_atomic_types);
@@ -1145,6 +1146,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $single_item_value_type,
                         $item_value_type,
                         false,
+                        true,
                         30
                     );
                 } else {

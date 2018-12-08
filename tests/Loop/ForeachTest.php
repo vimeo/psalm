@@ -443,7 +443,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       }
                     }',
                 'assignments' => [
-                    '$a' => 'mixed',
+                    '$a' => 'null|mixed',
                 ],
                 'error_levels' => [
                     'MixedAssignment',
