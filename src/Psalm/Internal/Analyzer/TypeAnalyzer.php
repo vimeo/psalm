@@ -280,16 +280,16 @@ class TypeAnalyzer
 
     /**
      * @param  Codebase       $codebase
-     * @param  TNamedObject   $input_type_part
-     * @param  TNamedObject   $container_type_part
+     * @param  TNamedObject|TGenericParam   $input_type_part
+     * @param  TNamedObject|TGenericParam   $container_type_part
      * @param  bool           $allow_interface_equality
      *
      * @return bool
      */
     private static function isObjectContainedByObject(
         Codebase $codebase,
-        TNamedObject $input_type_part,
-        TNamedObject $container_type_part,
+        $input_type_part,
+        $container_type_part,
         $allow_interface_equality
     ) {
         $intersection_input_types = $input_type_part->extra_types ?: [];
@@ -400,7 +400,9 @@ class TypeAnalyzer
         &$to_string_cast = null,
         &$type_coerced_from_scalar = null
     ) {
-        if ($container_type_part instanceof TMixed || $container_type_part instanceof TGenericParam) {
+        if ($container_type_part instanceof TMixed
+            || ($container_type_part instanceof TGenericParam && !$container_type_part->extra_types)
+        ) {
             if (get_class($container_type_part) === TEmptyMixed::class
                 && get_class($input_type_part) === TMixed::class
             ) {
@@ -413,7 +415,9 @@ class TypeAnalyzer
             return true;
         }
 
-        if ($input_type_part instanceof TMixed || $input_type_part instanceof TGenericParam) {
+        if ($input_type_part instanceof TMixed
+            || ($input_type_part instanceof TGenericParam && !$input_type_part->extra_types)
+        ) {
             $type_coerced = true;
             $type_coerced_from_mixed = true;
 
@@ -430,8 +434,8 @@ class TypeAnalyzer
 
         if ($input_type_part->shallowEquals($container_type_part) ||
             (
-                $input_type_part instanceof TNamedObject
-                && $container_type_part instanceof TNamedObject
+                ($input_type_part instanceof TNamedObject || $input_type_part instanceof TGenericParam)
+                && ($container_type_part instanceof TNamedObject || $container_type_part instanceof TGenericParam)
                 && self::isObjectContainedByObject(
                     $codebase,
                     $input_type_part,
