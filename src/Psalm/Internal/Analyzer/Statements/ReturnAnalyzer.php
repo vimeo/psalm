@@ -188,8 +188,8 @@ class ReturnAnalyzer
                             if ($type_coerced_from_mixed) {
                                 if (IssueBuffer::accepts(
                                     new MixedTypeCoercion(
-                                        'The type \'' . $stmt->inferredType . '\' is more general than the declared '
-                                            . 'return type \'' . $local_return_type->getId() . '\''
+                                        'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
+                                            . ' declared return type \'' . $local_return_type->getId() . '\''
                                             . ' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt)
                                     ),
@@ -200,8 +200,8 @@ class ReturnAnalyzer
                             } else {
                                 if (IssueBuffer::accepts(
                                     new LessSpecificReturnStatement(
-                                        'The type \'' . $stmt->inferredType . '\' is more general than the declared '
-                                            . 'return type \'' . $local_return_type->getId() . '\''
+                                        'The type \'' . $stmt->inferredType->getId() . '\' is more general than the'
+                                            . ' declared return type \'' . $local_return_type->getId() . '\''
                                             . ' for ' . $cased_method_id,
                                         new CodeLocation($source, $stmt)
                                     ),
