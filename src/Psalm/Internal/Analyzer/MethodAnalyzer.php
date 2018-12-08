@@ -523,10 +523,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 if ($type_coerced) {
                     if (IssueBuffer::accepts(
                         new LessSpecificImplementedReturnType(
-                            'The return type \'' . $guide_method_storage->return_type
+                            'The return type \'' . $guide_method_storage->return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
-                            . $implementer_method_storage->return_type . '\'',
+                            . $implementer_method_storage->return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location ?: $code_location
                         ),
                         $suppressed_issues
@@ -536,10 +536,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 } else {
                     if (IssueBuffer::accepts(
                         new ImplementedReturnTypeMismatch(
-                            'The return type \'' . $guide_method_storage->return_type
+                            'The return type \'' . $guide_method_storage->return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
-                            . $implementer_method_storage->return_type . '\'',
+                            . $implementer_method_storage->return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location ?: $code_location
                         ),
                         $suppressed_issues
@@ -607,8 +607,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new MoreSpecificImplementedParamType(
                             'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                                $implementer_param->type . '\', expecting \'' .
-                                $guide_param->type . '\' as defined by ' .
+                                $implementer_param->type->getId() . '\', expecting \'' .
+                                $guide_param->type->getId() . '\' as defined by ' .
                                 $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 ?: $code_location
