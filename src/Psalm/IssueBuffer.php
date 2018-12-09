@@ -1,12 +1,17 @@
 <?php
 namespace Psalm;
 
-use LSS\Array2XML;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
+use Psalm\Output\Compact;
+use Psalm\Output\Console;
+use Psalm\Output\Emacs;
+use Psalm\Output\Json;
+use Psalm\Output\Pylint;
+use Psalm\Output\Xml;
 
 class IssueBuffer
 {
@@ -177,96 +182,6 @@ class IssueBuffer
         }
 
         return true;
-    }
-
-    /**
-     * @param  array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
-     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int} $issue_data
-     *
-     * @return string
-     */
-    protected static function getEmacsOutput(array $issue_data)
-    {
-        return $issue_data['file_path'] . ':' . $issue_data['line_from'] . ':' . $issue_data['column_from'] . ':' .
-            ($issue_data['severity'] === Config::REPORT_ERROR ? 'error' : 'warning') . ' - ' . $issue_data['message'];
-    }
-
-    /**
-     * @param  array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
-     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int} $issue_data
-     *
-     * @return string
-     */
-    protected static function getPylintOutput(array $issue_data)
-    {
-        $message = sprintf(
-            '%s: %s',
-            $issue_data['type'],
-            $issue_data['message']
-        );
-        if ($issue_data['severity'] === Config::REPORT_ERROR) {
-            $code = 'E0001';
-        } else {
-            $code = 'W0001';
-        }
-
-        // https://docs.pylint.org/en/1.6.0/output.html doesn't mention what to do about 'column',
-        // but it's still useful for users.
-        // E.g. jenkins can't parse %s:%d:%d.
-        $message = sprintf('%s (column %d)', $message, $issue_data['column_from']);
-        $issue_string = sprintf(
-            '%s:%d: [%s] %s',
-            $issue_data['file_name'],
-            $issue_data['line_from'],
-            $code,
-            $message
-        );
-
-        return $issue_string;
-    }
-
-    /**
-     * @param  array{severity: string, line_from: int, line_to: int, type: string, message: string,
-     *  file_name: string, file_path: string, snippet: string, from: int, to: int,
-     *  snippet_from: int, snippet_to: int, column_from: int, column_to: int} $issue_data
-     * @param  bool  $include_snippet
-     * @param  bool  $use_color
-     *
-     * @return string
-     */
-    protected static function getConsoleOutput(array $issue_data, $use_color, $include_snippet = true)
-    {
-        $issue_string = '';
-
-        $is_error = $issue_data['severity'] === Config::REPORT_ERROR;
-
-        if ($is_error) {
-            $issue_string .= ($use_color ? "\e[0;31mERROR\e[0m" : 'ERROR');
-        } else {
-            $issue_string .= 'INFO';
-        }
-
-        $issue_string .= ': ' . $issue_data['type'] . ' - ' . $issue_data['file_name'] . ':' .
-            $issue_data['line_from'] . ':' . $issue_data['column_from'] . ' - ' . $issue_data['message'] . "\n";
-
-        if ($include_snippet) {
-            $snippet = $issue_data['snippet'];
-
-            if (!$use_color) {
-                $issue_string .= $snippet;
-            } else {
-                $selection_start = $issue_data['from'] - $issue_data['snippet_from'];
-                $selection_length = $issue_data['to'] - $issue_data['from'];
-
-                $issue_string .= substr($snippet, 0, $selection_start)
-                    . ($is_error ? "\e[97;41m" : "\e[30;47m") . substr($snippet, $selection_start, $selection_length)
-                    . "\e[0m" . substr($snippet, $selection_length + $selection_start) . "\n";
-            }
-        }
-
-        return $issue_string;
     }
 
     /**
@@ -467,38 +382,34 @@ class IssueBuffer
      */
     public static function getOutput($format, $use_color, $show_snippet = true, $show_info = true)
     {
-        if ($format === ProjectAnalyzer::TYPE_JSON) {
-            return json_encode(self::$issues_data) . "\n";
-        } elseif ($format === ProjectAnalyzer::TYPE_XML) {
-            $xml = Array2XML::createXML('report', ['item' => self::$issues_data]);
+        switch ($format) {
+            case ProjectAnalyzer::TYPE_COMPACT:
+                $output = new Compact(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
 
-            return $xml->saveXML();
-        } elseif ($format === ProjectAnalyzer::TYPE_EMACS) {
-            $output = '';
-            foreach (self::$issues_data as $issue_data) {
-                $output .= self::getEmacsOutput($issue_data) . "\n";
-            }
+            case ProjectAnalyzer::TYPE_EMACS:
+                $output = new Emacs(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
 
-            return $output;
-        } elseif ($format === ProjectAnalyzer::TYPE_PYLINT) {
-            $output = '';
-            foreach (self::$issues_data as $issue_data) {
-                $output .= self::getPylintOutput($issue_data) . "\n";
-            }
+            case ProjectAnalyzer::TYPE_JSON:
+                $output = new Json(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
 
-            return $output;
+            case ProjectAnalyzer::TYPE_PYLINT:
+                $output = new Pylint(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
+
+            case ProjectAnalyzer::TYPE_XML:
+                $output = new Xml(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
+
+            case ProjectAnalyzer::TYPE_CONSOLE:
+            default:
+                $output = new Console(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
         }
 
-        $output = '';
-        foreach (self::$issues_data as $issue_data) {
-            if (!$show_info && $issue_data['severity'] === Config::REPORT_INFO) {
-                continue;
-            }
-
-            $output .= self::getConsoleOutput($issue_data, $use_color, $show_snippet) . "\n" . "\n";
-        }
-
-        return $output;
+        return $output->create();
     }
 
     /**

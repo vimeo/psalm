@@ -162,7 +162,7 @@ Options:
         Only checks methods that have changed (and their dependents)
 
     --output-format=console
-        Changes the output format. Possible values: console, emacs, json, pylint, xml
+        Changes the output format. Possible values: compact, console, emacs, json, pylint, xml
 
     --find-dead-code
         Look for dead code
