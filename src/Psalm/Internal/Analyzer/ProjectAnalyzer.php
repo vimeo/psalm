@@ -133,6 +133,7 @@ class ProjectAnalyzer
      */
     public $onchange_line_limit;
 
+    const TYPE_COMPACT = 'compact';
     const TYPE_CONSOLE = 'console';
     const TYPE_PYLINT = 'pylint';
     const TYPE_JSON = 'json';
@@ -140,6 +141,7 @@ class ProjectAnalyzer
     const TYPE_XML = 'xml';
 
     const SUPPORTED_OUTPUT_TYPES = [
+        self::TYPE_COMPACT,
         self::TYPE_CONSOLE,
         self::TYPE_PYLINT,
         self::TYPE_JSON,

@@ -85,10 +85,7 @@ class ReportOutputTest extends TestCase
         );
     }
 
-    /**
-     * @return void
-     */
-    public function testJsonOutputForGetPsalmDotOrg()
+    public function testGetOutputForGetPsalmDotOrg(): void
     {
         $file_contents = '<?php
 function psalmCanVerify(int $your_code): ?string {
@@ -186,19 +183,80 @@ echo $a;';
             ],
         ];
 
-        $emacs = 'somefile.php:3:10:error - Cannot find referenced variable $as_you
-somefile.php:2:42:error - Could not verify return type \'string|null\' for psalmCanVerify
-somefile.php:7:6:error - Const CHANGE_ME is not defined
-somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
-';
         $this->assertSame(
             $issue_data,
             json_decode(IssueBuffer::getOutput(ProjectAnalyzer::TYPE_JSON, false), true)
         );
+
         $this->assertSame(
-            $emacs,
+            'somefile.php:3:10:error - Cannot find referenced variable $as_you
+somefile.php:2:42:error - Could not verify return type \'string|null\' for psalmCanVerify
+somefile.php:7:6:error - Const CHANGE_ME is not defined
+somefile.php:15:6:error - Possibly undefined global variable $a, first seen on line 10
+',
             IssueBuffer::getOutput(ProjectAnalyzer::TYPE_EMACS, false)
         );
+
+        $this->assertSame(
+            'somefile.php:3: [E0001] UndefinedVariable: Cannot find referenced variable $as_you (column 10)
+somefile.php:2: [E0001] MixedInferredReturnType: Could not verify return type \'string|null\' for psalmCanVerify (column 42)
+somefile.php:7: [E0001] UndefinedConstant: Const CHANGE_ME is not defined (column 6)
+somefile.php:15: [E0001] PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 10 (column 6)
+',
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_PYLINT, false)
+        );
+
+        $this->assertSame(
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
+  return $as_you . "type";
+
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'string|null\' for psalmCanVerify
+function psalmCanVerify(int $your_code): ?string {
+  return $as_you . "type";
+}
+
+ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
+echo CHANGE_ME;
+
+ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10
+echo $a
+
+',
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CONSOLE, false)
+        );
+
+        $this->assertSame(
+            'ERROR: UndefinedVariable - somefile.php:3:10 - Cannot find referenced variable $as_you
+
+
+ERROR: MixedInferredReturnType - somefile.php:2:42 - Could not verify return type \'string|null\' for psalmCanVerify
+
+
+ERROR: UndefinedConstant - somefile.php:7:6 - Const CHANGE_ME is not defined
+
+
+ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined global variable $a, first seen on line 10
+
+
+',
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_CONSOLE, false, false)
+        );
+
+        $this->assertSame(
+            'FILE: somefile.php
+
++----------+------+---------------------------------+---------------------------------------------------------------+
+| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |
++----------+------+---------------------------------+---------------------------------------------------------------+
+| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |
+| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'string|null\' for psalmCanVerify |
+| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |
+| ERROR    | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |
++----------+------+---------------------------------+---------------------------------------------------------------+
+',
+            IssueBuffer::getOutput(ProjectAnalyzer::TYPE_COMPACT, false)
+        );
+
         // FIXME: The XML parser only return strings, all int value are casted, so the assertSame failed
         //$this->assertSame(
         //    ['report' => ['item' => $issue_data]],
