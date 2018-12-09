@@ -38,7 +38,6 @@ class Compact extends Output
 
                 $buffer = new BufferedOutput();
                 $table = new Table($buffer);
-                $table->setColumnMaxWidth(3, 70);
                 $table->setHeaders(['SEVERITY', 'LINE', 'ISSUE', 'DESCRIPTION']);
             }
 
@@ -49,11 +48,18 @@ class Compact extends Output
                 $severity = strtoupper($issue_data['severity']);
             }
 
+            // Since `Table::setColumnMaxWidth` is only available in symfony/console 4.2+ we need do something similar
+            // so we have clean tables.
+            $message = $issue_data['message'];
+            if (strlen($message) > 70) {
+                $message = implode("\n", str_split($message, 70));
+            }
+
             $table->addRow([
                 $severity,
                 $issue_data['line_from'],
                 $issue_data['type'],
-                $issue_data['message']
+                $message
             ]);
 
             $current_file = $issue_data['file_name'];
