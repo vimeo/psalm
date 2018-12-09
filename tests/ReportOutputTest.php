@@ -85,7 +85,10 @@ class ReportOutputTest extends TestCase
         );
     }
 
-    public function testGetOutputForGetPsalmDotOrg(): void
+    /**
+     * @return void
+     */
+    public function testGetOutputForGetPsalmDotOrg()
     {
         $file_contents = '<?php
 function psalmCanVerify(int $your_code): ?string {
