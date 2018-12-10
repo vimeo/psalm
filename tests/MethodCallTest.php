@@ -202,6 +202,25 @@ class MethodCallTest extends TestCase
                     $db = new PDO("sqlite:sqlitedb");
                     $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
             ],
+            'dontConvertedMaybeMixedAfterCall' => [
+                '<?php
+                    class B {
+                        public function foo() : void {}
+                    }
+                    /**
+                     * @param array<B> $b
+                     */
+                    function foo(array $a, array $b) : void {
+                        $c = array_merge($b, $a);
+
+                        foreach ($c as $d) {
+                            $d->foo();
+                            if ($d instanceof B) {}
+                        }
+                    }',
+                [],
+                'error_levels' => ['MixedAssignment', 'MixedMethodCall'],
+            ],
         ];
     }
 

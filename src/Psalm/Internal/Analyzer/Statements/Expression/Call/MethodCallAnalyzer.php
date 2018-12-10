@@ -906,6 +906,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if ($var_id
             && $class_type
             && $has_valid_method_call_type
+            && !$class_type->hasMixed()
             && !$invalid_method_call_types
             && $existent_method_ids
             && ($class_type->from_docblock || $class_type->isNullable())

@@ -1208,6 +1208,41 @@ class Reconciler
                 || $existing_var_type->possibly_undefined
                 || $existing_var_type->possibly_undefined_from_try;
 
+            if ($is_strict_equality && $new_var_type === 'empty') {
+                $existing_var_type->removeType('null');
+                $existing_var_type->removeType('false');
+
+                if ($existing_var_type->hasType('array')
+                    && $existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>'
+                ) {
+                    $existing_var_type->removeType('array');
+                }
+
+                if ($existing_var_type->hasMixed()) {
+                    $existing_var_type->removeType('mixed');
+
+                    if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
+                        $existing_var_type->addType(new Type\Atomic\TNonEmptyMixed);
+                    }
+                }
+
+                self::removeFalsyNegatedLiteralTypes(
+                    $existing_var_type,
+                    $did_remove_type
+                );
+
+                $existing_var_type->possibly_undefined = false;
+                $existing_var_type->possibly_undefined_from_try = false;
+
+                if ($existing_var_type->getTypes()) {
+                    return $existing_var_type;
+                }
+
+                $failed_reconciliation = true;
+
+                return Type::getMixed();
+            }
+
             if ($existing_var_type->hasMixed()) {
                 if ($existing_var_type->isMixed()
                     && $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed
@@ -1257,28 +1292,6 @@ class Reconciler
                 }
             }
 
-            if ($is_strict_equality && $new_var_type === 'empty') {
-                $existing_var_type->removeType('null');
-                $existing_var_type->removeType('false');
-
-                if ($existing_var_type->hasType('array')
-                    && $existing_var_type->getTypes()['array']->getId() === 'array<empty, empty>'
-                ) {
-                    $existing_var_type->removeType('array');
-                }
-
-                $existing_var_type->possibly_undefined = false;
-                $existing_var_type->possibly_undefined_from_try = false;
-
-                if ($existing_var_type->getTypes()) {
-                    return $existing_var_type;
-                }
-
-                $failed_reconciliation = true;
-
-                return Type::getMixed();
-            }
-
             if ($existing_var_type->hasType('null')) {
                 $did_remove_type = true;
                 $existing_var_type->removeType('null');
@@ -1295,59 +1308,10 @@ class Reconciler
                 $existing_var_type->addType(new TTrue);
             }
 
-            if ($existing_var_type->hasString()) {
-                $existing_string_types = $existing_var_type->getLiteralStrings();
-
-                if ($existing_string_types) {
-                    foreach ($existing_string_types as $string_key => $literal_type) {
-                        if (!$literal_type->value) {
-                            $existing_var_type->removeType($string_key);
-                            $did_remove_type = true;
-                        }
-                    }
-                } else {
-                    $did_remove_type = true;
-                }
-            }
-
-            if ($existing_var_type->hasInt()) {
-                $existing_int_types = $existing_var_type->getLiteralInts();
-
-                if ($existing_int_types) {
-                    foreach ($existing_int_types as $int_key => $literal_type) {
-                        if (!$literal_type->value) {
-                            $existing_var_type->removeType($int_key);
-                            $did_remove_type = true;
-                        }
-                    }
-                } else {
-                    $did_remove_type = true;
-                }
-            }
-
-            if ($existing_var_type->hasType('array')) {
-                $array_atomic_type = $existing_var_type->getTypes()['array'];
-
-                if ($array_atomic_type instanceof Type\Atomic\TArray
-                    && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
-                ) {
-                    $did_remove_type = true;
-
-                    if ($array_atomic_type->getId() === 'array<empty, empty>') {
-                        $existing_var_type->removeType('array');
-                    } else {
-                        $existing_var_type->addType(
-                            new Type\Atomic\TNonEmptyArray(
-                                $array_atomic_type->type_params
-                            )
-                        );
-                    }
-                } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike
-                    && !$array_atomic_type->sealed
-                ) {
-                    $did_remove_type = true;
-                }
-            }
+            self::removeFalsyNegatedLiteralTypes(
+                $existing_var_type,
+                $did_remove_type
+            );
 
             $existing_var_type->possibly_undefined = false;
             $existing_var_type->possibly_undefined_from_try = false;
@@ -1498,6 +1462,68 @@ class Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * @return void
+     */
+    private static function removeFalsyNegatedLiteralTypes(
+        Type\Union $existing_var_type,
+        bool &$did_remove_type
+    ) {
+        if ($existing_var_type->hasString()) {
+            $existing_string_types = $existing_var_type->getLiteralStrings();
+
+            if ($existing_string_types) {
+                foreach ($existing_string_types as $string_key => $literal_type) {
+                    if (!$literal_type->value) {
+                        $existing_var_type->removeType($string_key);
+                        $did_remove_type = true;
+                    }
+                }
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ($existing_var_type->hasInt()) {
+            $existing_int_types = $existing_var_type->getLiteralInts();
+
+            if ($existing_int_types) {
+                foreach ($existing_int_types as $int_key => $literal_type) {
+                    if (!$literal_type->value) {
+                        $existing_var_type->removeType($int_key);
+                        $did_remove_type = true;
+                    }
+                }
+            } else {
+                $did_remove_type = true;
+            }
+        }
+
+        if ($existing_var_type->hasType('array')) {
+            $array_atomic_type = $existing_var_type->getTypes()['array'];
+
+            if ($array_atomic_type instanceof Type\Atomic\TArray
+                && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
+            ) {
+                $did_remove_type = true;
+
+                if ($array_atomic_type->getId() === 'array<empty, empty>') {
+                    $existing_var_type->removeType('array');
+                } else {
+                    $existing_var_type->addType(
+                        new Type\Atomic\TNonEmptyArray(
+                            $array_atomic_type->type_params
+                        )
+                    );
+                }
+            } elseif ($array_atomic_type instanceof Type\Atomic\ObjectLike
+                && !$array_atomic_type->sealed
+            ) {
+                $did_remove_type = true;
+            }
+        }
     }
 
     /**
