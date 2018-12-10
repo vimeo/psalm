@@ -383,7 +383,9 @@ class Reconciler
             $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false);
 
             if ($existing_var_type->hasMixed()) {
-                if ($existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed) {
+                if ($existing_var_type->isMixed()
+                    && $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed
+                ) {
                     if ($code_location
                         && $key
                         && IssueBuffer::accepts(
@@ -403,7 +405,11 @@ class Reconciler
 
                 if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
                     $did_remove_type = true;
-                    $existing_var_type->addType(new Type\Atomic\TEmptyMixed);
+                    $existing_var_type->removeType('mixed');
+
+                    if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed) {
+                        $existing_var_type->addType(new Type\Atomic\TEmptyMixed);
+                    }
                 } elseif ($existing_var_type->isMixed()) {
                     if ($code_location
                         && $key
@@ -1203,7 +1209,9 @@ class Reconciler
                 || $existing_var_type->possibly_undefined_from_try;
 
             if ($existing_var_type->hasMixed()) {
-                if ($existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
+                if ($existing_var_type->isMixed()
+                    && $existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed
+                ) {
                     if ($code_location
                         && $key
                         && IssueBuffer::accepts(
@@ -1223,7 +1231,11 @@ class Reconciler
 
                 if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TNonEmptyMixed) {
                     $did_remove_type = true;
-                    $existing_var_type->addType(new Type\Atomic\TNonEmptyMixed);
+                    $existing_var_type->removeType('mixed');
+
+                    if (!$existing_var_atomic_types['mixed'] instanceof Type\Atomic\TEmptyMixed) {
+                        $existing_var_type->addType(new Type\Atomic\TNonEmptyMixed);
+                    }
                 } elseif ($existing_var_type->isMixed()) {
                     if ($code_location
                         && $key
