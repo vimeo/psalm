@@ -163,6 +163,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $non_existent_method_ids = [];
         $existent_method_ids = [];
+        $has_mixed_method_call = false;
 
         $invalid_method_call_types = [];
         $has_valid_method_call_type = false;
@@ -209,6 +210,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         case Type\Atomic\TGenericParam::class:
                         case Type\Atomic\TObject::class:
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+
+                            $has_mixed_method_call = true;
 
                             if (IssueBuffer::accepts(
                                 new MixedMethodCall(
@@ -807,7 +810,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($invalid_method_call_types) {
                 $invalid_class_type = $invalid_method_call_types[0];
 
-                if ($has_valid_method_call_type) {
+                if ($has_valid_method_call_type || $has_mixed_method_call) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidMethodCall(
                             'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $var_id,
@@ -831,7 +834,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             if ($non_existent_method_ids) {
-                if ($existent_method_ids) {
+                if ($existent_method_ids || $has_mixed_method_call) {
                     if (IssueBuffer::accepts(
                         new PossiblyUndefinedMethod(
                             'Method ' . $non_existent_method_ids[0] . ' does not exist',
