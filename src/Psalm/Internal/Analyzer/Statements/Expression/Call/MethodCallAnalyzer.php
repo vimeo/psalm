@@ -207,6 +207,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             break;
 
                         case Type\Atomic\TMixed::class:
+                        case Type\Atomic\TNonEmptyMixed::class:
                         case Type\Atomic\TGenericParam::class:
                         case Type\Atomic\TObject::class:
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
