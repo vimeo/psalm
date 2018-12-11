@@ -146,9 +146,8 @@ class BinaryOpAnalyzer
 
             if ($context->inside_conditional) {
                 foreach ($op_context->vars_in_scope as $var => $type) {
-                    if (!isset($context->vars_in_scope[$var])) {
+                    if (!isset($context->vars_in_scope[$var]) && !$type->possibly_undefined) {
                         $context->vars_in_scope[$var] = $type;
-                        continue;
                     }
                 }
 

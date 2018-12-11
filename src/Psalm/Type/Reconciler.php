@@ -137,7 +137,13 @@ class Reconciler
         foreach ($new_types as $key => $new_type_parts) {
             $result_type = isset($existing_types[$key])
                 ? clone $existing_types[$key]
-                : self::getValueForKey($codebase, $key, $existing_types, $code_location);
+                : self::getValueForKey(
+                    $codebase,
+                    $key,
+                    $existing_types,
+                    $new_type_parts,
+                    $code_location
+                );
 
             if ($result_type && empty($result_type->getTypes())) {
                 throw new \InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -2076,6 +2082,7 @@ class Reconciler
         Codebase $codebase,
         $key,
         array &$existing_keys,
+        array $new_type_parts,
         CodeLocation $code_location = null
     ) {
         $key_parts = self::breakUpPathIntoParts($key);
@@ -2105,6 +2112,10 @@ class Reconciler
                     foreach ($existing_keys[$base_key]->getTypes() as $existing_key_type_part) {
                         if ($existing_key_type_part instanceof Type\Atomic\TArray) {
                             $new_base_type_candidate = clone $existing_key_type_part->type_params[1];
+
+                            if ($new_type_parts[0][0] === 'empty' || $new_type_parts[0][0] === '=empty') {
+                                $new_base_type_candidate->possibly_undefined = true;
+                            }
                         } elseif (!$existing_key_type_part instanceof Type\Atomic\ObjectLike) {
                             return Type::getMixed();
                         } elseif ($array_key[0] === '$') {

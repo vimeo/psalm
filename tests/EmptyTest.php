@@ -219,6 +219,20 @@ class EmptyTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
             ],
+            'multipleEmptiesInCondition' => [
+                '<?php
+                    /** @param array<int, int> $o */
+                    function foo(array $o) : void {
+                        if (empty($o[0]) && empty($o[1])) {}
+                    }',
+            ],
+            'multipleEmptiesInConditionWithMixedOffset' => [
+                '<?php
+                    /** @param array $o */
+                    function foo(array $o) : void {
+                        if (empty($o[0]) && empty($o[1])) {}
+                    }',
+            ],
         ];
     }
 
