@@ -173,7 +173,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
-     * @return Promise <InitializeResult>
+     * @return Promise<InitializeResult>
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function initialize(

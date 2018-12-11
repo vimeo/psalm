@@ -23,6 +23,10 @@
         <class name="LogicException"/>
     </ignoreExceptions>
 
+    <stubs>
+        <file name="src/Psalm/Internal/Stubs/SabreEvent.php"/>
+    </stubs>
+
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress"/>
         <PossiblyNullOperand errorLevel="suppress"/>

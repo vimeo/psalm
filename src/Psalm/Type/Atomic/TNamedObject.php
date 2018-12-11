@@ -57,9 +57,6 @@ class TNamedObject extends Atomic
      */
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
-        $class_parts = explode('\\', $this->value);
-        $class_name = array_pop($class_parts);
-
         $intersection_types = $this->getNamespacedIntersectionTypes(
             $namespace,
             $aliased_classes,
@@ -71,8 +68,12 @@ class TNamedObject extends Atomic
             return 'self' . $intersection_types;
         }
 
-        if ($namespace && preg_match('/^' . preg_quote($namespace) . '\\\\' . $class_name . '$/i', $this->value)) {
-            return $class_name . $intersection_types;
+        if ($namespace && stripos($this->value, $namespace . '\\') === 0) {
+            return preg_replace(
+                '/^' . preg_quote($namespace . '\\') . '/i',
+                '',
+                $this->value
+            ) . $intersection_types;
         }
 
         if (!$namespace && stripos($this->value, '\\') === false) {
