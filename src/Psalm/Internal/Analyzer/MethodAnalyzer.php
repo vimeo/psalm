@@ -680,7 +680,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         }
 
         if ($guide_classlike_storage->user_defined
-            && $implementer_method_storage->cased_name !== '__construct'
+            && ($guide_classlike_storage->is_interface || $implementer_method_storage->cased_name !== '__construct')
             && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {
             if (IssueBuffer::accepts(

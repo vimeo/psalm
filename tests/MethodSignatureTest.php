@@ -559,6 +559,17 @@ class MethodSignatureTest extends TestCase
                     (new B)->foo(new stdClass);',
                 'error_message' => 'InvalidArgument'
             ],
+            'interfaceHasFewerConstructorArgs' => [
+                '<?php
+                    interface Foo {
+                        public function __construct();
+                    }
+
+                    class Bar implements Foo {
+                        public function __construct(bool $foo) {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }
