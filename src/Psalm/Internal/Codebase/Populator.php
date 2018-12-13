@@ -259,7 +259,10 @@ class Populator
             }
         }
 
-        if ($storage->internal) {
+        if ($storage->internal
+            && !$storage->is_interface
+            && !$storage->is_trait
+        ) {
             foreach ($storage->methods as $method) {
                 $method->internal = true;
             }
