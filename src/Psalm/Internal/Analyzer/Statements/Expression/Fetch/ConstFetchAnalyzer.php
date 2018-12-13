@@ -90,7 +90,8 @@ class ConstFetchAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($context->check_consts
+        if (($context->check_consts
+                || ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class'))
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
             $first_part_lc = strtolower($stmt->class->parts[0]);

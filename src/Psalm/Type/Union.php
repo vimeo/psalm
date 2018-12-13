@@ -778,6 +778,8 @@ class Union
                     if ($valid_input_atomic_types) {
                         $generic_params[$atomic_type->param_name] = new Union($valid_input_atomic_types);
                         $generic_params[$atomic_type->param_name]->setFromDocblock();
+                    } else {
+                        $generic_params[$atomic_type->param_name] = Type::getMixed();
                     }
                 }
             } else {
@@ -848,7 +850,9 @@ class Union
         $is_mixed = false;
 
         foreach ($this->types as $key => $atomic_type) {
-            if (isset($template_types[$key])) {
+            if ($atomic_type instanceof Type\Atomic\TGenericParam
+                && isset($template_types[$key])
+            ) {
                 $keys_to_unset[] = $key;
                 $template_type = clone $template_types[$key];
 
