@@ -2075,6 +2075,7 @@ class Reconciler
      *
      * @param  string                    $key
      * @param  array<string,Type\Union>  $existing_keys
+     * @param  string[][]                $new_type_parts
      *
      * @return Type\Union|null
      */
