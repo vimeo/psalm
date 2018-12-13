@@ -746,7 +746,9 @@ class Union
         $keys_to_unset = [];
 
         foreach ($this->types as $key => $atomic_type) {
-            if (isset($template_types[$key])) {
+            if ($atomic_type instanceof Type\Atomic\TGenericParam
+                && isset($template_types[$key])
+            ) {
                 if ($template_types[$key]->getId() !== $key) {
                     $keys_to_unset[] = $key;
                     $first_atomic_type = array_values($template_types[$key]->getTypes())[0];
@@ -755,6 +757,27 @@ class Union
                     if ($input_type) {
                         $generic_params[$key] = clone $input_type;
                         $generic_params[$key]->setFromDocblock();
+                    }
+                }
+            } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
+                && isset($template_types[$atomic_type->param_name])
+            ) {
+                $keys_to_unset[] = $key;
+                $class_string = new Type\Atomic\TClassString();
+                $this->types[$class_string->getKey()] = $class_string;
+
+                if ($input_type) {
+                    $valid_input_atomic_types = [];
+
+                    foreach ($input_type->getTypes() as $input_atomic_type) {
+                        if ($input_atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                            $valid_input_atomic_types[] = new Type\Atomic\TNamedObject($input_atomic_type->value);
+                        }
+                    }
+
+                    if ($valid_input_atomic_types) {
+                        $generic_params[$atomic_type->param_name] = new Union($valid_input_atomic_types);
+                        $generic_params[$atomic_type->param_name]->setFromDocblock();
                     }
                 }
             } else {

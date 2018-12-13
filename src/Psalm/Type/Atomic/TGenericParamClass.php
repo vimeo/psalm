@@ -1,11 +1,21 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TClassString extends TString
+use Psalm\Type\Atomic;
+
+class TGenericParamClass extends TClassString
 {
-    public function __toString()
+    /**
+     * @var string
+     */
+    public $param_name;
+
+    /**
+     * @param string $param_name
+     */
+    public function __construct($param_name)
     {
-        return 'class-string';
+        $this->param_name = $param_name;
     }
 
     /**
@@ -13,9 +23,20 @@ class TClassString extends TString
      */
     public function getKey()
     {
-        return 'class-string';
+        return 'class-string<' . $this->param_name . '>';
     }
 
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return 'class-string<' . $this->param_name . '>';
+    }
+
+    /**
+     * @return string
+     */
     public function getId()
     {
         return $this->getKey();
@@ -40,9 +61,6 @@ class TClassString extends TString
         return 'string';
     }
 
-    /**
-     * @return bool
-     */
     public function canBeFullyExpressedInPhp()
     {
         return false;

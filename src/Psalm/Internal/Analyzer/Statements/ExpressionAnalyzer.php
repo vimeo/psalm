@@ -128,7 +128,7 @@ class ExpressionAnalyzer
                     break;
 
                 case '__class__':
-                    $stmt->inferredType = Type::getClassString();
+                    $stmt->inferredType = Type::getClassString($context->self);
                     break;
 
                 case '__file__':

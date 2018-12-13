@@ -429,6 +429,11 @@ abstract class Type
 
         if (strpos($parse_tree->value, '::')) {
             list($fq_classlike_name, $const_name) = explode('::', $parse_tree->value);
+
+            if (isset($template_type_names[$fq_classlike_name]) && $const_name === 'class') {
+                return new Atomic\TGenericParamClass($fq_classlike_name);
+            }
+
             return new Atomic\TScalarClassConstant($fq_classlike_name, $const_name);
         }
 

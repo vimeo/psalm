@@ -950,98 +950,56 @@ class CallAnalyzer
 
                     if ($function_storage) {
                         if (isset($function_storage->template_typeof_params[$argument_offset])) {
-                            $template_type = $function_storage->template_typeof_params[$argument_offset];
-
-                            $offset_value_type = null;
-
-                            if ($arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                                && $arg->value->class instanceof PhpParser\Node\Name
-                                && $arg->value->name instanceof PhpParser\Node\Identifier
-                                && strtolower($arg->value->name->name) === 'class'
-                            ) {
-                                $offset_value_type = Type::parseString(
-                                    ClassLikeAnalyzer::getFQCLNFromNameObject(
-                                        $arg->value->class,
-                                        $statements_analyzer->getAliases()
-                                    )
-                                );
-
-                                $offset_value_type = ExpressionAnalyzer::fleshOutType(
-                                    $codebase,
-                                    $offset_value_type,
-                                    $context->self,
-                                    $context->self
-                                );
-                            } elseif ($arg->value instanceof PhpParser\Node\Scalar\String_ && $arg->value->value) {
-                                $offset_value_type = Type::parseString($arg->value->value);
-                            } elseif ($arg->value instanceof PhpParser\Node\Scalar\MagicConst\Class_
-                                && $context->self
-                            ) {
-                                $offset_value_type = Type::parseString($context->self);
+                            $param_type_nullable = $param_type->isNullable();
+                            $param_type = new Type\Union([
+                                new Type\Atomic\TGenericParamClass(
+                                    $function_storage->template_typeof_params[$argument_offset]
+                                )
+                            ]);
+                            if ($param_type_nullable) {
+                                $param_type->addType(new Type\Atomic\TNull);
                             }
+                        }
 
-                            if ($offset_value_type) {
-                                foreach ($offset_value_type->getTypes() as $offset_value_type_part) {
-                                    // register class if the class exists
-                                    if ($offset_value_type_part instanceof TNamedObject) {
-                                        ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                                            $statements_analyzer,
-                                            $offset_value_type_part->value,
-                                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                                            $statements_analyzer->getSuppressedIssues()
-                                        );
-                                    }
-                                }
+                        if ($existing_generic_params_to_strings) {
+                            $empty_generic_params = [];
 
-                                $offset_value_type->setFromDocblock();
-                            }
+                            $param_type->replaceTemplateTypesWithStandins(
+                                $existing_generic_params_to_strings,
+                                $empty_generic_params,
+                                $codebase,
+                                $arg->value->inferredType
+                            );
+                        }
 
+                        if ($template_types) {
                             if ($generic_params === null) {
                                 $generic_params = [];
                             }
 
-                            $generic_params[$template_type] = $offset_value_type ?: Type::getMixed();
-                        } else {
-                            if ($existing_generic_params_to_strings) {
-                                $empty_generic_params = [];
+                            $arg_type = $arg->value->inferredType;
 
-                                $param_type->replaceTemplateTypesWithStandins(
-                                    $existing_generic_params_to_strings,
-                                    $empty_generic_params,
-                                    $codebase,
-                                    $arg->value->inferredType
-                                );
-                            }
+                            if ($arg->unpack) {
+                                if ($arg->value->inferredType->hasArray()) {
+                                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                                    $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
 
-                            if ($template_types) {
-                                if ($generic_params === null) {
-                                    $generic_params = [];
-                                }
-
-                                $arg_type = $arg->value->inferredType;
-
-                                if ($arg->unpack) {
-                                    if ($arg->value->inferredType->hasArray()) {
-                                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
-                                        $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
-
-                                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                                        }
-
-                                        $arg_type = $array_atomic_type->type_params[1];
-                                    } else {
-                                        $arg_type = Type::getMixed();
+                                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
                                     }
-                                }
 
-                                $param_type->replaceTemplateTypesWithStandins(
-                                    $template_types,
-                                    $generic_params,
-                                    $codebase,
-                                    $arg_type
-                                );
+                                    $arg_type = $array_atomic_type->type_params[1];
+                                } else {
+                                    $arg_type = Type::getMixed();
+                                }
                             }
+
+                            $param_type->replaceTemplateTypesWithStandins(
+                                $template_types,
+                                $generic_params,
+                                $codebase,
+                                $arg_type
+                            );
                         }
                     }
 

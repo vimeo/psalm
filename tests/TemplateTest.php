@@ -55,11 +55,9 @@ class TemplateTest extends TestCase
                     // this shouldn’t cause a problem as it’s a docbblock type
                     if (!($bfoo_bar instanceof B)) {}
 
-                    $cfoo = new Foo("C");
-                    $cfoo_bar = $cfoo->bar();
-
-                    $dt = "D";
-                    $dfoo = new Foo($dt);',
+                    $c = C::class;
+                    $cfoo = new Foo($c);
+                    $cfoo_bar = $cfoo->bar();',
                 'assertions' => [
                     '$afoo' => 'Foo<A>',
                     '$afoo_bar' => 'A',
@@ -69,8 +67,6 @@ class TemplateTest extends TestCase
 
                     '$cfoo' => 'Foo<C>',
                     '$cfoo_bar' => 'C',
-
-                    '$dfoo' => 'Foo<mixed>',
                 ],
                 'error_levels' => [
                     'MixedReturnStatement',
@@ -146,7 +142,6 @@ class TemplateTest extends TestCase
                     '$gfoo3' => 'Foo<G>',
                 ],
                 'error_levels' => [
-                    'MixedReturnStatement',
                     'LessSpecificReturnStatement',
                     'RedundantConditionGivenDocblockType',
                 ],
@@ -180,7 +175,7 @@ class TemplateTest extends TestCase
                     $efoo = new Foo(Exception::class);
                     $efoo_bar = $efoo->bar();
 
-                    $ffoo = new Foo("LogicException");
+                    $ffoo = new Foo(LogicException::class);
                     $ffoo_bar = $ffoo->bar();',
                 'assertions' => [
                     '$efoo' => 'Foo<Exception>',
@@ -189,7 +184,7 @@ class TemplateTest extends TestCase
                     '$ffoo' => 'Foo<LogicException>',
                     '$ffoo_bar' => 'LogicException',
                 ],
-                'error_levels' => ['MixedReturnStatement', 'LessSpecificReturnStatement', 'TypeCoercion'],
+                'error_levels' => ['LessSpecificReturnStatement'],
             ],
             'classTemplateContainer' => [
                 '<?php
@@ -926,7 +921,47 @@ class TemplateTest extends TestCase
                             return $this->bar;
                         }
                     }'
-            ]
+            ],
+            'restrictTemplateInputWithTClassGoodInput' => [
+                '<?php
+                    namespace Bar;
+
+                    /** @template T */
+                    class Foo
+                    {
+                        /**
+                         * @psalm-var T::class
+                         */
+                        private $type;
+
+                        /** @var array<T> */
+                        private $items;
+
+                        /**
+                         * @param T::class $type
+                         */
+                        public function __construct(string $type)
+                        {
+                            if (!in_array($type, [A::class, B::class], true)) {
+                                throw new \InvalidArgumentException;
+                            }
+                            $this->type = $type;
+                            $this->items = [];
+                        }
+
+                        /** @param T $item */
+                        public function add($item): void
+                        {
+                            $this->items[] = $item;
+                        }
+                    }
+
+                    class A {}
+                    class B {}
+
+                    $foo = new Foo(A::class);
+                    $foo->add(new A);',
+            ],
         ];
     }
 
@@ -1052,6 +1087,45 @@ class TemplateTest extends TestCase
                     class A {}
                     class B {}
 
+
+                    $foo = new Foo(A::class);
+                    $foo->add(new B);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'restrictTemplateInputWithTClassBadInput' => [
+                '<?php
+                    /** @template T */
+                    class Foo
+                    {
+                        /**
+                         * @psalm-var class-string
+                         */
+                        private $type;
+
+                        /** @var array<T> */
+                        private $items;
+
+                        /**
+                         * @param T::class $type
+                         */
+                        public function __construct(string $type)
+                        {
+                            if (!in_array($type, [A::class, B::class], true)) {
+                                throw new \InvalidArgumentException;
+                            }
+                            $this->type = $type;
+                            $this->items = [];
+                        }
+
+                        /** @param T $item */
+                        public function add($item): void
+                        {
+                            $this->items[] = $item;
+                        }
+                    }
+
+                    class A {}
+                    class B {}
 
                     $foo = new Foo(A::class);
                     $foo->add(new B);',

@@ -199,6 +199,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         case Type\Atomic\TSingleLetter::class:
                         case Type\Atomic\TLiteralString::class:
                         case Type\Atomic\TLiteralClassString::class:
+                        case Type\Atomic\TGenericParamClass::class:
                         case Type\Atomic\TNumericString::class:
                         case Type\Atomic\THtmlEscapedString::class:
                         case Type\Atomic\TClassString::class:
