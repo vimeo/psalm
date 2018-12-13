@@ -778,7 +778,7 @@ class ClassLikes
 
                 $method_id = $classlike_storage->name . '::' . $method_storage->cased_name;
 
-                if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
                     $method_name_lc = strtolower($method_name);
 
                     $has_parent_references = false;

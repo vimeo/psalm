@@ -322,6 +322,25 @@ class UnusedCodeTest extends TestCase
 
                     new A();',
             ],
+            'abstractMethodImplementerCoveredByParentCall' => [
+                '<?php
+                    abstract class Foobar {
+                        public function doIt(): void {
+                            $this->inner();
+                        }
+
+                        abstract protected function inner(): void;
+                    }
+
+                    class MyFooBar extends Foobar {
+                        protected function inner(): void {
+                            // Do nothing
+                        }
+                    }
+
+                    $myFooBar = new MyFooBar();
+                    $myFooBar->doIt();',
+            ],
         ];
     }
 
