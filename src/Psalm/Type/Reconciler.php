@@ -97,6 +97,10 @@ class Reconciler
 
                         $new_base_key = $base_key . '[' . $array_key . ']';
 
+                        if (strpos($array_key, '\'') !== false) {
+                            $new_types[$base_key][] = ['!string'];
+                        }
+
                         $base_key = $new_base_key;
                     } elseif ($divider === '->') {
                         $property_name = array_shift($key_parts);
@@ -127,10 +131,6 @@ class Reconciler
 
         // make sure array keys come after base keys
         ksort($new_types);
-
-        if (empty($new_types)) {
-            return $existing_types;
-        }
 
         $codebase = $statements_analyzer->getCodebase();
 

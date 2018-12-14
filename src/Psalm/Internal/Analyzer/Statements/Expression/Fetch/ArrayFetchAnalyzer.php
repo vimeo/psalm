@@ -152,7 +152,6 @@ class ArrayFetchAnalyzer
             if ($context->inside_isset
                 && $stmt->dim
                 && isset($stmt->dim->inferredType)
-                && $stmt->var->inferredType->hasArray()
                 && ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
                     || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
             ) {
@@ -165,7 +164,10 @@ class ArrayFetchAnalyzer
                     $const_array_key_type = $array_type->getGenericKeyType();
                 }
 
-                if ($dim_var_id && !$const_array_key_type->hasMixed() && !$stmt->dim->inferredType->hasMixed()) {
+                if ($dim_var_id
+                    && !$const_array_key_type->hasMixed()
+                    && !$stmt->dim->inferredType->hasMixed()
+                ) {
                     $new_offset_type = clone $stmt->dim->inferredType;
                     $const_array_key_atomic_types = $const_array_key_type->getTypes();
 
@@ -646,17 +648,21 @@ class ArrayFetchAnalyzer
                     true
                 )) {
                     $expected_offset_types[] = $valid_offset_type->getId();
+
+                    if (!$inside_isset) {
+                        $array_access_type = Type::getMixed();
+                    }
                 } else {
                     $has_valid_offset = true;
-                }
 
-                if (!$array_access_type) {
-                    $array_access_type = Type::getSingleLetter();
-                } else {
-                    $array_access_type = Type::combineUnionTypes(
-                        $array_access_type,
-                        Type::getSingleLetter()
-                    );
+                    if (!$array_access_type) {
+                        $array_access_type = Type::getSingleLetter();
+                    } else {
+                        $array_access_type = Type::combineUnionTypes(
+                            $array_access_type,
+                            Type::getSingleLetter()
+                        );
+                    }
                 }
 
                 continue;
@@ -799,7 +805,9 @@ class ArrayFetchAnalyzer
                         . (is_int($key_value) ? $key_value : '\'' . $key_value . '\'');
                 }
 
-                if ($has_valid_offset) {
+                if ($has_valid_offset && $inside_isset) {
+                    // do nothing
+                } elseif ($has_valid_offset) {
                     if (IssueBuffer::accepts(
                         new PossiblyInvalidArrayOffset(
                             'Cannot access value on variable ' . $array_var_id . ' ' . $used_offset

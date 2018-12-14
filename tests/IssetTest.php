@@ -441,6 +441,37 @@ class IssetTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['PossiblyNullReference'],
             ],
+            'assertArrayAfterIssetStringOffset' => [
+                '<?php
+                    /**
+                     * @param string|array $a
+                     */
+                    function _renderInput($a) : array {
+                        if (isset($a["foo"], $a["bar"])) {
+                            return $a;
+                        }
+
+                        return [];
+                    }'
+            ],
+            'assertMoreComplicatedArrayAfterIssetStringOffset' => [
+                '<?php
+                    /**
+                     * @param string|int $val
+                     * @param string|array $text
+                     * @param array $data
+                     */
+                    function _renderInput($val, $text, $data) : array {
+                        if (is_int($val) && isset($text["foo"], $text["bar"])) {
+                            $radio = $text;
+                        } else {
+                            $radio = ["value" => $val, "text" => $text];
+                        }
+                        return $radio;
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment'],
+            ]
         ];
     }
 
