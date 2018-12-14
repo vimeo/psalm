@@ -171,7 +171,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @return Promise<Location|Hover>
+     * @psalm-return Promise<Location|Hover>
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -223,7 +223,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @return Promise<Hover>
+     * @psalm-return Promise<Hover>
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
@@ -275,7 +275,7 @@ class TextDocument
      *
      * @param TextDocumentIdentifier The text document
      * @param Position $position The position
-     * @return Promise<CompletionItem[]|CompletionList>
+     * @psalm-return Promise<CompletionItem[]|CompletionList>
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
