@@ -21,8 +21,6 @@ env:
     - XDEBUG="false"
     # generated with travis encrypt -r vimeo/psalm --org GITHUB_TOKEN="<secret oauth token>"
     - secure: Ayjp10v6IWeJX3ThWvPxlv0gkuTuvu30lsdQCjop+vS0Kv+6/IEOdSOxtm0tEWacq9EFCViWRKh9zxiwPtoi0wxGdzGGws+UtIJxew6Vy8HDCEH8nY4k50eElKUWI4YhVbiSdZEZ+Bd9kO0qGEBH9iWh8Tc8MP2Hklx7lOf+zUTSm8vpv+idcCxwGCvQMaMc5NhfnkgGq95/UU3iOvCi5/wkIFnSnoccxmZE2zsxI1e355ipa0uoe8/Ml6vK0NrZ0aBZwZfItsIuhRcL4Cm5kyar+Ao/mn9Zw8CHbfESrIMomRI7ZxwPNFj+sR/wCvEasIGHRxH8B9F4d8SmAoHR1CrmM/zyWRon73CfRb56M4VGG1hyqTr1GYHpBgZKSOYA8TKyOjD8EHGvevfHpJoGVNxf0+vAfdizlVJvkYhzSz/VjpOZO8rfOct4deNcpCVuVGg5uOGeg5P7coVniGHLHTm3JozK9Ia+ZLePtr3l/NuoW5dXVF1fdroCyQS2X0VSXALnnTPzcIQYsmpCk8yJ8uXorxj4dJHhstyll1jemJjxT7HJ1ASPUOTsPu9u9EoBDHQxOGa5b2/7chyV+EhrYV899RKZ4xEPzpC619sWgtZJci3oLcebU1BY42pIr94UqtwcJKhriwV72VpKvCG/eqOKLhXq355TYRx2dK05a5w=
-    - secure: ogitrDTh8Xj+m1K3M0nKpHwNaCcIJ0SajUWI/g5AvjnbIMyf+g0M63hPuv/4z+7WGIDCwm3SxupIyRqdvkXprwl8jRmf6bh810fyhs9WF3Ij1TkoAfPTnh/FxUnhHllE/PdEM8QO0Z77H/vr4IlodGAXgWyWkgQIsM32mtCN0ZXulrpcmm2Pv5Ug5wTkl7QaDroUWgKU734YFQdsDYduz0mh2NBAWMb9yMxuxsktwwlvb+GGh3Zz0L2gH+Xq0yv3z5bX3O3GsQZOg4aB57Jl4/YpS5JiduDyJNMT8MDMmgaKANmQImZ8G3tF7CLJJS85Gx9gm0ETA/CeGEaMDQhqfXzQX1tn/a/vS3Y3L64R65nRpZ5m0DHeqROHqr5sx8TPXKAUshqXRuSqsOMvW8RhgMM78+WlbpWVU3jF3OGpg0Dix07zn93HAZ/klYXR40cp8GRABc1015E6lZPMv6blskk0nBMQnDQAI4hSFbljbFpyamxkyfCiDNwMMW437ryrwwd04efXaJ9T9ag5ENJUzYavzEyTkUcmAJfLuGQ1LTF/4eu2efwVdxHPYNPQMBPTDXfeEzGlub5deEm9NCu0eQdacxDDvpThfWAYtOgfuzN+tGWL6Jan7yFCe9CaNzQk/yzpbuCqayWk1/0ikkAzSWjnMort7p3Ow14YLCumoog=
-    - secure: lh1COWOKa2TNAfqBIN4rsJ0tPfN/VcKHDsxO1cljnUVJPyC01X2jyWaBT/8VFl4VEtEHNhQQnUYtIkhos/ktX08S27Zo9tEb2KYd5tw5vmmWWRpi/b0rVPsmoQ/agc0kv5FgRDzc9EEMvm+2+ThMeC3gkGrDIJMzkiQvXFzxxwpPTDrlXV0BivrPEByCalRZiB0FZfdCVqB+flgV1O8+BxvPO5vuP1q/jWfHv6h9lh5O8SRjUtZXVQ/J5M3krp+mZ+3wEYbe0vUlZuNlxHN6JPoHjVc3pwAG+bHu/OWPr3ya1l1MEQd2XxYBdfGdLIh7H2nRkHDGPOYpFesn0cotNuoo+SaUIPOu7heFnZ4QOMXZEHnVRdUA/xOI0pgCPQufVuTpTHKrd0k44GO/mqHF2AtrI+gOXO7bilBfhV72Kl2fX1ODn/VfIepJWQ/eq5RvrVXPSYGgJ3NI28r2gYs5lCSwNAZAM13utka1I4Rwvm+TXm7NBVK4oTroFoHphYexOJeJ6oUVq+bPN8vqwTMo7yZaD4FzG9gowIbd4/APNalkReaPD12rm9HflWTBXAF9DKGXN4FKuu9O1CZHKrmXsfA6t+FfYtdh0aCDwfvQO0M4XTBuDO9aAXtSZ8+krDSWYFnD7xYEcpanhgPSyBnoraNhQiDLizHo84NzuEf0nFk=
 
 cache:
   directories:
@@ -82,7 +80,7 @@ jobs:
       before_deploy:
         - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
         - gpg --batch --yes --import keys.asc
-        - echo $SIGNING_KEY | gpg --passphrase-fd 0 -u B6DDD1213543D1D8 --armor --detach-sig build/phar.phar
+        - echo $SIGNING_KEY | gpg --passphrase-fd 0 -u 8A03EA3B385DBAA1 --armor --detach-sig build/phar.phar
       deploy:
         skip_cleanup: true
         on:
