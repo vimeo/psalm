@@ -343,6 +343,27 @@ class ArrayAccessTest extends TestCase
                     ["a" => $elt] = $entry;',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
+            'possiblyInvalidMixedArrayOffset' => [
+                '<?php
+                    /**
+                     * @param string|array $key
+                     */
+                    function foo(array $a, $key) : void {
+                        echo $a[$key];
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'possiblyInvalidMixedUnionArrayOffset' => [
+                '<?php
+                    function foo(?array $index): void {
+                        if (!$index) {
+                            $index = ["foo", []];
+                        }
+                        $index[1][] = "bar";
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_level' => ['MixedArrayAssignment'],
+            ],
         ];
     }
 }

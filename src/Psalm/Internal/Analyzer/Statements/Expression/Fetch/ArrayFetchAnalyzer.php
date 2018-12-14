@@ -386,12 +386,14 @@ class ArrayFetchAnalyzer
                             $type->type_params[0] = $offset_type;
                         }
                     } elseif (!$type->type_params[0]->isEmpty()) {
+                        $expected_offset_type = $type->type_params[0]->hasMixed()
+                            ? new Type\Union([ new TInt, new TString ])
+                            : $type->type_params[0];
+
                         if ((!TypeAnalyzer::isContainedBy(
                             $codebase,
                             $offset_type,
-                            $type->type_params[0]->hasMixed()
-                                ? new Type\Union([ new TInt, new TString ])
-                                : $type->type_params[0],
+                            $expected_offset_type,
                             true,
                             $offset_type->ignore_falsable_issues,
                             $has_scalar_match,
@@ -402,7 +404,15 @@ class ArrayFetchAnalyzer
                         ) && !$type_coerced_from_scalar)
                             || $to_string_cast
                         ) {
-                            $expected_offset_types[] = $type->type_params[0]->getId();
+                            if (TypeAnalyzer::canExpressionTypesBeIdentical(
+                                $codebase,
+                                $offset_type,
+                                $expected_offset_type
+                            )) {
+                                $has_valid_offset = true;
+                            }
+
+                            $expected_offset_types[] = $expected_offset_type->getId();
                         } else {
                             $has_valid_offset = true;
                         }
@@ -429,6 +439,7 @@ class ArrayFetchAnalyzer
                     }
 
                     if ($array_access_type->isEmpty()
+                        && !$array_type->hasMixed()
                         && !$in_assignment
                         && !$inside_isset
                     ) {
@@ -678,6 +689,7 @@ class ArrayFetchAnalyzer
                     }
                 }
 
+                $has_valid_offset = true;
                 $array_access_type = Type::getMixed();
                 break;
             }

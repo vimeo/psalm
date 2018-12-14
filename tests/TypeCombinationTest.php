@@ -74,7 +74,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'mixedOrEmptyArray' => [
-                'mixed',
+                'array<empty, empty>|mixed',
                 [
                     'mixed',
                     'array<empty, empty>',
