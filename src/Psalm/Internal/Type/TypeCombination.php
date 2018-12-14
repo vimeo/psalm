@@ -280,7 +280,9 @@ class TypeCombination
                     $array_type = new TArray($generic_type_params);
                 }
 
-                $new_types[] = $array_type;
+                if (!$combination->has_mixed || !$generic_type_params[1]->isEmpty()) {
+                    $new_types[] = $array_type;
+                }
             } elseif (!isset($combination->value_types[$generic_type])) {
                 $new_types[] = new TGenericObject($generic_type, $generic_type_params);
             }

@@ -73,6 +73,13 @@ class TypeCombinationTest extends TestCase
                     'object',
                 ],
             ],
+            'mixedOrEmptyArray' => [
+                'mixed',
+                [
+                    'mixed',
+                    'array<empty, empty>',
+                ],
+            ],
             'falseTrueToBool' => [
                 'bool',
                 [
