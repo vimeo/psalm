@@ -413,8 +413,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     return false;
                 }
 
-                if ($stmt->class instanceof PhpParser\Node\Name
-                    && ($stmt->class->parts[0] !== 'parent' || $statements_analyzer->isStatic())
+                if ((!$stmt->class instanceof PhpParser\Node\Name
+                        || $stmt->class->parts[0] !== 'parent'
+                        || $statements_analyzer->isStatic())
                     && (
                         !$context->self
                         || $statements_analyzer->isStatic()
@@ -423,7 +424,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 ) {
                     if (MethodAnalyzer::checkStatic(
                         $method_id,
-                        strtolower($stmt->class->parts[0]) === 'self' || $context->self === $fq_class_name,
+                        ($stmt->class instanceof PhpParser\Node\Name
+                            && strtolower($stmt->class->parts[0]) === 'self')
+                            || $context->self === $fq_class_name,
                         !$statements_analyzer->isStatic(),
                         $codebase,
                         new CodeLocation($source, $stmt),

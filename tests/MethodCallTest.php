@@ -435,6 +435,15 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'UndefinedMethod - src/somefile.php:7 - Method (B&A)::zugzug does not exist'
             ],
+            'noInstanceCallAsStatic' => [
+                '<?php
+                    class C {
+                        public function foo() : void {}
+                    }
+
+                    (new C)::foo();',
+                'error_message' => 'InvalidStaticInvocation',
+            ],
         ];
     }
 }
