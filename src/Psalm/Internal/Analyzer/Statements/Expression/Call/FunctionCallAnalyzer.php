@@ -421,27 +421,29 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                 $assert_type_assertions = Algebra::getTruthsFromFormula($simplified_clauses);
 
-                $changed_vars = [];
+                if ($assert_type_assertions) {
+                    $changed_vars = [];
 
-                // while in an and, we allow scope to boil over to support
-                // statements of the form if ($x && $x->foo())
-                $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
-                    $assert_type_assertions,
-                    $context->vars_in_scope,
-                    $changed_vars,
-                    [],
-                    $statements_analyzer,
-                    $context->inside_loop,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
-                );
+                    // while in an and, we allow scope to boil over to support
+                    // statements of the form if ($x && $x->foo())
+                    $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+                        $assert_type_assertions,
+                        $context->vars_in_scope,
+                        $changed_vars,
+                        [],
+                        $statements_analyzer,
+                        $context->inside_loop,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    );
 
-                foreach ($changed_vars as $changed_var) {
-                    if (isset($op_vars_in_scope[$changed_var])) {
-                        $op_vars_in_scope[$changed_var]->from_docblock = true;
+                    foreach ($changed_vars as $changed_var) {
+                        if (isset($op_vars_in_scope[$changed_var])) {
+                            $op_vars_in_scope[$changed_var]->from_docblock = true;
+                        }
                     }
-                }
 
-                $context->vars_in_scope = $op_vars_in_scope;
+                    $context->vars_in_scope = $op_vars_in_scope;
+                }
             }
         }
 

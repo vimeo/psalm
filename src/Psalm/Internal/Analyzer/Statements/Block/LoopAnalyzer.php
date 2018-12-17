@@ -546,17 +546,19 @@ class LoopAnalyzer
 
         $changed_var_ids = [];
 
-        $pre_condition_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-            $reconcilable_while_types,
-            $loop_context->vars_in_scope,
-            $changed_var_ids,
-            $new_referenced_var_ids,
-            $statements_analyzer,
-            true,
-            new CodeLocation($statements_analyzer->getSource(), $pre_condition)
-        );
+        if ($reconcilable_while_types) {
+            $pre_condition_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                $reconcilable_while_types,
+                $loop_context->vars_in_scope,
+                $changed_var_ids,
+                $new_referenced_var_ids,
+                $statements_analyzer,
+                true,
+                new CodeLocation($statements_analyzer->getSource(), $pre_condition)
+            );
 
-        $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
+            $loop_context->vars_in_scope = $pre_condition_vars_in_scope_reconciled;
+        }
 
         foreach ($asserted_var_ids as $var_id) {
             $loop_context->clauses = Context::filterClauses(

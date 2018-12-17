@@ -108,20 +108,23 @@ class BinaryOpAnalyzer
 
             $changed_var_ids = [];
 
-            // while in an and, we allow scope to boil over to support
-            // statements of the form if ($x && $x->foo())
-            $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
-                $left_type_assertions,
-                $context->vars_in_scope,
-                $changed_var_ids,
-                $new_referenced_var_ids,
-                $statements_analyzer,
-                $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
-            );
-
             $op_context = clone $context;
-            $op_context->vars_in_scope = $op_vars_in_scope;
+
+            if ($left_type_assertions) {
+                // while in an and, we allow scope to boil over to support
+                // statements of the form if ($x && $x->foo())
+                $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+                    $left_type_assertions,
+                    $context->vars_in_scope,
+                    $changed_var_ids,
+                    $new_referenced_var_ids,
+                    $statements_analyzer,
+                    $context->inside_loop,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                );
+
+                $op_context->vars_in_scope = $op_vars_in_scope;
+            }
 
             $op_context->removeReconciledClauses($changed_var_ids);
 
@@ -216,21 +219,25 @@ class BinaryOpAnalyzer
 
             $changed_var_ids = [];
 
-            // while in an or, we allow scope to boil over to support
-            // statements of the form if ($x === null || $x->foo())
-            $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
-                $negated_type_assertions,
-                $pre_op_context->vars_in_scope,
-                $changed_var_ids,
-                $new_referenced_var_ids,
-                $statements_analyzer,
-                $pre_op_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
-            );
-
             $op_context = clone $pre_op_context;
+
+            if ($negated_type_assertions) {
+                // while in an or, we allow scope to boil over to support
+                // statements of the form if ($x === null || $x->foo())
+                $op_vars_in_scope = Reconciler::reconcileKeyedTypes(
+                    $negated_type_assertions,
+                    $pre_op_context->vars_in_scope,
+                    $changed_var_ids,
+                    $new_referenced_var_ids,
+                    $statements_analyzer,
+                    $pre_op_context->inside_loop,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                );
+                $op_context->vars_in_scope = $op_vars_in_scope;
+            }
+
             $op_context->clauses = $clauses_for_right_analysis;
-            $op_context->vars_in_scope = $op_vars_in_scope;
+
 
             if ($changed_var_ids) {
                 $op_context->removeReconciledClauses($changed_var_ids);
@@ -359,17 +366,20 @@ class BinaryOpAnalyzer
 
             $changed_var_ids = [];
 
-            $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-                $reconcilable_if_types,
-                $t_if_context->vars_in_scope,
-                $changed_var_ids,
-                [],
-                $statements_analyzer,
-                $t_if_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->left)
-            );
+            if ($reconcilable_if_types) {
+                $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                    $reconcilable_if_types,
+                    $t_if_context->vars_in_scope,
+                    $changed_var_ids,
+                    [],
+                    $statements_analyzer,
+                    $t_if_context->inside_loop,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->left)
+                );
 
-            $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+                $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+            }
+
             $t_if_context->inside_isset = true;
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $t_if_context) === false) {

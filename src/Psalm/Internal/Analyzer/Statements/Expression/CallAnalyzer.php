@@ -2245,24 +2245,26 @@ class CallAnalyzer
             $asserted_keys[$var_id] = true;
         }
 
-        // while in an and, we allow scope to boil over to support
-        // statements of the form if ($x && $x->foo())
-        $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
-            $type_assertions,
-            $context->vars_in_scope,
-            $changed_vars,
-            $asserted_keys,
-            $statements_analyzer,
-            $context->inside_loop,
-            new CodeLocation($statements_analyzer->getSource(), $expr)
-        );
+        if ($type_assertions) {
+            // while in an and, we allow scope to boil over to support
+            // statements of the form if ($x && $x->foo())
+            $op_vars_in_scope = \Psalm\Type\Reconciler::reconcileKeyedTypes(
+                $type_assertions,
+                $context->vars_in_scope,
+                $changed_vars,
+                $asserted_keys,
+                $statements_analyzer,
+                $context->inside_loop,
+                new CodeLocation($statements_analyzer->getSource(), $expr)
+            );
 
-        foreach ($changed_vars as $changed_var) {
-            if (isset($op_vars_in_scope[$changed_var])) {
-                $op_vars_in_scope[$changed_var]->from_docblock = true;
+            foreach ($changed_vars as $changed_var) {
+                if (isset($op_vars_in_scope[$changed_var])) {
+                    $op_vars_in_scope[$changed_var]->from_docblock = true;
+                }
             }
-        }
 
-        $context->vars_in_scope = $op_vars_in_scope;
+            $context->vars_in_scope = $op_vars_in_scope;
+        }
     }
 }

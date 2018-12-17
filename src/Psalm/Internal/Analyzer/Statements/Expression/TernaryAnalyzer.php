@@ -102,17 +102,20 @@ class TernaryAnalyzer
 
         $changed_var_ids = [];
 
-        $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
-            $reconcilable_if_types,
-            $t_if_context->vars_in_scope,
-            $changed_var_ids,
-            $new_referenced_var_ids,
-            $statements_analyzer,
-            $t_if_context->inside_loop,
-            new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
-        );
+        if ($reconcilable_if_types) {
+            $t_if_vars_in_scope_reconciled = Reconciler::reconcileKeyedTypes(
+                $reconcilable_if_types,
+                $t_if_context->vars_in_scope,
+                $changed_var_ids,
+                $new_referenced_var_ids,
+                $statements_analyzer,
+                $t_if_context->inside_loop,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
+            );
 
-        $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+            $t_if_context->vars_in_scope = $t_if_vars_in_scope_reconciled;
+        }
+
         $t_else_context = clone $context;
 
         if ($stmt->if) {

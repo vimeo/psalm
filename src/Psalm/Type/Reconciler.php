@@ -63,6 +63,10 @@ class Reconciler
         bool $inside_loop = false,
         CodeLocation $code_location = null
     ) {
+        if (!$new_types) {
+            return $existing_types;
+        }
+
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
         foreach ($new_types as $nk => $type) {
