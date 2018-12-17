@@ -962,6 +962,50 @@ class TemplateTest extends TestCase
                     $foo = new Foo(A::class);
                     $foo->add(new A);',
             ],
+            'classTemplateAsCorrect' => [
+                '<?php
+                    class Foo {}
+                    class FooChild extends Foo {}
+
+                    /**
+                     * @template T as Foo
+                     * @param T $x
+                     * @return T
+                     */
+                    function bar($x) {
+                        return $x;
+                    }
+
+                    bar(new Foo());
+                    bar(new FooChild());',
+            ],
+            'classTemplateAsInterface' => [
+                '<?php
+                    interface Foo {}
+                    interface FooChild extends Foo {}
+                    class FooImplementer implements Foo {}
+
+                    /**
+                     * @template T as Foo
+                     * @param T $x
+                     * @return T
+                     */
+                    function bar($x) {
+                        return $x;
+                    }
+
+                    function takesFoo(Foo $f) : void {
+                        bar($f);
+                    }
+
+                    function takesFooChild(FooChild $f) : void {
+                        bar($f);
+                    }
+
+                    function takesFooImplementer(FooImplementer $f) : void {
+                        bar($f);
+                    }',
+            ],
         ];
     }
 
@@ -1155,7 +1199,43 @@ class TemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArgument - src/somefile.php:20 - Argument 1 of type expects string, callable(State):T&Foo provided',
-            ]
+            ],
+            'classTemplateAsIncorrectClass' => [
+                '<?php
+                    class Foo {}
+                    class NotFoo {}
+
+                    /**
+                     * @template T as Foo
+                     * @param T $x
+                     * @return T
+                     */
+                    function bar($x) {
+                        return $x;
+                    }
+
+                    bar(new NotFoo());',
+                'error_message' => 'InvalidArgument',
+            ],
+            'classTemplateAsIncorrectInterface' => [
+                '<?php
+                    interface Foo {}
+                    interface NotFoo {}
+
+                    /**
+                     * @template T as Foo
+                     * @param T $x
+                     * @return T
+                     */
+                    function bar($x) {
+                        return $x;
+                    }
+
+                    function takesNotFoo(NotFoo $f) : void {
+                        bar($f);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
