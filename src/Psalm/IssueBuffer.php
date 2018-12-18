@@ -11,6 +11,7 @@ use Psalm\Output\Console;
 use Psalm\Output\Emacs;
 use Psalm\Output\Json;
 use Psalm\Output\Pylint;
+use Psalm\Output\Text;
 use Psalm\Output\Xml;
 
 class IssueBuffer
@@ -389,6 +390,10 @@ class IssueBuffer
 
             case ProjectAnalyzer::TYPE_EMACS:
                 $output = new Emacs(self::$issues_data, $use_color, $show_snippet, $show_info);
+                break;
+
+            case ProjectAnalyzer::TYPE_TEXT:
+                $output = new Text(self::$issues_data, $use_color, $show_snippet, $show_info);
                 break;
 
             case ProjectAnalyzer::TYPE_JSON:

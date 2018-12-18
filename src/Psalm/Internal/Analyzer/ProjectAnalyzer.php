@@ -139,6 +139,7 @@ class ProjectAnalyzer
     const TYPE_JSON = 'json';
     const TYPE_EMACS = 'emacs';
     const TYPE_XML = 'xml';
+    const TYPE_TEXT = 'text';
 
     const SUPPORTED_OUTPUT_TYPES = [
         self::TYPE_COMPACT,
@@ -147,6 +148,7 @@ class ProjectAnalyzer
         self::TYPE_JSON,
         self::TYPE_EMACS,
         self::TYPE_XML,
+        self::TYPE_TEXT,
     ];
 
     /**
@@ -200,7 +202,7 @@ class ProjectAnalyzer
             $mapping = [
                 '.xml' => self::TYPE_XML,
                 '.json' => self::TYPE_JSON,
-                '.txt' => self::TYPE_EMACS,
+                '.txt' => self::TYPE_TEXT,
                 '.emacs' => self::TYPE_EMACS,
                 '.pylint' => self::TYPE_PYLINT,
             ];
