@@ -176,7 +176,7 @@ Options:
 
     --report=PATH
         The path where to output report file. The output format is base on the file extension.
-        (Currently supported format: ".json", ".xml", ".txt")
+        (Currently supported format: ".json", ".xml", ".txt", ".emacs")
 
     --clear-cache
         Clears all cache files that Psalm uses for this specific project
