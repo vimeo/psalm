@@ -64,6 +64,10 @@ class TNamedObject extends Atomic
             $use_phpdoc_format
         );
 
+        if ($this->value === 'static') {
+            return 'static';
+        }
+
         if ($this->value === $this_class) {
             return 'self' . $intersection_types;
         }
@@ -94,7 +98,7 @@ class TNamedObject extends Atomic
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string
+     * @return string|null
      */
     public function toPhpString(
         $namespace,
@@ -103,12 +107,16 @@ class TNamedObject extends Atomic
         $php_major_version,
         $php_minor_version
     ) {
+        if ($this->value === 'static') {
+            return null;
+        }
+
         return $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
     }
 
     public function canBeFullyExpressedInPhp()
     {
-        return true;
+        return $this->value !== 'static';
     }
 
     /**
