@@ -11,7 +11,7 @@ class Text extends Output
      */
     public function create(): string
     {
-        $output = null;
+        $output = '';
         foreach ($this->issues_data as $issue_data) {
             $output .= sprintf(
                 '%s:%s:%s:%s - %s: %s',
