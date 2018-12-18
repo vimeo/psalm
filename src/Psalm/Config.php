@@ -597,7 +597,7 @@ class Config
         if (isset($config_xml->mockClasses) && isset($config_xml->mockClasses->class)) {
             /** @var \SimpleXMLElement $mock_class */
             foreach ($config_xml->mockClasses->class as $mock_class) {
-                $config->mock_classes[] = (string)$mock_class['name'];
+                $config->mock_classes[] = strtolower((string)$mock_class['name']);
             }
         }
 

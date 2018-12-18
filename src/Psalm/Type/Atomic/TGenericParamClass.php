@@ -11,11 +11,17 @@ class TGenericParamClass extends TClassString
     public $param_name;
 
     /**
+     * @var string
+     */
+    public $extends;
+
+    /**
      * @param string $param_name
      */
-    public function __construct($param_name)
+    public function __construct($param_name, string $extends = 'object')
     {
         $this->param_name = $param_name;
+        $this->extends = $extends;
     }
 
     /**

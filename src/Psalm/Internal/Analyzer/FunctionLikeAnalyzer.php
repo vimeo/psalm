@@ -79,15 +79,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     protected static $no_effects_hashes = [];
 
     /**
+     * @var FunctionLikeStorage $storage
+     */
+    protected $storage;
+
+    /**
      * @param Closure|Function_|ClassMethod $function
      * @param SourceAnalyzer $source
      */
-    public function __construct($function, SourceAnalyzer $source)
+    protected function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
     {
         $this->function = $function;
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
         $this->codebase = $source->getCodebase();
+        $this->storage = $storage;
     }
 
     /**
@@ -99,6 +105,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      */
     public function analyze(Context $context, Context $global_context = null, $add_mutations = false)
     {
+        $storage = $this->storage;
+
         $function_stmts = $this->function->getStmts() ?: [];
 
         $hash = null;
@@ -119,13 +127,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         $codebase = $this->codebase;
         $project_analyzer = $this->getProjectAnalyzer();
 
-        $file_storage_provider = $codebase->file_storage_provider;
-
         $implemented_docblock_param_types = [];
 
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         if ($this->function instanceof ClassMethod) {
+            if (!$storage instanceof MethodStorage) {
+                throw new \UnexpectedValueException('$storage must be MethodStorage');
+            }
+
             $real_method_id = (string)$this->getMethodId();
 
             $method_id = (string)$this->getMethodId($context->self);
@@ -154,25 +164,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             $class_storage = $classlike_storage_provider->get($fq_class_name);
 
-            try {
-                $storage = $codebase->methods->getStorage($real_method_id);
-            } catch (\UnexpectedValueException $e) {
-                if ($class_storage->has_visitor_issues) {
-                    return null;
-                }
-
-                if (!$class_storage->parent_classes) {
-                    throw $e;
-                }
-
-                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-                if (!$declaring_method_id) {
-                    throw $e;
-                }
-
-                // happens for fake constructors
-                $storage = $codebase->methods->getStorage($declaring_method_id);
+            if ($class_storage->has_visitor_issues) {
+                return null;
             }
 
             $cased_method_id = $fq_class_name . '::' . $storage->cased_name;
@@ -224,24 +217,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             $context->calling_method_id = strtolower($method_id);
         } elseif ($this->function instanceof Function_) {
-            $file_storage = $file_storage_provider->get($this->source->getFilePath());
-
-            $function_id = (string)$this->getMethodId();
-
-            if (!isset($file_storage->functions[$function_id])) {
-                throw new \UnexpectedValueException(
-                    'Function ' . $function_id . ' should be defined in ' . $this->source->getFilePath()
-                );
-            }
-
-            $storage = $file_storage->functions[$function_id];
-
             $cased_method_id = $this->function->name;
         } else { // Closure
-            $function_id = $this->getMethodId();
-
-            $storage = $codebase->getClosureStorage($this->source->getFilePath(), $function_id);
-
             if ($storage->return_type) {
                 $closure_return_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
@@ -430,8 +407,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             if ($template_types) {
                 $substituted_type = clone $param_type;
-                $generic_types = [];
-                $substituted_type->replaceTemplateTypesWithStandins($template_types, $generic_types);
                 $substituted_type->check(
                     $this->source,
                     $function_param->type_location,
@@ -980,6 +955,19 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     public function getClassName()
     {
         return $this->source->getClassName();
+    }
+
+    /**
+     * @return array<string, Type\Union>|null
+     */
+    public function getTemplateTypeMap()
+    {
+        if ($this->source instanceof ClassLikeAnalyzer) {
+            return ($this->source->getTemplateTypeMap() ?: [])
+                + ($this->storage->template_types ?: []);
+        }
+
+        return $this->storage->template_types;
     }
 
     /**

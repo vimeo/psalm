@@ -179,6 +179,24 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $lhs_types = $class_type->getTypes();
 
             foreach ($lhs_types as $lhs_type_part) {
+                if ($lhs_type_part instanceof Type\Atomic\TGenericParam
+                    && $lhs_type_part->extends !== 'mixed'
+                ) {
+                    $extra_types = $lhs_type_part->extra_types;
+
+                    $lhs_type_part = array_values(
+                        Type::parseString($lhs_type_part->extends)->getTypes()
+                    )[0];
+
+                    $lhs_type_part->from_docblock = true;
+
+                    if ($lhs_type_part instanceof TNamedObject) {
+                        $lhs_type_part->extra_types = $extra_types;
+                    }
+
+                    $has_mixed_method_call = true;
+                }
+
                 if (!$lhs_type_part instanceof TNamedObject) {
                     switch (get_class($lhs_type_part)) {
                         case Type\Atomic\TNull::class:
@@ -207,9 +225,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $invalid_method_call_types[] = (string)$lhs_type_part;
                             break;
 
+                        case Type\Atomic\TGenericParam::class:
                         case Type\Atomic\TMixed::class:
                         case Type\Atomic\TNonEmptyMixed::class:
-                        case Type\Atomic\TGenericParam::class:
                         case Type\Atomic\TObject::class:
                             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
@@ -444,7 +462,23 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     foreach ($intersection_types as $intersection_type) {
                         if ($intersection_type instanceof Type\Atomic\TGenericParam) {
-                            throw new \UnexpectedValueException('Shouldn’t get a generic param here');
+                            if ($intersection_type->extends !== 'mixed'
+                                && $intersection_type->extends !== 'object'
+                            ) {
+                                $intersection_type = array_values(
+                                    Type::parseString($intersection_type->extends)->getTypes()
+                                )[0];
+
+                                if (!$intersection_type instanceof TNamedObject) {
+                                    throw new \UnexpectedValueException(
+                                        'Shouldn’t get a non-object generic param here'
+                                    );
+                                }
+
+                                $intersection_type->from_docblock = true;
+                            } else {
+                                continue;
+                            }
                         }
 
                         $method_id = $intersection_type->value . '::' . $method_name_lc;
@@ -907,7 +941,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if ($var_id
             && $class_type
             && $has_valid_method_call_type
-            && !$class_type->hasMixed()
+            && !$has_mixed_method_call
             && !$invalid_method_call_types
             && $existent_method_ids
             && ($class_type->from_docblock || $class_type->isNullable())

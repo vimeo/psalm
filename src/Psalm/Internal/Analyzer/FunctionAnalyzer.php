@@ -21,7 +21,25 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {
-        parent::__construct($function, $source);
+        $codebase = $source->getCodebase();
+
+        $file_storage_provider = $codebase->file_storage_provider;
+
+        $file_storage = $file_storage_provider->get($source->getFilePath());
+
+        $namespace = $source->getNamespace();
+
+        $function_id = ($namespace ? strtolower($namespace) . '\\' : '') . strtolower($function->name->name);
+
+        if (!isset($file_storage->functions[$function_id])) {
+            throw new \UnexpectedValueException(
+                'Function ' . $function_id . ' should be defined in ' . $source->getFilePath()
+            );
+        }
+
+        $storage = $file_storage->functions[$function_id];
+
+        parent::__construct($function, $source, $storage);
     }
 
     /**

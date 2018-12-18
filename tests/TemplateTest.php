@@ -23,7 +23,7 @@ class TemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var class-string */
+                        /** @var T::class */
                         public $T;
 
                         /**
@@ -81,7 +81,7 @@ class TemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var class-string */
+                        /** @var T::class */
                         public $T;
 
                         /**
@@ -152,7 +152,7 @@ class TemplateTest extends TestCase
                      * @template T as object
                      */
                     class Foo {
-                        /** @var class-string */
+                        /** @var T::class */
                         public $T;
 
                         /**
@@ -172,10 +172,10 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    $efoo = new Foo(Exception::class);
+                    $efoo = new Foo(\Exception::class);
                     $efoo_bar = $efoo->bar();
 
-                    $ffoo = new Foo(LogicException::class);
+                    $ffoo = new Foo(\LogicException::class);
                     $ffoo_bar = $ffoo->bar();',
                 'assertions' => [
                     '$efoo' => 'Foo<Exception>',
@@ -1006,6 +1006,79 @@ class TemplateTest extends TestCase
                         bar($f);
                     }',
             ],
+            'classTemplateFunctionImplementsInterface' => [
+                '<?php
+                    namespace A\B;
+
+                    interface Foo {}
+
+                    interface IFooGetter {
+                        /**
+                         * @return Foo
+                         */
+                        public function getFoo();
+                    }
+
+                    /**
+                     * @template T as Foo
+                     */
+                    class FooGetter implements IFooGetter {
+                        /** @var T */
+                        private $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        public function __construct(Foo $t)
+                        {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function getFoo()
+                        {
+                            return $this->t;
+                        }
+                    }
+
+                    function passFoo(Foo $f) : Foo {
+                        return (new FooGetter($f))->getFoo();
+                    }',
+            ],
+            'templateFunctionVar' => [
+                '<?php
+                    namespace A\B;
+
+                    class C {
+                        public function bar() : void {}
+                    }
+
+                    interface D {}
+
+                    /**
+                     * @template T as C
+                     * @return T
+                     */
+                    function foo($some_t) : C {
+                        /** @var T */
+                        $a = $some_t;
+                        $a->bar();
+
+                        /** @var T&D */
+                        $b = $some_t;
+                        $b->bar();
+
+                        /** @var D&T */
+                        $b = $some_t;
+                        $b->bar();
+
+                        return $a;
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+            ],
         ];
     }
 
@@ -1235,6 +1308,35 @@ class TemplateTest extends TestCase
                         bar($f);
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'templateFunctionMethodCallWithoutMethod' => [
+                '<?php
+                    namespace A\B;
+
+                    class C {}
+
+                    /**
+                     * @template T as C
+                     * @param T $some_t
+                     */
+                    function foo($some_t) : void {
+                        $some_t->bar();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod',
+            ],
+            'templateFunctionMethodCallWithoutAsType' => [
+                '<?php
+                    namespace A\B;
+
+                    /**
+                     * @template T
+                     * @param T $some_t
+                     * @return T
+                     */
+                    function foo($some_t) : void {
+                        $some_t->bar();
+                    }',
+                'error_message' => 'MixedMethodCall',
             ],
         ];
     }

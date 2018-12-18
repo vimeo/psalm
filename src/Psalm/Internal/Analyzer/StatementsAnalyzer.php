@@ -685,7 +685,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $var_comments = CommentAnalyzer::getTypeFromComment(
                             (string)$stmt->getDocComment(),
                             $this->getSource(),
-                            $this->getSource()->getAliases()
+                            $this->getSource()->getAliases(),
+                            $this->getSource()->getTemplateTypeMap()
                         );
                     } catch (DocblockParseException $e) {
                         if (IssueBuffer::accepts(

@@ -11,11 +11,17 @@ class TGenericParam extends \Psalm\Type\Atomic
     public $param_name;
 
     /**
+     * @var string
+     */
+    public $extends;
+
+    /**
      * @param string $param_name
      */
-    public function __construct($param_name)
+    public function __construct($param_name, string $extends = 'mixed')
     {
         $this->param_name = $param_name;
+        $this->extends = $extends;
     }
 
     public function __toString()

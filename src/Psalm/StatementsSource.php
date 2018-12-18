@@ -29,6 +29,11 @@ interface StatementsSource extends FileSource
     public function getParentFQCLN();
 
     /**
+     * @return array<string,Type\Union>|null
+     */
+    public function getTemplateTypeMap();
+
+    /**
      * @param string $file_path
      * @param string $file_name
      *

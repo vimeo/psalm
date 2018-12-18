@@ -141,6 +141,25 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $new_type = null;
 
                 foreach ($stmt->class->inferredType->getTypes() as $lhs_type_part) {
+                    if ($lhs_type_part instanceof Type\Atomic\TGenericParamClass) {
+                        if (!isset($stmt->inferredType)) {
+                            $new_type_part = new Type\Atomic\TGenericParam(
+                                $lhs_type_part->param_name,
+                                $lhs_type_part->extends
+                            );
+
+                            if ($new_type) {
+                                $new_type = Type::combineUnionTypes(
+                                    $new_type,
+                                    new Type\Union([$new_type_part])
+                                );
+                            } else {
+                                $new_type = new Type\Union([$new_type_part]);
+                            }
+                        }
+
+                        continue;
+                    }
                     // this is always OK
                     if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
                         || $lhs_type_part instanceof Type\Atomic\TClassString

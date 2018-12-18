@@ -411,6 +411,14 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
+     * @return array<string, Type\Union>|null
+     */
+    public function getTemplateTypeMap()
+    {
+        return $this->storage->template_types;
+    }
+
+    /**
      * @return string|null
      */
     public function getParentFQCLN()

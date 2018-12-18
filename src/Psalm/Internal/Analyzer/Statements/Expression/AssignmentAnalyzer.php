@@ -74,12 +74,14 @@ class AssignmentAnalyzer
 
             $file_storage = $file_storage_provider->get($file_path);
 
+            $template_type_map = $statements_analyzer->getTemplateTypeMap();
+
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $doc_comment,
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getAliases(),
-                    null,
+                    $template_type_map,
                     $came_from_line_number,
                     null,
                     $file_storage->type_aliases

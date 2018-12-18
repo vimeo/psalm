@@ -681,10 +681,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($docblock_info) {
-                if ($docblock_info->template_type_names) {
+                if ($docblock_info->templates) {
                     $storage->template_types = [];
 
-                    foreach ($docblock_info->template_type_names as $template_type) {
+                    foreach ($docblock_info->templates as $template_type) {
                         if (count($template_type) === 3) {
                             $storage->template_types[$template_type[0]] = Type::parseTokens(
                                 Type::fixUpLocalType(
@@ -1244,10 +1244,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
 
-        if ($docblock_info->template_type_names) {
+        if ($docblock_info->templates) {
             $storage->template_types = [];
 
-            foreach ($docblock_info->template_type_names as $template_type) {
+            foreach ($docblock_info->templates as $template_type) {
                 if (count($template_type) === 3) {
                     $storage->template_types[$template_type[0]] = Type::parseTokens(
                         Type::fixUpLocalType(

@@ -1386,6 +1386,6 @@ class ExpressionAnalyzer
      */
     public static function isMock($fq_class_name)
     {
-        return in_array($fq_class_name, Config::getInstance()->getMockClasses(), true);
+        return in_array(strtolower($fq_class_name), Config::getInstance()->getMockClasses(), true);
     }
 }

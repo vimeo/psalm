@@ -5,6 +5,7 @@ use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\StatementsSource;
+use Psalm\Type;
 
 /**
  * @internal
@@ -194,5 +195,13 @@ abstract class SourceAnalyzer implements StatementsSource
     public function getFileAnalyzer() : FileAnalyzer
     {
         return $this->source->getFileAnalyzer();
+    }
+
+    /**
+     * @return array<string, Type\Union>|null
+     */
+    public function getTemplateTypeMap()
+    {
+        return $this->source->getTemplateTypeMap();
     }
 }

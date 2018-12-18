@@ -30,16 +30,39 @@ use Psalm\Type;
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
     /**
-     * @param PhpParser\Node\FunctionLike $function
      * @psalm-suppress MixedAssignment
      */
-    public function __construct($function, SourceAnalyzer $source)
-    {
-        if (!$function instanceof PhpParser\Node\Stmt\ClassMethod) {
-            throw new \InvalidArgumentException('Must be called with a ClassMethod');
+    public function __construct(
+        PhpParser\Node\Stmt\ClassMethod $function,
+        SourceAnalyzer $source,
+        MethodStorage $storage = null
+    ) {
+        $codebase = $source->getCodebase();
+
+        $real_method_id = $source->getFQCLN() . '::' . strtolower((string) $function->name);
+
+        if (!$storage) {
+            try {
+                $storage = $codebase->methods->getStorage($real_method_id);
+            } catch (\UnexpectedValueException $e) {
+                $class_storage = $codebase->classlike_storage_provider->get((string) $source->getFQCLN());
+
+                if (!$class_storage->parent_classes) {
+                    throw $e;
+                }
+
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($real_method_id);
+
+                if (!$declaring_method_id) {
+                    throw $e;
+                }
+
+                // happens for fake constructors
+                $storage = $codebase->methods->getStorage($declaring_method_id);
+            }
         }
 
-        parent::__construct($function, $source);
+        parent::__construct($function, $source, $storage);
     }
 
     /**

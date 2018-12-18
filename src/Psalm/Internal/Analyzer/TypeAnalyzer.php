@@ -300,25 +300,33 @@ class TypeAnalyzer
 
         foreach ($intersection_container_types as $intersection_container_type) {
             if ($intersection_container_type instanceof TGenericParam) {
-                continue;
-            }
-
-            $intersection_container_type_lower = strtolower(
-                $codebase->classlikes->getUnAliasedName(
-                    strtolower($intersection_container_type->value)
-                )
-            );
-
-            foreach ($intersection_input_types as $intersection_input_type) {
-                if ($intersection_input_type instanceof TGenericParam) {
+                if ($intersection_container_type->extends === 'mixed') {
                     continue;
                 }
 
-                $intersection_input_type_lower = strtolower(
+                $intersection_container_type_lower = strtolower($intersection_container_type->extends);
+            } else {
+                $intersection_container_type_lower = strtolower(
                     $codebase->classlikes->getUnAliasedName(
-                        strtolower($intersection_input_type->value)
+                        strtolower($intersection_container_type->value)
                     )
                 );
+            }
+
+            foreach ($intersection_input_types as $intersection_input_type) {
+                if ($intersection_input_type instanceof TGenericParam) {
+                    if ($intersection_input_type->extends === 'mixed') {
+                        continue;
+                    }
+
+                    $intersection_input_type_lower = strtolower($intersection_input_type->extends);
+                } else {
+                    $intersection_input_type_lower = strtolower(
+                        $codebase->classlikes->getUnAliasedName(
+                            strtolower($intersection_input_type->value)
+                        )
+                    );
+                }
 
                 if ($intersection_container_type_lower === $intersection_input_type_lower) {
                     continue 2;
@@ -336,17 +344,17 @@ class TypeAnalyzer
                     continue 2;
                 }
 
-                $input_type_is_interface = $codebase->interfaceExists($intersection_input_type->value);
-                $container_type_is_interface = $codebase->interfaceExists($intersection_container_type->value);
+                $input_type_is_interface = $codebase->interfaceExists($intersection_input_type_lower);
+                $container_type_is_interface = $codebase->interfaceExists($intersection_container_type_lower);
 
                 if ($allow_interface_equality && $input_type_is_interface && $container_type_is_interface) {
                     continue 2;
                 }
 
-                if ($codebase->classExists($intersection_input_type->value)
+                if ($codebase->classExists($intersection_input_type_lower)
                     && $codebase->classExtendsOrImplements(
-                        $intersection_input_type->value,
-                        $intersection_container_type->value
+                        $intersection_input_type_lower,
+                        $intersection_container_type_lower
                     )
                 ) {
                     continue 2;
@@ -354,14 +362,14 @@ class TypeAnalyzer
 
                 if ($input_type_is_interface
                     && $codebase->interfaceExtends(
-                        $intersection_input_type->value,
-                        $intersection_container_type->value
+                        $intersection_input_type_lower,
+                        $intersection_container_type_lower
                     )
                 ) {
                     continue 2;
                 }
 
-                if (ExpressionAnalyzer::isMock($intersection_input_type->value)) {
+                if (ExpressionAnalyzer::isMock($intersection_input_type_lower)) {
                     return true;
                 }
             }
@@ -401,7 +409,9 @@ class TypeAnalyzer
         &$type_coerced_from_scalar = null
     ) {
         if ($container_type_part instanceof TMixed
-            || ($container_type_part instanceof TGenericParam && !$container_type_part->extra_types)
+            || ($container_type_part instanceof TGenericParam
+                && $container_type_part->extends === 'mixed'
+                && !$container_type_part->extra_types)
         ) {
             if (get_class($container_type_part) === TEmptyMixed::class
                 && get_class($input_type_part) === TMixed::class
@@ -416,7 +426,9 @@ class TypeAnalyzer
         }
 
         if ($input_type_part instanceof TMixed
-            || ($input_type_part instanceof TGenericParam && !$input_type_part->extra_types)
+            || ($input_type_part instanceof TGenericParam
+                && $input_type_part->extends === 'mixed'
+                && !$input_type_part->extra_types)
         ) {
             $type_coerced = true;
             $type_coerced_from_mixed = true;
@@ -432,9 +444,8 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($input_type_part->shallowEquals($container_type_part) ||
-            (
-                ($input_type_part instanceof TNamedObject || $input_type_part instanceof TGenericParam)
+        if ($input_type_part->shallowEquals($container_type_part)
+            || (($input_type_part instanceof TNamedObject || $input_type_part instanceof TGenericParam)
                 && ($container_type_part instanceof TNamedObject || $container_type_part instanceof TGenericParam)
                 && self::isObjectContainedByObject(
                     $codebase,
