@@ -71,4 +71,17 @@ class TGenericParamClass extends TClassString
     {
         return false;
     }
+
+    /**
+     * @param  string|null   $namespace
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  bool          $use_phpdoc_format
+     *
+     * @return string
+     */
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
+    {
+        return $this->param_name . '::class';
+    }
 }
