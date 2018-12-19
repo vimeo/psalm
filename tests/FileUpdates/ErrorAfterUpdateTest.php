@@ -66,10 +66,6 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
-        if (!$file_stages) {
-            throw new \UnexpectedValueException('$file_stages should not be empty');
-        }
-
         $end_files = array_pop($file_stages);
 
         foreach ($file_stages as $files) {

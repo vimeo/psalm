@@ -22,7 +22,6 @@ use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -88,9 +87,6 @@ abstract class Atomic
 
             case 'array':
                 return new TArray([new Union([new TMixed]), new Union([new TMixed])]);
-
-            case 'non-empty-array':
-                return new TNonEmptyArray([new Union([new TMixed]), new Union([new TMixed])]);
 
             case 'resource':
                 return $php_compatible ? new TNamedObject($value) : new TResource();

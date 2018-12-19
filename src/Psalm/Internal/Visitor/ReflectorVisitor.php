@@ -541,10 +541,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            if (!$this->classlike_storages) {
-                throw new \LogicException('$this->classlike_storages should not be empty');
-            }
-
             $classlike_storage = array_pop($this->classlike_storages);
 
             if ($classlike_storage->has_visitor_issues) {
@@ -579,10 +575,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         ) {
             $this->function_template_types = [];
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
-            if (!$this->functionlike_storages) {
-                throw new \UnexpectedValueException('There should be function storages');
-            }
-
             $functionlike_storage = array_pop($this->functionlike_storages);
 
             if ($functionlike_storage->has_visitor_issues) {

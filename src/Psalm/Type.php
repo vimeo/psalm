@@ -281,10 +281,9 @@ abstract class Type
                 }
             }
 
-            /** @var TNamedObject|TGenericParam */
+            /** @var array<int, TNamedObject|TGenericParam> $intersection_types */
             $first_type = array_shift($intersection_types);
 
-            /** @var array<int, TNamedObject|TGenericParam> $intersection_types */
             $first_type->extra_types = $intersection_types;
 
             return $first_type;

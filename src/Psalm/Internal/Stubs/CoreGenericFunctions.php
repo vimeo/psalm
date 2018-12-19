@@ -89,6 +89,26 @@ function array_diff_key(array $arr, array $arr2, array $arr3 = null, array $arr4
  * @psalm-template TValue
  *
  * @param array<TKey, TValue> $arr
+ * @return null|TValue
+ * @psalm-ignore-nullable-return
+ */
+function array_shift(array &$arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return null|TValue
+ * @psalm-ignore-nullable-return
+ */
+function array_pop(array &$arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
  * @param bool            $preserve_keys
  * @return array<TKey, TValue>
  */
@@ -102,6 +122,56 @@ function array_reverse(array $arr, bool $preserve_keys = false) {}
  * @return array<TValue, TKey>
  */
 function array_flip(array $arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
+function current(array $arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
+function next(array &$arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
+function prev(array &$arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
+function reset(array &$arr) {}
+
+/**
+ * @psalm-template TKey
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr
+ * @return TValue|false
+ * @psalm-ignore-falsable-return
+ */
+function end(array &$arr) {}
 
 /**
  * @psalm-template TKey

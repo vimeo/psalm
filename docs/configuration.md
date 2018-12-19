@@ -36,7 +36,7 @@ Psalm uses an XML config file. A barebones example looks like this:
 - `allowCoercionFromStringToClassConst=[bool]`<br />
   When `true`, strings can be coerced to [`class-string`](supported_annotations.md#class-constants), with Psalm emitting a `TypeCoercion` issue. If disabled, that issue changes to a more serious one. Defaults to `true`.
 - `allowStringToStandInForClass=[bool]`<br />
-  When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
+  When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `true` (no issues emitted).
 - `memoizeMethodCallResults=[bool]`<br />
   When `true`, the results of method calls without arguments passed arguments are remembered between repeated calls of that method on a given object. Defaults to `false`.
 - `hoistConstants=[bool]`<br />
@@ -45,10 +45,6 @@ Psalm uses an XML config file. A barebones example looks like this:
   Occasionally a param default will not match up with the docblock type. By default, Psalm emits an issue. Setting this flag to `true` causes it to expand the param type to include the param default. Defaults to `false`.
 - `checkForThrowsDocblock=[bool]`<br />
   When `true`, Psalm will check that the developer has supplied `@throws` docblocks for every exception thrown in a given function or method. Defaults to `false`.
-- `ignoreInternalFunctionFalseReturn=[bool]`<br />
-  When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely). Defaults to `true`.
-- `ignoreInternalFunctionNullReturn=[bool]`<br />
-  When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
 
 ### Running Psalm
 

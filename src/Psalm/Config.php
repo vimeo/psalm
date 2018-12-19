@@ -215,16 +215,6 @@ class Config
     public $check_for_throws_docblock = false;
 
     /**
-     * @var bool
-     */
-    public $ignore_internal_falsable_issues = true;
-
-    /**
-     * @var bool
-     */
-    public $ignore_internal_nullable_issues = true;
-
-    /**
      * @var array<string, bool>
      */
     public $ignored_exceptions = [];
@@ -587,16 +577,6 @@ class Config
         if (isset($config_xml['forbidEcho'])) {
             $attribute_text = (string) $config_xml['forbidEcho'];
             $config->forbid_echo = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['ignoreRareInternalFunctionFalseReturn'])) {
-            $attribute_text = (string) $config_xml['ignoreRareInternalFunctionFalseReturn'];
-            $config->ignore_internal_falsable_issues = $attribute_text === 'true' || $attribute_text === '1';
-        }
-
-        if (isset($config_xml['ignoreRareInternalFunctioNullReturn'])) {
-            $attribute_text = (string) $config_xml['ignoreRareInternalFunctionNullReturn'];
-            $config->ignore_internal_nullable_issues = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['errorBaseline'])) {

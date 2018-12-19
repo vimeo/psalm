@@ -82,10 +82,6 @@ class Reconciler
 
                 $key_parts = Reconciler::breakUpPathIntoParts($nk);
 
-                if (!$key_parts) {
-                    throw new \UnexpectedValueException('There should be some key parts');
-                }
-
                 $base_key = array_shift($key_parts);
 
                 if (!isset($new_types[$base_key])) {
@@ -107,7 +103,6 @@ class Reconciler
 
                         if (strpos($array_key, '\'') !== false) {
                             $new_types[$base_key][] = ['!string'];
-                            $new_types[$base_key][] = ['!~falsy'];
                         }
 
                         $base_key = $new_base_key;
@@ -324,7 +319,7 @@ class Reconciler
                 return Type::getMixed($inside_loop);
             }
 
-            if ($new_var_type === 'array-key-exists' || $new_var_type === 'non-empty-countable') {
+            if ($new_var_type === 'array-key-exists') {
                 return Type::getMixed();
             }
 
@@ -744,28 +739,6 @@ class Reconciler
             }
 
             return Type::getFloat();
-        }
-
-        if ($new_var_type === 'non-empty-countable') {
-            if ($existing_var_type->hasType('array')) {
-                $array_atomic_type = $existing_var_type->getTypes()['array'];
-
-                if ($array_atomic_type instanceof Type\Atomic\TArray
-                    && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
-                ) {
-                    if ($array_atomic_type->getId() === 'array<empty, empty>') {
-                        $existing_var_type->removeType('array');
-                    } else {
-                        $existing_var_type->addType(
-                            new Type\Atomic\TNonEmptyArray(
-                                $array_atomic_type->type_params
-                            )
-                        );
-                    }
-                }
-            }
-
-            return $existing_var_type;
         }
 
         if (substr($new_var_type, 0, 4) === 'isa-') {
@@ -1420,31 +1393,6 @@ class Reconciler
             }
 
             $existing_var_type->from_calculation = false;
-
-            return $existing_var_type;
-        }
-
-        if ($new_var_type === 'non-empty-countable') {
-            if (isset($existing_var_atomic_types['array'])) {
-                $array_atomic_type = $existing_var_atomic_types['array'];
-
-                if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
-                    || ($array_atomic_type instanceof Type\Atomic\ObjectLike && $array_atomic_type->sealed)
-                ) {
-                    $did_remove_type = true;
-
-                    $existing_var_type->removeType('array');
-                } elseif ($array_atomic_type->getId() !== 'array<empty, empty>') {
-                    $did_remove_type = true;
-
-                    $existing_var_type->addType(new TArray(
-                        [
-                            new Type\Union([new TEmpty]),
-                            new Type\Union([new TEmpty]),
-                        ]
-                    ));
-                }
-            }
 
             return $existing_var_type;
         }
