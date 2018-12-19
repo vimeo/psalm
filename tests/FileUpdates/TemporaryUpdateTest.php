@@ -68,6 +68,10 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
             $config->setCustomErrorLevel($error_type, $error_level);
         }
 
+        if (!$file_stages) {
+            throw new \UnexpectedValueException('$file_stages should not be empty');
+        }
+
         $start_files = array_shift($file_stages);
 
         // first batch

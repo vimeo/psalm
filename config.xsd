@@ -37,6 +37,8 @@
         <xs:attribute name="allowPhpStormGenerics" type="xs:string" />
         <xs:attribute name="allowCoercionFromStringToClassConst" type="xs:string" />
         <xs:attribute name="allowStringToStandInForClass" type="xs:string" />
+        <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:string" />
+        <xs:attribute name="ignoreInternalFunctionNullReturn" type="xs:string" />
         <xs:attribute name="usePhpDocMethodsWithoutMagicCall" type="xs:string" />
         <xs:attribute name="memoizeMethodCallResults" type="xs:string" />
         <xs:attribute name="hoistConstants" type="xs:string" />
