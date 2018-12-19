@@ -589,13 +589,13 @@ class Config
             $config->forbid_echo = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['ignoreRareInternalFunctionFalseReturn'])) {
-            $attribute_text = (string) $config_xml['ignoreRareInternalFunctionFalseReturn'];
+        if (isset($config_xml['ignoreInternalFunctionFalseReturn'])) {
+            $attribute_text = (string) $config_xml['ignoreInternalFunctionFalseReturn'];
             $config->ignore_internal_falsable_issues = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['ignoreRareInternalFunctioNullReturn'])) {
-            $attribute_text = (string) $config_xml['ignoreRareInternalFunctionNullReturn'];
+        if (isset($config_xml['ignoreInternalFunctioNullReturn'])) {
+            $attribute_text = (string) $config_xml['ignoreInternalFunctionNullReturn'];
             $config->ignore_internal_nullable_issues = $attribute_text === 'true' || $attribute_text === '1';
         }
 
