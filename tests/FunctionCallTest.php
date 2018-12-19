@@ -271,6 +271,13 @@ class FunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'noRedundantConditionAfterArrayObjectCountCheck' => [
+                '<?php
+                    /** @var ArrayObject<int, int> */
+                    $a = [];
+                    $b = 5;
+                    if (count($a)) {}',
+            ],
             'arrayPopNonEmptyAfterCountEqualsOne' => [
                 '<?php
                     /** @var array<string, int> */
