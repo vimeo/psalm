@@ -594,7 +594,7 @@ class Config
             $config->ignore_internal_falsable_issues = $attribute_text === 'true' || $attribute_text === '1';
         }
 
-        if (isset($config_xml['ignoreInternalFunctioNullReturn'])) {
+        if (isset($config_xml['ignoreInternalFunctionNullReturn'])) {
             $attribute_text = (string) $config_xml['ignoreInternalFunctionNullReturn'];
             $config->ignore_internal_nullable_issues = $attribute_text === 'true' || $attribute_text === '1';
         }
