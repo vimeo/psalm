@@ -195,12 +195,6 @@ class IfAnalyzer
             }
         }
 
-        foreach ($if_context->vars_possibly_in_scope as $var_id => $_) {
-            if (!isset($if_context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
-
         $if_clauses = Algebra::getFormula(
             $stmt->cond,
             $context->self,
