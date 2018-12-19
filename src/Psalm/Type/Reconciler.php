@@ -164,7 +164,6 @@ class Reconciler
             $has_negation = false;
             $has_equality = false;
             $has_isset = false;
-            $has_count_check = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
                 $orred_type = null;
@@ -182,9 +181,6 @@ class Reconciler
                     $has_isset = $has_isset
                         || $new_type_part_part === 'isset'
                         || $new_type_part_part === 'array-key-exists';
-
-                    $has_count_check = $has_count_check
-                        || $new_type_part_part === 'non-empty-countable';
 
                     $result_type_candidate = self::reconcileTypes(
                         $new_type_part_part,
@@ -231,7 +227,6 @@ class Reconciler
                 && isset($referenced_var_ids[$key])
                 && !$has_negation
                 && !$has_equality
-                && !$has_count_check
                 && !$result_type->hasMixed()
                 && (!$has_isset || substr($key, -1, 1) !== ']')
             ) {
@@ -753,13 +748,11 @@ class Reconciler
 
         if ($new_var_type === 'non-empty-countable') {
             if ($existing_var_type->hasType('array')) {
-                $did_remove_type = false;
                 $array_atomic_type = $existing_var_type->getTypes()['array'];
 
                 if ($array_atomic_type instanceof Type\Atomic\TArray
                     && !$array_atomic_type instanceof Type\Atomic\TNonEmptyArray
                 ) {
-                    $did_remove_type = true;
                     if ($array_atomic_type->getId() === 'array<empty, empty>') {
                         $existing_var_type->removeType('array');
                     } else {
@@ -767,20 +760,6 @@ class Reconciler
                             new Type\Atomic\TNonEmptyArray(
                                 $array_atomic_type->type_params
                             )
-                        );
-                    }
-                }
-
-                if (!$did_remove_type || empty($existing_var_type->getTypes())) {
-                    if ($key && $code_location) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $key,
-                            $new_var_type,
-                            !$did_remove_type,
-                            $code_location,
-                            $suppressed_issues
                         );
                     }
                 }
@@ -1447,7 +1426,6 @@ class Reconciler
 
         if ($new_var_type === 'non-empty-countable') {
             if (isset($existing_var_atomic_types['array'])) {
-                $did_remove_type = false;
                 $array_atomic_type = $existing_var_atomic_types['array'];
 
                 if ($array_atomic_type instanceof Type\Atomic\TNonEmptyArray
@@ -1465,20 +1443,6 @@ class Reconciler
                             new Type\Union([new TEmpty]),
                         ]
                     ));
-                }
-
-                if (!$did_remove_type || empty($existing_var_type->getTypes())) {
-                    if ($key && $code_location) {
-                        self::triggerIssueForImpossible(
-                            $existing_var_type,
-                            $old_var_type_string,
-                            $key,
-                            $new_var_type,
-                            !$did_remove_type,
-                            $code_location,
-                            $suppressed_issues
-                        );
-                    }
                 }
             }
 
