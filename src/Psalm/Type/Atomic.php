@@ -228,6 +228,10 @@ abstract class Atomic
 
             if ($this->extra_types) {
                 foreach ($this->extra_types as $extra_type) {
+                    if ($extra_type instanceof TGenericParam) {
+                        continue;
+                    }
+
                     if (!isset($phantom_classes[strtolower($extra_type->value)]) &&
                         ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $source,

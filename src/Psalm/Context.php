@@ -464,9 +464,17 @@ class Context
             $this->clauses,
             /** @return bool */
             function (Clause $c) use ($changed_var_ids) {
-                return count($c->possibilities) > 1
-                    || $c->wedge
-                    || !in_array(array_keys($c->possibilities)[0], $changed_var_ids, true);
+                if ($c->wedge) {
+                    return true;
+                }
+
+                foreach ($c->possibilities as $key => $_) {
+                    if (in_array($key, $changed_var_ids, true)) {
+                        return false;
+                    }
+                }
+
+                return true;
             }
         );
     }

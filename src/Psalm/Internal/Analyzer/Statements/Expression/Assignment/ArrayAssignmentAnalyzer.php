@@ -58,8 +58,6 @@ class ArrayAssignmentAnalyzer
      * @param  Context                           $context
      *
      * @return false|null
-     *
-     * @psalm-suppress UnusedVariable due to Psalm bug
      */
     public static function updateArrayType(
         StatementsAnalyzer $statements_analyzer,
@@ -231,25 +229,27 @@ class ArrayAssignmentAnalyzer
                 throw new \InvalidArgumentException('Should never get here');
             }
 
-            $is_single_string_literal = false;
+            $key_value = null;
 
             if ($current_dim instanceof PhpParser\Node\Scalar\String_
                 || $current_dim instanceof PhpParser\Node\Scalar\LNumber
-                || ($current_dim instanceof PhpParser\Node\Expr\ConstFetch
-                    && isset($current_dim->inferredType)
-                    && (($is_single_string_literal = $current_dim->inferredType->isSingleStringLiteral())
-                        || $current_dim->inferredType->isSingleIntLiteral()))
             ) {
-                if ($current_dim instanceof PhpParser\Node\Scalar\String_
-                    || $current_dim instanceof PhpParser\Node\Scalar\LNumber
-                ) {
-                    $key_value = $current_dim->value;
-                } elseif ($is_single_string_literal) {
-                    $key_value = $current_dim->inferredType->getSingleStringLiteral()->value;
-                } else {
-                    $key_value = $current_dim->inferredType->getSingleIntLiteral()->value;
-                }
+                $key_value = $current_dim->value;
+            } elseif ($current_dim instanceof PhpParser\Node\Expr\ConstFetch
+                && isset($current_dim->inferredType)
+            ) {
+                $is_single_string_literal = $current_dim->inferredType->isSingleStringLiteral();
 
+                if ($is_single_string_literal || $current_dim->inferredType->isSingleIntLiteral()) {
+                    if ($is_single_string_literal) {
+                        $key_value = $current_dim->inferredType->getSingleStringLiteral()->value;
+                    } else {
+                        $key_value = $current_dim->inferredType->getSingleIntLiteral()->value;
+                    }
+                }
+            }
+
+            if ($key_value !== null) {
                 $has_matching_objectlike_property = false;
 
                 foreach ($child_stmt->inferredType->getTypes() as $type) {
@@ -311,27 +311,28 @@ class ArrayAssignmentAnalyzer
         }
 
         $root_is_string = $root_type->isString();
-        $is_single_string_literal = false;
+        $key_value = null;
 
-        if (($current_dim instanceof PhpParser\Node\Scalar\String_
-                || $current_dim instanceof PhpParser\Node\Scalar\LNumber
-                || ($current_dim instanceof PhpParser\Node\Expr\ConstFetch
-                    && isset($current_dim->inferredType)
-                    && (($is_single_string_literal = $current_dim->inferredType->isSingleStringLiteral())
-                        || $current_dim->inferredType->isSingleIntLiteral())))
-            && ($current_dim instanceof PhpParser\Node\Scalar\String_
-                || !$root_is_string)
+        if ($current_dim instanceof PhpParser\Node\Scalar\String_
+            || ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string)
         ) {
-            if ($current_dim instanceof PhpParser\Node\Scalar\String_
-                || $current_dim instanceof PhpParser\Node\Scalar\LNumber
-            ) {
-                $key_value = $current_dim->value;
-            } elseif ($is_single_string_literal) {
-                $key_value = $current_dim->inferredType->getSingleStringLiteral()->value;
-            } else {
-                $key_value = $current_dim->inferredType->getSingleIntLiteral()->value;
-            }
+            $key_value = $current_dim->value;
+        } elseif ($current_dim instanceof PhpParser\Node\Expr\ConstFetch
+            && isset($current_dim->inferredType)
+            && !$root_is_string
+        ) {
+            $is_single_string_literal = $current_dim->inferredType->isSingleStringLiteral();
 
+            if ($is_single_string_literal || $current_dim->inferredType->isSingleIntLiteral()) {
+                if ($is_single_string_literal) {
+                    $key_value = $current_dim->inferredType->getSingleStringLiteral()->value;
+                } else {
+                    $key_value = $current_dim->inferredType->getSingleIntLiteral()->value;
+                }
+            }
+        }
+
+        if ($key_value !== null) {
             $has_matching_objectlike_property = false;
 
             foreach ($root_type->getTypes() as $type) {
