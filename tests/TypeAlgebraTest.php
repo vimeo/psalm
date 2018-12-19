@@ -410,18 +410,6 @@ class TypeAlgebraTest extends TestCase
             'noParadoxAfterArrayAppending' => [
                 '<?php
                     /** @return array|false */
-                    function array_append2(array $errors) {
-                        if ($errors) {
-                            return $errors;
-                        }
-                        $errors[] = "deterministic";
-                        if ($errors) {
-                            return false;
-                        }
-                        return $errors;
-                    }
-
-                    /** @return array|false */
                     function array_append(array $errors) {
                         if ($errors) {
                             return $errors;

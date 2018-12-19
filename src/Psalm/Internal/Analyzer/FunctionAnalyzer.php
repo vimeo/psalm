@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Codebase\CallMap;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Issue\InvalidArgument;
@@ -100,7 +101,12 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                         if (in_array($call_map_key, ['preg_replace', 'preg_replace_callback'], true)) {
                             $return_type->addType(new Type\Atomic\TNull());
-                            $return_type->ignore_nullable_issues = true;
+
+                            $codebase = $statements_analyzer->getCodebase();
+
+                            if ($codebase->config->ignore_internal_nullable_issues) {
+                                $return_type->ignore_nullable_issues = true;
+                            }
                         }
 
                         return $return_type;
@@ -114,6 +120,13 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     }
 
                     return Type::getArray();
+
+                case 'current':
+                case 'next':
+                case 'prev':
+                case 'reset':
+                case 'end':
+                    return self::getArrayPointerAdjustReturn($call_args, $statements_analyzer->getCodebase());
 
                 case 'count':
                     if (isset($call_args[0]->value->inferredType)) {
@@ -242,6 +255,10 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 case 'array_slice':
                     return self::getArraySliceReturnType($call_args);
 
+                case 'array_pop':
+                case 'array_shift':
+                    return self::getArrayPopReturnType($call_args, $statements_analyzer->getCodebase());
+
                 case 'explode':
                     if ($call_args[0]->value instanceof PhpParser\Node\Scalar\String_) {
                         if ($call_args[0]->value->value === '') {
@@ -249,7 +266,16 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         }
 
                         return new Type\Union([
-                            new Type\Atomic\TArray([
+                            new Type\Atomic\TNonEmptyArray([
+                                Type::getInt(),
+                                Type::getString()
+                            ])
+                        ]);
+                    } elseif (isset($call_args[0]->value->inferredType)
+                        && $call_args[0]->value->inferredType->hasString()
+                    ) {
+                        return new Type\Union([
+                            new Type\Atomic\TNonEmptyArray([
                                 Type::getInt(),
                                 Type::getString()
                             ])
@@ -382,8 +408,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             $operator_type = $call_args[2]->value->inferredType;
 
                             if (!$operator_type->hasMixed()) {
-                                $codebase = $statements_analyzer->getCodebase();
-
                                 $acceptable_operator_type = new Type\Union([
                                     new Type\Atomic\TLiteralString('<'),
                                     new Type\Atomic\TLiteralString('lt'),
@@ -400,6 +424,8 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     new Type\Atomic\TLiteralString('<>'),
                                     new Type\Atomic\TLiteralString('ne'),
                                 ]);
+
+                                $codebase = $statements_analyzer->getCodebase();
 
                                 if (TypeAnalyzer::isContainedBy(
                                     $codebase,
@@ -455,7 +481,11 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                         new Type\Atomic\TNull
                                     ]);
 
-                                    $nullable_string->ignore_nullable_issues = true;
+                                    $codebase = $statements_analyzer->getCodebase();
+
+                                    if ($codebase->config->ignore_internal_nullable_issues) {
+                                        $nullable_string->ignore_nullable_issues = true;
+                                    }
 
                                     return $nullable_string;
                                 }
@@ -470,7 +500,11 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                         new Type\Atomic\TNull
                                     ]);
 
-                                    $nullable_int->ignore_nullable_issues = true;
+                                    $codebase = $statements_analyzer->getCodebase();
+
+                                    if ($codebase->config->ignore_internal_nullable_issues) {
+                                        $nullable_int->ignore_nullable_issues = true;
+                                    }
 
                                     return $nullable_int;
                                 }
@@ -483,7 +517,11 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             new Type\Atomic\TNull
                         ]);
 
-                        $nullable_string_or_int->ignore_nullable_issues = true;
+                        $codebase = $statements_analyzer->getCodebase();
+
+                        if ($codebase->config->ignore_internal_nullable_issues) {
+                            $nullable_string_or_int->ignore_nullable_issues = true;
+                        }
 
                         return $nullable_string_or_int;
                     }
@@ -504,7 +542,11 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         new Type\Atomic\TFalse
                     ]);
 
-                    $nullable_string_or_int->ignore_falsable_issues = true;
+                    $codebase = $statements_analyzer->getCodebase();
+
+                    if ($codebase->config->ignore_internal_falsable_issues) {
+                        $nullable_string_or_int->ignore_falsable_issues = true;
+                    }
 
                     return $nullable_string_or_int;
 
@@ -635,12 +677,53 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 break;
 
             default:
-                if ($call_map_return_type->isFalsable()) {
+                $codebase = $statements_analyzer->getCodebase();
+
+                if ($call_map_return_type->isFalsable()
+                    && $codebase->config->ignore_internal_falsable_issues
+                ) {
                     $call_map_return_type->ignore_falsable_issues = true;
                 }
         }
 
         return $call_map_return_type;
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
+     *
+     * @return Type\Union
+     */
+    private static function getArrayPointerAdjustReturn(array $call_args, Codebase $codebase)
+    {
+        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+
+        $first_arg_array = $first_arg
+            && isset($first_arg->inferredType)
+            && $first_arg->inferredType->hasType('array')
+            && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
+            && ($array_atomic_type instanceof Type\Atomic\TArray ||
+                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+        ? $array_atomic_type
+        : null;
+
+        if (!$first_arg_array) {
+            return Type::getMixed();
+        }
+
+        if ($first_arg_array instanceof Type\Atomic\TArray) {
+            $value_type = clone $first_arg_array->type_params[1];
+        } else {
+            $value_type = $first_arg_array->getGenericValueType();
+        }
+
+        $value_type->addType(new Type\Atomic\TFalse);
+
+        if ($codebase->config->ignore_internal_falsable_issues) {
+            $value_type->ignore_falsable_issues = true;
+        }
+
+        return $value_type;
     }
 
     /**
@@ -841,6 +924,59 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
+     * @return Type\Union
+     */
+    private static function getArrayPopReturnType(array $call_args, Codebase $codebase)
+    {
+        $first_arg = isset($call_args[0]->value) ? $call_args[0]->value : null;
+
+        $first_arg_array = $first_arg
+            && isset($first_arg->inferredType)
+            && $first_arg->inferredType->hasType('array')
+            && ($array_atomic_type = $first_arg->inferredType->getTypes()['array'])
+            && ($array_atomic_type instanceof Type\Atomic\TArray ||
+                $array_atomic_type instanceof Type\Atomic\ObjectLike)
+        ? $array_atomic_type
+        : null;
+
+        if (!$first_arg_array) {
+            return Type::getMixed();
+        }
+
+        $nullable = false;
+
+        if ($first_arg_array instanceof Type\Atomic\TArray) {
+            $value_type = clone $first_arg_array->type_params[1];
+
+            if ($value_type->isEmpty()) {
+                return Type::getNull();
+            }
+
+            if (!$first_arg_array instanceof Type\Atomic\TNonEmptyArray) {
+                $nullable = true;
+            }
+        } else {
+            $value_type = $first_arg_array->getGenericValueType();
+
+            if (!$first_arg_array->sealed) {
+                $nullable = true;
+            }
+        }
+
+        if ($nullable) {
+            $value_type->addType(new Type\Atomic\TNull);
+
+            if ($codebase->config->ignore_internal_nullable_issues) {
+                $value_type->ignore_nullable_issues = true;
+            }
+        }
+
+        return $value_type;
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
      * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
      *
@@ -907,6 +1043,15 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 $array_arg_type->properties
                             )
                         ),
+                    ]);
+                }
+
+                if ($array_arg_type instanceof Type\Atomic\TNonEmptyArray) {
+                    return new Type\Union([
+                        new Type\Atomic\TNonEmptyArray([
+                            $generic_key_type,
+                            $inner_type,
+                        ]),
                     ]);
                 }
 

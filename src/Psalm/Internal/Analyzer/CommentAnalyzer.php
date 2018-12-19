@@ -190,6 +190,10 @@ class CommentAnalyzer
 
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
+            if (!$var_line_parts) {
+                continue;
+            }
+
             $type_alias = array_shift($var_line_parts);
 
             if (!isset($var_line_parts[0])) {

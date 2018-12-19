@@ -233,6 +233,186 @@ class FunctionCallTest extends TestCase
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
+            'arrayPopNonEmpty' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if ($a) {
+                        $b = array_pop($a);
+                    }
+                    $c = array_pop($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                    '$c' => 'int|null',
+                ],
+            ],
+            'arrayPopNonEmptyAfterIsset' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (isset($a["a"])) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCount' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (count($a)) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountEqualsOne' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (count($a) === 1) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountSoftEqualsOne' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (count($a) == 1) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountGreaterThanOne' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (count($a) > 0) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountGreaterOrEqualsOne' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (count($a) >= 1) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountEqualsOneReversed' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (1 === count($a)) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountSoftEqualsOneReversed' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (1 == count($a)) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountGreaterThanOneReversed' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (0 < count($a)) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterCountGreatorOrEqualToOneReversed' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $b = 5;
+                    if (1 <= count($a)) {
+                        $b = array_pop($a);
+                    }',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterThreeAssertions' => [
+                '<?php
+                    class A {}
+                    class B extends A {
+                        /** @var array<int, string> */
+                        public $arr = [];
+                    }
+
+                    /** @var array<A> */
+                    $replacement_stmts = [];
+
+                    if (!$replacement_stmts
+                        || !$replacement_stmts[0] instanceof B
+                        || count($replacement_stmts[0]->arr) > 1
+                    ) {
+                        return null;
+                    }
+
+                    $b = $replacement_stmts[0]->arr;',
+                'assertions' => [
+                    '$b' => 'array<int, string>',
+                ],
+            ],
+            'arrayPopNonEmptyAfterArrayAddition' => [
+                '<?php
+                    /** @var array<string, int> */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $a["foo"] = 10;
+                    $b = array_pop($a);',
+                'assertions' => [
+                    '$b' => 'int',
+                ],
+            ],
+            'arrayPopNonEmptyAfterMixedArrayAddition' => [
+                '<?php
+                    /** @var array */
+                    $a = ["a" => 5, "b" => 6, "c" => 7];
+                    $a[] = "hello";
+                    $b = array_pop($a);',
+                'assertions' => [
+                    '$b' => 'string|mixed',
+                ],
+                'error_levels' => [
+                    'MixedAssignment',
+                ],
+            ],
             'uasort' => [
                 '<?php
                     uasort(
@@ -405,7 +585,7 @@ class FunctionCallTest extends TestCase
                     '$b' => 'string|false',
                 ],
             ],
-            'arrayPopIgnoreNullable' => [
+            'arrayPopNotNullable' => [
                 '<?php
                     function expectsInt(int $a) : void {}
 
@@ -652,7 +832,7 @@ class FunctionCallTest extends TestCase
                     $arr = ["one", "two", "three"];
                     $n = next($arr);',
                 'assertions' => [
-                    '$n' => 'false|string',
+                    '$n' => 'string|false',
                 ],
             ],
             'iteratorToArray' => [
@@ -1371,6 +1551,22 @@ class FunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
+            ],
+            'arrayPopNotNull' => [
+                '<?php
+                    function expectsInt(int $a) : void {}
+
+                    /**
+                     * @param array<mixed, array{item:int}> $list
+                     */
+                    function test(array $list) : void
+                    {
+                        while (!empty($list)) {
+                            $tmp = array_pop($list);
+                            if ($tmp === null) {}
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }

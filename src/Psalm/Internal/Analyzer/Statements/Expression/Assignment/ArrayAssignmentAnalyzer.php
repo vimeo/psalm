@@ -345,8 +345,11 @@ class ArrayAssignmentAnalyzer
             }
 
             if (!$has_matching_objectlike_property) {
+                $object_like = new ObjectLike([$key_value => $current_type]);
+                $object_like->sealed = true;
+
                 $array_assignment_type = new Type\Union([
-                    new ObjectLike([$key_value => $current_type]),
+                    $object_like,
                 ]);
 
                 $new_child_type = Type::combineUnionTypes(
@@ -372,7 +375,7 @@ class ArrayAssignmentAnalyzer
                 $array_atomic_key_type = Type::getInt();
             }
 
-            $array_atomic_type = new TArray([
+            $array_atomic_type = new TNonEmptyArray([
                 $array_atomic_key_type,
                 $current_type,
             ]);
@@ -383,16 +386,17 @@ class ArrayAssignmentAnalyzer
                 $atomic_root_types = $root_type->getTypes();
 
                 if (isset($atomic_root_types['array'])) {
-                    if ($atomic_root_types['array'] instanceof TNonEmptyArray
-                        && $array_atomic_type instanceof TNonEmptyArray
-                    ) {
+                    if ($atomic_root_types['array'] instanceof TNonEmptyArray) {
                         $array_atomic_type->count = $atomic_root_types['array']->count;
                     } elseif ($atomic_root_types['array'] instanceof ObjectLike
-                        && $array_atomic_type instanceof TNonEmptyArray
                         && $atomic_root_types['array']->sealed
                     ) {
                         $array_atomic_type->count = count($atomic_root_types['array']->properties);
                         $from_countable_object_like = true;
+                    } else {
+                        $array_atomic_type = new TNonEmptyArray(
+                            $array_atomic_type->type_params
+                        );
                     }
                 }
             }

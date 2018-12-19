@@ -50,6 +50,9 @@ class TypeCombination
     private $array_counts = [];
 
     /** @var bool */
+    private $array_sometimes_filled = false;
+
+    /** @var bool */
     private $array_always_filled = true;
 
     /** @var array<string|int, Union> */
@@ -269,7 +272,12 @@ class TypeCombination
                     );
                 }
 
-                if ($combination->array_always_filled) {
+                if ($combination->array_always_filled
+                    || ($combination->array_sometimes_filled && $overwrite_empty_array)
+                    || ($combination->objectlike_entries
+                        && $combination->objectlike_sealed
+                        && $overwrite_empty_array)
+                ) {
                     if ($combination->array_counts && count($combination->array_counts) === 1) {
                         $array_type = new TNonEmptyArray($generic_type_params);
                         $array_type->count = array_keys($combination->array_counts)[0];
@@ -408,6 +416,8 @@ class TypeCombination
                             $combination->array_counts[$type->count] = true;
                         }
                     }
+
+                    $combination->array_sometimes_filled = true;
                 } else {
                     $combination->array_always_filled = false;
                 }

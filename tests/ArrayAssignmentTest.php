@@ -42,7 +42,7 @@ class ArrayAssignmentTest extends TestCase
 
                     $out[] = 4;',
                 'assertions' => [
-                    '$out' => 'array<int, int>',
+                    '$out' => 'non-empty-array<int, int>',
                 ],
             ],
             'genericArrayCreationWithInt' => [
@@ -53,7 +53,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = 4;
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, int>',
+                    '$out' => 'non-empty-array<int, int>',
                 ],
             ],
             'generic2dArrayCreation' => [
@@ -64,7 +64,7 @@ class ArrayAssignmentTest extends TestCase
                         $out[] = [4];
                     }',
                 'assertions' => [
-                    '$out' => 'array<int, array{0:int}>',
+                    '$out' => 'non-empty-array<int, array{0:int}>',
                 ],
             ],
             'generic2dArrayCreationAddedInIf' => [
@@ -82,11 +82,9 @@ class ArrayAssignmentTest extends TestCase
                         $bits[] = 4;
                     }
 
-                    if ($bits) {
-                        $out[] = $bits;
-                    }',
+                    $out[] = $bits;',
                 'assertions' => [
-                    '$out' => 'array<int, array<int, int>>',
+                    '$out' => 'non-empty-array<int, non-empty-array<int, int>>',
                 ],
             ],
             'genericArrayCreationWithObjectAddedInIf' => [
@@ -160,7 +158,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array<int, string>',
+                    '$foo' => 'non-empty-array<int, string>',
                 ],
             ],
             'implicit2dIntArrayCreation' => [
@@ -168,7 +166,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array<int, array<int, string>>',
+                    '$foo' => 'non-empty-array<int, array<int, string>>',
                 ],
             ],
             'implicit3dIntArrayCreation' => [
@@ -176,7 +174,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array<int, array<int, array<int, string>>>',
+                    '$foo' => 'non-empty-array<int, array<int, array<int, string>>>',
                 ],
             ],
             'implicit4dIntArrayCreation' => [
@@ -184,7 +182,7 @@ class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'array<int, array<int, array<int, array<int, string>>>>',
+                    '$foo' => 'non-empty-array<int, array<int, array<int, array<int, string>>>>',
                 ],
             ],
             'implicitIndexedIntArrayCreation' => [
@@ -370,8 +368,8 @@ class ArrayAssignmentTest extends TestCase
                     $c = [];
                     $c[$b][$b][] = "bam";',
                 'assertions' => [
-                    '$a' => 'array<string, array<int, string>>',
-                    '$c' => 'array<string, array<string, array<int, string>>>',
+                    '$a' => 'non-empty-array<string, array<int, string>>',
+                    '$c' => 'non-empty-array<string, array<string, array<int, string>>>',
                 ],
             ],
             'assignExplicitValueToGeneric' => [
@@ -380,7 +378,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
                     $a["foo"] = ["bar" => "baz"];',
                 'assertions' => [
-                    '$a' => 'array<string, array<string, string>>',
+                    '$a' => 'non-empty-array<string, non-empty-array<string, string>>',
                 ],
             ],
             'additionWithEmpty' => [
@@ -458,41 +456,63 @@ class ArrayAssignmentTest extends TestCase
                     '$foo' => 'array{root:array{a:int, b:array{0:int, 1:int}}}',
                 ],
             ],
-            'updateStringIntKey' => [
+            'updateStringIntKey1' => [
                 '<?php
-                    $string = "c";
-                    $int = 5;
-
                     $a = [];
 
                     $a["a"] = 5;
-                    $a[0] = 3;
+                    $a[0] = 3;',
+                'assertions' => [
+                    '$a' => 'array{a:int, 0:int}',
+                ],
+            ],
+            'updateStringIntKey2' => [
+                '<?php
+                    $string = "c";
 
                     $b = [];
 
                     $b[$string] = 5;
-                    $b[0] = 3;
+                    $b[0] = 3;',
+                'assertions' => [
+                    '$b' => 'non-empty-array<string|int, int>',
+                ],
+            ],
+            'updateStringIntKey3' => [
+                '<?php
+                    $string = "c";
 
                     $c = [];
 
                     $c[0] = 3;
-                    $c[$string] = 5;
+                    $c[$string] = 5;',
+                'assertions' => [
+                    '$c' => 'non-empty-array<int|string, int>',
+                ],
+            ],
+            'updateStringIntKey4' => [
+                '<?php
+                    $int = 5;
 
                     $d = [];
 
                     $d[$int] = 3;
-                    $d["a"] = 5;
+                    $d["a"] = 5;',
+                'assertions' => [
+                    '$d' => 'non-empty-array<int|string, int>',
+                ],
+            ],
+            'updateStringIntKey5' => [
+                '<?php
+                    $string = "c";
+                    $int = 5;
 
                     $e = [];
 
                     $e[$int] = 3;
                     $e[$string] = 5;',
                 'assertions' => [
-                    '$a' => 'array{a:int, 0:int}',
-                    '$b' => 'array<string|int, int>',
-                    '$c' => 'array<int|string, int>',
-                    '$d' => 'array<int|string, int>',
-                    '$e' => 'array<string|int, int>',
+                    '$e' => 'non-empty-array<string|int, int>',
                 ],
             ],
             'updateStringIntKeyWithIntRootAndNumberOffset' => [

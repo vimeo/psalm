@@ -138,7 +138,7 @@ class EmptyTest extends TestCase
                 '<?php
                     function testarray(array $data): void {
                         foreach ($data as $item) {
-                            if (!empty($item["a"]) && !empty($item["b"]) && !empty($item["b"]["c"])) {
+                            if (!empty($item["a"]) && !empty($item["b"]["c"])) {
                                 echo "Found\n";
                             }
                         }
