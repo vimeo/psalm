@@ -130,7 +130,7 @@ class StatementsProvider
 
             if ($existing_statements
                 && $existing_file_contents
-                && abs(strlen($existing_file_contents) - strlen($existing_file_contents)) < 5000
+                && abs(strlen($existing_file_contents) - strlen($file_contents)) < 5000
             ) {
                 $file_changes = \Psalm\Internal\Diff\FileDiffer::getDiff($existing_file_contents, $file_contents);
 
