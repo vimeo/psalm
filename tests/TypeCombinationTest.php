@@ -66,6 +66,13 @@ class TypeCombinationTest extends TestCase
                     'null',
                 ],
             ],
+            'mixedOrEmpty' => [
+                'mixed',
+                [
+                    'empty',
+                    'mixed',
+                ],
+            ],
             'mixedOrObject' => [
                 'mixed|object',
                 [

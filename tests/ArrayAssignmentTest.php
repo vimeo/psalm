@@ -932,6 +932,7 @@ class ArrayAssignmentTest extends TestCase
                       /**
                        * @psalm-suppress EmptyArrayAccess
                        * @psalm-suppress InvalidOperand
+                       * @psalm-suppress MixedOperand
                        */
                       $a[$key] += 5;
                     }
