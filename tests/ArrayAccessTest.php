@@ -56,6 +56,15 @@ class ArrayAccessTest extends TestCase
                     $a = new A();
                     if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
             ],
+            'issetPropertyStringOffsetUndefinedClass' => [
+                '<?php
+                    /** @psalm-suppress UndefinedClass */
+                    $a = new A();
+                    /** @psalm-suppress UndefinedClass */
+                    if (!isset($a->arr["bat"]) || strlen($a->arr["bat"])) { }',
+                'assertions' => [],
+                'error_levels' => ['MixedArgument'],
+            ],
             'notEmptyIntOffset' => [
                 '<?php
                     /**

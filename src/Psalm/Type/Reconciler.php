@@ -2279,29 +2279,30 @@ class Reconciler
                             $class_property_type = Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TNamedObject) {
                             if (!$codebase->classOrInterfaceExists($existing_key_type_part->value)) {
-                                continue;
+                                $class_property_type = Type::getMixed();
+                            } else {
+                                $property_id = $existing_key_type_part->value . '::$' . $property_name;
+
+                                if (!$codebase->properties->propertyExists($property_id)) {
+                                    return null;
+                                }
+
+                                $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
+                                    $property_id
+                                );
+
+                                $class_storage = $codebase->classlike_storage_provider->get(
+                                    (string)$declaring_property_class
+                                );
+
+                                $class_property_type = $class_storage->properties[$property_name]->type;
+
+                                $class_property_type = $class_property_type
+                                    ? clone $class_property_type
+                                    : Type::getMixed();
                             }
-
-                            $property_id = $existing_key_type_part->value . '::$' . $property_name;
-
-                            if (!$codebase->properties->propertyExists($property_id)) {
-                                return null;
-                            }
-
-                            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                                $property_id
-                            );
-
-                            $class_storage = $codebase->classlike_storage_provider->get(
-                                (string)$declaring_property_class
-                            );
-
-                            $class_property_type = $class_storage->properties[$property_name]->type;
-
-                            $class_property_type = $class_property_type ? clone $class_property_type : Type::getMixed();
                         } else {
-                            // @todo handle this
-                            continue;
+                            $class_property_type = Type::getMixed();
                         }
 
                         if ($new_base_type instanceof Type\Union) {
