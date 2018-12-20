@@ -152,6 +152,7 @@ class ArrayFetchAnalyzer
             if ($context->inside_isset
                 && $stmt->dim
                 && isset($stmt->dim->inferredType)
+                && $stmt->var->inferredType->hasArray()
                 && ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
                     || $stmt->var instanceof PhpParser\Node\Expr\ConstFetch)
             ) {
@@ -649,9 +650,7 @@ class ArrayFetchAnalyzer
                 )) {
                     $expected_offset_types[] = $valid_offset_type->getId();
 
-                    if (!$inside_isset) {
-                        $array_access_type = Type::getMixed();
-                    }
+                    $array_access_type = Type::getMixed();
                 } else {
                     $has_valid_offset = true;
 
