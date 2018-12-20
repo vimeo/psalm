@@ -306,10 +306,12 @@ class TypeCombination
             $new_types = array_merge($new_types, array_values($combination->floats));
         }
 
+        $has_empty = (int) isset($combination->value_types['empty']);
+
         foreach ($combination->value_types as $type) {
             if ($type instanceof TMixed
                 && $combination->mixed_from_loop_isset
-                && (count($combination->value_types) > 1 || count($new_types))
+                && (count($combination->value_types) > (1 + $has_empty) || count($new_types) > $has_empty)
             ) {
                 continue;
             }
@@ -321,6 +323,10 @@ class TypeCombination
             }
 
             $new_types[] = $type;
+        }
+
+        if (!$new_types) {
+            throw new \UnexpectedValueException('There should be types here');
         }
 
         $union_type = new Union($new_types);
