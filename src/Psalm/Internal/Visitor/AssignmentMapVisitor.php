@@ -64,6 +64,14 @@ class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract implements PhpP
                     $this->assignment_map[$arg_var_id][$arg_var_id] = true;
                 }
             }
+        } elseif ($node instanceof PhpParser\Node\Stmt\Unset_) {
+            foreach ($node->vars as $arg) {
+                $arg_var_id = ExpressionAnalyzer::getRootVarId($arg, $this->this_class_name);
+
+                if ($arg_var_id) {
+                    $this->assignment_map[$arg_var_id][$arg_var_id] = true;
+                }
+            }
         }
 
         return null;
