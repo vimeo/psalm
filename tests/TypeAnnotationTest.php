@@ -158,30 +158,6 @@ class TypeAnnotationTest extends TestCase
                         return $r;
                     }',
             ],
-            'namespacedType' => [
-                '<?php
-                    namespace Foo {
-                        class A {
-                            /**
-                             * @psalm-type self::TBaz = A|\Bar\B
-                             */
-                            public function foo() : void {}
-                        }
-                    }
-
-                    namespace Bar {
-                        class B {
-                            /**
-                             * @param \Foo\A::TBaz $a
-                             */
-                            public function tender($a) : void {
-                                $a->foo();
-                            }
-
-                            public function foo() : void {}
-                        }
-                    }'
-            ],
         ];
     }
 
