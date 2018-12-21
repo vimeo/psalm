@@ -639,7 +639,7 @@ class ExpressionAnalyzer
                 );
 
                 if ($existing_type->getId() !== 'array<empty, empty>') {
-                    $context->vars_in_scope[$var_id] = $by_ref_type;
+                    $context->vars_in_scope[$var_id] = clone $by_ref_type;
 
                     if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
                         $stmt->inferredType = clone $by_ref_type;
