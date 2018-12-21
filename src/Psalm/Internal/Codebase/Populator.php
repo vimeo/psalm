@@ -289,6 +289,9 @@ class Populator
     ) {
         foreach ($storage->used_traits as $used_trait_lc => $_) {
             try {
+                $used_trait_lc = $this->classlikes->getUnAliasedName(
+                    $used_trait_lc
+                );
                 $trait_storage = $storage_provider->get($used_trait_lc);
             } catch (\InvalidArgumentException $e) {
                 continue;
@@ -312,6 +315,9 @@ class Populator
         $parent_storage_class = reset($storage->parent_classes);
 
         try {
+            $parent_storage_class = $this->classlikes->getUnAliasedName(
+                strtolower($parent_storage_class)
+            );
             $parent_storage = $storage_provider->get($parent_storage_class);
         } catch (\InvalidArgumentException $e) {
             $storage->invalid_dependencies[] = $parent_storage_class;
@@ -364,6 +370,9 @@ class Populator
 
         foreach ($storage->parent_interfaces as $parent_interface_lc => $_) {
             try {
+                $parent_interface_lc = $this->classlikes->getUnAliasedName(
+                    $parent_interface_lc
+                );
                 $parent_interface_storage = $storage_provider->get($parent_interface_lc);
             } catch (\InvalidArgumentException $e) {
                 $storage->invalid_dependencies[] = $parent_interface_lc;
@@ -403,6 +412,9 @@ class Populator
 
         foreach ($storage->class_implements as $implemented_interface_lc => $_) {
             try {
+                $implemented_interface_lc = $this->classlikes->getUnAliasedName(
+                    strtolower($implemented_interface_lc)
+                );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
             } catch (\InvalidArgumentException $e) {
                 $storage->invalid_dependencies[] = $implemented_interface_lc;
@@ -431,6 +443,9 @@ class Populator
 
         foreach ($storage->class_implements as $implemented_interface) {
             try {
+                $implemented_interface = $this->classlikes->getUnAliasedName(
+                    strtolower($implemented_interface)
+                );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
             } catch (\InvalidArgumentException $e) {
                 continue;

@@ -721,7 +721,7 @@ class Scanner
         $new_fq_class_name = $reflected_class->getName();
 
         if (strtolower($new_fq_class_name) !== strtolower($fq_class_name)) {
-            $classlikes->addClassAlias($new_fq_class_name, $fq_class_name);
+            $classlikes->addClassAlias($new_fq_class_name, strtolower($fq_class_name));
         }
 
         $fq_class_name = $new_fq_class_name;

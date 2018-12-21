@@ -369,7 +369,9 @@ class StubTest extends TestCase
                     return f();
                 }
 
-                $d = new D();'
+                $d = new D();
+
+                class E implements IAlias {}'
         );
 
         $this->analyzeFile($file_path, new Context());

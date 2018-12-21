@@ -298,7 +298,7 @@ class ClassLikes
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if (isset($this->classlike_aliases[$fq_class_name_lc])) {
-            $fq_class_name_lc = $this->classlike_aliases[$fq_class_name_lc];
+            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
         }
 
         if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
@@ -344,7 +344,7 @@ class ClassLikes
         $fq_class_name_lc = strtolower($fq_class_name);
 
         if (isset($this->classlike_aliases[$fq_class_name_lc])) {
-            $fq_class_name_lc = $this->classlike_aliases[$fq_class_name_lc];
+            $fq_class_name_lc = strtolower($this->classlike_aliases[$fq_class_name_lc]);
         }
 
         if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
@@ -555,6 +555,10 @@ class ClassLikes
      */
     public function interfaceHasCorrectCasing($fq_interface_name)
     {
+        if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
+            return true;
+        }
+
         if (isset($this->classlike_aliases[strtolower($fq_interface_name)])) {
             return true;
         }

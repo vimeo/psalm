@@ -13,12 +13,17 @@ class A {
     }
 }
 
+interface I {}
+
 class_alias("ClassAliasStubTest\\A", "ClassAliasStubTest\\B");
 class_alias(A::class, C::class);
 
 $arr = [
-    [A::class, D::class]
+    [A::class, D::class],
+    [I::class, IAlias::class],
 ];
 
-// Psalm cannot reason about this in the loading step
-class_alias($arr[0][0], $arr[0][1]);
+foreach ($arr as list($orig, $alias)) {
+    // Psalm cannot reason about this in the loading step
+    class_alias($orig, $alias);
+}
