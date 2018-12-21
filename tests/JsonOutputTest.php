@@ -88,7 +88,7 @@ echo $a;';
             $file_contents
         );
 
-        $this->project_analyzer->getCodebase()->classlikes->checkClassReferences();
+        $this->project_analyzer->checkClassReferences();
 
         $this->analyzeFile('somefile.php', new Context());
 

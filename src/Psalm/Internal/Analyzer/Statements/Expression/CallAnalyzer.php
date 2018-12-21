@@ -188,6 +188,8 @@ class CallAnalyzer
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
+        $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         $method_storage = null;

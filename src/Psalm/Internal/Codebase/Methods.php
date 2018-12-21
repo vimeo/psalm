@@ -38,16 +38,23 @@ class Methods
     public $file_reference_provider;
 
     /**
+     * @var ClassLikes
+     */
+    private $classlikes;
+
+    /**
      * @param ClassLikeStorageProvider $storage_provider
      */
     public function __construct(
         \Psalm\Config $config,
         ClassLikeStorageProvider $storage_provider,
-        FileReferenceProvider $file_reference_provider
+        FileReferenceProvider $file_reference_provider,
+        ClassLikes $classlikes
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
+        $this->classlikes = $classlikes;
     }
 
     /**
@@ -71,6 +78,8 @@ class Methods
         $method_id = $fq_class_name . '::' . $method_name;
 
         $old_method_id = null;
+
+        $fq_class_name = $this->classlikes->getUnAliasedName($fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -271,6 +280,8 @@ class Methods
         if ($this->config->use_phpdoc_method_without_magic_or_parent) {
             list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
 
+            $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
+
             $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
 
             if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
@@ -289,6 +300,8 @@ class Methods
         if (!$checked_for_pseudo_method) {
             list($original_fq_class_name, $original_method_name) = explode('::', $method_id);
 
+            $original_fq_class_name = $this->classlikes->getUnAliasedName($original_fq_class_name);
+
             $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
 
             if (isset($original_class_storage->pseudo_methods[strtolower($original_method_name)])) {
@@ -300,6 +313,8 @@ class Methods
 
         if (!$appearing_method_id) {
             list($fq_class_name, $method_name) = explode('::', $method_id);
+
+            $fq_class_name = $this->classlikes->getUnAliasedName($fq_class_name);
 
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -485,6 +500,8 @@ class Methods
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
+        $fq_class_name = $this->classlikes->getUnAliasedName($fq_class_name);
+
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
@@ -508,6 +525,8 @@ class Methods
         $method_id = strtolower($method_id);
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        $fq_class_name = $this->classlikes->getUnAliasedName($fq_class_name);
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 

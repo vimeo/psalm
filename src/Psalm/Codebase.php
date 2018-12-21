@@ -194,11 +194,7 @@ class Codebase
         $this->loadAnalyzer();
 
         $this->functions = new Internal\Codebase\Functions($providers->file_storage_provider, $this->reflection);
-        $this->methods = new Internal\Codebase\Methods(
-            $config,
-            $providers->classlike_storage_provider,
-            $providers->file_reference_provider
-        );
+
         $this->properties = new Internal\Codebase\Properties(
             $providers->classlike_storage_provider,
             $providers->file_reference_provider
@@ -207,9 +203,16 @@ class Codebase
         $this->classlikes = new Internal\Codebase\ClassLikes(
             $this->config,
             $providers->classlike_storage_provider,
-            $this->scanner,
-            $this->methods
+            $this->scanner
         );
+
+        $this->methods = new Internal\Codebase\Methods(
+            $config,
+            $providers->classlike_storage_provider,
+            $providers->file_reference_provider,
+            $this->classlikes
+        );
+
         $this->populator = new Internal\Codebase\Populator(
             $config,
             $providers->classlike_storage_provider,

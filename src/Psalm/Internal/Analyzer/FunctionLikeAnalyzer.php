@@ -1026,6 +1026,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
 
         if ($fq_class_name) {
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
             if ($class_storage->user_defined || $class_storage->stubbed) {

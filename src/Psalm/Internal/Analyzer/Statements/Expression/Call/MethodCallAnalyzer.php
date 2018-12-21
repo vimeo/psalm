@@ -587,6 +587,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     self::collectSpecialInformation($source, $stmt->name->name, $context);
                 }
 
+                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 if ($class_storage->template_types) {

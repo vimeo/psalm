@@ -504,6 +504,10 @@ class Scanner
                     $this->reflection->registerClass($reflected_class);
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
                 } elseif ($this->fileExistsForClassLike($classlikes, $fq_classlike_name)) {
+                    $fq_classlike_name_lc = strtolower($classlikes->getUnAliasedName(
+                        $fq_classlike_name_lc
+                    ));
+
                     // even though we've checked this above, calling the method invalidates it
                     if (isset($this->classlike_files[$fq_classlike_name_lc])) {
                         /** @var string */
