@@ -98,4 +98,9 @@ class FunctionDocblockComment
      * @var array<int, array{type: string, param_name: string}>
      */
     public $if_false_assertions = [];
+
+    /**
+     * @var bool
+     */
+    public $inheritdoc = false;
 }

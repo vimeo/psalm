@@ -506,6 +506,25 @@ class InterfaceTest extends TestCase
                         }
                     }',
             ],
+            'docblockParamInheritance' => [
+                '<?php
+                    interface I {
+                        /** @param string[] $f */
+                        function foo(array $f) : void {}
+                    }
+
+                    class C implements I {
+                        /** @var string[] */
+                        private $f = [];
+
+                        /**
+                         * {@inheritdoc}
+                         */
+                        public function foo(array $f) : void {
+                            $this->f = $f;
+                        }
+                    }',
+            ],
         ];
     }
 

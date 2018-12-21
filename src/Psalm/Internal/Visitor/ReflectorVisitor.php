@@ -1250,6 +1250,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             return $storage;
         }
 
+        if ($storage instanceof MethodStorage && $docblock_info->inheritdoc) {
+            $storage->inheritdoc = true;
+        }
+
         $template_types = $class_storage && $class_storage->template_types ? $class_storage->template_types : null;
 
         if ($docblock_info->templates) {

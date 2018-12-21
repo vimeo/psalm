@@ -206,7 +206,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     );
 
                     foreach ($parent_method_storage->params as $i => $guide_param) {
-                        if ($guide_param->type && !($guide_param->signature_type && $parent_storage->user_defined)) {
+                        if ($guide_param->type
+                            && (!$guide_param->signature_type
+                                || ($guide_param->signature_type !== $guide_param->type
+                                    && $storage->inheritdoc)
+                                || !$parent_storage->user_defined
+                            )
+                        ) {
                             $implemented_docblock_param_types[$i] = $guide_param->type;
                         }
                     }
@@ -291,7 +297,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     );
                 }
 
-                $param_type = clone $function_param->type;
+                $is_signature_type = $function_param->type === $function_param->signature_type;
+
+                if ($is_signature_type
+                    && $storage instanceof MethodStorage
+                    && $storage->inheritdoc
+                    && isset($implemented_docblock_param_types[$offset])
+                ) {
+                    $param_type = clone $implemented_docblock_param_types[$offset];
+                } else {
+                    $param_type = clone $function_param->type;
+                }
 
                 $param_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,

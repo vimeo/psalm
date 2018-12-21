@@ -390,6 +390,10 @@ class CommentAnalyzer
             }
         }
 
+        if (strpos(strtolower($comments['description']), '@inheritdoc') !== false) {
+            $info->inheritdoc = true;
+        }
+
         if (isset($comments['specials']['template']) || isset($comments['specials']['psalm-template'])) {
             $all_templates = (isset($comments['specials']['template']) ? $comments['specials']['template'] : [])
                 + (isset($comments['specials']['psalm-template']) ? $comments['specials']['psalm-template'] : []);
