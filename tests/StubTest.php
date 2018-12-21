@@ -344,6 +344,8 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
+                namespace ClassAliasStubTest;
+
                 function foo(A $a) : void {}
 
                 foo(new B());
@@ -365,7 +367,9 @@ class StubTest extends TestCase
 
                 function getAliased(): B {
                     return f();
-                }'
+                }
+
+                $d = new D();'
         );
 
         $this->analyzeFile($file_path, new Context());
