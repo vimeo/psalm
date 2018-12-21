@@ -11,6 +11,8 @@ class A {
     public function bar(string $s) : string {
         return $s . " I’m here";
     }
+
+    public static function bat() : void {}
 }
 
 interface I {}

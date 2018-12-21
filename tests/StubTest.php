@@ -371,6 +371,9 @@ class StubTest extends TestCase
 
                 $d = new D();
 
+                D::bat();
+                $d::bat();
+
                 class E implements IAlias {}'
         );
 

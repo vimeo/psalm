@@ -315,6 +315,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             $fq_class_name = $lhs_type_part->value;
 
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
+
             $is_mock = ExpressionAnalyzer::isMock($fq_class_name);
 
             $has_mock = $has_mock || $is_mock;
