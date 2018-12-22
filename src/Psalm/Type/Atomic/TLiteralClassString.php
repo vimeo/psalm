@@ -58,4 +58,41 @@ class TLiteralClassString extends TLiteralString
     {
         return 'class-string(' . $this->value . ')';
     }
+
+    /**
+     * @param  string|null   $namespace
+     * @param  array<string> $aliased_classes
+     * @param  string|null   $this_class
+     * @param  bool          $use_phpdoc_format
+     *
+     * @return string
+     */
+    public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
+    {
+        if ($this->value === 'static') {
+            return 'static::class';
+        }
+
+        if ($this->value === $this_class) {
+            return 'self::class';
+        }
+
+        if ($namespace && stripos($this->value, $namespace . '\\') === 0) {
+            return preg_replace(
+                '/^' . preg_quote($namespace . '\\') . '/i',
+                '',
+                $this->value
+            ) . '::class';
+        }
+
+        if (!$namespace && stripos($this->value, '\\') === false) {
+            return $this->value . '::class';
+        }
+
+        if (isset($aliased_classes[strtolower($this->value)])) {
+            return $aliased_classes[strtolower($this->value)] . '::class';
+        }
+
+        return '\\' . $this->value . '::class';
+    }
 }
