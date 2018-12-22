@@ -435,6 +435,10 @@ abstract class Type
                 return new Atomic\TGenericParamClass($fq_classlike_name);
             }
 
+            if ($const_name === 'class') {
+                return new Atomic\TLiteralClassString($fq_classlike_name);
+            }
+
             return new Atomic\TScalarClassConstant($fq_classlike_name, $const_name);
         }
 
