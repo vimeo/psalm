@@ -68,6 +68,10 @@ class TNamedObject extends Atomic
             return 'static';
         }
 
+        if ($this->value === 'iterable') {
+            return 'iterable';
+        }
+
         if ($this->value === $this_class) {
             return 'self' . $intersection_types;
         }
