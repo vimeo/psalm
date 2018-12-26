@@ -5758,7 +5758,7 @@ return [
 'IntlCodePointBreakIterator::setText' => ['bool', 'text'=>'string'],
 'IntlDateFormatter::__construct' => ['void', 'locale'=>'string', 'datetype'=>'?int', 'timetype'=>'?int', 'timezone='=>'null|string|IntlTimeZone|DateTimeZone', 'calendar='=>'null|int|IntlCalendar', 'pattern='=>'string'],
 'IntlDateFormatter::create' => ['IntlDateFormatter', 'locale'=>'string', 'datetype'=>'int', 'timetype'=>'int', 'timezone='=>'null|string|IntlTimeZone|DateTimeZone', 'calendar='=>'int|IntlCalendar', 'pattern='=>'string'],
-'IntlDateFormatter::format' => ['string', 'args'=>''],
+'IntlDateFormatter::format' => ['string|false', 'args'=>''],
 'IntlDateFormatter::formatObject' => ['string', 'object'=>'object', 'format='=>'mixed', 'locale='=>'string'],
 'IntlDateFormatter::getCalendar' => ['int'],
 'IntlDateFormatter::getCalendarObject' => ['IntlCalendar'],
