@@ -233,6 +233,7 @@ class Reconciler
                 && !$has_equality
                 && !$has_count_check
                 && !$result_type->hasMixed()
+                && !$result_type->hasType('iterable')
                 && (!$has_isset || substr($key, -1, 1) !== ']')
             ) {
                 $reconcile_key = implode(
@@ -400,7 +401,8 @@ class Reconciler
         $existing_var_atomic_types = $existing_var_type->getTypes();
 
         if ($new_var_type === 'falsy' || $new_var_type === 'empty') {
-            $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false);
+            $did_remove_type = $existing_var_type->hasDefinitelyNumericType(false)
+                || $existing_var_type->hasType('iterable');
 
             if ($existing_var_type->hasMixed()) {
                 if ($existing_var_type->isMixed()
@@ -554,6 +556,10 @@ class Reconciler
                     || $type instanceof TResource
                     || $type instanceof TCallable
                 ) {
+                    if ($type instanceof TNamedObject && $type->value === 'iterable') {
+                        continue;
+                    }
+
                     $did_remove_type = true;
 
                     $existing_var_type->removeType($type_key);
@@ -1273,7 +1279,8 @@ class Reconciler
                 || $existing_var_type->isEmpty()
                 || $existing_var_type->hasType('bool')
                 || $existing_var_type->possibly_undefined
-                || $existing_var_type->possibly_undefined_from_try;
+                || $existing_var_type->possibly_undefined_from_try
+                || $existing_var_type->hasType('iterable');
 
             if ($is_strict_equality && $new_var_type === 'empty') {
                 $existing_var_type->removeType('null');

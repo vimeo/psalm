@@ -278,6 +278,13 @@ class EmptyTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'MixedArrayOffset'],
             ],
+            'possiblyEmptyIterable' => [
+                '<?php
+                    function foo(iterable $i) : void {
+                        if (empty($i)) {}
+                        if (!empty($i)) {}
+                    }',
+            ],
         ];
     }
 
