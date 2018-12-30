@@ -308,6 +308,18 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
+            'noCrashWhenIgnoringUndefinedClass' => [
+                '<?php
+                    class A extends B {
+                        public function foo() {
+                            parent::bar();
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'UndefinedClass'
+                ],
+            ],
         ];
     }
 

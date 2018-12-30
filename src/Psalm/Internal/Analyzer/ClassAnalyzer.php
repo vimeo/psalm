@@ -232,6 +232,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        if ($storage->invalid_dependencies) {
+            return;
+        }
+
         $class_interfaces = $storage->class_implements;
 
         if (!$class->isAbstract()) {
