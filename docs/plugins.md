@@ -64,7 +64,7 @@ Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugi
 
 ### Upgrading file-based plugin to composer-based version
 
-Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/examples/plugins/composer-based/echo-checker/).
+Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
 
 ### Registering stub files
 
