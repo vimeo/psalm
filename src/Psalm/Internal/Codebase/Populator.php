@@ -320,6 +320,10 @@ class Populator
             );
             $parent_storage = $storage_provider->get($parent_storage_class);
         } catch (\InvalidArgumentException $e) {
+            if ($this->debug_output) {
+                echo 'Populator could not find dependency (' . __LINE__ . ")\n";
+            }
+
             $storage->invalid_dependencies[] = $parent_storage_class;
             $parent_storage = null;
         }
@@ -375,6 +379,10 @@ class Populator
                 );
                 $parent_interface_storage = $storage_provider->get($parent_interface_lc);
             } catch (\InvalidArgumentException $e) {
+                if ($this->debug_output) {
+                    echo 'Populator could not find dependency (' . __LINE__ . ")\n";
+                }
+
                 $storage->invalid_dependencies[] = $parent_interface_lc;
                 continue;
             }
@@ -417,6 +425,10 @@ class Populator
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
             } catch (\InvalidArgumentException $e) {
+                if ($this->debug_output) {
+                    echo 'Populator could not find dependency (' . __LINE__ . ")\n";
+                }
+
                 $storage->invalid_dependencies[] = $implemented_interface_lc;
                 continue;
             }

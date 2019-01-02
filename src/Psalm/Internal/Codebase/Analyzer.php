@@ -150,7 +150,7 @@ class Analyzer
 
     /**
      * @param  string $file_path
-     * @param  array<string, class-string> $filetype_analyzers
+     * @param  array<string, FileAnalyzer::class> $filetype_analyzers
      *
      * @return FileAnalyzer
      *
@@ -163,7 +163,6 @@ class Analyzer
         $file_name = $this->config->shortenFileName($file_path);
 
         if (isset($filetype_analyzers[$extension])) {
-            /** @var FileAnalyzer */
             $file_analyzer = new $filetype_analyzers[$extension]($project_analyzer, $file_path, $file_name);
         } else {
             $file_analyzer = new FileAnalyzer($project_analyzer, $file_path, $file_name);

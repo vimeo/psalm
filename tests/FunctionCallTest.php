@@ -860,7 +860,9 @@ class FunctionCallTest extends TestCase
                         if (class_exists($s)) {
                             new $s();
                         }
-                    }'
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'next' => [
                 '<?php
@@ -1128,6 +1130,8 @@ class FunctionCallTest extends TestCase
                     $b = get_parent_class(new A());
                     if ($b === false) {}
                     $c = new $b();',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'arraySplice' => [
                 '<?php

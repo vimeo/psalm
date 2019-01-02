@@ -137,6 +137,9 @@ class UnusedVariableTest extends TestCase
                         $a = 5;
                         $b = [];
                         $c[] = "hello";
+                        class Foo {
+                            public function __construct(string $_i) {}
+                        }
                         $d = "Foo";
                         $e = "arg";
                         $f = new $d($e);

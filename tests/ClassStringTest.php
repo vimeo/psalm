@@ -203,6 +203,8 @@ class ClassStringTest extends TestCase
                     function bar(string $s) : void {
                         new $s();
                     }',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'constantArrayOffset' => [
                 '<?php
@@ -362,6 +364,33 @@ class ClassStringTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass',
                 'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+            ],
+            'badClassStringConstructor' => [
+                '<?php
+                    class Foo
+                    {
+                        public function __construct(int $_)
+                        {
+                        }
+                    }
+
+                    /**
+                     * @return Foo
+                     */
+                    function makeFoo()
+                    {
+                        $fooClass = Foo::class;
+                        return new $fooClass;
+                    }',
+                'error_message' => 'TooFewArguments',
+            ],
+            'unknownConstructorCall' => [
+                '<?php
+                    /** @param class-string $s */
+                    function bar(string $s) : void {
+                        new $s();
+                    }',
+                'error_message' => 'MixedMethodCall',
             ],
         ];
     }

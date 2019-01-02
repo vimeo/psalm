@@ -333,7 +333,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'TypeCoercion'],
+                'error_levels' => ['MixedInferredReturnType', 'MixedReturnStatement', 'TypeCoercion', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 '<?php

@@ -7,6 +7,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config\IssueHandler;
 use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use SimpleXMLElement;
 use Psalm\PluginRegistrationSocket;
@@ -113,12 +114,12 @@ class Config
     private $file_extensions = ['php'];
 
     /**
-     * @var array<string, class-string>
+     * @var array<string, FileScanner::class>
      */
     private $filetype_scanners = [];
 
     /**
-     * @var array<string, class-string>
+     * @var array<string, FileAnalyzer::class>
      */
     private $filetype_analyzers = [];
 
@@ -850,15 +851,11 @@ class Config
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
-                \Psalm\Internal\Scanner\FileScanner::class
+                FileScanner::class
             );
 
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
-
-            if (!class_exists($fq_class_name)) {
-                throw new \UnexpectedValueException($fq_class_name . ' is expected in ' . $path);
-            }
 
             $this->filetype_scanners[$extension] = $fq_class_name;
         }
@@ -867,15 +864,11 @@ class Config
             $fq_class_name = $this->getPluginClassForPath(
                 $codebase,
                 $path,
-                \Psalm\Internal\Analyzer\FileAnalyzer::class
+                FileAnalyzer::class
             );
 
             /** @psalm-suppress UnresolvableInclude */
             require_once($path);
-
-            if (!class_exists($fq_class_name)) {
-                throw new \UnexpectedValueException($fq_class_name . ' is expected in ' . $path);
-            }
 
             $this->filetype_analyzers[$extension] = $fq_class_name;
         }
@@ -891,10 +884,12 @@ class Config
     }
 
     /**
-     * @param  string $path
-     * @param  string $must_extend
+     * @template T
      *
-     * @return string
+     * @param  string $path
+     * @param  T::class $must_extend
+     *
+     * @return T::class
      */
     private function getPluginClassForPath(Codebase $codebase, $path, $must_extend)
     {
@@ -926,6 +921,9 @@ class Config
             );
         }
 
+        /**
+         * @var T::class
+         */
         return $fq_class_name;
     }
 
@@ -1123,7 +1121,7 @@ class Config
     }
 
     /**
-     * @return array<string, class-string>
+     * @return array<string, FileScanner::class>
      */
     public function getFiletypeScanners()
     {
@@ -1131,7 +1129,7 @@ class Config
     }
 
     /**
-     * @return array<string, class-string>
+     * @return array<string, FileAnalyzer::class>
      */
     public function getFiletypeAnalyzers()
     {
