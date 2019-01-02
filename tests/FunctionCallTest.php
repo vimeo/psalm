@@ -1217,10 +1217,10 @@ class FunctionCallTest extends TestCase
                         return $filtered;
                     }
                     function filterNullableInt(string $s) : ?int {
-                        return filter_var($s, FILTER_VALIDATE_INT, ["default" => null]);
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => null]]);
                     }
                     function filterIntWithDefault(string $s) : int {
-                        return filter_var($s, FILTER_VALIDATE_INT, ["default" => 5]);
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => 5]]);
                     }
                     function filterBool(string $s) : bool {
                         return filter_var($s, FILTER_VALIDATE_BOOLEAN);
@@ -1239,7 +1239,7 @@ class FunctionCallTest extends TestCase
                         return $filtered;
                     }
                     function filterFloatWithDefault(string $s) : float {
-                        return filter_var($s, FILTER_VALIDATE_FLOAT, ["default" => 5.0]);
+                        return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
                     }',
             ],
             'callVariableVar' => [
