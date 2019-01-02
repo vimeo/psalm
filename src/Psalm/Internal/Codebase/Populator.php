@@ -355,6 +355,14 @@ class Populator
                 $storage->protected_class_constants
             );
 
+            foreach ($parent_storage->public_class_constant_nodes as $name => $_) {
+                $storage->public_class_constants[$name] = Type::getMixed();
+            }
+
+            foreach ($parent_storage->protected_class_constant_nodes as $name => $_) {
+                $storage->protected_class_constants[$name] = Type::getMixed();
+            }
+
             $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
             $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
@@ -400,6 +408,10 @@ class Populator
                 $parent_interface_storage->invalid_dependencies
             );
 
+            foreach ($parent_interface_storage->public_class_constant_nodes as $name => $_) {
+                $storage->public_class_constants[$name] = Type::getMixed();
+            }
+
             $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
 
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
@@ -440,6 +452,10 @@ class Populator
                 $implemented_interface_storage->public_class_constants,
                 $storage->public_class_constants
             );
+
+            foreach ($implemented_interface_storage->public_class_constant_nodes as $name => $_) {
+                $storage->public_class_constants[$name] = Type::getMixed();
+            }
 
             $storage->invalid_dependencies = array_merge(
                 $storage->invalid_dependencies,
