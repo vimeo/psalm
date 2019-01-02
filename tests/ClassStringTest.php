@@ -299,6 +299,18 @@ class ClassStringTest extends TestCase
                         return new $s();
                     }',
             ],
+            'takesChildOfClass' => [
+                '<?php
+                    class A {}
+                    class AChild extends A {}
+
+                    /**
+                     * @param class-string<A> $s
+                     */
+                    function foo(string $s) : void {}
+
+                    foo(AChild::class);',
+            ],
         ];
     }
 
@@ -402,6 +414,19 @@ class ClassStringTest extends TestCase
                         new $s();
                     }',
                 'error_message' => 'MixedMethodCall',
+            ],
+            'doesNotTakeChildOfClass' => [
+                '<?php
+                    class A {}
+                    class AChild extends A {}
+
+                    /**
+                     * @param A::class $s
+                     */
+                    function foo(string $s) : void {}
+
+                    foo(AChild::class);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

@@ -221,7 +221,13 @@ abstract class Type
             }
 
             if ($generic_type_value === 'class-string') {
-                return new TClassString((string) $generic_params[0]);
+                $class_name = (string) $generic_params[0];
+
+                if (isset($template_type_map[$class_name])) {
+                    return new Atomic\TGenericParamClass($class_name);
+                }
+
+                return new TClassString($class_name);
             }
 
             return new TGenericObject($generic_type_value, $generic_params);

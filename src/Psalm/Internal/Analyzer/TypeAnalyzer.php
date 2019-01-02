@@ -704,19 +704,38 @@ class TypeAnalyzer
         if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
             && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
         ) {
-            if ($container_type_part instanceof TClassString) {
+            if ($container_type_part instanceof TLiteralClassString
+                && $input_type_part instanceof TLiteralClassString
+            ) {
+                return $container_type_part->value === $input_type_part->value;
+            }
+
+            if ($container_type_part instanceof TClassString
+                && $container_type_part->extends === 'object'
+            ) {
                 return true;
             }
 
-            if ($input_type_part instanceof TClassString) {
+            if ($input_type_part instanceof TClassString
+                && $input_type_part->extends === 'object'
+            ) {
                 $type_coerced = true;
                 $type_coerced_from_scalar = true;
 
                 return false;
             }
 
-            $fake_container_object = new TNamedObject($container_type_part->value);
-            $fake_input_object = new TNamedObject($input_type_part->value);
+            $fake_container_object = new TNamedObject(
+                $container_type_part instanceof TClassString
+                    ? $container_type_part->extends
+                    : $container_type_part->value
+            );
+
+            $fake_input_object = new TNamedObject(
+                $input_type_part instanceof TClassString
+                    ? $input_type_part->extends
+                    : $input_type_part->value
+            );
 
             return self::isObjectContainedByObject(
                 $codebase,

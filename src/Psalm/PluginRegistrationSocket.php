@@ -23,7 +23,10 @@ class PluginRegistrationSocket implements RegistrationInterface
         $this->config->addStubFile($file_name);
     }
 
-    /** @return void */
+    /**
+     * @return void
+     * @psalm-suppress TypeCoercion
+     */
     public function registerHooksFromClass(string $handler)
     {
         if (!class_exists($handler, false)) {
