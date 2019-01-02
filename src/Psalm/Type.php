@@ -66,6 +66,9 @@ abstract class Type
         'static' => true,
         'scalar' => true,
         'numeric' => true,
+        'no-return' => true,
+        'never-return' => true,
+        'never-returns' => true,
     ];
 
     /**

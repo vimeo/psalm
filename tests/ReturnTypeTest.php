@@ -541,6 +541,7 @@ class ReturnTypeTest extends TestCase
             ],
             'neverReturnsSimple' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
@@ -550,6 +551,7 @@ class ReturnTypeTest extends TestCase
             ],
             'neverReturnsCovariance' => [
                 '<?php
+                    namespace Foo;
                     class A {
                         /**
                          * @return string
@@ -570,6 +572,7 @@ class ReturnTypeTest extends TestCase
             ],
             'noReturnCallReturns' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
@@ -838,6 +841,7 @@ class ReturnTypeTest extends TestCase
             ],
             'callNeverReturns' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
@@ -850,6 +854,7 @@ class ReturnTypeTest extends TestCase
             ],
             'returnNeverReturns' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
@@ -864,6 +869,7 @@ class ReturnTypeTest extends TestCase
             ],
             'useNeverReturnsAsArg' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
@@ -878,6 +884,7 @@ class ReturnTypeTest extends TestCase
             ],
             'invalidNoReturnType' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
@@ -887,6 +894,7 @@ class ReturnTypeTest extends TestCase
             ],
             'invalidNoReturnStatement' => [
                 '<?php
+                    namespace Foo;
                     /**
                      * @return never-returns
                      */
