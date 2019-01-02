@@ -288,6 +288,17 @@ class ClassStringTest extends TestCase
                         use T;
                     }'
             ],
+            'refineStringToClassString' => [
+                '<?php
+                    class A {}
+
+                    function foo(string $s) : void {
+                        if ($s !== A::class) {
+                            return;
+                        }
+                        new $s();
+                    }',
+            ],
         ];
     }
 

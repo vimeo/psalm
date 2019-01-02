@@ -497,7 +497,13 @@ class Config
         }
 
         if (isset($config_xml['autoloader'])) {
-            $config->autoloader = (string) $config_xml['autoloader'];
+            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
+
+            if (!file_exists($autoloader_path)) {
+                throw new ConfigException('Cannot locate config schema');
+            }
+
+            $config->autoloader = realpath($autoloader_path);
         }
 
         if (isset($config_xml['cacheDirectory'])) {
@@ -1331,7 +1337,7 @@ class Config
 
         if ($this->autoloader) {
             // do this in a separate method so scope does not leak
-            $this->requireAutoloader($this->base_dir . DIRECTORY_SEPARATOR . $this->autoloader);
+            $this->requireAutoloader($this->autoloader);
 
             $this->collectPredefinedConstants();
             $this->collectPredefinedFunctions();

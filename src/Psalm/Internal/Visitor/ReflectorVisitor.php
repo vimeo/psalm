@@ -21,6 +21,7 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
 use Psalm\Issue\DuplicateClass;
+use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MisplacedRequiredParam;
@@ -835,7 +836,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      * @param  PhpParser\Node\FunctionLike $stmt
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      *
-     * @return FunctionLikeStorage
+     * @return FunctionLikeStorage|false
      */
     private function registerFunctionLike(PhpParser\Node\FunctionLike $stmt, $fake_method = false)
     {
@@ -889,7 +890,25 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             if (isset($class_storage->methods[strtolower($stmt->name->name)])) {
                 if (!$this->codebase->register_stub_files) {
-                    throw new \InvalidArgumentException('Cannot re-register ' . $function_id);
+                    $duplicate_method_storage = $class_storage->methods[strtolower($stmt->name->name)];
+
+                    if (IssueBuffer::accepts(
+                        new DuplicateMethod(
+                            'Method ' . $function_id . ' has already been defined'
+                                . ($duplicate_method_storage->location
+                                    ? ' in ' . $duplicate_method_storage->location->file_path
+                                    : ''),
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    $this->file_storage->has_visitor_issues = true;
+
+                    $duplicate_method_storage->has_visitor_issues = true;
+
+                    return false;
                 }
 
                 $storage = $class_storage->methods[strtolower($stmt->name->name)];

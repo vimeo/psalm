@@ -4,6 +4,8 @@ namespace Psalm;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Issue\ClassIssue;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\DuplicateClass;
+use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\MethodIssue;
 use Psalm\Issue\PropertyIssue;
 use Psalm\Output\Compact;
@@ -61,7 +63,10 @@ class IssueBuffer
             return false;
         }
 
-        if (!$config->reportIssueInFile($issue_type, $e->getFilePath())) {
+        if (!$e instanceof DuplicateClass
+            && !$e instanceof DuplicateMethod
+            && !$config->reportIssueInFile($issue_type, $e->getFilePath())
+        ) {
             return false;
         }
 

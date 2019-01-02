@@ -180,6 +180,17 @@ class A {}
 class A {}
 ```
 
+### DuplicateMethod
+
+Emitted when a method is defined twice
+
+```php
+class A {
+    public function foo() {}
+    public function foo() {}
+}
+```
+
 ### DuplicateParam
 
 Emitted when a function has a param defined twice
