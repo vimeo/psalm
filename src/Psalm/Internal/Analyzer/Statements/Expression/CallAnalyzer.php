@@ -18,6 +18,7 @@ use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgument;
 use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\NoValue;
 use Psalm\Issue\NullArgument;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
@@ -1643,6 +1644,20 @@ class CallAnalyzer
                 $statements_analyzer->getSuppressedIssues()
             )) {
                 // fall through
+            }
+
+            return null;
+        }
+
+        if ($input_type->isNever()) {
+            if (IssueBuffer::accepts(
+                new NoValue(
+                    'This function or method call never returns output',
+                    $code_location
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                return false;
             }
 
             return null;

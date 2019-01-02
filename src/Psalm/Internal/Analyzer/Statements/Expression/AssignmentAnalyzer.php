@@ -18,6 +18,7 @@ use Psalm\Issue\InvalidScope;
 use Psalm\Issue\LoopInvalidation;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MixedAssignment;
+use Psalm\Issue\NoValue;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
@@ -559,20 +560,38 @@ class AssignmentAnalyzer
             }
         }
 
-        if ($var_id && isset($context->vars_in_scope[$var_id]) && $context->vars_in_scope[$var_id]->isVoid()) {
-            if (IssueBuffer::accepts(
-                new AssignmentToVoid(
-                    'Cannot assign ' . $var_id . ' to type void',
-                    new CodeLocation($statements_analyzer->getSource(), $assign_var)
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
+        if ($var_id && isset($context->vars_in_scope[$var_id])) {
+            if ($context->vars_in_scope[$var_id]->isVoid()) {
+                if (IssueBuffer::accepts(
+                    new AssignmentToVoid(
+                        'Cannot assign ' . $var_id . ' to type void',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+
+                $context->vars_in_scope[$var_id] = Type::getNull();
+
+                return $context->vars_in_scope[$var_id];
             }
 
-            $context->vars_in_scope[$var_id] = Type::getMixed();
+            if ($context->vars_in_scope[$var_id]->isNever()) {
+                if (IssueBuffer::accepts(
+                    new NoValue(
+                        'This function or method call never returns output',
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    return false;
+                }
 
-            return Type::getMixed();
+                $context->vars_in_scope[$var_id] = Type::getEmpty();
+
+                return $context->vars_in_scope[$var_id];
+            }
         }
 
         return $assign_value_type;

@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -422,6 +423,10 @@ class TypeAnalyzer
                 return false;
             }
 
+            return true;
+        }
+
+        if ($input_type_part instanceof TNever) {
             return true;
         }
 

@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
@@ -79,6 +80,11 @@ abstract class Atomic
 
             case 'void':
                 return new TVoid();
+
+            case 'never-return':
+            case 'never-returns':
+            case 'no-return':
+                return new TNever();
 
             case 'object':
                 return new TObject();

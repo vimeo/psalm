@@ -153,6 +153,29 @@ class ReturnTypeAnalyzer
             return null;
         }
 
+        if ($return_type
+            && $return_type->isNever()
+            && !$inferred_yield_types
+            && ScopeAnalyzer::getFinalControlActions(
+                $function_stmts,
+                $codebase->config->exit_functions,
+                false,
+                false
+            ) !== [ScopeAnalyzer::ACTION_END]
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    $cased_method_id . ' is not expected to return any values but it does, '
+                        . 'either implicitly or explicitly',
+                    $return_type_location
+                )
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
         $inferred_return_type = $inferred_return_type_parts
             ? TypeCombination::combineTypes($inferred_return_type_parts)
             : Type::getVoid();
@@ -302,7 +325,7 @@ class ReturnTypeAnalyzer
         );
 
         if (!$inferred_return_type_parts && !$inferred_yield_types) {
-            if ($declared_return_type->isVoid()) {
+            if ($declared_return_type->isVoid() || $declared_return_type->isNever()) {
                 return null;
             }
 

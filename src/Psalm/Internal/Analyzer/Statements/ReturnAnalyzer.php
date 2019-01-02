@@ -18,6 +18,7 @@ use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MixedReturnStatement;
 use Psalm\Issue\MixedTypeCoercion;
+use Psalm\Issue\NoValue;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -92,6 +93,20 @@ class ReturnAnalyzer
             } elseif (isset($stmt->expr->inferredType)) {
                 $stmt->inferredType = $stmt->expr->inferredType;
 
+                if ($stmt->inferredType->isNever()) {
+                    if (IssueBuffer::accepts(
+                        new NoValue(
+                            'This function or method call never returns output',
+                            new CodeLocation($source, $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    $stmt->inferredType = Type::getEmpty();
+                }
+
                 if ($stmt->inferredType->isVoid()) {
                     $stmt->inferredType = Type::getNull();
                 }
@@ -127,7 +142,7 @@ class ReturnAnalyzer
                     }
 
                     if ($stmt->inferredType->hasMixed()) {
-                        if ($local_return_type->isVoid()) {
+                        if ($local_return_type->isVoid() || $local_return_type->isNever()) {
                             if (IssueBuffer::accepts(
                                 new InvalidReturnStatement(
                                     'No return values are expected for ' . $cased_method_id,

@@ -660,6 +660,14 @@ class Union
     /**
      * @return bool
      */
+    public function isNever()
+    {
+        return isset($this->types['never-return']);
+    }
+
+    /**
+     * @return bool
+     */
     public function isGenerator()
     {
         return count($this->types) === 1 && isset($this->types['Generator']);

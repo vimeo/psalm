@@ -225,7 +225,7 @@ function foo() : string {
 
 ### FalseOperand
 
-Emitted when using `false` as part of an operation (e.g. `+`, `.`, `^` etc.`)
+Emitted when using `false` as part of an operation (e.g. `+`, `.`, `^` etc.)
 
 ```php
 echo false . 'hello';
@@ -1102,6 +1102,21 @@ function foo() : B {
 }
 ```
 
+### NoValue
+
+Emitted when using the result of a function that never returns.
+
+```php
+/**
+ * @return never-returns
+ */
+function foo() : void {
+    exit();
+}
+
+$a = foo();
+```
+
 ### NoInterfaceProperties
 
 Emitted when trying to fetch a property on an interface as interfaces, by definition, do not have definitions for properties.
@@ -1191,7 +1206,7 @@ foreach (null as $a) {}
 
 ### NullOperand
 
-Emitted when using `null` as part of an operation (e.g. `+`, `.`, `^` etc.`)
+Emitted when using `null` as part of an operation (e.g. `+`, `.`, `^` etc.)
 
 ```php
 echo null . 'hello';

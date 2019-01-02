@@ -539,6 +539,35 @@ class ReturnTypeTest extends TestCase
                         return false;
                     }',
             ],
+            'neverReturnsSimple' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function foo() : void {
+                        exit();
+                    }',
+            ],
+            'neverReturnsCovariance' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return string
+                         */
+                        public function foo() {
+                            return "hello";
+                        }
+                    }
+
+                    class B extends A {
+                        /**
+                         * @return no-return
+                         */
+                        public function foo() {
+                            exit();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -790,6 +819,65 @@ class ReturnTypeTest extends TestCase
                         public function __invoke(): int {}
                     }',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'callNeverReturns' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function foo() : void {
+                        exit();
+                    }
+
+                    $a = foo();',
+                'error_message' => 'NoValue',
+            ],
+            'returnNeverReturns' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function foo() : void {
+                        exit();
+                    }
+
+                    function bar() : void {
+                        return foo();
+                    }',
+                'error_message' => 'NoValue',
+            ],
+            'useNeverReturnsAsArg' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function foo() : void {
+                        exit();
+                    }
+
+                    function bar(string $s) : void {}
+
+                    bar(foo());',
+                'error_message' => 'NoValue',
+            ],
+            'invalidNoReturnType' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function foo() : void {
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'invalidNoReturnStatement' => [
+                '<?php
+                    /**
+                     * @return never-returns
+                     */
+                    function foo() : void {
+                        return 5;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
