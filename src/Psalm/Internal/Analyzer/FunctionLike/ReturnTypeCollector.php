@@ -54,12 +54,16 @@ class ReturnTypeCollector
                 }
 
                 break;
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Throw_
                 || $stmt instanceof PhpParser\Node\Stmt\Break_
                 || $stmt instanceof PhpParser\Node\Stmt\Continue_
             ) {
                 break;
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
+            }
+
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression
                 && ($stmt->expr instanceof PhpParser\Node\Expr\Yield_
                     || $stmt->expr instanceof PhpParser\Node\Expr\YieldFrom)
             ) {
