@@ -538,6 +538,21 @@ class IfAnalyzer
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
+        $if_context->parent_context = $outer_context;
+
+        $assigned_var_ids = $if_context->assigned_var_ids;
+        $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
+        $if_context->assigned_var_ids = [];
+        $if_context->possibly_assigned_var_ids = [];
+
+        if ($statements_analyzer->analyze(
+            $stmt->stmts,
+            $if_context
+        ) === false
+        ) {
+            return false;
+        }
+
         $final_actions = ScopeAnalyzer::getFinalControlActions(
             $stmt->stmts,
             $codebase->config->exit_functions,
@@ -553,24 +568,7 @@ class IfAnalyzer
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
         $has_leave_switch_statement = $final_actions === [ScopeAnalyzer::ACTION_LEAVE_SWITCH];
 
-        if (!$has_ending_statements) {
-            $if_context->parent_context = $outer_context;
-        }
-
         $if_scope->final_actions = $final_actions;
-
-        $assigned_var_ids = $if_context->assigned_var_ids;
-        $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
-        $if_context->assigned_var_ids = [];
-        $if_context->possibly_assigned_var_ids = [];
-
-        if ($statements_analyzer->analyze(
-            $stmt->stmts,
-            $if_context
-        ) === false
-        ) {
-            return false;
-        }
 
         /** @var array<string, bool> */
         $new_assigned_var_ids = $if_context->assigned_var_ids;

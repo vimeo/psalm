@@ -101,8 +101,7 @@ class ScopeAnalyzer
                 }
 
                 // This allows calls to functions that always exit to act as exit statements themselves
-                if (!$return_is_exit
-                    && isset($stmt->expr->inferredType)
+                if (isset($stmt->expr->inferredType)
                     && $stmt->expr->inferredType->isNever()
                 ) {
                     return [self::ACTION_END];
