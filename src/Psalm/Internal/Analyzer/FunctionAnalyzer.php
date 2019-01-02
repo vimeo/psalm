@@ -673,11 +673,13 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                         if (isset($atomic_type->properties['options'])
                             && $atomic_type->properties['options']->hasArray()
-                            && isset($atomic_type->properties['options']->getTypes()['array']->properties['default'])
+                            && ($options_array = $atomic_type->properties['options']->getTypes()['array'])
+                            && $options_array instanceof Type\Atomic\ObjectLike
+                            && isset($options_array->properties['default'])
                         ) {
                             $filter_type = Type::combineUnionTypes(
                                 $filter_type,
-                                $atomic_type->properties['options']->getTypes()['array']->properties['default']
+                                $options_array->properties['default']
                             );
                         } else {
                             $filter_type->addType(new Type\Atomic\TFalse);
@@ -709,7 +711,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
             return $filter_type ?: Type::getMixed();
         }
-        
+
         return Type::getMixed();
     }
 
