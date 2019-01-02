@@ -535,7 +535,7 @@ class Scanner
 
     /**
      * @param  string $file_path
-     * @param  array<string, FileScanner::class>  $filetype_scanners
+     * @param  array<string, class-string<FileScanner>>  $filetype_scanners
      * @param  bool   $will_analyze
      *
      * @return FileScanner
@@ -625,7 +625,7 @@ class Scanner
 
     /**
      * @param  string $file_path
-     * @param  array<string, FileScanner::class>  $filetype_scanners
+     * @param  array<string, class-string<FileScanner>>  $filetype_scanners
      * @param  bool   $will_analyze
      *
      * @return FileScanner

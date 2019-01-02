@@ -220,6 +220,10 @@ abstract class Type
                 return new TArray($generic_params);
             }
 
+            if ($generic_type_value === 'class-string') {
+                return new TClassString((string) $generic_params[0]);
+            }
+
             return new TGenericObject($generic_type_value, $generic_params);
         }
 

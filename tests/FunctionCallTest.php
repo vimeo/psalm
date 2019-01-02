@@ -1242,6 +1242,25 @@ class FunctionCallTest extends TestCase
                         return filter_var($s, FILTER_VALIDATE_FLOAT, ["default" => 5.0]);
                     }',
             ],
+            'callVariableVar' => [
+                '<?php
+                    class Foo
+                    {
+                        public static function someInt(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @return int
+                     */
+                    function makeInt()
+                    {
+                        $fooClass = Foo::class;
+                        return $fooClass::someInt();
+                    }',
+            ],
         ];
     }
 

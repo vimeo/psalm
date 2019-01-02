@@ -9,8 +9,9 @@ use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use SimpleXMLElement;
+use Psalm\Plugin\Hook;
 use Psalm\PluginRegistrationSocket;
+use SimpleXMLElement;
 
 class Config
 {
@@ -114,12 +115,12 @@ class Config
     private $file_extensions = ['php'];
 
     /**
-     * @var array<string, FileScanner::class>
+     * @var array<string, class-string<FileScanner>>
      */
     private $filetype_scanners = [];
 
     /**
-     * @var array<string, FileAnalyzer::class>
+     * @var array<string, class-string<FileAnalyzer>>
      */
     private $filetype_analyzers = [];
 
@@ -253,42 +254,42 @@ class Config
     /**
      * Static methods to be called after method checks have completed
      *
-     * @var class-string[]
+     * @var class-string<Hook\AfterMethodCallAnalysisInterface>[]
      */
     public $after_method_checks = [];
 
     /**
      * Static methods to be called after function checks have completed
      *
-     * @var class-string[]
+     * @var class-string<Hook\AfterFunctionCallAnalysisInterface>[]
      */
     public $after_function_checks = [];
 
     /**
      * Static methods to be called after expression checks have completed
      *
-     * @var class-string[]
+     * @var class-string<Hook\AfterExpressionAnalysisInterface>[]
      */
     public $after_expression_checks = [];
 
     /**
      * Static methods to be called after statement checks have completed
      *
-     * @var class-string[]
+     * @var class-string<Hook\AfterStatementAnalysisInterface>[]
      */
     public $after_statement_checks = [];
 
     /**
      * Static methods to be called after classlike exists checks have completed
      *
-     * @var class-string[]
+     * @var class-string<Hook\AfterClassLikeExistenceCheckInterface>[]
      */
     public $after_classlike_exists_checks = [];
 
     /**
      * Static methods to be called after classlikes have been scanned
      *
-     * @var class-string[]
+     * @var class-string<Hook\AfterClassLikeVisitInterface>[]
      */
     public $after_visit_classlikes = [];
 
@@ -889,7 +890,7 @@ class Config
      * @param  string $path
      * @param  T::class $must_extend
      *
-     * @return T::class
+     * @return class-string<T>
      */
     private function getPluginClassForPath(Codebase $codebase, $path, $must_extend)
     {
@@ -922,7 +923,7 @@ class Config
         }
 
         /**
-         * @var T::class
+         * @var class-string<T>
          */
         return $fq_class_name;
     }
@@ -1121,7 +1122,7 @@ class Config
     }
 
     /**
-     * @return array<string, FileScanner::class>
+     * @return array<string, class-string<FileScanner>>
      */
     public function getFiletypeScanners()
     {
@@ -1129,7 +1130,7 @@ class Config
     }
 
     /**
-     * @return array<string, FileAnalyzer::class>
+     * @return array<string, class-string<FileAnalyzer>>
      */
     public function getFiletypeAnalyzers()
     {

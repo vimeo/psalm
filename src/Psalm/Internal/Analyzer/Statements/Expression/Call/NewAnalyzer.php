@@ -137,16 +137,16 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                         continue;
                     }
-                    // this is always OK
+
                     if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString
                         || $lhs_type_part instanceof Type\Atomic\TClassString
                     ) {
                         if (!isset($stmt->inferredType)) {
                             $class_name = $lhs_type_part instanceof Type\Atomic\TClassString
-                                ? 'object'
+                                ? $lhs_type_part->extends
                                 : $lhs_type_part->value;
 
-                            if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                            if ($class_name === 'object') {
                                 if (IssueBuffer::accepts(
                                     new MixedMethodCall(
                                         'Cannot call constructor on an unknown class',
@@ -188,7 +188,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     } elseif ($lhs_type_part instanceof Type\Atomic\TMixed
                         || $lhs_type_part instanceof Type\Atomic\TGenericParam
                     ) {
-                        // do nothing
+                        if (IssueBuffer::accepts(
+                            new MixedMethodCall(
+                                'Cannot call constructor on an unknown class',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     } elseif ($lhs_type_part instanceof Type\Atomic\TFalse
                         && $stmt->class->inferredType->ignore_falsable_issues
                     ) {

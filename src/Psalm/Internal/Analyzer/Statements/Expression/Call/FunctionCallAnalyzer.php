@@ -349,13 +349,13 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                         $function_id,
                                         $context,
                                         $statements_analyzer->getSource(),
+                                        $codebase,
                                         $file_manipulations,
                                         $return_type
                                     );
                                 }
 
                                 if ($file_manipulations) {
-                                    /** @psalm-suppress MixedTypeCoercion */
                                     FileManipulationBuffer::add(
                                         $statements_analyzer->getFilePath(),
                                         $file_manipulations
@@ -363,6 +363,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                                 }
                             }
 
+                            /** @var Type\Union $return_type */
                             $stmt->inferredType = $return_type;
                             $return_type->by_ref = $function_storage->returns_by_ref;
 

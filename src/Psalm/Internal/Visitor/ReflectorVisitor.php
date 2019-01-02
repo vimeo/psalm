@@ -81,7 +81,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var ClassLikeStorage[] */
     private $classlike_storages = [];
 
-    /** @var class-string[] */
+    /** @var class-string<\Psalm\Plugin\Hook\AfterClassLikeVisitInterface>[] */
     private $after_classlike_check_plugins;
 
     /**

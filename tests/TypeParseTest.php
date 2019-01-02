@@ -246,6 +246,14 @@ class TypeParseTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testParamaterizedClassString()
+    {
+        $this->assertSame('class-string<A>', (string) Type::parseString('class-string<A>'));
+    }
+
+    /**
      * @expectedException \Psalm\Exception\TypeParseTreeException
      *
      * @return void

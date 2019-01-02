@@ -3,17 +3,33 @@ namespace Psalm\Type\Atomic;
 
 class TClassString extends TString
 {
-    public function __toString()
+    /**
+     * @var string
+     */
+    public $extends;
+
+    /**
+     * @param string $param_name
+     */
+    public function __construct(string $extends = 'object')
     {
-        return 'class-string';
+        $this->extends = $extends;
+    }
+
+     /**
+     * @return string
+     */
+    public function getKey()
+    {
+        return 'class-string' . ($this->extends === 'object' ? '' : '<' . $this->extends . '>');
     }
 
     /**
      * @return string
      */
-    public function getKey()
+    public function __toString()
     {
-        return 'class-string';
+        return $this->getKey();
     }
 
     public function getId()

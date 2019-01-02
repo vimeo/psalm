@@ -14,6 +14,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMethod;
@@ -256,14 +257,34 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $has_mock = false;
 
         foreach ($lhs_type->getTypes() as $lhs_type_part) {
-            if (!$lhs_type_part instanceof TNamedObject) {
-                // this is always OK
-                if ($lhs_type_part instanceof Type\Atomic\TClassString) {
-                    continue;
-                }
+            if ($lhs_type_part instanceof TNamedObject) {
+                $fq_class_name = $lhs_type_part->value;
+            } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
+                && $lhs_type_part->extends !== 'object'
+            ) {
+                $fq_class_name = $lhs_type_part->extends;
+            } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
+                $fq_class_name = $lhs_type_part->value;
+            } elseif ($lhs_type_part instanceof Type\Atomic\TGenericParam
+                && $lhs_type_part->extends !== 'mixed'
+                && $lhs_type_part->extends !== 'object'
+            ) {
+                $fq_class_name = $lhs_type_part->extends;
+            } else {
+                if ($lhs_type_part instanceof Type\Atomic\TMixed
+                    || $lhs_type_part instanceof Type\Atomic\TGenericParam
+                    || $lhs_type_part instanceof Type\Atomic\TClassString
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MixedMethodCall(
+                            'Cannot call constructor on an unknown class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
 
-                // ok for now
-                if ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                     continue;
                 }
 
@@ -287,12 +308,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     continue;
                 }
 
-                if ($lhs_type_part instanceof Type\Atomic\TMixed
-                    || $lhs_type_part instanceof Type\Atomic\TGenericParam
-                ) {
-                    continue;
-                }
-
                 if ($lhs_type_part instanceof Type\Atomic\TNull
                     && $lhs_type->ignore_nullable_issues
                 ) {
@@ -312,8 +327,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 continue;
             }
-
-            $fq_class_name = $lhs_type_part->value;
 
             $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
