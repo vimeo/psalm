@@ -863,6 +863,25 @@ class Union
 
                     $new_types[$template_type_part->getKey()] = $template_type_part;
                 }
+            } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
+                && isset($template_types[$atomic_type->param_name])
+            ) {
+                $keys_to_unset[] = $key;
+                $template_type = clone $template_types[$atomic_type->param_name];
+
+                foreach ($template_type->types as $template_type_part) {
+                    if ($template_type_part instanceof Type\Atomic\TMixed) {
+                        $is_mixed = true;
+
+                        $unknown_class_string = new Type\Atomic\TClassString();
+
+                        $new_types[$unknown_class_string->getKey()] = $unknown_class_string;
+                    } elseif ($template_type_part instanceof Type\Atomic\TNamedObject) {
+                        $literal_class_string = new Type\Atomic\TLiteralClassString($template_type_part->value);
+
+                        $new_types[$literal_class_string->getKey()] = $literal_class_string;
+                    }
+                }
             } else {
                 $atomic_type->replaceTemplateTypesWithArgTypes($template_types);
             }
