@@ -359,6 +359,14 @@ abstract class Atomic
     }
 
     /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return $this->getId();
+    }
+
+    /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class

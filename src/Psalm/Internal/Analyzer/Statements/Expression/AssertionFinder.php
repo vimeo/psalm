@@ -774,9 +774,9 @@ class AssertionFinder
                     );
 
                 if ($identical) {
-                    $if_types[$var_name] = [['=' . $var_type->getId()]];
+                    $if_types[$var_name] = [['=' . $var_type->getAssertionString()]];
                 } else {
-                    $if_types[$var_name] = [['~' . $var_type->getId()]];
+                    $if_types[$var_name] = [['~' . $var_type->getAssertionString()]];
                 }
             }
 
@@ -1275,9 +1275,9 @@ class AssertionFinder
                         );
 
                     if ($not_identical) {
-                        $if_types[$var_name] = [['!=' . $var_type->getId()]];
+                        $if_types[$var_name] = [['!=' . $var_type->getAssertionString()]];
                     } else {
-                        $if_types[$var_name] = [['!~' . $var_type->getId()]];
+                        $if_types[$var_name] = [['!~' . $var_type->getAssertionString()]];
                     }
                 }
 

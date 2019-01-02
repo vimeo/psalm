@@ -21,7 +21,7 @@ class TLiteralClassString extends TLiteralString
      */
     public function getKey()
     {
-        return $this->value . '::class';
+        return 'class-string(' . $this->value . ')';
     }
 
     /**
@@ -57,6 +57,14 @@ class TLiteralClassString extends TLiteralString
     public function getId()
     {
         return $this->value . '::class';
+    }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return $this->getKey();
     }
 
     /**

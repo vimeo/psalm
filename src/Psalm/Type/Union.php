@@ -255,6 +255,18 @@ class Union
     }
 
     /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        foreach ($this->types as $type) {
+            return $type->getAssertionString();
+        }
+
+        throw new \UnexpectedValueException('Should only be one type per assertion');
+    }
+
+    /**
      * @param  string|null   $namespace
      * @param  array<string> $aliased_classes
      * @param  string|null   $this_class

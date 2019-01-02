@@ -292,11 +292,11 @@ class ClassStringTest extends TestCase
                 '<?php
                     class A {}
 
-                    function foo(string $s) : void {
+                    function foo(string $s) : ?A {
                         if ($s !== A::class) {
-                            return;
+                            return null;
                         }
-                        new $s();
+                        return new $s();
                     }',
             ],
         ];
