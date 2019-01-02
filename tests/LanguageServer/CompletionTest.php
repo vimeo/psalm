@@ -156,9 +156,6 @@ class CompletionTest extends \Psalm\Tests\TestCase
                 }'
         );
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
-
-        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
-
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $this->assertSame(['B\A', '->'], $codebase->getCompletionDataAtPosition('somefile.php', new Position(8, 31)));

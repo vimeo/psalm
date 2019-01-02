@@ -104,12 +104,6 @@ class CachedStorageTest extends \Psalm\Tests\TestCase
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($analyzable_files + $vendor_files));
 
-        foreach ($analyzable_files as $file_path => $_) {
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        }
-
-        $codebase->scanFiles();
-
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
     }
 }

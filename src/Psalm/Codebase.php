@@ -290,6 +290,7 @@ class Codebase
         $referenced_files = array_combine($referenced_files, $referenced_files);
 
         $this->scanner->addFilesToDeepScan($referenced_files);
+        $this->addFilesToAnalyze(array_combine($candidate_files, $candidate_files));
         $this->scanner->scanFiles($this->classlikes);
 
         $this->file_reference_provider->updateReferenceCache($this, $referenced_files);

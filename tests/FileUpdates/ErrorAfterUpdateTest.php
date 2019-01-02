@@ -79,13 +79,6 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
             $codebase->reloadFiles($this->project_analyzer, array_keys($files));
 
-            foreach ($files as $file_path => $contents) {
-                $this->file_provider->registerFile($file_path, $contents);
-                $codebase->addFilesToAnalyze([$file_path => $file_path]);
-            }
-
-            $codebase->scanFiles();
-
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
         }
 

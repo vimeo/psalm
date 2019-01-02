@@ -97,11 +97,6 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 
-        foreach ($end_files as $file_path => $_) {
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        }
-
-        $codebase->scanFiles();
         $codebase->analyzer->loadCachedResults($this->project_analyzer);
 
         $this->assertSame(

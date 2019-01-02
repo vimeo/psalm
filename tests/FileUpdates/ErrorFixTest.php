@@ -93,12 +93,6 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($middle_files));
 
-        foreach ($middle_files as $file_path => $_) {
-            $codebase->addFilesToAnalyze([$file_path => $file_path]);
-        }
-
-        $codebase->scanFiles();
-
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $data = \Psalm\IssueBuffer::clear();
@@ -115,8 +109,6 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
         foreach ($end_files as $file_path => $_) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
-
-        $codebase->scanFiles();
 
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 

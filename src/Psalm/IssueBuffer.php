@@ -63,10 +63,7 @@ class IssueBuffer
             return false;
         }
 
-        if (!$e instanceof DuplicateClass
-            && !$e instanceof DuplicateMethod
-            && !$config->reportIssueInFile($issue_type, $e->getFilePath())
-        ) {
+        if (!$config->reportIssueInFile($issue_type, $e->getFilePath())) {
             return false;
         }
 

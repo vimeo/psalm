@@ -213,8 +213,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $codebase->reloadFiles($this->project_analyzer, ['somefile.php']);
 
-        $codebase->addFilesToAnalyze(['somefile.php' => 'somefile.php']);
-
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(10, 30));
