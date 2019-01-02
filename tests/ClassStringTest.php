@@ -269,6 +269,23 @@ class ClassStringTest extends TestCase
                     $a ? 1 : 0;
                     bar($a);',
             ],
+            'allowTraitClassComparison' => [
+                '<?php
+                    trait T {
+                        public function foo() : void {
+                            if (self::class === A::class) {}
+                            if (self::class !== A::class) {}
+                        }
+                    }
+
+                    class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+                    }'
+            ],
         ];
     }
 

@@ -786,7 +786,17 @@ class AssertionFinder
                 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
                 && $source instanceof StatementsSource
             ) {
-                if (!TypeAnalyzer::canExpressionTypesBeIdentical(
+                $parent_source = $source->getSource();
+
+                if ($parent_source
+                    && $parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                    && (($var_type->isSingleStringLiteral()
+                            && $var_type->getSingleStringLiteral()->value === $this_class_name)
+                        || ($other_type->isSingleStringLiteral()
+                            && $other_type->getSingleStringLiteral()->value === $this_class_name))
+                ) {
+                    // do nothing
+                } elseif (!TypeAnalyzer::canExpressionTypesBeIdentical(
                     $codebase,
                     $other_type,
                     $var_type
@@ -1276,7 +1286,17 @@ class AssertionFinder
                     && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
                     && $source instanceof StatementsSource
                 ) {
-                    if (!TypeAnalyzer::isContainedBy(
+                    $parent_source = $source->getSource();
+
+                    if ($parent_source
+                        && $parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                        && (($var_type->isSingleStringLiteral()
+                                && $var_type->getSingleStringLiteral()->value === $this_class_name)
+                            || ($other_type->isSingleStringLiteral()
+                                && $other_type->getSingleStringLiteral()->value === $this_class_name))
+                    ) {
+                        // do nothing
+                    } elseif (!TypeAnalyzer::isContainedBy(
                         $codebase,
                         $var_type,
                         $other_type,
