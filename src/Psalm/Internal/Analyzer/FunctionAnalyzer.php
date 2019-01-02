@@ -625,10 +625,13 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 if ($atomic_type instanceof Type\Atomic\ObjectLike) {
                                     $has_object_like = true;
 
-                                    if (isset($atomic_type->properties['default'])) {
+                                    if (isset($atomic_type->properties['options'])
+                                        && $atomic_type->properties['options']->hasArray()
+                                        && isset($atomic_type->properties['options']->getTypes()['array']->properties['default'])
+                                    ) {
                                         $filter_type = Type::combineUnionTypes(
                                             $filter_type,
-                                            $atomic_type->properties['default']
+                                            $atomic_type->properties['options']->getTypes()['array']->properties['default']
                                         );
                                     } else {
                                         $filter_type->addType(new Type\Atomic\TFalse);
