@@ -213,7 +213,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                                 || !$parent_storage->user_defined
                             )
                         ) {
-                            $implemented_docblock_param_types[$i] = $guide_param->type;
+                            if (!isset($implemented_docblock_param_types[$i])) {
+                                $implemented_docblock_param_types[$i] = $guide_param->type;
+                            }
                         }
                     }
                 }
