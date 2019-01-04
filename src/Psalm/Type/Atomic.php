@@ -11,6 +11,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
@@ -21,6 +22,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\THtmlEscapedString;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
@@ -83,6 +85,12 @@ abstract class Atomic
 
             case 'void':
                 return new TVoid();
+
+            case 'array-key':
+                return new TArrayKey();
+
+            case 'iterable':
+                return new TIterable();
 
             case 'never-return':
             case 'never-returns':
@@ -194,7 +202,7 @@ abstract class Atomic
      */
     public function isIterable(Codebase $codebase)
     {
-        return $this instanceof TNamedObject && (strtolower($this->value) === 'iterable')
+        return $this instanceof TIterable
             || $this->isTraversable($codebase)
             || $this instanceof TArray
             || $this instanceof ObjectLike;

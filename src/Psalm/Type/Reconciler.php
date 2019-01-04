@@ -25,6 +25,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -556,10 +557,6 @@ class Reconciler
                     || $type instanceof TResource
                     || $type instanceof TCallable
                 ) {
-                    if ($type instanceof TNamedObject && $type->value === 'iterable') {
-                        continue;
-                    }
-
                     $did_remove_type = true;
 
                     $existing_var_type->removeType($type_key);
@@ -1573,6 +1570,16 @@ class Reconciler
         ) {
             $existing_var_type->removeType('iterable');
             $existing_var_type->addType(new TNamedObject('Traversable'));
+        } elseif (strtolower($new_var_type) === 'string'
+            && isset($existing_var_type->getTypes()['array-key'])
+        ) {
+            $existing_var_type->removeType('array-key');
+            $existing_var_type->addType(new TInt);
+        } elseif (strtolower($new_var_type) === 'int'
+            && isset($existing_var_type->getTypes()['array-key'])
+        ) {
+            $existing_var_type->removeType('array-key');
+            $existing_var_type->addType(new TString);
         } elseif (substr($new_var_type, 0, 9) === 'getclass-') {
             $new_var_type = substr($new_var_type, 9);
         } elseif (!$is_equality) {

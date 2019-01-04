@@ -154,7 +154,10 @@ trait GenericTrait
         foreach ($this->type_params as $offset => $type_param) {
             $input_type_param = null;
 
-            if (($input_type instanceof Atomic\TGenericObject || $input_type instanceof Atomic\TArray) &&
+            if (($input_type instanceof Atomic\TGenericObject
+                    || $input_type instanceof Atomic\TGenericIterable
+                    || $input_type instanceof Atomic\TArray)
+                &&
                     isset($input_type->type_params[$offset])
             ) {
                 $input_type_param = $input_type->type_params[$offset];

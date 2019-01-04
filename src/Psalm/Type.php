@@ -12,9 +12,11 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericIterable;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -69,6 +71,7 @@ abstract class Type
         'no-return' => true,
         'never-return' => true,
         'never-returns' => true,
+        'array-key' => true,
     ];
 
     /**
@@ -223,6 +226,10 @@ abstract class Type
                 return new TArray($generic_params);
             }
 
+            if ($generic_type_value === 'iterable') {
+                return new TGenericIterable($generic_params);
+            }
+
             if ($generic_type_value === 'class-string') {
                 $class_name = (string) $generic_params[0];
 
@@ -289,8 +296,11 @@ abstract class Type
             foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TNamedObject
                     && !$intersection_type instanceof TGenericParam
+                    && !$intersection_type instanceof TIterable
                 ) {
-                    throw new TypeParseTreeException('Intersection types must all be objects');
+                    throw new TypeParseTreeException(
+                        'Intersection types must all be objects, ' . get_class($intersection_type) . ' provided'
+                    );
                 }
             }
 

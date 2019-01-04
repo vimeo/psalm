@@ -68,10 +68,6 @@ class TNamedObject extends Atomic
             return 'static';
         }
 
-        if ($this->value === 'iterable') {
-            return 'iterable';
-        }
-
         if ($this->value === $this_class) {
             return 'self' . $intersection_types;
         }
@@ -134,7 +130,7 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @return array<int, TNamedObject|TGenericParam>|null
+     * @return array<int, TNamedObject|TGenericParam|TIterable>|null
      */
     public function getIntersectionTypes()
     {

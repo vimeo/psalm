@@ -9,7 +9,7 @@ use Psalm\Type\Union;
 trait HasIntersectionTrait
 {
     /**
-     * @var array<int, TNamedObject|TGenericParam>|null
+     * @var array<int, TNamedObject|TGenericParam|TIterable>|null
      */
     public $extra_types;
 
@@ -31,7 +31,7 @@ trait HasIntersectionTrait
             '&',
             array_map(
                 /**
-                 * @param TNamedObject|TGenericParam $extra_type
+                 * @param TNamedObject|TGenericParam|TIterable $extra_type
                  * @return string
                  */
                 function (Atomic $extra_type) use (

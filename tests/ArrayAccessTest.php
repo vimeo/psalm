@@ -415,6 +415,13 @@ class ArrayAccessTest extends TestCase
                 'error_message' => 'PossiblyInvalidArrayOffset',
                 'error_level' => ['MixedArrayAssignment'],
             ],
+            'arrayAccessOnIterable' => [
+                '<?php
+                    function foo(iterable $i) {
+                        echo $i[0];
+                    }',
+                'error_message' => 'InvalidArrayAccess',
+            ],
         ];
     }
 }

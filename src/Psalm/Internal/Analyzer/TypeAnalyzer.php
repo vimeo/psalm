@@ -13,11 +13,13 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericIterable;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\GetClassT;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -281,8 +283,8 @@ class TypeAnalyzer
 
     /**
      * @param  Codebase       $codebase
-     * @param  TNamedObject|TGenericParam   $input_type_part
-     * @param  TNamedObject|TGenericParam   $container_type_part
+     * @param  TNamedObject|TGenericParam|TIterable  $input_type_part
+     * @param  TNamedObject|TGenericParam|TIterable  $container_type_part
      * @param  bool           $allow_interface_equality
      *
      * @return bool
@@ -300,7 +302,9 @@ class TypeAnalyzer
         $intersection_container_types[] = $container_type_part;
 
         foreach ($intersection_container_types as $intersection_container_type) {
-            if ($intersection_container_type instanceof TGenericParam) {
+            if ($intersection_container_type instanceof TIterable) {
+                $intersection_container_type_lower = 'iterable';
+            } elseif ($intersection_container_type instanceof TGenericParam) {
                 if ($intersection_container_type->extends === 'mixed') {
                     continue;
                 }
@@ -315,7 +319,9 @@ class TypeAnalyzer
             }
 
             foreach ($intersection_input_types as $intersection_input_type) {
-                if ($intersection_input_type instanceof TGenericParam) {
+                if ($intersection_input_type instanceof TIterable) {
+                    $intersection_input_type_lower = 'iterable';
+                } elseif ($intersection_input_type instanceof TGenericParam) {
                     if ($intersection_input_type->extends === 'mixed') {
                         continue;
                     }
@@ -450,8 +456,12 @@ class TypeAnalyzer
         }
 
         if ($input_type_part->shallowEquals($container_type_part)
-            || (($input_type_part instanceof TNamedObject || $input_type_part instanceof TGenericParam)
-                && ($container_type_part instanceof TNamedObject || $container_type_part instanceof TGenericParam)
+            || (($input_type_part instanceof TNamedObject
+                    || $input_type_part instanceof TGenericParam
+                    || $input_type_part instanceof TIterable)
+                && ($container_type_part instanceof TNamedObject
+                    || $container_type_part instanceof TGenericParam
+                    || $container_type_part instanceof TIterable)
                 && self::isObjectContainedByObject(
                     $codebase,
                     $input_type_part,
@@ -605,11 +615,9 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($container_type_part instanceof TNamedObject
-            && strtolower($container_type_part->value) === 'iterable'
-        ) {
+        if ($container_type_part instanceof TIterable) {
             if ($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike) {
-                if (!$container_type_part instanceof TGenericObject) {
+                if (!$container_type_part instanceof TGenericIterable) {
                     return true;
                 }
 

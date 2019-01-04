@@ -727,6 +727,20 @@ class Union
                         $this->removeType('iterable');
                         $this->types['traversable'] = new Type\Atomic\TNamedObject('Traversable');
                     }
+                } elseif (isset($this->types['array-key'])) {
+                    if ($old_type_part instanceof Type\Atomic\TString
+                        && !isset($this->types['int'])
+                    ) {
+                        $this->removeType('array-key');
+                        $this->types['int'] = new Type\Atomic\TInt();
+                    }
+
+                    if ($old_type_part instanceof Type\Atomic\TInt
+                        && !isset($this->types['string'])
+                    ) {
+                        $this->removeType('array-key');
+                        $this->types['string'] = new Type\Atomic\TString();
+                    }
                 }
             }
         }

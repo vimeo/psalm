@@ -490,10 +490,6 @@ class ClassLikes
      */
     public function interfaceExtends($interface_name, $possible_parent)
     {
-        if (strtolower($interface_name) === 'iterable' && strtolower($possible_parent) === 'traversable') {
-            return true;
-        }
-
         return isset($this->getParentInterfaces($interface_name)[strtolower($possible_parent)]);
     }
 

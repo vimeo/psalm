@@ -598,19 +598,20 @@ class Populator
             $generic_params = null;
 
             foreach ($atomic_types as $type) {
-                if ($type instanceof Type\Atomic\TNamedObject
-                    && (!$type->from_docblock || $is_property)
-                    && (
-                        strtolower($type->value) === 'traversable'
-                        || $this->classlikes->interfaceExtends(
-                            $type->value,
-                            'Traversable'
-                        )
-                        || $this->classlikes->classImplements(
-                            $type->value,
-                            'Traversable'
-                        )
-                    )
+                if ($type instanceof Type\Atomic\TIterable
+                    || ($type instanceof Type\Atomic\TNamedObject
+                        && (!$type->from_docblock || $is_property)
+                        && (
+                            strtolower($type->value) === 'traversable'
+                            || $this->classlikes->interfaceExtends(
+                                $type->value,
+                                'Traversable'
+                            )
+                            || $this->classlikes->classImplements(
+                                $type->value,
+                                'Traversable'
+                            )
+                        ))
                 ) {
                     $iterator_name = $type->value;
                 } elseif ($type instanceof Type\Atomic\TArray) {
@@ -619,7 +620,12 @@ class Populator
             }
 
             if ($iterator_name && $generic_params) {
-                $generic_iterator = new Type\Atomic\TGenericObject($iterator_name, $generic_params);
+                if ($iterator_name === 'iterable') {
+                    $generic_iterator = new Type\Atomic\TGenericIterable($generic_params);
+                } else {
+                    $generic_iterator = new Type\Atomic\TGenericObject($iterator_name, $generic_params);
+                }
+
                 $candidate->removeType('array');
                 $candidate->addType($generic_iterator);
             }

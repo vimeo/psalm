@@ -222,6 +222,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         case Type\Atomic\THtmlEscapedString::class:
                         case Type\Atomic\TClassString::class:
                         case Type\Atomic\TEmptyMixed::class:
+                        case Type\Atomic\TIterable::class:
+                        case Type\Atomic\TGenericIterable::class:
                             $invalid_method_call_types[] = (string)$lhs_type_part;
                             break;
 
@@ -296,22 +298,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if (!$does_class_exist) {
                     return $does_class_exist;
-                }
-
-                if ($fq_class_name === 'iterable') {
-                    if (IssueBuffer::accepts(
-                        new UndefinedMethod(
-                            $fq_class_name . ' has no defined methods',
-                            new CodeLocation($source, $stmt->var),
-                            $fq_class_name . '::'
-                                . (!$stmt->name instanceof PhpParser\Node\Identifier ? '$method' : $stmt->name->name)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return;
                 }
 
                 if (!$stmt->name instanceof PhpParser\Node\Identifier) {
