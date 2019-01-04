@@ -39,6 +39,6 @@ class TCallable extends \Psalm\Type\Atomic
 
     public function canBeFullyExpressedInPhp()
     {
-        return false;
+        return $this->params === null && $this->return_type === null;
     }
 }
