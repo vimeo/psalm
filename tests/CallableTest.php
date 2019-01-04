@@ -573,6 +573,39 @@ class CallableTest extends TestCase
                         [1, 2, 3]
                     );',
             ],
+            'callablesCanBeObjects' => [
+                '<?php
+                    function foo(callable $c) : void {
+                        if (is_object($c)) {
+                            $c();
+                        }
+                    }'
+            ],
+            'objectsCanBeCallable' => [
+                '<?php
+                    function foo(object $c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }'
+            ],
+            'unionCanBeCallable' => [
+                '<?php
+                    class A {}
+                    class B {
+                        public function __invoke() : string {
+                            return "hello";
+                        }
+                    }
+                    /**
+                     * @param A|B $c
+                     */
+                    function foo($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }'
+            ],
         ];
     }
 

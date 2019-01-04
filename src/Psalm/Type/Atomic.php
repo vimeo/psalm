@@ -13,6 +13,8 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
@@ -173,6 +175,17 @@ abstract class Atomic
     public function isObjectType()
     {
         return $this instanceof TObject || $this instanceof TNamedObject;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isCallableType()
+    {
+        return $this instanceof TCallable
+            || $this instanceof TCallableObject
+            || $this instanceof TCallableString
+            || (($this instanceof TArray || $this instanceof ObjectLike) && $this->callable);
     }
 
     /**

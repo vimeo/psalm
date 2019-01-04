@@ -19,6 +19,8 @@ use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -117,6 +119,11 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TGenericParam) {
                         $has_valid_function_call_type = true;
                         // @todo maybe emit issue here
+                    } elseif ($var_type_part instanceof TCallableObject
+                        || $var_type_part instanceof TCallableString
+                    ) {
+                        // this is fine
+                        $has_valid_function_call_type = true;
                     } elseif (($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')) {
                         // this is fine
                         $has_valid_function_call_type = true;

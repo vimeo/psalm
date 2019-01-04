@@ -532,6 +532,12 @@ class TypeAnalyzer
             return true;
         }
 
+        if ($input_type_part instanceof TObject &&
+            $container_type_part instanceof TCallable
+        ) {
+            return true;
+        }
+
         if ($container_type_part instanceof TNumeric &&
             ($input_type_part->isNumericType() || $input_type_part instanceof TString)
         ) {

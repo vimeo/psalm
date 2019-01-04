@@ -596,6 +596,9 @@ class Reconciler
             foreach ($existing_var_atomic_types as $type) {
                 if ($type->isObjectType()) {
                     $object_types[] = $type;
+                } elseif ($type instanceof TCallable) {
+                    $object_types[] = new Type\Atomic\TCallableObject();
+                    $did_remove_type = true;
                 } else {
                     $did_remove_type = true;
                 }
@@ -617,6 +620,58 @@ class Reconciler
 
             if ($object_types) {
                 return new Type\Union($object_types);
+            }
+
+            $failed_reconciliation = true;
+
+            return Type::getMixed();
+        }
+
+        if ($new_var_type === 'callable' && !$existing_var_type->hasMixed()) {
+            $callable_types = [];
+            $did_remove_type = false;
+
+            foreach ($existing_var_atomic_types as $type) {
+                if ($type->isCallableType()) {
+                    $callable_types[] = $type;
+                } elseif ($type instanceof TObject) {
+                    $callable_types[] = new Type\Atomic\TCallableObject();
+                    $did_remove_type = true;
+                } elseif ($type instanceof TNamedObject
+                    && $codebase->classExists($type->value)
+                    && $codebase->methodExists($type->value . '::__invoke')
+                ) {
+                    $callable_types[] = $type;
+                } elseif (get_class($type) === TString::class) {
+                    $callable_types[] = new Type\Atomic\TCallableString();
+                    $did_remove_type = true;
+                } elseif ($type instanceof TArray || $type instanceof ObjectLike) {
+                    $type = clone $type;
+                    $type->callable = true;
+
+                    $callable_types[] = $type;
+                    $did_remove_type = true;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$callable_types || !$did_remove_type) && !$is_equality) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $new_var_type,
+                        !$did_remove_type,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            }
+
+            if ($callable_types) {
+                return new Type\Union($callable_types);
             }
 
             $failed_reconciliation = true;
@@ -983,22 +1038,6 @@ class Reconciler
 
                     if ($scalar_type_match_found) {
                         $any_scalar_type_match_found = true;
-                    }
-
-                    if ($new_type_part instanceof TCallable &&
-                        (
-                            $existing_var_type_part instanceof TString ||
-                            $existing_var_type_part instanceof TArray ||
-                            $existing_var_type_part instanceof ObjectLike ||
-                            (
-                                $existing_var_type_part instanceof TNamedObject &&
-                                $codebase->classExists($existing_var_type_part->value) &&
-                                $codebase->methodExists($existing_var_type_part->value . '::__invoke')
-                            )
-                        )
-                    ) {
-                        $has_local_match = true;
-                        continue;
                     }
                 }
 

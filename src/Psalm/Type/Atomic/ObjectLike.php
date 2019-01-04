@@ -27,6 +27,11 @@ class ObjectLike extends \Psalm\Type\Atomic
     public $sealed = false;
 
     /**
+     * @var bool
+     */
+    public $callable = false;
+
+    /**
      * Constructs a new instance of a generic type
      *
      * @param array<string|int, Union> $properties
@@ -286,6 +291,10 @@ class ObjectLike extends \Psalm\Type\Atomic
             if (!$property_type->equals($other_type->properties[$property_name])) {
                 return false;
             }
+        }
+
+        if ($this->callable !== $other_type->callable) {
+            return false;
         }
 
         return true;
