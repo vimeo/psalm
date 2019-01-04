@@ -801,16 +801,22 @@ abstract class Type
     }
 
     /**
+     * @param string $extends
+     *
+     * @return Type\Union
+     */
+    public static function getClassString($extends = 'object')
+    {
+        return new Union([new TClassString($extends)]);
+    }
+
+    /**
      * @param string $class_type
      *
      * @return Type\Union
      */
-    public static function getClassString($class_type = null)
+    public static function getLiteralClassString($class_type)
     {
-        if (!$class_type) {
-            return new Union([new TClassString()]);
-        }
-
         $type = new TLiteralClassString($class_type);
 
         return new Union([$type]);

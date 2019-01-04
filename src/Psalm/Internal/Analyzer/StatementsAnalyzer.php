@@ -1022,7 +1022,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 }
 
                 if (strtolower($stmt->name->name) === 'class') {
-                    return Type::getClassString($const_fq_class_name);
+                    return Type::getLiteralClassString($const_fq_class_name);
                 }
 
                 if ($existing_class_constants === null) {

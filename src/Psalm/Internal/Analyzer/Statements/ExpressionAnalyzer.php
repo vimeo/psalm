@@ -35,6 +35,7 @@ use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\PossiblyUndefinedVariable;
+use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
@@ -128,7 +129,22 @@ class ExpressionAnalyzer
                     break;
 
                 case '__class__':
-                    $stmt->inferredType = Type::getClassString($context->self);
+                    if (!$context->self) {
+                        if (IssueBuffer::accepts(
+                            new UndefinedConstant(
+                                'Cannot get __class__ outside a class',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+
+                        $stmt->inferredType = Type::getClassString();
+                        break;
+                    }
+
+                    $stmt->inferredType = Type::getLiteralClassString($context->self);
                     break;
 
                 case '__file__':

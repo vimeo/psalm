@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -270,6 +271,32 @@ abstract class Atomic
             }
         }
 
+        if ($this instanceof TLiteralClassString) {
+            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                $source,
+                $this->value,
+                $code_location,
+                $suppressed_issues,
+                $inferred
+            ) === false
+            ) {
+                return false;
+            }
+        }
+
+        if ($this instanceof TClassString && $this->extends !== 'object') {
+            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                $source,
+                $this->extends,
+                $code_location,
+                $suppressed_issues,
+                $inferred
+            ) === false
+            ) {
+                return false;
+            }
+        }
+
         if ($this instanceof TScalarClassConstant) {
             if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $source,
@@ -339,6 +366,30 @@ abstract class Atomic
             );
             if ($file_storage) {
                 $file_storage->referenced_classlikes[] = $this->fq_classlike_name;
+            }
+        }
+
+        if ($this instanceof TClassString && $this->extends !== 'object') {
+            $codebase->scanner->queueClassLikeForScanning(
+                $this->extends,
+                $file_storage ? $file_storage->file_path : null,
+                false,
+                !$this->from_docblock
+            );
+            if ($file_storage) {
+                $file_storage->referenced_classlikes[] = $this->extends;
+            }
+        }
+
+        if ($this instanceof TLiteralClassString) {
+            $codebase->scanner->queueClassLikeForScanning(
+                $this->value,
+                $file_storage ? $file_storage->file_path : null,
+                false,
+                !$this->from_docblock
+            );
+            if ($file_storage) {
+                $file_storage->referenced_classlikes[] = $this->value;
             }
         }
 

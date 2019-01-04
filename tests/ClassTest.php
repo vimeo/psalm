@@ -320,6 +320,16 @@ class ClassTest extends TestCase
                     'UndefinedClass'
                 ],
             ],
+            'allowAbstractInstantiationOnPossibleChild' => [
+                '<?php
+                    abstract class A {}
+
+                    function foo(string $a_class) : void {
+                        if (is_a($a_class, A::class, true)) {
+                            new $a_class();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -507,6 +517,17 @@ class ClassTest extends TestCase
                 '<?php
                     class A extends A {}',
                 'error_message' => 'CircularReference',
+            ],
+            'preventAbstractInstantiationDefiniteClasss' => [
+                '<?php
+                    abstract class A {}
+
+                    function foo(string $a_class) : void {
+                        if ($a_class === A::class) {
+                            new $a_class();
+                        }
+                    }',
+                'error_message' => 'AbstractInstantiation',
             ],
         ];
     }

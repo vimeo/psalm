@@ -140,7 +140,7 @@ class ConstFetchAnalyzer
             }
 
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
-                $stmt->inferredType = Type::getClassString($fq_class_name);
+                $stmt->inferredType = Type::getLiteralClassString($fq_class_name);
 
                 return null;
             }

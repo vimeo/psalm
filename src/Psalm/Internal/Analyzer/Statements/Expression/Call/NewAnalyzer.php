@@ -43,7 +43,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
-        $late_static = false;
+        $can_extend = false;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
@@ -77,7 +77,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     case 'static':
                         // @todo maybe we can do better here
                         $fq_class_name = $context->self;
-                        $late_static = true;
+                        $can_extend = true;
                         break;
                 }
             }
@@ -145,6 +145,10 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             $class_name = $lhs_type_part instanceof Type\Atomic\TClassString
                                 ? $lhs_type_part->extends
                                 : $lhs_type_part->value;
+
+                            if ($lhs_type_part instanceof Type\Atomic\TClassString) {
+                                $can_extend = true;
+                            }
 
                             if ($class_name === 'object') {
                                 if (IssueBuffer::accepts(
@@ -278,7 +282,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 // if we're not calling this constructor via new static()
-                if ($storage->abstract && !$late_static) {
+                if ($storage->abstract && !$can_extend) {
                     if (IssueBuffer::accepts(
                         new AbstractInstantiation(
                             'Unable to instantiate a abstract class ' . $fq_class_name,
