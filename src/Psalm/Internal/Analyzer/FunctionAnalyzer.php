@@ -635,8 +635,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                             );
                         }
                     }
-
-
             }
         }
 
