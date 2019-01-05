@@ -608,33 +608,14 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     return self::getFilterVar($call_args);
 
                 case 'get_parent_class':
-                    $codebase = $statements_analyzer->getCodebase();
-
-                    $first_arg = $call_args[0]->value;
-
-                    if (isset($first_arg->inferredType)) {
-                        $class_strings = [];
-
-                        foreach ($first_arg->inferredType->getTypes() as $atomic_type) {
-                            if ($atomic_type instanceof Type\Atomic\TNamedObject
-                                && $codebase->classExists($atomic_type->value)
-                            ) {
-                                $classlike_storage = $codebase->classlike_storage_provider->get($atomic_type->value);
-
-                                if ($classlike_storage->parent_classes) {
-                                    $class_strings[] = new Type\Atomic\TClassString(
-                                        array_values($classlike_storage->parent_classes)[0]
-                                    );
-                                }
-                            }
-                        }
-
-                        if ($class_strings) {
-                            return \Psalm\Internal\Type\TypeCombination::combineTypes(
-                                $class_strings
-                            );
-                        }
-                    }
+                    // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
+                    // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
+                    // but caused problems where it didn’t know exactly what level of child we
+                    // were receiving.
+                    //
+                    // Really this should only work on instances we've created with new Foo(),
+                    // but that requires more work
+                    break;
             }
         }
 
