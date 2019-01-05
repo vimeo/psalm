@@ -344,7 +344,19 @@ class ClassStringTest extends TestCase
                         return get_class($a);
                     }',
             ],
-            'returnGetParentClassClassStringParameterized' => [
+            'returnGetParentClassClassStringParameterizedWithArg' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+
+                    /**
+                     * @return class-string<A> $s
+                     */
+                    function foo(B $b) : string {
+                        return get_parent_class($b);
+                    }',
+            ],
+            'returnGetParentClassClassStringParameterizedNoArg' => [
                 '<?php
                     class A {}
 

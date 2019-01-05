@@ -606,6 +606,37 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 case 'filter_var':
                     return self::getFilterVar($call_args);
+
+                case 'get_parent_class':
+                    $codebase = $statements_analyzer->getCodebase();
+
+                    $first_arg = $call_args[0]->value;
+
+                    if (isset($first_arg->inferredType)) {
+                        $class_strings = [];
+
+                        foreach ($first_arg->inferredType->getTypes() as $atomic_type) {
+                            if ($atomic_type instanceof Type\Atomic\TNamedObject
+                                && $codebase->classExists($atomic_type->value)
+                            ) {
+                                $classlike_storage = $codebase->classlike_storage_provider->get($atomic_type->value);
+
+                                if ($classlike_storage->parent_classes) {
+                                    $class_strings[] = new Type\Atomic\TClassString(
+                                        array_values($classlike_storage->parent_classes)[0]
+                                    );
+                                }
+                            }
+                        }
+
+                        if ($class_strings) {
+                            return \Psalm\Internal\Type\TypeCombination::combineTypes(
+                                $class_strings
+                            );
+                        }
+                    }
+
+
             }
         }
 
