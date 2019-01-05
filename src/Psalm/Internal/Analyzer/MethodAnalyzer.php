@@ -620,18 +620,32 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 && $guide_param->type
                 && $implementer_param->type->getId() !== $guide_param->type->getId()
             ) {
-                if (!TypeAnalyzer::isContainedBy(
+                $implementer_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $implementer_param->type,
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->name
+                );
+
+                $guide_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
                     $codebase,
                     $guide_param->type,
-                    $implementer_param->type,
+                    $guide_classlike_storage->name,
+                    $guide_classlike_storage->name
+                );
+
+                if (!TypeAnalyzer::isContainedBy(
+                    $codebase,
+                    $guide_method_storage_param_type,
+                    $implementer_method_storage_param_type,
                     false,
                     false
                 )) {
                     if (IssueBuffer::accepts(
                         new MoreSpecificImplementedParamType(
                             'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                                $implementer_param->type->getId() . '\', expecting \'' .
-                                $guide_param->type->getId() . '\' as defined by ' .
+                                $implementer_method_storage_param_type->getId() . '\', expecting \'' .
+                                $guide_method_storage_param_type->getId() . '\' as defined by ' .
                                 $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 ?: $code_location
