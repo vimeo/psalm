@@ -50,4 +50,12 @@ class TMixed extends \Psalm\Type\Atomic
     {
         return false;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'mixed';
+    }
 }

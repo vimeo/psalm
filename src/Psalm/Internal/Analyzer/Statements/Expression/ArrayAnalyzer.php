@@ -49,6 +49,8 @@ class ArrayAnalyzer
 
         $int_offset_diff = 0;
 
+        $codebase = $statements_analyzer->getCodebase();
+
         /** @var int $int_offset */
         foreach ($stmt->items as $int_offset => $item) {
             if ($item === null) {
@@ -72,7 +74,7 @@ class ArrayAnalyzer
                     }
 
                     if ($item_key_type) {
-                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type, false, true, 30);
+                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type, $codebase, false, true, 30);
                     } else {
                         $item_key_type = $key_type;
                     }
@@ -132,6 +134,7 @@ class ArrayAnalyzer
                     $item_value_type = Type::combineUnionTypes(
                         $item->value->inferredType,
                         clone $item_value_type,
+                        $codebase,
                         false,
                         true,
                         30

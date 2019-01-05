@@ -180,12 +180,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
             foreach ($lhs_types as $lhs_type_part) {
                 if ($lhs_type_part instanceof Type\Atomic\TGenericParam
-                    && $lhs_type_part->extends !== 'mixed'
+                    && !$lhs_type_part->as->isMixed()
                 ) {
                     $extra_types = $lhs_type_part->extra_types;
 
                     $lhs_type_part = array_values(
-                        Type::parseString($lhs_type_part->extends)->getTypes()
+                        $lhs_type_part->as->getTypes()
                     )[0];
 
                     $lhs_type_part->from_docblock = true;
@@ -448,11 +448,11 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     foreach ($intersection_types as $intersection_type) {
                         if ($intersection_type instanceof Type\Atomic\TGenericParam) {
-                            if ($intersection_type->extends !== 'mixed'
-                                && $intersection_type->extends !== 'object'
+                            if (!$intersection_type->as->isMixed()
+                                && !$intersection_type->as->hasObject()
                             ) {
                                 $intersection_type = array_values(
-                                    Type::parseString($intersection_type->extends)->getTypes()
+                                    $intersection_type->as->getTypes()
                                 )[0];
 
                                 if (!$intersection_type instanceof TNamedObject) {
@@ -763,7 +763,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                     $method_storage->assertions,
                                     $args,
                                     $class_template_params ?: [],
-                                    $method_storage->template_typeof_params ?: [],
                                     $context,
                                     $statements_analyzer
                                 );

@@ -299,4 +299,12 @@ class ObjectLike extends \Psalm\Type\Atomic
 
         return true;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return $this->getKey();
+    }
 }

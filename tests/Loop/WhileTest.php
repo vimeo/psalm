@@ -123,7 +123,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                         $a = $a->parent;
                     }',
                 'assertions' => [
-                    '$a' => 'A|null',
+                    '$a' => 'null|A',
                 ],
             ],
             'loopWithNoParadox' => [

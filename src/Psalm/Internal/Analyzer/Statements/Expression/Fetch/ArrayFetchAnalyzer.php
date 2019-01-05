@@ -15,6 +15,7 @@ use Psalm\Issue\MixedArrayAccess;
 use Psalm\Issue\MixedArrayAssignment;
 use Psalm\Issue\MixedArrayOffset;
 use Psalm\Issue\MixedStringOffsetAssignment;
+use Psalm\Issue\MixedTypeCoercion;
 use Psalm\Issue\NullArrayAccess;
 use Psalm\Issue\NullArrayOffset;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
@@ -28,6 +29,7 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -390,7 +392,7 @@ class ArrayFetchAnalyzer
                         }
                     } elseif (!$type->type_params[0]->isEmpty()) {
                         $expected_offset_type = $type->type_params[0]->hasMixed()
-                            ? new Type\Union([ new TInt, new TString ])
+                            ? new Type\Union([ new TArrayKey ])
                             : $type->type_params[0];
 
                         if ((!TypeAnalyzer::isContainedBy(
@@ -407,6 +409,21 @@ class ArrayFetchAnalyzer
                         ) && !$type_coerced_from_scalar)
                             || $to_string_cast
                         ) {
+                            if ($type_coerced_from_mixed && !$offset_type->isMixed()) {
+                                if (IssueBuffer::accepts(
+                                    new MixedTypeCoercion(
+                                        'Coercion from array offset type \'' . $offset_type->getId() . '\' '
+                                            . 'to the expected type \'' . $expected_offset_type->getId() . '\'',
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
+                            } else {
+                                $expected_offset_types[] = $expected_offset_type->getId();
+                            }
+
                             if (TypeAnalyzer::canExpressionTypesBeIdentical(
                                 $codebase,
                                 $offset_type,
@@ -414,8 +431,6 @@ class ArrayFetchAnalyzer
                             )) {
                                 $has_valid_offset = true;
                             }
-
-                            $expected_offset_types[] = $expected_offset_type->getId();
                         } else {
                             $has_valid_offset = true;
                         }
@@ -516,7 +531,7 @@ class ArrayFetchAnalyzer
                         }
                     } else {
                         $key_type = $generic_key_type->hasMixed()
-                                ? new Type\Union([ new TInt, new TString ])
+                                ? Type::getArrayKey()
                                 : $generic_key_type;
 
                         $is_contained = TypeAnalyzer::isContainedBy(
@@ -560,8 +575,6 @@ class ArrayFetchAnalyzer
                                 );
 
                                 $property_count = $type->sealed ? count($type->properties) : null;
-
-
 
                                 if (!$stmt->dim && $property_count) {
                                     ++$property_count;

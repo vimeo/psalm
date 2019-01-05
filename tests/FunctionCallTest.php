@@ -176,7 +176,7 @@ class FunctionCallTest extends TestCase
                     $b = ["a" => 5];
                     $a = array_keys($b);',
                 'assertions' => [
-                    '$a' => 'array<int, mixed>',
+                    '$a' => 'array<int, array-key>',
                 ],
                 'error_levels' => ['MixedArgument'],
             ],
@@ -616,7 +616,7 @@ class FunctionCallTest extends TestCase
                     $a = getenv();
                     $b = getenv("some_key");',
                 'assertions' => [
-                    '$a' => 'array<mixed, string>',
+                    '$a' => 'array<array-key, string>',
                     '$b' => 'string|false',
                 ],
             ],
@@ -625,7 +625,7 @@ class FunctionCallTest extends TestCase
                     function expectsInt(int $a) : void {}
 
                     /**
-                     * @param array<mixed, array{item:int}> $list
+                     * @param array<array-key, array{item:int}> $list
                      */
                     function test(array $list) : void
                     {
@@ -907,14 +907,14 @@ class FunctionCallTest extends TestCase
                     $h = array_column(makeUnionArray(), 0);
                 ',
                 'assertions' => [
-                    '$a' => 'array<mixed, int>',
-                    '$b' => 'array<mixed, int>',
+                    '$a' => 'array<array-key, int>',
+                    '$b' => 'array<array-key, int>',
                     '$c' => 'array<string, int>',
-                    '$d' => 'array<mixed, mixed>',
-                    '$e' => 'array<mixed, mixed>',
-                    '$f' => 'array<mixed, mixed>',
-                    '$g' => 'array<mixed, string>',
-                    '$h' => 'array<mixed, mixed>',
+                    '$d' => 'array<array-key, mixed>',
+                    '$e' => 'array<array-key, mixed>',
+                    '$f' => 'array<array-key, mixed>',
+                    '$g' => 'array<array-key, string>',
+                    '$h' => 'array<array-key, mixed>',
                 ],
             ],
             'strtrWithPossiblyFalseFirstArg' => [
@@ -1622,7 +1622,7 @@ class FunctionCallTest extends TestCase
                     function expectsInt(int $a) : void {}
 
                     /**
-                     * @param array<mixed, array{item:int}> $list
+                     * @param array<array-key, array{item:int}> $list
                      */
                     function test(array $list) : void
                     {

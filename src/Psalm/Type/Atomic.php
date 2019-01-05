@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TGenericParamClass;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TInt;
@@ -61,7 +62,7 @@ abstract class Atomic
     /**
      * @param  string $value
      * @param  bool   $php_compatible
-     * @param  array<string, string> $template_type_map
+     * @param  array<string, Union> $template_type_map
      *
      * @return Atomic
      */
@@ -104,7 +105,7 @@ abstract class Atomic
                 return new TCallable();
 
             case 'array':
-                return new TArray([new Union([new TMixed]), new Union([new TMixed])]);
+                return new TArray([new Union([new TArrayKey]), new Union([new TMixed])]);
 
             case 'non-empty-array':
                 return new TNonEmptyArray([new Union([new TMixed]), new Union([new TMixed])]);
@@ -292,10 +293,10 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof TClassString && $this->extends !== 'object') {
+        if ($this instanceof TClassString && $this->as !== 'object' && $this->as !== 'mixed') {
             if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $source,
-                $this->extends,
+                $this->as,
                 $code_location,
                 $suppressed_issues,
                 $inferred
@@ -303,6 +304,10 @@ abstract class Atomic
             ) {
                 return false;
             }
+        }
+
+        if ($this instanceof TGenericParam) {
+            $this->as->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
         }
 
         if ($this instanceof TScalarClassConstant) {
@@ -377,16 +382,24 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof TClassString && $this->extends !== 'object') {
+        if ($this instanceof TClassString && $this->as !== 'object') {
             $codebase->scanner->queueClassLikeForScanning(
-                $this->extends,
+                $this->as,
                 $file_storage ? $file_storage->file_path : null,
                 false,
                 !$this->from_docblock
             );
             if ($file_storage) {
-                $file_storage->referenced_classlikes[] = $this->extends;
+                $file_storage->referenced_classlikes[] = $this->as;
             }
+        }
+
+        if ($this instanceof TGenericParam) {
+            $this->as->queueClassLikesForScanning(
+                $codebase,
+                $file_storage,
+                $phantom_classes
+            );
         }
 
         if ($this instanceof TLiteralClassString) {

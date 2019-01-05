@@ -20,6 +20,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmpty;
@@ -203,7 +204,11 @@ class Reconciler
                     }
 
                     $orred_type = $orred_type
-                        ? Type::combineUnionTypes($result_type_candidate, $orred_type)
+                        ? Type::combineUnionTypes(
+                            $result_type_candidate,
+                            $orred_type,
+                            $codebase
+                        )
                         : $result_type_candidate;
                 }
 
@@ -1561,7 +1566,7 @@ class Reconciler
             $existing_var_type->removeType('iterable');
             $existing_var_type->addType(new TArray(
                 [
-                    new Type\Union([new TMixed]),
+                    new Type\Union([new TArrayKey]),
                     new Type\Union([new TMixed]),
                 ]
             ));
@@ -2304,7 +2309,8 @@ class Reconciler
                         } else {
                             $new_base_type = Type::combineUnionTypes(
                                 $new_base_type,
-                                $new_base_type_candidate
+                                $new_base_type_candidate,
+                                $codebase
                             );
                         }
 
@@ -2359,7 +2365,11 @@ class Reconciler
                         }
 
                         if ($new_base_type instanceof Type\Union) {
-                            $new_base_type = Type::combineUnionTypes($new_base_type, $class_property_type);
+                            $new_base_type = Type::combineUnionTypes(
+                                $new_base_type,
+                                $class_property_type,
+                                $codebase
+                            );
                         } else {
                             $new_base_type = $class_property_type;
                         }

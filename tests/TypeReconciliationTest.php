@@ -188,7 +188,7 @@ class TypeReconciliationTest extends TestCase
         return [
             'notNullWithObject' => ['MyObject', '!null', 'MyObject'],
             'notNullWithObjectPipeNull' => ['MyObject', '!null', 'MyObject|null'],
-            'notNullWithMyObjectPipeFalse' => ['MyObject|false', '!null', 'MyObject|false'],
+            'notNullWithMyObjectPipeFalse' => ['false|MyObject', '!null', 'MyObject|false'],
             'notNullWithMixed' => ['mixed', '!null', 'mixed'],
 
             'notEmptyWithMyObject' => ['MyObject', '!falsy', 'MyObject'],
@@ -216,9 +216,9 @@ class TypeReconciliationTest extends TestCase
             'myObjectWithMyObjectPipeBool' => ['MyObject', 'MyObject', 'MyObject|bool'],
             'myObjectWithMyObjectAPipeMyObjectB' => ['MyObjectA', 'MyObjectA', 'MyObjectA|MyObjectB'],
 
-            'array' => ['array<mixed, mixed>', 'array', 'array|null'],
+            'array' => ['array<array-key, mixed>', 'array', 'array|null'],
 
-            '2dArray' => ['array<mixed, array<mixed, string>>', 'array', 'array<array<string>>|null'],
+            '2dArray' => ['array<array-key, array<array-key, string>>', 'array', 'array<array<string>>|null'],
 
             'numeric' => ['numeric-string', 'numeric', 'string'],
 
@@ -411,7 +411,7 @@ class TypeReconciliationTest extends TestCase
                     '$seconds' => 'string|int|float',
                 ],
             ],
-            'typeRefinementWithIsNumeric' => [
+            'typeRefinementWithIsNumericOnIntOrFalse' => [
                 '<?php
                     /** @return void */
                     function fooFoo(string $a) {
@@ -1113,6 +1113,34 @@ class TypeReconciliationTest extends TestCase
                         if (!isset($v[0])) {}
                     }'
             ],
+            'arrayEquality' => [
+                '<?php
+                    /**
+                     * @param array<string, array<array-key, string|int>> $haystack
+                     * @param array<array-key, int|string> $needle
+                     */
+                    function foo(array $haystack, array $needle) : void {
+                        foreach ($haystack as $arr) {
+                            if ($arr === $needle) {}
+                        }
+                    }',
+            ],
+            'classResolvesBackToSelfAfterComparison' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    function getA() : A {
+                      return new A();
+                    }
+
+                    $a = getA();
+                    if ($a instanceof B) {
+                        $a = new B;
+                    }',
+                'assertions' => [
+                    '$a' => 'A',
+                ]
+            ],
         ];
     }
 
@@ -1346,6 +1374,22 @@ class TypeReconciliationTest extends TestCase
                         if (0 === $f) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'classCannotNotBeSelf' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+                    function getA() : A {
+                      return new A();
+                    }
+
+                    $a = getA();
+                    if ($a instanceof B) {
+                        $a = new B;
+                    }
+
+                    if ($a instanceof A) {}',
+                'error_message' => 'RedundantCondition'
             ],
         ];
     }

@@ -178,7 +178,7 @@ class MagicMethodAnnotationTest extends TestCase
                     '$a' => 'string',
                     '$b' => 'mixed',
                     '$c' => 'bool',
-                    '$d' => 'array<mixed, string|int>',
+                    '$d' => 'array<array-key, string|int>',
                     '$e' => 'callable():string',
                 ],
             ],

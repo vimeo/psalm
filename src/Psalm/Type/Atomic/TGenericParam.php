@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Union;
+
 class TGenericParam extends \Psalm\Type\Atomic
 {
     use HasIntersectionTrait;
@@ -11,17 +13,17 @@ class TGenericParam extends \Psalm\Type\Atomic
     public $param_name;
 
     /**
-     * @var string
+     * @var Union
      */
-    public $extends;
+    public $as;
 
     /**
      * @param string $param_name
      */
-    public function __construct($param_name, string $extends = 'mixed')
+    public function __construct($param_name, Union $extends)
     {
         $this->param_name = $param_name;
-        $this->extends = $extends;
+        $this->as = $extends;
     }
 
     public function __toString()
@@ -43,7 +45,12 @@ class TGenericParam extends \Psalm\Type\Atomic
 
     public function getId()
     {
-        return $this->getKey();
+        if ($this->extra_types) {
+            return '(' . $this->param_name. ' as ' . $this->as->getId()
+                . ')&' . implode('&', $this->extra_types);
+        }
+
+        return $this->param_name . ' as ' . $this->as->getId();
     }
 
     /**

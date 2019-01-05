@@ -67,10 +67,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var Config */
     private $config;
 
-    /** @var array<string, string> */
+    /** @var array<string, Type\Union> */
     private $class_template_types = [];
 
-    /** @var array<string, string> */
+    /** @var array<string, Type\Union> */
     private $function_template_types = [];
 
     /** @var FunctionLikeStorage[] */
@@ -1298,19 +1298,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->function_template_types = $template_types;
         }
 
-        if ($docblock_info->template_typeofs) {
-            $storage->template_typeof_params = [];
-
-            foreach ($docblock_info->template_typeofs as $template_typeof) {
-                foreach ($storage->params as $i => $param) {
-                    if ($param->name === $template_typeof['param_name']) {
-                        $storage->template_typeof_params[$i] = $template_typeof['template_type'];
-                        break;
-                    }
-                }
-            }
-        }
-
         if ($docblock_info->assertions) {
             $storage->assertions = [];
 
@@ -1503,6 +1490,32 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $docblock_info->params,
                 $stmt
             );
+        }
+
+        if ($docblock_info->template_typeofs) {
+            foreach ($docblock_info->template_typeofs as $template_typeof) {
+                foreach ($storage->params as $i => $param) {
+                    if ($param->name === $template_typeof['param_name']) {
+                        $param_type_nullable = $param->type && $param->type->isNullable();
+
+                        $param->type = new Type\Union([
+                            new Type\Atomic\TGenericParamClass(
+                                $template_typeof['template_type'],
+                                isset($template_types[$template_typeof['template_type']])
+                                    && !$template_types[$template_typeof['template_type']]->isMixed()
+                                    ? (string)$template_types[$template_typeof['template_type']]
+                                    : 'object'
+                            )
+                        ]);
+
+                        if ($param_type_nullable) {
+                            $param->type->addType(new Type\Atomic\TNull);
+                        }
+
+                        break;
+                    }
+                }
+            }
         }
 
         return $storage;
@@ -1735,6 +1748,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     $type->from_docblock = false;
+
+                    if ($storage_param_atomic_types[$key] instanceof Type\Atomic\TArray
+                        && $type instanceof Type\Atomic\TArray
+                        && $type->type_params[0]->hasArrayKey()
+                    ) {
+                        $type->type_params[0]->from_docblock = false;
+                    }
                 } else {
                     $all_types_match = false;
                     $all_typehint_types_match = false;

@@ -98,11 +98,6 @@ class FunctionLikeStorage
     public $template_types;
 
     /**
-     * @var array<int, string>|null
-     */
-    public $template_typeof_params;
-
-    /**
      * @var bool
      */
     public $has_template_return_type;

@@ -86,6 +86,8 @@ class ArrayAssignmentAnalyzer
             // fall through
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         $root_type = isset($root_array_expr->inferredType) ? $root_array_expr->inferredType : Type::getMixed();
 
         if ($root_type->hasMixed()) {
@@ -270,6 +272,7 @@ class ArrayAssignmentAnalyzer
                     $new_child_type = Type::combineUnionTypes(
                         $child_stmt->inferredType,
                         $array_assignment_type,
+                        $codebase,
                         true,
                         false
                     );
@@ -287,6 +290,7 @@ class ArrayAssignmentAnalyzer
                 $new_child_type = Type::combineUnionTypes(
                     $child_stmt->inferredType,
                     $array_assignment_type,
+                    $codebase,
                     true,
                     false
                 );
@@ -356,6 +360,7 @@ class ArrayAssignmentAnalyzer
                 $new_child_type = Type::combineUnionTypes(
                     $root_type,
                     $array_assignment_type,
+                    $codebase,
                     true,
                     false
                 );
@@ -409,6 +414,7 @@ class ArrayAssignmentAnalyzer
             $new_child_type = Type::combineUnionTypes(
                 $root_type,
                 $array_assignment_type,
+                $codebase,
                 true,
                 false
             );

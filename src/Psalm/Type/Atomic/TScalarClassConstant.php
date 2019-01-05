@@ -105,4 +105,12 @@ class TScalarClassConstant extends Scalar
 
         return '\\' . $this->fq_classlike_name . '::' . $this->const_name;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'mixed';
+    }
 }

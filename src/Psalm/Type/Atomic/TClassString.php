@@ -6,14 +6,14 @@ class TClassString extends TString
     /**
      * @var string
      */
-    public $extends;
+    public $as;
 
     /**
      * @param string $param_name
      */
-    public function __construct(string $extends = 'object')
+    public function __construct(string $as = 'object')
     {
-        $this->extends = $extends;
+        $this->as = $as;
     }
 
      /**
@@ -21,7 +21,7 @@ class TClassString extends TString
      */
     public function getKey()
     {
-        return 'class-string' . ($this->extends === 'object' ? '' : '<' . $this->extends . '>');
+        return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as . '>');
     }
 
     /**
@@ -66,27 +66,27 @@ class TClassString extends TString
      */
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
-        if ($this->extends === 'object') {
+        if ($this->as === 'object') {
             return 'class-string';
         }
 
-        if ($namespace && stripos($this->extends, $namespace . '\\') === 0) {
+        if ($namespace && stripos($this->as, $namespace . '\\') === 0) {
             return 'class-string<' . preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
-                $this->extends
+                $this->as
             ) . '>';
         }
 
-        if (!$namespace && stripos($this->extends, '\\') === false) {
-            return 'class-string<' . $this->extends . '>';
+        if (!$namespace && stripos($this->as, '\\') === false) {
+            return 'class-string<' . $this->as . '>';
         }
 
-        if (isset($aliased_classes[strtolower($this->extends)])) {
-            return 'class-string<' . $aliased_classes[strtolower($this->extends)] . '>';
+        if (isset($aliased_classes[strtolower($this->as)])) {
+            return 'class-string<' . $aliased_classes[strtolower($this->as)] . '>';
         }
 
-        return 'class-string<\\' . $this->extends . '>';
+        return 'class-string<\\' . $this->as . '>';
     }
 
     /**

@@ -209,10 +209,19 @@ class Php71Test extends TestCase
             'iterableIsArrayOrTraversable' => [
                 '<?php
                     function castToArray(iterable $arr): array {
-                       return $arr instanceof \Traversable ? iterator_to_array($arr, false) : $arr;
+                        if ($arr instanceof \Traversable) {
+                            return iterator_to_array($arr, false);
+                        }
+
+                        return $arr;
                     }
+
                     function castToArray2(iterable $arr): array {
-                       return is_array($arr) ? $arr : iterator_to_array($arr, false);
+                        if (is_array($arr)) {
+                            return $arr;
+                        }
+
+                        return iterator_to_array($arr, false);
                     }',
             ],
             'substituteIterable' => [

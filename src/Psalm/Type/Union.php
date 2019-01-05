@@ -481,6 +481,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasObject()
+    {
+        return isset($this->types['object']);
+    }
+
+    /**
+     * @return bool
+     */
     public function hasObjectType()
     {
         foreach ($this->types as $type) {
@@ -524,6 +532,7 @@ class Union
         return isset($this->types['string'])
             || isset($this->types['class-string'])
             || isset($this->types['numeric-string'])
+            || isset($this->types['array-key'])
             || $this->literal_string_types;
     }
 
@@ -532,7 +541,15 @@ class Union
      */
     public function hasInt()
     {
-        return isset($this->types['int']) || $this->literal_int_types;
+        return isset($this->types['int']) || isset($this->types['array-key']) || $this->literal_int_types;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasArrayKey()
+    {
+        return isset($this->types['array-key']);
     }
 
     /**
@@ -718,7 +735,7 @@ class Union
                         && !isset($this->types['array'])
                     ) {
                         $this->removeType('iterable');
-                        $this->types['array'] = new Type\Atomic\TArray([Type::getMixed(), Type::getMixed()]);
+                        $this->types['array'] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
                     }
 
                     if ($old_type_part instanceof Type\Atomic\TArray
@@ -784,9 +801,11 @@ class Union
                 && isset($template_types[$key])
             ) {
                 if ($template_types[$key]->getId() !== $key) {
-                    $keys_to_unset[] = $key;
                     $first_atomic_type = array_values($template_types[$key]->getTypes())[0];
                     $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
+                    if ($first_atomic_type->getKey() !== $key) {
+                        $keys_to_unset[] = $key;
+                    }
 
                     if ($input_type) {
                         $generic_params[$key] = clone $input_type;
@@ -865,6 +884,10 @@ class Union
 
         foreach ($keys_to_unset as $key) {
             unset($this->types[$key]);
+        }
+
+        if (!$this->types) {
+            throw new \UnexpectedValueException('Cannot remove all keys');
         }
 
         $this->id = null;

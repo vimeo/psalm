@@ -100,7 +100,7 @@ class TypeParseTest extends TestCase
      */
     public function testArrayWithSingleArg()
     {
-        $this->assertSame('array<mixed, int>', (string) Type::parseString('array<int>'));
+        $this->assertSame('array<array-key, int>', (string) Type::parseString('array<int>'));
     }
 
     /**
@@ -108,7 +108,7 @@ class TypeParseTest extends TestCase
      */
     public function testArrayWithNestedSingleArg()
     {
-        $this->assertSame('array<mixed, array<mixed, int>>', (string) Type::parseString('array<array<int>>'));
+        $this->assertSame('array<array-key, array<array-key, int>>', (string) Type::parseString('array<array<int>>'));
     }
 
     /**
@@ -140,7 +140,7 @@ class TypeParseTest extends TestCase
      */
     public function testIntersectionOrNull()
     {
-        $this->assertSame('I1&I2|null', (string) Type::parseString('I1&I2|null'));
+        $this->assertSame('null|I1&I2', (string) Type::parseString('I1&I2|null'));
     }
 
     /**
@@ -165,7 +165,7 @@ class TypeParseTest extends TestCase
     public function testTraversableAndIteratorOrNull()
     {
         $this->assertSame(
-            'Traversable&Iterator<int>|null',
+            'null|Traversable&Iterator<int>',
             (string) Type::parseString('Traversable&Iterator<int>|null')
         );
     }
@@ -183,7 +183,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocSimpleArray()
     {
-        $this->assertSame('array<mixed, A>', (string) Type::parseString('A[]'));
+        $this->assertSame('array<array-key, A>', (string) Type::parseString('A[]'));
     }
 
     /**
@@ -191,7 +191,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocUnionArray()
     {
-        $this->assertSame('array<mixed, A|B>', (string) Type::parseString('(A|B)[]'));
+        $this->assertSame('array<array-key, A|B>', (string) Type::parseString('(A|B)[]'));
     }
 
     /**
@@ -199,7 +199,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocMultiDimensionalArray()
     {
-        $this->assertSame('array<mixed, array<mixed, A>>', (string) Type::parseString('A[][]'));
+        $this->assertSame('array<array-key, array<array-key, A>>', (string) Type::parseString('A[][]'));
     }
 
     /**
@@ -207,7 +207,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocMultidimensionalUnionArray()
     {
-        $this->assertSame('array<mixed, array<mixed, A|B>>', (string) Type::parseString('(A|B)[][]'));
+        $this->assertSame('array<array-key, array<array-key, A|B>>', (string) Type::parseString('(A|B)[][]'));
     }
 
     /**
@@ -216,7 +216,7 @@ class TypeParseTest extends TestCase
     public function testPhpDocObjectLikeArray()
     {
         $this->assertSame(
-            'array<mixed, array{b:bool, d:string}>',
+            'array<array-key, array{b:bool, d:string}>',
             (string) Type::parseString('array{b:bool,d:string}[]')
         );
     }
@@ -226,7 +226,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocUnionOfArrays()
     {
-        $this->assertSame('array<mixed, A|B>', (string) Type::parseString('A[]|B[]'));
+        $this->assertSame('array<array-key, A|B>', (string) Type::parseString('A[]|B[]'));
     }
 
     /**
@@ -234,7 +234,7 @@ class TypeParseTest extends TestCase
      */
     public function testPhpDocUnionOfArraysOrObject()
     {
-        $this->assertSame('array<mixed, A|B>|C', (string) Type::parseString('A[]|B[]|C'));
+        $this->assertSame('array<array-key, A|B>|C', (string) Type::parseString('A[]|B[]|C'));
     }
 
     /**
@@ -317,7 +317,7 @@ class TypeParseTest extends TestCase
     public function testObjectLikeWithIntKeysAndUnionArgs()
     {
         $this->assertSame(
-            'array{0:stdClass|null}',
+            'array{0:null|stdClass}',
             (string)Type::parseString('array{stdClass|null}')
         );
     }
@@ -328,7 +328,7 @@ class TypeParseTest extends TestCase
     public function testObjectLikeWithIntKeysAndGenericArgs()
     {
         $this->assertSame(
-            'array{0:array<mixed, mixed>}',
+            'array{0:array<array-key, mixed>}',
             (string)Type::parseString('array{array}')
         );
 

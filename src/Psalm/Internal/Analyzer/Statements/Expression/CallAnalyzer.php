@@ -663,7 +663,7 @@ class CallAnalyzer
                                 $context->vars_in_scope[$var_id]->removeType('array');
                                 $context->vars_in_scope[$var_id]->addType(
                                     new TArray(
-                                        [Type::getMixed(), Type::getMixed()]
+                                        [Type::getArrayKey(), Type::getMixed()]
                                     )
                                 );
                             }
@@ -952,18 +952,6 @@ class CallAnalyzer
                     }
 
                     if ($function_storage) {
-                        if (isset($function_storage->template_typeof_params[$argument_offset])) {
-                            $param_type_nullable = $param_type->isNullable();
-                            $param_type = new Type\Union([
-                                new Type\Atomic\TGenericParamClass(
-                                    $function_storage->template_typeof_params[$argument_offset]
-                                )
-                            ]);
-                            if ($param_type_nullable) {
-                                $param_type->addType(new Type\Atomic\TNull);
-                            }
-                        }
-
                         if ($existing_generic_params_to_strings) {
                             $empty_generic_params = [];
 
@@ -1744,7 +1732,7 @@ class CallAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidScalarArgument(
                             'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' .
-                                $param_type . ', ' . $input_type . ' provided',
+                                $param_type->getId() . ', ' . $input_type->getId() . ' provided',
                             $code_location
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -2152,7 +2140,6 @@ class CallAnalyzer
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
      * @param  array<string, Type\Union> $generic_params,
-     * @param  array<int, string> $template_typeof_params
      * @param  StatementsAnalyzer $statements_analyzer
      *
      * @return void
@@ -2162,7 +2149,6 @@ class CallAnalyzer
         array $assertions,
         array $args,
         array $generic_params,
-        array $template_typeof_params,
         Context $context,
         StatementsAnalyzer $statements_analyzer
     ) {
@@ -2206,17 +2192,7 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (($offset = array_search($rule, $template_typeof_params, true)) !== false) {
-                    if (isset($args[$offset]->value->inferredType)) {
-                        $templated_type = $args[$offset]->value->inferredType;
-
-                        if ($templated_type->isSingleStringLiteral()) {
-                            $type_assertions[$assertion_var_id] = [
-                                [$prefix . $templated_type->getSingleStringLiteral()->value]
-                            ];
-                        }
-                    }
-                } elseif (isset($generic_params[$rule])) {
+                if (isset($generic_params[$rule])) {
                     if ($generic_params[$rule]->hasMixed()) {
                         continue;
                     }

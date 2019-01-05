@@ -42,4 +42,12 @@ class TCallableObject extends TObject
     {
         return false;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'object';
+    }
 }

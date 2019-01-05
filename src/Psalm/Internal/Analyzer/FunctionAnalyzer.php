@@ -70,7 +70,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         if (!$call_args) {
             switch ($call_map_key) {
                 case 'getenv':
-                    return new Type\Union([new Type\Atomic\TArray([Type::getMixed(), Type::getString()])]);
+                    return new Type\Union([new Type\Atomic\TArray([Type::getArrayKey(), Type::getString()])]);
 
                 case 'gettimeofday':
                     return new Type\Union([
@@ -313,7 +313,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         if ($value_type) {
                             return new Type\Union([
                                 new Type\Atomic\TArray([
-                                    Type::getMixed(),
+                                    Type::getArrayKey(),
                                     $value_type
                                 ])
                             ]);
@@ -365,7 +365,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         }
                     }
 
-                    $result_key_type = Type::getMixed();
+                    $result_key_type = Type::getArrayKey();
                     $result_element_type = null;
                     // calculate results
                     if ($row_shape instanceof Type\Atomic\ObjectLike) {
@@ -806,7 +806,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 && $unpacked_type_part->from_loop_isset
                             ) {
                                 $unpacked_type_part = new Type\Atomic\TArray([
-                                    Type::getMixed(),
+                                    Type::getArrayKey(),
                                     Type::getMixed(true)
                                 ]);
                             } else {
@@ -842,8 +842,8 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
         if ($inner_value_types) {
             return new Type\Union([
                 new Type\Atomic\TArray([
-                    TypeCombination::combineTypes($inner_key_types, true),
-                    TypeCombination::combineTypes($inner_value_types, true),
+                    TypeCombination::combineTypes($inner_key_types, null, true),
+                    TypeCombination::combineTypes($inner_value_types, null, true),
                 ]),
             ]);
         }
@@ -1035,7 +1035,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 if ($array_arg_type instanceof Type\Atomic\ObjectLike) {
                     $generic_key_type = $array_arg_type->getGenericKeyType();
                 } else {
-                    $generic_key_type = $array_arg_type ? clone $array_arg_type->type_params[0] : Type::getMixed();
+                    $generic_key_type = $array_arg_type ? clone $array_arg_type->type_params[0] : Type::getArrayKey();
                 }
             } else {
                 $generic_key_type = Type::getInt();

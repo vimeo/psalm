@@ -418,7 +418,7 @@ class ExpressionAnalyzer
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidCast(
-                        $stmt->expr->inferredType . ' cannot be cast to ' . $container_type,
+                        $stmt->expr->inferredType->getId() . ' cannot be cast to ' . $container_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()

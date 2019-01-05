@@ -69,4 +69,12 @@ class TGenericObject extends TNamedObject
 
         return true;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return $this->value;
+    }
 }

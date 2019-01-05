@@ -708,7 +708,7 @@ class PropertyTypeTest extends TestCase
                     $node = new Node();
                     $next = $node->next;',
                 'assertions' => [
-                    '$next' => 'Node|null',
+                    '$next' => 'null|Node',
                 ],
             ],
             'perPropertySuppress' => [

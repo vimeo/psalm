@@ -260,16 +260,40 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($lhs_type_part instanceof TNamedObject) {
                 $fq_class_name = $lhs_type_part->value;
             } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
-                && $lhs_type_part->extends !== 'object'
+                && $lhs_type_part->as !== 'object'
             ) {
-                $fq_class_name = $lhs_type_part->extends;
+                $fq_class_name = $lhs_type_part->as;
             } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                 $fq_class_name = $lhs_type_part->value;
             } elseif ($lhs_type_part instanceof Type\Atomic\TGenericParam
-                && $lhs_type_part->extends !== 'mixed'
-                && $lhs_type_part->extends !== 'object'
+                && !$lhs_type_part->as->isMixed()
+                && !$lhs_type_part->as->hasObject()
             ) {
-                $fq_class_name = $lhs_type_part->extends;
+                $fq_class_name = null;
+
+                foreach ($lhs_type_part->as->getTypes() as $generic_param_type) {
+                    if (!$generic_param_type instanceof TNamedObject) {
+                        continue 2;
+                    }
+
+                    $fq_class_name = $generic_param_type->value;
+                    break;
+                }
+
+                if (!$fq_class_name) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedClass(
+                            'Type ' . $lhs_type_part->as . ' cannot be called as a class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            (string) $lhs_type_part
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    continue;
+                }
             } else {
                 if ($lhs_type_part instanceof Type\Atomic\TMixed
                     || $lhs_type_part instanceof Type\Atomic\TGenericParam
@@ -556,7 +580,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $method_storage->assertions,
                             $stmt->args,
                             $found_generic_params ?: [],
-                            $method_storage->template_typeof_params ?: [],
                             $context,
                             $statements_analyzer
                         );

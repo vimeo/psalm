@@ -140,14 +140,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayOfIntOrString' => [
-                'array<mixed, int|string>',
+                'array<array-key, int|string>',
                 [
                     'array<int>',
                     'array<string>',
                 ],
             ],
             'arrayOfIntOrAlsoString' => [
-                'array<mixed, int>|string',
+                'array<array-key, int>|string',
                 [
                     'array<int>',
                     'string',
@@ -161,14 +161,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayStringOrEmptyArray' => [
-                'array<mixed, string>',
+                'array<array-key, string>',
                 [
                     'array<empty>',
                     'array<string>',
                 ],
             ],
             'arrayMixedOrString' => [
-                'array<mixed, mixed|string>',
+                'array<array-key, mixed|string>',
                 [
                     'array<mixed>',
                     'array<string>',
@@ -182,14 +182,14 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'arrayMixedOrEmpty' => [
-                'array<mixed, mixed>',
+                'array<array-key, mixed>',
                 [
                     'array<empty>',
                     'array<mixed>',
                 ],
             ],
             'arrayBigCombination' => [
-                'array<mixed, int|float|string>',
+                'array<array-key, int|float|string>',
                 [
                     'array<int|float>',
                     'array<string>',

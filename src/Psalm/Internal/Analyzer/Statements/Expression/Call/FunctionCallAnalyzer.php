@@ -496,7 +496,6 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     $function_storage->assertions,
                     $stmt->args,
                     $generic_params ?: [],
-                    $function_storage->template_typeof_params ?: [],
                     $context,
                     $statements_analyzer
                 );

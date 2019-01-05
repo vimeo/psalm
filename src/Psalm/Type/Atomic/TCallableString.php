@@ -23,4 +23,12 @@ class TCallableString extends TString
     {
         return false;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'string';
+    }
 }

@@ -258,6 +258,67 @@ class ArrayAccessTest extends TestCase
                         if (isset($settings["c"])) {}
                     }'
             ],
+            'arrayKeyChecks' => [
+                '<?php
+                    /**
+                     * @param  string[] $arr
+                     */
+                    function foo(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foreach ($arr as $i => $_) {}
+
+                        if ($i === "hello") {}
+                        if ($i !== "hello") {}
+                        if ($i === 5) {}
+                        if ($i !== 5) {}
+                        if (is_string($i)) {}
+                        if (is_int($i)) {}
+
+                        foreach ($arr as $i => $_) {}
+
+                        if ($i === "hell") {
+                            $i = "hellp";
+                        }
+
+                        if ($i === "hel") {}
+                    }',
+            ],
+            'arrayKeyChecksAfterDefinition' => [
+                '<?php
+                    /**
+                     * @param  string[] $arr
+                     */
+                    function foo(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foreach ($arr as $i => $_) {}
+
+                        if ($i === "hell") {
+                            $i = "hellp";
+                        }
+
+                        if ($i === "hel") {}
+                    }',
+            ],
+            'allowMixedTypeCoercionArrayKeyAccess' =>  [
+                '<?php
+                    /**
+                     * @param array<array-key, int> $i
+                     * @param array<int, string> $arr
+                     */
+                    function foo(array $i, array $arr) : void {
+                        foreach ($i as $j => $k) {
+                            echo $arr[$j];
+                        }
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedTypeCoercion'],
+            ],
         ];
     }
 
@@ -421,6 +482,54 @@ class ArrayAccessTest extends TestCase
                         echo $i[0];
                     }',
                 'error_message' => 'InvalidArrayAccess',
+            ],
+            'arrayKeyCannotBeBool' => [
+                '<?php
+                    /**
+                     * @param string[] $arr
+                     */
+                    function foo(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foreach ($arr as $i => $_) {}
+
+                        if ($i === false) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'arrayKeyCannotBeFloat' => [
+                '<?php
+                    /**
+                     * @param string[] $arr
+                     */
+                    function foo(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foreach ($arr as $i => $_) {}
+
+                        if ($i === 4.0) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'arrayKeyCannotBeObject' => [
+                '<?php
+                    /**
+                     * @param string[] $arr
+                     */
+                    function foo(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foreach ($arr as $i => $_) {}
+
+                        if ($i === new stdClass) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

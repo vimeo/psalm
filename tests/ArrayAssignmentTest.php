@@ -914,7 +914,7 @@ class ArrayAssignmentTest extends TestCase
                         return $ret["a"];
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedMethodCall', 'MixedArrayOffset'],
+                'error_levels' => ['MixedMethodCall', 'MixedArrayOffset', 'MixedTypeCoercion'],
             ],
             'mixedAccessNestedKeys' => [
                 '<?php

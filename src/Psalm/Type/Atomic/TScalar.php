@@ -39,4 +39,12 @@ class TScalar extends Scalar
     {
         return false;
     }
+
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return 'scalar';
+    }
 }

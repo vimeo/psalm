@@ -431,7 +431,7 @@ class TemplateTest extends TestCase
             'genericArrayKeys' => [
                 '<?php
                     /**
-                     * @template T
+                     * @template T as array-key
                      *
                      * @param array<T, mixed> $arr
                      * @return array<int, T>
@@ -448,7 +448,7 @@ class TemplateTest extends TestCase
             'genericArrayFlip' => [
                 '<?php
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      *
                      * @param array<TKey, TValue> $arr
@@ -467,7 +467,7 @@ class TemplateTest extends TestCase
                 '<?php
                     /**
                      * @template TValue
-                     * @template TKey
+                     * @template TKey as array-key
                      *
                      * @param array<TKey, TValue> $arr
                      */
@@ -499,7 +499,7 @@ class TemplateTest extends TestCase
                     /**
                      * @template TValue
                      *
-                     * @param array<mixed, TValue> $arr
+                     * @param array<array-key, TValue> $arr
                      * @return TValue|null
                      */
                     function my_array_pop(array &$arr) {
@@ -511,7 +511,7 @@ class TemplateTest extends TestCase
                     $a = my_array_pop($b);',
                 'assertions' => [
                     '$a' => 'mixed',
-                    '$b' => 'array<mixed, mixed>',
+                    '$b' => 'array<array-key, mixed>',
                 ],
                 'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
@@ -519,7 +519,7 @@ class TemplateTest extends TestCase
                 '<?php
                     /**
                      * @template TValue
-                     * @template TKey
+                     * @template TKey as array-key
                      *
                      * @param array<TKey, TValue> $arr
                      * @return TValue|null
@@ -605,7 +605,7 @@ class TemplateTest extends TestCase
                     use Closure;
 
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      */
                     class ArrayCollection {
@@ -641,7 +641,7 @@ class TemplateTest extends TestCase
             'replaceChildType' => [
                 '<?php
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      * @param Traversable<TKey, TValue> $t
                      * @return array<TKey, TValue>
@@ -751,7 +751,7 @@ class TemplateTest extends TestCase
             'splatTemplateParam' => [
                 '<?php
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      *
                      * @param array<TKey, TValue> $arr
@@ -782,7 +782,7 @@ class TemplateTest extends TestCase
                     acceptsStdClass(fNoRef($q));
 
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      *
                      * @param array<TKey, TValue> $_arr
@@ -794,7 +794,7 @@ class TemplateTest extends TestCase
                     }
 
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      *
                      * @param array<TKey, TValue> $_arr
@@ -1100,6 +1100,19 @@ class TemplateTest extends TestCase
 
                     bar(foo(A::class));'
             ],
+            'callStaticMethodOnTemplatedClassName' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @param class-string $class
+                     * @template-typeof T $class
+                     */
+                    function foo(string $class, array $args) : void {
+                        $class::bar($args);
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedMethodCall'],
+            ],
         ];
     }
 
@@ -1191,7 +1204,7 @@ class TemplateTest extends TestCase
             ],
             'restrictTemplateInput' => [
                 '<?php
-                    /** @template T */
+                    /** @template T as object */
                     class Foo
                     {
                         /**
@@ -1203,8 +1216,7 @@ class TemplateTest extends TestCase
                         private $items;
 
                         /**
-                         * @param class-string $type
-                         * @template-typeof T $type
+                         * @param T::class $type
                          */
                         public function __construct(string $type)
                         {
@@ -1292,7 +1304,7 @@ class TemplateTest extends TestCase
                             type($closure);
                         }
                     }',
-                'error_message' => 'InvalidArgument - src/somefile.php:20 - Argument 1 of type expects string, callable(State):T&Foo provided',
+                'error_message' => 'InvalidArgument - src/somefile.php:20 - Argument 1 of type expects string, callable(State):(T as mixed)&Foo provided',
             ],
             'classTemplateAsIncorrectClass' => [
                 '<?php

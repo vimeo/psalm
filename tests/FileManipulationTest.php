@@ -387,7 +387,7 @@ class FileManipulationTest extends TestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array<mixed, string>
+                     * @psalm-return array<array-key, string>
                      */
                     function bar(): array {
                         return foo();
@@ -415,7 +415,7 @@ class FileManipulationTest extends TestCase
                     /**
                      * @return string[]
                      *
-                     * @psalm-return array<mixed, string>
+                     * @psalm-return array<array-key, string>
                      */
                     function bar() {
                         return foo();
@@ -463,7 +463,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '<?php
                     /**
-                     * @return stdClass|null
+                     * @return null|stdClass
                      */
                     function foo() {
                       if (rand(0, 1)) return new stdClass;

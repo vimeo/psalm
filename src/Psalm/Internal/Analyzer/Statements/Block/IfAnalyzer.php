@@ -479,7 +479,8 @@ class IfAnalyzer
                 ) {
                     $combined_type = Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
-                        $type
+                        $type,
+                        $codebase
                     );
 
                     if ($combined_type->equals($context->vars_in_scope[$var_id])) {
