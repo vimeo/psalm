@@ -868,13 +868,34 @@ class Reconciler
 
             $new_var_type = substr($new_var_type, 4);
 
+            $allow_string_comparison = false;
+
+            if (substr($new_var_type, 0, 7) === 'string-') {
+                $new_var_type = substr($new_var_type, 7);
+                $allow_string_comparison = true;
+            }
+
             $existing_has_object = $existing_var_type->hasObjectType();
             $existing_has_string = $existing_var_type->hasString();
 
             if ($existing_has_object && !$existing_has_string) {
                 $new_type = Type::parseString($new_var_type);
             } elseif ($existing_has_string && !$existing_has_object) {
-                $new_type = Type::getClassString($new_var_type);
+                if (!$allow_string_comparison && $code_location) {
+                    if (IssueBuffer::accepts(
+                        new TypeDoesNotContainType(
+                            'Cannot allow string comparison to object for ' . $key,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        // fall through
+                    }
+
+                    $new_type = Type::getMixed();
+                } else {
+                    $new_type = Type::getClassString($new_var_type);
+                }
             } else {
                 $new_type = Type::getMixed();
             }

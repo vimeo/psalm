@@ -1386,19 +1386,22 @@ class AssertionFinder
             if ($first_var_name) {
                 $second_arg = $expr->args[1]->value;
 
-                $is_a_prefix = '';
+                $third_arg = isset($expr->args[2]->value) ? $expr->args[2]->value : null;
 
-                if (isset($expr->args[2]->value)) {
-                    $third_arg = $expr->args[2]->value;
-
-                    if (!$third_arg instanceof PhpParser\Node\Expr\ConstFetch
-                        || !in_array(strtolower($third_arg->name->parts[0]), ['true', 'false'])
-                    ) {
+                if ($third_arg instanceof PhpParser\Node\Expr\ConstFetch) {
+                    if (!in_array(strtolower($third_arg->name->parts[0]), ['true', 'false'])) {
                         return $if_types;
                     }
 
-                    $is_a_prefix = strtolower($third_arg->name->parts[0]) === 'true' ? 'isa-' : '';
+                    $third_arg_value = strtolower($third_arg->name->parts[0]);
+                } else {
+                    $third_arg_value = $expr->name instanceof PhpParser\Node\Name
+                        && strtolower($expr->name->parts[0]) === 'is_subclass_of'
+                        ? 'true'
+                        : 'false';
                 }
+
+                $is_a_prefix = $third_arg_value === 'true' ? 'isa-string-' : 'isa-';
 
                 if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
                     $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $second_arg->value]];
@@ -1901,7 +1904,8 @@ class AssertionFinder
     protected static function hasIsACheck(PhpParser\Node\Expr\FuncCall $stmt)
     {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->parts[0]) === 'is_a'
+            && (strtolower($stmt->name->parts[0]) === 'is_a'
+                || strtolower($stmt->name->parts[0]) === 'is_subclass_of')
             && isset($stmt->args[1])
         ) {
             $second_arg = $stmt->args[1]->value;
