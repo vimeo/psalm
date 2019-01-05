@@ -34,4 +34,9 @@ class TNumeric extends Scalar
     ) {
         return null;
     }
+
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
+    }
 }
