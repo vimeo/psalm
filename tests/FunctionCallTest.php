@@ -1268,7 +1268,7 @@ class FunctionCallTest extends TestCase
                         foo($a);
                     }',
             ],
-            'SKIPPED-getTypeHasValues' => [
+            'getTypeHasValues' => [
                 '<?php
                     /**
                      * @param mixed $maybe
@@ -1648,6 +1648,17 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'getTypeInvalidValue' => [
+                '<?php
+                    /**
+                     * @param mixed $maybe
+                     */
+                    function matchesTypes($maybe) : void {
+                        $t = gettype($maybe);
+                        if ($t === "bool") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

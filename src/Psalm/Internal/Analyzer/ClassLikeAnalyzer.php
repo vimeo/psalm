@@ -29,10 +29,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     const VISIBILITY_PROTECTED = 2;
     const VISIBILITY_PRIVATE = 3;
 
-    /**
-     * @var array
-     */
-    public static $SPECIAL_TYPES = [
+    public const SPECIAL_TYPES = [
         'int' => 'int',
         'string' => 'string',
         'float' => 'float',
@@ -47,10 +44,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         'mixed' => 'mixed',
     ];
 
-    /**
-     * @var array
-     */
-    public static $GETTYPE_TYPES = [
+    public const GETTYPE_TYPES = [
         'boolean' => true,
         'integer' => true,
         'double' => true,

@@ -632,7 +632,7 @@ class AssertionFinder
             /** @var PhpParser\Node\Scalar\String_ $string_expr */
             $var_type = $string_expr->value;
 
-            if (!isset(ClassLikeAnalyzer::$GETTYPE_TYPES[$var_type])
+            if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])
                 && $source instanceof StatementsSource
             ) {
                 if (IssueBuffer::accepts(
@@ -1159,7 +1159,7 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Shouldn’t get here');
             }
 
-            if (!isset(ClassLikeAnalyzer::$GETTYPE_TYPES[$var_type])) {
+            if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
                 if (IssueBuffer::accepts(
                     new UnevaluatedCode(
                         'gettype cannot return this value',

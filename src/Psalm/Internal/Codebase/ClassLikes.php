@@ -393,7 +393,7 @@ class ClassLikes
      */
     public function classExists($fq_class_name)
     {
-        if (isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$fq_class_name])) {
+        if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
         }
 
@@ -453,8 +453,8 @@ class ClassLikes
             return true;
         }
 
-        if (isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$interface_id])
-            || isset(ClassLikeAnalyzer::$SPECIAL_TYPES[$fq_class_name])
+        if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$interface_id])
+            || isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])
         ) {
             return false;
         }
@@ -475,7 +475,7 @@ class ClassLikes
      */
     public function interfaceExists($fq_interface_name)
     {
-        if (isset(ClassLikeAnalyzer::$SPECIAL_TYPES[strtolower($fq_interface_name)])) {
+        if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 

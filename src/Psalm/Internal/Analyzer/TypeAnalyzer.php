@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TGenericIterable;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\GetClassT;
+use Psalm\Type\Atomic\GetTypeT;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
@@ -543,6 +544,22 @@ class TypeAnalyzer
             );
         }
 
+        if ($input_type_part instanceof GetTypeT) {
+            $input_type_part = new TString();
+
+            if ($container_type_part instanceof TLiteralString) {
+                return isset(ClassLikeAnalyzer::GETTYPE_TYPES[$container_type_part->value]);
+            }
+        }
+
+        if ($container_type_part instanceof GetTypeT) {
+            $container_type_part = new TString();
+
+            if ($input_type_part instanceof TLiteralString) {
+                return isset(ClassLikeAnalyzer::GETTYPE_TYPES[$input_type_part->value]);
+            }
+        }
+
         if ($input_type_part->shallowEquals($container_type_part)) {
             return self::isMatchingTypeContainedBy(
                 $codebase,
@@ -869,13 +886,8 @@ class TypeAnalyzer
         if (($input_type_part instanceof TClassString
             || $input_type_part instanceof TLiteralClassString)
             && (get_class($container_type_part) === TString::class
-                || get_class($container_type_part) === TSingleLetter::class
-                || get_class($container_type_part) === GetClassT::class)
+                || get_class($container_type_part) === TSingleLetter::class)
         ) {
-            return true;
-        }
-
-        if ($container_type_part instanceof TClassString && $input_type_part instanceof GetClassT) {
             return true;
         }
 
