@@ -348,8 +348,6 @@ class Scanner
 
         $files_to_deep_scan = $this->files_to_deep_scan;
 
-        $baseMemory = memory_get_usage();
-
         $scanner_worker =
             /**
              * @param int $_
@@ -357,7 +355,7 @@ class Scanner
              *
              * @return void
              */
-            function ($_, $file_path) use ($filetype_scanners, $files_to_deep_scan, $baseMemory) {
+            function ($_, $file_path) use ($filetype_scanners, $files_to_deep_scan) {
                 $this->scanFile(
                     $file_path,
                     $filetype_scanners,
