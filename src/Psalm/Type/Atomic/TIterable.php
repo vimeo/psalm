@@ -47,6 +47,6 @@ class TIterable extends \Psalm\Type\Atomic
         $php_major_version,
         $php_minor_version
     ) {
-        return $php_major_version >= 7 && $php_minor_version >= 2 ? 'iterable' : null;
+        return $php_major_version >= 7 && $php_minor_version >= 1 ? 'iterable' : null;
     }
 }
