@@ -82,6 +82,24 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                 case 'microtime':
                     return Type::getString();
+
+                case 'get_called_class':
+                    return new Type\Union([new Type\Atomic\TClassString($context->self ?: 'object')]);
+
+                case 'get_parent_class':
+                    $codebase = $statements_analyzer->getCodebase();
+
+                    if ($context->self && $codebase->classExists($context->self)) {
+                        $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
+
+                        if ($classlike_storage->parent_classes) {
+                            return new Type\Union([
+                                new Type\Atomic\TClassString(
+                                    array_values($classlike_storage->parent_classes)[0]
+                                )
+                            ]);
+                        }
+                    }
             }
         } else {
             switch ($call_map_key) {

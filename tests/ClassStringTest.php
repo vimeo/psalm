@@ -322,6 +322,17 @@ class ClassStringTest extends TestCase
                         return $a::class;
                     }',
             ],
+            'returnGetCalledClassClassStringParameterized' => [
+                '<?php
+                    class A {
+                        /**
+                         * @return class-string<A> $s
+                         */
+                        function foo() : string {
+                            return get_called_class();
+                        }
+                    }',
+            ],
             'returnGetClassClassStringParameterized' => [
                 '<?php
                     class A {}
@@ -331,6 +342,19 @@ class ClassStringTest extends TestCase
                      */
                     function foo(A $a) : string {
                         return get_class($a);
+                    }',
+            ],
+            'returnGetParentClassClassStringParameterized' => [
+                '<?php
+                    class A {}
+
+                    class B extends A {
+                        /**
+                         * @return class-string<A> $s
+                         */
+                        function foo() : string {
+                            return get_parent_class();
+                        }
                     }',
             ],
             'createClassOfTypeFromString' => [
