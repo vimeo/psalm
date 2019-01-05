@@ -1,6 +1,8 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type\Union;
+
 class TClassString extends TString
 {
     /**
@@ -9,11 +11,17 @@ class TClassString extends TString
     public $as;
 
     /**
+     * @var ?Union
+     */
+    public $as_type;
+
+    /**
      * @param string $param_name
      */
-    public function __construct(string $as = 'object')
+    public function __construct(string $as = 'object', Union $as_type = null)
     {
         $this->as = $as;
+        $this->as_type = $as_type;
     }
 
      /**

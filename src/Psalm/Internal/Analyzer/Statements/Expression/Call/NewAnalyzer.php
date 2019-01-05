@@ -122,7 +122,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         if (!isset($stmt->inferredType)) {
                             $new_type_part = new Type\Atomic\TGenericParam(
                                 $lhs_type_part->param_name,
-                                Type::parseString($lhs_type_part->as)
+                                $lhs_type_part->as_type ?: Type::parseString($lhs_type_part->as)
                             );
 
                             if ($new_type) {

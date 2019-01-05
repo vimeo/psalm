@@ -1113,6 +1113,34 @@ class TemplateTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedMethodCall'],
             ],
+            'upcastIterableToTraversable' => [
+                '<?php
+                    /**
+                     * @template T as iterable
+                     * @param T::class $class
+                     */
+                    function foo(string $class) : void {
+                        $a = new $class();
+
+                        foreach ($a as $b) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => ['MixedAssignment'],
+            ],
+            'upcastGenericIterableToGenericTraversable' => [
+                '<?php
+                    /**
+                     * @template T as iterable<int>
+                     * @param T::class $class
+                     */
+                    function foo(string $class) : void {
+                        $a = new $class();
+
+                        foreach ($a as $b) {}
+                    }',
+                'assertions' => [],
+                'error_levels' => [],
+            ],
         ];
     }
 
@@ -1370,6 +1398,19 @@ class TemplateTest extends TestCase
                         $some_t->bar();
                     }',
                 'error_message' => 'MixedMethodCall',
+            ],
+            'forbidLossOfInformationWhenCoercing' => [
+                '<?php
+                    /**
+                     * @template T as iterable<int>
+                     * @param T::class $class
+                     */
+                    function foo(string $class) : void {}
+
+                    function bar(Traversable $t) : void {
+                        foo(get_class($t));
+                    }',
+                'error_message' => 'MixedTypeCoercion',
             ],
         ];
     }

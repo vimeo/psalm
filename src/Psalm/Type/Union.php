@@ -816,7 +816,7 @@ class Union
                 && isset($template_types[$atomic_type->param_name])
             ) {
                 $keys_to_unset[] = $key;
-                $class_string = new Type\Atomic\TClassString();
+                $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
                 $this->types[$class_string->getKey()] = $class_string;
 
                 if ($input_type) {
@@ -824,7 +824,9 @@ class Union
 
                     foreach ($input_type->getTypes() as $input_atomic_type) {
                         if ($input_atomic_type instanceof Type\Atomic\TLiteralClassString) {
-                            $valid_input_atomic_types[] = new Type\Atomic\TNamedObject($input_atomic_type->value);
+                            $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
+                                $input_atomic_type->value
+                            );
                         }
                     }
 

@@ -290,6 +290,10 @@ class ForeachAnalyzer
         $invalid_iterator_types = [];
 
         foreach ($iterator_type->getTypes() as $iterator_atomic_type) {
+            if ($iterator_atomic_type instanceof Type\Atomic\TGenericParam) {
+                $iterator_atomic_type = array_values($iterator_atomic_type->as->getTypes())[0];
+            }
+
             // if it's an empty array, we cannot iterate over it
             if ($iterator_atomic_type instanceof Type\Atomic\TArray
                 && $iterator_atomic_type->type_params[1]->isEmpty()

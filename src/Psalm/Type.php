@@ -501,6 +501,31 @@ abstract class Type
                 );
             }
 
+            if ($t instanceof TIterable) {
+                if ($t instanceof TGenericIterable) {
+                    $traversable = new TGenericObject(
+                        'Traversable',
+                        $t->type_params
+                    );
+
+                    $as->substitute(new Union([$t]), new Union([$traversable]));
+                    return new Atomic\TGenericParamClass(
+                        $param_name,
+                        $traversable->value,
+                        new Union([$traversable])
+                    );
+                }
+
+                $traversable = new TNamedObject('Traversable');
+                $as->substitute(new Union([$t]), new Union([$traversable]));
+
+                return new Atomic\TGenericParamClass(
+                    $param_name,
+                    $traversable->value,
+                    new Union([$traversable])
+                );
+            }
+
             if (!$t instanceof TNamedObject) {
                 throw new TypeParseTreeException(
                     'Invalid templated classname \'' . $t . '\''
@@ -509,7 +534,8 @@ abstract class Type
 
             return new Atomic\TGenericParamClass(
                 $param_name,
-                $t->value
+                $t->value,
+                new Union([$t])
             );
         }
 

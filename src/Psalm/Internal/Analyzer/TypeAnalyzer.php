@@ -529,6 +529,20 @@ class TypeAnalyzer
             $input_type_part = array_values($input_type_part->as->getTypes())[0];
         }
 
+        if ($container_type_part instanceof GetClassT) {
+            $container_type_part = new TClassString(
+                'object',
+                $container_type_part->as_type
+            );
+        }
+
+        if ($input_type_part instanceof GetClassT) {
+            $input_type_part = new TClassString(
+                'object',
+                $input_type_part->as_type
+            );
+        }
+
         if ($input_type_part->shallowEquals($container_type_part)) {
             return self::isMatchingTypeContainedBy(
                 $codebase,
@@ -807,12 +821,14 @@ class TypeAnalyzer
 
             if ($container_type_part instanceof TClassString
                 && $container_type_part->as === 'object'
+                && (!$container_type_part->as_type || $container_type_part->as_type->hasObject())
             ) {
                 return true;
             }
 
             if ($input_type_part instanceof TClassString
                 && $input_type_part->as === 'object'
+                && (!$input_type_part->as_type || $input_type_part->as_type->hasObject())
             ) {
                 $type_coerced = true;
                 $type_coerced_from_scalar = true;
@@ -820,23 +836,33 @@ class TypeAnalyzer
                 return false;
             }
 
-            $fake_container_object = new TNamedObject(
-                $container_type_part instanceof TClassString
-                    ? $container_type_part->as
-                    : $container_type_part->value
-            );
+            $fake_container_object = $container_type_part instanceof TClassString
+                && $container_type_part->as_type
+                ? array_values($container_type_part->as_type->getTypes())[0]
+                : new TNamedObject(
+                    $container_type_part instanceof TClassString
+                        ? $container_type_part->as
+                        : $container_type_part->value
+                );
 
-            $fake_input_object = new TNamedObject(
-                $input_type_part instanceof TClassString
-                    ? $input_type_part->as
-                    : $input_type_part->value
-            );
+            $fake_input_object = $input_type_part instanceof TClassString
+                && $input_type_part->as_type
+                ? array_values($input_type_part->as_type->getTypes())[0]
+                : new TNamedObject(
+                    $input_type_part instanceof TClassString
+                        ? $input_type_part->as
+                        : $input_type_part->value
+                );
 
-            return self::isObjectContainedByObject(
+            return self::isAtomicContainedBy(
                 $codebase,
                 $fake_input_object,
                 $fake_container_object,
-                $allow_interface_equality
+                $allow_interface_equality,
+                $allow_float_int_equality,
+                $has_scalar_match,
+                $type_coerced,
+                $type_coerced_from_mixed
             );
         }
 
