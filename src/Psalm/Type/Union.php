@@ -1105,7 +1105,7 @@ class Union
      * @param  array<string, bool> $phantom_classes
      * @param  bool             $inferred
      *
-     * @return void
+     * @return null|false
      */
     public function check(
         StatementsSource $source,
@@ -1118,11 +1118,25 @@ class Union
             return;
         }
 
+        $all_good = true;
+
         foreach ($this->types as $atomic_type) {
-            $atomic_type->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
+            if ($atomic_type->check(
+                $source,
+                $code_location,
+                $suppressed_issues,
+                $phantom_classes,
+                $inferred
+            ) === false) {
+                $all_good = false;
+            }
         }
 
-        $this->checked = true;
+        if (!$all_good) {
+            return false;
+        } else {
+            $this->checked = true;
+        }
     }
 
     /**

@@ -273,6 +273,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         );
 
+        $check_stmts = true;
+
         foreach ($storage->params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
             $signature_type_location = $function_param->signature_type_location;
@@ -290,13 +292,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             if ($function_param->type) {
                 if ($function_param->type_location) {
-                    $function_param->type->check(
+                    if ($function_param->type->check(
                         $this,
                         $function_param->type_location,
                         $storage->suppressed_issues,
                         [],
                         false
-                    );
+                    ) === false) {
+                        $check_stmts = false;
+                    }
                 }
 
                 $is_signature_type = $function_param->type === $function_param->signature_type;
@@ -383,13 +387,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         return false;
                     }
 
-                    $signature_type->check(
+                    if ($signature_type->check(
                         $this,
                         $function_param->type_location,
                         $storage->suppressed_issues,
                         [],
                         false
-                    );
+                    ) === false) {
+                        $check_stmts = false;
+                    }
 
                     continue;
                 }
@@ -425,13 +431,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
             if ($template_types) {
                 $substituted_type = clone $param_type;
-                $substituted_type->check(
+                if ($substituted_type->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
                     [],
                     false
-                );
+                ) === false) {
+                    $check_stmts = false;
+                }
             } else {
                 if ($param_type->isVoid()) {
                     if (IssueBuffer::accepts(
@@ -446,13 +454,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     }
                 }
 
-                $param_type->check(
+                if ($param_type->check(
                     $this->source,
                     $function_param->type_location,
                     $this->suppressed_issues,
                     [],
                     false
-                );
+                ) === false) {
+                    $check_stmts = false;
+                }
             }
 
             if ($codebase->collect_references) {
@@ -460,13 +470,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $function_param->signature_type_location &&
                     $function_param->signature_type
                 ) {
-                    $function_param->signature_type->check(
+                    if ($function_param->signature_type->check(
                         $this->source,
                         $function_param->signature_type_location,
                         $this->suppressed_issues,
                         [],
                         false
-                    );
+                    ) === false) {
+                        $check_stmts = false;
+                    }
                 }
             }
 
@@ -496,6 +508,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $storage,
             $context
         ) === false) {
+            $check_stmts = false;
+        }
+
+        if (!$check_stmts) {
             return false;
         }
 

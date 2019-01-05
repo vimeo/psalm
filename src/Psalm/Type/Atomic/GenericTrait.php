@@ -66,7 +66,7 @@ trait GenericTrait
         }
 
         if ($use_phpdoc_format) {
-            if ($this instanceof TNamedObject) {
+            if ($this instanceof TNamedObject || $this instanceof TGenericIterable) {
                 return $base_value;
             }
 

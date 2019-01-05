@@ -216,13 +216,14 @@ abstract class Atomic
     {
         return $this instanceof TNamedObject
             && (strtolower($this->value) === 'traversable'
-                || $codebase->classExtendsOrImplements(
-                    $this->value,
-                    'Traversable'
-                ) || $codebase->interfaceExtends(
-                    $this->value,
-                    'Traversable'
-                )
+                || ($codebase->classOrInterfaceExists($this->value)
+                    && ($codebase->classExtendsOrImplements(
+                        $this->value,
+                        'Traversable'
+                    ) || $codebase->interfaceExtends(
+                        $this->value,
+                        'Traversable'
+                    )))
             );
     }
 
@@ -338,7 +339,15 @@ abstract class Atomic
 
         if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
             foreach ($this->type_params as $type_param) {
-                $type_param->check($source, $code_location, $suppressed_issues, $phantom_classes, $inferred);
+                if ($type_param->check(
+                    $source,
+                    $code_location,
+                    $suppressed_issues,
+                    $phantom_classes,
+                    $inferred
+                ) === false) {
+                    return false;
+                }
             }
         }
 

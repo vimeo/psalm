@@ -320,6 +320,47 @@ class ClassTest extends TestCase
                     'UndefinedClass'
                 ],
             ],
+            'noCrashWhenIgnoringUndefinedParam' => [
+                '<?php
+                    function bar(iterable $_i) : void {}
+                    function foo(C $c) : void {
+                        bar($c);
+                    }',
+                'assertions' => [],
+                'error_levels' => [
+                    'UndefinedClass',
+                    'InvalidArgument',
+                ],
+            ],
+            'noCrashWhenIgnoringUndefinedReturnIterableArg' => [
+                '<?php
+                    function bar(iterable $_i) : void {}
+                    function foo() : D {
+                        return new D();
+                    }
+                    bar(foo());',
+                'assertions' => [],
+                'error_levels' => [
+                    'UndefinedClass',
+                    'MixedInferredReturnType',
+                    'InvalidArgument',
+                ],
+            ],
+            'noCrashWhenIgnoringUndefinedReturnClassArg' => [
+                '<?php
+                    class Exists {}
+                    function bar(Exists $_i) : void {}
+                    function foo() : D {
+                        return new D();
+                    }
+                    bar(foo());',
+                'assertions' => [],
+                'error_levels' => [
+                    'UndefinedClass',
+                    'MixedInferredReturnType',
+                    'InvalidArgument',
+                ],
+            ],
             'allowAbstractInstantiationOnPossibleChild' => [
                 '<?php
                     abstract class A {}

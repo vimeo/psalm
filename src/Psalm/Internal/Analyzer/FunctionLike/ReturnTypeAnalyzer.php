@@ -626,13 +626,15 @@ class ReturnTypeAnalyzer
             $context->self
         );
 
-        $fleshed_out_signature_type->check(
+        if ($fleshed_out_signature_type->check(
             $function_like_analyzer,
             $storage->signature_return_type_location ?: $storage->return_type_location,
             $storage->suppressed_issues,
             [],
             false
-        );
+        ) === false) {
+            return false;
+        }
 
         if ($function instanceof Closure) {
             return;

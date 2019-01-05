@@ -518,6 +518,55 @@ class FileManipulationTest extends TestCase
                 ['MissingReturnType'],
                 false,
             ],
+            'addIterableReturnType' => [
+                '<?php
+                    function foo() {
+                        return bar();
+                    }
+
+                    function bar(): iterable {
+                        return [1, 2, 3];
+                    }',
+                '<?php
+                    function foo(): iterable {
+                        return bar();
+                    }
+
+                    function bar(): iterable {
+                        return [1, 2, 3];
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
+            'addGenericIterableReturnType' => [
+                '<?php
+                    function foo() {
+                        return bar();
+                    }
+
+                    /** @return iterable<int> */
+                    function bar(): iterable {
+                        return [1, 2, 3];
+                    }',
+                '<?php
+                    /**
+                     * @return iterable
+                     *
+                     * @psalm-return iterable<mixed, int>
+                     */
+                    function foo(): iterable {
+                        return bar();
+                    }
+
+                    /** @return iterable<int> */
+                    function bar(): iterable {
+                        return [1, 2, 3];
+                    }',
+                '7.1',
+                ['MissingReturnType'],
+                false,
+            ],
             'addMissingNullableReturnTypeInDocblockOnly71' => [
                 '<?php
                     function foo() {
