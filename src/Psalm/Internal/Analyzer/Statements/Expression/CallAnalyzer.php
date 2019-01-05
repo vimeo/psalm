@@ -2100,41 +2100,6 @@ class CallAnalyzer
     }
 
     /**
-     * @param  StatementsAnalyzer    $statements_analyzer
-     * @param  string               $function_id
-     * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
-     *
-     * @return string
-     */
-    protected static function getExistingFunctionId(
-        StatementsAnalyzer $statements_analyzer,
-        $function_id,
-        $can_be_in_root_scope
-    ) {
-        $function_id = strtolower($function_id);
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($codebase->functions->functionExists($statements_analyzer, $function_id)) {
-            return $function_id;
-        }
-
-        if (!$can_be_in_root_scope) {
-            return $function_id;
-        }
-
-        $root_function_id = preg_replace('/.*\\\/', '', $function_id);
-
-        if ($function_id !== $root_function_id
-            && $codebase->functions->functionExists($statements_analyzer, $root_function_id)
-        ) {
-            return $root_function_id;
-        }
-
-        return $function_id;
-    }
-
-    /**
      * @param PhpParser\Node\Identifier|PhpParser\Node\Name $expr
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
@@ -2158,6 +2123,8 @@ class CallAnalyzer
 
         foreach ($assertions as $assertion) {
             $assertion_var_id = null;
+
+            $arg_value = null;
 
             if (is_int($assertion->var_id)) {
                 if (!isset($args[$assertion->var_id])) {
@@ -2229,6 +2196,23 @@ class CallAnalyzer
                 } else {
                     $type_assertions[$assertion_var_id] = $assertion->rule;
                 }
+            } elseif ($arg_value && $assertion->rule === [['!falsy']]) {
+                $assert_clauses = \Psalm\Type\Algebra::getFormula(
+                    $arg_value,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                    $statements_analyzer->getCodebase()
+                );
+
+                $simplified_clauses = \Psalm\Type\Algebra::simplifyCNF(
+                    array_merge($context->clauses, $assert_clauses)
+                );
+
+                $assert_type_assertions = \Psalm\Type\Algebra::getTruthsFromFormula(
+                    $simplified_clauses
+                );
+
+                $type_assertions = array_merge($type_assertions, $assert_type_assertions);
             }
         }
 

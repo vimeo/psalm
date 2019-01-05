@@ -1268,6 +1268,22 @@ class FunctionCallTest extends TestCase
                         foo($a);
                     }',
             ],
+            'SKIPPED-getTypeHasValues' => [
+                '<?php
+                    /**
+                     * @param mixed $maybe
+                     */
+                    function matchesTypes($maybe) : void {
+                        $t = gettype($maybe);
+                        if ($t === "object") {}
+                    }'
+            ],
+            'functionResolutionInNamespace' => [
+                '<?php
+                    namespace Foo;
+                    function sort(int $_) : void {}
+                    sort(5);'
+            ],
         ];
     }
 

@@ -200,10 +200,39 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $stmt->inferredType = Type::getMixed();
             }
         } else {
-            $function_id = implode('\\', $stmt->name->parts);
+            $original_function_id = implode('\\', $stmt->name->parts);
 
-            $in_call_map = CallMap::inCallMap($function_id);
-            $is_stubbed = $codebase_functions->hasStubbedFunction($function_id);
+            if (!$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                $function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
+                    $original_function_id,
+                    $statements_analyzer
+                );
+            } else {
+                $function_id = $original_function_id;
+            }
+
+            $namespaced_function_exists = $codebase_functions->functionExists(
+                $statements_analyzer,
+                strtolower($function_id)
+            );
+
+            if (!$namespaced_function_exists
+                && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified
+            ) {
+                $in_call_map = CallMap::inCallMap($original_function_id);
+                $is_stubbed = $codebase_functions->hasStubbedFunction($original_function_id);
+
+                if ($is_stubbed || $in_call_map) {
+                    $function_id = $original_function_id;
+                }
+            } else {
+                $in_call_map = CallMap::inCallMap($function_id);
+                $is_stubbed = $codebase_functions->hasStubbedFunction($function_id);
+            }
+
+            if ($is_stubbed || $in_call_map || $namespaced_function_exists) {
+                $function_exists = true;
+            }
 
             $is_predefined = true;
 
@@ -212,17 +241,9 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
             if (!$in_call_map) {
                 $predefined_functions = $config->getPredefinedFunctions();
-                $is_predefined = isset($predefined_functions[$function_id]);
-            }
+                $is_predefined = isset($predefined_functions[strtolower($original_function_id)])
+                    || isset($predefined_functions[strtolower($function_id)]);
 
-            if (!$in_call_map && !$stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
-                $function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
-                    $function_id,
-                    $statements_analyzer
-                );
-            }
-
-            if (!$in_call_map) {
                 if ($context->check_functions) {
                     if (self::checkFunctionExists(
                         $statements_analyzer,
@@ -233,18 +254,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     ) {
                         return false;
                     }
-                } else {
-                    $function_id = self::getExistingFunctionId(
-                        $statements_analyzer,
-                        $function_id,
-                        $is_maybe_root_function
-                    );
                 }
-
-                $function_exists = $is_stubbed || $codebase_functions->functionExists(
-                    $statements_analyzer,
-                    strtolower($function_id)
-                );
             } else {
                 $function_exists = true;
             }
