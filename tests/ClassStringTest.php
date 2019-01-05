@@ -311,6 +311,47 @@ class ClassStringTest extends TestCase
 
                     foo(AChild::class);',
             ],
+            'returnClassConstantClassStringParameterized' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string<A> $s
+                     */
+                    function foo(A $a) : string {
+                        return $a::class;
+                    }',
+            ],
+            'returnGetClassClassStringParameterized' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string<A> $s
+                     */
+                    function foo(A $a) : string {
+                        return get_class($a);
+                    }',
+            ],
+            'createClassOfTypeFromString' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string<A> $s
+                     */
+                    function foo(string $s) : string {
+                        if (!class_exists($s)) {
+                            throw new \UnexpectedValueException("bad");
+                        }
+
+                        if (!is_a($s, A::class, true)) {
+                            throw new \UnexpectedValueException("bad");
+                        }
+
+                        return $s;
+                    }',
+            ],
         ];
     }
 
@@ -427,6 +468,27 @@ class ClassStringTest extends TestCase
 
                     foo(AChild::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'createClassOfWrongTypeFromString' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @return class-string<A> $s
+                     */
+                    function foo(string $s) : string {
+                        if (!class_exists($s)) {
+                            throw new \UnexpectedValueException("bad");
+                        }
+
+                        if (!is_a($s, B::class, true)) {
+                            throw new \UnexpectedValueException("bad");
+                        }
+
+                        return $s;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
