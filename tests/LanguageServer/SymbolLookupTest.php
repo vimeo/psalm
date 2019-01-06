@@ -77,7 +77,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
         $this->assertSame('<?php public function foo() : void', $codebase->getSymbolInformation('somefile.php', 'B\A::foo()'));
@@ -114,7 +113,6 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
 

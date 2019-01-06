@@ -21,6 +21,7 @@ use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
 use Psalm\Issue\DuplicateClass;
+use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
@@ -851,15 +852,46 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
             $function_id = strtolower($cased_function_id);
 
-            if (isset($this->file_storage->functions[$function_id])) {
-                if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+            if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
+                if (isset($this->file_storage->functions[$function_id])) {
                     $this->codebase->functions->addGlobalFunction(
                         $function_id,
                         $this->file_storage->functions[$function_id]
                     );
-                }
 
-                return $this->file_storage->functions[$function_id];
+                    return $this->file_storage->functions[$function_id];
+                }
+            } else {
+                if (isset($this->file_storage->functions[$function_id])) {
+                    $duplicate_function_storage = $this->file_storage->functions[$function_id];
+
+                    if (IssueBuffer::accepts(
+                        new DuplicateFunction(
+                            'Method ' . $function_id . ' has already been defined'
+                                . ($duplicate_function_storage->location
+                                    ? ' in ' . $duplicate_function_storage->location->file_path
+                                    : ''),
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+
+                    $this->file_storage->has_visitor_issues = true;
+
+                    $duplicate_function_storage->has_visitor_issues = true;
+
+                    return $this->file_storage->functions[$function_id];
+                } elseif (isset($this->config->getPredefinedFunctions()[$function_id])) {
+                    if (IssueBuffer::accepts(
+                        new DuplicateFunction(
+                            'Method ' . $function_id . ' has already been defined as a core function',
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
             }
 
             $storage = new FunctionLikeStorage();

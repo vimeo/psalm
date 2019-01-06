@@ -1328,6 +1328,12 @@ class FunctionCallTest extends TestCase
                         foo($x);
                     }',
             ],
+            'duplicateNamespacedFunction' => [
+                '<?php
+                    namespace Bar;
+
+                    function sort() : void {}',
+            ],
         ];
     }
 
@@ -1727,6 +1733,17 @@ class FunctionCallTest extends TestCase
                         foo($x);
                     }',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'duplicateFunction' => [
+                '<?php
+                    function f() : void {}
+                    function f() : void {}',
+                'error_message' => 'DuplicateFunction',
+            ],
+            'duplicateCoreFunction' => [
+                '<?php
+                    function sort() : void {}',
+                'error_message' => 'DuplicateFunction',
             ],
         ];
     }

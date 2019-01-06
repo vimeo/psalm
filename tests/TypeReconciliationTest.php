@@ -872,7 +872,7 @@ class TypeReconciliationTest extends TestCase
                         if ($i == 0.0) {}
                         if (0.0 == $i) {}
                     }
-                    function foo(float $i) : void {
+                    function bar(float $i) : void {
                         $i = $i / 100.0;
                         if ($i == "5") {}
                         if ("5" == $i) {}
@@ -883,7 +883,7 @@ class TypeReconciliationTest extends TestCase
                         if ($i == 0) {}
                         if (0 == $i) {}
                     }
-                    function foo(string $i) : void {
+                    function bat(string $i) : void {
                         if ($i == 5) {}
                         if (5 == $i) {}
                         if ($i == 5.0) {}

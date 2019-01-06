@@ -236,7 +236,7 @@ class Php56Test extends TestCase
                         return intval(...$args);
                     }
 
-                    function foo(ArrayIterator $args): int {
+                    function bar(ArrayIterator $args): int {
                         return intval(...$args);
                     }',
             ],
