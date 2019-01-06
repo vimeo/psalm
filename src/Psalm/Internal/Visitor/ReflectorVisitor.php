@@ -883,13 +883,26 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     return $this->file_storage->functions[$function_id];
                 } elseif (isset($this->config->getPredefinedFunctions()[$function_id])) {
-                    if (IssueBuffer::accepts(
-                        new DuplicateFunction(
-                            'Method ' . $function_id . ' has already been defined as a core function',
-                            new CodeLocation($this->file_scanner, $stmt, null, true)
-                        )
-                    )) {
-                        // fall through
+                    $duplicate_function_storage = null;
+
+                    try {
+                        $duplicate_function_storage = $this->codebase->functions->getStorage(null, $function_id);
+                    } catch (\Exception $e) {
+                        // do nothing
+                    }
+
+                    if (!$duplicate_function_storage
+                        || !$duplicate_function_storage->location
+                        || $duplicate_function_storage->location->file_path !== $this->file_path
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new DuplicateFunction(
+                                'Method ' . $function_id . ' has already been defined as a core function',
+                                new CodeLocation($this->file_scanner, $stmt, null, true)
+                            )
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }

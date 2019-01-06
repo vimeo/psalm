@@ -221,13 +221,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         case Type\Atomic\TNumericString::class:
                         case Type\Atomic\THtmlEscapedString::class:
                         case Type\Atomic\TClassString::class:
-                        case Type\Atomic\TEmptyMixed::class:
                         case Type\Atomic\TIterable::class:
                         case Type\Atomic\TGenericIterable::class:
                             $invalid_method_call_types[] = (string)$lhs_type_part;
                             break;
 
                         case Type\Atomic\TGenericParam::class:
+                        case Type\Atomic\TEmptyMixed::class:
                         case Type\Atomic\TMixed::class:
                         case Type\Atomic\TNonEmptyMixed::class:
                         case Type\Atomic\TObject::class:
