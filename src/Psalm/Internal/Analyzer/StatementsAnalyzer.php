@@ -674,6 +674,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         $context->strict_types = true;
                     }
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
+                $has_returned = true;
             } else {
                 if (IssueBuffer::accepts(
                     new UnrecognizedStatement(
