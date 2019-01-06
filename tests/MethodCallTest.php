@@ -221,6 +221,23 @@ class MethodCallTest extends TestCase
                 [],
                 'error_levels' => ['MixedAssignment', 'MixedMethodCall'],
             ],
+            'methodResolution' => [
+                '<?php
+                    interface ReturnsString {
+                        public function getId(): string;
+                    }
+
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(ReturnsString $user, $a): string {
+                        strlen($user->getId());
+
+                        (is_object($a) && method_exists($a, "getS")) ? (string)$a->getS() : "";
+
+                        return $user->getId();
+                    }'
+            ],
         ];
     }
 

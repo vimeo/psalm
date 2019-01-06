@@ -96,7 +96,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $source = $statements_analyzer->getSource();
 
-        if (!$context->check_methods || !$context->check_classes) {
+        if (!$context->check_classes) {
             if (self::checkFunctionArguments(
                 $statements_analyzer,
                 $stmt->args,
@@ -235,14 +235,16 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                             $has_mixed_method_call = true;
 
-                            if (IssueBuffer::accepts(
-                                new MixedMethodCall(
-                                    'Cannot call method on a mixed variable ' . $var_id,
-                                    $name_code_location
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
+                            if ($context->check_methods) {
+                                if (IssueBuffer::accepts(
+                                    new MixedMethodCall(
+                                        'Cannot call method on a mixed variable ' . $var_id,
+                                        $name_code_location
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues()
+                                )) {
+                                    // fall through
+                                }
                             }
 
                             if (self::checkFunctionArguments(
@@ -857,27 +859,29 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             if ($non_existent_method_ids) {
-                if ($existent_method_ids || $has_mixed_method_call) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyUndefinedMethod(
-                            'Method ' . $non_existent_method_ids[0] . ' does not exist',
-                            $name_code_location,
-                            $non_existent_method_ids[0]
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new UndefinedMethod(
-                            'Method ' . $non_existent_method_ids[0] . ' does not exist',
-                            $name_code_location,
-                            $non_existent_method_ids[0]
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
+                if ($context->check_methods) {
+                    if ($existent_method_ids || $has_mixed_method_call) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyUndefinedMethod(
+                                'Method ' . $non_existent_method_ids[0] . ' does not exist',
+                                $name_code_location,
+                                $non_existent_method_ids[0]
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UndefinedMethod(
+                                'Method ' . $non_existent_method_ids[0] . ' does not exist',
+                                $name_code_location,
+                                $non_existent_method_ids[0]
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
                     }
                 }
 
