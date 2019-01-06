@@ -909,9 +909,9 @@ class Config
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
-        if (count($declared_classes) !== 1) {
+        if (!count($declared_classes)) {
             throw new \InvalidArgumentException(
-                'Plugins must have exactly one class in the file - ' . $path . ' has ' .
+                'Plugins must have at least one class in the file - ' . $path . ' has ' .
                     count($declared_classes)
             );
         }
