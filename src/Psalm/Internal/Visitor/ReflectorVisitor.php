@@ -852,6 +852,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
             $function_id = strtolower($cased_function_id);
 
+            $storage = new FunctionLikeStorage();
+
             if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
                 if (isset($this->file_storage->functions[$function_id])) {
                     $this->codebase->functions->addGlobalFunction(
@@ -883,18 +885,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     return $this->file_storage->functions[$function_id];
                 } elseif (isset($this->config->getPredefinedFunctions()[$function_id])) {
-                    $duplicate_function_storage = null;
+                    $reflection_function = new \ReflectionFunction($function_id);
 
-                    try {
-                        $duplicate_function_storage = $this->codebase->functions->getStorage(null, $function_id);
-                    } catch (\Exception $e) {
-                        // do nothing
-                    }
-
-                    if (!$duplicate_function_storage
-                        || !$duplicate_function_storage->location
-                        || $duplicate_function_storage->location->file_path !== $this->file_path
-                    ) {
+                    if ($reflection_function->getFileName() !== $this->file_path) {
                         if (IssueBuffer::accepts(
                             new DuplicateFunction(
                                 'Method ' . $function_id . ' has already been defined as a core function',
@@ -906,8 +899,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 }
             }
-
-            $storage = new FunctionLikeStorage();
 
             if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
                 $this->codebase->functions->addGlobalFunction($function_id, $storage);
