@@ -142,6 +142,38 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testIgnoreSymlinkedProjectDirectory()
+    {
+        @unlink(__DIR__ . '/symlinktest/ignored/b');
+        symlink(__DIR__ . '/symlinktest/a', __DIR__ . '/symlinktest/ignored/b');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests" />
+                        <ignoreFiles>
+                            <directory name="tests/symlinktest/ignored" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('tests/AnnotationTest.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('tests/symlinktest/a/ignoreme.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+
+        unlink(__DIR__ . '/symlinktest/ignored/b');
+    }
+
+    /**
+     * @return void
+     */
     public function testIgnoreWildcardProjectDirectory()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -22,8 +22,8 @@
             <directory name="tests/DummyProject"/>
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php"/>
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
-            <directory name="tests/performance/a.test"/>
-            <directory name="tests/performance/b.test"/>
+            <file name="tests/performance/a.test"/>
+            <file name="tests/performance/b.test"/>
             <file name="tests/ErrorBaselineTest.php"/>
         </ignoreFiles>
     </projectFiles>

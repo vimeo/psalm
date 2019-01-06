@@ -138,6 +138,36 @@ class FileFilter
                     exit(1);
                 }
 
+                if (!is_dir($directory_path)) {
+                    echo $base_dir . DIRECTORY_SEPARATOR . (string)$directory['name']
+                        . ' is not a directory ' . PHP_EOL;
+                    exit(1);
+                }
+
+                /** @var \RecursiveDirectoryIterator */
+                $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory_path));
+                $iterator->rewind();
+
+                while ($iterator->valid()) {
+                    if (!$iterator->isDot() && $iterator->isLink()) {
+                        $linked_path = readlink($iterator->getPathName());
+
+                        if (stripos($linked_path, $directory_path) !== 0) {
+                            if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
+                                $filter->ignore_type_stats[$directory_path] = true;
+                            }
+
+                            if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
+                                $filter->declare_strict_types[$directory_path] = true;
+                            }
+
+                            $filter->addDirectory(readlink($iterator->getPathName()));
+                        }
+                    }
+
+                    $iterator->next();
+                }
+
                 if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
                     $filter->ignore_type_stats[$directory_path] = true;
                 }
