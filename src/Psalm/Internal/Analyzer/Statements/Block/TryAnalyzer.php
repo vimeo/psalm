@@ -357,7 +357,25 @@ class TryAnalyzer
         }
 
         if ($stmt->finally) {
+            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+            }
+
+            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            }
+
             $statements_analyzer->analyze($stmt->finally->stmts, $context);
+
+            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+            }
+
+            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
+                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            }
         }
 
         if ($context->collect_references) {
