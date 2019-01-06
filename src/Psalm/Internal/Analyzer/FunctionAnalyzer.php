@@ -607,6 +607,24 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 case 'filter_var':
                     return self::getFilterVar($call_args);
 
+                case 'range':
+                    $all_ints = true;
+
+                    foreach ($call_args as $call_arg) {
+                        $all_ints = $all_ints
+                            && isset($call_arg->value->inferredType)
+                            && $call_arg->value->inferredType->isInt();
+                    }
+
+                    if ($all_ints) {
+                        return new Type\Union([new Type\Atomic\TArray([Type::getInt(), Type::getInt()])]);
+                    }
+
+                    return new Type\Union([new Type\Atomic\TArray([
+                        Type::getInt(),
+                        new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat])
+                    ])]);
+
                 case 'get_parent_class':
                     // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
                     // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
