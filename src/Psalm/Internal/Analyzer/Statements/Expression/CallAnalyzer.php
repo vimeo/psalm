@@ -834,9 +834,17 @@ class CallAnalyzer
             if ($class_storage && $class_storage->template_types) {
                 $template_types = array_merge($template_types, $class_storage->template_types);
             }
+
+            foreach ($template_types as $key => $type) {
+                $template_types[$key] = clone $type;
+            }
         }
 
-        $existing_generic_params_to_strings = $generic_params ?: [];
+        $existing_generic_params = $generic_params ?: [];
+
+        foreach ($existing_generic_params as $key => $type) {
+            $existing_generic_params[$key] = clone $type;
+        }
 
         foreach ($args as $argument_offset => $arg) {
             $function_param = count($function_params) > $argument_offset
@@ -952,11 +960,11 @@ class CallAnalyzer
                     }
 
                     if ($function_storage) {
-                        if ($existing_generic_params_to_strings) {
+                        if ($existing_generic_params) {
                             $empty_generic_params = [];
 
                             $param_type->replaceTemplateTypesWithStandins(
-                                $existing_generic_params_to_strings,
+                                $existing_generic_params,
                                 $empty_generic_params,
                                 $codebase,
                                 $arg->value->inferredType

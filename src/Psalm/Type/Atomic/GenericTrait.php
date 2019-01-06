@@ -146,7 +146,7 @@ trait GenericTrait
      * @return void
      */
     public function replaceTemplateTypesWithStandins(
-        array $template_types,
+        array &$template_types,
         array &$generic_params,
         Codebase $codebase = null,
         Atomic $input_type = null

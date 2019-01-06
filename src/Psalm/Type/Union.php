@@ -789,10 +789,11 @@ class Union
      * @return void
      */
     public function replaceTemplateTypesWithStandins(
-        array $template_types,
+        array &$template_types,
         array &$generic_params,
         Codebase $codebase = null,
-        Type\Union $input_type = null
+        Type\Union $input_type = null,
+        bool $add_upper_bound = false
     ) {
         $keys_to_unset = [];
 
@@ -802,6 +803,9 @@ class Union
             ) {
                 if ($template_types[$key]->getId() !== $key) {
                     $first_atomic_type = array_values($template_types[$key]->getTypes())[0];
+                    if ($add_upper_bound && $input_type) {
+                        $template_types[$key] = clone $input_type;
+                    }
                     $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
                     if ($first_atomic_type->getKey() !== $key) {
                         $keys_to_unset[] = $key;

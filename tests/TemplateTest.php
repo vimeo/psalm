@@ -1141,6 +1141,28 @@ class TemplateTest extends TestCase
                 'assertions' => [],
                 'error_levels' => [],
             ],
+            'bindFirstTemplatedClosureParameter' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @param Closure(T):void $t1
+                     * @param T $t2
+                     */
+                    function apply(Closure $t1, $t2) : void
+                    {
+                        $t1($t2);
+                    }
+
+                    apply(function(int $_i) : void {}, 5);
+                    apply(function(string $_i) : void {}, "hello");
+                    apply(function(stdClass $_i) : void {}, new stdClass);
+
+                    class A {}
+                    class AChild extends A {}
+
+                    apply(function(A $_i) : void {}, new AChild());',
+            ],
         ];
     }
 
@@ -1411,6 +1433,41 @@ class TemplateTest extends TestCase
                         foo(get_class($t));
                     }',
                 'error_message' => 'MixedTypeCoercion',
+            ],
+            'bindFirstTemplatedClosureParameter' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @param Closure(T):void $t1
+                     * @param T $t2
+                     */
+                    function apply(Closure $t1, $t2) : void
+                    {
+                        $t1($t2);
+                    }
+
+                    apply(function(int $_i) : void {}, "hello");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'bindFirstTemplatedClosureParameterTypeCoercion' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @param Closure(T):void $t1
+                     * @param T $t2
+                     */
+                    function apply(Closure $t1, $t2) : void
+                    {
+                        $t1($t2);
+                    }
+
+                    class A {}
+                    class AChild extends A {}
+
+                    apply(function(AChild $_i) : void {}, new A());',
+                'error_message' => 'TypeCoercion',
             ],
         ];
     }

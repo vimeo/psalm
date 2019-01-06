@@ -166,7 +166,7 @@ trait CallableTrait
      * @return void
      */
     public function replaceTemplateTypesWithStandins(
-        array $template_types,
+        array &$template_types,
         array &$generic_params,
         Codebase $codebase = null,
         Atomic $input_type = null
@@ -189,7 +189,8 @@ trait CallableTrait
                     $template_types,
                     $generic_params,
                     $codebase,
-                    $input_param_type
+                    $input_param_type,
+                    true
                 );
             }
         }
