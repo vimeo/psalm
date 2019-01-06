@@ -386,7 +386,13 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['throws'])) {
             foreach ($comments['specials']['throws'] as $throws_entry) {
-                $info->throws[] = preg_split('/[\s]+/', $throws_entry)[0];
+                $throws_class = preg_split('/[\s]+/', $throws_entry)[0];
+
+                if (!$throws_class) {
+                    throw new IncorrectDocblockException('Unexpectedly empty @throws');
+                }
+
+                $info->throws[] = $throws_class;
             }
         }
 

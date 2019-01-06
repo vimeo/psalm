@@ -303,6 +303,30 @@ class ThrowsAnnotationTest extends TestCase
     }
 
     /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingDocblockType
+     *
+     * @return                   void
+     */
+    public function testEmptyThrows()
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws
+                 */
+                function foo(int $x, int $y) : int {}'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
      * @return void
      */
     public function testCaughtAllThrowInFunctionCall()
