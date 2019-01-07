@@ -259,14 +259,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $appearing_method_id = $codebase_methods->getAppearingMethodId($method_id);
 
         $appearing_method_class = null;
+        $appearing_method_storage = null;
+        $appearing_method_name = null;
 
         if ($appearing_method_id) {
-            list($appearing_method_class) = explode('::', $appearing_method_id);
+            list($appearing_method_class, $appearing_method_name) = explode('::', $appearing_method_id);
 
             // if the calling class is the same, we know the method exists, so it must be visible
             if ($appearing_method_class === $calling_context) {
                 return null;
             }
+
+            $appearing_method_storage = $codebase->classlike_storage_provider->get($appearing_method_class);
         }
 
         list($declaring_method_class) = explode('::', $declaring_method_id);
@@ -276,8 +280,15 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         }
 
         $storage = $codebase->methods->getStorage($declaring_method_id);
+        $visibility = $storage->visibility;
 
-        switch ($storage->visibility) {
+        if ($appearing_method_name
+            && isset($appearing_method_storage->trait_visibility_map[$appearing_method_name])
+        ) {
+            $visibility = $appearing_method_storage->trait_visibility_map[$appearing_method_name];
+        }
+
+        switch ($visibility) {
             case ClassLikeAnalyzer::VISIBILITY_PUBLIC:
                 return null;
 
