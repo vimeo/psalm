@@ -161,7 +161,9 @@ class FileFilter
                                 $filter->declare_strict_types[$directory_path] = true;
                             }
 
-                            $filter->addDirectory(readlink($iterator->getPathName()));
+                            if (is_dir($linked_path)) {
+                                $filter->addDirectory($linked_path);
+                            }
                         }
                     }
 
