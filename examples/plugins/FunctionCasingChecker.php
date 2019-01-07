@@ -1,0 +1,115 @@
+<?php
+namespace Psalm\Example\Plugin;
+
+use PhpParser;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\StaticCall;
+use Psalm\Checker;
+use Psalm\Checker\StatementsChecker;
+use Psalm\Codebase;
+use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\FileManipulation;
+use Psalm\IssueBuffer;
+use Psalm\Issue\TypeCoercion;
+use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
+use Psalm\Plugin\Hook\AfterMethodCallAnalysisInterface;
+use Psalm\StatementsSource;
+use Psalm\Type\Union;
+
+/**
+ * Prevents any assignment to a float value
+ */
+class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
+{
+    /**
+     * @param  MethodCall|StaticCall $expr
+     * @param  FileManipulation[] $file_replacements
+     *
+     * @return void
+     */
+    public static function afterMethodCallAnalysis(
+        Expr $expr,
+        string $method_id,
+        string $appearing_method_id,
+        string $declaring_method_id,
+        Context $context,
+        StatementsSource $statements_source,
+        Codebase $codebase,
+        array &$file_replacements = [],
+        Union &$return_type_candidate = null
+    ) {
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return;
+        }
+
+        try {
+            $function_storage = $codebase->methods->getStorage($declaring_method_id);
+
+            if ($function_storage->cased_name === '__call') {
+                return;
+            }
+
+            if ($function_storage->cased_name !== (string)$expr->name) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new IncorrectFunctionCasing(
+                        'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
+                        new CodeLocation($statements_source, $expr->name)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        } catch (\Exception $e) {
+            // can throw if storage is missing
+        }
+    }
+
+    /**
+     * @param  FileManipulation[] $file_replacements
+     *
+     * @return void
+     */
+    public static function afterFunctionCallAnalysis(
+        FuncCall $expr,
+        string $function_id,
+        Context $context,
+        StatementsSource $statements_source,
+        Codebase $codebase,
+        array &$file_replacements = [],
+        Union &$return_type_candidate = null
+    ) {
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return;
+        }
+
+        try {
+            $function_storage = $codebase->functions->getStorage(
+                $statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+                    ? $statements_source
+                    : null,
+                $function_id
+            );
+
+            if ($function_storage->cased_name !== (string)$expr->name) {
+                if (\Psalm\IssueBuffer::accepts(
+                    new IncorrectFunctionCasing(
+                        'Function is incorrectly cased, expecting ' . $function_storage->cased_name,
+                        new CodeLocation($statements_source, $expr->name)
+                    ),
+                    $statements_source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        } catch (\Exception $e) {
+            // can throw if storage is missing
+        }
+    }
+}
+
+class IncorrectFunctionCasing extends \Psalm\Issue\PluginIssue {
+}

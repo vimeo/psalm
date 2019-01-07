@@ -23,6 +23,7 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
 Here are a couple of example plugins:
  - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings
  - [PreventFloatAssignmentChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/PreventFloatAssignmentChecker.php) - prevents assignment to floats
+ - [FunctionCasingChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/FunctionCasingChecker.php) - checks that your functions and methods are correctly-cased
 
 To ensure your plugin runs when Psalm does, add it to your [config](Configuration):
 ```php
