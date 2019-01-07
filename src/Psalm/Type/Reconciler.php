@@ -162,7 +162,7 @@ class Reconciler
 
             $before_adjustment = $result_type ? clone $result_type : null;
 
-            $failed_reconciliation = false;
+            $failed_reconciliation = 0;
             $has_negation = false;
             $has_equality = false;
             $has_isset = false;
@@ -266,7 +266,7 @@ class Reconciler
                 );
             }
 
-            if ($failed_reconciliation) {
+            if ($failed_reconciliation === 2) {
                 $result_type->failed_reconciliation = true;
             }
 
@@ -291,7 +291,7 @@ class Reconciler
      * @param   StatementsAnalyzer   $statements_analyzer
      * @param   CodeLocation        $code_location
      * @param   string[]            $suppressed_issues
-     * @param   bool                $failed_reconciliation if the types cannot be reconciled, we need to know
+     * @param   0|1|2               $failed_reconciliation if the types cannot be reconciled, we need to know
      *
      * @return  Type\Union
      */
@@ -303,7 +303,7 @@ class Reconciler
         bool $inside_loop,
         CodeLocation $code_location = null,
         array $suppressed_issues = [],
-        &$failed_reconciliation = false
+        &$failed_reconciliation = 0
     ) {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -380,7 +380,7 @@ class Reconciler
             $existing_var_type->removeType('null');
 
             if (empty($existing_var_type->getTypes())) {
-                $failed_reconciliation = true;
+                $failed_reconciliation = 2;
 
                 // @todo - I think there's a better way to handle this, but for the moment
                 // mixed will have to do.
@@ -586,7 +586,7 @@ class Reconciler
                 return $existing_var_type;
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -624,7 +624,7 @@ class Reconciler
                 return new Type\Union($object_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -676,7 +676,7 @@ class Reconciler
                 return new Type\Union($callable_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -725,7 +725,7 @@ class Reconciler
                 return new Type\Union($numeric_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -760,7 +760,7 @@ class Reconciler
                 return new Type\Union($scalar_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -798,7 +798,7 @@ class Reconciler
                 return new Type\Union($bool_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -1127,7 +1127,7 @@ class Reconciler
                     }
                 }
 
-                $failed_reconciliation = true;
+                $failed_reconciliation = 2;
             }
         }
 
@@ -1149,7 +1149,7 @@ class Reconciler
      * @param  string|null $key
      * @param  CodeLocation|null $code_location
      * @param  string[]   $suppressed_issues
-     * @param  bool       $failed_reconciliation
+     * @param  0|1|2      $failed_reconciliation
      *
      * @return Type\Union
      */
@@ -1202,7 +1202,7 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$non_object_types)) {
+            if (!$did_remove_type || !$non_object_types) {
                 if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -1214,13 +1214,17 @@ class Reconciler
                         $suppressed_issues
                     );
                 }
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
 
             if ($non_object_types) {
                 return new Type\Union($non_object_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -1237,7 +1241,7 @@ class Reconciler
                 }
             }
 
-            if ((!$did_remove_type || !$non_scalar_types)) {
+            if (!$did_remove_type || !$non_scalar_types) {
                 if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
@@ -1249,13 +1253,17 @@ class Reconciler
                         $suppressed_issues
                     );
                 }
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
 
             if ($non_scalar_types) {
                 return new Type\Union($non_scalar_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -1290,13 +1298,17 @@ class Reconciler
                         $suppressed_issues
                     );
                 }
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
 
             if ($non_bool_types) {
                 return new Type\Union($non_bool_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -1325,13 +1337,17 @@ class Reconciler
                         $suppressed_issues
                     );
                 }
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
 
             if ($non_numeric_types) {
                 return new Type\Union($non_numeric_types);
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -1374,7 +1390,7 @@ class Reconciler
                     return $existing_var_type;
                 }
 
-                $failed_reconciliation = true;
+                $failed_reconciliation = 2;
 
                 return Type::getMixed();
             }
@@ -1464,13 +1480,17 @@ class Reconciler
                         $suppressed_issues
                     );
                 }
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
 
             if ($existing_var_type->getTypes()) {
                 return $existing_var_type;
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getEmpty();
         }
@@ -1495,13 +1515,17 @@ class Reconciler
                         $suppressed_issues
                     );
                 }
+
+                if (!$did_remove_type) {
+                    $failed_reconciliation = 1;
+                }
             }
 
             if ($existing_var_type->getTypes()) {
                 return $existing_var_type;
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return Type::getMixed();
         }
@@ -1654,7 +1678,7 @@ class Reconciler
                 }
             }
 
-            $failed_reconciliation = true;
+            $failed_reconciliation = 2;
 
             return new Type\Union([new Type\Atomic\TEmptyMixed]);
         }

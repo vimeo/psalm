@@ -506,6 +506,18 @@ class RedundantConditionTest extends TestCase
                         return true;
                     }',
             ],
+            'noRedundantConditionBleed' => [
+                '<?php
+                    $foo = getopt("i");
+                    $i = $foo["i"];
+
+                    /** @psalm-suppress TypeDoesNotContainNull */
+                    if ($i === null) {
+                        exit;
+                    }
+
+                    if ($i) {}',
+            ],
         ];
     }
 
