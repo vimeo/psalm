@@ -91,6 +91,7 @@ class DocumentationTest extends TestCase
         // these cannot have code
         $code_blocks['UnrecognizedExpression'] = true;
         $code_blocks['UnrecognizedStatement'] = true;
+        $code_blocks['PluginIssue'] = true;
 
         $documented_issues = array_keys($code_blocks);
         sort($documented_issues);
@@ -156,6 +157,9 @@ class DocumentationTest extends TestCase
                     continue 2;
 
                 case 'ForbiddenEcho':
+                    continue 2;
+
+                case 'PluginClass':
                     continue 2;
 
                 case 'InvalidFalsableReturnType':

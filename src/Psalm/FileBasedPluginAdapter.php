@@ -48,13 +48,6 @@ class FileBasedPluginAdapter implements Plugin\PluginEntryPointInterface
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
 
-        if (count($declared_classes) !== 1) {
-            throw new \InvalidArgumentException(
-                'Plugins must have exactly one class in the file - ' . $path . ' has ' .
-                    count($declared_classes)
-            );
-        }
-
         $fq_class_name = reset($declared_classes);
 
         return $fq_class_name;

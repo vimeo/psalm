@@ -695,8 +695,20 @@ class Config
         if (isset($config_xml->issueHandlers)) {
             /** @var \SimpleXMLElement $issue_handler */
             foreach ($config_xml->issueHandlers->children() as $key => $issue_handler) {
-                /** @var string $key */
-                $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
+                if ($key === 'PluginIssue') {
+                    $custom_class_name = (string) $issue_handler['name'];
+                    /** @var string $key */
+                    $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
+                        $issue_handler,
+                        $base_dir
+                    );
+                } else {
+                    /** @var string $key */
+                    $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                        $issue_handler,
+                        $base_dir
+                    );
+                }
             }
         }
 

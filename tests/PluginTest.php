@@ -336,6 +336,117 @@ class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage NoFloatAssignment
+     *
+     * @return                   void
+     */
+    public function testFloatCheckerPlugin()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/PreventFloatAssignmentChecker.php" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+
+            $a = 5.0;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testFloatCheckerPluginIssueSuppressionByConfig()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/PreventFloatAssignmentChecker.php" />
+                    </plugins>
+
+                    <issueHandlers>
+                        <PluginIssue name="NoFloatAssignment" errorLevel="suppress" />
+                        <PluginIssue name="SomeOtherCustomIssue" errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+
+            $a = 5.0;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testFloatCheckerPluginIssueSuppressionByDocblock()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/PreventFloatAssignmentChecker.php" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+
+            /** @psalm-suppress NoFloatAssignment */
+            $a = 5.0;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     /** @return void */
     public function testInheritedHookHandlersAreCalled()
     {

@@ -129,6 +129,7 @@
 
     <xs:complexType name="IssueHandlersType">
         <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="PluginIssue" type="PluginIssueHandlerType" minOccurs="0" />
             <xs:element name="AbstractInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
@@ -326,6 +327,24 @@
         </xs:sequence>
 
         <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="PluginIssueHandlerType">
+        <xs:sequence>
+            <xs:element name="errorLevel" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="directory" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                        <xs:element name="file" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+                    </xs:choice>
+
+                    <xs:attribute name="type" type="xs:string" use="required" />
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="errorLevel" type="xs:string" />
+        <xs:attribute name="name" type="xs:string" use="required" />
     </xs:complexType>
 
     <xs:complexType name="MethodIssueHandlerType">

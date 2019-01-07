@@ -20,13 +20,35 @@ class SomePlugin implements \Psalm\Plugin\Hook\AfterStatementAnalysisInterface
  - `AfterMethodCallAnalysisInterface` - called after Psalm analyzes a method call
  - `AfterFunctionCallAnalysisInterface` - called after Psalm analyzes a function call
 
-An example plugin that checks class references in strings is provided [here](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php).
+Here are a couple of example plugins:
+ - [StringChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/StringChecker.php) - checks class references in strings
+ - [PreventFloatAssignmentChecker](https://github.com/vimeo/psalm/blob/master/examples/plugins/PreventFloatAssignmentChecker.php) - prevents assignment to floats
 
 To ensure your plugin runs when Psalm does, add it to your [config](Configuration):
 ```php
     <plugins>
         <plugin filename="src/plugins/SomePlugin.php" />
     </plugins>
+```
+
+# Handling custom plugin issues
+
+Plugins may sometimes need to emit their own issues (i.e. not emit one of the [existing issues](issues.md)). If this is the case, they can emit an issue that extends `Psalm\Issue\PluginIssue`.
+
+To suppress a custom plugin issue in docblocks you can just use its issue name (e.g. `/** @psalm-suppress NoFloatAssignment */`, but to [suppress it in Psalm’s config](dealing_with_code_issues.md#config-suppression) you must use the pattern:
+
+```xml
+<PluginIssue name="NoFloatAssignment" errorLevel="suppress" />
+```
+
+You can also use more complex rules in the `<issueHandler />` element, as you can with any other issue type e.g.
+
+```xml
+<PluginIssue name="NoFloatAssignment">
+    <errorLevel type="suppress">
+        <directory name="tests" />
+    </errorLevel>
+</PluginIssue>
 ```
 
 # Composer-based plugins

@@ -472,7 +472,7 @@ class ConfigTest extends TestCase
                  * @return string
                  */
                 function ($issue_name) {
-                    if ($issue_name === 'ParseError') {
+                    if ($issue_name === 'ParseError' || $issue_name === 'PluginIssue') {
                         return '';
                     }
 
