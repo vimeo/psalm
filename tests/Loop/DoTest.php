@@ -256,6 +256,20 @@ class DoTest extends \Psalm\Tests\TestCase
                         $a = $a->getParent();
                     } while ($a !== false);',
             ],
+            'doCallInWhile' => [
+                '<?php
+                    class A {
+                        public function getParent() : ?A {
+                            return rand(0, 1) ? new A : null;
+                        }
+                    }
+
+                    $a = new A();
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($a = $a->getParent());'
+            ],
             'doWithContinue' => [
                 '<?php
                     do {

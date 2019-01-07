@@ -135,29 +135,7 @@ class DoAnalyzer
             $do_context->vars_in_scope = $while_vars_in_scope_reconciled;
         }
 
-        $do_cond_context = clone $do_context;
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-
-        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->cond, $do_cond_context);
-
-        if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-        }
-        if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-
-        if ($context->collect_references) {
-            $do_context->unreferenced_vars = $do_cond_context->unreferenced_vars;
-        }
-
-        foreach ($do_cond_context->vars_in_scope as $var_id => $type) {
+        foreach ($do_context->vars_in_scope as $var_id => $type) {
             if (isset($context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
             }
@@ -232,7 +210,7 @@ class DoAnalyzer
         );
 
         if ($context->collect_references) {
-            $context->unreferenced_vars = $do_context->unreferenced_vars;
+            $context->unreferenced_vars = $inner_loop_context->unreferenced_vars;
         }
 
         if ($context->collect_exceptions) {
