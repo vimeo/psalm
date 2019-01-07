@@ -608,11 +608,13 @@ class CallAnalyzer
                     }
                 }
             } else {
-                // if it's a closure, we want to evaluate it anyway
+                // there are a bunch of things we want to evaluate anyway
                 if ($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall) {
+                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                    || $arg->value instanceof PhpParser\Node\Expr\Assign
+                ) {
                     if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                         return false;
                     }
