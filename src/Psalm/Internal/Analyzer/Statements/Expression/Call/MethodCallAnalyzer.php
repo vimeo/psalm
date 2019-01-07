@@ -115,8 +115,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if ($class_type && $stmt->name instanceof PhpParser\Node\Identifier && $class_type->isNull()) {
             if (IssueBuffer::accepts(
                 new NullReference(
-                    'Cannot call method ' . $stmt->name->name . ' on null variable ' . $var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    'Cannot call method ' . $stmt->name->name . ' on null value',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
@@ -133,8 +133,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyNullReference(
-                    'Cannot call method ' . $stmt->name->name . ' on possibly null variable ' . $var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    'Cannot call method ' . $stmt->name->name . ' on possibly null value',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
@@ -149,8 +149,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         ) {
             if (IssueBuffer::accepts(
                 new PossiblyFalseReference(
-                    'Cannot call method ' . $stmt->name->name . ' on possibly false variable ' . $var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->var)
+                    'Cannot call method ' . $stmt->name->name . ' on possibly false value',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
