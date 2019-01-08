@@ -183,7 +183,7 @@ if (isset($options['plugin'])) {
 
 /** @var string $plugin_path */
 foreach ($plugins as $plugin_path) {
-    Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
+    Config::getInstance()->addPluginPath($current_dir . $plugin_path);
 }
 
 $project_analyzer->alterCodeAfterCompletion(
