@@ -494,7 +494,7 @@ if ($find_dead_code) {
 
 /** @var string $plugin_path */
 foreach ($plugins as $plugin_path) {
-    Config::getInstance()->addPluginPath($current_dir . DIRECTORY_SEPARATOR . $plugin_path);
+    Config::getInstance()->addPluginPath($current_dir . $plugin_path);
 }
 
 if ($paths_to_check === null) {
