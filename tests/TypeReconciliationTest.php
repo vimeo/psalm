@@ -225,6 +225,9 @@ class TypeReconciliationTest extends TestCase
             'nullableClassString' => ['null', 'falsy', '?class-string'],
             'mixedOrNullNotFalsy' => ['non-empty-mixed', '!falsy', 'mixed|null'],
             'mixedOrNullFalsy' => ['null|empty-mixed', 'falsy', 'mixed|null'],
+            'nullableClassStringFalsy' => ['null', 'falsy', 'class-string<A>|null'],
+            'nullableClassStringEqualsNull' => ['null', '=null', 'class-string<A>|null'],
+            'nullableClassStringTruthy' => ['class-string<A>', '!falsy', 'class-string<A>|null'],
         ];
     }
 

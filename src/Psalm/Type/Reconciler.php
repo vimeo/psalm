@@ -561,6 +561,7 @@ class Reconciler
                     || $type instanceof TObject
                     || $type instanceof TResource
                     || $type instanceof TCallable
+                    || $type instanceof Type\Atomic\TClassString
                 ) {
                     $did_remove_type = true;
 
