@@ -717,14 +717,24 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     foreach ($docblock_info->templates as $template_type) {
                         if (count($template_type) === 3) {
-                            $storage->template_types[$template_type[0]] = Type::parseTokens(
-                                Type::fixUpLocalType(
-                                    $template_type[2],
-                                    $this->aliases,
-                                    null,
-                                    $this->type_aliases
-                                )
-                            );
+                            if (trim($template_type[2])) {
+                                $storage->template_types[$template_type[0]] = Type::parseTokens(
+                                    Type::fixUpLocalType(
+                                        $template_type[2],
+                                        $this->aliases,
+                                        null,
+                                        $this->type_aliases
+                                    )
+                                );
+                            } else {
+                                if (IssueBuffer::accepts(
+                                    new InvalidDocblock(
+                                        'Template missing as type',
+                                        new CodeLocation($this->file_scanner, $node, null, true)
+                                    )
+                                )) {
+                                }
+                            }
                         } else {
                             $storage->template_types[$template_type[0]] = Type::getMixed();
                         }
@@ -1337,14 +1347,24 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             foreach ($docblock_info->templates as $template_type) {
                 if (count($template_type) === 3) {
-                    $storage->template_types[$template_type[0]] = Type::parseTokens(
-                        Type::fixUpLocalType(
-                            $template_type[2],
-                            $this->aliases,
-                            null,
-                            $this->type_aliases
-                        )
-                    );
+                    if (trim($template_type[2])) {
+                        $storage->template_types[$template_type[0]] = Type::parseTokens(
+                            Type::fixUpLocalType(
+                                $template_type[2],
+                                $this->aliases,
+                                null,
+                                $this->type_aliases
+                            )
+                        );
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                'Template missing as type',
+                                new CodeLocation($this->file_scanner, $stmt, null, true)
+                            )
+                        )) {
+                        }
+                    }
                 } else {
                     $storage->template_types[$template_type[0]] = Type::getMixed();
                 }

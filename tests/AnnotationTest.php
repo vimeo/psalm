@@ -1137,6 +1137,22 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'noCrashOnInvalidClassTemplateAsType' => [
+                '<?php
+                    /**
+                     * @template T as ' . '
+                     */
+                    class A {}',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'noCrashOnInvalidFunctionTemplateAsType' => [
+                '<?php
+                    /**
+                     * @template T as ' . '
+                     */
+                    function foo() : void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
