@@ -3,6 +3,7 @@ namespace Psalm\Type;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
@@ -12,6 +13,9 @@ use Psalm\Type\Algebra;
 
 class Algebra
 {
+    /** @var int */
+    private static $clause_count = 0;
+
     /**
      * @param  array<string, array<int, array<int, string>>>  $all_types
      *
@@ -342,8 +346,8 @@ class Algebra
      */
     private static function groupImpossibilities(array $clauses)
     {
-        if (count($clauses) > 5000) {
-            return [];
+        if (static::$clause_count > 500) {
+            throw new ComplicatedExpressionException();
         }
 
         $clause = array_shift($clauses);
@@ -353,8 +357,8 @@ class Algebra
         if ($clauses) {
             $grouped_clauses = self::groupImpossibilities($clauses);
 
-            if (count($grouped_clauses) > 5000) {
-                return [];
+            if (static::$clause_count > 500) {
+                throw new ComplicatedExpressionException();
             }
 
             foreach ($grouped_clauses as $grouped_clause) {
@@ -375,6 +379,8 @@ class Algebra
                         $new_clause = new Clause($new_clause_possibilities, false, true, true);
 
                         $new_clauses[] = $new_clause;
+
+                        self::$clause_count++;
                     }
                 }
             }
@@ -388,6 +394,8 @@ class Algebra
                     $new_clause = new Clause([$var => [$impossible_type]]);
 
                     $new_clauses[] = $new_clause;
+
+                    self::$clause_count++;
                 }
             }
         }
@@ -500,12 +508,22 @@ class Algebra
      */
     public static function negateFormula(array $clauses)
     {
+        if (count($clauses) > 1000) {
+            return [];
+        }
+
+        self::$clause_count = 0;
+
         foreach ($clauses as $clause) {
             self::calculateNegation($clause);
         }
 
-        $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
-        return $negated;
+        try {
+            $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
+            return $negated;
+        } catch (ComplicatedExpressionException $e) {
+            return [];
+        }
     }
 
     /**
