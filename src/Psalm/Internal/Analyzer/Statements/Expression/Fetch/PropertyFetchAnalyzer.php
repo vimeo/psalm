@@ -231,6 +231,20 @@ class PropertyFetchAnalyzer
                 continue;
             }
 
+            if ($lhs_type_part instanceof Type\Atomic\TGenericParam) {
+                $extra_types = $lhs_type_part->extra_types;
+
+                $lhs_type_part = array_values(
+                    $lhs_type_part->as->getTypes()
+                )[0];
+
+                $lhs_type_part->from_docblock = true;
+
+                if ($lhs_type_part instanceof TNamedObject) {
+                    $lhs_type_part->extra_types = $extra_types;
+                }
+            }
+
             if ($lhs_type_part instanceof Type\Atomic\TMixed) {
                 $stmt->inferredType = Type::getMixed();
                 continue;

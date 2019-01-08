@@ -43,6 +43,14 @@ class TGenericParam extends \Psalm\Type\Atomic
         return $this->param_name;
     }
 
+    /**
+     * @return string
+     */
+    public function getAssertionString()
+    {
+        return $this->as->getId();
+    }
+
     public function getId()
     {
         if ($this->extra_types) {

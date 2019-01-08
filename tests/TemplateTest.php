@@ -1163,6 +1163,82 @@ class TemplateTest extends TestCase
 
                     apply(function(A $_i) : void {}, new AChild());',
             ],
+            'getPropertyOnClass' => [
+                '<?php
+                    class Foo {
+                        /** @var int */
+                        public $id = 0;
+                    }
+
+                    /**
+                     * @template T as Foo
+                     */
+                    class Collection {
+                        /**
+                         * @var class-string<T>
+                         */
+                        private $type;
+
+                        /**
+                         * @param class-string<T> $type
+                         */
+                        public function __construct(string $type) {
+                            $this->type = $type;
+                        }
+
+                        /**
+                         * @return class-string<T>
+                         */
+                        public function getType()
+                        {
+                           return $this->type;
+                        }
+
+                        /**
+                         * @param T $object
+                         */
+                        public function bar(Foo $object) : void
+                        {
+                            if ($this->getType() !== get_class($object)) {
+                                return;
+                            }
+
+                            echo $object->id;
+                        }
+                    }',
+            ],
+            'getEquateClass' => [
+                '<?php
+                    class Foo {
+                        /** @var int */
+                        public $id = 0;
+                    }
+
+                    /**
+                     * @template T as Foo
+                     */
+                    class Container {
+                        /**
+                         * @var T
+                         */
+                        private $obj;
+
+                        /**
+                         * @param T $obj
+                         */
+                        public function __construct(Foo $obj) {
+                            $this->obj = $obj;
+                        }
+
+                        /**
+                         * @param T $object
+                         */
+                        public function bar(Foo $object) : void
+                        {
+                            if ($this->obj === $object) {}
+                        }
+                    }',
+            ],
         ];
     }
 
