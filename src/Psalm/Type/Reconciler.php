@@ -1315,7 +1315,8 @@ class Reconciler
 
         if ($new_var_type === 'numeric' && !$existing_var_type->hasMixed()) {
             $non_numeric_types = [];
-            $did_remove_type = $existing_var_type->hasString();
+            $did_remove_type = $existing_var_type->hasString()
+                || $existing_var_type->hasScalar();
 
             foreach ($existing_var_atomic_types as $type) {
                 if (!$type->isNumericType()) {

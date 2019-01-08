@@ -1141,6 +1141,13 @@ class TypeReconciliationTest extends TestCase
                     '$a' => 'A',
                 ]
             ],
+            'isNumericCanBeScalar' => [
+                '<?php
+                    /** @param scalar $val */
+                    function foo($val) : void {
+                        if (!is_numeric($val)) {}
+                    }',
+            ],
         ];
     }
 
