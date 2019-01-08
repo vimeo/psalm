@@ -206,7 +206,11 @@ class BinaryOpAnalyzer
                 $codebase
             );
 
-            $negated_left_clauses = Algebra::negateFormula($left_clauses);
+            try {
+                $negated_left_clauses = Algebra::negateFormula($left_clauses);
+            } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+                return false;
+            }
 
             $clauses_for_right_analysis = Algebra::simplifyCNF(
                 array_merge(

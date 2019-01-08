@@ -16,6 +16,12 @@ class Algebra
     /** @var int */
     private static $clause_count = 0;
 
+    /** @return void */
+    public static function resetClauseCount()
+    {
+        self::$clause_count = 0;
+    }
+
     /**
      * @param  array<string, array<int, array<int, string>>>  $all_types
      *
@@ -346,7 +352,7 @@ class Algebra
      */
     private static function groupImpossibilities(array $clauses)
     {
-        if (static::$clause_count > 500) {
+        if (self::$clause_count > 50000) {
             throw new ComplicatedExpressionException();
         }
 
@@ -357,7 +363,7 @@ class Algebra
         if ($clauses) {
             $grouped_clauses = self::groupImpossibilities($clauses);
 
-            if (static::$clause_count > 500) {
+            if (self::$clause_count > 50000) {
                 throw new ComplicatedExpressionException();
             }
 
@@ -508,22 +514,12 @@ class Algebra
      */
     public static function negateFormula(array $clauses)
     {
-        if (count($clauses) > 1000) {
-            return [];
-        }
-
-        self::$clause_count = 0;
-
         foreach ($clauses as $clause) {
             self::calculateNegation($clause);
         }
 
-        try {
-            $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
-            return $negated;
-        } catch (ComplicatedExpressionException $e) {
-            return [];
-        }
+        $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
+        return $negated;
     }
 
     /**

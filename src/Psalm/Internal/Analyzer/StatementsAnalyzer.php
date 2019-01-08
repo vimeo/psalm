@@ -165,6 +165,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             $original_context = clone $context->loop_scope->loop_parent_context;
         }
 
+        \Psalm\Type\Algebra::resetClauseCount();
+
         $plugin_classes = $codebase->config->after_statement_checks;
 
         foreach ($stmts as $stmt) {
