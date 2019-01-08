@@ -243,7 +243,11 @@ class IfAnalyzer
         // define this before we alter local claues after reconciliation
         $if_scope->reasonable_clauses = $if_context->clauses;
 
-        $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+        try {
+            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            $if_scope->negated_clauses = [];
+        }
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(

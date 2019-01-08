@@ -39,7 +39,11 @@ class AlgebraAnalyzer
         PhpParser\Node $stmt,
         array $new_assigned_var_ids
     ) {
-        $negated_formula2 = Algebra::negateFormula($formula2);
+        try {
+            $negated_formula2 = Algebra::negateFormula($formula2);
+        } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
+            return;
+        }
 
         $formula1_hashes = [];
 
