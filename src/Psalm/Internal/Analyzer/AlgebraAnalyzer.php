@@ -40,7 +40,7 @@ class AlgebraAnalyzer
         array $new_assigned_var_ids
     ) {
         try {
-            $negated_formula2 = Algebra::negateFormula($formula2);
+            $negated_formula2 = Algebra::negateFormula($formula2, 1);
         } catch (\Psalm\Exception\ComplicatedExpressionException $e) {
             return;
         }

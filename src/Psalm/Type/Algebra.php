@@ -13,15 +13,6 @@ use Psalm\Type\Algebra;
 
 class Algebra
 {
-    /** @var int */
-    private static $clause_count = 0;
-
-    /** @return void */
-    public static function resetClauseCount()
-    {
-        self::$clause_count = 0;
-    }
-
     /**
      * @param  array<string, array<int, array<int, string>>>  $all_types
      *
@@ -350,9 +341,9 @@ class Algebra
      *
      * @return array<int, Clause>
      */
-    private static function groupImpossibilities(array $clauses)
+    private static function groupImpossibilities(array $clauses, int &$complexity = 1)
     {
-        if (self::$clause_count > 50000) {
+        if ($complexity > 50000) {
             throw new ComplicatedExpressionException();
         }
 
@@ -361,9 +352,9 @@ class Algebra
         $new_clauses = [];
 
         if ($clauses) {
-            $grouped_clauses = self::groupImpossibilities($clauses);
+            $grouped_clauses = self::groupImpossibilities($clauses, $complexity);
 
-            if (self::$clause_count > 50000) {
+            if ($complexity > 50000) {
                 throw new ComplicatedExpressionException();
             }
 
@@ -386,7 +377,7 @@ class Algebra
 
                         $new_clauses[] = $new_clause;
 
-                        self::$clause_count++;
+                        $complexity += count($new_clause_possibilities);
                     }
                 }
             }
@@ -401,7 +392,7 @@ class Algebra
 
                     $new_clauses[] = $new_clause;
 
-                    self::$clause_count++;
+                    $complexity++;
                 }
             }
         }
@@ -512,13 +503,17 @@ class Algebra
      *
      * @return array<int, Clause>
      */
-    public static function negateFormula(array $clauses)
+    public static function negateFormula(array $clauses, int $complexity = null)
     {
         foreach ($clauses as $clause) {
             self::calculateNegation($clause);
         }
 
-        $negated = self::simplifyCNF(self::groupImpossibilities($clauses));
+        if ($complexity === null) {
+            $complexity = count($clauses);
+        }
+
+        $negated = self::simplifyCNF(self::groupImpossibilities($clauses, $complexity));
         return $negated;
     }
 
