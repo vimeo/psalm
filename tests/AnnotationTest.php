@@ -1121,6 +1121,22 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'noCrashOnHalfDoneArrayPropertyType' => [
+                '<?php
+                    class A {
+                        /** @var array< */
+                        private $foo = [];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'noCrashOnHalfDoneObjectLikeArrayPropertyType' => [
+                '<?php
+                    class A {
+                        /** @var array{ */
+                        private $foo = [];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

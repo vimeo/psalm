@@ -220,7 +220,7 @@ abstract class Type
             }
 
             if (!$generic_params) {
-                throw new \InvalidArgumentException('No generic params provided for type');
+                throw new TypeParseTreeException('No generic params provided for type');
             }
 
             if ($generic_type_value === 'array') {
@@ -350,7 +350,7 @@ abstract class Type
             }
 
             if (!$properties) {
-                throw new \InvalidArgumentException('No properties supplied for ObjectLike');
+                throw new TypeParseTreeException('No properties supplied for ObjectLike');
             }
 
             return new ObjectLike($properties);
