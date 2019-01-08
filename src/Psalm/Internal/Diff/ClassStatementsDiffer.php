@@ -86,9 +86,7 @@ class ClassStatementsDiffer extends AstDiffer
                     $start_diff = $b_start - $a_start;
                     $line_diff = $b->getLine() - $a->getLine();
 
-                    if ($start_diff !== 0 || $line_diff !== 0) {
-                        $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
-                    }
+                    $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
 
                     return true;
                 }

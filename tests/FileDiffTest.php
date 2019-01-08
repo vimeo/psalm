@@ -231,7 +231,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
                 [],
                 [],
-                []
+                [[0, 0], [0, 0], [0, 0], [0, 0]]
             ],
             'sameFileWithDoubleDocblocks' => [
                 '<?php
@@ -285,7 +285,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::$aB', 'foo\a::F', 'foo\a::foo', 'foo\a::bar'],
                 [],
                 [],
-                []
+                [[0, 0], [0, 0], [0, 0], [0, 0]]
             ],
             'lineChanges' => [
                 '<?php
@@ -411,7 +411,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                []
+                [[0, 0]]
             ],
             'propertyChange' => [
                 '<?php
@@ -587,7 +587,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                []
+                [[0, 0]]
             ],
             'removeDocblock' => [
                 '<?php
@@ -618,7 +618,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                []
+                [[0, 0]]
             ],
             'changeDocblock' => [
                 '<?php
@@ -652,7 +652,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                []
+                [[0, 0]]
             ],
             'changeMethodVisibility' => [
                 '<?php
@@ -680,7 +680,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 ['foo\a::bar', 'foo\a::bar'],
-                []
+                [[0, 0]]
             ],
             'removeFunctionAtEnd' => [
                 '<?php
@@ -729,7 +729,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                []
+                [[0, 0], [0, 0]]
             ],
             'addSpaceInFunction' => [
                 '<?php
@@ -803,7 +803,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bat'],
                 ['foo\a::bar'],
                 [],
-                [[4, 4]]
+                [[0, 0], [4, 4]]
             ],
             'removeSpaceInFunction' => [
                 '<?php
@@ -877,7 +877,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bat'],
                 ['foo\a::bar'],
                 [],
-                [[-4, -4]]
+                [[0, 0], [-4, -4]]
             ],
             'removeFunctionAtBeginning' => [
                 '<?php
@@ -939,7 +939,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bat'],
                 [],
                 ['foo\a::bar'],
-                [[-98, -3]],
+                [[0, 0], [-98, -3]],
             ],
             'changeNamespace' => [
                 '<?php
@@ -1036,7 +1036,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                []
+                [[0, 0], [0, 0]]
             ],
             'newFunctionAtBeginning' => [
                 '<?php
@@ -1134,7 +1134,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 ['foo\a::bat'],
-                [[183, 7]]
+                [[0, 0], [183, 7]]
             ],
             'removeAdditionalComments' => [
                 '<?php
@@ -1247,7 +1247,7 @@ class FileDiffTest extends TestCase
                 ['foo\a::__construct', 'foo\a::bar', 'foo\b::bat'],
                 [],
                 ['foo\b::__construct', 'foo\b::bar'],
-                [[120, 2]]
+                [[0, 0], [0, 0], [120, 2]]
             ],
             'sameTrait' => [
                 '<?php
@@ -1283,7 +1283,7 @@ class FileDiffTest extends TestCase
                 ['foo\t::$aB', 'foo\t::F', 'foo\t::foo', 'foo\t::bar'],
                 [],
                 [],
-                []
+                [[0, 0], [0, 0], [0, 0], [0, 0]]
             ],
             'traitPropertyChange' => [
                 '<?php
@@ -1416,7 +1416,7 @@ class FileDiffTest extends TestCase
                 ['bar\foo::a', 'bar\foo::c'],
                 [],
                 ['bar\foo::b'],
-                [[229, 8]]
+                [[0, 0], [229, 8]]
             ],
             'removeStatementsAbove' => [
                 '<?php

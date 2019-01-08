@@ -975,6 +975,64 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [238], [], [238], []],
             ],
+            'duplicateMethodThenRemove' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {
+                                /**
+                                 * @return void
+                                 */
+                                public static function foo() {}
+
+                                /**
+                                 * @return void
+                                 */
+                                public static function bar(
+                                    string $function_id
+                                ) {}
+                            }',
+                    ],
+                ],
+                'error_positions' => [[], [381], []],
+            ],
         ];
     }
 }
