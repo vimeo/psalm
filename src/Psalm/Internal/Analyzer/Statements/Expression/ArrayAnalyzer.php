@@ -90,7 +90,7 @@ class ArrayAnalyzer
                         $item_key_value = $item->key->inferredType->getSingleIntLiteral()->value;
 
                         if ($item_key_value > $int_offset + $int_offset_diff) {
-                            $int_offset_diff = $item_key_value - ($int_offset + $int_offset_diff);
+                            $int_offset_diff = $item_key_value - $int_offset;
                         }
                     }
                 }

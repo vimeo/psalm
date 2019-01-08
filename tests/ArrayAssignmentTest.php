@@ -1010,6 +1010,13 @@ class ArrayAssignmentTest extends TestCase
                     $arr = [1 => 0, 1, 2, 3];
                     $arr = [1 => "one", 2 => "two", "three"];',
             ],
+            'noDuplicateImplicitIntArrayKeyLargeOffset' => [
+                '<?php
+                    $arr = [
+                        48 => "A",
+                        95 => "a", "b",
+                    ];',
+            ],
             'constArrayAssignment' => [
                 '<?php
                     const BAR = 2;
