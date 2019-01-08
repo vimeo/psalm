@@ -934,8 +934,6 @@ class Union
 
                 foreach ($template_type->types as $template_type_part) {
                     if ($template_type_part instanceof Type\Atomic\TMixed) {
-                        $is_mixed = true;
-
                         $unknown_class_string = new Type\Atomic\TClassString();
 
                         $new_types[$unknown_class_string->getKey()] = $unknown_class_string;
