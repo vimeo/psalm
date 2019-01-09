@@ -274,6 +274,10 @@ class Scanner
         $analyze_too = false,
         $store_failure = true
     ) {
+        if ($fq_classlike_name[0] === '\\') {
+            $fq_classlike_name = substr($fq_classlike_name, 1);
+        }
+
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         // avoid checking classes that we know will just end in failure

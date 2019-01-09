@@ -342,6 +342,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
                 }
 
+                if ($function_id === 'is_a' || $function_id === 'is_subclass_of') {
+                    $second_arg = $node->args[1]->value ?? null;
+
+                    if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
+                        $this->codebase->scanner->queueClassLikeForScanning(
+                            $second_arg->value,
+                            $this->file_path
+                        );
+                    }
+                }
+
                 if ($function_id === 'class_alias') {
                     $first_arg = $node->args[0]->value ?? null;
                     $second_arg = $node->args[1]->value ?? null;
