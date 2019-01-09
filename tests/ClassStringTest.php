@@ -395,6 +395,25 @@ class ClassStringTest extends TestCase
                         return $s;
                     }',
             ],
+            'createClassOfTypeFromStringUsingIsSubclassOfString' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @return class-string<A> $s
+                     */
+                    function foo(string $s) : string {
+                        if (!class_exists($s)) {
+                            throw new \UnexpectedValueException("bad");
+                        }
+
+                        if (!is_subclass_of($s, "\A")) {
+                            throw new \UnexpectedValueException("bad");
+                        }
+
+                        return $s;
+                    }',
+            ],
             'checkSubclassOfAbstract' => [
                 '<?php
                     interface Foo {

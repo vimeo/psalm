@@ -1404,7 +1404,11 @@ class AssertionFinder
                 $is_a_prefix = $third_arg_value === 'true' ? 'isa-string-' : 'isa-';
 
                 if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
-                    $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $second_arg->value]];
+                    $fq_class_name = $second_arg->value;
+                    if ($fq_class_name[0] === '\\') {
+                        $fq_class_name = substr($fq_class_name, 1);
+                    }
+                    $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $fq_class_name]];
                 } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $second_arg->class instanceof PhpParser\Node\Name
                     && $second_arg->name instanceof PhpParser\Node\Identifier
