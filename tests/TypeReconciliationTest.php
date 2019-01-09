@@ -409,9 +409,9 @@ class TypeReconciliationTest extends TestCase
                     '$a' => 'int',
                     '$b' => 'int',
                     '$c' => 'string',
-                    '$hours' => 'string|int|float',
-                    '$minutes' => 'string|int|float',
-                    '$seconds' => 'string|int|float',
+                    '$hours' => 'string|int|float|null',
+                    '$minutes' => 'string|int|float|null',
+                    '$seconds' => 'string|int|float|null',
                 ],
             ],
             'typeRefinementWithIsNumericOnIntOrFalse' => [
