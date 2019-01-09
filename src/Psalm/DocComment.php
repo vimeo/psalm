@@ -49,7 +49,8 @@ class DocComment
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
-                $lines[$last] = rtrim($old_last_line) . ($preserve_format ? "\n" . $line : ' ' . trim($line));
+                $lines[$last] = rtrim($old_last_line)
+                    . ($preserve_format || trim($old_last_line) === '@return' ? "\n" . $line : ' ' . trim($line));
 
                 if ($line_number) {
                     $old_line_number = $line_map[$old_last_line];

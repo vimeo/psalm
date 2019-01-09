@@ -1153,6 +1153,15 @@ class AnnotationTest extends TestCase
                     function foo() : void {}',
                 'error_message' => 'InvalidDocblock',
             ],
+            'returnTypeNewLineIsIgnored' => [
+                '<?php
+                    /**
+                     * @return
+                     *     Some text
+                     */
+                    function foo() {}',
+                'error_message' => 'MissingReturnType',
+            ],
         ];
     }
 }

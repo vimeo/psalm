@@ -256,36 +256,7 @@ class CommentAnalyzer
                 ? $comments['specials']['psalm-return']
                 : $comments['specials']['return'];
 
-            $return_block = trim((string)reset($return_specials));
-
-            if (!$return_block) {
-                throw new DocblockParseException('Missing @return type');
-            }
-
-            try {
-                $line_parts = self::splitDocLine($return_block);
-            } catch (DocblockParseException $e) {
-                throw $e;
-            }
-
-            if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
-                && $line_parts[0][0] !== '{'
-            ) {
-                if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
-                    throw new IncorrectDocblockException('Misplaced variable');
-                }
-
-                $info->return_type = array_shift($line_parts);
-                $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
-
-                $line_number = array_keys($return_specials)[0];
-
-                if ($line_number) {
-                    $info->return_type_line_number = $line_number;
-                }
-            } else {
-                throw new DocblockParseException('Badly-formatted @return type');
-            }
+            self::extractReturnType((string) reset($return_specials), array_keys($return_specials)[0], $info);
         }
 
         if (isset($comments['specials']['param']) || isset($comments['specials']['psalm-param'])) {
@@ -483,6 +454,47 @@ class CommentAnalyzer
         $info->ignore_falsable_return = isset($comments['specials']['psalm-ignore-falsable-return']);
 
         return $info;
+    }
+
+    /**
+     * @return void
+     */
+    private static function extractReturnType(string $return_block, int $line_number, FunctionDocblockComment $info)
+    {
+        $return_lines = explode("\n", $return_block);
+
+        if (!trim($return_lines[0])) {
+            return;
+        }
+
+        $return_block = trim($return_block);
+
+        if (!$return_block) {
+            return;
+        }
+
+        try {
+            $line_parts = self::splitDocLine($return_block);
+        } catch (DocblockParseException $e) {
+            throw $e;
+        }
+
+        if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
+            && $line_parts[0][0] !== '{'
+        ) {
+            if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                throw new IncorrectDocblockException('Misplaced variable');
+            }
+
+            $info->return_type = array_shift($line_parts);
+            $info->return_type_description = $line_parts ? implode(' ', $line_parts) : null;
+
+            if ($line_number) {
+                $info->return_type_line_number = $line_number;
+            }
+        } else {
+            throw new DocblockParseException('Badly-formatted @return type');
+        }
     }
 
     /**
