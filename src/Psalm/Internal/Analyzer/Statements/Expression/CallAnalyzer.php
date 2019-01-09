@@ -102,7 +102,45 @@ class CallAnalyzer
         ) {
             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-            $declaring_method_id = (string) $codebase->methods->getDeclaringMethodId($method_id);
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+            if (!$declaring_method_id) {
+                if (isset($context->vars_in_scope['$this'])) {
+                    foreach ($context->vars_in_scope['$this']->getTypes() as $atomic_type) {
+                        if ($atomic_type instanceof TNamedObject) {
+                            $fq_class_name = $atomic_type->value;
+                            $method_id = $fq_class_name . '::' . strtolower($method_name);
+
+                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                            if ($declaring_method_id) {
+                                break;
+                            }
+
+                            if (!$atomic_type->extra_types) {
+                                continue;
+                            }
+
+                            foreach ($atomic_type->extra_types as $intersection_type) {
+                                if ($intersection_type instanceof TNamedObject) {
+                                    $fq_class_name = $intersection_type->value;
+                                    $method_id = $fq_class_name . '::' . strtolower($method_name);
+
+                                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                                    if ($declaring_method_id) {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!$declaring_method_id) {
+                    throw new \UnexpectedValueException('Could not find declaring method for ' . $method_id);
+                }
+            }
 
             if (isset($context->initialized_methods[$declaring_method_id])) {
                 return;

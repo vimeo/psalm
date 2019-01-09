@@ -1132,6 +1132,48 @@ class PropertyTypeTest extends TestCase
 
                     class B extends A {}',
             ],
+            'noCrashForAbstractConstructorWithInstanceofInterface' => [
+                '<?php
+                    abstract class A {
+                        /** @var int */
+                        public $a;
+
+                        public function __construct() {
+                            if ($this instanceof I) {
+                                $this->a = $this->bar();
+                            } else {
+                                $this->a = 6;
+                            }
+                        }
+                    }
+
+                    interface I {
+                        public function bar() : int;
+                    }',
+            ],
+            'SKIPPED-abstractConstructorWithInstanceofClass' => [
+                '<?php
+                    abstract class A {
+                        /** @var int */
+                        public $a;
+
+                        public function __construct() {
+                            if ($this instanceof B) {
+                                $this->a = $this->bar();
+                            } else {
+                                $this->a = 6;
+                            }
+                        }
+                    }
+
+                    class B extends A {
+                        public function bar() : int {
+                            return 3;
+                        }
+                    }',
+                [],
+                'error_levels' => []
+            ],
         ];
     }
 
