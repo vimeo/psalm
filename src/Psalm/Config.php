@@ -287,6 +287,13 @@ class Config
     public $after_classlike_exists_checks = [];
 
     /**
+     * Static methods to be called after classlike checks have completed
+     *
+     * @var class-string<Hook\AfterClassLikeAnalysisInterface>[]
+     */
+    public $after_classlike_checks = [];
+
+    /**
      * Static methods to be called after classlikes have been scanned
      *
      * @var class-string<Hook\AfterClassLikeVisitInterface>[]

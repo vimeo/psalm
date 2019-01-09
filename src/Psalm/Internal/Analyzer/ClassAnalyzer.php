@@ -529,8 +529,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-
-
         foreach ($storage->pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
             $pseudo_method_id = $this->fq_class_name . '::' . $pseudo_method_name;
 
@@ -559,6 +557,31 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         false
                     );
                 }
+            }
+        }
+
+        $plugin_classes = $codebase->config->after_classlike_checks;
+
+        if ($plugin_classes) {
+            $file_manipulations = [];
+
+            foreach ($plugin_classes as $plugin_fq_class_name) {
+                if ($plugin_fq_class_name::afterStatementAnalysis(
+                    $class,
+                    $storage,
+                    $this->getSource(),
+                    $codebase,
+                    $file_manipulations
+                ) === false) {
+                    return false;
+                }
+            }
+
+            if ($file_manipulations) {
+                \Psalm\Internal\FileManipulation\FileManipulationBuffer::add(
+                    $this->getFilePath(),
+                    $file_manipulations
+                );
             }
         }
     }
