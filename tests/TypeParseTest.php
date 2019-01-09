@@ -721,11 +721,15 @@ class TypeParseTest extends TestCase
         $param_type_4 = ''
     ) {
         if ($return_type && $return_type !== 'void') {
+            if (stripos($return_type, 'oci-') !== false) {
+                return;
+            }
+
             \Psalm\Type::parseString($return_type);
         }
 
         if ($param_type_1 && $param_type_1 !== 'mixed') {
-            if (strpos($param_type_1, 'oci-') !== false) {
+            if (stripos($param_type_1, 'oci-') !== false) {
                 return;
             }
 
