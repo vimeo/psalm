@@ -17,6 +17,7 @@ class TGenericObject extends TNamedObject
         if ($value[0] === '\\') {
             $value = substr($value, 1);
         }
+
         $this->value = $value;
         $this->type_params = $type_params;
     }

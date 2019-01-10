@@ -29,7 +29,7 @@ interface StatementsSource extends FileSource
     public function getParentFQCLN();
 
     /**
-     * @return array<string,Type\Union>|null
+     * @return array<string,array{Type\Union, ?string}>|null
      */
     public function getTemplateTypeMap();
 

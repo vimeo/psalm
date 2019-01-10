@@ -360,7 +360,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             if (isset($found_generic_params[$template_name])) {
                                 $generic_params[] = $found_generic_params[$template_name];
                             } else {
-                                $generic_params[] = Type::getMixed();
+                                $generic_params[] = [Type::getMixed(), null];
                             }
                         }
                     }
@@ -416,7 +416,15 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         $stmt->inferredType = new Type\Union([
                             new Type\Atomic\TGenericObject(
                                 $fq_class_name,
-                                $generic_params
+                                array_map(
+                                    /**
+                                     * @param array{Type\Union, ?string} $i
+                                     */
+                                    function (array $i) : Type\Union {
+                                        return $i[0];
+                                    },
+                                    $generic_params
+                                )
                             ),
                         ]);
                     }

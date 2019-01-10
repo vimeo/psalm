@@ -138,7 +138,7 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  array<string, Union>     $template_types
+     * @param  array<string, array{Union, ?string}>  $template_types
      *
      * @return void
      */
@@ -152,7 +152,7 @@ class TNamedObject extends Atomic
 
         foreach ($this->extra_types as $extra_type) {
             if ($extra_type instanceof TGenericParam && isset($template_types[$extra_type->param_name])) {
-                $template_type = clone $template_types[$extra_type->param_name];
+                $template_type = clone $template_types[$extra_type->param_name][0];
 
                 foreach ($template_type->getTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {

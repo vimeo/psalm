@@ -782,8 +782,8 @@ class Union
     }
 
     /**
-     * @param  array<string, Union> $template_types
-     * @param  array<string, Union> $generic_params
+     * @param  array<string, array{Union, ?string}> $template_types
+     * @param  array<string, array{Union, ?string}> $generic_params
      * @param  Type\Union|null      $input_type
      *
      * @return void
@@ -801,10 +801,10 @@ class Union
             if ($atomic_type instanceof Type\Atomic\TGenericParam
                 && isset($template_types[$key])
             ) {
-                if ($template_types[$key]->getId() !== $key) {
-                    $first_atomic_type = array_values($template_types[$key]->getTypes())[0];
+                if ($template_types[$key][0]->getId() !== $key) {
+                    $first_atomic_type = array_values($template_types[$key][0]->getTypes())[0];
                     if ($add_upper_bound && $input_type) {
-                        $template_types[$key] = clone $input_type;
+                        $template_types[$key][0] = clone $input_type;
                     }
                     $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
                     if ($first_atomic_type->getKey() !== $key) {
@@ -812,8 +812,13 @@ class Union
                     }
 
                     if ($input_type) {
-                        $generic_params[$key] = clone $input_type;
-                        $generic_params[$key]->setFromDocblock();
+                        $generic_param = clone $input_type;
+                        $generic_param->setFromDocblock();
+
+                        $generic_params[$key] = [
+                            $generic_param,
+                            $atomic_type->defining_class
+                        ];
                     }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
@@ -835,11 +840,16 @@ class Union
                     }
 
                     if ($valid_input_atomic_types) {
-                        $generic_params[$atomic_type->param_name] = new Union($valid_input_atomic_types);
-                        $generic_params[$atomic_type->param_name]->setFromDocblock();
+                        $generic_param = new Union($valid_input_atomic_types);
+                        $generic_param->setFromDocblock();
                     } else {
-                        $generic_params[$atomic_type->param_name] = Type::getMixed();
+                        $generic_param = Type::getMixed();
                     }
+
+                    $generic_params[$atomic_type->param_name] = [
+                        $generic_param,
+                        $atomic_type->defining_class
+                    ];
                 }
             } else {
                 $matching_atomic_type = null;
@@ -900,7 +910,7 @@ class Union
     }
 
     /**
-     * @param  array<string, Type\Union>     $template_types
+     * @param  array<string, array{Union, ?string}>  $template_types
      *
      * @return void
      */
@@ -916,7 +926,8 @@ class Union
             if ($atomic_type instanceof Type\Atomic\TGenericParam) {
                 $keys_to_unset[] = $key;
                 $template_type = isset($template_types[$key])
-                    ? clone $template_types[$key]
+                    && $atomic_type->defining_class === $template_types[$key][1]
+                    ? clone $template_types[$key][0]
                     : Type::getMixed();
 
                 foreach ($template_type->types as $template_type_part) {
@@ -929,7 +940,7 @@ class Union
             } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass) {
                 $keys_to_unset[] = $key;
                 $template_type = isset($template_types[$atomic_type->param_name])
-                    ? clone $template_types[$atomic_type->param_name]
+                    ? clone $template_types[$atomic_type->param_name][0]
                     : Type::getMixed();
 
                 foreach ($template_type->types as $template_type_part) {

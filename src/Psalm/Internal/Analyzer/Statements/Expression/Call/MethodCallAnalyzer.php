@@ -589,10 +589,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         foreach ($reversed_class_template_types as $i => $type_name) {
                             if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
-                                $class_template_params[$type_name] =
-                                    $lhs_type_part->type_params[$provided_type_param_count - 1 - $i];
+                                $class_template_params[$type_name] = [
+                                    $lhs_type_part->type_params[$provided_type_param_count - 1 - $i],
+                                    $fq_class_name,
+                                ];
                             } else {
-                                $class_template_params[$type_name] = Type::getMixed();
+                                $class_template_params[$type_name] = [Type::getMixed(), null];
                             }
                         }
                     } else {
@@ -600,7 +602,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             if (!$stmt->var instanceof PhpParser\Node\Expr\Variable
                                 || $stmt->var->name !== 'this'
                             ) {
-                                $class_template_params[$type_name] = Type::getMixed();
+                                $class_template_params[$type_name] = [Type::getMixed(), null];
                             }
                         }
                     }

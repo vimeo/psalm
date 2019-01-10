@@ -159,8 +159,8 @@ trait CallableTrait
     }
 
     /**
-     * @param  array<string, Union>     $template_types
-     * @param  array<string, Union>     $generic_params
+     * @param  array<string, array{Union, ?string}>     $template_types
+     * @param  array<string, array{Union, ?string}>     $generic_params
      * @param  Atomic|null              $input_type
      *
      * @return void
@@ -209,7 +209,7 @@ trait CallableTrait
     }
 
     /**
-     * @param  array<string, Union>     $template_types
+     * @param  array<string, array{Union, ?string}>  $template_types
      *
      * @return void
      */

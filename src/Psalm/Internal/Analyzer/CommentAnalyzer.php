@@ -23,7 +23,7 @@ class CommentAnalyzer
     /**
      * @param  string           $comment
      * @param  Aliases          $aliases
-     * @param  array<string, Type\Union>|null   $template_type_map
+     * @param  array<string, array{Type\Union, ?string}>|null   $template_type_map
      * @param  int|null         $var_line_number
      * @param  int|null         $came_from_line_number what line number in $source that $comment came from
      * @param  array<string, array<int, string>> $type_aliases

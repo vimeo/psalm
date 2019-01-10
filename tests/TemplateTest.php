@@ -1303,7 +1303,7 @@ class TemplateTest extends TestCase
 
                     /**
                      * @template TKey
-                     * @template Tv
+                     * @template TValue
                      */
                     class KeyValueContainer extends ValueContainer
                     {
@@ -1313,7 +1313,7 @@ class TemplateTest extends TestCase
                         private $k;
                         /**
                          * @param TKey $k
-                         * @param Tv $v
+                         * @param TValue $v
                          */
                         public function __construct($k, $v)
                         {
@@ -1332,7 +1332,7 @@ class TemplateTest extends TestCase
                     $b = $a->getValue();',
                 [
                     '$a' => 'KeyValueContainer<string, int>',
-                    '$b' => 'mixed',
+                    '$b' => 'mixed'
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],

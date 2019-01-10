@@ -190,7 +190,7 @@ class CallAnalyzer
     /**
      * @param  string|null                      $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  array<string, Type\Union>|null   &$generic_params
+     * @param  array<string, array{Type\Union, ?string}>|null   &$generic_params
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
      * @param  StatementsAnalyzer                $statements_analyzer
@@ -792,7 +792,7 @@ class CallAnalyzer
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   FunctionLikeStorage|null                $function_storage
      * @param   ClassLikeStorage|null                   $class_storage
-     * @param   array<string, Type\Union>|null          $generic_params
+     * @param   array<string, array{Type\Union, ?string}>|null          $generic_params
      * @param   CodeLocation                            $code_location
      * @param   Context                                 $context
      *
@@ -872,18 +872,20 @@ class CallAnalyzer
                 $template_types = $function_storage->template_types;
             }
             if ($class_storage && $class_storage->template_types) {
-                $template_types = array_merge($template_types, $class_storage->template_types);
+                foreach ($class_storage->template_types as $template_name => $type) {
+                    $template_types[$template_name] = $type;
+                }
             }
 
             foreach ($template_types as $key => $type) {
-                $template_types[$key] = clone $type;
+                $template_types[$key][0] = clone $type[0];
             }
         }
 
         $existing_generic_params = $generic_params ?: [];
 
         foreach ($existing_generic_params as $key => $type) {
-            $existing_generic_params[$key] = clone $type;
+            $existing_generic_params[$key][0] = clone $type[0];
         }
 
         foreach ($args as $argument_offset => $arg) {
@@ -2152,7 +2154,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
-     * @param  array<string, Type\Union> $generic_params,
+     * @param  array<string, array{Type\Union, ?string}> $generic_params,
      * @param  StatementsAnalyzer $statements_analyzer
      *
      * @return void
@@ -2208,11 +2210,11 @@ class CallAnalyzer
                 }
 
                 if (isset($generic_params[$rule])) {
-                    if ($generic_params[$rule]->hasMixed()) {
+                    if ($generic_params[$rule][0]->hasMixed()) {
                         continue;
                     }
 
-                    $replacement_atomic_types = $generic_params[$rule]->getTypes();
+                    $replacement_atomic_types = $generic_params[$rule][0]->getTypes();
 
                     if (count($replacement_atomic_types) > 1) {
                         continue;

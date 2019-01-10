@@ -22,13 +22,23 @@ class TGenericParamClass extends TClassString
     public $as_type;
 
     /**
+     * @var ?string
+     */
+    public $defining_class;
+
+    /**
      * @param string $param_name
      */
-    public function __construct(string $param_name, string $as = 'object', Union $as_type = null)
-    {
+    public function __construct(
+        string $param_name,
+        string $as = 'object',
+        Union $as_type = null,
+        string $defining_class = null
+    ) {
         $this->param_name = $param_name;
         $this->as = $as;
         $this->as_type = $as_type;
+        $this->defining_class = $defining_class;
     }
 
     /**

@@ -85,7 +85,7 @@ abstract class Type
      *
      * @param  string $type_string
      * @param  bool   $php_compatible
-     * @param  array<string, Union> $template_type_map
+     * @param  array<string, array{Union, ?string}> $template_type_map
      *
      * @return Union
      */
@@ -102,7 +102,7 @@ abstract class Type
      *
      * @param  array<int, string> $type_tokens
      * @param  bool   $php_compatible
-     * @param  array<string, Union> $template_type_map
+     * @param  array<string, array{Union, ?string}> $template_type_map
      *
      * @return Union
      */
@@ -185,7 +185,7 @@ abstract class Type
     /**
      * @param  ParseTree $parse_tree
      * @param  bool      $php_compatible
-     * @param  array<string, Union> $template_type_map
+     * @param  array<string, array{Union, ?string}> $template_type_map
      *
      * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
      */
@@ -235,7 +235,11 @@ abstract class Type
                 $class_name = (string) $generic_params[0];
 
                 if (isset($template_type_map[$class_name])) {
-                    return self::getGenericParamClass($class_name, $template_type_map[$class_name]);
+                    return self::getGenericParamClass(
+                        $class_name,
+                        $template_type_map[$class_name][0],
+                        $template_type_map[$class_name][1]
+                    );
                 }
 
                 return new TClassString($class_name);
@@ -456,7 +460,11 @@ abstract class Type
             list($fq_classlike_name, $const_name) = explode('::', $parse_tree->value);
 
             if (isset($template_type_map[$fq_classlike_name]) && $const_name === 'class') {
-                return self::getGenericParamClass($fq_classlike_name, $template_type_map[$fq_classlike_name]);
+                return self::getGenericParamClass(
+                    $fq_classlike_name,
+                    $template_type_map[$fq_classlike_name][0],
+                    $template_type_map[$fq_classlike_name][1]
+                );
             }
 
             if ($const_name === 'class') {
@@ -479,12 +487,17 @@ abstract class Type
         return Atomic::create($atomic_type, $php_compatible, $template_type_map);
     }
 
-    private static function getGenericParamClass(string $param_name, Union $as) : Atomic\TGenericParamClass
-    {
+    private static function getGenericParamClass(
+        string $param_name,
+        Union $as,
+        ?string $defining_class = null
+    ) : Atomic\TGenericParamClass {
         if ($as->hasMixed()) {
             return new Atomic\TGenericParamClass(
                 $param_name,
-                'object'
+                'object',
+                null,
+                $defining_class
             );
         }
 
@@ -497,7 +510,10 @@ abstract class Type
         foreach ($as->getTypes() as $t) {
             if ($t instanceof TObject) {
                 return new Atomic\TGenericParamClass(
-                    $param_name
+                    $param_name,
+                    'object',
+                    null,
+                    $defining_class
                 );
             }
 
@@ -512,7 +528,8 @@ abstract class Type
                     return new Atomic\TGenericParamClass(
                         $param_name,
                         $traversable->value,
-                        new Union([$traversable])
+                        new Union([$traversable]),
+                        $defining_class
                     );
                 }
 
@@ -522,7 +539,8 @@ abstract class Type
                 return new Atomic\TGenericParamClass(
                     $param_name,
                     $traversable->value,
-                    new Union([$traversable])
+                    new Union([$traversable]),
+                    $defining_class
                 );
             }
 
@@ -535,7 +553,8 @@ abstract class Type
             return new Atomic\TGenericParamClass(
                 $param_name,
                 $t->value,
-                new Union([$t])
+                new Union([$t]),
+                $defining_class
             );
         }
 
@@ -697,7 +716,7 @@ abstract class Type
     /**
      * @param  string                       $string_type
      * @param  Aliases                      $aliases
-     * @param  array<string, string>|null   $template_type_map
+     * @param  array<string, mixed>|null    $template_type_map
      * @param  array<string, array<int, string>>|null   $type_aliases
      *
      * @return array<int, string>

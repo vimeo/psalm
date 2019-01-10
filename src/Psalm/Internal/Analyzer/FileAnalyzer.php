@@ -496,7 +496,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return null|array<string, Type\Union>
+     * @return null|array<string,array{Type\Union, ?string}>
      */
     public function getTemplateTypeMap()
     {

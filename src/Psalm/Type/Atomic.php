@@ -62,7 +62,7 @@ abstract class Atomic
     /**
      * @param  string $value
      * @param  bool   $php_compatible
-     * @param  array<string, Union> $template_type_map
+     * @param  array<string, array{Union, ?string}> $template_type_map
      *
      * @return Atomic
      */
@@ -156,7 +156,7 @@ abstract class Atomic
                 }
 
                 if (isset($template_type_map[$value])) {
-                    return new TGenericParam($value, $template_type_map[$value]);
+                    return new TGenericParam($value, $template_type_map[$value][0], $template_type_map[$value][1]);
                 }
 
                 return new TNamedObject($value);
@@ -510,8 +510,8 @@ abstract class Atomic
     }
 
     /**
-     * @param  array<string, Type\Union> $template_types
-     * @param  array<string, Type\Union> $generic_params
+     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @param  array<string, array{Type\Union, ?string}> $generic_params
      * @param  Type\Atomic|null          $input_type
      *
      * @return void
@@ -526,7 +526,7 @@ abstract class Atomic
     }
 
     /**
-     * @param  array<string, Type\Union>     $template_types
+     * @param  array<string, array{Type\Union, ?string}>     $template_types
      *
      * @return void
      */
