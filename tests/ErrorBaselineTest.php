@@ -38,7 +38,7 @@ class ErrorBaselineTest extends TestCase
                 </MixedAssignment>
                 <InvalidReturnStatement occurrences="1"/>
               </file>
-              <file src="sample/sample-file2.php">
+              <file src="sample\sample-file2.php">
                 <PossiblyUnusedMethod occurrences="2">
                   <code>foo</code>
                   <code>bar</code>

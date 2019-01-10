@@ -52,6 +52,8 @@ class ErrorBaseline
         foreach ($filesElement->getElementsByTagName('file') as $file) {
             $fileName = $file->getAttribute('src');
 
+            $fileName = str_replace('\\', '/', $fileName);
+
             $files[$fileName] = [];
 
             /** @var \DOMElement $issue */
