@@ -875,6 +875,10 @@ class ProjectAnalyzer
             return 1;
         }
 
+        if (!extension_loaded('pcntl')) {
+            return 1;
+        }
+
         $has_nproc = trim((string) @shell_exec('command -v nproc'));
         if ($has_nproc) {
             $ret = @shell_exec('nproc');
