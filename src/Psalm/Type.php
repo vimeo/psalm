@@ -490,7 +490,7 @@ abstract class Type
     private static function getGenericParamClass(
         string $param_name,
         Union $as,
-        ?string $defining_class = null
+        string $defining_class = null
     ) : Atomic\TGenericParamClass {
         if ($as->hasMixed()) {
             return new Atomic\TGenericParamClass(
