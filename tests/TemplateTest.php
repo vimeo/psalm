@@ -638,7 +638,7 @@ class TemplateTest extends TestCase
                     takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));
                     takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));'
             ],
-            'replaceChildType' => [
+            'replaceChildTypeWithGenerator' => [
                 '<?php
                     /**
                      * @template TKey as array-key
@@ -1274,7 +1274,7 @@ class TemplateTest extends TestCase
                         if ($val) {}
                     }',
             ],
-            'mixedTemplatedParamOutWithNoTemplateExtends' => [
+            'mixedTemplatedParamOutWithNoExtendedTemplate' => [
                 '<?php
                     /**
                      * @template TValue
@@ -1335,6 +1335,192 @@ class TemplateTest extends TestCase
                     '$b' => 'mixed'
                 ],
                 'error_levels' => ['MixedAssignment'],
+            ],
+            'mixedTemplatedParamOutDifferentParamName' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     */
+                    class ValueContainer
+                    {
+                        /**
+                         * @var TValue
+                         */
+                        private $v;
+                        /**
+                         * @param TValue $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return TValue
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template TKey
+                     * @template Tv
+                     */
+                    class KeyValueContainer extends ValueContainer
+                    {
+                        /**
+                         * @var TKey
+                         */
+                        private $k;
+                        /**
+                         * @param TKey $k
+                         * @param Tv $v
+                         */
+                        public function __construct($k, $v)
+                        {
+                            $this->k = $k;
+                            parent::__construct($v);
+                        }
+                        /**
+                         * @return TKey
+                         */
+                        public function getKey()
+                        {
+                            return $this->k;
+                        }
+                    }
+                    $a = new KeyValueContainer("hello", 15);
+                    $b = $a->getValue();',
+                [
+                    '$a' => 'KeyValueContainer<string, int>',
+                    '$b' => 'mixed'
+                ],
+                'error_levels' => ['MixedAssignment'],
+            ],
+            'templateExtendsSameName' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     */
+                    class ValueContainer
+                    {
+                        /**
+                         * @var TValue
+                         */
+                        private $v;
+                        /**
+                         * @param TValue $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return TValue
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template-extends ValueContainer<TValue>
+                     */
+                    class KeyValueContainer extends ValueContainer
+                    {
+                        /**
+                         * @var TKey
+                         */
+                        private $k;
+                        /**
+                         * @param TKey $k
+                         * @param TValue $v
+                         */
+                        public function __construct($k, $v)
+                        {
+                            $this->k = $k;
+                            parent::__construct($v);
+                        }
+                        /**
+                         * @return TKey
+                         */
+                        public function getKey()
+                        {
+                            return $this->k;
+                        }
+                    }
+                    $a = new KeyValueContainer("hello", 15);
+                    $b = $a->getValue();',
+                [
+                    '$a' => 'KeyValueContainer<string, int>',
+                    '$b' => 'int'
+                ],
+            ],
+            'templateExtendsDifferentName' => [
+                '<?php
+                    /**
+                     * @template TValue
+                     */
+                    class ValueContainer
+                    {
+                        /**
+                         * @var TValue
+                         */
+                        private $v;
+                        /**
+                         * @param TValue $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return TValue
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template TKey
+                     * @template Tv
+                     * @template-extends ValueContainer<Tv>
+                     */
+                    class KeyValueContainer extends ValueContainer
+                    {
+                        /**
+                         * @var TKey
+                         */
+                        private $k;
+                        /**
+                         * @param TKey $k
+                         * @param Tv $v
+                         */
+                        public function __construct($k, $v)
+                        {
+                            $this->k = $k;
+                            parent::__construct($v);
+                        }
+                        /**
+                         * @return TKey
+                         */
+                        public function getKey()
+                        {
+                            return $this->k;
+                        }
+                    }
+                    $a = new KeyValueContainer("hello", 15);
+                    $b = $a->getValue();',
+                [
+                    '$a' => 'KeyValueContainer<string, int>',
+                    '$b' => 'int'
+                ],
             ],
         ];
     }

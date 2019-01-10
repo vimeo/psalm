@@ -876,11 +876,9 @@ class Union
                                 $classlike_storage =
                                     $codebase->classlike_storage_provider->get($atomic_input_type->value);
 
-                                if ($classlike_storage->template_parents
-                                    && in_array($atomic_type->value, $classlike_storage->template_parents)
-                                ) {
+                                if (isset($classlike_storage->template_extends[strtolower($key)])) {
                                     $matching_atomic_type = $atomic_input_type;
-                                        break;
+                                    break;
                                 }
                             } catch (\InvalidArgumentException $e) {
                                 // do nothing
@@ -914,7 +912,7 @@ class Union
      *
      * @return void
      */
-    public function replaceTemplateTypesWithArgTypes(array $template_types)
+    public function replaceTemplateTypesWithArgTypes(array $template_types, Codebase $codebase = null)
     {
         $keys_to_unset = [];
 
@@ -925,10 +923,40 @@ class Union
         foreach ($this->types as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TGenericParam) {
                 $keys_to_unset[] = $key;
-                $template_type = isset($template_types[$key])
-                    && $atomic_type->defining_class === $template_types[$key][1]
-                    ? clone $template_types[$key][0]
-                    : Type::getMixed();
+
+                $template_type = null;
+
+                if (isset($template_types[$key]) && $atomic_type->defining_class === $template_types[$key][1]) {
+                    $template_type = clone $template_types[$key][0];
+                } elseif ($codebase && $atomic_type->defining_class) {
+                    foreach ($template_types as $replacement_key => $template_type_map) {
+                        if (!$template_type_map[1]) {
+                            continue;
+                        }
+
+                        try {
+                            $classlike_storage =
+                                $codebase->classlike_storage_provider->get($template_type_map[1]);
+
+                            if ($classlike_storage->template_extends) {
+                                foreach ($classlike_storage->template_extends as $fq_class_name_lc => $param_map) {
+                                    $param_map_reversed = array_flip($param_map);
+                                    if (strtolower($atomic_type->defining_class) === $fq_class_name_lc
+                                        && isset($param_map_reversed[$key])
+                                        && isset($template_types[$param_map_reversed[$key]])
+                                    ) {
+                                        $template_type = clone $template_types[$param_map_reversed[$key]][0];
+                                    }
+                                }
+                            }
+                        } catch (\InvalidArgumentException $e) {
+                        }
+                    }
+                }
+
+                if (!$template_type) {
+                    $template_type = Type::getMixed();
+                }
 
                 foreach ($template_type->types as $template_type_part) {
                     if ($template_type_part instanceof Type\Atomic\TMixed) {

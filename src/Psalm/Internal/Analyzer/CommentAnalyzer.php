@@ -529,7 +529,13 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['template-extends'])) {
             foreach ($comments['specials']['template-extends'] as $template_line) {
-                $info->template_parents[] = $template_line;
+                $info->template_extends[] = $template_line;
+            }
+        }
+
+        if (isset($comments['specials']['template-implements'])) {
+            foreach ($comments['specials']['template-implements'] as $template_line) {
+                $info->template_extends[] = $template_line;
             }
         }
 

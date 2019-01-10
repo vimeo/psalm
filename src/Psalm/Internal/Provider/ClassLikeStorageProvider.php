@@ -112,6 +112,14 @@ class ClassLikeStorageProvider
     }
 
     /**
+     * @return void
+     */
+    public function makeNew(string $fq_classlike_name_lc)
+    {
+        self::$new_storage[$fq_classlike_name_lc] = self::$storage[$fq_classlike_name_lc];
+    }
+
+    /**
      * @param  string $fq_classlike_name
      *
      * @return ClassLikeStorage

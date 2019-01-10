@@ -17,7 +17,7 @@ interface Traversable {
  * @template TKey
  * @template TValue
  *
- * @template-extends Traversable
+ * @template-extends Traversable<TKey, TValue>
  */
 interface IteratorAggregate extends Traversable {
 
@@ -39,7 +39,7 @@ interface IteratorAggregate extends Traversable {
  * @template TKey
  * @template TValue
  *
- * @template-extends Traversable
+ * @template-extends Traversable<TKey, TValue>
  */
 interface Iterator extends Traversable {
 
@@ -91,7 +91,7 @@ interface Iterator extends Traversable {
  * @template TSend
  * @template TReturn
  *
- * @template-extends Traversable
+ * @template-implements Traversable<TKey, TValue>
  */
 class Generator implements Traversable {
     /**

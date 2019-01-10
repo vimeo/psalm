@@ -103,6 +103,7 @@
                 <referencedMethod name="Psalm\Codebase::getAppearingMethodId"/>
                 <referencedMethod name="Psalm\Codebase::getOverriddenMethodIds"/>
                 <referencedMethod name="Psalm\Codebase::getCasedMethodId"/>
+                <referencedMethod name="Psalm\Codebase::createClassLikeStorage"/>
                 <referencedMethod name="Psalm\Codebase::isVariadic"/>
                 <referencedMethod name="Psalm\Codebase::getMethodReturnsByRef"/>
             </errorLevel>

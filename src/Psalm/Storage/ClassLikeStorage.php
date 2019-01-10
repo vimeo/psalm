@@ -266,9 +266,9 @@ class ClassLikeStorage
     public $template_types;
 
     /**
-     * @var array<string, string>|null
+     * @var array<string, array<string, ?string>>|null
      */
-    public $template_parents;
+    public $template_extends;
 
     /**
      * @var array<string, array<int, CodeLocation>>|null

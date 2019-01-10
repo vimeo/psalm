@@ -333,6 +333,23 @@ class Populator
 
             $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
+            if (isset($storage->template_extends[$parent_storage_class])) {
+                $i = 0;
+
+                foreach ($storage->template_extends[$parent_storage_class] as $template_name => $_) {
+                    if ($parent_storage->template_types) {
+                        $parent_template_type_names = array_keys($parent_storage->template_types);
+
+                        if (isset($parent_template_type_names[$i])) {
+                            $storage->template_extends[$parent_storage_class][$template_name]
+                                = $parent_template_type_names[$i];
+                        }
+                    }
+
+                    $i++;
+                }
+            }
+
             $this->inheritMethodsFromParent($storage, $parent_storage);
             $this->inheritPropertiesFromParent($storage, $parent_storage);
 
@@ -461,6 +478,23 @@ class Populator
                 $storage->invalid_dependencies,
                 $implemented_interface_storage->invalid_dependencies
             );
+
+            if (isset($storage->template_extends[$implemented_interface_lc])) {
+                $i = 0;
+
+                if ($implemented_interface_storage->template_types) {
+                    foreach ($storage->template_extends[$implemented_interface_lc] as $template_name => $_) {
+                        $parent_template_type_names = array_keys($implemented_interface_storage->template_types);
+
+                        if (isset($parent_template_type_names[$i])) {
+                            $storage->template_extends[$implemented_interface_lc][$template_name]
+                                = $parent_template_type_names[$i];
+                        }
+                    }
+
+                    $i++;
+                }
+            }
 
             $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
         }

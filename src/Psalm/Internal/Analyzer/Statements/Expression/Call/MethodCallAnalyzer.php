@@ -641,7 +641,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         if ($class_template_params) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                                $class_template_params
+                                $class_template_params,
+                                $codebase
                             );
                         }
                     } else {
@@ -722,7 +723,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         if ($class_template_params) {
                             $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                                $class_template_params
+                                $class_template_params,
+                                $codebase
                             );
                         }
 
