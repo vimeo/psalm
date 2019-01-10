@@ -51,10 +51,12 @@ class Pool
             'The pool size must be >= 2 to use the fork pool.'
         );
 
-        \assert(
-            extension_loaded('pcntl'),
-            'The pcntl extension must be loaded in order for Psalm to be able to fork.'
-        );
+        if (!extension_loaded('pcntl')) {
+            die(
+                'The pcntl extension must be loaded in order for Psalm to be able to use multiple processes.'
+                . PHP_EOL
+            );
+        }
 
         // We'll keep track of if this is the parent process
         // so that we can tell who will be doing the waiting
