@@ -913,11 +913,11 @@ class Union
         $is_mixed = false;
 
         foreach ($this->types as $key => $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TGenericParam
-                && isset($template_types[$key])
-            ) {
+            if ($atomic_type instanceof Type\Atomic\TGenericParam) {
                 $keys_to_unset[] = $key;
-                $template_type = clone $template_types[$key];
+                $template_type = isset($template_types[$key])
+                    ? clone $template_types[$key]
+                    : Type::getMixed();
 
                 foreach ($template_type->types as $template_type_part) {
                     if ($template_type_part instanceof Type\Atomic\TMixed) {
@@ -926,11 +926,11 @@ class Union
 
                     $new_types[$template_type_part->getKey()] = $template_type_part;
                 }
-            } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
-                && isset($template_types[$atomic_type->param_name])
-            ) {
+            } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass) {
                 $keys_to_unset[] = $key;
-                $template_type = clone $template_types[$atomic_type->param_name];
+                $template_type = isset($template_types[$atomic_type->param_name])
+                    ? clone $template_types[$atomic_type->param_name]
+                    : Type::getMixed();
 
                 foreach ($template_type->types as $template_type_part) {
                     if ($template_type_part instanceof Type\Atomic\TMixed) {
