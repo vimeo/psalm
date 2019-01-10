@@ -1031,10 +1031,36 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof TGenericObject) {
             if (!$input_type_part instanceof TGenericObject) {
-                $type_coerced = true;
-                $type_coerced_from_mixed = true;
+                if ($input_type_part instanceof TNamedObject
+                    && $codebase->classExists($input_type_part->value)
+                ) {
+                    $class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
 
-                return false;
+                    $container_class_lc = strtolower($container_type_part->value);
+
+                    // attempt to transform it
+                    if ($class_storage->template_value_extends
+                        && isset($class_storage->template_value_extends[$container_class_lc])
+                    ) {
+                        $extends_list = $class_storage->template_value_extends[$container_class_lc];
+
+                        $input_type_part = new TGenericObject(
+                            $input_type_part->value,
+                            array_map(
+                                function (Type\Atomic $a) : Type\Union {
+                                    return new Type\Union([$a]);
+                                },
+                                $extends_list
+                            )
+                        );
+                    }
+                }
+
+                if (!$input_type_part instanceof TGenericObject) {
+                    $type_coerced = true;
+                    $type_coerced_from_mixed = true;
+                    return false;
+                }
             }
 
             foreach ($input_type_part->type_params as $i => $input_param) {

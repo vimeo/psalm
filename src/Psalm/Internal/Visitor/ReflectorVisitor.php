@@ -818,102 +818,102 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     $this->class_template_types = $storage->template_types;
+                }
 
-                    foreach ($docblock_info->template_extends as $extended_class_name) {
-                        try {
-                            $extended_union_type = Type::parseTokens(
-                                Type::fixUpLocalType(
-                                    $extended_class_name,
-                                    $this->aliases,
-                                    $this->class_template_types,
-                                    $this->type_aliases
-                                )
-                            );
-                        } catch (TypeParseTreeException $e) {
+                foreach ($docblock_info->template_extends as $extended_class_name) {
+                    try {
+                        $extended_union_type = Type::parseTokens(
+                            Type::fixUpLocalType(
+                                $extended_class_name,
+                                $this->aliases,
+                                $this->class_template_types,
+                                $this->type_aliases
+                            ),
+                            false,
+                            $this->class_template_types
+                        );
+                    } catch (TypeParseTreeException $e) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                                new CodeLocation($this->file_scanner, $node, null, true)
+                            )
+                        )) {
+                        }
+
+                        $storage->has_docblock_issues = true;
+                        continue;
+                    }
+
+                    if (!$extended_union_type->isSingle()) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                '@template-extends cannot be a union type',
+                                new CodeLocation($this->file_scanner, $node, null, true)
+                            )
+                        )) {
+                        }
+                    }
+
+                    foreach ($extended_union_type->getTypes() as $atomic_type) {
+                        if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
-                                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                                    '@template-extends has invalid class ' . $atomic_type->getId(),
                                     new CodeLocation($this->file_scanner, $node, null, true)
                                 )
                             )) {
                             }
 
-                            $storage->has_docblock_issues = true;
-                            continue;
+                            break;
                         }
 
-                        if (!$extended_union_type->isSingle()) {
+                        $generic_class_lc = strtolower($atomic_type->value);
+
+                        if (!isset($storage->parent_classes[$generic_class_lc])
+                            && !isset($storage->parent_interfaces[$generic_class_lc])
+                            && !isset($storage->class_implements[$generic_class_lc])
+                        ) {
                             if (IssueBuffer::accepts(
                                 new InvalidDocblock(
-                                    '@template-extends cannot be a union type',
+                                    '@template-extends must include the name of an extended class,'
+                                        . ' got ' . $atomic_type->getId(),
                                     new CodeLocation($this->file_scanner, $node, null, true)
                                 )
                             )) {
                             }
                         }
 
-                        foreach ($extended_union_type->getTypes() as $atomic_type) {
-                            if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
+                        $extended_type_parameters = [];
+                        $extended_type_values = [];
+
+                        foreach ($atomic_type->type_params as $i => $type_param) {
+                            if (!$type_param->isSingle()) {
                                 if (IssueBuffer::accepts(
                                     new InvalidDocblock(
-                                        '@template-extends has invalid class ' . $atomic_type->getId(),
+                                        '@template-extends type parameter cannot be a union type',
                                         new CodeLocation($this->file_scanner, $node, null, true)
                                     )
                                 )) {
                                 }
-
-                                break;
+                                break 2;
                             }
 
-                            if (!isset($storage->parent_classes[strtolower($atomic_type->value)])
-                                && !isset($storage->parent_interfaces[strtolower($atomic_type->value)])
-                                && !isset($storage->class_implements[strtolower($atomic_type->value)])
-                            ) {
-                                if (IssueBuffer::accepts(
-                                    new InvalidDocblock(
-                                        '@template-extends must include the name of an extended class,'
-                                            . ' got ' . $atomic_type->getId(),
-                                        new CodeLocation($this->file_scanner, $node, null, true)
-                                    )
-                                )) {
+                            foreach ($type_param->getTypes() as $type_param_atomic) {
+                                if ($type_param_atomic instanceof Type\Atomic\TGenericParam) {
+                                    $extended_type_parameters[$type_param_atomic->param_name] = null;
+                                } else {
+                                    $extended_type_values[$i] = $type_param_atomic;
                                 }
                             }
+                        }
 
-                            $extended_type_parameters = [];
+                        if ($extended_type_parameters) {
+                            $storage->template_type_extends[$generic_class_lc] = $extended_type_parameters;
+                        }
 
-                            foreach ($atomic_type->type_params as $type_param) {
-                                if (!$type_param->isSingle()) {
-                                    if (IssueBuffer::accepts(
-                                        new InvalidDocblock(
-                                            '@template-extends type parameter cannot be a union type',
-                                            new CodeLocation($this->file_scanner, $node, null, true)
-                                        )
-                                    )) {
-                                    }
-                                    break 2;
-                                }
-
-                                $extended_type_parameter = (string) $type_param;
-
-                                if (!isset($this->class_template_types[$extended_type_parameter])) {
-                                    if (IssueBuffer::accepts(
-                                        new InvalidDocblock(
-                                            '@template-extends type parameter ' . $extended_type_parameter
-                                                . ' is not recognized',
-                                            new CodeLocation($this->file_scanner, $node, null, true)
-                                        )
-                                    )) {
-                                    }
-
-                                    break 2;
-                                }
-
-                                $extended_type_parameters[$extended_type_parameter] = null;
-                            }
-
-                            if ($extended_type_parameters) {
-                                $storage->template_extends[strtolower($atomic_type->value)] = $extended_type_parameters;
-                            }
+                        if ($extended_type_values) {
+                            $storage->template_value_extends[$generic_class_lc] = $extended_type_values;
                         }
                     }
                 }

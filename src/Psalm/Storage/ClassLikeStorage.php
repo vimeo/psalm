@@ -268,7 +268,12 @@ class ClassLikeStorage
     /**
      * @var array<string, array<string, ?string>>|null
      */
-    public $template_extends;
+    public $template_type_extends;
+
+    /**
+     * @var array<string, array<int, Type\Atomic>>|null
+     */
+    public $template_value_extends;
 
     /**
      * @var array<string, array<int, CodeLocation>>|null

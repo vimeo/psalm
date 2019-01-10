@@ -876,8 +876,23 @@ class Union
                                 $classlike_storage =
                                     $codebase->classlike_storage_provider->get($atomic_input_type->value);
 
-                                if (isset($classlike_storage->template_extends[strtolower($key)])) {
+                                if (isset($classlike_storage->template_type_extends[strtolower($key)])) {
                                     $matching_atomic_type = $atomic_input_type;
+                                    break;
+                                }
+
+                                if (isset($classlike_storage->template_value_extends[strtolower($key)])) {
+                                    $extends_list = $classlike_storage->template_value_extends[strtolower($key)];
+
+                                    $matching_atomic_type = new Type\Atomic\TGenericObject(
+                                        $atomic_input_type->value,
+                                        array_map(
+                                            function (Type\Atomic $a) : Type\Union {
+                                                return new Type\Union([$a]);
+                                            },
+                                            $extends_list
+                                        )
+                                    );
                                     break;
                                 }
                             } catch (\InvalidArgumentException $e) {
@@ -938,8 +953,8 @@ class Union
                             $classlike_storage =
                                 $codebase->classlike_storage_provider->get($template_type_map[1]);
 
-                            if ($classlike_storage->template_extends) {
-                                foreach ($classlike_storage->template_extends as $fq_class_name_lc => $param_map) {
+                            if ($classlike_storage->template_type_extends) {
+                                foreach ($classlike_storage->template_type_extends as $fq_class_name_lc => $param_map) {
                                     $param_map_reversed = array_flip($param_map);
                                     if (strtolower($atomic_type->defining_class) === $fq_class_name_lc
                                         && isset($param_map_reversed[$key])

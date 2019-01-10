@@ -333,15 +333,15 @@ class Populator
 
             $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-            if (isset($storage->template_extends[$parent_storage_class])) {
+            if (isset($storage->template_type_extends[$parent_storage_class])) {
                 $i = 0;
 
-                foreach ($storage->template_extends[$parent_storage_class] as $template_name => $_) {
+                foreach ($storage->template_type_extends[$parent_storage_class] as $template_name => $_) {
                     if ($parent_storage->template_types) {
                         $parent_template_type_names = array_keys($parent_storage->template_types);
 
                         if (isset($parent_template_type_names[$i])) {
-                            $storage->template_extends[$parent_storage_class][$template_name]
+                            $storage->template_type_extends[$parent_storage_class][$template_name]
                                 = $parent_template_type_names[$i];
                         }
                     }
@@ -479,15 +479,15 @@ class Populator
                 $implemented_interface_storage->invalid_dependencies
             );
 
-            if (isset($storage->template_extends[$implemented_interface_lc])) {
+            if (isset($storage->template_type_extends[$implemented_interface_lc])) {
                 $i = 0;
 
                 if ($implemented_interface_storage->template_types) {
-                    foreach ($storage->template_extends[$implemented_interface_lc] as $template_name => $_) {
+                    foreach ($storage->template_type_extends[$implemented_interface_lc] as $template_name => $_) {
                         $parent_template_type_names = array_keys($implemented_interface_storage->template_types);
 
                         if (isset($parent_template_type_names[$i])) {
-                            $storage->template_extends[$implemented_interface_lc][$template_name]
+                            $storage->template_type_extends[$implemented_interface_lc][$template_name]
                                 = $parent_template_type_names[$i];
                         }
                     }
