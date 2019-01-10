@@ -11,6 +11,7 @@
     ],
     "require": {
         "php": "^7.0",
+        "ext-pcntl": "*",
         "nikic/PHP-Parser": "^4.0.2 || ^4.1",
         "openlss/lib-array2xml": "^0.0.10||^0.5.1",
         "muglug/package-versions-56": "1.2.4",
