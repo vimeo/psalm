@@ -887,17 +887,17 @@ class Union
                                 if (isset($classlike_storage->template_type_extends[strtolower($key)])) {
                                     $extends_list = $classlike_storage->template_type_extends[strtolower($key)];
 
-                                    $generic_params = [];
+                                    $new_generic_params = [];
 
                                     foreach ($extends_list as $key => $value) {
                                         if (is_int($key)) {
-                                            $generic_params[] = new Type\Union([$value]);
+                                            $new_generic_params[] = new Type\Union([$value]);
                                         }
                                     }
 
                                     $matching_atomic_type = new TGenericObject(
                                         $atomic_input_type->value,
-                                        $generic_params
+                                        $new_generic_params
                                     );
                                     break;
                                 }

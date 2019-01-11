@@ -539,13 +539,17 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
                 $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
 
+                $template_types = [];
+
+                foreach ($map as $key => $atomic_type) {
+                    if (is_string($key)) {
+                        $template_types[$key] = [new Type\Union([$atomic_type]), $guide_classlike_storage->name];
+                    }
+                }
+
                 $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
-                    array_map(
-                        function (Type\Atomic $u) use ($guide_classlike_storage) : array {
-                            return [new Type\Union([$u]), $guide_classlike_storage->name];
-                        },
-                        $map
-                    )
+                    $template_types,
+                    $codebase
                 );
             }
 
@@ -572,10 +576,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 if ($type_coerced) {
                     if (IssueBuffer::accepts(
                         new LessSpecificImplementedReturnType(
-                            'The return type \'' . $guide_method_storage->return_type->getId()
+                            'The return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
-                            . $implementer_method_storage->return_type->getId() . '\'',
+                            . $implementer_method_storage_return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location ?: $code_location
                         ),
                         $suppressed_issues
@@ -585,10 +589,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 } else {
                     if (IssueBuffer::accepts(
                         new ImplementedReturnTypeMismatch(
-                            'The return type \'' . $guide_method_storage->return_type->getId()
+                            'The return type \'' . $guide_method_storage_return_type->getId()
                             . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
-                            . $implementer_method_storage->return_type->getId() . '\'',
+                            . $implementer_method_storage_return_type->getId() . '\'',
                             $implementer_method_storage->return_type_location ?: $code_location
                         ),
                         $suppressed_issues

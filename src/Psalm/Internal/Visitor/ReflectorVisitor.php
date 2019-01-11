@@ -886,7 +886,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                         $extended_type_parameters = [];
 
-                        foreach ($atomic_type->type_params as $i => $type_param) {
+                        foreach ($atomic_type->type_params as $type_param) {
                             if (!$type_param->isSingle()) {
                                 if (IssueBuffer::accepts(
                                     new InvalidDocblock(

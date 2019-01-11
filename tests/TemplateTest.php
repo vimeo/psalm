@@ -1914,7 +1914,7 @@ class TemplateTest extends TestCase
                             return new Foo();
                         }
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_message' => 'ImplementedReturnTypeMismatch - src/somefile.php:29 - The return type \'A\Bar\' for',
             ],
         ];
     }
