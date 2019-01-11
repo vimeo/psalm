@@ -501,7 +501,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         );
 
         foreach ($class->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Property) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Property && !isset($stmt->type)) {
                 $this->checkForMissingPropertyType($this, $stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
