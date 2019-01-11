@@ -664,6 +664,25 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $guide_classlike_storage->name
                 );
 
+                $guide_class_name_lc = strtolower($guide_classlike_storage->name);
+
+                if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
+                    $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
+
+                    $template_types = [];
+
+                    foreach ($map as $key => $atomic_type) {
+                        if (is_string($key)) {
+                            $template_types[$key] = [new Type\Union([$atomic_type]), $guide_classlike_storage->name];
+                        }
+                    }
+
+                    $guide_method_storage_param_type->replaceTemplateTypesWithArgTypes(
+                        $template_types,
+                        $codebase
+                    );
+                }
+
                 if (!TypeAnalyzer::isContainedBy(
                     $codebase,
                     $guide_method_storage_param_type,
