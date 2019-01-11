@@ -577,25 +577,65 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
+                $calling_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 if ($class_storage->template_types) {
                     $class_template_params = [];
 
                     if ($lhs_type_part instanceof TGenericObject) {
-                        $reversed_class_template_types = array_reverse(array_keys($class_storage->template_types));
+                        if ($calling_class_storage->template_types) {
+                            $i = 0;
+                            foreach ($calling_class_storage->template_types as $type_name => $_) {
+                                if (isset($lhs_type_part->type_params[$i])) {
+                                    $class_template_params[$type_name] = [
+                                        $lhs_type_part->type_params[$i],
+                                        $calling_class_storage->name,
+                                    ];
+                                }
 
-                        $provided_type_param_count = count($lhs_type_part->type_params);
+                                $i++;
+                            }
+                        }
 
-                        foreach ($reversed_class_template_types as $i => $type_name) {
-                            if (isset($lhs_type_part->type_params[$provided_type_param_count - 1 - $i])) {
-                                $class_template_params[$type_name] = [
-                                    $lhs_type_part->type_params[$provided_type_param_count - 1 - $i],
-                                    $fq_class_name,
-                                ];
-                            } else {
+                        $e = $calling_class_storage->template_type_extends;
+
+                        $i = 0;
+                        foreach ($class_storage->template_types as $type_name => $_) {
+                            if (isset($class_template_params[$type_name])) {
+                                $i++;
+                                continue;
+                            }
+
+                            if ($class_storage !== $calling_class_storage
+                                && isset($e[strtolower($class_storage->name)][$type_name])
+                            ) {
+                                $type_extends = $e[strtolower($class_storage->name)][$type_name];
+
+                                if ($type_extends instanceof Type\Atomic\TGenericParam) {
+                                    if (isset($calling_class_storage->template_types[$type_extends->param_name])) {
+                                        $mapped_offset = array_search(
+                                            $type_extends->param_name,
+                                            array_keys($calling_class_storage->template_types)
+                                        );
+                                        $class_template_params[$type_name] = [
+                                            $lhs_type_part->type_params[(int) $mapped_offset],
+                                            $class_storage->name,
+                                        ];
+                                    }
+                                } else {
+                                    $class_template_params[$type_name] = [
+                                        new Type\Union([$type_extends]),
+                                        $class_storage->name,
+                                    ];
+                                }
+                            }
+
+                            if (!isset($class_template_params[$type_name])) {
                                 $class_template_params[$type_name] = [Type::getMixed(), null];
                             }
+
+                            $i++;
                         }
                     } else {
                         foreach ($class_storage->template_types as $type_name => $_) {

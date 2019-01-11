@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -593,6 +594,28 @@ class Methods
         }
 
         return $storage;
+    }
+
+    /**
+     * @param  string $method_id
+     *
+     * @return ClassLikeStorage
+     */
+    public function getClassLikeStorageForMethod($method_id)
+    {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        if (!$declaring_method_id) {
+            if (CallMap::inCallMap($method_id)) {
+                $declaring_method_id = $method_id;
+            } else {
+                throw new \UnexpectedValueException('$storage should not be null for ' . $method_id);
+            }
+        }
+
+        list($declaring_fq_class_name) = explode('::', $declaring_method_id);
+
+        return $this->classlike_storage_provider->get($declaring_fq_class_name);
     }
 
     /**

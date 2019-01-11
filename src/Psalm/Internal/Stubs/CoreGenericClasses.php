@@ -451,6 +451,7 @@ class ArrayObject implements IteratorAggregate, Traversable, ArrayAccess, Serial
  * over Arrays and Objects.
  * @link http://php.net/manual/en/class.arrayiterator.php
  *
+ * @template TKey as array-key
  * @template TValue
  */
 class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Countable {
