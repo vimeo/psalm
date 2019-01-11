@@ -2045,20 +2045,67 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
         }
 
-        $property_group_type = $var_comment ? $var_comment->type : null;
+        $signature_type = null;
+        $signature_type_location = null;
 
-        if ($property_group_type) {
-            $property_group_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
-            $property_group_type->setFromDocblock();
+        /** @var null|PhpParser\Node\Identifier|PhpParser\Node\Name|PhpParser\Node\NullableType */
+        $parser_property_type = isset($stmt->type) ? $stmt->type : null;
+
+        if ($parser_property_type) {
+            $suffix = '';
+
+            if ($parser_property_type instanceof PhpParser\Node\NullableType) {
+                $suffix = '|null';
+                $parser_property_type = $parser_property_type->type;
+            }
+
+            if ($parser_property_type instanceof PhpParser\Node\Identifier) {
+                $property_type_string = $parser_property_type->name . $suffix;
+            } else {
+                $property_type_fq_classlike_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                    $parser_property_type,
+                    $this->aliases
+                );
+
+                $property_type_string = $property_type_fq_classlike_name . $suffix;
+            }
+
+            $signature_type = Type::parseString($property_type_string, true);
+            $signature_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+
+            $signature_type_location = new CodeLocation(
+                $this->file_scanner,
+                $parser_property_type,
+                null,
+                false,
+                CodeLocation::FUNCTION_RETURN_TYPE
+            );
+        }
+
+        $doc_var_group_type = $var_comment ? $var_comment->type : null;
+
+        if ($doc_var_group_type) {
+            $doc_var_group_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            $doc_var_group_type->setFromDocblock();
         }
 
         foreach ($stmt->props as $property) {
-            $property_type_location = null;
-            $default_type = null;
+            $doc_var_location = null;
 
-            if (!$property_group_type) {
+            $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
+            $property_storage->is_static = (bool)$stmt->isStatic();
+            $property_storage->type = $signature_type;
+            $property_storage->signature_type = $signature_type;
+            $property_storage->signature_type_location = $signature_type_location;
+            $property_storage->type_location = $signature_type_location;
+            $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
+            $property_storage->has_default = $property->default ? true : false;
+            $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
+            $property_storage->internal = $var_comment ? $var_comment->internal : false;
+
+            if (!$signature_type && !$doc_var_group_type) {
                 if ($property->default) {
-                    $default_type = StatementsAnalyzer::getSimpleType(
+                    $property_storage->suggested_type = StatementsAnalyzer::getSimpleType(
                         $this->codebase,
                         $property->default,
                         $this->aliases,
@@ -2068,10 +2115,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     );
                 }
 
-                $property_type = false;
+                $property_storage->type = null;
             } else {
                 if ($var_comment && $var_comment->line_number) {
-                    $property_type_location = new CodeLocation(
+                    $doc_var_location = new CodeLocation(
                         $this->file_scanner,
                         $stmt,
                         null,
@@ -2079,21 +2126,50 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         CodeLocation::VAR_TYPE,
                         $var_comment->original_type
                     );
-                    $property_type_location->setCommentLine($var_comment->line_number);
+                    $doc_var_location->setCommentLine($var_comment->line_number);
                 }
 
-                $property_type = count($stmt->props) === 1 ? $property_group_type : clone $property_group_type;
+                if ($doc_var_group_type) {
+                    $property_storage->type = count($stmt->props) === 1
+                        ? $doc_var_group_type
+                        : clone $doc_var_group_type;
+                }
             }
 
-            $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
-            $property_storage->is_static = (bool)$stmt->isStatic();
-            $property_storage->type = $property_type;
-            $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
-            $property_storage->type_location = $property_type_location;
-            $property_storage->has_default = $property->default ? true : false;
-            $property_storage->suggested_type = $property_group_type ? null : $default_type;
-            $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
-            $property_storage->internal = $var_comment ? $var_comment->internal : false;
+            if ($property_storage->type
+                && $property_storage->type !== $property_storage->signature_type
+                && (!$property_storage->signature_type
+                    || $doc_var_group_type !== $property_storage->signature_type->getId())
+            ) {
+                if (!$property_storage->signature_type) {
+                    $property_storage->type_location = $doc_var_location;
+                }
+
+                if ($property_storage->signature_type) {
+                    $all_typehint_types_match = true;
+                    $signature_atomic_types = $property_storage->signature_type->getTypes();
+
+                    foreach ($property_storage->type->getTypes() as $key => $type) {
+                        if (isset($signature_atomic_types[$key])) {
+                            $type->from_docblock = false;
+                        } else {
+                            $all_typehint_types_match = false;
+                        }
+                    }
+
+                    if ($all_typehint_types_match) {
+                        $property_storage->type->from_docblock = false;
+                    }
+
+                    if ($property_storage->signature_type->isNullable()
+                        && !$property_storage->type->isNullable()
+                    ) {
+                        $property_storage->type->addType(new Type\Atomic\TNull());
+                    }
+                }
+
+                $property_storage->type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+            }
 
             if ($stmt->isPublic()) {
                 $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;

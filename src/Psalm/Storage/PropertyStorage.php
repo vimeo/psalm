@@ -28,9 +28,19 @@ class PropertyStorage
     public $type_location;
 
     /**
-     * @var Type\Union|false
+     * @var CodeLocation|null
+     */
+    public $signature_type_location;
+
+    /**
+     * @var Type\Union|null
      */
     public $type;
+
+    /**
+     * @var Type\Union|null
+     */
+    public $signature_type;
 
     /**
      * @var Type\Union|null

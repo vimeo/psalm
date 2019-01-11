@@ -452,7 +452,7 @@ class PropertyAssignmentAnalyzer
 
                 $class_property_type = $property_storage->type;
 
-                if ($class_property_type === false) {
+                if (!$class_property_type) {
                     $class_property_type = Type::getMixed();
 
                     if (!$assignment_value_type->hasMixed()) {
@@ -799,7 +799,7 @@ class PropertyAssignmentAnalyzer
 
         $class_property_type = $property_storage->type;
 
-        if ($class_property_type === false) {
+        if (!$class_property_type) {
             $class_property_type = Type::getMixed();
 
             if (!$assignment_value_type->hasMixed()) {

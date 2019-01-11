@@ -473,7 +473,7 @@ class PropertyFetchAnalyzer
 
             $class_property_type = $property_storage->type;
 
-            if ($class_property_type === false) {
+            if (!$class_property_type) {
                 if (IssueBuffer::accepts(
                     new MissingPropertyType(
                         'Property ' . $fq_class_name . '::$' . $prop_name
