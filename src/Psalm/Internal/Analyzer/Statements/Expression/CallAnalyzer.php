@@ -2002,6 +2002,7 @@ class CallAnalyzer
             && !$param_type->from_docblock
             && !$variadic
             && !$by_ref
+            && $cased_method_id !== 'echo'
         ) {
             $var_id = ExpressionAnalyzer::getVarId(
                 $input_expr,
