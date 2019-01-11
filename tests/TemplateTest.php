@@ -1991,6 +1991,41 @@ class TemplateTest extends TestCase
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch - src/somefile.php:29 - The return type \'A\Bar\' for',
             ],
+            'extendTemplateAndDoesNotOverrideWithWrongArg' => [
+                '<?php
+                    /**
+                     * @template T as array-key
+                     */
+                    abstract class User
+                    {
+                        /**
+                         * @var T
+                         */
+                        private $id;
+                        /**
+                         * @param T $id
+                         */
+                        public function __construct($id)
+                        {
+                            $this->id = $id;
+                        }
+                        /**
+                         * @return T
+                         */
+                        public function getID()
+                        {
+                            return $this->id;
+                        }
+                    }
+
+                    /**
+                     * @template-extends User<int>
+                     */
+                    class AppUser extends User {}
+
+                    $au = new AppUser("string");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
         ];
     }
 }

@@ -838,6 +838,8 @@ class CallAnalyzer
             $cased_method_id = $function_storage->cased_name;
         }
 
+        $calling_class_storage = $class_storage;
+
         if ($method_id && strpos($method_id, '::')) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -871,9 +873,24 @@ class CallAnalyzer
             if ($function_storage->template_types) {
                 $template_types = $function_storage->template_types;
             }
-            if ($class_storage && $class_storage->template_types) {
-                foreach ($class_storage->template_types as $template_name => $type) {
-                    $template_types[$template_name] = $type;
+            if ($class_storage) {
+                if ($calling_class_storage
+                    && $class_storage !== $calling_class_storage
+                    && $calling_class_storage->template_type_extends
+                ) {
+                    foreach ($calling_class_storage->template_type_extends as $class_name_lc => $type_map) {
+                        foreach ($type_map as $template_name => $type) {
+                            if (is_string($template_name)
+                                && $class_name_lc === strtolower($class_storage->name)
+                            ) {
+                                $template_types[$template_name] = [new Type\Union([$type]), null];
+                            }
+                        }
+                    }
+                } elseif ($class_storage->template_types) {
+                    foreach ($class_storage->template_types as $template_name => $type) {
+                        $template_types[$template_name] = $type;
+                    }
                 }
             }
 
