@@ -519,6 +519,7 @@ class CallAnalyzer
                         || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                         || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                         || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\Assign
                     )
                 ) {
                     $var_id = ExpressionAnalyzer::getVarId(
