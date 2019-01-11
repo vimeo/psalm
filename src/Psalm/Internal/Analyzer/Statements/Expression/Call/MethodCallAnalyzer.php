@@ -582,6 +582,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($class_storage->template_types) {
                     $class_template_params = [];
+                    $e = $calling_class_storage->template_type_extends;
 
                     if ($lhs_type_part instanceof TGenericObject) {
                         if ($calling_class_storage->template_types) {
@@ -597,8 +598,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 $i++;
                             }
                         }
-
-                        $e = $calling_class_storage->template_type_extends;
 
                         $i = 0;
                         foreach ($class_storage->template_types as $type_name => $_) {
@@ -638,11 +637,26 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $i++;
                         }
                     } else {
-                        foreach ($class_storage->template_types as $type_name => $_) {
+                        foreach ($class_storage->template_types as $type_name => list($type)) {
+                            if ($class_storage !== $calling_class_storage
+                                && isset($e[strtolower($class_storage->name)][$type_name])
+                            ) {
+                                $type_extends = $e[strtolower($class_storage->name)][$type_name];
+
+                                if (!$type_extends instanceof Type\Atomic\TGenericParam) {
+                                    $class_template_params[$type_name] = [
+                                        new Type\Union([$type_extends]),
+                                        $class_storage->name,
+                                    ];
+                                }
+                            }
+
                             if (!$stmt->var instanceof PhpParser\Node\Expr\Variable
                                 || $stmt->var->name !== 'this'
                             ) {
-                                $class_template_params[$type_name] = [Type::getMixed(), null];
+                                if (!isset($class_template_params[$type_name])) {
+                                    $class_template_params[$type_name] = [$type, $class_storage->name];
+                                }
                             }
                         }
                     }
