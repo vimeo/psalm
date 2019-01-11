@@ -1878,6 +1878,44 @@ class TemplateTest extends TestCase
                     apply(function(AChild $_i) : void {}, new A());',
                 'error_message' => 'TypeCoercion',
             ],
+            'extendsWithUnfulfilledNonTemplate' => [
+                '<?php
+                    namespace A;
+
+                    /**
+                     * @template T
+                     */
+                    abstract class Container
+                    {
+                        /**
+                         * @return T
+                         */
+                        public abstract function getItem();
+                    }
+
+                    class Foo
+                    {
+                    }
+
+                    class Bar
+                    {
+                    }
+
+                    /**
+                     * @template-extends Container<Bar>
+                     */
+                    class BarContainer extends Container
+                    {
+                        /**
+                         * @return Foo
+                         */
+                        public function getItem()
+                        {
+                            return new Foo();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
         ];
     }
 }

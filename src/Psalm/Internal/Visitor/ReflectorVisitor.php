@@ -885,7 +885,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         }
 
                         $extended_type_parameters = [];
-                        $extended_type_values = [];
 
                         foreach ($atomic_type->type_params as $i => $type_param) {
                             if (!$type_param->isSingle()) {
@@ -900,20 +899,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             }
 
                             foreach ($type_param->getTypes() as $type_param_atomic) {
-                                if ($type_param_atomic instanceof Type\Atomic\TGenericParam) {
-                                    $extended_type_parameters[$type_param_atomic->param_name] = null;
-                                } else {
-                                    $extended_type_values[$i] = $type_param_atomic;
-                                }
+                                $extended_type_parameters[] = $type_param_atomic;
                             }
                         }
 
                         if ($extended_type_parameters) {
                             $storage->template_type_extends[$generic_class_lc] = $extended_type_parameters;
-                        }
-
-                        if ($extended_type_values) {
-                            $storage->template_value_extends[$generic_class_lc] = $extended_type_values;
                         }
                     }
                 }

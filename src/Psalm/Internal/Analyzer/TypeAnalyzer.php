@@ -1039,19 +1039,20 @@ class TypeAnalyzer
                     $container_class_lc = strtolower($container_type_part->value);
 
                     // attempt to transform it
-                    if ($class_storage->template_value_extends
-                        && isset($class_storage->template_value_extends[$container_class_lc])
-                    ) {
-                        $extends_list = $class_storage->template_value_extends[$container_class_lc];
+                    if (isset($class_storage->template_type_extends[$container_class_lc])) {
+                        $extends_list = $class_storage->template_type_extends[$container_class_lc];
+
+                        $generic_params = [];
+
+                        foreach ($extends_list as $key => $value) {
+                            if (is_int($key)) {
+                                $generic_params[] = new Type\Union([$value]);
+                            }
+                        }
 
                         $input_type_part = new TGenericObject(
                             $input_type_part->value,
-                            array_map(
-                                function (Type\Atomic $a) : Type\Union {
-                                    return new Type\Union([$a]);
-                                },
-                                $extends_list
-                            )
+                            $generic_params
                         );
                     }
                 }

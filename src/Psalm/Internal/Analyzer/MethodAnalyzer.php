@@ -534,6 +534,21 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $guide_classlike_storage->name
             );
 
+            $guide_class_name_lc = strtolower($guide_classlike_storage->name);
+
+            if (isset($implementer_classlike_storage->template_type_extends[$guide_class_name_lc])) {
+                $map = $implementer_classlike_storage->template_type_extends[$guide_class_name_lc];
+
+                $guide_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    array_map(
+                        function (Type\Atomic $u) use ($guide_classlike_storage) : array {
+                            return [new Type\Union([$u]), $guide_classlike_storage->name];
+                        },
+                        $map
+                    )
+                );
+            }
+
             // treat void as null when comparing against docblock implementer
             if ($implementer_method_storage_return_type->isVoid()) {
                 $implementer_method_storage_return_type = Type::getNull();

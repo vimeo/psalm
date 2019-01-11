@@ -333,20 +333,17 @@ class Populator
 
             $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-            if (isset($storage->template_type_extends[$parent_storage_class])) {
-                $i = 0;
+            if ($parent_storage->template_types
+                && isset($storage->template_type_extends[$parent_storage_class])
+            ) {
+                foreach ($storage->template_type_extends[$parent_storage_class] as $i => $type) {
+                    $parent_template_type_names = array_keys($parent_storage->template_types);
 
-                foreach ($storage->template_type_extends[$parent_storage_class] as $template_name => $_) {
-                    if ($parent_storage->template_types) {
-                        $parent_template_type_names = array_keys($parent_storage->template_types);
+                    $mapped_name = $parent_template_type_names[$i] ?? null;
 
-                        if (isset($parent_template_type_names[$i])) {
-                            $storage->template_type_extends[$parent_storage_class][$template_name]
-                                = $parent_template_type_names[$i];
-                        }
+                    if ($mapped_name) {
+                        $storage->template_type_extends[$parent_storage_class][$mapped_name] = $type;
                     }
-
-                    $i++;
                 }
             }
 
@@ -479,20 +476,17 @@ class Populator
                 $implemented_interface_storage->invalid_dependencies
             );
 
-            if (isset($storage->template_type_extends[$implemented_interface_lc])) {
-                $i = 0;
+            if ($implemented_interface_storage->template_types
+                && isset($storage->template_type_extends[$implemented_interface_lc])
+            ) {
+                foreach ($storage->template_type_extends[$implemented_interface_lc] as $i => $type) {
+                    $parent_template_type_names = array_keys($implemented_interface_storage->template_types);
 
-                if ($implemented_interface_storage->template_types) {
-                    foreach ($storage->template_type_extends[$implemented_interface_lc] as $template_name => $_) {
-                        $parent_template_type_names = array_keys($implemented_interface_storage->template_types);
+                    $mapped_name = $parent_template_type_names[$i] ?? null;
 
-                        if (isset($parent_template_type_names[$i])) {
-                            $storage->template_type_extends[$implemented_interface_lc][$template_name]
-                                = $parent_template_type_names[$i];
-                        }
+                    if ($mapped_name) {
+                        $storage->template_type_extends[$implemented_interface_lc][$mapped_name] = $type;
                     }
-
-                    $i++;
                 }
             }
 

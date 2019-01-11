@@ -11,6 +11,7 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Internal\Type\TypeCombination;
@@ -876,22 +877,27 @@ class Union
                                 $classlike_storage =
                                     $codebase->classlike_storage_provider->get($atomic_input_type->value);
 
-                                if (isset($classlike_storage->template_type_extends[strtolower($key)])) {
+                                if ($atomic_input_type instanceof TGenericObject
+                                    && isset($classlike_storage->template_type_extends[strtolower($key)])
+                                ) {
                                     $matching_atomic_type = $atomic_input_type;
                                     break;
                                 }
 
-                                if (isset($classlike_storage->template_value_extends[strtolower($key)])) {
-                                    $extends_list = $classlike_storage->template_value_extends[strtolower($key)];
+                                if (isset($classlike_storage->template_type_extends[strtolower($key)])) {
+                                    $extends_list = $classlike_storage->template_type_extends[strtolower($key)];
 
-                                    $matching_atomic_type = new Type\Atomic\TGenericObject(
+                                    $generic_params = [];
+
+                                    foreach ($extends_list as $key => $value) {
+                                        if (is_int($key)) {
+                                            $generic_params[] = new Type\Union([$value]);
+                                        }
+                                    }
+
+                                    $matching_atomic_type = new TGenericObject(
                                         $atomic_input_type->value,
-                                        array_map(
-                                            function (Type\Atomic $a) : Type\Union {
-                                                return new Type\Union([$a]);
-                                            },
-                                            $extends_list
-                                        )
+                                        $generic_params
                                     );
                                     break;
                                 }
@@ -955,12 +961,11 @@ class Union
 
                             if ($classlike_storage->template_type_extends) {
                                 foreach ($classlike_storage->template_type_extends as $fq_class_name_lc => $param_map) {
-                                    $param_map_reversed = array_flip($param_map);
                                     if (strtolower($atomic_type->defining_class) === $fq_class_name_lc
-                                        && isset($param_map_reversed[$key])
-                                        && isset($template_types[$param_map_reversed[$key]])
+                                        && isset($param_map[$key])
+                                        && isset($template_types[(string) $param_map[$key]])
                                     ) {
-                                        $template_type = clone $template_types[$param_map_reversed[$key]][0];
+                                        $template_type = clone $template_types[(string) $param_map[$key]][0];
                                     }
                                 }
                             }
