@@ -932,7 +932,7 @@ class CallAnalyzer
                     if (IssueBuffer::accepts(
                         new InvalidPassByReference(
                             'Parameter ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects a variable',
-                            $code_location
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
@@ -1103,7 +1103,7 @@ class CallAnalyzer
                                 new MixedArgument(
                                     'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                         . ' cannot be mixed, expecting array',
-                                    $code_location
+                                    new CodeLocation($statements_analyzer->getSource(), $arg->value)
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
@@ -1116,7 +1116,7 @@ class CallAnalyzer
                                         new InvalidArgument(
                                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
                                                 . ' expects array, ' . $atomic_type->getId() . ' provided',
-                                            $code_location
+                                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
                                         ),
                                         $statements_analyzer->getSuppressedIssues()
                                     )) {
