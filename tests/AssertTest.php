@@ -14,6 +14,8 @@ class AssertTest extends TestCase
         return [
             'assertInstanceOfB' => [
                 '<?php
+                    namespace Bar;
+
                     class A {}
                     class B extends A {
                         public function foo(): void {}
@@ -32,6 +34,8 @@ class AssertTest extends TestCase
             ],
             'dropInReplacementForAssert' => [
                 '<?php
+                    namespace Bar;
+
                     /**
                      * @param mixed $_b
                      * @psalm-assert !falsy $_b
@@ -49,6 +53,8 @@ class AssertTest extends TestCase
             ],
             'assertInstanceOfInterface' => [
                 '<?php
+                    namespace Bar;
+
                     class A {
                         public function bar() : void {}
                     }
@@ -73,6 +79,8 @@ class AssertTest extends TestCase
             ],
             'assertInstanceOfMultipleInterfaces' => [
                 '<?php
+                    namespace Bar;
+
                     class A {
                         public function bar() : void {}
                     }
@@ -101,6 +109,8 @@ class AssertTest extends TestCase
             ],
             'assertInstanceOfBInClassMethod' => [
                 '<?php
+                    namespace Bar;
+
                     class A {}
                     class B extends A {
                         public function foo(): void {}
@@ -121,6 +131,8 @@ class AssertTest extends TestCase
             ],
             'assertPropertyNotNull' => [
                 '<?php
+                    namespace Bar;
+
                     class A {
                         public function foo(): void {}
                     }
@@ -143,21 +155,23 @@ class AssertTest extends TestCase
             ],
             'assertWithoutRedundantCondition' => [
                 '<?php
+                    namespace Bar;
+
                     /**
                      * @param mixed $data
                      * @throws \Exception
                      */
                     function assertIsLongString($data): void {
                         if (!is_string($data)) {
-                            throw new Exception;
+                            throw new \Exception;
                         }
                         if (strlen($data) < 100) {
-                            throw new Exception;
+                            throw new \Exception;
                         }
                     }
 
                     /**
-                     * @throws Exception
+                     * @throws \Exception
                      */
                     function f(string $s): void {
                         assertIsLongString($s);
@@ -165,6 +179,8 @@ class AssertTest extends TestCase
             ],
             'assertInstanceOfBAnnotation' => [
                 '<?php
+                    namespace Bar;
+
                     class A {}
                     class B extends A {
                         public function foo(): void {}
@@ -184,6 +200,8 @@ class AssertTest extends TestCase
             ],
             'assertIfTrueAnnotation' => [
                 '<?php
+                    namespace Bar;
+
                     /** @psalm-assert-if-true string $myVar */
                     function isValidString(?string $myVar) : bool {
                         return $myVar !== null && $myVar[0] === "a";
@@ -197,6 +215,8 @@ class AssertTest extends TestCase
             ],
             'assertIfFalseAnnotation' => [
                 '<?php
+                    namespace Bar;
+
                     /** @psalm-assert-if-false string $myVar */
                     function isInvalidString(?string $myVar) : bool {
                         return $myVar === null || $myVar[0] !== "a";
@@ -212,6 +232,8 @@ class AssertTest extends TestCase
             ],
             'assertServerVar' => [
                 '<?php
+                    namespace Bar;
+
                     /**
                      * @psalm-assert-if-true string $a
                      * @param mixed $a
@@ -227,6 +249,8 @@ class AssertTest extends TestCase
             ],
             'assertTemplatedType' => [
                 '<?php
+                    namespace Bar;
+
                     interface Foo {}
 
                     class Bar implements Foo {
@@ -258,6 +282,8 @@ class AssertTest extends TestCase
             ],
             'dontBleedBadAssertVarIntoContext' => [
                 '<?php
+                    namespace Bar;
+
                     class A {
                         public function foo() : bool {
                             return (bool) rand(0, 1);
@@ -284,6 +310,8 @@ class AssertTest extends TestCase
             ],
             'suppressRedundantCondition' => [
                 '<?php
+                    namespace Bar;
+
                     class A {}
 
                     /**
@@ -307,6 +335,7 @@ class AssertTest extends TestCase
             ],
             'allowCanBeSameAfterAssertion' => [
                 '<?php
+                    namespace Bar;
 
                     /**
                      * Asserts that two variables are the same.
@@ -343,6 +372,7 @@ class AssertTest extends TestCase
             ],
             'allowCanBeNotSameAfterAssertion' => [
                 '<?php
+                    namespace Bar;
 
                     /**
                      * Asserts that two variables are the same.

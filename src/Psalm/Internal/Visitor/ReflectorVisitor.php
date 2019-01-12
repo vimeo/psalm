@@ -1494,11 +1494,30 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->assertions = [];
 
             foreach ($docblock_info->assertions as $assertion) {
+                $assertion_type = $assertion['type'];
+                $prefix = '';
+                if ($assertion_type[0] === '!') {
+                    $prefix = '!';
+                    $assertion_type = substr($assertion_type, 1);
+                }
+                if ($assertion_type[0] === '~') {
+                    $prefix .= '~';
+                    $assertion_type = substr($assertion_type, 1);
+                }
+                if ($assertion_type[0] === '=') {
+                    $prefix .= '=';
+                    $assertion_type = substr($assertion_type, 1);
+                }
+
+                if ($assertion_type !== 'falsy' && !isset($template_types[$assertion_type])) {
+                    $assertion_type = Type::getFQCLNFromString($assertion_type, $this->aliases);
+                }
+
                 foreach ($storage->params as $i => $param) {
                     if ($param->name === $assertion['param_name']) {
                         $storage->assertions[] = new \Psalm\Storage\Assertion(
                             $i,
-                            [[$assertion['type']]]
+                            [[$prefix . $assertion_type]]
                         );
                         continue 2;
                     }
@@ -1506,7 +1525,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->assertions[] = new \Psalm\Storage\Assertion(
                     '$' . $assertion['param_name'],
-                    [[$assertion['type']]]
+                    [[$prefix . $assertion_type]]
                 );
             }
         }
