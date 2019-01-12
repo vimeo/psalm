@@ -463,7 +463,7 @@ class Config
 
             $old_dom_document = $dom_document;
             $dom_document = new \DOMDocument();
-            $dom_document->loadXML($old_dom_document->saveXml());
+            $dom_document->loadXML($old_dom_document->saveXML());
         }
 
         // Enable user error handling

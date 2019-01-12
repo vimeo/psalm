@@ -694,7 +694,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $fake_param = (new PhpParser\Builder\Param($param->name));
                         if ($param->signature_type) {
                             /** @psalm-suppress DeprecatedMethod */
-                            $fake_param->setTypehint((string)$param->signature_type);
+                            $fake_param->setTypeHint((string)$param->signature_type);
                         }
 
                         return $fake_param->getNode();

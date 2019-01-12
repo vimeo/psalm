@@ -87,7 +87,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
-        $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
 

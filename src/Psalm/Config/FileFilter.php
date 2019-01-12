@@ -150,7 +150,7 @@ class FileFilter
 
                 while ($iterator->valid()) {
                     if (!$iterator->isDot() && $iterator->isLink()) {
-                        $linked_path = readlink($iterator->getPathName());
+                        $linked_path = readlink($iterator->getPathname());
 
                         if (stripos($linked_path, $directory_path) !== 0) {
                             if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {

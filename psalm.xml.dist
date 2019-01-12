@@ -38,6 +38,10 @@
         <file name="src/Psalm/Internal/Stubs/SabreEvent.php"/>
     </stubs>
 
+    <plugins>
+        <plugin filename="examples/plugins/FunctionCasingChecker.php" />
+    </plugins>
+
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress"/>
         <PossiblyNullOperand errorLevel="suppress"/>

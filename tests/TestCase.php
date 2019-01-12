@@ -78,7 +78,7 @@ class TestCase extends BaseTestCase
     public function addFile($file_path, $contents)
     {
         $this->file_provider->registerFile($file_path, $contents);
-        $this->project_analyzer->getCodeBase()->scanner->addFileToShallowScan($file_path);
+        $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
     }
 
     /**

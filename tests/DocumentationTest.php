@@ -125,7 +125,7 @@ class DocumentationTest extends TestCase
         }
 
         $this->expectException('\Psalm\Exception\CodeException');
-        $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

@@ -81,7 +81,7 @@ class IncludeTest extends TestCase
         $config = $codebase->config;
 
         $this->expectException('\Psalm\Exception\CodeException');
-        $this->expectExceptionMessageRegexp('/\b' . preg_quote($error_message, '/') . '\b/');
+        $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->scanFiles();
 

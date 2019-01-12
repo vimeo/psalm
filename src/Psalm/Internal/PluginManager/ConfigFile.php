@@ -111,7 +111,7 @@ class ConfigFile
             }
         }
 
-        $doc->loadXml($file_contents);
+        $doc->loadXML($file_contents);
         return $doc;
     }
 
