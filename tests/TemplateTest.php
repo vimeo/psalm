@@ -1672,6 +1672,96 @@ class TemplateTest extends TestCase
                     '$id' => 'array-key',
                 ]
             ],
+            'extendsTwiceSameName' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Container
+                    {
+                        /**
+                         * @var T
+                         */
+                        private $v;
+                        /**
+                         * @param T $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return T
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template-extends Container<T>
+                     */
+                    class ChildContainer extends Container {}
+
+                    /**
+                     * @template T
+                     * @template-extends ChildContainer<T>
+                     */
+                    class GrandChildContainer extends ChildContainer {}
+
+                    $fc = new GrandChildContainer(5);
+                    $a = $fc->getValue();',
+                [
+                    '$a' => 'int',
+                ]
+            ],
+            'extendsTwiceDifferentName' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    class Container
+                    {
+                        /**
+                         * @var T1
+                         */
+                        private $v;
+                        /**
+                         * @param T1 $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return T1
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template T2
+                     * @template-extends Container<T2>
+                     */
+                    class ChildContainer extends Container {}
+
+                    /**
+                     * @template T3
+                     * @template-extends ChildContainer<T3>
+                     */
+                    class GrandChildContainer extends ChildContainer {}
+
+                    $fc = new GrandChildContainer(5);
+                    $a = $fc->getValue();',
+                [
+                    '$a' => 'int',
+                ]
+            ],
         ];
     }
 
@@ -2050,6 +2140,132 @@ class TemplateTest extends TestCase
 
                     $au = new AppUser("string");',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'extendsTwiceDifferentNameBrokenChain' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    class Container
+                    {
+                        /**
+                         * @var T1
+                         */
+                        private $v;
+                        /**
+                         * @param T1 $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return T1
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template T2
+                     */
+                    class ChildContainer extends Container {}
+
+                    /**
+                     * @template T3
+                     * @template-extends ChildContainer<T3>
+                     */
+                    class GrandChildContainer extends ChildContainer {}
+
+                    $fc = new GrandChildContainer(5);
+                    $a = $fc->getValue();',
+                'error_message' => 'MixedAssignment',
+            ],
+            'extendsTwiceSameNameBrokenChain' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Container
+                    {
+                        /**
+                         * @var T
+                         */
+                        private $v;
+                        /**
+                         * @param T $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return T
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    class ChildContainer extends Container {}
+
+                    /**
+                     * @template T
+                     * @template-extends ChildContainer<T>
+                     */
+                    class GrandChildContainer extends ChildContainer {}
+
+                    $fc = new GrandChildContainer(5);
+                    $a = $fc->getValue();',
+                'error_message' => 'MixedAssignment',
+            ],
+            'extendsTwiceSameNameLastDoesNotExtend' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Container
+                    {
+                        /**
+                         * @var T
+                         */
+                        private $v;
+                        /**
+                         * @param T $v
+                         */
+                        public function __construct($v)
+                        {
+                            $this->v = $v;
+                        }
+                        /**
+                         * @return T
+                         */
+                        public function getValue()
+                        {
+                            return $this->v;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template-extends Container<T>
+                     */
+                    class ChildContainer extends Container {}
+
+                    /**
+                     * @template T
+                     */
+                    class GrandChildContainer extends ChildContainer {}
+
+                    $fc = new GrandChildContainer(5);
+                    $a = $fc->getValue();',
+                'error_message' => 'MixedAssignment',
             ],
         ];
     }

@@ -357,6 +357,12 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         foreach ($storage->template_types as $template_name => $_) {
                             if (isset($found_generic_params[$template_name])) {
                                 $generic_params[] = $found_generic_params[$template_name];
+                            } elseif ($storage->template_type_extends && $found_generic_params) {
+                                $generic_params[] = self::getGenericParamForOffset(
+                                    $template_name,
+                                    $storage->template_type_extends,
+                                    $found_generic_params
+                                );
                             } else {
                                 $generic_params[] = [Type::getMixed(), null];
                             }
@@ -443,5 +449,39 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         return null;
+    }
+
+    /**
+     * @param  string $template_name
+     * @param  array<string, array<int|string, Type\Atomic>>  $template_type_extends
+     * @param  array<string, array{Type\Union, ?string}>  $found_generic_params
+     * @return array{Type\Union, ?string}
+     */
+    private static function getGenericParamForOffset(
+        string $template_name,
+        array $template_type_extends,
+        array $found_generic_params
+    ) {
+        if (isset($found_generic_params[$template_name])) {
+            return $found_generic_params[$template_name];
+        }
+
+        foreach ($template_type_extends as $type_map) {
+            //var_dump($template_name, $type_map);
+            foreach ($type_map as $extended_template_name => $extended_type) {
+                if (is_string($extended_template_name)
+                    && $extended_type instanceof Type\Atomic\TGenericParam
+                    && $extended_type->param_name === $template_name
+                ) {
+                    return self::getGenericParamForOffset(
+                        $extended_template_name,
+                        $template_type_extends,
+                        $found_generic_params
+                    );
+                }
+            }
+        }
+
+        return [Type::getMixed(), null];
     }
 }

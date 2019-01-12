@@ -423,6 +423,10 @@ abstract class Type
         }
 
         if ($parse_tree instanceof ParseTree\NullableTree) {
+            if (!isset($parse_tree->children[0])) {
+                throw new TypeParseTreeException('Misplaced question mark');
+            }
+
             $non_nullable_type = self::getTypeFromTree($parse_tree->children[0], false, $template_type_map);
 
             if ($non_nullable_type instanceof Union) {

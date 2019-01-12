@@ -869,35 +869,11 @@ class CallAnalyzer
         $template_types = null;
 
         if ($function_storage) {
-            $template_types = [];
-
-            if ($function_storage->template_types) {
-                $template_types = $function_storage->template_types;
-            }
-            if ($class_storage) {
-                if ($calling_class_storage
-                    && $class_storage !== $calling_class_storage
-                    && $calling_class_storage->template_type_extends
-                ) {
-                    foreach ($calling_class_storage->template_type_extends as $class_name_lc => $type_map) {
-                        foreach ($type_map as $template_name => $type) {
-                            if (is_string($template_name)
-                                && $class_name_lc === strtolower($class_storage->name)
-                            ) {
-                                $template_types[$template_name] = [new Type\Union([$type]), null];
-                            }
-                        }
-                    }
-                } elseif ($class_storage->template_types) {
-                    foreach ($class_storage->template_types as $template_name => $type) {
-                        $template_types[$template_name] = $type;
-                    }
-                }
-            }
-
-            foreach ($template_types as $key => $type) {
-                $template_types[$key][0] = clone $type[0];
-            }
+            $template_types = self::getTemplateTypesForFunction(
+                $function_storage,
+                $class_storage,
+                $calling_class_storage
+            );
         }
 
         $existing_generic_params = $generic_params ?: [];
@@ -1237,6 +1213,63 @@ class CallAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * @return array<string, array{Type\Union, ?string}>
+     */
+    private static function getTemplateTypesForFunction(
+        FunctionLikeStorage $function_storage,
+        ClassLikeStorage $class_storage = null,
+        ClassLikeStorage $calling_class_storage = null
+    ) : array {
+        $template_types = [];
+
+        if ($function_storage->template_types) {
+            $template_types = $function_storage->template_types;
+        }
+
+        if ($class_storage) {
+            if ($calling_class_storage
+                && $class_storage !== $calling_class_storage
+                && $calling_class_storage->template_type_extends
+            ) {
+                foreach ($calling_class_storage->template_type_extends as $class_name_lc => $type_map) {
+                    foreach ($type_map as $template_name => $type) {
+                        if (is_string($template_name)
+                            && $class_name_lc === strtolower($class_storage->name)
+                        ) {
+                            if ($type instanceof Type\Atomic\TGenericParam
+                                && $type->defining_class
+                                && isset(
+                                    $calling_class_storage
+                                        ->template_type_extends
+                                        [strtolower($type->defining_class)]
+                                        [$type->param_name]
+                                )
+                            ) {
+                                $type = $calling_class_storage
+                                    ->template_type_extends
+                                    [strtolower($type->defining_class)]
+                                    [$type->param_name];
+                            }
+
+                            $template_types[$template_name] = [new Type\Union([$type]), $class_storage->name];
+                        }
+                    }
+                }
+            } elseif ($class_storage->template_types) {
+                foreach ($class_storage->template_types as $template_name => $type) {
+                    $template_types[$template_name] = $type;
+                }
+            }
+        }
+
+        foreach ($template_types as $key => $type) {
+            $template_types[$key][0] = clone $type[0];
+        }
+
+        return $template_types;
     }
 
     /**

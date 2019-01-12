@@ -334,6 +334,7 @@ class Populator
             $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
             if ($parent_storage->template_types
+                && $parent_storage_class
                 && isset($storage->template_type_extends[$parent_storage_class])
             ) {
                 foreach ($storage->template_type_extends[$parent_storage_class] as $i => $type) {
@@ -344,6 +345,13 @@ class Populator
                     if ($mapped_name) {
                         $storage->template_type_extends[$parent_storage_class][$mapped_name] = $type;
                     }
+                }
+
+                if ($parent_storage->template_type_extends) {
+                    $storage->template_type_extends = array_merge(
+                        $parent_storage->template_type_extends,
+                        $storage->template_type_extends
+                    );
                 }
             }
 

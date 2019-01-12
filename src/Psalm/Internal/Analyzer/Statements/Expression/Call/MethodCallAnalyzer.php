@@ -1058,6 +1058,25 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 $lhs_type_part->type_params[(int) $mapped_offset],
                                 $class_storage->name,
                             ];
+                        } elseif ($type_extends->defining_class
+                            && isset(
+                                $calling_class_storage
+                                    ->template_type_extends
+                                        [strtolower($type_extends->defining_class)]
+                                        [$type_extends->param_name]
+                            )
+                        ) {
+                            $mapped_offset = array_search(
+                                $type_extends->param_name,
+                                array_keys($calling_class_storage
+                                ->template_type_extends
+                                    [strtolower($type_extends->defining_class)])
+                            );
+
+                            $class_template_params[$type_name] = [
+                                $lhs_type_part->type_params[(int) $mapped_offset],
+                                $class_storage->name,
+                            ];
                         }
                     } else {
                         $class_template_params[$type_name] = [
@@ -1073,6 +1092,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $i++;
             }
+
+            //var_dump($class_template_params);
         } else {
             foreach ($class_storage->template_types as $type_name => list($type)) {
                 if ($class_storage !== $calling_class_storage
