@@ -615,10 +615,10 @@ class Scanner
                 foreach ($file_storage->constants as $name => $type) {
                     $this->codebase->addGlobalConstantType($name, $type);
                 }
+            }
 
-                foreach ($file_storage->classlike_aliases as $aliased_name => $unaliased_name) {
-                    $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
-                }
+            foreach ($file_storage->classlike_aliases as $aliased_name => $unaliased_name) {
+                $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
             }
         }
 

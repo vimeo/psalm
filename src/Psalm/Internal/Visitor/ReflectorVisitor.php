@@ -384,12 +384,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     if ($first_arg_value && $second_arg_value) {
-                        if ($this->codebase->register_stub_files || $this->codebase->register_autoload_files) {
-                            $this->codebase->classlikes->addClassAlias(
-                                $first_arg_value,
-                                $second_arg_value
-                            );
-                        }
+                        $this->codebase->classlikes->addClassAlias(
+                            $first_arg_value,
+                            $second_arg_value
+                        );
 
                         $this->file_storage->classlike_aliases[strtolower($second_arg_value)] = $first_arg_value;
                     }
