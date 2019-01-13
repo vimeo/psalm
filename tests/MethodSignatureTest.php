@@ -530,7 +530,25 @@ class MethodSignatureTest extends TestCase
                     class B extends A {
                         use T;
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'abstractTraitMethodWithDifferentReturnType' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    trait T {
+                        abstract public function foo() : A;
+                    }
+
+                    class C {
+                        use T;
+
+                        public function foo() : B{
+                            return new B();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch'
             ],
             'mustOmitReturnType' => [
                 '<?php

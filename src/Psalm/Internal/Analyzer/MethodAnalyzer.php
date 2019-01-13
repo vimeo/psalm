@@ -501,16 +501,30 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 ) : null;
 
             if (!TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type)) {
-                if (IssueBuffer::accepts(
-                    new MethodSignatureMismatch(
-                        'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . $implementer_signature_return_type . '\' is different to return type \''
-                            . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
-                        $code_location
-                    ),
-                    $suppressed_issues
-                )) {
-                    return false;
+                if ($guide_classlike_storage !== $implementer_classlike_storage) {
+                    if (IssueBuffer::accepts(
+                        new MethodSignatureMismatch(
+                            'Method ' . $cased_implementer_method_id . ' with return type \''
+                                . $implementer_signature_return_type . '\' is different to return type \''
+                                . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
+                } else {
+                    if (IssueBuffer::accepts(
+                        new ImplementedReturnTypeMismatch(
+                            'Method ' . $cased_implementer_method_id . ' with return type \''
+                                . $implementer_signature_return_type . '\' is different to return type \''
+                                . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            $code_location
+                        ),
+                        $suppressed_issues
+                    )) {
+                        return false;
+                    }
                 }
 
                 return null;

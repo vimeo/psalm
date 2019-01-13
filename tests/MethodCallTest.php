@@ -460,7 +460,7 @@ class MethodCallTest extends TestCase
                     function f($p): void {
                         $p->zugzug();
                     }',
-                'error_message' => 'UndefinedMethod - src/somefile.php:7 - Method (B&A)::zugzug does not exist'
+                'error_message' => 'UndefinedInterfaceMethod - src/somefile.php:7 - Method (B&A)::zugzug does not exist'
             ],
             'noInstanceCallAsStatic' => [
                 '<?php
