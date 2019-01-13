@@ -636,6 +636,41 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testThing()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <mockClasses>
+                        <class name="MyMockClass" />
+                    </mockClasses>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class MyMockClass {}
+
+                $a = new MyMockClass();
+                $a->foo($b = 5);
+                echo $b;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testExitFunctions()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -473,6 +473,17 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $context->isPhantomClass($fq_class_name)
         ) {
             $return_type = Type::getMixed();
+
+            if (self::checkFunctionArguments(
+                $statements_analyzer,
+                $stmt->args,
+                null,
+                null,
+                $context
+            ) === false) {
+                return false;
+            }
+
             return;
         }
 
