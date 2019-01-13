@@ -188,6 +188,15 @@ class BinaryOperationTest extends TestCase
                     '$b' => 'float',
                 ],
             ],
+            'exponent' => [
+                '<?php
+                    $a = "x" ^ "y";
+                    $b = 4 ^ 5;',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -268,6 +277,16 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = 5 / (rand(0, 1) ? 2 : null);',
                 'error_message' => 'PossiblyNullOperand',
+            ],
+            'invalidExponent' => [
+                '<?php
+                    $a = "x" ^ 1;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidBitwiseOr' => [
+                '<?php
+                    $a = "x" | new stdClass;',
+                'error_message' => 'InvalidOperand',
             ],
         ];
     }

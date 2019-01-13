@@ -575,6 +575,15 @@ class BinaryOpAnalyzer
                 if ($result_type) {
                     $stmt->inferredType = $result_type;
                 }
+            } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
+                self::analyzeNonDivArithmenticOp(
+                    $statements_analyzer,
+                    $stmt->left,
+                    $stmt->right,
+                    $stmt,
+                    $result_type,
+                    $context
+                );
             }
         }
 
