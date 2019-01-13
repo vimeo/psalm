@@ -823,6 +823,17 @@ class ExpressionAnalyzer
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $stmt->name instanceof PhpParser\Node\Identifier
+        ) {
+            /** @var string|null */
+            $resolved_name = $stmt->class->getAttribute('resolvedName');
+
+            if ($resolved_name) {
+                return $resolved_name . '::' . $stmt->name;
+            }
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             && $stmt->name instanceof PhpParser\Node\Identifier
             && !$stmt->args

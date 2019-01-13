@@ -252,6 +252,7 @@ class ConstFetchAnalyzer
 
                 if (isset($class_constants[$stmt->name->name]) && $first_part_lc !== 'static') {
                     $stmt->inferredType = clone $class_constants[$stmt->name->name];
+                    $context->vars_in_scope[$const_id] = $stmt->inferredType;
                 } else {
                     $stmt->inferredType = Type::getMixed();
                 }
