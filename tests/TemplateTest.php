@@ -1113,6 +1113,34 @@ class TemplateTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedMethodCall'],
             ],
+            'returnTemplatedClassClassName' => [
+                '<?php
+                    class I {
+                        /**
+                         * @template T as Foo
+                         * @param class-string $class
+                         * @template-typeof T $class
+                         * @return T|null
+                         */
+                        public function loader(string $class) : void {
+                            return $class::load();
+                        }
+                    }
+
+                    class Foo {
+                        /** @return static */
+                        public static function load() {
+                            return new static();
+                        }
+                    }
+
+                    class FooChild extends Foo{}
+
+                    $a = (new I)->loader(FooChild::class);',
+                'assertions' => [
+                    '$a' => 'null|FooChild',
+                ],
+            ],
             'upcastIterableToTraversable' => [
                 '<?php
                     /**
