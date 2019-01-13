@@ -804,7 +804,7 @@ class AssertionFinder
                     if ($var_type->from_docblock || $other_type->from_docblock) {
                         if (IssueBuffer::accepts(
                             new DocblockTypeContradiction(
-                                $var_type . ' does not contain ' . $other_type,
+                                $var_type->getId() . ' does not contain ' . $other_type->getId(),
                                 new CodeLocation($source, $conditional)
                             ),
                             $source->getSuppressedIssues()

@@ -1233,6 +1233,13 @@ class TemplateTest extends TestCase
 
                             echo $object->id;
                         }
+                    }
+
+                    class FooChild extends Foo {}
+
+                    /** @param Collection<Foo> $c */
+                    function handleCollectionOfFoo(Collection $c) : void {
+                        if ($c->getType() === FooChild::class) {}
                     }',
             ],
             'getEquateClass' => [
