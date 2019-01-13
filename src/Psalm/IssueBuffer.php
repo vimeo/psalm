@@ -126,6 +126,10 @@ class IssueBuffer
             return preg_replace('/^(False|Null)/', 'Invalid', $issue_type);
         }
 
+        if ($issue_type === 'UndefinedInterfaceMethod') {
+            return 'UndefinedMethod';
+        }
+
         return null;
     }
 

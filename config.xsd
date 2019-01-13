@@ -290,6 +290,7 @@
             <xs:element name="UndefinedClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedConstant" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedFunction" type="FunctionIssueHandlerType" minOccurs="0" />
+            <xs:element name="UndefinedInterfaceMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedPropertyAssignment" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="UndefinedPropertyFetch" type="PropertyIssueHandlerType" minOccurs="0" />

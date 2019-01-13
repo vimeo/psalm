@@ -1913,6 +1913,18 @@ class A {}
 A::foo();
 ```
 
+### UndefinedInterfaceMethod
+
+Emitted when calling a method that doesn’t exist on an interface
+
+```php
+interface I {}
+
+function foo(I $i) {
+    $i->bar();
+}
+```
+
 ### UndefinedPropertyAssignment
 
 Emitted when assigning a property on an object that doesn’t have that property defined

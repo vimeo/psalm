@@ -115,6 +115,7 @@
         <InvalidReturnStatement errorLevel="info" />
         <InvalidReturnType errorLevel="info" />
         <UndefinedThisPropertyAssignment errorLevel="info" />
+        <UndefinedInterfaceMethod errorLevel="info" />
 
         <!-- level 7 issues - even worse -->
 

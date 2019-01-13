@@ -147,7 +147,7 @@ abstract class Atomic
                 return new TNamedObject('static');
 
             default:
-                if (strpos($value, '-')) {
+                if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
                     throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');
                 }
 

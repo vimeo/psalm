@@ -26,6 +26,7 @@ use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\PossiblyUndefinedMethod;
 use Psalm\Issue\TypeCoercion;
+use Psalm\Issue\UndefinedInterfaceMethod;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
@@ -159,7 +160,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
 
-        $non_existent_method_ids = [];
+        $non_existent_class_method_ids = [];
+        $non_existent_interface_method_ids = [];
         $existent_method_ids = [];
         $has_mixed_method_call = false;
 
@@ -192,7 +194,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $has_mixed_method_call,
                     $invalid_method_call_types,
                     $existent_method_ids,
-                    $non_existent_method_ids
+                    $non_existent_class_method_ids,
+                    $non_existent_interface_method_ids
                 );
 
                 if ($result === false) {
@@ -230,14 +233,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            if ($non_existent_method_ids) {
+            if ($non_existent_class_method_ids) {
                 if ($context->check_methods) {
                     if ($existent_method_ids || $has_mixed_method_call) {
                         if (IssueBuffer::accepts(
                             new PossiblyUndefinedMethod(
-                                'Method ' . $non_existent_method_ids[0] . ' does not exist',
+                                'Method ' . $non_existent_class_method_ids[0] . ' does not exist',
                                 new CodeLocation($source, $stmt->name),
-                                $non_existent_method_ids[0]
+                                $non_existent_class_method_ids[0]
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
@@ -246,9 +249,39 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     } else {
                         if (IssueBuffer::accepts(
                             new UndefinedMethod(
-                                'Method ' . $non_existent_method_ids[0] . ' does not exist',
+                                'Method ' . $non_existent_class_method_ids[0] . ' does not exist',
                                 new CodeLocation($source, $stmt->name),
-                                $non_existent_method_ids[0]
+                                $non_existent_class_method_ids[0]
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            if ($non_existent_interface_method_ids) {
+                if ($context->check_methods) {
+                    if ($existent_method_ids || $has_mixed_method_call) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyUndefinedMethod(
+                                'Method ' . $non_existent_interface_method_ids[0] . ' does not exist',
+                                new CodeLocation($source, $stmt->name),
+                                $non_existent_interface_method_ids[0]
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UndefinedInterfaceMethod(
+                                'Method ' . $non_existent_interface_method_ids[0] . ' does not exist',
+                                new CodeLocation($source, $stmt->name),
+                                $non_existent_interface_method_ids[0]
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
@@ -345,7 +378,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
      * @param  bool                           &$has_mixed_method_call
      * @param  array<string>                  &$invalid_method_call_types
      * @param  array<string>                  &$existent_method_ids
-     * @param  array<string>                  &$non_existent_method_ids
+     * @param  array<string>                  &$non_existent_class_method_ids
+     * @param  array<string>                  &$non_existent_interface_method_ids
      * @return null|bool
      */
     private static function analyzeAtomicCall(
@@ -362,7 +396,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         &$has_mixed_method_call,
         &$invalid_method_call_types,
         &$existent_method_ids,
-        &$non_existent_method_ids
+        &$non_existent_class_method_ids,
+        &$non_existent_interface_method_ids
     ) {
         $config = $codebase->config;
 
@@ -582,7 +617,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
 
                     if ($class_storage->sealed_methods) {
-                        $non_existent_method_ids[] = $method_id;
+                        $non_existent_class_method_ids[] = $method_id;
                         return true;
                     }
                 }
@@ -641,8 +676,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         }
 
+        $is_interface = false;
+
+        if ($codebase->interfaceExists($fq_class_name)) {
+            $is_interface = true;
+        }
+
         if ($intersection_types && !$codebase->methodExists($method_id)) {
-            if ($codebase->interfaceExists($fq_class_name)) {
+            if ($is_interface) {
                 $interface_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                 $check_visibility = $check_visibility && !$interface_storage->override_method_visibility;
@@ -684,6 +725,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($codebase->methodExists($method_id)) {
+                    $is_interface = $codebase->interfaceExists($fq_class_name);
+
                     break;
                 }
             }
@@ -751,7 +794,12 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             }
 
-            $non_existent_method_ids[] = $intersection_method_id ?: $method_id;
+            if ($is_interface) {
+                $non_existent_interface_method_ids[] = $intersection_method_id ?: $method_id;
+            } else {
+                $non_existent_class_method_ids[] = $intersection_method_id ?: $method_id;
+            }
+
             return true;
         }
 
