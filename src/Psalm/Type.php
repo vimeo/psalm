@@ -41,7 +41,7 @@ abstract class Type
     /**
      * @var array<string, bool>
      */
-    public static $PSALM_RESERVED_WORDS = [
+    const PSALM_RESERVED_WORDS = [
         'int' => true,
         'string' => true,
         'float' => true,
@@ -762,7 +762,7 @@ abstract class Type
 
             $type_tokens[$i] = $string_type_token = self::fixScalarTerms($string_type_token);
 
-            if (isset(self::$PSALM_RESERVED_WORDS[$string_type_token])) {
+            if (isset(self::PSALM_RESERVED_WORDS[$string_type_token])) {
                 continue;
             }
 

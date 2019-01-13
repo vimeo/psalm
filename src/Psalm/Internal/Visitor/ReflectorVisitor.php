@@ -1513,7 +1513,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $assertion_type = substr($assertion_type, 1);
                 }
 
-                if ($assertion_type !== 'falsy' && !isset($template_types[$assertion_type])) {
+                if ($assertion_type !== 'falsy'
+                    && !isset($template_types[$assertion_type])
+                    && !isset(Type::PSALM_RESERVED_WORDS[$assertion_type])
+                ) {
                     $assertion_type = Type::getFQCLNFromString($assertion_type, $this->aliases);
                 }
 
