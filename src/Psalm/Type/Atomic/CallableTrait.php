@@ -203,8 +203,10 @@ trait CallableTrait
                 $template_types,
                 $generic_params,
                 $codebase,
-                $input_type->return_type
+                $input_type->return_type,
+                true
             );
+
         }
     }
 

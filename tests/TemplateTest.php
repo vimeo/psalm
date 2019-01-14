@@ -1797,6 +1797,26 @@ class TemplateTest extends TestCase
                     '$a' => 'int',
                 ]
             ],
+            'callableReturnsItself' => [
+                '<?php
+                    $a =
+                      /**
+                       * @param callable():string $s
+                       * @return string
+                       */
+                      function(callable $s) {
+                        return $s();
+                      };
+
+                    /**
+                     * @template T1
+                     * @param callable(callable():T1):T1 $s
+                     * @return void
+                     */
+                    function takesReturnTCallable(callable $s) {}
+
+                    takesReturnTCallable($a);'
+            ],
         ];
     }
 
@@ -2301,6 +2321,27 @@ class TemplateTest extends TestCase
                     $fc = new GrandChildContainer(5);
                     $a = $fc->getValue();',
                 'error_message' => 'MixedAssignment',
+            ],
+            'callableDoesNotReturnItself' => [
+                '<?php
+                    $b =
+                      /**
+                       * @param callable():int $s
+                       * @return string
+                       */
+                      function(callable $s) {
+                        return "#" . $s();
+                      };
+
+                    /**
+                     * @template T1
+                     * @param callable(callable():T1):T1 $s
+                     * @return void
+                     */
+                    function takesReturnTCallable(callable $s) {}
+
+                    takesReturnTCallable($b);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }
