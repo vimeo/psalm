@@ -11,6 +11,7 @@ php:
   - 7.0
   - 7.1
   - 7.2
+  - 7.3
   - nightly
 
 env:
@@ -50,14 +51,14 @@ matrix:
   allow_failures:
     - php: nightly
   exclude: # covered in Code coverage stage
-    - php: 7.2
+    - php: 7.3
       env: DEPS="high"
 
 # Additional stages
 jobs:
   include:
     - stage: Code coverage analysis
-      php: 7.2
+      php: 7.3
       # don't disable xdebug here
       env: XDEBUG="true"
       install:
@@ -67,7 +68,7 @@ jobs:
         - travis_retry php vendor/bin/php-coveralls -v
 
     - stage: Code style analysis
-      php: 7.2
+      php: 7.3
       env: DEPS="high"
       script:
         - vendor/bin/phpcs
