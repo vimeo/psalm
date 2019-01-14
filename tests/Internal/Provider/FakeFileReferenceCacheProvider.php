@@ -26,6 +26,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     public function __construct()
     {
+        $this->config_changed = false;
     }
 
     /**

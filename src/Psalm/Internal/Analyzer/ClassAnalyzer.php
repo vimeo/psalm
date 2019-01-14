@@ -635,10 +635,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $uninitialized_properties = [];
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
-            $property_class_name = $codebase->properties->getDeclaringClassForProperty(
+            $property_class_name = (string) $codebase->properties->getDeclaringClassForProperty(
                 $appearing_property_id
             );
-            $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
+            $property_class_storage = $classlike_storage_provider->get($property_class_name);
 
             $property = $property_class_storage->properties[$property_name];
 
@@ -648,12 +648,10 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property_class_name) {
-                $codebase->file_reference_provider->addReferenceToClassMethod(
-                    strtolower($fq_class_name) . '::__construct',
-                    strtolower($property_class_name) . '::$' . $property_name
-                );
-            }
+            $codebase->file_reference_provider->addReferenceToClassMethod(
+                strtolower($fq_class_name) . '::__construct',
+                strtolower($property_class_name) . '::$' . $property_name
+            );
 
             if ($property->has_default || !$property->type || $property_is_initialized) {
                 continue;
@@ -664,7 +662,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             $uninitialized_variables[] = '$this->' . $property_name;
-            $uninitialized_properties[$property_name] = $property;
+            $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;
         }
 
         if (!$uninitialized_properties) {
@@ -758,14 +756,13 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $constructor_analyzer->analyze($method_context, $global_context, true);
 
-            foreach ($uninitialized_properties as $property_name => $property_storage) {
+            foreach ($uninitialized_properties as $property_id => $property_storage) {
+                list(,$property_name) = explode('::$', $property_id);
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
                     throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
                 }
 
                 $end_type = $method_context->vars_in_scope['$this->' . $property_name];
-
-                $property_id = $constructor_appearing_fqcln . '::$' . $property_name;
 
                 $constructor_class_property_storage = $property_storage;
 
@@ -785,21 +782,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($property_storage->location
                     && (!$end_type->initialized || $property_storage !== $constructor_class_property_storage)
                 ) {
-                    if (!$config->reportIssueInFile(
-                        'PropertyNotSetInConstructor',
-                        $property_storage->location->file_path
-                    ) && $class->extends
-                    ) {
-                        $error_location = new CodeLocation($this, $class->extends);
-                    } else {
-                        $error_location = $property_storage->location;
-                    }
-
                     if (IssueBuffer::accepts(
                         new PropertyNotSetInConstructor(
                             'Property ' . $property_id . ' is not defined in constructor of ' .
                                 $this->fq_class_name . ' or in any private methods called in the constructor',
-                            $error_location
+                            $property_storage->location,
+                            $property_id
                         ),
                         array_merge($this->source->getSuppressedIssues(), $storage->suppressed_issues)
                     )) {
