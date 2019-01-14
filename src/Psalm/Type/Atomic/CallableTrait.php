@@ -207,7 +207,6 @@ trait CallableTrait
                 $input_type->return_type,
                 $add_upper_bound
             );
-
         }
     }
 
