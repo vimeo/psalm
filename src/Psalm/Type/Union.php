@@ -912,7 +912,8 @@ class Union
                     $template_types,
                     $generic_params,
                     $codebase,
-                    $matching_atomic_type
+                    $matching_atomic_type,
+                    $add_upper_bound
                 );
             }
         }

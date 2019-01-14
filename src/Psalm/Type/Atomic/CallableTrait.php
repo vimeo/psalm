@@ -169,7 +169,8 @@ trait CallableTrait
         array &$template_types,
         array &$generic_params,
         Codebase $codebase = null,
-        Atomic $input_type = null
+        Atomic $input_type = null,
+        bool $add_upper_bound = false
     ) {
         if ($this->params) {
             foreach ($this->params as $offset => $param) {
@@ -190,7 +191,7 @@ trait CallableTrait
                     $generic_params,
                     $codebase,
                     $input_param_type,
-                    true
+                    !$add_upper_bound
                 );
             }
         }
@@ -204,7 +205,7 @@ trait CallableTrait
                 $generic_params,
                 $codebase,
                 $input_type->return_type,
-                true
+                $add_upper_bound
             );
 
         }

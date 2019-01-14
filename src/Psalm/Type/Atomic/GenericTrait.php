@@ -149,7 +149,8 @@ trait GenericTrait
         array &$template_types,
         array &$generic_params,
         Codebase $codebase = null,
-        Atomic $input_type = null
+        Atomic $input_type = null,
+        bool $add_upper_bound = false
     ) {
         foreach ($this->type_params as $offset => $type_param) {
             $input_type_param = null;
@@ -175,7 +176,8 @@ trait GenericTrait
                 $template_types,
                 $generic_params,
                 $codebase,
-                $input_type_param
+                $input_type_param,
+                $add_upper_bound
             );
         }
     }
