@@ -204,6 +204,29 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'nonExistentConstantClass' => [
+                '<?php
+                    /**
+                     * @return Foo::HELLO|5
+                     */
+                    function getVal()
+                    {
+                        return 5;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'nonExistentClassConstant' => [
+                '<?php
+                    class Foo {}
+                    /**
+                     * @return Foo::HELLO|5
+                     */
+                    function getVal()
+                    {
+                        return 5;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ]
         ];
     }
 }

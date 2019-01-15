@@ -992,7 +992,7 @@ class ExpressionAnalyzer
                 }
             }
 
-            return new TMixed();
+            return $return_type;
         }
 
         if ($return_type instanceof Type\Atomic\TArray || $return_type instanceof Type\Atomic\TGenericObject) {

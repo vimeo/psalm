@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Issue\ReservedWord;
+use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
@@ -312,15 +313,40 @@ abstract class Atomic
         }
 
         if ($this instanceof TScalarClassConstant) {
+            $fq_classlike_name = $this->fq_classlike_name === 'self'
+                ? $source->getClassName()
+                : $this->fq_classlike_name;
+
+            if (!$fq_classlike_name) {
+                return;
+            }
+
             if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $source,
-                $this->fq_classlike_name,
+                $fq_classlike_name,
                 $code_location,
                 $suppressed_issues,
                 $inferred
             ) === false
             ) {
                 return false;
+            }
+
+            $class_constants = $source->getCodebase()->classlikes->getConstantsForClass(
+                $fq_classlike_name,
+                \ReflectionProperty::IS_PRIVATE
+            );
+
+            if (!isset($class_constants[$this->const_name])) {
+                if (IssueBuffer::accepts(
+                    new UndefinedConstant(
+                        'Constant ' . $fq_classlike_name . '::' . $this->const_name . ' is not defined',
+                        $code_location
+                    ),
+                    $source->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
         }
 
