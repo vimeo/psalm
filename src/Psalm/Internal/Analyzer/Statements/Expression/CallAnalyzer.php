@@ -1166,7 +1166,8 @@ class CallAnalyzer
             if (self::checkArrayFunctionArgumentsMatch(
                 $statements_analyzer,
                 $args,
-                $method_id
+                $method_id,
+                $context->check_functions
             ) === false
             ) {
                 return false;
@@ -1282,7 +1283,8 @@ class CallAnalyzer
     protected static function checkArrayFunctionArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        $method_id
+        $method_id,
+        bool $check_functions
     ) {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
 
@@ -1336,7 +1338,8 @@ class CallAnalyzer
                     $closure_arg,
                     $min_closure_param_count,
                     $max_closure_param_count,
-                    $array_arg_types
+                    $array_arg_types,
+                    $check_functions
                 ) === false) {
                     return false;
                 }
@@ -1359,7 +1362,8 @@ class CallAnalyzer
         PhpParser\Node\Arg $closure_arg,
         $min_closure_param_count,
         $max_closure_param_count,
-        array $array_arg_types
+        array $array_arg_types,
+        bool $check_functions
     ) {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
 
@@ -1426,6 +1430,10 @@ class CallAnalyzer
                         );
                     }
                 } else {
+                    if (!$check_functions) {
+                        continue;
+                    }
+
                     $function_storage = $codebase->functions->getStorage(
                         $statements_analyzer,
                         $function_id

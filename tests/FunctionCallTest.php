@@ -1334,6 +1334,13 @@ class FunctionCallTest extends TestCase
 
                     function sort() : void {}',
             ],
+            'arrayMapAfterFunctionMissingFile' => [
+                '<?php
+                    require_once(FOO);
+                    $urls = array_map("strval", [1, 2, 3]);',
+                [],
+                'error_levels' => ['UndefinedConstant', 'UnresolvableInclude'],
+            ],
         ];
     }
 
