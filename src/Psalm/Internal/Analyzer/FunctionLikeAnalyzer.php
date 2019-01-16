@@ -224,6 +224,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $parent_storage,
                         $storage,
                         $parent_method_storage,
+                        $fq_class_name,
                         $implementer_visibility,
                         $codeLocation,
                         $storage->suppressed_issues

@@ -436,6 +436,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         ClassLikeStorage $guide_classlike_storage,
         MethodStorage $implementer_method_storage,
         MethodStorage $guide_method_storage,
+        string $implementer_called_class_name,
         int $implementer_visibility,
         CodeLocation $code_location,
         array $suppressed_issues,
@@ -539,7 +540,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $codebase,
                 $implementer_method_storage->return_type,
                 $implementer_classlike_storage->name,
-                $implementer_classlike_storage->name
+                $implementer_called_class_name
             );
 
             $guide_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
@@ -669,7 +670,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $codebase,
                     $implementer_param->type,
                     $implementer_classlike_storage->name,
-                    $implementer_classlike_storage->name
+                    $implementer_called_class_name
                 );
 
                 $guide_method_storage_param_type = ExpressionAnalyzer::fleshOutType(
