@@ -259,7 +259,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $appearing_method_id = $codebase_methods->getAppearingMethodId($method_id);
 
         $appearing_method_class = null;
-        $appearing_method_storage = null;
+        $appearing_class_storage = null;
         $appearing_method_name = null;
 
         if ($appearing_method_id) {
@@ -270,7 +270,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 return null;
             }
 
-            $appearing_method_storage = $codebase->classlike_storage_provider->get($appearing_method_class);
+            $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_method_class);
         }
 
         list($declaring_method_class) = explode('::', $declaring_method_id);
@@ -283,9 +283,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $visibility = $storage->visibility;
 
         if ($appearing_method_name
-            && isset($appearing_method_storage->trait_visibility_map[$appearing_method_name])
+            && isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])
         ) {
-            $visibility = $appearing_method_storage->trait_visibility_map[$appearing_method_name];
+            $visibility = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
         }
 
         switch ($visibility) {
@@ -436,6 +436,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         ClassLikeStorage $guide_classlike_storage,
         MethodStorage $implementer_method_storage,
         MethodStorage $guide_method_storage,
+        int $implementer_visibility,
         CodeLocation $code_location,
         array $suppressed_issues,
         $prevent_abstract_override = true,
@@ -451,7 +452,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         $cased_guide_method_id = $guide_classlike_storage->name . '::' . $guide_method_storage->cased_name;
 
-        if ($implementer_method_storage->visibility > $guide_method_storage->visibility) {
+        if ($implementer_visibility > $guide_method_storage->visibility) {
             if (IssueBuffer::accepts(
                 new OverriddenMethodAccess(
                     'Method ' . $cased_implementer_method_id . ' has different access level than '

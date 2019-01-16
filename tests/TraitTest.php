@@ -729,6 +729,36 @@ class TraitTest extends TestCase
 
                     (new A)->bar();'
             ],
+            'allowImplementMethodMadePublicInClass' => [
+                '<?php
+                    interface I {
+                        public function boo();
+                    }
+
+                    trait T {
+                        private function boo() : void {}
+                    }
+
+                    class A implements I {
+                        use T { boo as public; }
+                    }',
+            ],
+            'allowImplementMethodMadePublicInParent' => [
+                '<?php
+                    interface I {
+                        public function boo();
+                    }
+
+                    trait T {
+                        private function boo() : void {}
+                    }
+
+                    class B {
+                        use T { boo as public; }
+                    }
+
+                    class BChild extends B implements I {}',
+            ],
         ];
     }
 

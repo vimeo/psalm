@@ -195,12 +195,36 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
                     $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
 
+                    $implementer_visibility = $storage->visibility;
+
+                    $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId($cased_method_id);
+                    $implementer_declaring_method_id = $real_method_id;
+
+                    if ($implementer_appearing_method_id
+                        && $implementer_appearing_method_id !== $implementer_declaring_method_id
+                    ) {
+                        list($appearing_fq_class_name, $appearing_method_name) = explode(
+                            '::',
+                            $implementer_appearing_method_id
+                        );
+
+                        $appearing_class_storage = $classlike_storage_provider->get(
+                            $appearing_fq_class_name
+                        );
+
+                        if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
+                            $implementer_visibility
+                                = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
+                        }
+                    }
+
                     MethodAnalyzer::compareMethods(
                         $codebase,
                         $class_storage,
                         $parent_storage,
                         $storage,
                         $parent_method_storage,
+                        $implementer_visibility,
                         $codeLocation,
                         $storage->suppressed_issues
                     );

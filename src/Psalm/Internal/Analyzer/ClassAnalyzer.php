@@ -273,17 +273,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                         $implementer_fq_class_name = null;
 
+                        $implementer_method_storage = null;
+                        $implementer_classlike_storage = null;
+
                         if ($implementer_declaring_method_id) {
                             list($implementer_fq_class_name) = explode('::', $implementer_declaring_method_id);
+                            $implementer_method_storage = $codebase->methods->getStorage(
+                                $implementer_declaring_method_id
+                            );
+                            $implementer_classlike_storage = $classlike_storage_provider->get(
+                                $implementer_fq_class_name
+                            );
                         }
-
-                        $implementer_classlike_storage = $implementer_fq_class_name
-                            ? $classlike_storage_provider->get($implementer_fq_class_name)
-                            : null;
-
-                        $implementer_method_storage = $implementer_declaring_method_id
-                            ? $codebase->methods->getStorage($implementer_declaring_method_id)
-                            : null;
 
                         if (!$implementer_method_storage) {
                             if (IssueBuffer::accepts(
@@ -300,7 +301,31 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             return null;
                         }
 
-                        if ($implementer_method_storage->visibility !== self::VISIBILITY_PUBLIC) {
+                        $implementer_appearing_method_id = $codebase->methods->getAppearingMethodId(
+                            $this->fq_class_name . '::' . $method_name
+                        );
+
+                        $implementer_visibility = $implementer_method_storage->visibility;
+
+                        if ($implementer_appearing_method_id
+                            && $implementer_appearing_method_id !== $implementer_declaring_method_id
+                        ) {
+                            list($appearing_fq_class_name, $appearing_method_name) = explode(
+                                '::',
+                                $implementer_appearing_method_id
+                            );
+
+                            $appearing_class_storage = $classlike_storage_provider->get(
+                                $appearing_fq_class_name
+                            );
+
+                            if (isset($appearing_class_storage->trait_visibility_map[$appearing_method_name])) {
+                                $implementer_visibility
+                                    = $appearing_class_storage->trait_visibility_map[$appearing_method_name];
+                            }
+                        }
+
+                        if ($implementer_visibility !== self::VISIBILITY_PUBLIC) {
                             if (IssueBuffer::accepts(
                                 new InaccessibleMethod(
                                     'Interface-defined method ' . $implementer_method_storage->cased_name
@@ -321,6 +346,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             $interface_storage,
                             $implementer_method_storage,
                             $interface_method_storage,
+                            $implementer_visibility,
                             $code_location,
                             $implementer_method_storage->suppressed_issues,
                             false
@@ -551,6 +577,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_storage,
                         $pseudo_method_storage,
                         $parent_method_storage,
+                        $pseudo_method_storage->visibility ?: 0,
                         $pseudo_method_storage->location,
                         $storage->suppressed_issues,
                         true,
@@ -1051,6 +1078,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $appearing_storage,
                         $implementer_method_storage,
                         $declaring_method_storage,
+                        $implementer_method_storage->visibility,
                         new CodeLocation($source, $stmt),
                         $implementer_method_storage->suppressed_issues,
                         false
