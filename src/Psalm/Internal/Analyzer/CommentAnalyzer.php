@@ -378,7 +378,9 @@ class CommentAnalyzer
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
-                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'], true)) {
+                if (count($template_type) > 2
+                    && in_array(strtolower($template_type[1]), ['as', 'super', 'of'], true)
+                ) {
                     $info->templates[] = [
                         $template_type[0],
                         strtolower($template_type[1]), $template_type[2]
@@ -516,7 +518,9 @@ class CommentAnalyzer
             foreach ($comments['specials']['template'] as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
-                if (count($template_type) > 2 && in_array(strtolower($template_type[1]), ['as', 'super'], true)) {
+                if (count($template_type) > 2
+                    && in_array(strtolower($template_type[1]), ['as', 'super', 'of'], true)
+                ) {
                     $info->templates[] = [
                         $template_type[0],
                         strtolower($template_type[1]), $template_type[2]
