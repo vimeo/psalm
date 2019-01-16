@@ -400,7 +400,7 @@ abstract class Atomic
                 );
 
                 if ($file_storage) {
-                    $file_storage->referenced_classlikes[] = $this->value;
+                    $file_storage->referenced_classlikes[strtolower($this->value)] = $this->value;
                 }
             }
         }
@@ -413,7 +413,7 @@ abstract class Atomic
                 !$this->from_docblock
             );
             if ($file_storage) {
-                $file_storage->referenced_classlikes[] = $this->fq_classlike_name;
+                $file_storage->referenced_classlikes[strtolower($this->fq_classlike_name)] = $this->fq_classlike_name;
             }
         }
 
@@ -425,7 +425,7 @@ abstract class Atomic
                 !$this->from_docblock
             );
             if ($file_storage) {
-                $file_storage->referenced_classlikes[] = $this->as;
+                $file_storage->referenced_classlikes[strtolower($this->as)] = $this->as;
             }
         }
 
@@ -445,7 +445,7 @@ abstract class Atomic
                 !$this->from_docblock
             );
             if ($file_storage) {
-                $file_storage->referenced_classlikes[] = $this->value;
+                $file_storage->referenced_classlikes[strtolower($this->value)] = $this->value;
             }
         }
 

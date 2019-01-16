@@ -112,8 +112,8 @@ class FileStorageProvider
      */
     public function addMore(array $more)
     {
-        self::$new_storage = array_merge($more, self::$new_storage);
-        self::$storage = array_merge($more, self::$storage);
+        self::$new_storage = array_merge(self::$new_storage, $more);
+        self::$storage = array_merge(self::$storage, $more);
     }
 
     /**
