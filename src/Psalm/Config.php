@@ -507,7 +507,7 @@ class Config
             $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
 
             if (!file_exists($autoloader_path)) {
-                throw new ConfigException('Cannot locate config schema');
+                throw new ConfigException('Cannot locate autoloader');
             }
 
             $config->autoloader = realpath($autoloader_path);
