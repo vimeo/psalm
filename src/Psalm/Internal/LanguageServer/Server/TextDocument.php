@@ -42,7 +42,6 @@ use Psalm\Internal\LanguageServer\Index\ReadableIndex;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Sabre\Event\Promise;
-use Sabre\Uri;
 use function Sabre\Event\coroutine;
 use function Psalm\Internal\LanguageServer\{waitForEvent, isVendored};
 
