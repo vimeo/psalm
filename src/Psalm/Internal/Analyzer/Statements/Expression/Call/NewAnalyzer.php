@@ -467,7 +467,6 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         }
 
         foreach ($template_type_extends as $type_map) {
-            //var_dump($template_name, $type_map);
             foreach ($type_map as $extended_template_name => $extended_type) {
                 if (is_string($extended_template_name)
                     && $extended_type instanceof Type\Atomic\TGenericParam

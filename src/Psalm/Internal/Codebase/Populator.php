@@ -348,10 +348,29 @@ class Populator
                 }
 
                 if ($parent_storage->template_type_extends) {
-                    $storage->template_type_extends = array_merge(
-                        $parent_storage->template_type_extends,
-                        $storage->template_type_extends
-                    );
+                    foreach ($parent_storage->template_type_extends as $t_storage_class => $type_map) {
+                        foreach ($type_map as $i => $type) {
+                            if (isset($storage->template_type_extends[$t_storage_class][$i])
+                                || is_int($i)
+                            ) {
+                                continue;
+                            }
+
+                            if ($type instanceof Type\Atomic\TGenericParam
+                                && $type->defining_class
+                                && ($referenced_type
+                                    = $storage->template_type_extends
+                                        [strtolower($type->defining_class)]
+                                        [$type->param_name]
+                                        ?? null)
+                                && (!$referenced_type instanceof Type\Atomic\TGenericParam)
+                            ) {
+                                $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
+                            } else {
+                                $storage->template_type_extends[$t_storage_class][$i] = $type;
+                            }
+                        }
+                    }
                 }
             }
 

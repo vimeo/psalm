@@ -1769,7 +1769,7 @@ class TemplateTest extends TestCase
                     '$a' => 'int',
                 ]
             ],
-            'extendsTwiceDifferentName' => [
+            'extendsTwiceDifferentNameUnbrokenChain' => [
                 '<?php
                     /**
                      * @template T1
@@ -1849,6 +1849,52 @@ class TemplateTest extends TestCase
                         },
                         "hello"
                     );'
+            ],
+            'templateExtendsOnceAndBound' => [
+                '<?php
+                    /** @template T1 */
+                    class Repo {
+                        /** @return ?T1 */
+                        public function findOne() {}
+                    }
+
+                    class SpecificEntity {}
+
+                    /** @template-extends Repo<SpecificEntity> */
+                    class AnotherRepo extends Repo {}
+
+                    $a = new AnotherRepo();
+                    $b = $a->findOne();',
+                [
+                    '$a' => 'AnotherRepo',
+                    '$b' => 'null|SpecificEntity',
+                ]
+            ],
+            'templateExtendsTwiceAndBound' => [
+                '<?php
+                    /** @template T1 */
+                    class Repo {
+                        /** @return ?T1 */
+                        public function findOne() {}
+                    }
+
+                    /**
+                     * @template T2
+                     * @template-extends Repo<T2>
+                     */
+                    class CommonAppRepo extends Repo {}
+
+                    class SpecificEntity {}
+
+                    /** @template-extends CommonAppRepo<SpecificEntity> */
+                    class SpecificRepo extends CommonAppRepo {}
+
+                    $a = new SpecificRepo();
+                    $b = $a->findOne();',
+                [
+                    '$a' => 'SpecificRepo',
+                    '$b' => 'null|SpecificEntity',
+                ]
             ],
         ];
     }
