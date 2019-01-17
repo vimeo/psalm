@@ -462,7 +462,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($context->check_methods) {
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(
-                                'Cannot call method on a mixed variable ' . $lhs_var_id,
+                                'Cannot determine the type of the object on the left hand side of this expression',
                                 new CodeLocation($source, $stmt->name)
                             ),
                             $statements_analyzer->getSuppressedIssues()
