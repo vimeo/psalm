@@ -759,6 +759,27 @@ class TraitTest extends TestCase
 
                     class BChild extends B implements I {}',
             ],
+            'allowTraitParentDefinition' => [
+                '<?php
+                    class A {}
+
+                    class C extends A
+                    {
+                        use T;
+                    }
+
+                    trait T
+                    {
+                        public function bar() : ?C
+                        {
+                            if ($this instanceof A) {
+                                return $this;
+                            }
+
+                            return null;
+                        }
+                    }'
+            ],
         ];
     }
 

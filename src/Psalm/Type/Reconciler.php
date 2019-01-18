@@ -1001,10 +1001,11 @@ class Reconciler
             if ($acceptable_atomic_types) {
                 return new Type\Union($acceptable_atomic_types);
             }
-        } elseif ($code_location && !$new_type->hasMixed()) {
+        } elseif (!$new_type->hasMixed()) {
             $has_match = true;
 
             if ($key
+                && $code_location
                 && $new_type->getId() === $existing_var_type->getId()
                 && !$is_equality
             ) {
@@ -1075,7 +1076,10 @@ class Reconciler
                 $new_type = new Type\Union($matching_atomic_types);
             }
 
-            if (!$has_match && (!$is_loose_equality || !$any_scalar_type_match_found)) {
+            if ($code_location
+                && !$has_match
+                && (!$is_loose_equality || !$any_scalar_type_match_found)
+            ) {
                 if ($new_var_type === 'null') {
                     if ($existing_var_type->from_docblock) {
                         if (IssueBuffer::accepts(

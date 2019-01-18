@@ -143,7 +143,11 @@ class BinaryOpAnalyzer
 
             foreach ($op_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $type,
+                        $codebase
+                    );
                 }
             }
 
@@ -241,7 +245,6 @@ class BinaryOpAnalyzer
             }
 
             $op_context->clauses = $clauses_for_right_analysis;
-
 
             if ($changed_var_ids) {
                 $op_context->removeReconciledClauses($changed_var_ids);

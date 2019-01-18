@@ -979,7 +979,6 @@ class TypeAnalyzer
         } elseif ($container_type_part instanceof TObject
             && $input_type_part instanceof TNamedObject
         ) {
-            /** @psalm-suppress RedundantCondition due to some sort of Psalm bug */
             if ($container_type_part instanceof TObjectWithProperties
                 && $input_type_part->value !== 'stdClass'
             ) {
