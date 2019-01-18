@@ -292,6 +292,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testObjectWithSimpleArgs()
+    {
+        $this->assertSame('object{a:int, b:string}', (string) Type::parseString('object{a:int, b:string}'));
+    }
+
+    /**
+     * @return void
+     */
     public function testObjectLikeWithUnionArgs()
     {
         $this->assertSame(

@@ -5,6 +5,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic\ObjectLike;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -661,7 +662,11 @@ class TypeAnalyzer
             return false;
         }
 
-        if ($container_type_part instanceof ObjectLike && $input_type_part instanceof ObjectLike) {
+        if (($container_type_part instanceof ObjectLike
+                && $input_type_part instanceof ObjectLike)
+            || ($container_type_part instanceof TObjectWithProperties
+                && $input_type_part instanceof TObjectWithProperties)
+        ) {
             $all_types_contain = true;
 
             foreach ($container_type_part->properties as $key => $container_property_type) {
@@ -971,10 +976,81 @@ class TypeAnalyzer
             ) {
                 $has_scalar_match = true;
             }
-        } elseif ($container_type_part instanceof TObject &&
-            !$input_type_part instanceof TArray &&
-            !$input_type_part instanceof TResource
+        } elseif ($container_type_part instanceof TObject
+            && $input_type_part instanceof TNamedObject
         ) {
+            /** @psalm-suppress RedundantCondition due to some sort of Psalm bug */
+            if ($container_type_part instanceof TObjectWithProperties
+                && $input_type_part->value !== 'stdClass'
+            ) {
+                $all_types_contain = true;
+
+                foreach ($container_type_part->properties as $property_name => $container_property_type) {
+                    if (!is_string($property_name)) {
+                        continue;
+                    }
+
+                    if (!$codebase->properties->propertyExists($input_type_part . '::$' . $property_name)) {
+                        $all_types_contain = false;
+
+                        continue;
+                    }
+
+                    $property_declaring_class = (string) $codebase->properties->getDeclaringClassForProperty(
+                        $input_type_part . '::$' . $property_name
+                    );
+
+                    $class_storage = $codebase->classlike_storage_provider->get($property_declaring_class);
+
+                    $input_property_storage = $class_storage->properties[$property_name];
+
+                    $input_property_type = $input_property_storage->type ?: Type::getMixed();
+
+                    if (!$input_property_type->isEmpty()
+                        && !self::isContainedBy(
+                            $codebase,
+                            $input_property_type,
+                            $container_property_type,
+                            false,
+                            false,
+                            $property_has_scalar_match,
+                            $property_type_coerced,
+                            $property_type_coerced_from_mixed,
+                            $property_type_to_string_cast,
+                            $property_type_coerced_from_scalar,
+                            $allow_interface_equality
+                        )
+                        && !$property_type_coerced_from_scalar
+                    ) {
+                        if (self::isContainedBy(
+                            $codebase,
+                            $container_property_type,
+                            $input_property_type,
+                            false,
+                            false,
+                            $inverse_property_has_scalar_match,
+                            $inverse_property_type_coerced,
+                            $inverse_property_type_coerced_from_mixed,
+                            $inverse_property_type_to_string_cast,
+                            $inverse_property_type_coerced_from_scalar,
+                            $allow_interface_equality
+                        )
+                        || $inverse_property_type_coerced_from_scalar
+                        ) {
+                            $type_coerced = true;
+                        }
+
+                        $all_types_contain = false;
+                    }
+                }
+
+                if ($all_types_contain === true) {
+                    return true;
+                }
+
+                return false;
+            }
+
             return true;
         } elseif ($input_type_part instanceof TObject && $container_type_part instanceof TNamedObject) {
             $type_coerced = true;

@@ -455,6 +455,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 case Type\Atomic\TMixed::class:
                 case Type\Atomic\TNonEmptyMixed::class:
                 case Type\Atomic\TObject::class:
+                case Type\Atomic\TObjectWithProperties::class:
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                     $has_mixed_method_call = true;

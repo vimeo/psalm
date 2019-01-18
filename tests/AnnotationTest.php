@@ -740,6 +740,24 @@ class AnnotationTest extends TestCase
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ]
             ],
+            'objectWithPropertiesAnnotation' => [
+                '<?php
+                    /** @param object{foo:string} $o */
+                    function foo(object $o) : string {
+                        return $o->foo;
+                    }
+
+                    $s = new \stdClass();
+                    $s->foo = "hello";
+                    foo($s);
+
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+                    }
+
+                    foo(new A);',
+            ],
         ];
     }
 
@@ -1161,6 +1179,18 @@ class AnnotationTest extends TestCase
                      */
                     function foo() {}',
                 'error_message' => 'MissingReturnType',
+            ],
+            'objectWithPropertiesAnnotationNoMatchingProperty' => [
+                '<?php
+                    /** @param object{foo:string} $o */
+                    function foo(object $o) : string {
+                        return $o->foo;
+                    }
+
+                    class A {}
+
+                    foo(new A);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

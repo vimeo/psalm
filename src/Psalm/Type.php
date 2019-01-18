@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
@@ -349,12 +350,16 @@ abstract class Type
                 $properties[$property_key] = $property_type;
             }
 
-            if ($type !== 'array') {
+            if ($type !== 'array' && $type !== 'object') {
                 throw new TypeParseTreeException('Unexpected brace character');
             }
 
             if (!$properties) {
                 throw new TypeParseTreeException('No properties supplied for ObjectLike');
+            }
+
+            if ($type === 'object') {
+                return new TObjectWithProperties($properties);
             }
 
             return new ObjectLike($properties);

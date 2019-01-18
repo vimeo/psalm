@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 
 /**
  * @internal
@@ -262,6 +263,21 @@ class PropertyFetchAnalyzer
 
             $has_valid_fetch_type = true;
 
+            if ($lhs_type_part instanceof TObjectWithProperties
+                && isset($lhs_type_part->properties[$prop_name])
+            ) {
+                if (isset($stmt->inferredType)) {
+                    $stmt->inferredType = Type::combineUnionTypes(
+                        $lhs_type_part->properties[$prop_name],
+                        $stmt->inferredType
+                    );
+                } else {
+                    $stmt->inferredType = $lhs_type_part->properties[$prop_name];
+                }
+
+                continue;
+            }
+
             // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
             // but we don't want to throw an error
             // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
@@ -269,6 +285,7 @@ class PropertyFetchAnalyzer
                 || in_array(strtolower($lhs_type_part->value), ['stdclass', 'simplexmlelement'], true)
             ) {
                 $stmt->inferredType = Type::getMixed();
+
                 continue;
             }
 
