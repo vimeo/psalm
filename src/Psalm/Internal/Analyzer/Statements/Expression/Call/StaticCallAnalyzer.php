@@ -379,8 +379,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                         if (isset($class_storage->pseudo_static_methods[$method_name_lc])) {
-                            $has_valid_method_call_type = true;
-
                             $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
 
                             if (self::checkFunctionArguments(
@@ -434,8 +432,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 return false;
                             }
                         }
-
-                        $has_valid_method_call_type = true;
 
                         $array_values = array_map(
                             /**
