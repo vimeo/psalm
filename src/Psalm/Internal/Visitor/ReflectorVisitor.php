@@ -961,7 +961,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     /** @var MethodStorage */
                     $pseudo_method_storage = $this->registerFunctionLike($method, true);
 
-                    $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    if ($pseudo_method_storage->is_static) {
+                        $storage->pseudo_static_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    } else {
+                        $storage->pseudo_methods[strtolower($method->name->name)] = $pseudo_method_storage;
+                    }
                 }
             }
         }
@@ -994,6 +998,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $cased_function_id = '@method ' . $stmt->name->name;
 
             $storage = new MethodStorage();
+            $storage->is_static = (bool) $stmt->isStatic();
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;

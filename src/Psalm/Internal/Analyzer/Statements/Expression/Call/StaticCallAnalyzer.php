@@ -359,7 +359,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $has_mock = $has_mock || $is_mock;
 
             if ($stmt->name instanceof PhpParser\Node\Identifier && !$is_mock) {
-                $method_id = $fq_class_name . '::' . strtolower($stmt->name->name);
+                $method_name_lc = strtolower($stmt->name->name);
+                $method_id = $fq_class_name . '::' . $method_name_lc;
                 $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
 
                 $args = $stmt->args;
@@ -375,6 +376,67 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $fq_class_name . '::__callStatic',
                         $context->calling_method_id
                     )) {
+                        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                        if (isset($class_storage->pseudo_static_methods[$method_name_lc])) {
+                            $has_valid_method_call_type = true;
+
+                            $pseudo_method_storage = $class_storage->pseudo_static_methods[$method_name_lc];
+
+                            if (self::checkFunctionArguments(
+                                $statements_analyzer,
+                                $args,
+                                $pseudo_method_storage->params,
+                                $method_id,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
+                            $generic_params = [];
+
+                            if (self::checkFunctionLikeArgumentsMatch(
+                                $statements_analyzer,
+                                $args,
+                                null,
+                                $pseudo_method_storage->params,
+                                $pseudo_method_storage,
+                                null,
+                                $generic_params,
+                                new CodeLocation($source, $stmt),
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+
+                            if ($pseudo_method_storage->return_type) {
+                                $return_type_candidate = clone $pseudo_method_storage->return_type;
+
+                                if (!isset($stmt->inferredType)) {
+                                    $stmt->inferredType = $return_type_candidate;
+                                } else {
+                                    $stmt->inferredType = Type::combineUnionTypes(
+                                        $return_type_candidate,
+                                        $stmt->inferredType
+                                    );
+                                }
+
+                                return;
+                            }
+                        } else {
+                            if (self::checkFunctionArguments(
+                                $statements_analyzer,
+                                $args,
+                                null,
+                                null,
+                                $context
+                            ) === false) {
+                                return false;
+                            }
+                        }
+
+                        $has_valid_method_call_type = true;
+
                         $array_values = array_map(
                             /**
                              * @return PhpParser\Node\Expr\ArrayItem

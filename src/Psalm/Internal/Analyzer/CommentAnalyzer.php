@@ -579,8 +579,15 @@ class CommentAnalyzer
 
                 $docblock_lines = [];
 
+                $is_static = false;
+
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     $doc_line_parts = self::splitDocLine($method_entry);
+
+                    if ($doc_line_parts[0] === 'static' && !strpos($doc_line_parts[0], '(')) {
+                        $is_static = true;
+                        array_shift($doc_line_parts);
+                    }
 
                     $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
 
@@ -640,6 +647,10 @@ class CommentAnalyzer
                 }
 
                 $function_string = 'function ' . $method_tree->value . '(' . implode(', ', $args) . ')';
+
+                if ($is_static) {
+                    $function_string = 'static ' . $function_string;
+                }
 
                 $function_docblock = $docblock_lines ? "/**\n * " . implode("\n * ", $docblock_lines) . "\n*/\n" : "";
 
