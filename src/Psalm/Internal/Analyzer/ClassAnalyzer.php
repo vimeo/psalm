@@ -473,6 +473,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        foreach ($storage->pseudo_property_get_types as $property_name => $property_type) {
+            $fleshed_out_type = !$property_type->isMixed()
+                ? ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $property_type,
+                    $this->fq_class_name,
+                    $this->fq_class_name
+                )
+                : $property_type;
+
+            $class_context->vars_in_scope['$this->' . substr($property_name, 1)] = $fleshed_out_type;
+        }
+
         $constructor_analyzer = null;
         $member_stmts = [];
 

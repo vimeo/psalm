@@ -156,7 +156,7 @@ class Properties
      * @param  string $property_id
      * @return  ?Type\Union
      */
-    public function getPropertyType($property_id)
+    public function getPropertyType($property_id, bool $property_set = false)
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
@@ -179,6 +179,16 @@ class Properties
         }
 
         if ($storage->type) {
+            if ($property_set) {
+                if (isset($class_storage->pseudo_property_set_types[$property_name])) {
+                    return $class_storage->pseudo_property_set_types[$property_name];
+                }
+            } else {
+                if (isset($class_storage->pseudo_property_get_types[$property_name])) {
+                    return $class_storage->pseudo_property_get_types[$property_name];
+                }
+            }
+
             return $storage->type;
         }
 

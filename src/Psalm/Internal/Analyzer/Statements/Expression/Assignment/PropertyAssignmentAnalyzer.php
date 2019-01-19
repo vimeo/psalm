@@ -84,7 +84,7 @@ class PropertyAssignmentAnalyzer
 
             $property_exists = true;
 
-            $class_property_type = $codebase->properties->getPropertyType($property_id);
+            $class_property_type = $codebase->properties->getPropertyType($property_id, true);
 
             $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
 
@@ -446,7 +446,7 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                $class_property_type = $codebase->properties->getPropertyType($property_id);
+                $class_property_type = $codebase->properties->getPropertyType($property_id, true);
 
                 if (!$class_property_type) {
                     $class_property_type = Type::getMixed();
@@ -793,7 +793,7 @@ class PropertyAssignmentAnalyzer
             $context->vars_in_scope[$var_id] = $assignment_value_type;
         }
 
-        $class_property_type = $codebase->properties->getPropertyType($property_id);
+        $class_property_type = $codebase->properties->getPropertyType($property_id, true);
 
         if (!$class_property_type) {
             $class_property_type = Type::getMixed();
