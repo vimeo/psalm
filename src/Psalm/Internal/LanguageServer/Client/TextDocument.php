@@ -5,7 +5,7 @@ namespace Psalm\Internal\LanguageServer\Client;
 
 use Psalm\Internal\LanguageServer\ClientHandler;
 use LanguageServerProtocol\{Diagnostic, TextDocumentItem, TextDocumentIdentifier};
-use Sabre\Event\Promise;
+use Amp\Promise;
 use JsonMapper;
 
 /**
@@ -53,10 +53,12 @@ class TextDocument
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise
     {
-        return $this->handler->request(
+        $promise = $this->handler->request(
             'textDocument/xcontent',
             ['textDocument' => $textDocument]
-        )->then(
+        );
+
+        $promise->onResolve(
             /**
              * @param object $result
              * @return object
@@ -65,5 +67,7 @@ class TextDocument
                 return $this->mapper->map($result, new TextDocumentItem);
             }
         );
+
+        return $promise;
     }
 }

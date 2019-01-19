@@ -41,8 +41,8 @@ use Psalm\Codebase;
 use Psalm\Internal\LanguageServer\Index\ReadableIndex;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Sabre\Event\Promise;
-use function Sabre\Event\coroutine;
+use Amp\Promise;
+use function Amp\coroutine;
 use function Psalm\Internal\LanguageServer\{waitForEvent, isVendored};
 
 /**
@@ -174,7 +174,7 @@ class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        return coroutine(
+        return \Amp\call(
             /**
              * @return \Generator<int, true, mixed, Hover|Location>
              */
@@ -226,7 +226,7 @@ class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        return coroutine(
+        return \Amp\call(
             /**
              * @return \Generator<int, true, mixed, Hover>
              */
@@ -278,7 +278,7 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        return coroutine(
+        return \Amp\call(
             /**
              * @return \Generator<int, true, mixed, array<empty, empty>|CompletionList>
              */
