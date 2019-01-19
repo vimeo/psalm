@@ -2038,7 +2038,7 @@ class TemplateTest extends TestCase
                     function takesArrayOfStdClass(array $p): void {}',
                 'error_message' => 'MixedTypeCoercion',
             ],
-            'restrictTemplateInput' => [
+            'restrictTemplateInputWithClassString' => [
                 '<?php
                     /** @template T as object */
                     class Foo
@@ -2072,7 +2072,6 @@ class TemplateTest extends TestCase
 
                     class A {}
                     class B {}
-
 
                     $foo = new Foo(A::class);
                     $foo->add(new B);',

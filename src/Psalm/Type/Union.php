@@ -794,6 +794,7 @@ class Union
         array &$generic_params,
         Codebase $codebase = null,
         Type\Union $input_type = null,
+        bool $replace = true,
         bool $add_upper_bound = false
     ) {
         $keys_to_unset = [];
@@ -804,53 +805,60 @@ class Union
             ) {
                 if ($template_types[$key][0]->getId() !== $key) {
                     $first_atomic_type = array_values($template_types[$key][0]->getTypes())[0];
-                    if ($add_upper_bound && $input_type) {
+
+                    if ($replace) {
+                        $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
+
+                        if ($first_atomic_type->getKey() !== $key) {
+                            $keys_to_unset[] = $key;
+                        }
+
+                        if ($input_type) {
+                            $generic_param = clone $input_type;
+                            $generic_param->setFromDocblock();
+
+                            $generic_params[$key] = [
+                                $generic_param,
+                                $atomic_type->defining_class
+                            ];
+                        }
+                    } elseif ($add_upper_bound && $input_type) {
                         $template_types[$key][0] = clone $input_type;
-                    }
-                    $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
-                    if ($first_atomic_type->getKey() !== $key) {
-                        $keys_to_unset[] = $key;
-                    }
-
-                    if ($input_type) {
-                        $generic_param = clone $input_type;
-                        $generic_param->setFromDocblock();
-
-                        $generic_params[$key] = [
-                            $generic_param,
-                            $atomic_type->defining_class
-                        ];
                     }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
                 && isset($template_types[$atomic_type->param_name])
             ) {
-                $keys_to_unset[] = $key;
-                $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
-                $this->types[$class_string->getKey()] = $class_string;
+                if ($replace) {
+                    $class_string = new Type\Atomic\TClassString($atomic_type->as, $atomic_type->as_type);
 
-                if ($input_type) {
-                    $valid_input_atomic_types = [];
+                    $keys_to_unset[] = $key;
 
-                    foreach ($input_type->getTypes() as $input_atomic_type) {
-                        if ($input_atomic_type instanceof Type\Atomic\TLiteralClassString) {
-                            $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
-                                $input_atomic_type->value
-                            );
+                    $this->types[$class_string->getKey()] = $class_string;
+
+                    if ($input_type) {
+                        $valid_input_atomic_types = [];
+
+                        foreach ($input_type->getTypes() as $input_atomic_type) {
+                            if ($input_atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                                $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
+                                    $input_atomic_type->value
+                                );
+                            }
                         }
-                    }
 
-                    if ($valid_input_atomic_types) {
-                        $generic_param = new Union($valid_input_atomic_types);
-                        $generic_param->setFromDocblock();
-                    } else {
-                        $generic_param = Type::getMixed();
-                    }
+                        if ($valid_input_atomic_types) {
+                            $generic_param = new Union($valid_input_atomic_types);
+                            $generic_param->setFromDocblock();
+                        } else {
+                            $generic_param = Type::getMixed();
+                        }
 
-                    $generic_params[$atomic_type->param_name] = [
-                        $generic_param,
-                        $atomic_type->defining_class
-                    ];
+                        $generic_params[$atomic_type->param_name] = [
+                            $generic_param,
+                            $atomic_type->defining_class
+                        ];
+                    }
                 }
             } else {
                 $matching_atomic_type = null;
@@ -913,20 +921,23 @@ class Union
                     $generic_params,
                     $codebase,
                     $matching_atomic_type,
+                    $replace,
                     $add_upper_bound
                 );
             }
         }
 
-        foreach ($keys_to_unset as $key) {
-            unset($this->types[$key]);
-        }
+        if ($replace) {
+            foreach ($keys_to_unset as $key) {
+                unset($this->types[$key]);
+            }
 
-        if (!$this->types) {
-            throw new \UnexpectedValueException('Cannot remove all keys');
-        }
+            if (!$this->types) {
+                throw new \UnexpectedValueException('Cannot remove all keys');
+            }
 
-        $this->id = null;
+            $this->id = null;
+        }
     }
 
     /**

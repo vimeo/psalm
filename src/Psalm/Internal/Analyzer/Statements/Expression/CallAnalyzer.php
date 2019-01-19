@@ -874,6 +874,31 @@ class CallAnalyzer
                 $class_storage,
                 $calling_class_storage
             );
+
+            if ($template_types) {
+                foreach ($args as $argument_offset => $arg) {
+                    $function_param = count($function_params) > $argument_offset
+                        ? $function_params[$argument_offset]
+                        : ($last_param && $last_param->is_variadic ? $last_param : null);
+
+                    if (!$function_param
+                        || !$function_param->type
+                        || !isset($arg->value->inferredType)
+                    ) {
+                        continue;
+                    }
+
+                    $empty_generic_params = [];
+
+                    $function_param->type->replaceTemplateTypesWithStandins(
+                        $template_types,
+                        $empty_generic_params,
+                        $codebase,
+                        $arg->value->inferredType,
+                        false
+                    );
+                }
+            }
         }
 
         $existing_generic_params = $generic_params ?: [];
@@ -954,7 +979,7 @@ class CallAnalyzer
                                 $generic_params,
                                 $codebase,
                                 isset($arg->value->inferredType)
-                                    ? clone $arg->value->inferredType
+                                    ? $arg->value->inferredType
                                     : null
                             );
 

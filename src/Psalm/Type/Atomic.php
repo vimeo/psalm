@@ -547,6 +547,7 @@ abstract class Atomic
         array &$generic_params,
         Codebase $codebase = null,
         Type\Atomic $input_type = null,
+        bool $replace = true,
         bool $add_upper_bound = false
     ) {
         // do nothing
