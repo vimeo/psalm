@@ -1933,6 +1933,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
+            $storage_param->has_docblock_type = true;
             $new_param_type->setFromDocblock();
 
             $new_param_type->queueClassLikesForScanning(
@@ -1969,8 +1970,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage_param->type_location = $code_location;
                 continue;
             }
-
-            $storage_param->has_docblock_type = true;
 
             $storage_param_atomic_types = $storage_param->type->getTypes();
 
