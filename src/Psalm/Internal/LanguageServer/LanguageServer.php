@@ -25,9 +25,8 @@ use Psalm\Internal\LanguageServer\Cache\{FileSystemCache, ClientCache};
 use Psalm\Internal\LanguageServer\Server\TextDocument;
 use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};
 use AdvancedJsonRpc;
-use Sabre\Event\Loop;
-use Sabre\Event\Promise;
-use function Sabre\Event\coroutine;
+use Amp\Promise;
+use function Amp\coroutine;
 use Throwable;
 use Webmozart\PathUtil\Path;
 
@@ -102,7 +101,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             'message',
             /** @return void */
             function (Message $msg) {
-                coroutine(
+                \Amp\call(
                     /** @return \Generator<int, Promise, mixed, void> */
                     function () use ($msg) {
                         if (!$msg->body) {
@@ -113,6 +112,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                         if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
                             return;
                         }
+
                         $result = null;
                         $error = null;
                         try {
@@ -150,7 +150,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
                             $this->protocolWriter->write(new Message($responseBody));
                         }
                     }
-                )->otherwise('\Psalm\Internal\LanguageServer\LanguageServer::crash');
+                );
             }
         );
 
@@ -158,7 +158,12 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             'readMessageGroup',
             /** @return void */
             function () {
-                $this->doAnalysis();
+                \Amp\call(
+                    /** @return null */
+                    function () {
+                        $this->doAnalysis();
+                    }
+                );
             }
         );
 
@@ -181,7 +186,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         string $rootPath = null,
         int $processId = null
     ): Promise {
-        return coroutine(
+        return \Amp\call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
             function () use ($capabilities, $rootPath, $processId) {
                 // Eventually, this might block on something. Leave it as a generator.
@@ -448,7 +453,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
      */
     public static function crash(Throwable $err)
     {
-        Loop\nextTick(
+        \Amp\Loop::defer(
             /** @return void */
             function () use ($err) {
                 throw $err;

@@ -3,8 +3,6 @@ declare(strict_types = 1);
 
 namespace Psalm\Internal\LanguageServer;
 
-use Sabre\Event\EmitterInterface;
-
 /**
  * Must emit a "message" event with a Message object as parameter
  * when a message comes in

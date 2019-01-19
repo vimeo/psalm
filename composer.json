@@ -19,10 +19,10 @@
         "felixfbecker/language-server-protocol": "^1.2",
         "felixfbecker/advanced-json-rpc": "^3.0.3",
         "netresearch/jsonmapper": "^1.0",
-        "sabre/event": "^5.0.1",
         "webmozart/glob": "^4.1",
         "webmozart/path-util": "^2.3",
-        "symfony/console": "^3.0||^4.0"
+        "symfony/console": "^3.0||^4.0",
+        "amphp/amp": "^2.1"
     },
     "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin"],
     "autoload": {
