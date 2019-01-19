@@ -4,6 +4,7 @@ namespace Psalm\Type;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\StatementsSource;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
@@ -823,7 +824,15 @@ class Union
                             ];
                         }
                     } elseif ($add_upper_bound && $input_type) {
-                        $template_types[$key][0] = clone $input_type;
+                        if ($codebase
+                            && TypeAnalyzer::isContainedBy(
+                                $codebase,
+                                $input_type,
+                                $template_types[$key][0]
+                            )
+                        ) {
+                            $template_types[$key][0] = clone $input_type;
+                        }
                     }
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
