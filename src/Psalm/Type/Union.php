@@ -818,6 +818,14 @@ class Union
                             $generic_param = clone $input_type;
                             $generic_param->setFromDocblock();
 
+                            if (isset($generic_params[$key][0])) {
+                                $generic_param = Type::combineUnionTypes(
+                                    $generic_params[$key][0],
+                                    $generic_param,
+                                    $codebase
+                                );
+                            }
+
                             $generic_params[$key] = [
                                 $generic_param,
                                 $atomic_type->defining_class
