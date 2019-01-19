@@ -192,13 +192,17 @@ class Methods
         if ($method_id = $this->getDeclaringMethodId($method_id)) {
             $storage = $this->getStorage($method_id);
 
-            $non_null_param_types = array_filter(
-                $storage->params,
-                /** @return bool */
-                function (FunctionLikeParameter $p) {
-                    return $p->type !== null;
-                }
-            );
+            if (!$storage->inheritdoc) {
+                $non_null_param_types = array_filter(
+                    $storage->params,
+                    /** @return bool */
+                    function (FunctionLikeParameter $p) {
+                        return $p->type !== null;
+                    }
+                );
+            } else {
+                $non_null_param_types = false;
+            }
 
             $params = $storage->params;
 

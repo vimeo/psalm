@@ -619,6 +619,54 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'MethodSignatureMismatch',
             ],
+            'enforceParameterInheritanceWithInheritDoc' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+
+                    class X {
+                        /**
+                         * @param B $class
+                         */
+                        public function boo(A $class): void {}
+                    }
+
+                    class Y extends X {
+                        /**
+                         * @inheritdoc
+                         */
+                        public function boo(A $class): void {}
+                    }
+
+                    (new Y())->boo(new A());',
+                'error_message' => 'TypeCoercion',
+            ],
+            'warnAboutMismatchingClassParamDoc' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    class X {
+                        /**
+                         * @param B $class
+                         */
+                        public function boo(A $class): void {}
+                    }',
+                'error_message' => 'MismatchingDocblockParamType',
+            ],
+            'warnAboutMismatchingInterfaceParamDoc' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    interface X {
+                        /**
+                         * @param B $class
+                         */
+                        public function boo(A $class): void {}
+                    }',
+                'error_message' => 'MismatchingDocblockParamType',
+            ]
         ];
     }
 }
