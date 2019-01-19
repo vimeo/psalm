@@ -60,5 +60,13 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+
+        foreach ($this->class->stmts as $stmt) {
+            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                $method_analyzer = new MethodAnalyzer($stmt, $this);
+
+                $method_analyzer->analyze(new \Psalm\Context($this->getFQCLN()));
+            }
+        }
     }
 }

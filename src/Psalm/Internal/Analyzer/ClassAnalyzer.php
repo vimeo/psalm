@@ -1048,6 +1048,17 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     ) {
         $config = Config::getInstance();
 
+        if ($stmt->stmts === null && !$stmt->isAbstract()) {
+            \Psalm\IssueBuffer::add(
+                new \Psalm\Issue\ParseError(
+                    'Non-abstract class method must have statements',
+                    new CodeLocation($this, $stmt)
+                )
+            );
+
+            return null;
+        }
+
         $method_analyzer = new MethodAnalyzer($stmt, $source);
 
         $actual_method_id = (string)$method_analyzer->getMethodId();

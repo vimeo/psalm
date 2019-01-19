@@ -31,6 +31,24 @@ class BadFormatTest extends TestCase
 
     /**
      * @expectedException Psalm\Exception\CodeException
+     * @expectedExceptionMessage  ParseError - somefile.php:3
+     * @return void
+     */
+    public function testClassMethodWithNoStmts()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    public function foo() : void;
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @expectedException Psalm\Exception\CodeException
      * @expectedExceptionMessage  ParseError - somefile.php:5
      * @return void
      */

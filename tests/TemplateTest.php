@@ -730,8 +730,11 @@ class TemplateTest extends TestCase
                         /**
                          * @param Closure(TValue):bool $p
                          * @return Collection<TKey,TValue>
+                         * @psalm-suppress MixedTypeCoercion
                          */
-                        public function filter(Closure $p);
+                        public function filter(Closure $p) {
+                            return $this;
+                        }
                     }
                     class I {}
 
