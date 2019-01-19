@@ -6,19 +6,23 @@ namespace Psalm\Internal\LanguageServer;
 use AdvancedJsonRpc\Message as MessageBody;
 use Exception;
 use Psalm\Internal\LanguageServer\Message;
-use Sabre\Event\Emitter;
-use Sabre\Event\Loop;
+use Amp\Loop;
 
 /**
  * Source: https://github.com/felixfbecker/php-language-server/tree/master/src/ProtocolStreamReader.php
  */
-class ProtocolStreamReader extends Emitter implements ProtocolReader
+class ProtocolStreamReader implements ProtocolReader
 {
+    use EmitterTrait;
+
     const PARSE_HEADERS = 1;
     const PARSE_BODY = 2;
 
     /** @var resource */
     private $input;
+
+    /** @var string */
+    private $read_watcher;
     /**
      * This is checked by ProtocolStreamReader so that it will stop reading from streams in the forked process.
      * There could be buffered bytes in stdin/over TCP, those would be processed by TCP if it were not for this check.
@@ -43,15 +47,7 @@ class ProtocolStreamReader extends Emitter implements ProtocolReader
     {
         $this->input = $input;
 
-        $this->on(
-            'close',
-            /** @return void */
-            function () {
-                Loop\removeReadStream($this->input);
-            }
-        );
-
-        Loop\addReadStream(
+        $read_watcher = Loop::onReadable(
             $this->input,
             /** @return void */
             function () {
@@ -70,6 +66,16 @@ class ProtocolStreamReader extends Emitter implements ProtocolReader
                 if ($emitted_messages > 0) {
                     $this->emit('readMessageGroup');
                 }
+            }
+        );
+
+        $this->read_watcher = $read_watcher;
+
+        $this->on(
+            'close',
+            /** @return void */
+            function () {
+                Loop::cancel($this->read_watcher);
             }
         );
     }

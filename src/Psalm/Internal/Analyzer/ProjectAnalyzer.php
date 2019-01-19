@@ -16,7 +16,7 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Type;
-use Sabre\Event\Loop;
+use Amp\Loop;
 
 /**
  * @internal
@@ -265,7 +265,7 @@ class ProjectAnalyzer
                 new ProtocolStreamWriter($socket),
                 $this
             );
-            Loop\run();
+            \Amp\Loop::run();
         } elseif ($socket_server_mode && $address) {
             // Run a TCP Server
             $tcpServer = stream_socket_server('tcp://' . $address, $errno, $errstr);
@@ -304,7 +304,6 @@ class ProjectAnalyzer
                             new ProtocolStreamWriter($socket),
                             $this
                         );
-                        Loop\run();
                         // Just for safety
                         exit(0);
                     }
@@ -316,7 +315,7 @@ class ProjectAnalyzer
                         new ProtocolStreamWriter($socket),
                         $this
                     );
-                    Loop\run();
+                    \Amp\Loop::run();
                 }
             }
         } else {
@@ -327,7 +326,7 @@ class ProjectAnalyzer
                 new ProtocolStreamWriter(STDOUT),
                 $this
             );
-            Loop\run();
+            \Amp\Loop::run();
         }
     }
 

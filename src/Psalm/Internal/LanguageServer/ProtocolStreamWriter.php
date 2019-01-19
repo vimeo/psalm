@@ -4,7 +4,8 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use Psalm\Internal\LanguageServer\Message;
-use Sabre\Event\{
+use Amp\{
+    Deferred,
     Loop,
     Promise
 };
@@ -21,7 +22,12 @@ class ProtocolStreamWriter implements ProtocolWriter
     private $output;
 
     /**
-     * @var array<int, array{message: string, promise: Promise}> $messages
+     * @var ?string
+     */
+    private $output_watcher;
+
+    /**
+     * @var array<int, array{message: string, deferred: Deferred}> $messages
      */
     private $messages = [];
 
@@ -40,7 +46,7 @@ class ProtocolStreamWriter implements ProtocolWriter
     {
         // if the message queue is currently empty, register a write handler.
         if (empty($this->messages)) {
-            Loop\addWriteStream(
+            $this->output_watcher = Loop::onWritable(
                 $this->output,
                 /** @return void */
                 function () {
@@ -49,12 +55,12 @@ class ProtocolStreamWriter implements ProtocolWriter
             );
         }
 
-        $promise = new Promise();
+        $deferred = new \Amp\Deferred();
         $this->messages[] = [
             'message' => (string)$msg,
-            'promise' => $promise
+            'deferred' => $deferred
         ];
-        return $promise;
+        return $deferred->promise();
     }
 
     /**
@@ -67,7 +73,7 @@ class ProtocolStreamWriter implements ProtocolWriter
         $keepWriting = true;
         while ($keepWriting) {
             $message = $this->messages[0]['message'];
-            $promise = $this->messages[0]['promise'];
+            $deferred = $this->messages[0]['deferred'];
 
             $bytesWritten = @fwrite($this->output, $message);
 
@@ -80,12 +86,12 @@ class ProtocolStreamWriter implements ProtocolWriter
                 array_shift($this->messages);
 
                 // This was the last message in the queue, remove the write handler.
-                if (count($this->messages) === 0) {
-                    Loop\removeWriteStream($this->output);
+                if (count($this->messages) === 0 && $this->output_watcher) {
+                    Loop::cancel($this->output_watcher);
                     $keepWriting = false;
                 }
 
-                $promise->fulfill();
+                $deferred->resolve();
             } else {
                 $this->messages[0]['message'] = $message;
                 $keepWriting = false;
