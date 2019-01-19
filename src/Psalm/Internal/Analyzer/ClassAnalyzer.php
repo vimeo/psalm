@@ -982,19 +982,28 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             $codebase = $this->getCodebase();
 
+            $property_id = $fq_class_name . '::$' . $property_name;
+
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $fq_class_name . '::$' . $property_name
+                $property_id
             );
 
             if (!$declaring_property_class) {
                 throw new \UnexpectedValueException(
-                    'Cannot get declaring class for ' . $fq_class_name . '::$' . $property_name
+                    'Cannot get declaring class for ' . $property_id
                 );
             }
 
             $fq_class_name = $declaring_property_class;
 
-            $message = 'Property ' . $fq_class_name . '::$' . $property_name . ' does not have a declared type';
+            // gets inherited property type
+            $class_property_type = $codebase->properties->getPropertyType($property_id);
+
+            if ($class_property_type) {
+                return;
+            }
+
+            $message = 'Property ' . $property_id . ' does not have a declared type';
 
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 

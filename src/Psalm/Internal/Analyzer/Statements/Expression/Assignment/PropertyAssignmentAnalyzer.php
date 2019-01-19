@@ -86,9 +86,7 @@ class PropertyAssignmentAnalyzer
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
 
-            $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);
-
-            $class_property_type = $class_storage->properties[$prop_name]->type;
+            $class_property_type = $codebase->properties->getPropertyType($property_id);
 
             $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
 
@@ -450,7 +448,7 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                $class_property_type = $property_storage->type;
+                $class_property_type = $codebase->properties->getPropertyType($property_id);
 
                 if (!$class_property_type) {
                     $class_property_type = Type::getMixed();
@@ -797,7 +795,7 @@ class PropertyAssignmentAnalyzer
             $context->vars_in_scope[$var_id] = $assignment_value_type;
         }
 
-        $class_property_type = $property_storage->type;
+        $class_property_type = $codebase->properties->getPropertyType($property_id);
 
         if (!$class_property_type) {
             $class_property_type = Type::getMixed();

@@ -1174,6 +1174,30 @@ class PropertyTypeTest extends TestCase
                 [],
                 'error_levels' => []
             ],
+            'inheritDocPropertyTypes' => [
+                '<?php
+                    class X {
+                        /**
+                         * @var string|null
+                         */
+                        public $a;
+
+                        /**
+                         * @var string|null
+                         */
+                        public static $b;
+                    }
+
+                    class Y extends X {
+                        public $a = "foo";
+                        public static $b = "foo";
+                    }
+
+                    (new Y)->a = "hello";
+                    echo (new Y)->a;
+                    Y::$b = "bar";
+                    echo Y::$b;',
+            ],
         ];
     }
 
@@ -1866,6 +1890,41 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedThisPropertyFetch',
+            ],
+            'inheritDocPropertyTypesIncorrectAssignmentToInstanceProperty' => [
+                '<?php
+                    class X {
+                        /**
+                         * @var string|null
+                         */
+                        public $a;
+                    }
+
+                    class Y extends X {
+                        public $a = "foo";
+                    }
+
+                    (new Y)->a = 5;
+                    echo (new Y)->a;
+                    Y::$b = "bar";
+                    echo Y::$b;',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'inheritDocPropertyTypesIncorrectAssignmentToStaticProperty' => [
+                '<?php
+                    class X {
+                        /**
+                         * @var string|null
+                         */
+                        public static $b;
+                    }
+
+                    class Y extends X {
+                        public static $b = "foo";
+                    }
+
+                    Y::$b = 5;',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

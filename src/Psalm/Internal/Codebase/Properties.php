@@ -4,6 +4,7 @@ namespace Psalm\Internal\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Type;
 
 /**
  * @internal
@@ -149,5 +150,50 @@ class Properties
         }
 
         throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+    }
+
+    /**
+     * @param  string $property_id
+     * @return  ?Type\Union
+     */
+    public function getPropertyType($property_id)
+    {
+        // remove trailing backslash if it exists
+        $property_id = preg_replace('/^\\\\/', '', $property_id);
+
+        list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        if (isset($class_storage->declaring_property_ids[$property_name])) {
+            $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
+            $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
+
+            if (isset($declaring_class_storage->properties[$property_name])) {
+                $storage = $declaring_class_storage->properties[$property_name];
+            } else {
+                throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+            }
+        } else {
+            throw new \UnexpectedValueException('Property ' . $property_id . ' should exist');
+        }
+
+        if ($storage->type) {
+            return $storage->type;
+        }
+
+        if (!isset($class_storage->overridden_property_ids[$property_name])) {
+            return null;
+        }
+
+        foreach ($class_storage->overridden_property_ids[$property_name] as $overridden_property_id) {
+            $overridden_storage = $this->getStorage($overridden_property_id);
+
+            if ($overridden_storage->type) {
+                return $overridden_storage->type;
+            }
+        }
+
+        return null;
     }
 }

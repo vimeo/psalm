@@ -488,7 +488,7 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            $class_property_type = $property_storage->type;
+            $class_property_type = $codebase->properties->getPropertyType($property_id);
 
             if (!$class_property_type) {
                 if (IssueBuffer::accepts(
