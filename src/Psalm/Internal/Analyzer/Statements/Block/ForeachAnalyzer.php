@@ -41,11 +41,67 @@ class ForeachAnalyzer
         PhpParser\Node\Stmt\Foreach_ $stmt,
         Context $context
     ) {
+        $var_comments = [];
+
+        $doc_comment_text = (string)$stmt->getDocComment();
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($doc_comment_text) {
+            try {
+                $var_comments = CommentAnalyzer::getTypeFromComment(
+                    $doc_comment_text,
+                    $statements_analyzer->getSource(),
+                    $statements_analyzer->getSource()->getAliases()
+                );
+            } catch (DocblockParseException $e) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        (string)$e->getMessage(),
+                        new CodeLocation($statements_analyzer, $stmt)
+                    )
+                )) {
+                    // fall through
+                }
+            }
+        }
+
+        foreach ($var_comments as $var_comment) {
+            if (!$var_comment->var_id) {
+                continue;
+            }
+
+            $comment_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $var_comment->type,
+                $context->self,
+                $context->self
+            );
+
+            if (isset($context->vars_in_scope[$var_comment->var_id])
+                || in_array(
+                    $var_comment->var_id,
+                    [
+                        '$GLOBALS',
+                        '$_SERVER',
+                        '$_GET',
+                        '$_POST',
+                        '$_FILES',
+                        '$_COOKIE',
+                        '$_SESSION',
+                        '$_REQUEST',
+                        '$_ENV',
+                    ],
+                    true
+                )
+            ) {
+                $context->vars_in_scope[$var_comment->var_id] = $comment_type;
+            }
+        }
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $key_type = null;
         $value_type = null;
@@ -135,45 +191,22 @@ class ForeachAnalyzer
             null,
             $value_type ?: Type::getMixed(),
             $foreach_context,
-            (string)$stmt->getDocComment()
+            $doc_comment_text
         );
 
-        $doc_comment_text = (string)$stmt->getDocComment();
-
-        if ($doc_comment_text) {
-            $var_comments = [];
-
-            try {
-                $var_comments = CommentAnalyzer::getTypeFromComment(
-                    $doc_comment_text,
-                    $statements_analyzer->getSource(),
-                    $statements_analyzer->getSource()->getAliases()
-                );
-            } catch (DocblockParseException $e) {
-                if (IssueBuffer::accepts(
-                    new InvalidDocblock(
-                        (string)$e->getMessage(),
-                        new CodeLocation($statements_analyzer, $stmt)
-                    )
-                )) {
-                    // fall through
-                }
+        foreach ($var_comments as $var_comment) {
+            if (!$var_comment->var_id) {
+                continue;
             }
 
-            foreach ($var_comments as $var_comment) {
-                if (!$var_comment->var_id) {
-                    continue;
-                }
+            $comment_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $var_comment->type,
+                $context->self,
+                $context->self
+            );
 
-                $comment_type = ExpressionAnalyzer::fleshOutType(
-                    $codebase,
-                    $var_comment->type,
-                    $context->self,
-                    $context->self
-                );
-
-                $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
-            }
+            $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
         }
 
         $loop_scope = new LoopScope($foreach_context, $context);

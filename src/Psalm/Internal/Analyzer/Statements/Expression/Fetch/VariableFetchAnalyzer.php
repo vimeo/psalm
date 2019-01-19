@@ -132,6 +132,12 @@ class VariableFetchAnalyzer
             true
         )
         ) {
+            if (isset($context->vars_in_scope['$' . $stmt->name])) {
+                $stmt->inferredType = clone $context->vars_in_scope['$' . $stmt->name];
+
+                return null;
+            }
+
             $stmt->inferredType = Type::getArray();
             $context->vars_in_scope['$' . $stmt->name] = Type::getArray();
             $context->vars_possibly_in_scope['$' . $stmt->name] = true;

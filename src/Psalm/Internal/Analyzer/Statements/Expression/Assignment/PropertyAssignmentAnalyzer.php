@@ -84,8 +84,6 @@ class PropertyAssignmentAnalyzer
 
             $property_exists = true;
 
-            $declaring_property_class = $codebase->properties->getDeclaringClassForProperty($property_id);
-
             $class_property_type = $codebase->properties->getPropertyType($property_id);
 
             $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
