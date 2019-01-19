@@ -577,9 +577,9 @@ class CommentAnalyzer
             || isset($comments['specials']['extends'])
         ) {
             $all_inheritance = array_merge(
-                $comments['specials']['template-extends'] ?: [],
-                $comments['specials']['inherits'] ?: [],
-                $comments['specials']['extends'] ?: []
+                $comments['specials']['template-extends'] ?? [],
+                $comments['specials']['inherits'] ?? [],
+                $comments['specials']['extends'] ?? []
             );
 
             foreach ($all_inheritance as $template_line) {
