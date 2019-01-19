@@ -572,8 +572,17 @@ class CommentAnalyzer
             }
         }
 
-        if (isset($comments['specials']['template-extends'])) {
-            foreach ($comments['specials']['template-extends'] as $template_line) {
+        if (isset($comments['specials']['template-extends'])
+            || isset($comments['specials']['inherits'])
+            || isset($comments['specials']['extends'])
+        ) {
+            $all_inheritance = array_merge(
+                $comments['specials']['template-extends'] ?: [],
+                $comments['specials']['inherits'] ?: [],
+                $comments['specials']['extends'] ?: []
+            );
+
+            foreach ($all_inheritance as $template_line) {
                 $info->template_extends[] = $template_line;
             }
         }
