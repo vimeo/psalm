@@ -197,7 +197,7 @@ class Methods
                     $storage->params,
                     /** @return bool */
                     function (FunctionLikeParameter $p) {
-                        return $p->type !== null && $p->type->from_docblock;
+                        return $p->type !== null && $p->has_docblock_type;
                     }
                 );
             } else {

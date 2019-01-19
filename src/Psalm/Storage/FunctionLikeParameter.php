@@ -29,6 +29,11 @@ class FunctionLikeParameter
     /**
      * @var bool
      */
+    public $has_docblock_type = false;
+
+    /**
+     * @var bool
+     */
     public $is_optional;
 
     /**

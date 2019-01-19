@@ -1970,6 +1970,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
+            $storage_param->has_docblock_type = true;
+
             $storage_param_atomic_types = $storage_param->type->getTypes();
 
             $all_types_match = true;
