@@ -192,7 +192,15 @@ class Methods
         if ($method_id = $this->getDeclaringMethodId($method_id)) {
             $storage = $this->getStorage($method_id);
 
-            if (!$storage->inheritdoc) {
+            if ($storage->inheritdoc) {
+                $non_null_param_types = array_filter(
+                    $storage->params,
+                    /** @return bool */
+                    function (FunctionLikeParameter $p) {
+                        return $p->type !== null && $p->type->from_docblock;
+                    }
+                );
+            } else {
                 $non_null_param_types = array_filter(
                     $storage->params,
                     /** @return bool */
@@ -200,8 +208,6 @@ class Methods
                         return $p->type !== null;
                     }
                 );
-            } else {
-                $non_null_param_types = false;
             }
 
             $params = $storage->params;
