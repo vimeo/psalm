@@ -23,6 +23,11 @@ class FunctionLikeStorage
     public $param_types = [];
 
     /**
+     * @var array<int, Type\Union|null>
+     */
+    public $param_out_types = [];
+
+    /**
      * @var Type\Union|null
      */
     public $return_type;

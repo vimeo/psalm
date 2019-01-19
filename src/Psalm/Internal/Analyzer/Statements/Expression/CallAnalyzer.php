@@ -933,6 +933,9 @@ class CallAnalyzer
                     if ($last_param) {
                         if ($argument_offset < count($function_params)) {
                             $by_ref_type = $function_params[$argument_offset]->type;
+                            if (isset($function_storage->param_out_types[$argument_offset])) {
+                                $by_ref_type = $function_storage->param_out_types[$argument_offset];
+                            }
                         } else {
                             $by_ref_type = $last_param->type;
                         }

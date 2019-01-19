@@ -780,6 +780,23 @@ class AnnotationTest extends TestCase
                         }
                     }'
             ],
+            'paramOutChangeType' => [
+                '<?php
+                    /**
+                     * @param-out string $s
+                     */
+                    function addFoo(?string &$s) : void {
+                        if ($s === null) {
+                            $s = "hello";
+                        }
+                        $s .= "foo";
+                    }
+
+                    $a = null;
+                    addFoo($a);
+
+                    echo strlen($a);',
+            ],
         ];
     }
 
