@@ -1764,6 +1764,12 @@ class FunctionCallTest extends TestCase
                     );',
                 'error_message' => 'InvalidArgument',
             ],
+            'usortInvalidCallableString' => [
+                '<?php
+                    $a = [[1], [2], [3]];
+                    usort($a, "strcmp");',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

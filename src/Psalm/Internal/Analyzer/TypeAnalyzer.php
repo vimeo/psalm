@@ -959,69 +959,7 @@ class TypeAnalyzer
                 )
             )
         ) {
-            $input_callable = null;
-
-            if ($input_type_part instanceof TLiteralString) {
-                try {
-                    $function_storage = $codebase->functions->getStorage(null, $input_type_part->value);
-
-                    $input_callable = new TCallable(
-                        'callable',
-                        $function_storage->params,
-                        $function_storage->return_type
-                    );
-                } catch (\Exception $e) {
-                    if (CallMap::inCallMap($input_type_part->value)) {
-                        $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
-                            $codebase,
-                            $input_type_part->value,
-                            []
-                        );
-
-                        $input_callable = new TCallable(
-                            'callable',
-                            $function_params,
-                            CallMap::getReturnTypeFromCallMap($input_type_part->value)
-                        );
-                    }
-                }
-            } elseif ($input_type_part instanceof ObjectLike) {
-                if (isset($input_type_part->properties[0])
-                    && isset($input_type_part->properties[1])
-                    && $input_type_part->properties[1]->isSingleStringLiteral()
-                ) {
-                    $lhs = $input_type_part->properties[0];
-                    $method_name = $input_type_part->properties[1]->getSingleStringLiteral()->value;
-
-                    $class_name = null;
-
-                    if ($lhs->isSingleStringLiteral()) {
-                        $class_name = $lhs->getSingleStringLiteral()->value;
-                    } elseif ($lhs->isSingle()) {
-                        foreach ($lhs->getTypes() as $lhs_atomic_type) {
-                            if ($lhs_atomic_type instanceof TNamedObject) {
-                                $class_name = $lhs_atomic_type->value;
-                            }
-                        }
-                    }
-
-                    if ($class_name) {
-                        $method_id = $class_name . '::' . $method_name;
-
-                        try {
-                            $method_storage = $codebase->methods->getStorage($method_id);
-
-                            $input_callable = new TCallable(
-                                'callable',
-                                $method_storage->params,
-                                $method_storage->return_type
-                            );
-                        } catch (\Exception $e) {
-                            // do nothing
-                        }
-                    }
-                }
-            }
+            $input_callable = self::getCallableFromAtomic($codebase, $input_type_part);
 
             if ($input_callable) {
                 $all_types_contain = true;
@@ -1163,6 +1101,76 @@ class TypeAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * @return ?TCallable
+     */
+    public static function getCallableFromAtomic(Codebase $codebase, Type\Atomic $input_type_part)
+    {
+        if ($input_type_part instanceof TLiteralString) {
+            try {
+                $function_storage = $codebase->functions->getStorage(null, $input_type_part->value);
+
+                return new TCallable(
+                    'callable',
+                    $function_storage->params,
+                    $function_storage->return_type
+                );
+            } catch (\Exception $e) {
+                if (CallMap::inCallMap($input_type_part->value)) {
+                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                        $codebase,
+                        $input_type_part->value,
+                        []
+                    );
+
+                    return new TCallable(
+                        'callable',
+                        $function_params,
+                        CallMap::getReturnTypeFromCallMap($input_type_part->value)
+                    );
+                }
+            }
+        } elseif ($input_type_part instanceof ObjectLike) {
+            if (isset($input_type_part->properties[0])
+                && isset($input_type_part->properties[1])
+                && $input_type_part->properties[1]->isSingleStringLiteral()
+            ) {
+                $lhs = $input_type_part->properties[0];
+                $method_name = $input_type_part->properties[1]->getSingleStringLiteral()->value;
+
+                $class_name = null;
+
+                if ($lhs->isSingleStringLiteral()) {
+                    $class_name = $lhs->getSingleStringLiteral()->value;
+                } elseif ($lhs->isSingle()) {
+                    foreach ($lhs->getTypes() as $lhs_atomic_type) {
+                        if ($lhs_atomic_type instanceof TNamedObject) {
+                            $class_name = $lhs_atomic_type->value;
+                        }
+                    }
+                }
+
+                if ($class_name) {
+                    $method_id = $class_name . '::' . $method_name;
+
+                    try {
+                        $method_storage = $codebase->methods->getStorage($method_id);
+
+                        return new TCallable(
+                            'callable',
+                            $method_storage->params,
+                            $method_storage->return_type
+                        );
+                    } catch (\Exception $e) {
+                        // do nothing
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

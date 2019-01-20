@@ -897,6 +897,17 @@ class Union
                             break;
                         }
 
+                        if ($key === 'callable') {
+                            $matching_atomic_type = TypeAnalyzer::getCallableFromAtomic(
+                                $codebase,
+                                $atomic_input_type
+                            );
+
+                            if ($matching_atomic_type) {
+                                break;
+                            }
+                        }
+
                         if ($atomic_input_type instanceof TNamedObject && $atomic_type instanceof TNamedObject) {
                             try {
                                 $classlike_storage =
