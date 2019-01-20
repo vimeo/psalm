@@ -704,6 +704,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if ($class_name
             && isset($this->aliases->uses[strtolower($class_name)])
+            && $this->aliases->uses[strtolower($class_name)] !== $fq_classlike_name
         ) {
             IssueBuffer::add(
                 new \Psalm\Issue\ParseError(
