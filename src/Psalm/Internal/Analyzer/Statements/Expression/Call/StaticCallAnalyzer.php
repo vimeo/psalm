@@ -474,7 +474,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         ];
 
                         $method_id = $fq_class_name . '::__callstatic';
-                        $cased_method_id = $fq_class_name . '::__callStatic';
                     }
                 }
 
