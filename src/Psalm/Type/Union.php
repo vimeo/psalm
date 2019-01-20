@@ -91,6 +91,11 @@ class Union
     private $literal_string_types = [];
 
     /**
+     * @var array<string, Type\Atomic\TClassString>
+     */
+    private $typed_class_strings = [];
+
+    /**
      * @var array<string, TLiteralInt>
      */
     private $literal_int_types = [];
@@ -129,6 +134,8 @@ class Union
                 $this->literal_string_types[$key] = $type;
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
+            } elseif ($type instanceof Type\Atomic\TClassString && $type->as_type) {
+                $this->typed_class_strings[$key] = $type;
             }
 
             $from_docblock = $from_docblock || $type->from_docblock;
@@ -163,6 +170,14 @@ class Union
                 unset($this->literal_string_types[$key]);
                 unset($this->types[$key]);
             }
+            if (!$type instanceof Type\Atomic\TClassString
+                || !$type->as_type
+            ) {
+                foreach ($this->typed_class_strings as $key => $_) {
+                    unset($this->typed_class_strings[$key]);
+                    unset($this->types[$key]);
+                }
+            }
         } elseif ($type instanceof TInt && $this->literal_int_types) {
             foreach ($this->literal_int_types as $key => $_) {
                 unset($this->literal_int_types[$key]);
@@ -183,6 +198,7 @@ class Union
         $this->literal_string_types = [];
         $this->literal_int_types = [];
         $this->literal_float_types = [];
+        $this->typed_class_strings = [];
 
         foreach ($this->types as $key => &$type) {
             $type = clone $type;
@@ -193,6 +209,8 @@ class Union
                 $this->literal_string_types[$key] = $type;
             } elseif ($type instanceof TLiteralFloat) {
                 $this->literal_float_types[$key] = $type;
+            } elseif ($type instanceof Type\Atomic\TClassString && $type->as_type) {
+                $this->typed_class_strings[$key] = $type;
             }
         }
     }
@@ -535,7 +553,8 @@ class Union
             || isset($this->types['class-string'])
             || isset($this->types['numeric-string'])
             || isset($this->types['array-key'])
-            || $this->literal_string_types;
+            || $this->literal_string_types
+            || $this->typed_class_strings;
     }
 
     /**
@@ -604,6 +623,7 @@ class Union
         return isset($this->types['int'])
             || isset($this->types['float'])
             || isset($this->types['string'])
+            || isset($this->types['class-string'])
             || isset($this->types['bool'])
             || isset($this->types['false'])
             || isset($this->types['true'])
@@ -611,7 +631,8 @@ class Union
             || isset($this->types['numeric-string'])
             || $this->literal_int_types
             || $this->literal_float_types
-            || $this->literal_string_types;
+            || $this->literal_string_types
+            || $this->typed_class_strings;
     }
 
     /**

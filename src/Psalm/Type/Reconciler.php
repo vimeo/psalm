@@ -23,6 +23,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericParam;
@@ -561,7 +562,7 @@ class Reconciler
                     || $type instanceof TObject
                     || $type instanceof TResource
                     || $type instanceof TCallable
-                    || $type instanceof Type\Atomic\TClassString
+                    || $type instanceof TClassString
                 ) {
                     $did_remove_type = true;
 
@@ -895,7 +896,82 @@ class Reconciler
 
                     $new_type = Type::getMixed();
                 } else {
+                    $new_type_has_interface_string = $codebase->interfaceExists($new_var_type);
+
+                    $old_type_has_interface_string = false;
+
+                    foreach ($existing_var_type->getTypes() as $existing_type_part) {
+                        if ($existing_type_part instanceof TClassString
+                            && $existing_type_part->as_type
+                            && $codebase->interfaceExists($existing_type_part->as_type->value)
+                        ) {
+                            $old_type_has_interface_string = true;
+                            break;
+                        }
+                    }
+
                     $new_type = Type::getClassString($new_var_type);
+
+                    if (($new_type_has_interface_string
+                            && !TypeAnalyzer::isContainedBy(
+                                $codebase,
+                                $existing_var_type,
+                                $new_type
+                            )
+                        )
+                        || ($old_type_has_interface_string
+                            && !TypeAnalyzer::isContainedBy(
+                                $codebase,
+                                $new_type,
+                                $existing_var_type
+                            )
+                        )
+                    ) {
+                        $new_type_part = Atomic::create($new_var_type);
+
+                        $acceptable_atomic_types = [];
+
+                        foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
+                            if (!$new_type_part instanceof TNamedObject
+                                || !$existing_var_type_part instanceof TClassString
+                            ) {
+                                $acceptable_atomic_types = [];
+
+                                break;
+                            }
+
+                            if (!$existing_var_type_part->as_type instanceof TNamedObject) {
+                                $acceptable_atomic_types = [];
+
+                                break;
+                            }
+
+                            $existing_var_type_part = $existing_var_type_part->as_type;
+
+                            if (TypeAnalyzer::isAtomicContainedBy(
+                                $codebase,
+                                $existing_var_type_part,
+                                $new_type_part
+                            )) {
+                                $acceptable_atomic_types[] = clone $existing_var_type_part;
+                                continue;
+                            }
+
+                            if ($codebase->classExists($existing_var_type_part->value)
+                                || $codebase->interfaceExists($existing_var_type_part->value)
+                            ) {
+                                $existing_var_type_part = clone $existing_var_type_part;
+                                $existing_var_type_part->addIntersectionType($new_type_part);
+                                $acceptable_atomic_types[] = $existing_var_type_part;
+                            }
+                        }
+
+                        if (count($acceptable_atomic_types) === 1) {
+                            return new Type\Union([
+                                new TClassString('object', $acceptable_atomic_types[0])
+                            ]);
+                        }
+                    }
                 }
             } else {
                 $new_type = Type::getMixed();
@@ -976,13 +1052,7 @@ class Reconciler
                 if (TypeAnalyzer::isAtomicContainedBy(
                     $codebase,
                     $existing_var_type_part,
-                    $new_type_part,
-                    false,
-                    false,
-                    $scalar_type_match_found,
-                    $type_coerced,
-                    $type_coerced_from_mixed,
-                    $atomic_to_string_cast
+                    $new_type_part
                 )) {
                     $acceptable_atomic_types[] = clone $existing_var_type_part;
                     continue;

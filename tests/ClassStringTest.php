@@ -452,6 +452,28 @@ class ClassStringTest extends TestCase
                         $className::two();
                     }'
             ],
+            'implicitIntersectionClassString' => [
+                '<?php
+                    interface Foo {
+                        public static function one() : bool;
+                    };
+
+                    interface Bar {
+                        public static function two() : bool;
+                    }
+
+                    /**
+                     * @param class-string<Bar> $className
+                     */
+                    function foo($className) : void {
+                        $className::two();
+
+                        if (is_subclass_of($className, Foo::class, true)) {
+                            $className::one();
+                            $className::two();
+                        }
+                    }'
+            ],
         ];
     }
 

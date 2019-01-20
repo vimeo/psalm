@@ -30,7 +30,7 @@ class TClassString extends TString
      */
     public function getKey()
     {
-        return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as . '>');
+        return 'class-string' . ($this->as === 'object' ? '' : '<' . $this->as_type . '>');
     }
 
     /**
