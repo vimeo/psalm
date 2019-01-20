@@ -45,6 +45,22 @@ function bat(): string {
 
 There are a number of custom tags that determine how Psalm treats your code.
 
+### `@param-out`
+
+This is used to specify that a by-ref type is different from the one that entered. In the function below the first param can be null, but once the function has executed the by-ref value is not null.
+
+```php
+/**
+ * @param-out string $s
+ */
+function addFoo(?string &$s) : void {
+    if ($s === null) {
+        $s = "hello";
+    }
+    $s .= "foo";
+}
+```
+
 ### `@psalm-var`, `@psalm-param` and `@psalm-return`
 
 When specifying types in a format not supported phpDocumentor ([but supported by Psalm](#type-syntax)) you may wish to prepend `@psalm-` to the PHPDoc tag, so as to avoid confusing your IDE. If a `@psalm`-prefixed tag is given, Psalm will use it in place of its non-prefixed counterpart.
