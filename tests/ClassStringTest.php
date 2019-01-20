@@ -426,7 +426,6 @@ class ClassStringTest extends TestCase
                         }
                     }
 
-
                     function foo(string $className) : bool {
                         if (is_subclass_of($className, Foo::class, true)) {
                             return $className::Bar();
@@ -434,6 +433,24 @@ class ClassStringTest extends TestCase
 
                         return false;
                     }',
+            ],
+            'intersectionClassString' => [
+                '<?php
+                    interface Foo {
+                        public static function one() : bool;
+                    };
+
+                    interface Bar {
+                        public static function two() : bool;
+                    }
+
+                    /**
+                     * @param class-string<Foo&Bar> $className
+                     */
+                    function foo($className) : bool {
+                        return $className::one();
+                        return $className::two();
+                    }'
             ],
         ];
     }

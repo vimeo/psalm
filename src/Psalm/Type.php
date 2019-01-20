@@ -243,7 +243,17 @@ abstract class Type
                     );
                 }
 
-                return new TClassString($class_name);
+                $param_union_types = array_values($generic_params[0]->getTypes());
+
+                if (count($param_union_types) > 1) {
+                    throw new TypeParseTreeException('Union types are not allowed in class string param');
+                }
+
+                if (!$param_union_types[0] instanceof TNamedObject) {
+                    throw new TypeParseTreeException('Class string param should be a named object');
+                }
+
+                return new TClassString($class_name, $param_union_types[0]);
             }
 
             return new TGenericObject($generic_type_value, $generic_params);
@@ -537,7 +547,7 @@ abstract class Type
                     return new Atomic\TGenericParamClass(
                         $param_name,
                         $traversable->value,
-                        new Union([$traversable]),
+                        $traversable,
                         $defining_class
                     );
                 }
@@ -548,7 +558,7 @@ abstract class Type
                 return new Atomic\TGenericParamClass(
                     $param_name,
                     $traversable->value,
-                    new Union([$traversable]),
+                    $traversable,
                     $defining_class
                 );
             }
@@ -562,7 +572,7 @@ abstract class Type
             return new Atomic\TGenericParamClass(
                 $param_name,
                 $t->value,
-                new Union([$t]),
+                $t,
                 $defining_class
             );
         }
@@ -909,7 +919,14 @@ abstract class Type
      */
     public static function getClassString($extends = 'object')
     {
-        return new Union([new TClassString($extends)]);
+        return new Union([
+            new TClassString(
+                $extends,
+                $extends === 'object'
+                    ? null
+                    : new TNamedObject($extends)
+            )
+        ]);
     }
 
     /**

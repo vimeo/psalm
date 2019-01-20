@@ -17,7 +17,7 @@ class TGenericParamClass extends TClassString
     public $as;
 
     /**
-     * @var ?Union
+     * @var ?TNamedObject
      */
     public $as_type;
 
@@ -32,7 +32,7 @@ class TGenericParamClass extends TClassString
     public function __construct(
         string $param_name,
         string $as = 'object',
-        Union $as_type = null,
+        TNamedObject $as_type = null,
         string $defining_class = null
     ) {
         $this->param_name = $param_name;

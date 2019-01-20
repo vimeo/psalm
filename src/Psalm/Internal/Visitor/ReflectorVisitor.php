@@ -1756,15 +1756,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             ? $template_types[$template_typeof['template_type']][1]
                             : null;
 
+                        $template_atomic_type = null;
+
+                        if ($template_type) {
+                            foreach ($template_type->getTypes() as $tat) {
+                                if ($tat instanceof Type\Atomic\TNamedObject) {
+                                    $template_atomic_type = $tat;
+                                }
+                            }
+                        }
+
                         $param->type = new Type\Union([
                             new Type\Atomic\TGenericParamClass(
                                 $template_typeof['template_type'],
                                 $template_type && !$template_type->isMixed()
                                     ? (string)$template_type
                                     : 'object',
-                                $template_type && $template_type->isMixed()
-                                    ? null
-                                    : $template_type,
+                                $template_atomic_type,
                                 $template_class
                             )
                         ]);

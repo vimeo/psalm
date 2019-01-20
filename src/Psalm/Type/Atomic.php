@@ -296,15 +296,27 @@ abstract class Atomic
         }
 
         if ($this instanceof TClassString && $this->as !== 'object' && $this->as !== 'mixed') {
-            if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
-                $source,
-                $this->as,
-                $code_location,
-                $suppressed_issues,
-                $inferred
-            ) === false
-            ) {
-                return false;
+            if ($this->as_type) {
+                if ($this->as_type->check(
+                    $source,
+                    $code_location,
+                    $suppressed_issues,
+                    $phantom_classes,
+                    $inferred
+                ) === false) {
+                    return false;
+                }
+            } else {
+                if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $source,
+                    $this->as,
+                    $code_location,
+                    $suppressed_issues,
+                    $inferred
+                ) === false
+                ) {
+                    return false;
+                }
             }
         }
 

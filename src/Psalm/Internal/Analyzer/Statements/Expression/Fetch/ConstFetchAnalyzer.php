@@ -263,9 +263,32 @@ class ConstFetchAnalyzer
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
             $lhs_type = $stmt->class->inferredType;
 
-            $stmt->inferredType = new Type\Union([
-                new Type\Atomic\TClassString('object', $lhs_type)
-            ]);
+            $class_string_types = [];
+
+            $has_mixed_or_object = false;
+
+            if ($lhs_type) {
+                foreach ($lhs_type->getTypes() as $lhs_atomic_type) {
+                    if ($lhs_atomic_type instanceof Type\Atomic\TNamedObject) {
+                        $class_string_types[] = new Type\Atomic\TClassString(
+                            $lhs_atomic_type->value,
+                            clone $lhs_atomic_type
+                        );
+                    } elseif ($lhs_atomic_type instanceof Type\Atomic\TObject
+                        || $lhs_atomic_type instanceof Type\Atomic\TMixed
+                    ) {
+                        $has_mixed_or_object = true;
+                    }
+                }
+            }
+
+            if ($has_mixed_or_object) {
+                $stmt->inferredType = new Type\Union([new Type\Atomic\TClassString()]);
+            } elseif ($class_string_types) {
+                $stmt->inferredType = new Type\Union($class_string_types);
+            } else {
+                $stmt->inferredType = Type::getMixed();
+            }
 
             return;
         }

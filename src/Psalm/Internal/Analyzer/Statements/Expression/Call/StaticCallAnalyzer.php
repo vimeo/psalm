@@ -260,9 +260,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($lhs_type_part instanceof TNamedObject) {
                 $fq_class_name = $lhs_type_part->value;
             } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
-                && $lhs_type_part->as !== 'object'
+                && $lhs_type_part->as_type
             ) {
-                $fq_class_name = $lhs_type_part->as;
+                $fq_class_name = $lhs_type_part->as_type->value;
             } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                 $fq_class_name = $lhs_type_part->value;
             } elseif ($lhs_type_part instanceof Type\Atomic\TGenericParam
@@ -301,7 +301,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 ) {
                     if (IssueBuffer::accepts(
                         new MixedMethodCall(
-                            'Cannot call constructor on an unknown class',
+                            'Cannot call method on an unknown class',
                             new CodeLocation($statements_analyzer->getSource(), $stmt)
                         ),
                         $statements_analyzer->getSuppressedIssues()

@@ -533,16 +533,20 @@ class TypeAnalyzer
         }
 
         if ($container_type_part instanceof GetClassT) {
+            $first_type = array_values($container_type_part->as_type->getTypes())[0];
+
             $container_type_part = new TClassString(
                 'object',
-                $container_type_part->as_type
+                $first_type instanceof TNamedObject ? $first_type : null
             );
         }
 
         if ($input_type_part instanceof GetClassT) {
+            $first_type = array_values($input_type_part->as_type->getTypes())[0];
+
             $input_type_part = new TClassString(
                 'object',
-                $input_type_part->as_type
+                $first_type instanceof TNamedObject ? $first_type : null
             );
         }
 
@@ -844,14 +848,14 @@ class TypeAnalyzer
 
             if ($container_type_part instanceof TClassString
                 && $container_type_part->as === 'object'
-                && (!$container_type_part->as_type || $container_type_part->as_type->hasObject())
+                && !$container_type_part->as_type
             ) {
                 return true;
             }
 
             if ($input_type_part instanceof TClassString
                 && $input_type_part->as === 'object'
-                && (!$input_type_part->as_type || $input_type_part->as_type->hasObject())
+                && !$input_type_part->as_type
             ) {
                 $type_coerced = true;
                 $type_coerced_from_scalar = true;
@@ -861,7 +865,7 @@ class TypeAnalyzer
 
             $fake_container_object = $container_type_part instanceof TClassString
                 && $container_type_part->as_type
-                ? array_values($container_type_part->as_type->getTypes())[0]
+                ? $container_type_part->as_type
                 : new TNamedObject(
                     $container_type_part instanceof TClassString
                         ? $container_type_part->as
@@ -870,7 +874,7 @@ class TypeAnalyzer
 
             $fake_input_object = $input_type_part instanceof TClassString
                 && $input_type_part->as_type
-                ? array_values($input_type_part->as_type->getTypes())[0]
+                ? $input_type_part->as_type
                 : new TNamedObject(
                     $input_type_part instanceof TClassString
                         ? $input_type_part->as
