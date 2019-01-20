@@ -606,6 +606,31 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
+            'goodCallableArgs' => [
+                '<?php
+                    /**
+                     * @param callable(string,string):int $_p
+                     */
+                    function f(callable $_p): void {}
+
+                    class C {
+                        public static function m(string $a, string $b): int { return $a <=> $b; }
+                    }
+
+                    f("strcmp");
+                    f([new C, "m"]);
+                    f([C::class, "m"]);'
+            ],
+            'fileExistsCallable' => [
+                '<?php
+                    /** @return string[] */
+                    function foo(string $prospective_file_path) : array {
+                        return array_filter(
+                            glob($prospective_file_path),
+                            "file_exists"
+                        );
+                    }'
+            ],
         ];
     }
 
@@ -953,6 +978,44 @@ class CallableTest extends TestCase
                         if ($a) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'checkCallableTypeString' => [
+                '<?php
+                    /**
+                     * @param callable(int,int):int $_p
+                     */
+                    function f(callable $_p): void {}
+
+                    f("strcmp");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'checkCallableTypeArrayInstanceFirstArg' => [
+                '<?php
+                    /**
+                     * @param callable(int,int):int $_p
+                     */
+                    function f(callable $_p): void {}
+
+                    class C {
+                        public static function m(string $a, string $b): int { return $a <=> $b; }
+                    }
+
+                    f([new C, "m"]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'checkCallableTypeArrayClassStringFirstArg' => [
+                '<?php
+                    /**
+                     * @param callable(int,int):int $_p
+                     */
+                    function f(callable $_p): void {}
+
+                    class C {
+                        public static function m(string $a, string $b): int { return $a <=> $b; }
+                    }
+
+                    f([C::class, "m"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

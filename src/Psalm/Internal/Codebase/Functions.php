@@ -148,11 +148,17 @@ class Functions
             return true;
         }
 
-        if ($this->reflection->registerFunction($function_id) === false) {
-            return false;
+        $predefined_functions = $statements_analyzer->getCodebase()->config->getPredefinedFunctions();
+
+        if (isset($predefined_functions[$function_id])) {
+            if ($this->reflection->registerFunction($function_id) === false) {
+                return false;
+            }
+
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     /**

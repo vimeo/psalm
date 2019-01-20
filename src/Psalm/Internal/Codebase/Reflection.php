@@ -3,6 +3,7 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Storage\FunctionLikeParameter;
@@ -354,14 +355,32 @@ class Reflection
         try {
             $reflection_function = new \ReflectionFunction($function_id);
 
+            $callmap_function_params = null;
+
+            $callmap_return_type = null;
+
             $storage = self::$builtin_functions[$function_id] = new FunctionLikeStorage();
 
-            $reflection_params = $reflection_function->getParameters();
+            if (CallMap::inCallMap($function_id)) {
+                $callmap_function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                    $this->codebase,
+                    $function_id,
+                    []
+                );
 
-            /** @var \ReflectionParameter $param */
-            foreach ($reflection_params as $param) {
-                $param_obj = $this->getReflectionParamData($param);
-                $storage->params[] = $param_obj;
+                $callmap_return_type = CallMap::getReturnTypeFromCallMap($function_id);
+            }
+
+            if ($callmap_function_params !== null) {
+                $storage->params = $callmap_function_params;
+            } else {
+                $reflection_params = $reflection_function->getParameters();
+
+                /** @var \ReflectionParameter $param */
+                foreach ($reflection_params as $param) {
+                    $param_obj = $this->getReflectionParamData($param);
+                    $storage->params[] = $param_obj;
+                }
             }
 
             $storage->required_param_count = 0;
@@ -374,9 +393,9 @@ class Reflection
 
             $storage->cased_name = $reflection_function->getName();
 
-            if (version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                && $reflection_return_type = $reflection_function->getReturnType()
-            ) {
+            if ($callmap_return_type) {
+                $storage->return_type = $callmap_return_type;
+            } elseif ($reflection_return_type = $reflection_function->getReturnType()) {
                 $storage->return_type = Type::parseString((string)$reflection_return_type);
             }
         } catch (\ReflectionException $e) {
