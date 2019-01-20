@@ -140,6 +140,13 @@ class TryAnalyzer
         // the try was applied
         $original_context = clone $try_context;
 
+        $issues_to_suppress = [
+            'RedundantCondition',
+            'RedundantConditionGivenDocblockType',
+            'TypeDoesNotContainNull',
+            'TypeDoesNotContainType',
+        ];
+
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
@@ -279,14 +286,18 @@ class TryAnalyzer
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+            foreach ($issues_to_suppress as $issue_to_suppress) {
+                if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
+                    $statements_analyzer->addSuppressedIssues([$issue_to_suppress]);
+                }
             }
 
             $statements_analyzer->analyze($catch->stmts, $catch_context);
 
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+            foreach ($issues_to_suppress as $issue_to_suppress) {
+                if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
+                    $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
+                }
             }
 
             $context->referenced_var_ids = array_merge(
@@ -359,22 +370,18 @@ class TryAnalyzer
         if ($stmt->finally) {
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-            }
-
-            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            foreach ($issues_to_suppress as $issue_to_suppress) {
+                if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
+                    $statements_analyzer->addSuppressedIssues([$issue_to_suppress]);
+                }
             }
 
             $statements_analyzer->analyze($stmt->finally->stmts, $context);
 
-            if (!in_array('RedundantCondition', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-            }
-
-            if (!in_array('RedundantConditionGivenDocblockType', $suppressed_issues, true)) {
-                $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+            foreach ($issues_to_suppress as $issue_to_suppress) {
+                if (!in_array($issue_to_suppress, $suppressed_issues, true)) {
+                    $statements_analyzer->removeSuppressedIssues([$issue_to_suppress]);
+                }
             }
         }
 
