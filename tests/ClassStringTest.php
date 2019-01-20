@@ -434,22 +434,22 @@ class ClassStringTest extends TestCase
                         return false;
                     }',
             ],
-            'intersectionClassString' => [
+            'explicitIntersectionClassString' => [
                 '<?php
                     interface Foo {
-                        public static function one() : bool;
+                        public static function one() : void;
                     };
 
                     interface Bar {
-                        public static function two() : bool;
+                        public static function two() : void;
                     }
 
                     /**
                      * @param class-string<Foo&Bar> $className
                      */
-                    function foo($className) : bool {
-                        return $className::one();
-                        return $className::two();
+                    function foo($className) : void {
+                        $className::one();
+                        $className::two();
                     }'
             ],
         ];

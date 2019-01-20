@@ -257,12 +257,18 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $has_mock = false;
 
         foreach ($lhs_type->getTypes() as $lhs_type_part) {
+            $intersection_types = [];
+
             if ($lhs_type_part instanceof TNamedObject) {
                 $fq_class_name = $lhs_type_part->value;
+
+                $intersection_types = $lhs_type_part->extra_types;
             } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
                 && $lhs_type_part->as_type
             ) {
                 $fq_class_name = $lhs_type_part->as_type->value;
+
+                $intersection_types = $lhs_type_part->as_type->extra_types;
             } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                 $fq_class_name = $lhs_type_part->value;
             } elseif ($lhs_type_part instanceof Type\Atomic\TGenericParam
@@ -365,6 +371,25 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $args = $stmt->args;
 
+                if ($intersection_types
+                    && !$codebase->methods->methodExists($method_id)
+                ) {
+                    foreach ($intersection_types as $intersection_type) {
+                        if (!$intersection_type instanceof TNamedObject) {
+                            continue;
+                        }
+
+                        $intersection_method_id = $intersection_type->value . '::' . $method_name_lc;
+
+                        if ($codebase->methods->methodExists($intersection_method_id)) {
+                            $method_id = $intersection_method_id;
+                            $fq_class_name = $intersection_type->value;
+                            $cased_method_id = $fq_class_name . '::' . $stmt->name->name;
+                            break;
+                        }
+                    }
+                }
+
                 if (!$codebase->methods->methodExists($method_id)
                     || !MethodAnalyzer::isMethodVisible(
                         $method_id,
@@ -455,7 +480,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $does_method_exist = MethodAnalyzer::checkMethodExists(
                     $codebase,
-                    $cased_method_id,
+                    $method_id,
                     new CodeLocation($source, $stmt),
                     $statements_analyzer->getSuppressedIssues(),
                     $context->calling_method_id
