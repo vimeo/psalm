@@ -68,4 +68,24 @@ class BadFormatTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
     }
+
+    /**
+     * @expectedException Psalm\Exception\CodeException
+     * @expectedExceptionMessage  ParseError - somefile.php:6
+     * @return void
+     */
+    public function testOverriddenUse()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Demo;
+
+                use A\B;
+
+                interface B {}'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 }

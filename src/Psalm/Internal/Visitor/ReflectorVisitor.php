@@ -642,6 +642,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $storage = null;
 
+        $class_name = null;
+
         if ($node->name === null) {
             if (!$node instanceof PhpParser\Node\Stmt\Class_) {
                 throw new \LogicException('Anonymous classes are always classes');
@@ -651,6 +653,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         } else {
             $fq_classlike_name =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name;
+
+            $class_name = $node->name->name;
 
             if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)) {
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name);
@@ -696,6 +700,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         if (!$storage) {
             $storage = $this->codebase->classlike_storage_provider->create($fq_classlike_name);
+        }
+
+        if ($class_name
+            && isset($this->aliases->uses[strtolower($class_name)])
+        ) {
+            IssueBuffer::add(
+                new \Psalm\Issue\ParseError(
+                    'Class name ' . $class_name . ' clashes with a use statement alias',
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                )
+            );
+
+            $storage->has_visitor_issues = true;
+            $this->file_storage->has_visitor_issues = true;
         }
 
         $storage->location = $class_location;
@@ -1018,6 +1036,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             } else {
                 if (isset($this->file_storage->functions[$function_id])) {
                     $duplicate_function_storage = $this->file_storage->functions[$function_id];
+
+                    if ($duplicate_function_storage->location
+                        && $duplicate_function_storage->location->getLineNumber() === $stmt->getLine()
+                    ) {
+                        return $this->file_storage->functions[$function_id];
+                    }
 
                     if (IssueBuffer::accepts(
                         new DuplicateFunction(

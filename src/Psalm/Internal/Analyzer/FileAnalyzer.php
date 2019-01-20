@@ -124,6 +124,10 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             throw new UnpreparedAnalysisException('File ' . $this->file_path . ' has not been properly scanned');
         }
 
+        if ($file_storage->has_visitor_issues) {
+            return;
+        }
+
         if ($file_context) {
             $this->context = $file_context;
         }
