@@ -66,8 +66,39 @@ class ForeachAnalyzer
             }
         }
 
+        $safe_var_ids = [];
+
+        if ($stmt->keyVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->keyVar->name)) {
+            $safe_var_ids['$' . $stmt->keyVar->name] = true;
+        }
+
+        if ($stmt->valueVar instanceof PhpParser\Node\Expr\Variable && is_string($stmt->valueVar->name)) {
+            $safe_var_ids['$' . $stmt->valueVar->name] = true;
+        } elseif ($stmt->valueVar instanceof PhpParser\Node\Expr\List_) {
+            foreach ($stmt->valueVar->items as $list_item) {
+                if (!$list_item) {
+                    continue;
+                }
+
+                $list_item_key = $list_item->key;
+                $list_item_value = $list_item->value;
+
+                if ($list_item_value instanceof PhpParser\Node\Expr\Variable && is_string($list_item_value->name)) {
+                    $safe_var_ids['$' . $list_item_value->name] = true;
+                }
+
+                if ($list_item_key instanceof PhpParser\Node\Expr\Variable && is_string($list_item_key->name)) {
+                    $safe_var_ids['$' . $list_item_key->name] = true;
+                }
+            }
+        }
+
         foreach ($var_comments as $var_comment) {
             if (!$var_comment->var_id) {
+                continue;
+            }
+
+            if (isset($safe_var_ids[$var_comment->var_id])) {
                 continue;
             }
 
