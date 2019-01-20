@@ -800,6 +800,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             foreach ($uninitialized_properties as $property_id => $property_storage) {
                 list(,$property_name) = explode('::$', $property_id);
+
                 if (!isset($method_context->vars_in_scope['$this->' . $property_name])) {
                     throw new \UnexpectedValueException('$this->' . $property_name . ' should be in scope');
                 }
@@ -808,7 +809,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $constructor_class_property_storage = $property_storage;
 
-                if ($fq_class_name !== $constructor_appearing_fqcln) {
+                if ($fq_class_name !== $constructor_appearing_fqcln
+                    && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                ) {
                     $a_class_storage = $classlike_storage_provider->get($constructor_appearing_fqcln);
 
                     if (!isset($a_class_storage->declaring_property_ids[$property_name])) {
