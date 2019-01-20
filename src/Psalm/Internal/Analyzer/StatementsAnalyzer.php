@@ -1291,15 +1291,13 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $is_fully_qualified,
         Context $context
     ) {
-        $fq_const_name = null;
-
         $aliased_constants = $this->getAliases()->constants;
 
         if (isset($aliased_constants[$const_name])) {
             $fq_const_name = $aliased_constants[$const_name];
         } elseif ($is_fully_qualified) {
             $fq_const_name = $const_name;
-        } elseif (strpos($const_name, '\\')) {
+        } else {
             $fq_const_name = Type::getFQCLNFromString($const_name, $this->getAliases());
         }
 

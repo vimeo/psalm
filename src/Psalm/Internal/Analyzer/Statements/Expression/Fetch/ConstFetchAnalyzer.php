@@ -325,8 +325,10 @@ class ConstFetchAnalyzer
 
         $predefined_constants = $codebase->config->getPredefinedConstants();
 
-        if (isset($predefined_constants[$fq_const_name ?: $const_name])) {
-            switch ($fq_const_name ?: $const_name) {
+        if (isset($predefined_constants[$fq_const_name])
+            || isset($predefined_constants[$const_name])
+        ) {
+            switch ($const_name) {
                 case 'PHP_VERSION':
                 case 'DIRECTORY_SEPARATOR':
                 case 'PATH_SEPARATOR':
@@ -369,8 +371,11 @@ class ConstFetchAnalyzer
                     return Type::getFloat();
             }
 
-            $type = ClassLikeAnalyzer::getTypeFromValue($predefined_constants[$fq_const_name ?: $const_name]);
-            return $type;
+            if (isset($predefined_constants[$fq_const_name])) {
+                return ClassLikeAnalyzer::getTypeFromValue($predefined_constants[$fq_const_name]);
+            }
+
+            return ClassLikeAnalyzer::getTypeFromValue($predefined_constants[$const_name]);
         }
 
         $stubbed_const_type = $codebase->getStubbedConstantType(
