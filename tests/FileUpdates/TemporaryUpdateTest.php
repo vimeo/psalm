@@ -1058,6 +1058,33 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[], [116], []],
             ],
+            'addMissingArgs' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            function variadic_arguments(string $_foo, ...$bars ) : void {}
+
+                            function foo() : void {
+                                variadic_arguments(
+                                    $baz,
+                                    $qux
+                                );
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            function variadic_arguments(string $_foo, ...$bars ) : void {}
+
+                            function foo(string $baz, string $qux) : void {
+                                variadic_arguments(
+                                    $baz,
+                                    $qux
+                                );
+                            }',
+                    ],
+                ],
+                'error_positions' => [[238, 238, 280], []],
+            ],
         ];
     }
 }

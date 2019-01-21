@@ -1152,10 +1152,18 @@ class CallAnalyzer
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if ($function_param->type && !$function_param->type->hasMixed()) {
+                    $param_type = $function_param->type;
+                    if ($function_param->is_variadic && $function_param->type->hasArray()) {
+                        /** @var TArray */
+                        $array_type = $function_param->type->getTypes()['array'];
+
+                        $param_type = $array_type->type_params[0];
+                    }
+
                     if (IssueBuffer::accepts(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' cannot be mixed, expecting ' . $function_param->type,
+                                . ' cannot be mixed, expecting ' . $param_type,
                             new CodeLocation($statements_analyzer->getSource(), $arg->value)
                         ),
                         $statements_analyzer->getSuppressedIssues()
@@ -1759,7 +1767,6 @@ class CallAnalyzer
 
         if ($input_type->hasMixed()) {
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-
             if (IssueBuffer::accepts(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be mixed, expecting ' .
