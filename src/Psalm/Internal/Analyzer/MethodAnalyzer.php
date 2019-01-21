@@ -88,10 +88,16 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     ) {
         $codebase_methods = $codebase->methods;
 
+        if ($method_id === 'Closure::fromcallable') {
+            return true;
+        }
+
+        $original_method_id = $method_id;
+
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
         if (!$method_id) {
-            throw new \LogicException('Method id should not be null');
+            throw new \LogicException('Declaring method for ' . $original_method_id . ' should not be null');
         }
 
         $storage = $codebase_methods->getStorage($method_id);

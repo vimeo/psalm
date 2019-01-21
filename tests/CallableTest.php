@@ -631,7 +631,7 @@ class CallableTest extends TestCase
                         );
                     }'
             ],
-            'closureFromCallableInvokableNamedClass' => [
+            'PHP71-closureFromCallableInvokableNamedClass' => [
                 '<?php
                     namespace NS;
                     use Closure;
@@ -647,7 +647,7 @@ class CallableTest extends TestCase
 
                     acceptsIntToBool(Closure::fromCallable(new NamedInvokable));'
             ],
-            'closureFromCallableInvokableAnonymousClass' => [
+            'PHP71-closureFromCallableInvokableAnonymousClass' => [
                 '<?php
                     namespace NS;
                     use Closure;
@@ -1049,7 +1049,7 @@ class CallableTest extends TestCase
                     f([C::class, "m"]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'closureFromCallableInvokableNamedClassWrongArgs' => [
+            'PHP71-closureFromCallableInvokableNamedClassWrongArgs' => [
                 '<?php
                     namespace NS;
                     use Closure;
