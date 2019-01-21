@@ -570,7 +570,7 @@ class Config
         }
 
         if (isset($config_xml['allowStringToStandInForClass'])) {
-            $attribute_text = (string) $config_xml['allowCoercionFromStringToClassConst'];
+            $attribute_text = (string) $config_xml['allowStringToStandInForClass'];
             $config->allow_string_standin_for_class = $attribute_text === 'true' || $attribute_text === '1';
         }
 
