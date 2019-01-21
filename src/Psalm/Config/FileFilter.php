@@ -23,6 +23,11 @@ class FileFilter
     /**
      * @var array<string>
      */
+    protected $fq_classlike_patterns = [];
+
+    /**
+     * @var array<string>
+     */
     protected $method_ids = [];
 
     /**
@@ -234,7 +239,14 @@ class FileFilter
         if ($e->referencedClass) {
             /** @var \SimpleXMLElement $referenced_class */
             foreach ($e->referencedClass as $referenced_class) {
-                $filter->fq_classlike_names[] = strtolower((string)$referenced_class['name']);
+                $class_name = strtolower((string)$referenced_class['name']);
+
+                if (strpos($class_name, '*')) {
+                    $regex = '/' . \str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/i';
+                    $filter->fq_classlike_patterns[] = $regex;
+                } else {
+                    $filter->fq_classlike_names[] = $class_name;
+                }
             }
         }
 
@@ -346,6 +358,14 @@ class FileFilter
      */
     public function allowsClass($fq_classlike_name)
     {
+        if ($this->fq_classlike_patterns) {
+            foreach ($this->fq_classlike_patterns as $pattern) {
+                if (preg_match($pattern, $fq_classlike_name)) {
+                    return true;
+                }
+            }
+        }
+
         return in_array(strtolower($fq_classlike_name), $this->fq_classlike_names);
     }
 
