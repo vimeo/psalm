@@ -24,6 +24,7 @@ trait InvalidCodeAnalysisTestTrait
      */
     public function testInvalidCode($code, $error_message, $error_levels = [], $strict_mode = false)
     {
+        $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP7-') !== false) {
             if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.');
