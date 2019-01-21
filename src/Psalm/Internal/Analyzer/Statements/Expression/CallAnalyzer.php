@@ -1151,15 +1151,19 @@ class CallAnalyzer
             } elseif ($function_param) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
-                if ($function_param->type && !$function_param->type->hasMixed()) {
-                    $param_type = $function_param->type;
-                    if ($function_param->is_variadic && $function_param->type->hasArray()) {
-                        /** @var TArray */
-                        $array_type = $function_param->type->getTypes()['array'];
+                $param_type = $function_param->type;
 
-                        $param_type = $array_type->type_params[1];
-                    }
+                if ($function_param->is_variadic
+                    && $param_type
+                    && $param_type->hasArray()
+                ) {
+                    /** @var TArray */
+                    $array_type = $param_type->getTypes()['array'];
 
+                    $param_type = $array_type->type_params[1];
+                }
+
+                if ($param_type && !$param_type->hasMixed()) {
                     if (IssueBuffer::accepts(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
