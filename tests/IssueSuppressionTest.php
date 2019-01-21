@@ -49,6 +49,36 @@ class IssueSuppressionTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['UndefinedFunction'],
             ],
+            'crossClosureBoundariesOnFunction' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MissingClosureParamType
+                     * @psalm-suppress MissingClosureReturnType
+                     */
+                    function foo(array $bar): array {
+                        return array_map(
+                            function ($value) {
+                                return (string)$value;
+                            },
+                            $bar
+                        );
+                    }'
+            ],
+            'crossClosureBoundariesOnReturn' => [
+                '<?php
+                    function bar(array $bar): array {
+                        /**
+                         * @psalm-suppress MissingClosureParamType
+                         * @psalm-suppress MissingClosureReturnType
+                         */
+                        return array_map(
+                            function ($value) {
+                                return (string)$value;
+                            },
+                            $bar
+                        );
+                    }'
+            ],
         ];
     }
 

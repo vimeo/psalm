@@ -564,7 +564,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                             'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
                             $function_param->location
                         ),
-                        $storage->suppressed_issues
+                        array_merge($this->suppressed_issues, $storage->suppressed_issues)
                     );
                 } else {
                     IssueBuffer::accepts(
@@ -572,7 +572,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                             'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
                             $function_param->location
                         ),
-                        $storage->suppressed_issues
+                        array_merge($this->suppressed_issues, $storage->suppressed_issues)
                     );
                 }
             }
