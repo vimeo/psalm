@@ -1157,7 +1157,7 @@ class CallAnalyzer
                         /** @var TArray */
                         $array_type = $function_param->type->getTypes()['array'];
 
-                        $param_type = $array_type->type_params[0];
+                        $param_type = $array_type->type_params[1];
                     }
 
                     if (IssueBuffer::accepts(
