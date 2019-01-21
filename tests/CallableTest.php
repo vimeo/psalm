@@ -631,6 +631,38 @@ class CallableTest extends TestCase
                         );
                     }'
             ],
+            'closureFromCallableInvokableNamedClass' => [
+                '<?php
+                    namespace NS;
+                    use Closure;
+
+                    /** @param Closure(int):bool $c */
+                    function acceptsIntToBool(Closure $c): void {}
+
+                    class NamedInvokable {
+                        public function __invoke(int $p): bool {
+                            return $p > 0;
+                        }
+                    }
+
+                    acceptsIntToBool(Closure::fromCallable(new NamedInvokable));'
+            ],
+            'closureFromCallableInvokableAnonymousClass' => [
+                '<?php
+                    namespace NS;
+                    use Closure;
+
+                    /** @param Closure(int):bool $c */
+                    function acceptsIntToBool(Closure $c): void {}
+
+                    $anonInvokable = new class {
+                        public function __invoke(int $p):bool {
+                            return $p > 0;
+                        }
+                    };
+
+                    acceptsIntToBool(Closure::fromCallable($anonInvokable));'
+            ],
         ];
     }
 
@@ -1015,6 +1047,23 @@ class CallableTest extends TestCase
                     }
 
                     f([C::class, "m"]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'closureFromCallableInvokableNamedClassWrongArgs' => [
+                '<?php
+                    namespace NS;
+                    use Closure;
+
+                    /** @param Closure(string):bool $c */
+                    function acceptsIntToBool(Closure $c): void {}
+
+                    class NamedInvokable {
+                        public function __invoke(int $p): bool {
+                            return $p > 0;
+                        }
+                    }
+
+                    acceptsIntToBool(Closure::fromCallable(new NamedInvokable));',
                 'error_message' => 'InvalidScalarArgument',
             ],
         ];

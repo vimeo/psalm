@@ -346,13 +346,27 @@ class Methods
                 && $args[0]->value->inferredType->isSingle()
             ) {
                 foreach ($args[0]->value->inferredType->getTypes() as $atomic_type) {
-                    if ($atomic_type instanceof Type\Atomic\TCallable || $atomic_type instanceof Type\Atomic\Fn) {
+                    if ($atomic_type instanceof Type\Atomic\TCallable
+                        || $atomic_type instanceof Type\Atomic\Fn
+                    ) {
                         $callable_type = clone $atomic_type;
 
                         return new Type\Union([new Type\Atomic\Fn(
                             'Closure',
                             $callable_type->params,
                             $callable_type->return_type
+                        )]);
+                    }
+
+                    if ($atomic_type instanceof Type\Atomic\TNamedObject
+                        && $this->methodExists($atomic_type->value . '::__invoke')
+                    ) {
+                        $invokable_storage = $this->getStorage($atomic_type->value . '::__invoke');
+
+                        return new Type\Union([new Type\Atomic\Fn(
+                            'Closure',
+                            $invokable_storage->params,
+                            $invokable_storage->return_type
                         )]);
                     }
                 }
