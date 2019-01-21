@@ -987,7 +987,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             if (strtolower($stmt->name->parts[0]) === 'false') {
                 return Type::getFalse();
             } elseif (strtolower($stmt->name->parts[0]) === 'true') {
-                return Type::getBool();
+                return Type::getTrue();
             } elseif (strtolower($stmt->name->parts[0]) === 'null') {
                 return Type::getNull();
             }
