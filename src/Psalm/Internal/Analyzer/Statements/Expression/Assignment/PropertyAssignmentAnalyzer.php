@@ -335,7 +335,11 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                if (!$codebase->properties->propertyExists($property_id, $context->calling_method_id)) {
+                if (!$codebase->properties->propertyExists(
+                    $property_id,
+                    $context->calling_method_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                )) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                         // if this is a proper error, we'll see it on the first pass
                         if ($context->collect_mutations) {

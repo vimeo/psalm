@@ -167,7 +167,7 @@ Options:
     --find-dead-code
         Look for dead code
 
-    --find-references-to=[class|method]
+    --find-references-to=[class|method|property]
         Searches the codebase for references to the given fully-qualified class or method,
         where method is in the format class::methodName
 
