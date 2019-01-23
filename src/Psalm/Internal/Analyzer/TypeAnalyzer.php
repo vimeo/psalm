@@ -400,6 +400,7 @@ class TypeAnalyzer
                 }
 
                 if ($codebase->classExists($intersection_input_type_lower)
+                    && $codebase->classOrInterfaceExists($intersection_container_type_lower)
                     && $codebase->classExtendsOrImplements(
                         $intersection_input_type_lower,
                         $intersection_container_type_lower

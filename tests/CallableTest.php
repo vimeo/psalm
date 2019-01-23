@@ -1066,6 +1066,14 @@ class CallableTest extends TestCase
                     acceptsIntToBool(Closure::fromCallable(new NamedInvokable));',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'undefinedClassForCallable' => [
+                '<?php
+                    class Foo {
+                        public function __construct(UndefinedClass $o) {}
+                    }
+                    new Foo(function() : void {});',
+                'error_message' => 'UndefinedClass',
+            ],
         ];
     }
 }
