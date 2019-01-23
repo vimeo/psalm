@@ -119,6 +119,7 @@ class BinaryOpAnalyzer
                     $changed_var_ids,
                     $new_referenced_var_ids,
                     $statements_analyzer,
+                    [],
                     $context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
@@ -238,6 +239,7 @@ class BinaryOpAnalyzer
                     $changed_var_ids,
                     $new_referenced_var_ids,
                     $statements_analyzer,
+                    [],
                     $pre_op_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 );
@@ -274,6 +276,7 @@ class BinaryOpAnalyzer
                         '',
                         $statements_analyzer,
                         $context->inside_loop,
+                        [],
                         new CodeLocation($statements_analyzer->getSource(), $stmt->left),
                         $statements_analyzer->getSuppressedIssues()
                     );
@@ -380,6 +383,7 @@ class BinaryOpAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     $t_if_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->left)
                 );
@@ -424,6 +428,7 @@ class BinaryOpAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     $t_else_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $stmt->right)
                 );
@@ -456,6 +461,7 @@ class BinaryOpAnalyzer
                     '',
                     $statements_analyzer,
                     $context->inside_loop,
+                    [],
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues()
                 );

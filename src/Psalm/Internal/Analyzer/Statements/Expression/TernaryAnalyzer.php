@@ -109,6 +109,7 @@ class TernaryAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                [],
                 $t_if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
             );
@@ -147,6 +148,7 @@ class TernaryAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                [],
                 $t_else_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else)
             );
@@ -201,6 +203,7 @@ class TernaryAnalyzer
                 '',
                 $statements_analyzer,
                 $context->inside_loop,
+                [],
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer->getSuppressedIssues()
             );

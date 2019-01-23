@@ -2253,7 +2253,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
-     * @param  array<string, array{Type\Union, ?string}> $generic_params,
+     * @param  array<string, array{Type\Union, ?string}> $template_type_map,
      * @param  StatementsAnalyzer $statements_analyzer
      *
      * @return void
@@ -2262,7 +2262,7 @@ class CallAnalyzer
         $expr,
         array $assertions,
         array $args,
-        array $generic_params,
+        array $template_type_map,
         Context $context,
         StatementsAnalyzer $statements_analyzer
     ) {
@@ -2308,12 +2308,12 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (isset($generic_params[$rule])) {
-                    if ($generic_params[$rule][0]->hasMixed()) {
+                if (isset($template_type_map[$rule])) {
+                    if ($template_type_map[$rule][0]->hasMixed()) {
                         continue;
                     }
 
-                    $replacement_atomic_types = $generic_params[$rule][0]->getTypes();
+                    $replacement_atomic_types = $template_type_map[$rule][0]->getTypes();
 
                     if (count($replacement_atomic_types) > 1) {
                         continue;
@@ -2380,6 +2380,7 @@ class CallAnalyzer
                 $changed_vars,
                 $asserted_keys,
                 $statements_analyzer,
+                $template_type_map,
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $expr)
             );

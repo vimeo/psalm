@@ -535,6 +535,7 @@ class Context
                         null,
                         $statements_analyzer,
                         false,
+                        [],
                         null,
                         [],
                         $failed_reconciliation

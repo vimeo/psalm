@@ -31,6 +31,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\Issue\UndefinedThisPropertyAssignment;
 use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -446,7 +447,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 case Type\Atomic\THtmlEscapedString::class:
                 case Type\Atomic\TClassString::class:
                 case Type\Atomic\TIterable::class:
-                case Type\Atomic\TGenericIterable::class:
                     $invalid_method_call_types[] = (string)$lhs_type_part;
                     return;
 
@@ -1002,11 +1002,21 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 if ($method_storage->if_true_assertions) {
-                    $stmt->ifTrueAssertions = $method_storage->if_true_assertions;
+                    $stmt->ifTrueAssertions = array_map(
+                        function (Assertion $assertion) use ($class_template_params) : Assertion {
+                            return $assertion->getUntemplatedCopy($class_template_params ?: []);
+                        },
+                        $method_storage->if_true_assertions
+                    );
                 }
 
                 if ($method_storage->if_false_assertions) {
-                    $stmt->ifFalseAssertions = $method_storage->if_false_assertions;
+                    $stmt->ifFalseAssertions = array_map(
+                        function (Assertion $assertion) use ($class_template_params) : Assertion {
+                            return $assertion->getUntemplatedCopy($class_template_params ?: []);
+                        },
+                        $method_storage->if_false_assertions
+                    );
                 }
             }
         }

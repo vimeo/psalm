@@ -409,6 +409,7 @@ class LoopAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     true,
                     new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0])
                 );
@@ -553,6 +554,7 @@ class LoopAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                [],
                 true,
                 new CodeLocation($statements_analyzer->getSource(), $pre_condition)
             );

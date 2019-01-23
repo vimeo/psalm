@@ -128,6 +128,7 @@ class DoAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     true,
                     new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );
@@ -176,6 +177,7 @@ class DoAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     true,
                     new \Psalm\CodeLocation($statements_analyzer->getSource(), $stmt->cond)
                 );

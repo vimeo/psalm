@@ -19,6 +19,7 @@ use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 
@@ -668,11 +669,21 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
 
                     if ($method_storage->if_true_assertions) {
-                        $stmt->ifTrueAssertions = $method_storage->if_true_assertions;
+                        $stmt->ifTrueAssertions = array_map(
+                            function (Assertion $assertion) use ($found_generic_params) : Assertion {
+                                return $assertion->getUntemplatedCopy($found_generic_params ?: []);
+                            },
+                            $method_storage->if_true_assertions
+                        );
                     }
 
                     if ($method_storage->if_false_assertions) {
-                        $stmt->ifFalseAssertions = $method_storage->if_false_assertions;
+                        $stmt->ifFalseAssertions = array_map(
+                            function (Assertion $assertion) use ($found_generic_params) : Assertion {
+                                return $assertion->getUntemplatedCopy($found_generic_params ?: []);
+                            },
+                            $method_storage->if_false_assertions
+                        );
                     }
                 }
 

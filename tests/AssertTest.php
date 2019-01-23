@@ -441,6 +441,138 @@ class AssertTest extends TestCase
                         assertEqual($a, $b);
                     }',
             ],
+            'assertAllStrings' => [
+                '<?php
+                    /**
+                     * @psalm-assert iterable<mixed,string> $i
+                     *
+                     * @param iterable<mixed,mixed> $i
+                     */
+                    function assertAllStrings(iterable $i): void {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($i as $s) {
+                            if (!is_string($s)) {
+                                throw new \UnexpectedValueException("");
+                            }
+                        }
+                    }
+
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    function getIterable(): iterable {
+                        return [];
+                    }
+
+                    $array = getArray();
+                    assertAllStrings($array);
+
+                    $iterable = getIterable();
+                    assertAllStrings($iterable);',
+                [
+                    '$array' => 'array<array-key, string>',
+                    '$iterable' => 'iterable<mixed, string>',
+                ]
+            ],
+            'assertAllArrayOfClass' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @psalm-assert iterable<mixed,T> $i
+                     *
+                     * @param iterable<mixed,mixed> $i
+                     * @param class-string<T> $type
+                     */
+                    function assertAllInstanceOf(iterable $i, string $type): void {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($i as $elt) {
+                            if (!$elt instanceof $type) {
+                                throw new \UnexpectedValueException("");
+                            }
+                        }
+                    }
+
+                    class A {}
+
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    $array = getArray();
+                    assertAllInstanceOf($array, A::class);',
+                [
+                    '$array' => 'array<array-key, A>',
+                ]
+            ],
+            'assertAllIterableOfClass' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @psalm-assert iterable<mixed,T> $i
+                     *
+                     * @param iterable<mixed,mixed> $i
+                     * @param class-string<T> $type
+                     */
+                    function assertAllInstanceOf(iterable $i, string $type): void {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($i as $elt) {
+                            if (!$elt instanceof $type) {
+                                throw new \UnexpectedValueException("");
+                            }
+                        }
+                    }
+
+                    class A {}
+
+                    function getIterable(): iterable {
+                        return [];
+                    }
+
+                    $iterable = getIterable();
+                    assertAllInstanceOf($iterable, A::class);',
+                [
+                    '$iterable' => 'iterable<mixed, A>',
+                ]
+            ],
+            'complicatedAssertAllInstanceOf' => [
+                '<?php
+                    /**
+                     * @template T
+                     *
+                     * @psalm-assert-if-true iterable<mixed,T> $i
+                     *
+                     * @param iterable<mixed,mixed> $i
+                     * @param class-string<T> $type
+                     */
+                    function allInstanceOf(iterable $i, string $type): bool {
+                        /** @psalm-suppress MixedAssignment */
+                        foreach ($i as $elt) {
+                            if (!$elt instanceof $type) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+
+
+
+                    interface IBlogPost { public function getId(): int; }
+
+                    function getData(): iterable {
+                        return [];
+                    }
+
+                    $data = getData();
+
+                    assert(allInstanceOf($data, IBlogPost::class));
+
+                    foreach ($data as $post) {
+                        echo $post->getId();
+                    }',
+            ],
         ];
     }
 

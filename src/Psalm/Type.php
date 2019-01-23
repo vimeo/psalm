@@ -13,7 +13,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericIterable;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\TInt;
@@ -229,7 +228,7 @@ abstract class Type
             }
 
             if ($generic_type_value === 'iterable') {
-                return new TGenericIterable($generic_params);
+                return new TIterable($generic_params);
             }
 
             if ($generic_type_value === 'class-string') {
@@ -537,24 +536,12 @@ abstract class Type
             }
 
             if ($t instanceof TIterable) {
-                if ($t instanceof TGenericIterable) {
-                    $traversable = new TGenericObject(
-                        'Traversable',
-                        $t->type_params
-                    );
+                $traversable = new TGenericObject(
+                    'Traversable',
+                    $t->type_params
+                );
 
-                    $as->substitute(new Union([$t]), new Union([$traversable]));
-                    return new Atomic\TGenericParamClass(
-                        $param_name,
-                        $traversable->value,
-                        $traversable,
-                        $defining_class
-                    );
-                }
-
-                $traversable = new TNamedObject('Traversable');
                 $as->substitute(new Union([$t]), new Union([$traversable]));
-
                 return new Atomic\TGenericParamClass(
                     $param_name,
                     $traversable->value,

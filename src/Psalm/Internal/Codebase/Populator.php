@@ -676,7 +676,7 @@ class Populator
 
             if ($iterator_name && $generic_params) {
                 if ($iterator_name === 'iterable') {
-                    $generic_iterator = new Type\Atomic\TGenericIterable($generic_params);
+                    $generic_iterator = new Type\Atomic\TIterable($generic_params);
                 } else {
                     $generic_iterator = new Type\Atomic\TGenericObject($iterator_name, $generic_params);
                 }

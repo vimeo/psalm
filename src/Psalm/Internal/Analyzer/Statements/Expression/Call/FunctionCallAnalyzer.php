@@ -17,6 +17,7 @@ use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
 use Psalm\Issue\PossiblyNullFunctionCall;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
@@ -450,6 +451,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $changed_vars,
                         [],
                         $statements_analyzer,
+                        [],
                         $context->inside_loop,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     );
@@ -518,11 +520,21 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
 
             if ($function_storage->if_true_assertions) {
-                $stmt->ifTrueAssertions = $function_storage->if_true_assertions;
+                $stmt->ifTrueAssertions = array_map(
+                    function (Assertion $assertion) use ($generic_params) : Assertion {
+                        return $assertion->getUntemplatedCopy($generic_params ?: []);
+                    },
+                    $function_storage->if_true_assertions
+                );
             }
 
             if ($function_storage->if_false_assertions) {
-                $stmt->ifFalseAssertions = $function_storage->if_false_assertions;
+                $stmt->ifFalseAssertions = array_map(
+                    function (Assertion $assertion) use ($generic_params) : Assertion {
+                        return $assertion->getUntemplatedCopy($generic_params ?: []);
+                    },
+                    $function_storage->if_false_assertions
+                );
             }
         }
 

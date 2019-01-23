@@ -66,7 +66,7 @@ trait GenericTrait
         }
 
         if ($use_phpdoc_format) {
-            if ($this instanceof TNamedObject || $this instanceof TGenericIterable) {
+            if ($this instanceof TNamedObject || $this instanceof TIterable) {
                 return $base_value;
             }
 
@@ -157,7 +157,7 @@ trait GenericTrait
             $input_type_param = null;
 
             if (($input_type instanceof Atomic\TGenericObject
-                    || $input_type instanceof Atomic\TGenericIterable
+                    || $input_type instanceof Atomic\TIterable
                     || $input_type instanceof Atomic\TArray)
                 &&
                     isset($input_type->type_params[$offset])

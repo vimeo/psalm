@@ -419,13 +419,8 @@ class ForeachAnalyzer
                 $has_valid_iterator = true;
                 $value_type = Type::getMixed();
             } elseif ($iterator_atomic_type instanceof Type\Atomic\TIterable) {
-                if ($iterator_atomic_type instanceof Type\Atomic\TGenericIterable) {
-                    $value_type_part = $iterator_atomic_type->type_params[1];
-                    $key_type_part = $iterator_atomic_type->type_params[0];
-                } else {
-                    $value_type_part = Type::getMixed();
-                    $key_type_part = Type::getMixed();
-                }
+                $value_type_part = $iterator_atomic_type->type_params[1];
+                $key_type_part = $iterator_atomic_type->type_params[0];
 
                 if (!$value_type) {
                     $value_type = $value_type_part;
@@ -457,7 +452,7 @@ class ForeachAnalyzer
                 if (TypeAnalyzer::isAtomicContainedBy(
                     $codebase,
                     $iterator_atomic_type,
-                    new Type\Atomic\TIterable
+                    new Type\Atomic\TIterable([Type::getMixed(), Type::getMixed()])
                 )) {
                     self::handleIterable(
                         $statements_analyzer,
@@ -539,7 +534,7 @@ class ForeachAnalyzer
 
             $has_valid_iterator = true;
 
-            if (($iterator_atomic_type instanceof Type\Atomic\TGenericIterable)
+            if (($iterator_atomic_type instanceof Type\Atomic\TIterable)
                 || ($iterator_atomic_type instanceof Type\Atomic\TGenericObject
                     && strtolower($iterator_atomic_type->value) === 'traversable')
                 || ($iterator_atomic_type instanceof Type\Atomic\TGenericObject

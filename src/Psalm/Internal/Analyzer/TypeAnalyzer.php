@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericIterable;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGenericParam;
 use Psalm\Type\Atomic\GetClassT;
@@ -734,10 +733,6 @@ class TypeAnalyzer
 
         if ($container_type_part instanceof TIterable) {
             if ($input_type_part instanceof TArray || $input_type_part instanceof ObjectLike) {
-                if (!$container_type_part instanceof TGenericIterable) {
-                    return true;
-                }
-
                 if ($input_type_part instanceof ObjectLike) {
                     $input_type_part = $input_type_part->getGenericArrayType();
                 }

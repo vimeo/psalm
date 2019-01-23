@@ -138,6 +138,7 @@ class SwitchAnalyzer
                         $changed_var_ids,
                         [],
                         $statements_analyzer,
+                        [],
                         $original_context->inside_loop
                     );
 
@@ -442,6 +443,7 @@ class SwitchAnalyzer
                     $changed_var_ids,
                     $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
                     $statements_analyzer,
+                    [],
                     $case_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),

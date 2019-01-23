@@ -1,18 +1,25 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TIterable extends \Psalm\Type\Atomic
+use Psalm\Type\Atomic;
+use Psalm\Type\Union;
+
+class TIterable extends Atomic
 {
     use HasIntersectionTrait;
+    use GenericTrait;
 
     /**
      * @var string
      */
     public $value = 'iterable';
 
-    public function __toString()
+    /**
+     * @param array<int, \Psalm\Type\Union>     $type_params
+     */
+    public function __construct(array $type_params)
     {
-        return 'iterable';
+        $this->type_params = $type_params;
     }
 
     /**
@@ -21,14 +28,6 @@ class TIterable extends \Psalm\Type\Atomic
     public function getKey()
     {
         return 'iterable';
-    }
-
-    /**
-     * @return bool
-     */
-    public function canBeFullyExpressedInPhp()
-    {
-        return true;
     }
 
     /**
@@ -48,5 +47,35 @@ class TIterable extends \Psalm\Type\Atomic
         $php_minor_version
     ) {
         return $php_major_version >= 7 && $php_minor_version >= 1 ? 'iterable' : null;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canBeFullyExpressedInPhp()
+    {
+        return $this->type_params[0]->isMixed() && $this->type_params[1]->isMixed();
+    }
+
+    /**
+     * @return bool
+     */
+    public function equals(Atomic $other_type)
+    {
+        if (!$other_type instanceof self) {
+            return false;
+        }
+
+        if (count($this->type_params) !== count($other_type->type_params)) {
+            return false;
+        }
+
+        foreach ($this->type_params as $i => $type_param) {
+            if (!$type_param->equals($other_type->type_params[$i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

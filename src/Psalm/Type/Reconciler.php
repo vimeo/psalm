@@ -54,6 +54,7 @@ class Reconciler
      * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
      * @param  array<string>             $suppressed_issues
+     * @param   array<string, array{0:Type\Union, 1:null|string}> $template_type_map
      *
      * @return array<string, Type\Union>
      */
@@ -63,6 +64,7 @@ class Reconciler
         array &$changed_var_ids,
         array $referenced_var_ids,
         StatementsAnalyzer $statements_analyzer,
+        array $template_type_map = [],
         bool $inside_loop = false,
         CodeLocation $code_location = null
     ) {
@@ -195,6 +197,7 @@ class Reconciler
                         $key,
                         $statements_analyzer,
                         $inside_loop,
+                        $template_type_map,
                         $code_location && isset($referenced_var_ids[$key]) ? $code_location : null,
                         $suppressed_issues,
                         $failed_reconciliation
@@ -293,6 +296,7 @@ class Reconciler
      * @param   CodeLocation        $code_location
      * @param   string[]            $suppressed_issues
      * @param   0|1|2               $failed_reconciliation if the types cannot be reconciled, we need to know
+     * @param   array<string, array{0:Type\Union, 1:null|string}> $template_type_map
      *
      * @return  Type\Union
      */
@@ -302,6 +306,7 @@ class Reconciler
         $key,
         StatementsAnalyzer $statements_analyzer,
         bool $inside_loop,
+        array $template_type_map,
         CodeLocation $code_location = null,
         array $suppressed_issues = [],
         &$failed_reconciliation = 0
@@ -350,7 +355,7 @@ class Reconciler
                     }
                 }
 
-                return Type::parseString($new_var_type);
+                return Type::parseString($new_var_type, false, $template_type_map);
             }
 
             return Type::getMixed();
@@ -881,7 +886,7 @@ class Reconciler
             $existing_has_string = $existing_var_type->hasString();
 
             if ($existing_has_object && !$existing_has_string) {
-                $new_type = Type::parseString($new_var_type);
+                $new_type = Type::parseString($new_var_type, false, $template_type_map);
             } elseif ($existing_has_string && !$existing_has_object) {
                 if (!$allow_string_comparison && $code_location) {
                     if (IssueBuffer::accepts(
@@ -927,7 +932,7 @@ class Reconciler
                             )
                         )
                     ) {
-                        $new_type_part = Atomic::create($new_var_type);
+                        $new_type_part = Atomic::create($new_var_type, false, $template_type_map);
 
                         $acceptable_atomic_types = [];
 
@@ -978,7 +983,7 @@ class Reconciler
             }
         } elseif (substr($new_var_type, 0, 9) === 'getclass-') {
             $new_var_type = substr($new_var_type, 9);
-            $new_type = Type::parseString($new_var_type);
+            $new_type = Type::parseString($new_var_type, false, $template_type_map);
         } else {
             $bracket_pos = strpos($new_var_type, '(');
 
@@ -995,7 +1000,7 @@ class Reconciler
                 );
             }
 
-            $new_type = Type::parseString($new_var_type);
+            $new_type = Type::parseString($new_var_type, false, $template_type_map);
         }
 
         if ($existing_var_type->hasMixed()) {
@@ -1028,7 +1033,7 @@ class Reconciler
             }
         }
 
-        $new_type_part = Atomic::create($new_var_type);
+        $new_type_part = Atomic::create($new_var_type, false, $template_type_map);
 
         if ($new_type_part instanceof TNamedObject
             && (($new_type_has_interface
@@ -1092,59 +1097,14 @@ class Reconciler
 
             $any_scalar_type_match_found = false;
 
-            $matching_atomic_types = [];
-
-            foreach ($new_type->getTypes() as $new_type_part) {
-                $has_local_match = false;
-
-                foreach ($existing_var_type->getTypes() as $existing_var_type_part) {
-                    // special workaround because PHP allows floats to contain ints, but we don’t want this
-                    // behaviour here
-                    if ($existing_var_type_part instanceof Type\Atomic\TFloat
-                        && $new_type_part instanceof Type\Atomic\TInt
-                    ) {
-                        $any_scalar_type_match_found = true;
-                        continue;
-                    }
-
-                    $scalar_type_match_found = false;
-                    $type_coerced = false;
-                    $type_coerced_from_mixed = false;
-                    $atomic_to_string_cast = false;
-
-                    if (TypeAnalyzer::isAtomicContainedBy(
-                        $codebase,
-                        $new_type_part,
-                        $existing_var_type_part,
-                        false,
-                        false,
-                        $scalar_type_match_found,
-                        $type_coerced,
-                        $type_coerced_from_mixed,
-                        $atomic_to_string_cast
-                    ) || $type_coerced
-                    ) {
-                        $has_local_match = true;
-                        if ($type_coerced) {
-                            $matching_atomic_types[] = $existing_var_type_part;
-                        }
-                        continue;
-                    }
-
-                    if ($scalar_type_match_found) {
-                        $any_scalar_type_match_found = true;
-                    }
-                }
-
-                if (!$has_local_match) {
-                    $has_match = false;
-                    break;
-                }
-            }
-
-            if ($matching_atomic_types) {
-                $new_type = new Type\Union($matching_atomic_types);
-            }
+            $new_type = self::filterTypeWithAnother(
+                $codebase,
+                $existing_var_type,
+                $new_type,
+                $template_type_map,
+                $has_match,
+                $any_scalar_type_match_found
+            );
 
             if ($code_location
                 && !$has_match
@@ -1211,6 +1171,127 @@ class Reconciler
             $atomic_type->from_docblock = false;
 
             return new Type\Union([$atomic_type]);
+        }
+
+        return $new_type;
+    }
+
+    /**
+     * @param array<string, array{0:Type\Union, 1:null|string}> $template_type_map
+     */
+    private static function filterTypeWithAnother(
+        Codebase $codebase,
+        Type\Union $existing_type,
+        Type\Union $new_type,
+        array $template_type_map,
+        bool &$has_match,
+        bool &$any_scalar_type_match_found
+    ) : Type\Union {
+        $matching_atomic_types = [];
+
+        foreach ($new_type->getTypes() as $new_type_part) {
+            $has_local_match = false;
+
+            foreach ($existing_type->getTypes() as $existing_type_part) {
+                // special workaround because PHP allows floats to contain ints, but we don’t want this
+                // behaviour here
+                if ($existing_type_part instanceof Type\Atomic\TFloat
+                    && $new_type_part instanceof Type\Atomic\TInt
+                ) {
+                    $any_scalar_type_match_found = true;
+                    continue;
+                }
+
+                $scalar_type_match_found = false;
+                $type_coerced = false;
+                $type_coerced_from_mixed = false;
+                $atomic_to_string_cast = false;
+
+                $atomic_contained_by = TypeAnalyzer::isAtomicContainedBy(
+                    $codebase,
+                    $new_type_part,
+                    $existing_type_part,
+                    false,
+                    false,
+                    $scalar_type_match_found,
+                    $type_coerced,
+                    $type_coerced_from_mixed,
+                    $atomic_to_string_cast
+                );
+
+                if ($atomic_contained_by || $type_coerced) {
+                    $has_local_match = true;
+                    if ($type_coerced) {
+                        $matching_atomic_types[] = $existing_type_part;
+                    }
+                }
+
+                if (($new_type_part instanceof Type\Atomic\TGenericObject
+                        || $new_type_part instanceof Type\Atomic\TArray
+                        || $new_type_part instanceof Type\Atomic\TIterable)
+                    && ($existing_type_part instanceof Type\Atomic\TGenericObject
+                        || $existing_type_part instanceof Type\Atomic\TArray
+                        || $existing_type_part instanceof Type\Atomic\TIterable)
+                    && count($new_type_part->type_params) === count($existing_type_part->type_params)
+                ) {
+                    $has_any_param_match = false;
+
+                    foreach ($new_type_part->type_params as $i => $new_param) {
+                        $existing_param = $existing_type_part->type_params[$i];
+
+                        $has_param_match = true;
+
+                        $new_param = self::filterTypeWithAnother(
+                            $codebase,
+                            $existing_param,
+                            $new_param,
+                            $template_type_map,
+                            $has_param_match,
+                            $any_scalar_type_match_found
+                        );
+
+                        if ($template_type_map) {
+                            $new_param->replaceTemplateTypesWithArgTypes(
+                                $template_type_map,
+                                $codebase
+                            );
+                        }
+
+                        if ($has_param_match
+                            && $existing_type_part->type_params[$i]->getId() !== $new_param->getId()
+                        ) {
+                            $existing_type_part->type_params[$i] = $new_param;
+
+                            if (!$has_local_match) {
+                                $has_any_param_match = true;
+                            }
+                        }
+                    }
+
+                    if ($has_any_param_match) {
+                        $has_local_match = true;
+                        $matching_atomic_types[] = $existing_type_part;
+                        $type_coerced = true;
+                    }
+                }
+
+                if ($atomic_contained_by || $type_coerced) {
+                    continue;
+                }
+
+                if ($scalar_type_match_found) {
+                    $any_scalar_type_match_found = true;
+                }
+            }
+
+            if (!$has_local_match) {
+                $has_match = false;
+                break;
+            }
+        }
+
+        if ($matching_atomic_types) {
+            return new Type\Union($matching_atomic_types);
         }
 
         return $new_type;

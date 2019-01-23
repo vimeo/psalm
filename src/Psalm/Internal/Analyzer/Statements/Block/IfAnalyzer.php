@@ -271,6 +271,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     $cond_referenced_var_ids,
                     $statements_analyzer,
+                    [],
                     $if_context->inside_loop,
                     $context->check_variables
                         ? new CodeLocation(
@@ -315,6 +316,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 $stmt->else || $stmt->elseifs ? $cond_referenced_var_ids : [],
                 $statements_analyzer,
+                [],
                 $context->inside_loop,
                 $context->check_variables
                     ? new CodeLocation(
@@ -672,6 +674,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     $outer_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
@@ -832,6 +835,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 [],
                 $statements_analyzer,
+                [],
                 $elseif_context->inside_loop,
                 new CodeLocation(
                     $statements_analyzer->getSource(),
@@ -996,6 +1000,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 $new_referenced_var_ids,
                 $statements_analyzer,
+                [],
                 $elseif_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $elseif->cond, $outer_context->include_location)
             );
@@ -1195,6 +1200,7 @@ class IfAnalyzer
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
+                    [],
                     $elseif_context->inside_loop,
                     new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location)
                 );
@@ -1356,6 +1362,7 @@ class IfAnalyzer
                 $changed_var_ids,
                 [],
                 $statements_analyzer,
+                [],
                 $else_context->inside_loop,
                 $else
                     ? new CodeLocation($statements_analyzer->getSource(), $else, $outer_context->include_location)

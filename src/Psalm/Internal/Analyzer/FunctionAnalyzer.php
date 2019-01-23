@@ -1604,6 +1604,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                 $changed_var_ids,
                                 ['$inner_type' => true],
                                 $statements_analyzer,
+                                [],
                                 false,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             );
