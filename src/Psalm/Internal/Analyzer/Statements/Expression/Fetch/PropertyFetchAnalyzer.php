@@ -300,10 +300,12 @@ class PropertyFetchAnalyzer
 
             $override_property_visibility = false;
 
-            if (!$codebase->classExists($lhs_type_part->value)) {
-                $class_exists = false;
+            $class_exists = false;
+            $interface_exists = false;
 
+            if (!$codebase->classExists($lhs_type_part->value)) {
                 if ($codebase->interfaceExists($lhs_type_part->value)) {
+                    $interface_exists = true;
                     $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
                     $override_property_visibility = $interface_storage->override_property_visibility;
@@ -322,18 +324,21 @@ class PropertyFetchAnalyzer
                         if (IssueBuffer::accepts(
                             new NoInterfaceProperties(
                                 'Interfaces cannot have properties',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $lhs_type_part->value
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            // fall through
+                            return null;
                         }
 
-                        return null;
+                        if (!$codebase->methodExists($fq_class_name . '::__set')) {
+                            return null;
+                        }
                     }
                 }
 
-                if (!$class_exists) {
+                if (!$class_exists && !$interface_exists) {
                     if (IssueBuffer::accepts(
                         new UndefinedClass(
                             'Cannot set properties of undefined class ' . $lhs_type_part->value,
@@ -347,17 +352,11 @@ class PropertyFetchAnalyzer
 
                     return null;
                 }
+            } else {
+                $class_exists = true;
             }
 
             $property_id = $fq_class_name . '::$' . $prop_name;
-
-            if ($codebase->server_mode) {
-                $codebase->analyzer->addNodeReference(
-                    $statements_analyzer->getFilePath(),
-                    $stmt->name,
-                    $property_id
-                );
-            }
 
             if ($codebase->methodExists($fq_class_name . '::__get')
                 && (!$codebase->properties->propertyExists($property_id)
@@ -388,6 +387,31 @@ class PropertyFetchAnalyzer
                 if (!$class_storage->sealed_properties && !$override_property_visibility) {
                     continue;
                 }
+
+                if (!$class_exists) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedPropertyFetch(
+                            'Instance property ' . $property_id . ' is not defined',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $property_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            if (!$class_exists) {
+                continue;
+            }
+
+            if ($codebase->server_mode) {
+                $codebase->analyzer->addNodeReference(
+                    $statements_analyzer->getFilePath(),
+                    $stmt->name,
+                    $property_id
+                );
             }
 
             if (!$codebase->properties->propertyExists(
