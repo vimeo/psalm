@@ -241,7 +241,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $lhs_type = $stmt->class->inferredType;
         }
 
-        if (!$context->check_methods || !$lhs_type) {
+        if (!$lhs_type) {
             if (self::checkFunctionArguments(
                 $statements_analyzer,
                 $stmt->args,
@@ -476,6 +476,20 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                         $method_id = $fq_class_name . '::__callstatic';
                     }
+
+                    if (!$context->check_methods) {
+                        if (self::checkFunctionArguments(
+                            $statements_analyzer,
+                            $stmt->args,
+                            null,
+                            null,
+                            $context
+                        ) === false) {
+                            return false;
+                        }
+
+                        return null;
+                    }
                 }
 
                 $does_method_exist = MethodAnalyzer::checkMethodExists(
@@ -487,7 +501,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 );
 
                 if (!$does_method_exist) {
-                    return $does_method_exist;
+                    return false;
                 }
 
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
