@@ -197,8 +197,6 @@ class Functions
                 return $imported_function_namespaces[$first_namespace_lcase] . '\\' .
                     implode('\\', $function_name_parts);
             }
-        } elseif (isset($imported_namespaces[$function_name_lcase])) {
-            return $imported_namespaces[$function_name_lcase];
         } elseif (isset($imported_function_namespaces[$function_name_lcase])) {
             return $imported_function_namespaces[$function_name_lcase];
         }
