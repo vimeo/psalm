@@ -2603,6 +2603,26 @@ class TemplateTest extends TestCase
                     echo foo("hello", []);',
                 'error_message' => 'PossiblyInvalidArgument',
             ],
+            'mismatchingTypesAfterExtends' => [
+                '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    /**
+                     * @extends IteratorAggregate<int, Foo>
+                     */
+                    class SomeIterator implements IteratorAggregate
+                    {
+                        /**
+                         * @return Traversable<int, Bar>
+                         */
+                        public function getIterator()
+                        {
+                            yield new Bar;
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
         ];
     }
 }

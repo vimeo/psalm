@@ -1226,9 +1226,16 @@ class TypeAnalyzer
                 }
 
                 if (!$input_type_part instanceof TGenericObject) {
-                    $type_coerced = true;
-                    $type_coerced_from_mixed = true;
-                    return false;
+                    if ($input_type_part instanceof TNamedObject) {
+                        $input_type_part = new TGenericObject(
+                            $input_type_part->value,
+                            array_fill(0, count($container_type_part->type_params), Type::getMixed())
+                        );
+                    } else {
+                        $type_coerced = true;
+                        $type_coerced_from_mixed = true;
+                        return false;
+                    }
                 }
             }
 

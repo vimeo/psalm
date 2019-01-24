@@ -189,8 +189,8 @@ class Methods
      */
     public function getMethodParams($method_id)
     {
-        if ($method_id = $this->getDeclaringMethodId($method_id)) {
-            $storage = $this->getStorage($method_id);
+        if ($declaring_method_id = $this->getDeclaringMethodId($method_id)) {
+            $storage = $this->getStorage($declaring_method_id);
 
             if ($storage->inheritdoc) {
                 $non_null_param_types = array_filter(
@@ -216,7 +216,7 @@ class Methods
                 return $params;
             }
 
-            $appearing_method_id = $this->getAppearingMethodId($method_id);
+            $appearing_method_id = $this->getAppearingMethodId($declaring_method_id);
 
             if (!$appearing_method_id) {
                 return $params;

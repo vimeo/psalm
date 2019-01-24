@@ -544,8 +544,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
+            && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
+                || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
-            && !$guide_classlike_storage->stubbed
+            && (!$guide_classlike_storage->stubbed || $guide_classlike_storage->template_types)
         ) {
             $implementer_method_storage_return_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,

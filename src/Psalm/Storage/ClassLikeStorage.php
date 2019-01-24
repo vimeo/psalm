@@ -291,6 +291,11 @@ class ClassLikeStorage
     public $invalid_dependencies = [];
 
     /**
+     * @var array<string, bool>
+     */
+    public $dependent_classlikes = [];
+
+    /**
      * A hash of the source file's name, contents, and this file's modified on date
      *
      * @var string

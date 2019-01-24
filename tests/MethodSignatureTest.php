@@ -388,6 +388,14 @@ class MethodSignatureTest extends TestCase
 
                     (new Y())->boo(new A());',
             ],
+            'allowMixedExtensionOfIteratorAggregate' => [
+                '<?php
+                    class C implements IteratorAggregate {
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator([]);
+                        }
+                    }'
+            ],
         ];
     }
 

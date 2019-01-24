@@ -407,6 +407,8 @@ class Populator
             $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
             $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
+            $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
+
             $storage->pseudo_methods += $parent_storage->pseudo_methods;
         }
     }
@@ -503,8 +505,8 @@ class Populator
                 $implemented_interface_storage->invalid_dependencies
             );
 
-            if ($implemented_interface_storage->template_types
-                && isset($storage->template_type_extends[$implemented_interface_lc])
+            if (isset($storage->template_type_extends[$implemented_interface_lc])
+                && $implemented_interface_storage->template_types
             ) {
                 foreach ($storage->template_type_extends[$implemented_interface_lc] as $i => $type) {
                     $parent_template_type_names = array_keys($implemented_interface_storage->template_types);
@@ -524,15 +526,17 @@ class Populator
 
         $interface_method_implementers = [];
 
-        foreach ($storage->class_implements as $implemented_interface) {
+        foreach ($storage->class_implements as $implemented_interface_lc => $_) {
             try {
                 $implemented_interface = $this->classlikes->getUnAliasedName(
-                    strtolower($implemented_interface)
+                    $implemented_interface_lc
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
             } catch (\InvalidArgumentException $e) {
                 continue;
             }
+
+            $implemented_interface_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
             foreach ($implemented_interface_storage->methods as $method_name => $method) {
                 if ($method->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {

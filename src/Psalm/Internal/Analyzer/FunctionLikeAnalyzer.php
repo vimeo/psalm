@@ -218,17 +218,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         }
                     }
 
-                    MethodAnalyzer::compareMethods(
-                        $codebase,
-                        $class_storage,
-                        $parent_storage,
-                        $storage,
-                        $parent_method_storage,
-                        $fq_class_name,
-                        $implementer_visibility,
-                        $codeLocation,
-                        $storage->suppressed_issues
-                    );
+                    // we've already checked this in the class checker
+                    if (!isset($class_storage->class_implements[strtolower($overridden_fq_class_name)])) {
+                        MethodAnalyzer::compareMethods(
+                            $codebase,
+                            $class_storage,
+                            $parent_storage,
+                            $storage,
+                            $parent_method_storage,
+                            $fq_class_name,
+                            $implementer_visibility,
+                            $codeLocation,
+                            $storage->suppressed_issues
+                        );
+                    }
 
                     foreach ($parent_method_storage->params as $i => $guide_param) {
                         if ($guide_param->type

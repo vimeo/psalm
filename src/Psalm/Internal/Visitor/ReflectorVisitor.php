@@ -688,6 +688,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     // we're overwriting some methods
                     $storage = $duplicate_storage;
                     $this->codebase->classlike_storage_provider->makeNew(strtolower($fq_classlike_name));
+                    $storage->populated = false;
+
+                    foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
+                        $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
+                        $dependent_storage->populated = false;
+                        $this->codebase->classlike_storage_provider->makeNew($dependent_name_lc);
+                    }
                 }
             }
         }
