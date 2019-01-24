@@ -276,6 +276,11 @@ class ClassLikeStorage
     public $template_type_extends;
 
     /**
+     * @var ?int
+     */
+    public $template_type_extends_count;
+
+    /**
      * @var array<string, array<int, CodeLocation>>|null
      */
     public $referencing_locations;

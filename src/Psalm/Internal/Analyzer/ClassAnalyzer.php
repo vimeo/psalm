@@ -15,8 +15,10 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
+use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
@@ -198,6 +200,50 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name
                     );
                 }
+
+                if ($storage->template_type_extends_count !== null
+                    && $parent_class_storage->template_types
+                    && $storage->template_type_extends_count !== count($parent_class_storage->template_types)
+                ) {
+                    $code_location = new CodeLocation(
+                        $this,
+                        $class->extends,
+                        $class_context ? $class_context->include_location : null,
+                        true
+                    );
+
+                    if (IssueBuffer::accepts(
+                        new MissingTemplateParam(
+                            $parent_fq_class_name . ' has unextended template params, expecting '
+                                . count($parent_class_storage->template_types),
+                            $code_location
+                        ),
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if (isset($storage->template_type_extends[strtolower($parent_fq_class_name)])) {
+                    $code_location = new CodeLocation(
+                        $this,
+                        $class->name ?: $class,
+                        null,
+                        true
+                    );
+
+                    if (!$parent_class_storage->template_types) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                $parent_fq_class_name . ' does not have any templates',
+                                $code_location
+                            ),
+                            array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
             } catch (\InvalidArgumentException $e) {
                 // do nothing
             }
@@ -275,6 +321,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedInterface(
                             $interface_name . ' is marked deprecated',
+                            $code_location
+                        ),
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if ($storage->template_type_extends_count !== null
+                    && $interface_storage->template_types
+                    && $storage->template_type_extends_count !== count($interface_storage->template_types)
+                ) {
+                    if (IssueBuffer::accepts(
+                        new MissingTemplateParam(
+                            $interface_name . ' has unextended template params, expecting '
+                                . count($interface_storage->template_types),
                             $code_location
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())

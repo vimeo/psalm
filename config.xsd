@@ -210,6 +210,7 @@
             <xs:element name="MissingPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingTemplateParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingThrowsDocblock" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArgument" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayAccess" type="IssueHandlerType" minOccurs="0" />

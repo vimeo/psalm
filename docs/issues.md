@@ -937,6 +937,23 @@ function foo() {
 }
 ```
 
+### MissingTemplateParam
+
+Emitted when using the `@extends`/`@implements` annotation to extend a class without
+extending all its template params.
+
+```php
+/**
+ * @template-implements IteratorAggregate<int>
+ */
+class SomeIterator implements IteratorAggregate
+{
+    public function getIterator() {
+        yield 5;
+    }
+}
+```
+
 ### MissingThrowsDocblock
 
 Emitted when a function doesn't have a return type defined

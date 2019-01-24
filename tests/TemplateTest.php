@@ -871,7 +871,7 @@ class TemplateTest extends TestCase
             'implictIteratorTemplating' => [
                 '<?php
                     /**
-                     * @template-implements IteratorAggregate<int>
+                     * @template-implements IteratorAggregate<int, int>
                      */
                     class SomeIterator implements IteratorAggregate
                     {
@@ -2707,6 +2707,21 @@ class TemplateTest extends TestCase
                      */
                     class B extends A {}',
                 'error_message' => 'UndefinedClass'
+            ],
+            'templateExtendsWithoutAllParams' => [
+                '<?php
+                    /**
+                     * @template T
+                     * @template V
+                     * @template U
+                     */
+                    class A {}
+
+                    /**
+                     * @extends A<int>
+                     */
+                    class CC extends A {}',
+                'error_message' => 'MissingTemplateParam'
             ],
         ];
     }

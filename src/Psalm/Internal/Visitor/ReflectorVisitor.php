@@ -914,6 +914,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                         $extended_type_parameters = [];
 
+                        $storage->template_type_extends_count = count($atomic_type->type_params);
+
                         foreach ($atomic_type->type_params as $type_param) {
                             if (!$type_param->isSingle()) {
                                 if (IssueBuffer::accepts(
