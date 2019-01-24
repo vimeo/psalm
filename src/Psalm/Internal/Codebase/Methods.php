@@ -403,14 +403,6 @@ class Methods
 
                 $overridden_return_type = clone $overridden_storage->return_type;
 
-                if ($overridden_class_storage->template_types) {
-                    $generic_types = [];
-                    $overridden_return_type->replaceTemplateTypesWithStandins(
-                        $overridden_class_storage->template_types,
-                        $generic_types
-                    );
-                }
-
                 $self_class = $overridden_class_storage->name;
 
                 return $overridden_return_type;

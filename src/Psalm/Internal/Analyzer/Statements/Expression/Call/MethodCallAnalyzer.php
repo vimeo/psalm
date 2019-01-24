@@ -830,6 +830,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $codebase,
             $class_storage,
             $fq_class_name,
+            $method_name_lc,
             $lhs_type_part,
             $lhs_var_id
         );
@@ -1075,17 +1076,46 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     /**
      * @return array<string, array{0:Type\Union, 1:string|null}>|null
      */
-    private static function getClassTemplateParams(
+    public static function getClassTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         string $fq_class_name,
-        Type\Atomic $lhs_type_part,
+        string $method_name,
+        Type\Atomic $lhs_type_part = null,
         string $lhs_var_id = null
     ) {
         $calling_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
-        if (!$class_storage->template_types) {
-            return null;
+        $template_types = $class_storage->template_types;
+
+        if (!$template_types) {
+            if ($calling_class_storage->template_type_extends
+                && !empty($class_storage->overridden_method_ids[$method_name])
+                && !isset($class_storage->methods[$method_name]->return_type)
+            ) {
+                foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
+                    $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    if (!$overridden_storage->return_type) {
+                        return null;
+                    }
+
+                    if ($overridden_storage->return_type->isNull()) {
+                        return null;
+                    }
+
+                    list($fq_overridden_class) = explode('::', $overridden_method_id);
+
+                    $overridden_class_storage = $codebase->classlike_storage_provider->get($fq_overridden_class);
+
+                    $template_types = $overridden_class_storage->template_types;
+                    $class_storage = $overridden_class_storage;
+                }
+            }
+
+            if (!$template_types) {
+                return null;
+            }
         }
 
         $class_template_params = [];
@@ -1107,7 +1137,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             $i = 0;
-            foreach ($class_storage->template_types as $type_name => $_) {
+            foreach ($template_types as $type_name => $_) {
                 if (isset($class_template_params[$type_name])) {
                     $i++;
                     continue;
@@ -1163,7 +1193,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $i++;
             }
         } else {
-            foreach ($class_storage->template_types as $type_name => list($type)) {
+            foreach ($template_types as $type_name => list($type)) {
                 if ($class_storage !== $calling_class_storage
                     && isset($e[strtolower($class_storage->name)][$type_name])
                 ) {

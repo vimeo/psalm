@@ -1961,21 +1961,56 @@ class TemplateTest extends TestCase
                      * @param T $a
                      */
                     function foo(callable $c1, callable $c2, $a): void {
-                      $c1($a);
-                      $c2($a);
+                        $c1($a);
+                        $c2($a);
                     }
 
                     foo(
-                      function(A $_a) : void {},
-                      function(A $_a) : void {},
-                      new A()
+                        function(A $_a) : void {},
+                        function(A $_a) : void {},
+                        new A()
                     );
 
                     foo(
-                      function(A $_a) : void {},
-                      function(A $_a) : void {},
-                      new AChild()
+                        function(A $_a) : void {},
+                        function(A $_a) : void {},
+                        new AChild()
                     );'
+            ],
+            'templatedInterfaceExtendedMethodInheritReturnType' => [
+                '<?php
+                    class Foo {}
+
+                    /**
+                     * @template-implements IteratorAggregate<int, Foo>
+                     */
+                    class SomeIterator implements IteratorAggregate
+                    {
+                        public function getIterator() {
+                            yield new Foo;
+                        }
+                    }
+
+                    $i = (new SomeIterator())->getIterator();',
+                [
+                    '$i' => 'Traversable<int, Foo>',
+                ]
+            ],
+            'templatedInterfaceMethodInheritReturnType' => [
+                '<?php
+                    class Foo {}
+
+                    class SomeIterator implements IteratorAggregate
+                    {
+                        public function getIterator() {
+                            yield new Foo;
+                        }
+                    }
+
+                    $i = (new SomeIterator())->getIterator();',
+                [
+                    '$i' => 'Traversable<mixed, mixed>',
+                ]
             ],
         ];
     }
@@ -2622,6 +2657,23 @@ class TemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'mismatchingTypesAfterExtendsInherit' => [
+                '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    /**
+                     * @extends IteratorAggregate<int, Foo>
+                     */
+                    class SomeIterator implements IteratorAggregate
+                    {
+                        public function getIterator()
+                        {
+                            yield new Bar;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }

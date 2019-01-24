@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -1203,6 +1204,19 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $self_class = $class_context->self;
 
                 $return_type = $codebase->methods->getMethodReturnType($analyzed_method_id, $self_class);
+
+                if ($return_type && $class_storage->template_type_extends) {
+                    $generic_params = [];
+
+                    $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+                        $codebase,
+                        $class_storage,
+                        $class_context->self,
+                        strtolower($stmt->name->name)
+                    ) ?: [];
+
+                    $return_type->replaceTemplateTypesWithStandins($class_template_params, $generic_params);
+                }
 
                 $overridden_method_ids = isset($class_storage->overridden_method_ids[strtolower($stmt->name->name)])
                     ? $class_storage->overridden_method_ids[strtolower($stmt->name->name)]
