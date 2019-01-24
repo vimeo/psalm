@@ -688,7 +688,24 @@ class MethodSignatureTest extends TestCase
                         public function boo(A $class): void {}
                     }',
                 'error_message' => 'MismatchingDocblockParamType',
-            ]
+            ],
+            'interfaceInsertDocblockTypes' => [
+                '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    interface I {
+                      /** @return array<int, Foo> */
+                      public function getFoos() : array;
+                    }
+
+                    class A implements I {
+                        public function getFoos() : array {
+                            return [new Bar()];
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+            ],
         ];
     }
 }

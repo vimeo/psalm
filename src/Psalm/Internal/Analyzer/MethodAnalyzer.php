@@ -540,7 +540,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                 return null;
             }
-        } elseif ($guide_method_storage->return_type
+        }
+
+        if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
             && $implementer_classlike_storage->user_defined
             && !$guide_classlike_storage->stubbed
