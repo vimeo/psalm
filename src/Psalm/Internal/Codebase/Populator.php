@@ -544,6 +544,29 @@ class Populator
 
         foreach ($interface_method_implementers as $method_name => $interface_method_ids) {
             if (count($interface_method_ids) === 1) {
+                if (isset($storage->methods[$method_name])) {
+                    $method_storage = $storage->methods[$method_name];
+
+                    if ($method_storage->signature_return_type
+                        && !$method_storage->signature_return_type->isVoid()
+                        && $method_storage->return_type === $method_storage->signature_return_type
+                    ) {
+                        list($interface_fqcln) = explode('::', $interface_method_ids[0]);
+                        $interface_storage = $storage_provider->get($interface_fqcln);
+
+                        if (isset($interface_storage->methods[$method_name])) {
+                            $interface_method_storage = $interface_storage->methods[$method_name];
+
+                            if ($interface_method_storage->return_type
+                                && $interface_method_storage->signature_return_type
+                                && $interface_method_storage->return_type
+                                    !== $interface_method_storage->signature_return_type
+                            ) {
+                                $method_storage->return_type = $interface_method_storage->return_type;
+                            }
+                        }
+                    }
+                }
                 $storage->overridden_method_ids[$method_name][] = $interface_method_ids[0];
             } else {
                 $storage->interface_method_ids[$method_name] = $interface_method_ids;
@@ -774,7 +797,7 @@ class Populator
             }
         }
 
-        foreach ($storage->methods as $method_name => $_) {
+        foreach ($storage->methods as $method_name => $method_storage) {
             if (isset($storage->overridden_method_ids[$method_name])) {
                 foreach ($storage->overridden_method_ids[$method_name] as $declaring_method_id) {
                     list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
@@ -783,6 +806,24 @@ class Populator
                     // tell the declaring class it's overridden downstream
                     $declaring_class_storage->methods[strtolower($declaring_method_name)]->overridden_downstream = true;
                     $declaring_class_storage->methods[strtolower($declaring_method_name)]->overridden_somewhere = true;
+
+                    if (count($storage->overridden_method_ids[$method_name]) === 1
+                        && $method_storage->signature_return_type
+                        && !$method_storage->signature_return_type->isVoid()
+                        && $method_storage->return_type === $method_storage->signature_return_type
+                    ) {
+                        if (isset($declaring_class_storage->methods[$method_name])) {
+                            $declaring_method_storage = $declaring_class_storage->methods[$method_name];
+
+                            if ($declaring_method_storage->return_type
+                                && $declaring_method_storage->signature_return_type
+                                && $declaring_method_storage->return_type
+                                    !== $declaring_method_storage->signature_return_type
+                            ) {
+                                $method_storage->return_type = $declaring_method_storage->return_type;
+                            }
+                        }
+                    }
                 }
             }
         }
