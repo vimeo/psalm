@@ -2675,6 +2675,39 @@ class TemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
+            'templateWithNoReturn' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @return T */
+                        public function foo() {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'badTemplateExtends' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-extends A<Z>
+                     */
+                    class B extends A {}',
+                'error_message' => 'UndefinedClass'
+            ],
         ];
     }
 }
