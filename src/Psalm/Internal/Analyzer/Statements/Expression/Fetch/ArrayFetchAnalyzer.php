@@ -646,7 +646,7 @@ class ArrayFetchAnalyzer
                 } elseif ($type instanceof TLiteralString) {
                     $valid_offsets = [];
 
-                    for ($i = 0, $l = strlen($type->value); $i < $l; $i++) {
+                    for ($i = -strlen($type->value), $l = strlen($type->value); $i < $l; $i++) {
                         $valid_offsets[] = new TLiteralInt($i);
                     }
 

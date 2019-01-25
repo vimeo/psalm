@@ -319,6 +319,20 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedTypeCoercion'],
             ],
+            'allowNegativeStringOffset' =>  [
+                '<?php
+                    $a = "hello";
+                    echo $a[-5];
+                    echo $a[-4];
+                    echo $a[-3];
+                    echo $a[-2];
+                    echo $a[-1];
+                    echo $a[0];
+                    echo $a[1];
+                    echo $a[2];
+                    echo $a[3];
+                    echo $a[4];',
+            ],
         ];
     }
 
@@ -530,6 +544,12 @@ class ArrayAccessTest extends TestCase
                         if ($i === new stdClass) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'forbidNegativeStringOffsetOutOfRange' =>  [
+                '<?php
+                    $a = "hello";
+                    echo $a[-6];',
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }
