@@ -913,6 +913,11 @@ class Union
                             break;
                         }
 
+                        if ($input_key === 'array' && $key === 'iterable') {
+                            $matching_atomic_type = $atomic_input_type;
+                            break;
+                        }
+
                         if (strpos($input_key, $key . '&') === 0) {
                             $matching_atomic_type = $atomic_input_type;
                             break;

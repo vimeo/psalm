@@ -2033,6 +2033,22 @@ class TemplateTest extends TestCase
                      */
                     class SomeRepository extends Repository {}'
             ],
+            'upcastArrayToIterable' => [
+                '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     * @param iterable<K,V> $collection
+                     * @return V
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function first($collection) {}
+
+                    $one = first([1,2,3]);',
+                [
+                    '$one' => 'int',
+                ]
+            ],
         ];
     }
 
