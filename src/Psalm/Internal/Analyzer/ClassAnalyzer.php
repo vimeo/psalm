@@ -277,6 +277,35 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_interface_name
                 );
             }
+
+            try {
+                $interface_storage = $classlike_storage_provider->get($fq_interface_name);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            if ($storage->template_type_extends_count !== null
+                && $interface_storage->template_types
+                && $storage->template_type_extends_count !== count($interface_storage->template_types)
+            ) {
+                $code_location = new CodeLocation(
+                    $this,
+                    $interface_name,
+                    $class_context ? $class_context->include_location : null,
+                    true
+                );
+
+                if (IssueBuffer::accepts(
+                    new MissingTemplateParam(
+                        $interface_name . ' has unextended template params, expecting '
+                            . count($interface_storage->template_types),
+                        $code_location
+                    ),
+                    array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                )) {
+                    // fall through
+                }
+            }
         }
 
         if ($storage->template_type_extends) {
@@ -321,22 +350,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new DeprecatedInterface(
                             $interface_name . ' is marked deprecated',
-                            $code_location
-                        ),
-                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
-                    )) {
-                        // fall through
-                    }
-                }
-
-                if ($storage->template_type_extends_count !== null
-                    && $interface_storage->template_types
-                    && $storage->template_type_extends_count !== count($interface_storage->template_types)
-                ) {
-                    if (IssueBuffer::accepts(
-                        new MissingTemplateParam(
-                            $interface_name . ' has unextended template params, expecting '
-                                . count($interface_storage->template_types),
                             $code_location
                         ),
                         array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
