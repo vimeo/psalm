@@ -681,6 +681,20 @@ class A {
 A::bar();
 ```
 
+### InvalidTemplateParam
+
+Emitted when using the `@extends`/`@implements` annotation to extend a class that has a template type constraint, where that extended value does not satisfy the parent class/interface's constraints.
+
+```php
+/**
+ * @template T as object
+ */
+class Base {}
+
+/** @template-extends Base<int> */
+class SpecializedByInheritance extends Base {}
+```
+
 ### InvalidThrow
 
 Emitted when trying to throw a class that doesn't extend `Exception` or implement `Throwable`
@@ -1855,6 +1869,23 @@ Emitted when calling a function with more arguments than the function has parame
 ```php
 function foo(string $a) : void {}
 foo("hello", 4);
+```
+
+### TooManyTemplateParams
+
+Emitted when using the `@extends`/`@implements` annotation to extend a class and adds too
+many types.
+
+```php
+/**
+ * @template-implements IteratorAggregate<int, string, int>
+ */
+class SomeIterator implements IteratorAggregate
+{
+    public function getIterator() {
+        yield 5;
+    }
+}
 ```
 
 ### TypeCoercion

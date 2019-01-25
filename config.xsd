@@ -190,6 +190,7 @@
             <xs:element name="InvalidStaticInvocation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStaticVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidStringClass" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidTemplateParam" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidThrow" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidToString" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="LessSpecificImplementedReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -285,6 +286,7 @@
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TooFewArguments" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="TooManyArguments" type="FunctionIssueHandlerType" minOccurs="0" />
+            <xs:element name="TooManyTemplateParams" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="TypeCoercion" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainNull" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TypeDoesNotContainType" type="IssueHandlerType" minOccurs="0" />
