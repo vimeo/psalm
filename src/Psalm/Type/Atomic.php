@@ -92,7 +92,7 @@ abstract class Atomic
                 return new TArrayKey();
 
             case 'iterable':
-                return new TIterable([new Union([new TMixed]), new Union([new TMixed])]);
+                return new TIterable();
 
             case 'never-return':
             case 'never-returns':

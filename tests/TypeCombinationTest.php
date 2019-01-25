@@ -195,6 +195,76 @@ class TypeCombinationTest extends TestCase
                     'array<string>',
                 ],
             ],
+            'arrayTraversableToIterable' => [
+                'iterable<array-key|mixed, mixed>',
+                [
+                    'array',
+                    'Traversable',
+                ],
+            ],
+            'arrayIterableToIterable' => [
+                'iterable<mixed, mixed>',
+                [
+                    'array',
+                    'iterable',
+                ],
+            ],
+            'iterableArrayToIterable' => [
+                'iterable<mixed, mixed>',
+                [
+                    'iterable',
+                    'array',
+                ],
+            ],
+            'traversableIterableToIterable' => [
+                'iterable<mixed, mixed>',
+                [
+                    'Traversable',
+                    'iterable',
+                ],
+            ],
+            'iterableTraversableToIterable' => [
+                'iterable<mixed, mixed>',
+                [
+                    'iterable',
+                    'Traversable',
+                ],
+            ],
+            'arrayTraversableToIterableWithParams' => [
+                'iterable<int, string|bool>',
+                [
+                    'array<int, string>',
+                    'Traversable<int, bool>',
+                ],
+            ],
+            'arrayIterableToIterableWithParams' => [
+                'iterable<int, string|bool>',
+                [
+                    'array<int, string>',
+                    'iterable<int, bool>',
+                ],
+            ],
+            'iterableArrayToIterableWithParams' => [
+                'iterable<int, string|bool>',
+                [
+                    'iterable<int, string>',
+                    'array<int, bool>',
+                ],
+            ],
+            'traversableIterableToIterableWithParams' => [
+                'iterable<int, string|bool>',
+                [
+                    'Traversable<int, string>',
+                    'iterable<int, bool>',
+                ],
+            ],
+            'iterableTraversableToIterableWithParams' => [
+                'iterable<int, string|bool>',
+                [
+                    'iterable<int, string>',
+                    'Traversable<int, bool>',
+                ],
+            ],
             'falseDestruction' => [
                 'bool',
                 [

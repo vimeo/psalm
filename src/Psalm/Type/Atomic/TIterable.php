@@ -15,11 +15,21 @@ class TIterable extends Atomic
     public $value = 'iterable';
 
     /**
+     * @var bool
+     */
+    public $has_docblock_params = false;
+
+    /**
      * @param array<int, \Psalm\Type\Union>     $type_params
      */
-    public function __construct(array $type_params)
+    public function __construct(array $type_params = [])
     {
-        $this->type_params = $type_params;
+        if ($type_params) {
+            $this->has_docblock_params = true;
+            $this->type_params = $type_params;
+        } else {
+            $this->type_params = [\Psalm\Type::getMixed(), \Psalm\Type::getMixed()];
+        }
     }
 
     /**
