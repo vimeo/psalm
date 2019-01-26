@@ -479,20 +479,6 @@ class Union
     /**
      * @return bool
      */
-    public function hasGeneric()
-    {
-        foreach ($this->types as $type) {
-            if ($type instanceof Atomic\TGenericObject || $type instanceof Atomic\TArray) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @return bool
-     */
     public function hasArray()
     {
         return isset($this->types['array']);

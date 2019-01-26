@@ -686,14 +686,74 @@ class ForeachTest extends \Psalm\Tests\TestCase
             'intersectionIterator' => [
                 '<?php
                     /**
-                     * @param \Traversable<int>&\Countable $object
+                     * @param \Traversable<int, int>&\Countable $object
                      */
                     function doSomethingUseful($object) : void {
                         echo count($object);
                         foreach ($object as $foo) {}
                     }'
             ],
+            'rawIteratorIteration' => [
+                '<?php
+                    class Item {
+                      /**
+                       * @var string
+                       */
+                      public $prop = "var";
+                    }
+
+                    /**
+                     * @return Iterator<int, Item>
+                     */
+                    function getIterator(): Iterator {
+                        return new ArrayIterator([new Item()]);
+                    }
+
+                    foreach (getIterator() as $item) {
+                        echo $item->prop;
+                    }',
+            ],
+            'seekableIteratorIteration' => [
+                '<?php
+                    class Item {
+                        /**
+                         * @var string
+                         */
+                        public $prop = "var";
+                    }
+
+                    /**
+                     * @return SeekableIterator<int, Item>
+                     */
+                    function getIterator(): \SeekableIterator {
+                        return new ArrayIterator([new Item()]);
+                    }
+
+                    foreach (getIterator() as $item) {
+                        echo $item->prop;
+                    }',
+            ],
             'arrayIteratorIteration' => [
+                '<?php
+                    class Item {
+                        /**
+                         * @var string
+                         */
+                        public $prop = "var";
+                    }
+
+                    /**
+                     * @return ArrayIterator<int, Item>
+                     */
+                    function getIterator(): \SeekableIterator {
+                        return new ArrayIterator([new Item()]);
+                    }
+
+                    foreach (getIterator() as $item) {
+                        echo $item->prop;
+                    }',
+            ],
+            'templatedIteratorAggregateIteration' => [
                 '<?php
                     class Item {
                       /**
@@ -714,11 +774,11 @@ class ForeachTest extends \Psalm\Tests\TestCase
                       }
 
                       /**
-                        * @return \ArrayIterator<mixed, Item>
+                        * @return ArrayIterator<mixed, Item>
                         */
                       public function getIterator(): \ArrayIterator
                       {
-                          return new \ArrayIterator($this->items);
+                          return new ArrayIterator($this->items);
                       }
                     }
 

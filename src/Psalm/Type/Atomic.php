@@ -1,10 +1,15 @@
 <?php
 namespace Psalm\Type;
 
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Issue\InvalidTemplateParam;
+use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
+use Psalm\Issue\TooManyTemplateParams;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -375,8 +380,52 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
-            foreach ($this->type_params as $type_param) {
+        if ($this instanceof Type\Atomic\TArray
+            || $this instanceof Type\Atomic\TGenericObject
+            || $this instanceof Type\Atomic\TIterable
+        ) {
+            $codebase = $source->getCodebase();
+
+            if ($this instanceof Type\Atomic\TGenericObject) {
+                try {
+                    $class_storage = $codebase->classlike_storage_provider->get($this->value);
+                } catch (\InvalidArgumentException $e) {
+                    return;
+                }
+
+                $expected_type_params = $class_storage->template_types ?: [];
+            } else {
+                $expected_type_params = [[Type::getMixed(), null], [Type::getMixed(), null]];
+            }
+
+            $template_type_count = count($expected_type_params);
+            $template_param_count = count($this->type_params);
+
+            if ($template_type_count > $template_param_count) {
+                if (IssueBuffer::accepts(
+                    new MissingTemplateParam(
+                        $this->value . ' has missing template params, expecting '
+                            . $template_type_count,
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+            } elseif ($template_type_count < $template_param_count) {
+                if (IssueBuffer::accepts(
+                    new TooManyTemplateParams(
+                        $this->value . ' has too many template params, expecting '
+                            . $template_type_count,
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    // fall through
+                }
+            }
+
+            foreach ($this->type_params as $i => $type_param) {
                 if ($type_param->check(
                     $source,
                     $code_location,
@@ -385,6 +434,32 @@ abstract class Atomic
                     $inferred
                 ) === false) {
                     return false;
+                }
+
+                if (isset(array_values($expected_type_params)[$i])) {
+                    $expected_type_param = array_values($expected_type_params)[$i][0];
+                    $template_name = array_keys($expected_type_params)[$i];
+
+                    $type_param = ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $type_param,
+                        $source->getFQCLN(),
+                        $source->getFQCLN()
+                    );
+
+                    if (!TypeAnalyzer::isContainedBy($codebase, $type_param, $expected_type_param)) {
+                        if (IssueBuffer::accepts(
+                            new InvalidTemplateParam(
+                                'Extended template param ' . $template_name . ' expects type '
+                                    . $expected_type_param->getId()
+                                    . ', type ' . $type_param->getId() . ' given',
+                                $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            // fall through
+                        }
+                    }
                 }
             }
         }

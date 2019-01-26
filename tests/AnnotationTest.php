@@ -523,7 +523,7 @@ class AnnotationTest extends TestCase
 
                     $g = g();',
                 'assertions' => [
-                    '$g' => 'Generator<int, stdClass>',
+                    '$g' => 'Generator<int, stdClass, mixed, mixed>',
                 ],
             ],
             'returnTypeShouldBeNullable' => [

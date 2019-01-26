@@ -213,10 +213,18 @@ abstract class Type
 
             if ($generic_type_value === 'array' && count($generic_params) === 1) {
                 array_unshift($generic_params, new Union([new TArrayKey]));
-            } elseif (($generic_type_value === 'Generator' || $generic_type_value === 'iterable')
+            } elseif (($generic_type_value === 'iterable' || $generic_type_value === 'Traversable')
                 && count($generic_params) === 1
             ) {
                 array_unshift($generic_params, new Union([new TMixed]));
+            } elseif ($generic_type_value === 'Generator') {
+                if (count($generic_params) === 1) {
+                    array_unshift($generic_params, new Union([new TMixed]));
+                }
+
+                for ($i = 0, $l = 4 - count($generic_params); $i < $l; $i++) {
+                    $generic_params[] = new Union([new TMixed]);
+                }
             }
 
             if (!$generic_params) {

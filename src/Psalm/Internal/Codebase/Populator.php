@@ -385,7 +385,7 @@ class Populator
             $this->inheritMethodsFromParent($storage, $parent_storage);
             $this->inheritPropertiesFromParent($storage, $parent_storage);
 
-            $storage->class_implements += $parent_storage->class_implements;
+            $storage->class_implements = array_merge($storage->class_implements, $parent_storage->class_implements);
             $storage->invalid_dependencies = array_merge(
                 $storage->invalid_dependencies,
                 $parent_storage->invalid_dependencies
@@ -463,6 +463,53 @@ class Populator
                 $storage->public_class_constants[$name] = Type::getMixed();
             }
 
+            if ($parent_interface_storage->template_types) {
+                if (isset($storage->template_type_extends[$parent_interface_lc])) {
+                    foreach ($storage->template_type_extends[$parent_interface_lc] as $i => $type) {
+                        $parent_template_type_names = array_keys($parent_interface_storage->template_types);
+
+                        $mapped_name = $parent_template_type_names[$i] ?? null;
+
+                        if ($mapped_name) {
+                            $storage->template_type_extends[$parent_interface_lc][$mapped_name] = $type;
+                        }
+                    }
+
+                    if ($parent_interface_storage->template_type_extends) {
+                        foreach ($parent_interface_storage->template_type_extends as $t_storage_class => $type_map) {
+                            foreach ($type_map as $i => $type) {
+                                if (isset($storage->template_type_extends[$t_storage_class][$i])
+                                    || is_int($i)
+                                ) {
+                                    continue;
+                                }
+
+                                if ($type instanceof Type\Atomic\TGenericParam
+                                    && $type->defining_class
+                                    && ($referenced_type
+                                        = $storage->template_type_extends
+                                            [strtolower($type->defining_class)]
+                                            [$type->param_name]
+                                            ?? null)
+                                    && (!$referenced_type instanceof Type\Atomic\TGenericParam)
+                                ) {
+                                    $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
+                                } else {
+                                    $storage->template_type_extends[$t_storage_class][$i] = $type;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    $storage->template_type_extends[$parent_interface_lc] = [];
+
+                    foreach ($parent_interface_storage->template_types as $template_name => $template_type) {
+                        $storage->template_type_extends[$parent_interface_lc][$template_name]
+                            = array_values($template_type[0]->getTypes())[0];
+                    }
+                }
+            }
+
             $parent_interfaces = array_merge($parent_interfaces, $parent_interface_storage->parent_interfaces);
 
             $this->inheritMethodsFromParent($storage, $parent_interface_storage);
@@ -524,6 +571,16 @@ class Populator
                             $storage->template_type_extends[$implemented_interface_lc][$mapped_name] = $type;
                         }
                     }
+
+                    if ($implemented_interface_storage->template_type_extends) {
+                        foreach ($implemented_interface_storage->template_type_extends as $e_i_lc => $type) {
+                            if (isset($storage->template_type_extends[$e_i_lc])) {
+                                continue;
+                            }
+
+                            $storage->template_type_extends[$e_i_lc] = $type;
+                        }
+                    }
                 } else {
                     $storage->template_type_extends[$implemented_interface_lc] = [];
 
@@ -537,7 +594,7 @@ class Populator
             $extra_interfaces = array_merge($extra_interfaces, $implemented_interface_storage->parent_interfaces);
         }
 
-        $storage->class_implements = array_merge($extra_interfaces, $storage->class_implements);
+        $storage->class_implements = array_merge($storage->class_implements, $extra_interfaces);
 
         $interface_method_implementers = [];
 

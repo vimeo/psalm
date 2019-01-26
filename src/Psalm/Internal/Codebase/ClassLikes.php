@@ -449,6 +449,10 @@ class ClassLikes
             return true;
         }
 
+        if ($interface_id === 'traversable' && $fq_class_name === 'iterator') {
+            return true;
+        }
+
         if ($interface_id === 'arrayaccess' && $fq_class_name === 'domnodelist') {
             return true;
         }

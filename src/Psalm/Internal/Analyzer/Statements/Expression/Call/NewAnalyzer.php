@@ -371,51 +371,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                         }
                     }
 
-                    if ($fq_class_name === 'ArrayIterator' && isset($stmt->args[0]->value->inferredType)) {
-                        $first_arg_type = $stmt->args[0]->value->inferredType;
-
-                        if ($first_arg_type->hasGeneric()) {
-                            $key_type = null;
-                            $value_type = null;
-
-                            foreach ($first_arg_type->getTypes() as $type) {
-                                if ($type instanceof Type\Atomic\TArray) {
-                                    $first_type_param = count($type->type_params) ? $type->type_params[0] : null;
-                                    $last_type_param = $type->type_params[count($type->type_params) - 1];
-
-                                    if ($value_type === null) {
-                                        $value_type = clone $last_type_param;
-                                    } else {
-                                        $value_type = Type::combineUnionTypes($value_type, $last_type_param);
-                                    }
-
-                                    if (!$key_type || !$first_type_param) {
-                                        $key_type = $first_type_param ? clone $first_type_param : Type::getMixed();
-                                    } else {
-                                        $key_type = Type::combineUnionTypes($key_type, $first_type_param);
-                                    }
-                                }
-                            }
-
-                            if ($key_type === null) {
-                                throw new \UnexpectedValueException('$key_type cannot be null');
-                            }
-
-                            if ($value_type === null) {
-                                throw new \UnexpectedValueException('$value_type cannot be null');
-                            }
-
-                            $stmt->inferredType = new Type\Union([
-                                new Type\Atomic\TGenericObject(
-                                    $fq_class_name,
-                                    [
-                                        $key_type,
-                                        $value_type,
-                                    ]
-                                ),
-                            ]);
-                        }
-                    } elseif ($generic_params) {
+                    if ($generic_params) {
                         $stmt->inferredType = new Type\Union([
                             new Type\Atomic\TGenericObject(
                                 $fq_class_name,

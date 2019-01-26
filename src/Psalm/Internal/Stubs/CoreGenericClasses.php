@@ -199,8 +199,10 @@ interface ArrayAccess {
  *
  * @template TKey
  * @template TValue
+ * @template-implements IteratorAggregate<TKey, TValue>
+ * @template-implements ArrayAccess<TKey, TValue>
  */
-class ArrayObject implements IteratorAggregate, Traversable, ArrayAccess, Serializable, Countable {
+class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Countable {
     /**
      * Properties of the object have their normal functionality when accessed as list (var_dump, foreach, etc.).
      */
@@ -447,12 +449,34 @@ class ArrayObject implements IteratorAggregate, Traversable, ArrayAccess, Serial
 }
 
 /**
+ * The Seekable iterator.
+ * @link https://php.net/manual/en/class.seekableiterator.php
+ * @template TKey
+ * @template TValue
+ * @template-implements Iterator<TKey, TValue>
+ */
+interface SeekableIterator extends Iterator {
+    /**
+     * Seeks to a position
+     * @link https://php.net/manual/en/seekableiterator.seek.php
+     * @param int $position <p>
+     * The position to seek to.
+     * </p>
+     * @return void
+     * @since 5.1.0
+     */
+    public function seek($position);
+}
+
+/**
  * This iterator allows to unset and modify values and keys while iterating
  * over Arrays and Objects.
  * @link http://php.net/manual/en/class.arrayiterator.php
  *
  * @template TKey as array-key
  * @template TValue
+ * @template-implements SeekableIterator<TKey, TValue>
+ * @template-implements ArrayAccess<TKey, TValue>
  */
 class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Countable {
     const STD_PROP_LIST = 1;
@@ -460,7 +484,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * Construct an ArrayIterator
      * @link http://php.net/manual/en/arrayiterator.construct.php
-     * @param array $array The array or object to be iterated on.
+     * @param array<TKey, TValue> $array The array or object to be iterated on.
      * @param int $flags Flags to control the behaviour of the ArrayObject object.
      * @see ArrayObject::setFlags()
      * @since 5.0.0
@@ -671,6 +695,21 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
  * The DOMElement class
  * @link http://php.net/manual/en/class.domelement.php
  */
+class DOMDocument extends DOMNode {
+    /**
+     * @return DOMNodeList<DOMElement>
+     */
+    public function getElementsByTagName ($name) {}
+    /**
+     * @return DOMNodeList<DOMElement>
+     */
+    public function getElementsByTagNameNS ($namespaceURI, $localName) {}
+}
+
+/**
+ * The DOMElement class
+ * @link http://php.net/manual/en/class.domelement.php
+ */
 class DOMElement extends DOMNode  {
     /**
      * @return DOMNodeList<DOMElement>
@@ -684,6 +723,7 @@ class DOMElement extends DOMNode  {
 
 /**
  * @template TNode as DOMNode
+ * @template-implements Traversable<int, TNode>
  */
 class DOMNodeList implements Traversable, Countable {
     /**

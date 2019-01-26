@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -315,23 +316,38 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                     if (isset($call_args[0]->value->inferredType)
                         && $call_args[0]->value->inferredType->hasObjectType()
                     ) {
+                        $key_type = null;
                         $value_type = null;
 
-                        foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
-                            if ($call_arg_atomic_type instanceof Type\Atomic\TGenericObject) {
-                                $type_params = $call_arg_atomic_type->type_params;
-                                $last_param_type = $type_params[count($type_params) - 1];
+                        $codebase = $statements_analyzer->getCodebase();
 
-                                $value_type = $value_type
-                                    ? Type::combineUnionTypes($value_type, $last_param_type)
-                                    : $last_param_type;
+                        foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
+                            if ($call_arg_atomic_type instanceof Type\Atomic\TIterable
+                                || ($call_arg_atomic_type instanceof Type\Atomic\TGenericObject
+                                    && (strtolower($call_arg_atomic_type->value) === 'traversable'
+                                        || $codebase->classImplements(
+                                            $call_arg_atomic_type->value,
+                                            'Traversable'
+                                        )))
+                            ) {
+                                ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                                    $call_arg_atomic_type,
+                                    $codebase,
+                                    $key_type,
+                                    $value_type
+                                );
                             }
                         }
 
                         if ($value_type) {
                             return new Type\Union([
                                 new Type\Atomic\TArray([
-                                    Type::getArrayKey(),
+                                    $key_type
+                                        && (!isset($call_args[1]->value)
+                                            || (isset($call_args[1]->value->inferredType)
+                                                && ((string) $call_args[1]->value->inferredType === 'true')))
+                                        ? $key_type
+                                        : Type::getArrayKey(),
                                     $value_type
                                 ])
                             ]);

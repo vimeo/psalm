@@ -181,6 +181,18 @@ class MethodCallTest extends TestCase
                         return $b->getAttribute("bat");
                     }',
             ],
+            'domElementIteratorOrEmptyArray' => [
+                '<?php
+                    function foo(string $XML) : void {
+                        $dom = new DOMDocument();
+                        $dom->loadXML($XML);
+
+                        $elements = rand(0, 1) ? $dom->getElementsByTagName("bar") : [];
+                        foreach ($elements as $element) {
+                            $element->getElementsByTagName("bat");
+                        }
+                    }'
+            ],
             'reflectionParameter' => [
                 '<?php
                     function getTypeName(ReflectionParameter $parameter): string {

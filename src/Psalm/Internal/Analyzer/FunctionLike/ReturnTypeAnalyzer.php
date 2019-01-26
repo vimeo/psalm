@@ -587,7 +587,7 @@ class ReturnTypeAnalyzer
      *
      * @return false|null
      */
-    public static function checkSignatureReturnType(
+    public static function checkReturnType(
         FunctionLike $function,
         ProjectAnalyzer $project_analyzer,
         FunctionLikeAnalyzer $function_like_analyzer,
@@ -596,7 +596,7 @@ class ReturnTypeAnalyzer
     ) {
         $codebase = $project_analyzer->getCodebase();
 
-        if (!$storage->return_type || !$storage->return_type_location || $storage->has_template_return_type) {
+        if (!$storage->return_type || !$storage->return_type_location) {
             return;
         }
 
@@ -643,13 +643,6 @@ class ReturnTypeAnalyzer
         $fleshed_out_return_type = ExpressionAnalyzer::fleshOutType(
             $codebase,
             $storage->return_type,
-            $context->self,
-            $context->self
-        );
-
-        $fleshed_out_signature_type = ExpressionAnalyzer::fleshOutType(
-            $codebase,
-            $storage->signature_return_type,
             $context->self,
             $context->self
         );

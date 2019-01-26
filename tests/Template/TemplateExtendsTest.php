@@ -632,6 +632,218 @@ class TemplateExtendsTest extends TestCase
                      */
                     class SomeRepository extends Repository {}'
             ],
+            'iterateOverExtendedArrayObject' => [
+                '<?php
+                    class O {}
+                    class Foo extends O {
+                        public function bar() : void {}
+                    }
+
+                    /**
+                     * @template T as O
+                     * @template-extends ArrayObject<int, T>
+                     */
+                    class Collection extends ArrayObject
+                    {
+                        /** @var class-string<T> */
+                        public $class;
+
+                        /** @param class-string<T> $class */
+                        public function __construct(string $class) {
+                                $this->class = $class;
+                        }
+                    }
+
+                    /** @return Collection<Foo> */
+                    function getFooCollection() : Collection {
+                        return new Collection(Foo::class);
+                    }
+
+                    foreach (getFooCollection() as $i => $foo) {
+                        $foo->bar();
+                    }',
+            ],
+            'iterateOverExtendedArrayObjectWithoutParam' => [
+                '<?php
+                    class O {}
+                    class Foo extends O {
+                        public function bar() : void {}
+                    }
+
+                    /**
+                     * @template T as O
+                     * @template-extends ArrayObject<int, T>
+                     */
+                    class Collection extends ArrayObject
+                    {
+                        /** @var class-string<T> */
+                        public $class;
+
+                        /** @param class-string<T> $class */
+                        public function __construct(string $class) {
+                                $this->class = $class;
+                        }
+                    }
+
+                    function getFooCollection() : Collection {
+                        return new Collection(Foo::class);
+                    }
+
+                    foreach (getFooCollection() as $i => $foo) {}',
+            ],
+            'iterateOverExtendedArrayObjectFromClassCall' => [
+                '<?php
+                    class O {}
+                    class Foo extends O {
+                        public function bar() : void {}
+
+                        /** @return Collection<self> */
+                        public static function getSelfCollection() : Collection {
+                            return new Collection(self::class);
+                        }
+                    }
+
+                    /**
+                     * @template T as O
+                     * @template-extends ArrayObject<int, T>
+                     */
+                    class Collection extends ArrayObject
+                    {
+                        /** @var class-string<T> */
+                        public $class;
+
+                        /** @param class-string<T> $class */
+                        public function __construct(string $class) {
+                            $this->class = $class;
+                        }
+                    }
+
+                    foreach (Foo::getSelfCollection() as $i => $foo) {
+                        $foo->bar();
+                    }',
+            ],
+            'iterateOverExtendedArrayObjectInsideClass' => [
+                '<?php
+                    class O {}
+                    class Foo extends O {
+                        public function bar() : void {}
+
+                        /**
+                         * @param Collection<self> $c
+                         */
+                        public static function takesSelfCollection(Collection $c) : void {
+                            foreach ($c as $i => $foo) {
+                                $foo->bar();
+                            }
+                        }
+                    }
+
+                    /**
+                     * @template T as O
+                     * @template-extends ArrayObject<int, T>
+                     */
+                    class Collection extends ArrayObject
+                    {
+                        /** @var class-string<T> */
+                        public $class;
+
+                        /** @param class-string<T> $class */
+                        public function __construct(string $class) {
+                            $this->class = $class;
+                        }
+                    }',
+            ],
+            'iterateOverExtendedArrayObjectThisClassIteration' => [
+                '<?php
+                    class O {}
+
+                    /**
+                     * @template T as O
+                     * @template-extends ArrayObject<int, T>
+                     */
+                    class Collection extends ArrayObject
+                    {
+                        /** @var class-string<T> */
+                        public $class;
+
+                        /** @param class-string<T> $class */
+                        public function __construct(string $class) {
+                            $this->class = $class;
+                        }
+
+                        private function iterate() : void {
+                            foreach ($this as $o) {}
+                        }
+                    }',
+            ],
+            'iterateOverExtendedArrayObjectThisClassIterationWithExplicitGetIterator' => [
+                '<?php
+                    class O {}
+                    class Foo extends O {
+                        /** @return Collection<self> */
+                        public static function getSelfCollection() : Collection {
+                            return new Collection(self::class);
+                        }
+
+                        public function bar() : void {}
+                    }
+
+                    /**
+                     * @template T as O
+                     * @template-extends ArrayObject<int, T>
+                     */
+                    class Collection extends ArrayObject
+                    {
+                        /** @var class-string<T> */
+                        public $class;
+
+                        /** @param class-string<T> $class */
+                        public function __construct(string $class) {
+                            $this->class = $class;
+                        }
+
+                        /**
+                         * @return \ArrayIterator<int, T>
+                         */
+                        public function getIterator()
+                        {
+                            /** @var ArrayIterator<int, O> */
+                            return parent::getIterator();
+                        }
+                    }
+
+                    /** @return Collection<Foo> */
+                    function getFooCollection() : Collection {
+                        return new Collection(Foo::class);
+                    }
+
+                    foreach (getFooCollection() as $i => $foo) {
+                        $foo->bar();
+                    }
+
+                    foreach (Foo::getSelfCollection() as $i => $foo) {
+                        $foo->bar();
+                    }',
+            ],
+            'iterateOverSelfImplementedIterator' => [
+                '<?php
+                    class O {}
+                    class Foo extends O {}
+
+                    /**
+                     * @template-implements Iterator<int, Foo>
+                     */
+                    class FooCollection implements Iterator {
+                        private function iterate() : void {
+                            foreach ($this as $foo) {}
+                        }
+                        public function current() { return new Foo(); }
+                        public function key(): int { return 0; }
+                        public function next(): void {}
+                        public function rewind(): void {}
+                        public function valid(): bool { return false; }
+                    }',
+            ],
         ];
     }
 

@@ -327,7 +327,7 @@ class TemplateTest extends TestCase
                 '<?php
                     /**
                      * @template TKey as array-key
-                     * @template TValue
+                     * @template TValue as array-key
                      *
                      * @param array<TKey, TValue> $arr
                      * @return array<TValue, TKey>
@@ -507,7 +507,7 @@ class TemplateTest extends TestCase
 
                     class Item {}
                     /**
-                     * @param ArrayCollection<mixed,Item> $i
+                     * @param ArrayCollection<array-key,Item> $i
                      */
                     function takesCollectionOfItems(ArrayCollection $i): void {}
 
@@ -588,7 +588,7 @@ class TemplateTest extends TestCase
                          * @param  array<mixed,T> $items
                          * @return Foo<T>
                          */
-                        private function ensureFoo(array $items): EntitySeries
+                        private function ensureFoo(array $items): Foo
                         {
                             $type = $items[0] instanceof A ? A::class : B::class;
                             return new Foo($type);
@@ -1020,7 +1020,7 @@ class TemplateTest extends TestCase
                          * @template-typeof T $class
                          * @return T|null
                          */
-                        public function loader(string $class) : void {
+                        public function loader(string $class) {
                             return $class::load();
                         }
                     }
@@ -1507,7 +1507,7 @@ class TemplateTest extends TestCase
             'replaceChildTypeNoHint' => [
                 '<?php
                     /**
-                     * @template TKey
+                     * @template TKey as array-key
                      * @template TValue
                      * @param Traversable<TKey, TValue> $t
                      * @return array<TKey, TValue>
@@ -1687,7 +1687,6 @@ class TemplateTest extends TestCase
                     /**
                      * @template T
                      * @param T $some_t
-                     * @return T
                      */
                     function foo($some_t) : void {
                         $some_t->bar();
@@ -1875,6 +1874,20 @@ class TemplateTest extends TestCase
                         public function foo() {}
                     }',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'templateInvalidDocblockArgument' => [
+                '<?php
+                    /** @template T as object */
+                    class Generic {}
+
+                    /**
+                     * @template T
+                     * @param T $p
+                     * @return Generic<T>
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function violate($p) {}',
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

@@ -265,6 +265,20 @@ class TypeCombinationTest extends TestCase
                     'Traversable<int, bool>',
                 ],
             ],
+            'arrayObjectAndParamsWithEmptyArray' => [
+                'ArrayObject<int, string>|array<empty, empty>',
+                [
+                    'ArrayObject<int, string>',
+                    'array<empty, empty>',
+                ],
+            ],
+            'emptyArrayWithArrayObjectAndParams' => [
+                'array<empty, empty>|ArrayObject<int, string>',
+                [
+                    'array<empty, empty>',
+                    'ArrayObject<int, string>',
+                ],
+            ],
             'falseDestruction' => [
                 'bool',
                 [

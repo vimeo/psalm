@@ -529,7 +529,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         }
 
-        if (ReturnTypeAnalyzer::checkSignatureReturnType(
+        if (ReturnTypeAnalyzer::checkReturnType(
             $this->function,
             $project_analyzer,
             $this,

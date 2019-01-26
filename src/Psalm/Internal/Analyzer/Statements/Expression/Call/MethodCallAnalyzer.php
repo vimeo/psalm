@@ -1198,10 +1198,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     && isset($e[strtolower($class_storage->name)][$type_name])
                 ) {
                     $type_extends = $e[strtolower($class_storage->name)][$type_name];
-
                     if (!$type_extends instanceof Type\Atomic\TGenericParam) {
                         $class_template_params[$type_name] = [
                             new Type\Union([$type_extends]),
+                            $class_storage->name,
+                        ];
+                    } elseif ($type_extends->as) {
+                        $class_template_params[$type_name] = [
+                            $type_extends->as,
                             $class_storage->name,
                         ];
                     }
