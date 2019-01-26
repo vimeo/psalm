@@ -1273,6 +1273,12 @@ class AnnotationTest extends TestCase
                     foo(new A);',
                 'error_message' => 'InvalidArgument',
             ],
+            'badVar' => [
+                '<?php
+                    /** @var Foo */
+                    $a = $_GET["foo"];',
+                'error_message' => 'UndefinedClass',
+            ],
         ];
     }
 }

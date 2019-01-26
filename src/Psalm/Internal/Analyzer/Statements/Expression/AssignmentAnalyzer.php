@@ -118,6 +118,12 @@ class AssignmentAnalyzer
 
                     $var_comment_type->setFromDocblock();
 
+                    $var_comment_type->check(
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                        $statements_analyzer->getSuppressedIssues()
+                    );
+
                     if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
                         $comment_type = $var_comment_type;
                         continue;
