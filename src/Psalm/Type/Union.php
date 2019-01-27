@@ -868,6 +868,13 @@ class Union
                                 $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
                                     $input_atomic_type->value
                                 );
+                            } elseif ($input_atomic_type instanceof Type\Atomic\TGenericParamClass) {
+                                $valid_input_atomic_types[] = new Type\Atomic\TGenericParam(
+                                    $input_atomic_type->param_name,
+                                    $input_atomic_type->as_type
+                                        ? new Union([$input_atomic_type->as_type])
+                                        : Type::getMixed()
+                                );
                             }
                         }
 
