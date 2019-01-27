@@ -300,38 +300,10 @@ class Reflection
      */
     private function getReflectionParamData(\ReflectionParameter $param)
     {
-        $param_type_string = null;
-
-        if ($param->isArray()) {
-            $param_type_string = 'array';
-        } else {
-            try {
-                $param_class = $param->getClass();
-            } catch (\ReflectionException $e) {
-                $param_class = null;
-            }
-
-            if ($param_class) {
-                $param_type_string = (string)$param_class->getName();
-            }
-        }
-
-        $is_nullable = false;
+        $param_type = self::getPsalmTypeFromReflectionType($param->getType());
+        $param_name = (string)$param->getName();
 
         $is_optional = (bool)$param->isOptional();
-
-        try {
-            $is_nullable = $param->getDefaultValue() === null;
-
-            if ($param_type_string && $is_nullable) {
-                $param_type_string .= '|null';
-            }
-        } catch (\ReflectionException $e) {
-            // do nothing
-        }
-
-        $param_name = (string)$param->getName();
-        $param_type = $param_type_string ? Type::parseString($param_type_string) : Type::getMixed();
 
         return new FunctionLikeParameter(
             $param_name,
@@ -340,7 +312,7 @@ class Reflection
             null,
             null,
             $is_optional,
-            $is_nullable,
+            $param_type->isNullable(),
             $param->isVariadic()
         );
     }
@@ -396,11 +368,29 @@ class Reflection
             if ($callmap_return_type) {
                 $storage->return_type = $callmap_return_type;
             } elseif ($reflection_return_type = $reflection_function->getReturnType()) {
-                $storage->return_type = Type::parseString((string)$reflection_return_type);
+                $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
             }
         } catch (\ReflectionException $e) {
             return false;
         }
+    }
+
+    /**
+     * @return Type\Union
+     */
+    public static function getPsalmTypeFromReflectionType(?\ReflectionType $reflection_type)
+    {
+        if (!$reflection_type) {
+            return Type::getMixed();
+        }
+
+        $suffix = '';
+
+        if ($reflection_type->allowsNull()) {
+            $suffix = '|null';
+        }
+
+        return Type::parseString($reflection_type . $suffix);
     }
 
     /**

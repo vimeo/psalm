@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Internal\Codebase\Reflection;
 use Psalm\Type;
 
 class TypeParseTest extends TestCase
@@ -708,6 +709,41 @@ class TypeParseTest extends TestCase
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
+    }
+
+    /**
+     * @return void
+     */
+    public function testReflectionTypeParse()
+    {
+        /** @psalm-suppress UnusedParam */
+        function someFunction(string $param, array $param2, \stdClass $param3 = null) : string
+        {
+            return "hello";
+        }
+
+        $reflectionFunc = new \ReflectionFunction('Psalm\Tests\someFunction');
+        $reflectionParams = $reflectionFunc->getParameters();
+
+        $this->assertSame(
+            'string',
+            (string) Reflection::getPsalmTypeFromReflectionType($reflectionParams[0]->getType())
+        );
+
+        $this->assertSame(
+            'array<array-key, mixed>',
+            (string) Reflection::getPsalmTypeFromReflectionType($reflectionParams[1]->getType())
+        );
+
+        $this->assertSame(
+            'null|stdClass',
+            (string) Reflection::getPsalmTypeFromReflectionType($reflectionParams[2]->getType())
+        );
+
+        $this->assertSame(
+            'string',
+            (string) Reflection::getPsalmTypeFromReflectionType($reflectionFunc->getReturnType())
+        );
     }
 
     /**
