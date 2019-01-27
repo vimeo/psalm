@@ -717,7 +717,7 @@ class TypeParseTest extends TestCase
     public function testReflectionTypeParse()
     {
         /** @psalm-suppress UnusedParam */
-        function someFunction(string $param, array $param2, \stdClass $param3 = null) : string
+        function someFunction(string $param, array $param2, int $param3 = null) : string
         {
             return "hello";
         }
@@ -727,22 +727,22 @@ class TypeParseTest extends TestCase
 
         $this->assertSame(
             'string',
-            (string) Reflection::getPsalmTypeFromReflectionType($reflectionParams[0]->getType())
+            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[0]->getType())
         );
 
         $this->assertSame(
             'array<array-key, mixed>',
-            (string) Reflection::getPsalmTypeFromReflectionType($reflectionParams[1]->getType())
+            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[1]->getType())
         );
 
         $this->assertSame(
-            'null|stdClass',
-            (string) Reflection::getPsalmTypeFromReflectionType($reflectionParams[2]->getType())
+            'null|int',
+            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType())
         );
 
         $this->assertSame(
             'string',
-            (string) Reflection::getPsalmTypeFromReflectionType($reflectionFunc->getReturnType())
+            (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType())
         );
     }
 

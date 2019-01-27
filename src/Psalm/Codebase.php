@@ -416,6 +416,11 @@ class Codebase
         }
     }
 
+    public static function getPsalmTypeFromReflection(?\ReflectionType $type) : Type\Union
+    {
+        return \Psalm\Internal\Codebase\Reflection::getPsalmTypeFromReflectionType($type);
+    }
+
     /**
      * @param  string $file_path
      *
