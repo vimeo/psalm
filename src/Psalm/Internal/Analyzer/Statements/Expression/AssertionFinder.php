@@ -47,9 +47,9 @@ class AssertionFinder
         $if_types = [];
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
-            $instanceof_type = self::getInstanceOfTypes($conditional, $this_class_name, $source);
+            $instanceof_types = self::getInstanceOfTypes($conditional, $this_class_name, $source);
 
-            if ($instanceof_type) {
+            if ($instanceof_types) {
                 $var_name = ExpressionAnalyzer::getArrayVarId(
                     $conditional->expr,
                     $this_class_name,
@@ -57,7 +57,7 @@ class AssertionFinder
                 );
 
                 if ($var_name) {
-                    $if_types[$var_name] = [[$instanceof_type]];
+                    $if_types[$var_name] = [$instanceof_types];
                 }
             }
 
@@ -1653,7 +1653,7 @@ class AssertionFinder
      * @param  string|null                     $this_class_name
      * @param  FileSource                $source
      *
-     * @return string|null
+     * @return array<int, string>
      */
     protected static function getInstanceOfTypes(
         PhpParser\Node\Expr\Instanceof_ $stmt,
@@ -1667,15 +1667,25 @@ class AssertionFinder
                     $source->getAliases()
                 );
 
-                return $instanceof_class;
+                return [$instanceof_class];
             } elseif ($this_class_name
                 && (in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true))
             ) {
-                return $this_class_name;
+                return [$this_class_name];
             }
+        } elseif (isset($stmt->class->inferredType)) {
+            $literal_class_strings = [];
+
+            foreach ($stmt->class->inferredType->getTypes() as $atomic_type) {
+                if ($atomic_type instanceof Type\Atomic\TLiteralClassString) {
+                    $literal_class_strings[] = $atomic_type->value;
+                }
+            }
+
+            return $literal_class_strings;
         }
 
-        return null;
+        return [];
     }
 
     /**
