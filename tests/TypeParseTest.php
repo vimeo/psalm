@@ -736,7 +736,7 @@ class TypeParseTest extends TestCase
         );
 
         $this->assertSame(
-            'null|int',
+            'int|null',
             (string) \Psalm\Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType())
         );
 
