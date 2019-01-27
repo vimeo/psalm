@@ -31,13 +31,15 @@ class EnumTest extends TestCase
                 '<?php
                     namespace Ns;
 
-                    /** @psalm-param "foo\"with"|"bar"|1|2|3 $s */
+                    /** @psalm-param "foo\"with"|"bar"|1|2|3|4.0|4.1 $s */
                     function foo($s) : void {}
                     foo("foo\"with");
                     foo("bar");
                     foo(1);
                     foo(2);
-                    foo(3);',
+                    foo(3);
+                    foo(4.0);
+                    foo(4.1);',
             ],
             'noRedundantConditionWithSwitch' => [
                 '<?php
@@ -136,6 +138,15 @@ class EnumTest extends TestCase
                     /** @psalm-param "foo\"with"|"bar"|1|2|3 $s */
                     function foo($s) : void {}
                     foo(4);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'enumWrongFloat' => [
+                '<?php
+                    namespace Ns;
+
+                    /** @psalm-param 1.2|3.4|5.6 $s */
+                    function foo($s) : void {}
+                    foo(7.8);',
                 'error_message' => 'InvalidArgument',
             ],
             'classConstantIncorrect' => [

@@ -657,7 +657,7 @@ class TypeParseTest extends TestCase
      */
     public function testEnum()
     {
-        $docblock_type = Type::parseString('( \'foo\\\'with\' | "bar\"bar" | "baz" | "bat\\\\" | \'bang bang\' | 1 | 2 | 3)');
+        $docblock_type = Type::parseString('( \'foo\\\'with\' | "bar\"bar" | "baz" | "bat\\\\" | \'bang bang\' | 1 | 2 | 3 | 4.5)');
 
         $resolved_type = new Type\Union([
             new Type\Atomic\TLiteralString('foo\'with'),
@@ -667,7 +667,8 @@ class TypeParseTest extends TestCase
             new Type\Atomic\TLiteralString('bang bang'),
             new Type\Atomic\TLiteralInt(1),
             new Type\Atomic\TLiteralInt(2),
-            new Type\Atomic\TLiteralInt(3)
+            new Type\Atomic\TLiteralInt(3),
+            new Type\Atomic\TLiteralFloat(4.5)
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -678,7 +679,7 @@ class TypeParseTest extends TestCase
      */
     public function testEnumWithoutSpaces()
     {
-        $docblock_type = Type::parseString('\'foo\\\'with\'|"bar\"bar"|"baz"|"bat\\\\"|\'bang bang\'|1|2|3');
+        $docblock_type = Type::parseString('\'foo\\\'with\'|"bar\"bar"|"baz"|"bat\\\\"|\'bang bang\'|1|2|3|4.5');
 
         $resolved_type = new Type\Union([
             new Type\Atomic\TLiteralString('foo\'with'),
@@ -688,7 +689,8 @@ class TypeParseTest extends TestCase
             new Type\Atomic\TLiteralString('bang bang'),
             new Type\Atomic\TLiteralInt(1),
             new Type\Atomic\TLiteralInt(2),
-            new Type\Atomic\TLiteralInt(3)
+            new Type\Atomic\TLiteralInt(3),
+            new Type\Atomic\TLiteralFloat(4.5)
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());

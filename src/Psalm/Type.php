@@ -500,6 +500,10 @@ abstract class Type
             return new Atomic\TScalarClassConstant($fq_classlike_name, $const_name);
         }
 
+        if (preg_match('/^\-?(0|[1-9][0-9]*)(\.[0-9]{1,})$/', $parse_tree->value)) {
+            return new TLiteralFloat((float) $parse_tree->value);
+        }
+
         if (preg_match('/^\-?(0|[1-9][0-9]*)$/', $parse_tree->value)) {
             return new TLiteralInt((int) $parse_tree->value);
         }
@@ -701,6 +705,17 @@ abstract class Type
             }
 
             if ($char === '.') {
+                if ($i + 1 < $c
+                    && is_numeric($chars[$i + 1])
+                    && $i > 0
+                    && is_numeric($chars[$i - 1])
+                ) {
+                    $type_tokens[$rtc] .= $char;
+                    $was_char = false;
+
+                    continue;
+                }
+
                 if ($i + 2 > $c || $chars[$i + 1] !== '.' || $chars[$i + 2] !== '.') {
                     throw new TypeParseTreeException('Unexpected token ' . $char);
                 }
