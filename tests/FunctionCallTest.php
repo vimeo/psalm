@@ -894,12 +894,25 @@ class FunctionCallTest extends TestCase
                         yield new stdClass;
                     }
 
-                    /**
-                     * @return array<stdClass>
-                     */
-                    function foo(callable $filter): array {
-                        return array_filter(iterator_to_array(generator()), $filter);
-                    }'
+                    $a = iterator_to_array(generator());',
+                'assertions' => [
+                    '$a' => 'array<mixed, stdClass>',
+                ],
+            ],
+            'iteratorToArrayWithGetIterator' => [
+                '<?php
+                    class C implements IteratorAggregate {
+                        /**
+                         * @return Traversable<int,string>
+                         */
+                        public function getIterator() {
+                            yield 1 => "1";
+                        }
+                    }
+                    $a = iterator_to_array(new C);',
+                'assertions' => [
+                    '$a' => 'array<int, string>',
+                ],
             ],
             'arrayColumnInference' => [
                 '<?php

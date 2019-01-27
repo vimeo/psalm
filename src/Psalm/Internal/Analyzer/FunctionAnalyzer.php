@@ -322,19 +322,23 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         $codebase = $statements_analyzer->getCodebase();
 
                         foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
-                            if ($call_arg_atomic_type instanceof Type\Atomic\TIterable
-                                || ($call_arg_atomic_type instanceof Type\Atomic\TGenericObject
-                                    && (strtolower($call_arg_atomic_type->value) === 'traversable'
-                                        || $codebase->classImplements(
-                                            $call_arg_atomic_type->value,
-                                            'Traversable'
-                                        )))
-                            ) {
-                                ForeachAnalyzer::getKeyValueParamsForTraversableObject(
-                                    $call_arg_atomic_type,
+                            if ($call_arg_atomic_type instanceof Type\Atomic\TNamedObject
+                                && TypeAnalyzer::isAtomicContainedBy(
                                     $codebase,
+                                    $call_arg_atomic_type,
+                                    new Type\Atomic\TIterable([Type::getMixed(), Type::getMixed()])
+                                )
+                            ) {
+                                $has_valid_iterator = true;
+                                ForeachAnalyzer::handleIterable(
+                                    $statements_analyzer,
+                                    $call_arg_atomic_type,
+                                    $call_args[0]->value,
+                                    $codebase,
+                                    $context,
                                     $key_type,
-                                    $value_type
+                                    $value_type,
+                                    $has_valid_iterator
                                 );
                             }
                         }
