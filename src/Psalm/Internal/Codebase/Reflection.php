@@ -375,10 +375,7 @@ class Reflection
         }
     }
 
-    /**
-     * @return Type\Union
-     */
-    public static function getPsalmTypeFromReflectionType(?\ReflectionType $reflection_type)
+    public static function getPsalmTypeFromReflectionType(\ReflectionType $reflection_type = null) : Type\Union
     {
         if (!$reflection_type) {
             return Type::getMixed();
