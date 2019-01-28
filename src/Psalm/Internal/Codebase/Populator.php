@@ -347,6 +347,11 @@ class Populator
                             = array_values($template_type[0]->getTypes())[0];
                     }
                 }
+            } elseif ($trait_storage->template_type_extends) {
+                $storage->template_type_extends = array_merge(
+                    $storage->template_type_extends ?: [],
+                    $trait_storage->template_type_extends
+                );
             }
         }
     }
@@ -375,14 +380,12 @@ class Populator
             $parent_storage = null;
         }
 
-        if ($parent_storage) {
+        if ($parent_storage && $parent_storage_class) {
             $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
             $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
 
-            if ($parent_storage->template_types
-                && $parent_storage_class
-            ) {
+            if ($parent_storage->template_types) {
                 if (isset($storage->template_type_extends[$parent_storage_class])) {
                     foreach ($storage->template_type_extends[$parent_storage_class] as $i => $type) {
                         $parent_template_type_names = array_keys($parent_storage->template_types);
@@ -427,6 +430,11 @@ class Populator
                             = array_values($template_type[0]->getTypes())[0];
                     }
                 }
+            } elseif ($parent_storage->template_type_extends) {
+                $storage->template_type_extends = array_merge(
+                    $storage->template_type_extends ?: [],
+                    $parent_storage->template_type_extends
+                );
             }
 
             $this->inheritMethodsFromParent($storage, $parent_storage);

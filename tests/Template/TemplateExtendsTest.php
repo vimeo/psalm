@@ -632,7 +632,7 @@ class TemplateExtendsTest extends TestCase
                      */
                     class SomeRepository extends Repository {}'
             ],
-            'iterateOverExtendedArrayObject' => [
+            'iterateOverExtendedArrayObjectWithParam' => [
                 '<?php
                     class O {}
                     class Foo extends O {
@@ -880,6 +880,139 @@ class TemplateExtendsTest extends TestCase
                             return [1, 2, 3, 4];
                         }
                     }',
+            ],
+            'extendedTraitUse' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait CollectionTrait
+                    {
+                        /**
+                         * @return array<T>
+                         */
+                        abstract function elements() : array;
+
+                        /**
+                         * @return T|null
+                         */
+                        public function first()
+                        {
+                            return $this->elements()[0] ?? null;
+                        }
+                    }
+
+                    /**
+                     * @template TValue
+                     */
+                    trait BridgeTrait
+                    {
+                        /**
+                         * @use CollectionTrait<TValue>
+                         */
+                        use CollectionTrait;
+                    }
+
+                    class Service
+                    {
+                        /**
+                         * @use BridgeTrait<int>
+                         */
+                        use BridgeTrait;
+
+                        /**
+                         * @return array<int>
+                         */
+                        public function elements(): array
+                        {
+                            return [1, 2, 3, 4];
+                        }
+                    }',
+            ],
+            'extendedTraitUseAlreadyBound' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait CollectionTrait
+                    {
+                        /**
+                         * @return array<T>
+                         */
+                        abstract function elements() : array;
+
+                        /**
+                         * @return T|null
+                         */
+                        public function first()
+                        {
+                            return $this->elements()[0] ?? null;
+                        }
+                    }
+
+                    trait BridgeTrait
+                    {
+                        /**
+                         * @use CollectionTrait<int>
+                         */
+                        use CollectionTrait;
+                    }
+
+                    class Service
+                    {
+                        use BridgeTrait;
+
+                        /**
+                         * @return array<int>
+                         */
+                        public function elements(): array
+                        {
+                            return [1, 2, 3, 4];
+                        }
+                    }',
+            ],
+            'extendClassThatParameterizesTemplatedParent' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    abstract class Collection
+                    {
+                        /**
+                         * @return array<T>
+                         */
+                        abstract function elements() : array;
+
+                        /**
+                         * @return T|null
+                         */
+                        public function first()
+                        {
+                            return $this->elements()[0] ?? null;
+                        }
+                    }
+
+                    /**
+                     * @template-extends Collection<int>
+                     */
+                    abstract class Bridge extends Collection {}
+
+
+                    class Service extends Bridge
+                    {
+                        /**
+                         * @return array<int>
+                         */
+                        public function elements(): array
+                        {
+                            return [1, 2, 3];
+                        }
+                    }
+
+                    $a = (new Service)->first();',
+                [
+                    '$a' => 'null|int',
+                ]
             ],
         ];
     }
@@ -1147,6 +1280,309 @@ class TemplateExtendsTest extends TestCase
                      */
                     class B extends A {}',
                 'error_message' => 'UndefinedClass'
+            ],
+            'badTemplateExtendsInt' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-extends int
+                     */
+                    class B extends A {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateExtendsBadFormat' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-extends A< >
+                     */
+                    class B extends A {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateExtendsUnionType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-extends A<int|string>
+                     */
+                    class B extends A {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateImplementsShouldBeExtends' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-implements A<int>
+                     */
+                    class B extends A {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateImplements' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                        /** @param T $t */
+                        public function __construct($t);
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-implements I<Z>
+                     */
+                    class B implements I {}',
+                'error_message' => 'UndefinedClass'
+            ],
+            'badTemplateImplementsInt' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                        /** @param T $t */
+                        public function __construct($t);
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-implements int
+                     */
+                    class B implements I {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateImplementsBadFormat' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                        /** @param T $t */
+                        public function __construct($t);
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-implements I< >
+                     */
+                    class B implements I {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateImplementsUnionType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                        /** @param T $t */
+                        public function __construct($t);
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-implements I<int|string>
+                     */
+                    class B implements I {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateExtendsShouldBeImplements' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                        /** @param T $t */
+                        public function __construct($t);
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-extends I<string>
+                     */
+                    class B implements I {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateUse' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait T {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     */
+                    class B {
+                        /**
+                         * @template-use T<Z>
+                         */
+                        use T;
+                    }',
+                'error_message' => 'UndefinedClass'
+            ],
+            'badTemplateUseBadFormat' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait T {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     */
+                    class B {
+                        /**
+                         * @template-use T< >
+                         */
+                        use T;
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateUseInt' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait T {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     */
+                    class B {
+                        /**
+                         * @template-use int
+                         */
+                        use T;
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateExtendsShouldBeUse' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait T {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     */
+                    class B {
+                        /**
+                         * @template-extends T<int>
+                         */
+                        use T;
+                    }',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'badTemplateUseUnionType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait T {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     */
+                    class B {
+                        /**
+                         * @template-use T<int|string>
+                         */
+                        use T;
+                    }',
+                'error_message' => 'InvalidDocblock'
             ],
             'templateExtendsWithoutAllParams' => [
                 '<?php

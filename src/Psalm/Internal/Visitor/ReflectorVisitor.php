@@ -459,6 +459,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->useTemplatedType($storage, $node, $template_line);
                     }
                 }
+
+                if (isset($comments['specials']['template-extends'])
+                    || isset($comments['specials']['extends'])
+                    || isset($comments['specials']['template-implements'])
+                    || isset($comments['specials']['implements'])
+                ) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'You must use @use or @template-use to parameterize traits',
+                            new CodeLocation($this->file_scanner, $node, null, true)
+                        )
+                    )) {
+                    }
+                }
             }
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
             $this->visitInclude($node);
