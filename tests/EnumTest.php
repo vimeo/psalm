@@ -237,7 +237,14 @@ class EnumTest extends TestCase
                         return 5;
                     }',
                 'error_message' => 'UndefinedConstant',
-            ]
+            ],
+            'noIntToFloatEnum' => [
+                '<?php
+                    /** @param 0.3|0.5 $p */
+                    function f($p): void {}
+                    f(1);',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

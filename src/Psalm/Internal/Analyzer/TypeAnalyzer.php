@@ -598,6 +598,7 @@ class TypeAnalyzer
         // > int types can resolve a parameter type of float
         if ($input_type_part instanceof TInt
             && $container_type_part instanceof TFloat
+            && !$container_type_part instanceof TLiteralFloat
             && $allow_float_int_equality
         ) {
             return true;
