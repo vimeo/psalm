@@ -142,6 +142,33 @@ class ConfigTest extends TestCase
     /**
      * @return void
      */
+    public function testIgnoreMissingProjectDirectory()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles allowMissingFiles="true">
+                            <directory name="does/not/exist" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('does/not/exist/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
+    }
+
+    /**
+     * @return void
+     */
     public function testIgnoreSymlinkedProjectDirectory()
     {
         @unlink(__DIR__ . '/symlinktest/ignored/b');

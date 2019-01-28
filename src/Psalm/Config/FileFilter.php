@@ -81,6 +81,8 @@ class FileFilter
         $base_dir,
         $inclusive
     ) {
+        $allow_missing_files = ((string) $e['allowMissingFiles']) === 'true';
+
         $filter = new static($inclusive);
 
         if ($e->directory) {
@@ -110,6 +112,10 @@ class FileFilter
                     );
 
                     if (empty($globs)) {
+                        if ($allow_missing_files) {
+                            continue;
+                        }
+
                         echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                             (string)$directory['name'] . PHP_EOL;
                         exit(1);
@@ -117,9 +123,17 @@ class FileFilter
 
                     foreach ($globs as $glob_index => $directory_path) {
                         if (!$directory_path) {
+                            if ($allow_missing_files) {
+                                continue;
+                            }
+
                             echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                                 (string)$directory['name'] . ':' . $glob_index . PHP_EOL;
                             exit(1);
+                        }
+
+                        if (!$directory_path) {
+                            continue;
                         }
 
                         if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
@@ -138,6 +152,10 @@ class FileFilter
                 $directory_path = realpath($prospective_directory_path);
 
                 if (!$directory_path) {
+                    if ($allow_missing_files) {
+                        continue;
+                    }
+
                     echo 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                         (string)$directory['name'] . PHP_EOL;
                     exit(1);
