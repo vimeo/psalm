@@ -739,3 +739,184 @@ class DOMNodeList implements Traversable, Countable {
      */
     public function item ($index) {}
 }
+
+/**
+ * The SplDoublyLinkedList class provides the main functionalities of a doubly linked list.
+ * @link https://php.net/manual/en/class.spldoublylinkedlist.php
+ * @template TKey
+ * @template TValue
+ * @template-implements Iterator<TKey, TValue>
+ * @template-implements ArrayAccess<TKey, TValue>
+ */
+class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializable
+{
+    /**
+     * Add/insert a new value at the specified index
+     * @param TKey $index The index where the new value is to be inserted.
+     * @param TValue $newval The new value for the index.
+     * @link https://php.net/spldoublylinkedlist.add
+     * @return void
+     * @since 5.5.0
+     */
+    public function add($index, $newval) {}
+
+    /**
+     * Pops a node from the end of the doubly linked list
+     * @link https://php.net/manual/en/spldoublylinkedlist.pop.php
+     * @return TValue The value of the popped node.
+     * @since 5.3.0
+     */
+    public function pop () {}
+
+    /**
+     * Shifts a node from the beginning of the doubly linked list
+     * @link https://php.net/manual/en/spldoublylinkedlist.shift.php
+     * @return TValue The value of the shifted node.
+     * @since 5.3.0
+     */
+    public function shift () {}
+
+    /**
+     * Pushes an element at the end of the doubly linked list
+     * @link https://php.net/manual/en/spldoublylinkedlist.push.php
+     * @param TValue $value <p>
+     * The value to push.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function push ($value) {}
+
+    /**
+     * Prepends the doubly linked list with an element
+     * @link https://php.net/manual/en/spldoublylinkedlist.unshift.php
+     * @param TValue $value <p>
+     * The value to unshift.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function unshift ($value) {}
+
+    /**
+     * Peeks at the node from the end of the doubly linked list
+     * @link https://php.net/manual/en/spldoublylinkedlist.top.php
+     * @return TValue The value of the last node.
+     * @since 5.3.0
+     */
+    public function top () {}
+
+    /**
+     * Peeks at the node from the beginning of the doubly linked list
+     * @link https://php.net/manual/en/spldoublylinkedlist.bottom.php
+     * @return TValue The value of the first node.
+     * @since 5.3.0
+     */
+    public function bottom () {}
+
+    /**
+     * Counts the number of elements in the doubly linked list.
+     * @link https://php.net/manual/en/spldoublylinkedlist.count.php
+     * @return int the number of elements in the doubly linked list.
+     * @since 5.3.0
+     */
+    public function count () {}
+
+    /**
+     * Checks whether the doubly linked list is empty.
+     * @link https://php.net/manual/en/spldoublylinkedlist.isempty.php
+     * @return bool whether the doubly linked list is empty.
+     * @since 5.3.0
+     */
+    public function isEmpty () {}
+
+    /**
+     * Returns whether the requested $index exists
+     * @link https://php.net/manual/en/spldoublylinkedlist.offsetexists.php
+     * @param TKey $index <p>
+     * The index being checked.
+     * </p>
+ * @return bool true if the requested <i>index</i> exists, otherwise false
+     * @since 5.3.0
+     */
+    public function offsetExists ($index) {}
+
+    /**
+     * Returns the value at the specified $index
+     * @link https://php.net/manual/en/spldoublylinkedlist.offsetget.php
+     * @param TKey $index <p>
+     * The index with the value.
+     * </p>
+ * @return TValue The value at the specified <i>index</i>.
+     * @since 5.3.0
+     */
+    public function offsetGet ($index) {}
+
+    /**
+     * Sets the value at the specified $index to $newval
+     * @link https://php.net/manual/en/spldoublylinkedlist.offsetset.php
+     * @param TKey $index <p>
+     * The index being set.
+     * </p>
+     * @param TValue $newval <p>
+ * The new value for the <i>index</i>.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function offsetSet ($index, $newval) {}
+
+    /**
+     * Unsets the value at the specified $index
+     * @link https://php.net/manual/en/spldoublylinkedlist.offsetunset.php
+     * @param TKey $index <p>
+     * The index being unset.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function offsetUnset ($index) {}
+
+    /**
+     * Return current array entry
+     * @link https://php.net/manual/en/spldoublylinkedlist.current.php
+     * @return TValue The current node value.
+     * @since 5.3.0
+     */
+    public function current () {}
+
+    /**
+     * Return current node index
+     * @link https://php.net/manual/en/spldoublylinkedlist.key.php
+     * @return TKey The current node index.
+     * @since 5.3.0
+     */
+    public function key () {}
+}
+
+/**
+ * The SplQueue class provides the main functionalities of a queue implemented using a doubly linked list.
+ * @link https://php.net/manual/en/class.splqueue.php
+ * @template TValue
+ * @template-extends SplDoublyLinkedList<int, TValue>
+ */
+class SplQueue extends SplDoublyLinkedList {
+    /**
+     * Adds an element to the queue.
+     * @link https://php.net/manual/en/splqueue.enqueue.php
+     * @param TValue $value <p>
+     * The value to enqueue.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function enqueue ($value) {}
+
+    /**
+     * Dequeues a node from the queue
+     * @link https://php.net/manual/en/splqueue.dequeue.php
+     * @return TValue The value of the dequeued node.
+     * @since 5.3.0
+     */
+    public function dequeue () {}
+}
