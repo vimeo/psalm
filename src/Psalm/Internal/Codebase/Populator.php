@@ -301,6 +301,53 @@ class Populator
 
             $this->inheritMethodsFromParent($storage, $trait_storage);
             $this->inheritPropertiesFromParent($storage, $trait_storage);
+
+            if ($trait_storage->template_types) {
+                if (isset($storage->template_type_extends[$used_trait_lc])) {
+                    foreach ($storage->template_type_extends[$used_trait_lc] as $i => $type) {
+                        $trait_template_type_names = array_keys($trait_storage->template_types);
+
+                        $mapped_name = $trait_template_type_names[$i] ?? null;
+
+                        if ($mapped_name) {
+                            $storage->template_type_extends[$used_trait_lc][$mapped_name] = $type;
+                        }
+                    }
+
+                    if ($trait_storage->template_type_extends) {
+                        foreach ($trait_storage->template_type_extends as $t_storage_class => $type_map) {
+                            foreach ($type_map as $i => $type) {
+                                if (isset($storage->template_type_extends[$t_storage_class][$i])
+                                    || is_int($i)
+                                ) {
+                                    continue;
+                                }
+
+                                if ($type instanceof Type\Atomic\TGenericParam
+                                    && $type->defining_class
+                                    && ($referenced_type
+                                        = $storage->template_type_extends
+                                            [strtolower($type->defining_class)]
+                                            [$type->param_name]
+                                            ?? null)
+                                    && (!$referenced_type instanceof Type\Atomic\TGenericParam)
+                                ) {
+                                    $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
+                                } else {
+                                    $storage->template_type_extends[$t_storage_class][$i] = $type;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    $storage->template_type_extends[$used_trait_lc] = [];
+
+                    foreach ($trait_storage->template_types as $template_name => $template_type) {
+                        $storage->template_type_extends[$used_trait_lc][$template_name]
+                            = array_values($template_type[0]->getTypes())[0];
+                    }
+                }
+            }
         }
     }
 

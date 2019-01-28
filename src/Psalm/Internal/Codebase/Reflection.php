@@ -226,6 +226,7 @@ class Reflection
         $storage = $class_storage->methods[strtolower($method_name)] = new MethodStorage();
 
         $storage->cased_name = $method->name;
+        $storage->defining_fqcln = $method->class;
 
         if (strtolower((string)$method->name) === strtolower((string)$method->class)) {
             $this->codebase->methods->setDeclaringMethodId(

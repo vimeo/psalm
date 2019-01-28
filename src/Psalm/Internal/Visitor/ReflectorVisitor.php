@@ -443,6 +443,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->used_traits[strtolower($trait_fqcln)] = $trait_fqcln;
                 $this->file_storage->required_classes[strtolower($trait_fqcln)] = $trait_fqcln;
             }
+
+            if ($node_comment = $node->getDocComment()) {
+                $comments = DocComment::parse((string) $node_comment, 0);
+
+                if (isset($comments['specials']['template-use'])
+                    || isset($comments['specials']['use'])
+                ) {
+                    $all_inheritance = array_merge(
+                        $comments['specials']['template-use'] ?? [],
+                        $comments['specials']['use'] ?? []
+                    );
+
+                    foreach ($all_inheritance as $template_line) {
+                        $this->useTemplatedType($storage, $node, $template_line);
+                    }
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Expr\Include_) {
             $this->visitInclude($node);
         } elseif ($node instanceof PhpParser\Node\Expr\Assign
@@ -1097,7 +1114,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $implemented_type_parameters = [];
 
-            $storage->template_type_implements_count = count($atomic_type->type_params);
+            $storage->template_type_implements_count[$generic_class_lc] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
                 if (!$type_param->isSingle()) {
@@ -1123,6 +1140,101 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     }
 
     /**
+     * @return void
+     */
+    private function useTemplatedType(
+        ClassLikeStorage $storage,
+        PhpParser\Node\Stmt\TraitUse $node,
+        string $used_class_name
+    ) {
+        try {
+            $used_union_type = Type::parseTokens(
+                Type::fixUpLocalType(
+                    $used_class_name,
+                    $this->aliases,
+                    $this->class_template_types,
+                    $this->type_aliases
+                ),
+                false,
+                $this->class_template_types
+            );
+        } catch (TypeParseTreeException $e) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . implode('.', $this->fq_classlike_names),
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                )
+            )) {
+            }
+
+            $storage->has_docblock_issues = true;
+            return;
+        }
+
+        if (!$used_union_type->isSingle()) {
+            if (IssueBuffer::accepts(
+                new InvalidDocblock(
+                    '@template-use cannot be a union type',
+                    new CodeLocation($this->file_scanner, $node, null, true)
+                )
+            )) {
+            }
+        }
+
+        foreach ($used_union_type->getTypes() as $atomic_type) {
+            if (!$atomic_type instanceof Type\Atomic\TGenericObject) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        '@template-use has invalid class ' . $atomic_type->getId(),
+                        new CodeLocation($this->file_scanner, $node, null, true)
+                    )
+                )) {
+                }
+
+                return;
+            }
+
+            $generic_class_lc = strtolower($atomic_type->value);
+
+            if (!isset($storage->used_traits[$generic_class_lc])) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        '@template-use must include the name of an used class,'
+                            . ' got ' . $atomic_type->getId(),
+                        new CodeLocation($this->file_scanner, $node, null, true)
+                    )
+                )) {
+                }
+            }
+
+            $used_type_parameters = [];
+
+            $storage->template_type_uses_count[$generic_class_lc] = count($atomic_type->type_params);
+
+            foreach ($atomic_type->type_params as $type_param) {
+                if (!$type_param->isSingle()) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            '@template-uses type parameter cannot be a union type',
+                            new CodeLocation($this->file_scanner, $node, null, true)
+                        )
+                    )) {
+                    }
+                    return;
+                }
+
+                foreach ($type_param->getTypes() as $type_param_atomic) {
+                    $used_type_parameters[] = $type_param_atomic;
+                }
+            }
+
+            if ($used_type_parameters) {
+                $storage->template_type_extends[$generic_class_lc] = $used_type_parameters;
+            }
+        }
+    }
+
+    /**
      * @param  PhpParser\Node\FunctionLike $stmt
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      *
@@ -1137,6 +1249,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $cased_function_id = '@method ' . $stmt->name->name;
 
             $storage = new MethodStorage();
+            $storage->defining_fqcln = '';
             $storage->is_static = (bool) $stmt->isStatic();
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
@@ -1250,6 +1363,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             if (!$storage) {
                 $storage = $class_storage->methods[strtolower($stmt->name->name)] = new MethodStorage();
             }
+
+            $storage->defining_fqcln = $fq_classlike_name;
 
             $class_name_parts = explode('\\', $fq_classlike_name);
             $class_name = array_pop($class_name_parts);

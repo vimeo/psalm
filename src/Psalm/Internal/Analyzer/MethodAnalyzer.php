@@ -582,6 +582,34 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 );
             }
 
+            $guide_trait_name_lc = null;
+
+            if ($guide_classlike_storage === $implementer_classlike_storage) {
+                $guide_trait_name_lc = strtolower($implementer_method_storage->defining_fqcln);
+            }
+
+            if ($guide_trait_name_lc
+                && isset($implementer_classlike_storage->template_type_extends[$guide_trait_name_lc])
+            ) {
+                $map = $implementer_classlike_storage->template_type_extends[$guide_trait_name_lc];
+
+                $template_types = [];
+
+                foreach ($map as $key => $atomic_type) {
+                    if (is_string($key)) {
+                        $template_types[$key] = [
+                            new Type\Union([$atomic_type]),
+                            $implementer_method_storage->defining_fqcln
+                        ];
+                    }
+                }
+
+                $implementer_method_storage_return_type->replaceTemplateTypesWithArgTypes(
+                    $template_types,
+                    $codebase
+                );
+            }
+
             // treat void as null when comparing against docblock implementer
             if ($implementer_method_storage_return_type->isVoid()) {
                 $implementer_method_storage_return_type = Type::getNull();
