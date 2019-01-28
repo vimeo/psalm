@@ -257,141 +257,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
             $function_id = implode('\\', $node->name->parts);
             if (CallMap::inCallMap($function_id)) {
-                $function_params = CallMap::getParamsFromCallMap($function_id);
-
-                if ($function_params) {
-                    foreach ($function_params as $function_param_group) {
-                        foreach ($function_param_group as $function_param) {
-                            if ($function_param->type) {
-                                $function_param->type->queueClassLikesForScanning(
-                                    $this->codebase,
-                                    $this->file_storage
-                                );
-                            }
-                        }
-                    }
-                }
-
-                $return_type = CallMap::getReturnTypeFromCallMap($function_id);
-
-                $return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
-
-                if ($function_id === 'define') {
-                    $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
-                    $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
-                    if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
-                        $const_type = StatementsAnalyzer::getSimpleType(
-                            $this->codebase,
-                            $second_arg_value,
-                            $this->aliases
-                        ) ?: Type::getMixed();
-                        $const_name = $first_arg_value->value;
-
-                        if ($this->functionlike_storages && !$this->config->hoist_constants) {
-                            $functionlike_storage =
-                                $this->functionlike_storages[count($this->functionlike_storages) - 1];
-                            $functionlike_storage->defined_constants[$const_name] = $const_type;
-                        } else {
-                            $this->file_storage->constants[$const_name] = $const_type;
-                            $this->file_storage->declaring_constants[$const_name] = $this->file_path;
-                        }
-                    }
-                }
-
-                $mapping_function_ids = [];
-
-                if (($function_id === 'array_map' && isset($node->args[0]))
-                    || ($function_id === 'array_filter' && isset($node->args[1]))
-                ) {
-                    $node_arg_value = $function_id = 'array_map' ? $node->args[0]->value : $node->args[1]->value;
-
-                    if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
-                        || $node_arg_value instanceof PhpParser\Node\Expr\Array_
-                        || $node_arg_value instanceof PhpParser\Node\Expr\BinaryOp\Concat
-                    ) {
-                        $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
-                            $this->file_scanner,
-                            $node_arg_value
-                        );
-                    }
-
-                    foreach ($mapping_function_ids as $potential_method_id) {
-                        if (strpos($potential_method_id, '::') === false) {
-                            continue;
-                        }
-
-                        list($callable_fqcln) = explode('::', $potential_method_id);
-
-                        if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
-                            $this->codebase->scanner->queueClassLikeForScanning(
-                                $callable_fqcln,
-                                $this->file_path
-                            );
-                        }
-                    }
-                }
-
-                if ($function_id === 'func_get_arg'
-                    || $function_id === 'func_get_args'
-                    || $function_id === 'func_num_args'
-                ) {
-                    $function_like_storage = end($this->functionlike_storages);
-
-                    if ($function_like_storage) {
-                        $function_like_storage->variadic = true;
-                    }
-                }
-
-                if ($function_id === 'is_a' || $function_id === 'is_subclass_of') {
-                    $second_arg = $node->args[1]->value ?? null;
-
-                    if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
-                        $this->codebase->scanner->queueClassLikeForScanning(
-                            $second_arg->value,
-                            $this->file_path
-                        );
-                    }
-                }
-
-                if ($function_id === 'class_alias') {
-                    $first_arg = $node->args[0]->value ?? null;
-                    $second_arg = $node->args[1]->value ?? null;
-
-                    if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
-                        $first_arg_value = $first_arg->value;
-                    } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-                        && $first_arg->class instanceof PhpParser\Node\Name
-                        && $first_arg->name instanceof PhpParser\Node\Identifier
-                        && strtolower($first_arg->name->name) === 'class'
-                    ) {
-                        /** @var string */
-                        $first_arg_value = $first_arg->class->getAttribute('resolvedName');
-                    } else {
-                        $first_arg_value = null;
-                    }
-
-                    if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
-                        $second_arg_value = $second_arg->value;
-                    } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-                        && $second_arg->class instanceof PhpParser\Node\Name
-                        && $second_arg->name instanceof PhpParser\Node\Identifier
-                        && strtolower($second_arg->name->name) === 'class'
-                    ) {
-                        /** @var string */
-                        $second_arg_value = $second_arg->class->getAttribute('resolvedName');
-                    } else {
-                        $second_arg_value = null;
-                    }
-
-                    if ($first_arg_value && $second_arg_value) {
-                        $this->codebase->classlikes->addClassAlias(
-                            $first_arg_value,
-                            $second_arg_value
-                        );
-
-                        $this->file_storage->classlike_aliases[strtolower($second_arg_value)] = $first_arg_value;
-                    }
-                }
+                $this->registerClassMapFunctionCall($function_id, $node);
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\TraitUse) {
             if (!$this->classlike_storages) {
@@ -662,6 +528,150 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         }
 
         return null;
+    }
+
+    /**
+     * @return void
+     */
+    private function registerClassMapFunctionCall(
+        string $function_id,
+        PhpParser\Node\Expr\FuncCall $node
+    ) {
+        $function_params = CallMap::getParamsFromCallMap($function_id);
+
+        if ($function_params) {
+            foreach ($function_params as $function_param_group) {
+                foreach ($function_param_group as $function_param) {
+                    if ($function_param->type) {
+                        $function_param->type->queueClassLikesForScanning(
+                            $this->codebase,
+                            $this->file_storage
+                        );
+                    }
+                }
+            }
+        }
+
+        $return_type = CallMap::getReturnTypeFromCallMap($function_id);
+
+        $return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+
+        if ($function_id === 'define') {
+            $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
+            $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
+            if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
+                $const_type = StatementsAnalyzer::getSimpleType(
+                    $this->codebase,
+                    $second_arg_value,
+                    $this->aliases
+                ) ?: Type::getMixed();
+                $const_name = $first_arg_value->value;
+
+                if ($this->functionlike_storages && !$this->config->hoist_constants) {
+                    $functionlike_storage =
+                        $this->functionlike_storages[count($this->functionlike_storages) - 1];
+                    $functionlike_storage->defined_constants[$const_name] = $const_type;
+                } else {
+                    $this->file_storage->constants[$const_name] = $const_type;
+                    $this->file_storage->declaring_constants[$const_name] = $this->file_path;
+                }
+            }
+        }
+
+        $mapping_function_ids = [];
+
+        if (($function_id === 'array_map' && isset($node->args[0]))
+            || ($function_id === 'array_filter' && isset($node->args[1]))
+        ) {
+            $node_arg_value = $function_id = 'array_map' ? $node->args[0]->value : $node->args[1]->value;
+
+            if ($node_arg_value instanceof PhpParser\Node\Scalar\String_
+                || $node_arg_value instanceof PhpParser\Node\Expr\Array_
+                || $node_arg_value instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            ) {
+                $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
+                    $this->file_scanner,
+                    $node_arg_value
+                );
+            }
+
+            foreach ($mapping_function_ids as $potential_method_id) {
+                if (strpos($potential_method_id, '::') === false) {
+                    continue;
+                }
+
+                list($callable_fqcln) = explode('::', $potential_method_id);
+
+                if (!in_array(strtolower($callable_fqcln), ['self', 'parent', 'static'], true)) {
+                    $this->codebase->scanner->queueClassLikeForScanning(
+                        $callable_fqcln,
+                        $this->file_path
+                    );
+                }
+            }
+        }
+
+        if ($function_id === 'func_get_arg'
+            || $function_id === 'func_get_args'
+            || $function_id === 'func_num_args'
+        ) {
+            $function_like_storage = end($this->functionlike_storages);
+
+            if ($function_like_storage) {
+                $function_like_storage->variadic = true;
+            }
+        }
+
+        if ($function_id === 'is_a' || $function_id === 'is_subclass_of') {
+            $second_arg = $node->args[1]->value ?? null;
+
+            if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
+                $this->codebase->scanner->queueClassLikeForScanning(
+                    $second_arg->value,
+                    $this->file_path
+                );
+            }
+        }
+
+        if ($function_id === 'class_alias') {
+            $first_arg = $node->args[0]->value ?? null;
+            $second_arg = $node->args[1]->value ?? null;
+
+            if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
+                $first_arg_value = $first_arg->value;
+            } elseif ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $first_arg->class instanceof PhpParser\Node\Name
+                && $first_arg->name instanceof PhpParser\Node\Identifier
+                && strtolower($first_arg->name->name) === 'class'
+            ) {
+                /** @var string */
+                $first_arg_value = $first_arg->class->getAttribute('resolvedName');
+            } else {
+                $first_arg_value = null;
+            }
+
+            if ($second_arg instanceof PhpParser\Node\Scalar\String_) {
+                $second_arg_value = $second_arg->value;
+            } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $second_arg->class instanceof PhpParser\Node\Name
+                && $second_arg->name instanceof PhpParser\Node\Identifier
+                && strtolower($second_arg->name->name) === 'class'
+            ) {
+                /** @var string */
+                $second_arg_value = $second_arg->class->getAttribute('resolvedName');
+            } else {
+                $second_arg_value = null;
+            }
+
+            if ($first_arg_value && $second_arg_value) {
+                $this->codebase->classlikes->addClassAlias(
+                    $first_arg_value,
+                    $second_arg_value
+                );
+
+                $this->file_storage->classlike_aliases[strtolower($second_arg_value)] = $first_arg_value;
+            }
+        }
     }
 
     /**

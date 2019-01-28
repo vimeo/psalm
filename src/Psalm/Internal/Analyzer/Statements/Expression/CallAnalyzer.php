@@ -1474,6 +1474,10 @@ class CallAnalyzer
                         continue;
                     }
 
+                    if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+                        continue;
+                    }
+
                     $function_storage = $codebase->functions->getStorage(
                         $statements_analyzer,
                         $function_id
