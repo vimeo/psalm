@@ -1386,6 +1386,24 @@ class FunctionCallTest extends TestCase
                         foo();
                     }',
             ],
+            'round' => [
+                '<?php
+                    $a = round(4.6);
+                    $b = round(3.6, 0);
+                    $c = round(3.0, 1);
+                    $d = round(3.1, 2);
+
+                    /** @var int */
+                    $sig = 1;
+                    $e = round(3.1, $sig);',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'float',
+                    '$d' => 'float',
+                    '$e' => 'int|float',
+                ],
+            ]
         ];
     }
 

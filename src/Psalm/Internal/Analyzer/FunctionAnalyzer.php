@@ -624,6 +624,26 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
 
                     break;
 
+                case 'round':
+                    if (isset($call_args[1])) {
+                        $second_arg = $call_args[1]->value;
+
+                        if (isset($second_arg->inferredType)
+                            && $second_arg->inferredType->isSingleIntLiteral()
+                        ) {
+                            switch ($second_arg->inferredType->getSingleIntLiteral()->value) {
+                                case 0:
+                                    return Type::getInt(true);
+                                default:
+                                    return Type::getFloat();
+                            }
+                        }
+
+                        return new Type\Union([new Type\Atomic\TInt, new Type\Atomic\TFloat]);
+                    }
+
+                    return Type::getInt(true);
+
                 case 'filter_var':
                     return self::getFilterVar($call_args);
 
