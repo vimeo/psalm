@@ -523,7 +523,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $fleshed_out_type->check(
                     $this,
                     $property_type_location,
-                    $this->getSuppressedIssues(),
+                    array_merge($this->getSuppressedIssues(), $storage->suppressed_issues),
                     [],
                     false
                 );

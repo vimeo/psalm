@@ -504,6 +504,22 @@ class MethodCallTest extends TestCase
                     (new C)::foo();',
                 'error_message' => 'InvalidStaticInvocation',
             ],
+            'noExceptionOnMissingClass' => [
+                '<?php
+                    /** @psalm-suppress UndefinedClass */
+                    class A
+                    {
+                        /** @var class-string<Foo> */
+                        protected $bar;
+
+                        public function foo(string $s): void
+                        {
+                            $bar = $this->bar;
+                            $bar::baz();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass'
+            ],
         ];
     }
 }

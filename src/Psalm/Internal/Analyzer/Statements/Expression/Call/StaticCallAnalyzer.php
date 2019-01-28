@@ -263,15 +263,45 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             if ($lhs_type_part instanceof TNamedObject) {
                 $fq_class_name = $lhs_type_part->value;
 
+                if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    new CodeLocation($source, $stmt->class),
+                    $statements_analyzer->getSuppressedIssues(),
+                    false
+                )) {
+                    return false;
+                }
+
                 $intersection_types = $lhs_type_part->extra_types;
             } elseif ($lhs_type_part instanceof Type\Atomic\TClassString
                 && $lhs_type_part->as_type
             ) {
                 $fq_class_name = $lhs_type_part->as_type->value;
 
+                if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    new CodeLocation($source, $stmt->class),
+                    $statements_analyzer->getSuppressedIssues(),
+                    false
+                )) {
+                    return false;
+                }
+
                 $intersection_types = $lhs_type_part->as_type->extra_types;
             } elseif ($lhs_type_part instanceof Type\Atomic\TLiteralClassString) {
                 $fq_class_name = $lhs_type_part->value;
+
+                if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
+                    $statements_analyzer,
+                    $fq_class_name,
+                    new CodeLocation($source, $stmt->class),
+                    $statements_analyzer->getSuppressedIssues(),
+                    false
+                )) {
+                    return false;
+                }
             } elseif ($lhs_type_part instanceof Type\Atomic\TGenericParam
                 && !$lhs_type_part->as->isMixed()
                 && !$lhs_type_part->as->hasObject()
