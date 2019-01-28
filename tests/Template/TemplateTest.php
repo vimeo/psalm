@@ -1479,6 +1479,20 @@ class TemplateTest extends TestCase
                         return a($type);
                     }',
             ],
+            'doublyLinkedListConstructor' => [
+                '<?php
+                    $list = new SplDoublyLinkedList();
+                    $list->add(5, "hello");
+                    $list->add("hello", 5);
+
+                    /** @var SplDoublyLinkedList<int, string> */
+                    $templated_list = new SplDoublyLinkedList();
+                    $templated_list->add(5, "hello");
+                    $a = $templated_list->bottom();',
+                [
+                    '$a' => 'string',
+                ]
+            ],
         ];
     }
 
@@ -1930,6 +1944,13 @@ class TemplateTest extends TestCase
                      */
                     function violate($p) {}',
                 'error_message' => 'InvalidTemplateParam',
+            ],
+            'doublyLinkedListBadParam' => [
+                '<?php
+                    /** @var SplDoublyLinkedList<int, string> */
+                    $templated_list = new SplDoublyLinkedList();
+                    $templated_list->add(5, []);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

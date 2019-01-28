@@ -750,6 +750,8 @@ class DOMNodeList implements Traversable, Countable {
  */
 class SplDoublyLinkedList implements Iterator, Countable, ArrayAccess, Serializable
 {
+    public function __construct() {}
+
     /**
      * Add/insert a new value at the specified index
      * @param TKey $index The index where the new value is to be inserted.
