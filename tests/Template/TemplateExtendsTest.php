@@ -1058,7 +1058,7 @@ class TemplateExtendsTest extends TestCase
                     class Bar {}
 
                     /**
-                     * @extends IteratorAggregate<int, Foo>
+                     * @implements IteratorAggregate<int, Foo>
                      */
                     class SomeIterator implements IteratorAggregate
                     {
@@ -1078,7 +1078,7 @@ class TemplateExtendsTest extends TestCase
                     class Bar {}
 
                     /**
-                     * @extends IteratorAggregate<int, Foo>
+                     * @implements IteratorAggregate<int, Foo>
                      */
                     class SomeIterator implements IteratorAggregate
                     {

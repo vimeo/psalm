@@ -453,7 +453,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
  * @link https://php.net/manual/en/class.seekableiterator.php
  * @template TKey
  * @template TValue
- * @template-implements Iterator<TKey, TValue>
+ * @template-extends Iterator<TKey, TValue>
  */
 interface SeekableIterator extends Iterator {
     /**
