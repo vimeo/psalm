@@ -263,6 +263,10 @@ abstract class Type
                 return new TClassString($class_name, $param_union_types[0]);
             }
 
+            if (isset(self::PSALM_RESERVED_WORDS[$generic_type_value])) {
+                throw new TypeParseTreeException('Cannot create generic object with reserved word');
+            }
+
             return new TGenericObject($generic_type_value, $generic_params);
         }
 

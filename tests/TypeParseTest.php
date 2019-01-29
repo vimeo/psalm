@@ -521,6 +521,16 @@ class TypeParseTest extends TestCase
      *
      * @return void
      */
+    public function testBadGenericString()
+    {
+        Type::parseString('string<T>');
+    }
+
+    /**
+     * @expectedException \Psalm\Exception\TypeParseTreeException
+     *
+     * @return void
+     */
     public function testBadAmpersand()
     {
         Type::parseString('&array');
@@ -636,6 +646,28 @@ class TypeParseTest extends TestCase
         $this->assertSame(
             'callable(int, string)',
             (string)Type::parseString('callable(int, string)')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCombineLiteralStringWithClassString()
+    {
+        $this->assertSame(
+            'string',
+            (string)Type::parseString('"array"|class-string')
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testCombineLiteralClassStringWithClassString()
+    {
+        $this->assertSame(
+            'class-string',
+            (string)Type::parseString('A::class|class-string')
         );
     }
 

@@ -704,10 +704,23 @@ class TypeCombination
                     } else {
                         $type_key = 'string';
 
-                        $combination->strings = null;
-
                         if (!isset($combination->value_types['string'])) {
-                            $combination->value_types[$type_key] = $type;
+                            if ($combination->strings) {
+                                $has_non_literal_class_string = false;
+                                foreach ($combination->strings as $literal_string) {
+                                    if (!$literal_string instanceof TLiteralClassString) {
+                                        $has_non_literal_class_string = true;
+                                    }
+                                }
+
+                                if ($has_non_literal_class_string || !$type instanceof TClassString) {
+                                    $combination->value_types[$type_key] = new TString();
+                                } else {
+                                    $combination->value_types[$type_key] = new TClassString();
+                                }
+                            } else {
+                                $combination->value_types[$type_key] = $type;
+                            }
                         } elseif (get_class($combination->value_types['string']) !== TString::class) {
                             if (get_class($type) === TString::class) {
                                 $combination->value_types[$type_key] = $type;
@@ -715,6 +728,8 @@ class TypeCombination
                                 $combination->value_types[$type_key] = new TString();
                             }
                         }
+
+                        $combination->strings = null;
                     }
                 } elseif ($type instanceof TInt) {
                     if (isset($combination->value_types['array-key'])) {
