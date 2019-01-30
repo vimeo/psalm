@@ -1014,6 +1014,42 @@ class TemplateExtendsTest extends TestCase
                     '$a' => 'null|int',
                 ]
             ],
+            'splObjectStorage' => [
+                '<?php
+                    class SomeService
+                    {
+                        /**
+                         * @var \SplObjectStorage<\stdClass, mixed>
+                         */
+                        public $handlers;
+
+                        /**
+                         * @param SplObjectStorage<\stdClass, mixed> $handlers
+                         */
+                        public function __construct(SplObjectStorage $handlers)
+                        {
+                            $this->handlers = $handlers;
+                        }
+                    }
+
+                    /** @var SplObjectStorage<\stdClass, mixed> */
+                    $storage = new SplObjectStorage();
+                    new SomeService($storage);',
+            ],
+            'extendsArrayIterator' => [
+                '<?php
+                    class User {}
+
+                    /**
+                     * @template-extends ArrayIterator<int, User>
+                     */
+                    class Users extends ArrayIterator
+                    {
+                        public function __construct(User ...$users) {
+                            parent::__construct($users);
+                        }
+                    }',
+            ],
         ];
     }
 

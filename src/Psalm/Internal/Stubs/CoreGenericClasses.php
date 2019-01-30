@@ -922,3 +922,231 @@ class SplQueue extends SplDoublyLinkedList {
      */
     public function dequeue () {}
 }
+
+/**
+ * The SplObjectStorage class provides a map from objects to data or, by
+ * ignoring data, an object set. This dual purpose can be useful in many
+ * cases involving the need to uniquely identify objects.
+ * @link https://php.net/manual/en/class.splobjectstorage.php
+ * @template TObject as object
+ * @template TArrayValue
+ * @template-extends ArrayAccess<TObject, TArrayValue>
+ * @template-extends Iterator<int, TObject>
+ */
+class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess {
+    public function __construct() {}
+
+    /**
+     * Adds an object in the storage
+     * @link https://php.net/manual/en/splobjectstorage.attach.php
+     * @param TObject $object <p>
+     * The object to add.
+     * </p>
+     * @param mixed $data [optional] <p>
+     * The data to associate with the object.
+     * </p>
+     * @return void
+     * @since 5.1.0
+     */
+    public function attach ($object, $data = null) {}
+
+    /**
+     * Removes an object from the storage
+     * @link https://php.net/manual/en/splobjectstorage.detach.php
+     * @param TObject $object <p>
+     * The object to remove.
+     * </p>
+     * @return void
+     * @since 5.1.0
+     */
+    public function detach ($object) {}
+
+    /**
+     * Checks if the storage contains a specific object
+     * @link https://php.net/manual/en/splobjectstorage.contains.php
+     * @param TObject $object <p>
+     * The object to look for.
+     * </p>
+     * @return bool true if the object is in the storage, false otherwise.
+     * @since 5.1.0
+     */
+    public function contains ($object) {}
+
+    /**
+     * Adds all objects from another storage
+     * @link https://php.net/manual/en/splobjectstorage.addall.php
+     * @param SplObjectStorage<TObject, TArrayValue> $storage <p>
+     * The storage you want to import.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function addAll ($storage) {}
+
+    /**
+     * Removes objects contained in another storage from the current storage
+     * @link https://php.net/manual/en/splobjectstorage.removeall.php
+     * @param SplObjectStorage<TObject, TArrayValue> $storage <p>
+     * The storage containing the elements to remove.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function removeAll ($storage) {}
+
+    /**
+     * Removes all objects except for those contained in another storage from the current storage
+     * @link https://php.net/manual/en/splobjectstorage.removeallexcept.php
+     * @param SplObjectStorage<TObject, TArrayValue> $storage <p>
+     * The storage containing the elements to retain in the current storage.
+     * </p>
+     * @return void
+     * @since 5.3.6
+     */
+    public function removeAllExcept ($storage) {}
+
+    /**
+     * Returns the data associated with the current iterator entry
+     * @link https://php.net/manual/en/splobjectstorage.getinfo.php
+     * @return mixed The data associated with the current iterator position.
+     * @since 5.3.0
+     */
+    public function getInfo () {}
+
+    /**
+     * Sets the data associated with the current iterator entry
+     * @link https://php.net/manual/en/splobjectstorage.setinfo.php
+     * @param mixed $data <p>
+     * The data to associate with the current iterator entry.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function setInfo ($data) {}
+
+    /**
+     * Returns the number of objects in the storage
+     * @link https://php.net/manual/en/splobjectstorage.count.php
+     * @return int The number of objects in the storage.
+     * @since 5.1.0
+     */
+    public function count () {}
+
+    /**
+     * Rewind the iterator to the first storage element
+     * @link https://php.net/manual/en/splobjectstorage.rewind.php
+     * @return void
+     * @since 5.1.0
+     */
+    public function rewind () {}
+
+    /**
+     * Returns if the current iterator entry is valid
+     * @link https://php.net/manual/en/splobjectstorage.valid.php
+     * @return bool true if the iterator entry is valid, false otherwise.
+     * @since 5.1.0
+     */
+    public function valid () {}
+
+    /**
+     * Returns the index at which the iterator currently is
+     * @link https://php.net/manual/en/splobjectstorage.key.php
+     * @return int The index corresponding to the position of the iterator.
+     * @since 5.1.0
+     */
+    public function key () {}
+
+    /**
+     * Returns the current storage entry
+     * @link https://php.net/manual/en/splobjectstorage.current.php
+     * @return TObject The object at the current iterator position.
+     * @since 5.1.0
+     */
+    public function current () {}
+
+    /**
+     * Move to the next entry
+     * @link https://php.net/manual/en/splobjectstorage.next.php
+     * @return void
+     * @since 5.1.0
+     */
+    public function next () {}
+
+    /**
+     * Unserializes a storage from its string representation
+     * @link https://php.net/manual/en/splobjectstorage.unserialize.php
+     * @param string $serialized <p>
+     * The serialized representation of a storage.
+     * </p>
+     * @return void
+     * @since 5.2.2
+     */
+    public function unserialize ($serialized) {}
+
+    /**
+     * Serializes the storage
+     * @link https://php.net/manual/en/splobjectstorage.serialize.php
+     * @return string A string representing the storage.
+     * @since 5.2.2
+     */
+    public function serialize () {}
+
+    /**
+     * Checks whether an object exists in the storage
+     * @link https://php.net/manual/en/splobjectstorage.offsetexists.php
+     * @param TObject $object <p>
+     * The object to look for.
+     * </p>
+     * @return bool true if the object exists in the storage,
+     * and false otherwise.
+     * @since 5.3.0
+     */
+    public function offsetExists ($object) {}
+
+    /**
+     * Associates data to an object in the storage
+     * @link https://php.net/manual/en/splobjectstorage.offsetset.php
+     * @param TObject $object <p>
+     * The object to associate data with.
+     * </p>
+     * @param mixed $data [optional] <p>
+     * The data to associate with the object.
+     * </p>
+     * @return void
+     * @since 5.3.0
+         */
+    public function offsetSet ($object, $data = null) {}
+
+    /**
+     * Removes an object from the storage
+     * @link https://php.net/manual/en/splobjectstorage.offsetunset.php
+     * @param TObject $object <p>
+     * The object to remove.
+     * </p>
+     * @return void
+     * @since 5.3.0
+     */
+    public function offsetUnset ($object) {}
+
+    /**
+     * Returns the data associated with an <type>object</type>
+     * @link https://php.net/manual/en/splobjectstorage.offsetget.php
+     * @param TObject $object <p>
+     * The object to look for.
+     * </p>
+     * @return mixed The data previously associated with the object in the storage.
+     * @since 5.3.0
+     */
+    public function offsetGet ($object) {}
+
+    /**
+     * Calculate a unique identifier for the contained objects
+     * @link https://php.net/manual/en/splobjectstorage.gethash.php
+     * @param $object  <p>
+     * object whose identifier is to be calculated.
+     * @return string A string with the calculated identifier.
+     * @since 5.4.0
+    */
+    public function getHash($object) {}
+
+}
