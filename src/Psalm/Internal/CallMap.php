@@ -11122,7 +11122,7 @@ return [
 'sem_remove' => ['bool', 'sem_identifier'=>'resource'],
 'Serializable::__construct' => ['void'],
 'Serializable::serialize' => ['string'],
-'Serializable::unserialize' => ['void', 'serialized'=>''],
+'Serializable::unserialize' => ['void', 'serialized'=>'string'],
 'serialize' => ['string', 'variable'=>'mixed'],
 'ServerRequest::withInput' => ['ServerRequest', 'input'=>'mixed'],
 'ServerRequest::withoutParams' => ['ServerRequest', 'params'=>'int|string'],

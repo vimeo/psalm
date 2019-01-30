@@ -493,7 +493,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * Check if offset exists
      * @link http://php.net/manual/en/arrayiterator.offsetexists.php
-     * @param string $index <p>
+     * @param TKey $index <p>
      * The offset being checked.
      * </p>
      * @return bool true if the offset exists, otherwise false
@@ -503,7 +503,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * Get value for an offset
      * @link http://php.net/manual/en/arrayiterator.offsetget.php
-     * @param string $index <p>
+     * @param TKey $index <p>
      * The offset to get the value from.
      * </p>
      * @return TValue The value at offset <i>index</i>.
@@ -513,7 +513,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * Set value for an offset
      * @link http://php.net/manual/en/arrayiterator.offsetset.php
-     * @param string $index <p>
+     * @param TKey $index <p>
      * The index to set for.
      * </p>
      * @param TValue $newval <p>
@@ -526,7 +526,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * Unset value for an offset
      * @link http://php.net/manual/en/arrayiterator.offsetunset.php
-     * @param string $index <p>
+     * @param TKey $index <p>
      * The offset to unset.
      * </p>
      * @return void
