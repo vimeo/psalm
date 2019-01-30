@@ -200,6 +200,7 @@ class ArrayAssignmentAnalyzer
                 isset($child_stmt->dim->inferredType) ? $child_stmt->dim->inferredType : Type::getInt(),
                 true,
                 $array_var_id,
+                $context,
                 $child_stmts ? null : $assignment_type
             );
 

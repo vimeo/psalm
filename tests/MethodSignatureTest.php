@@ -250,7 +250,7 @@ class MethodSignatureTest extends TestCase
                         /** @var int */
                         private $id = 1;
 
-                        public function unserialize($serialized) : void
+                        public function unserialize(string $serialized) : void
                         {
                             [
                                 $this->id,
