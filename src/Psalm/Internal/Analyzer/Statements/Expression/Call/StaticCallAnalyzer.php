@@ -466,6 +466,13 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             if ($pseudo_method_storage->return_type) {
                                 $return_type_candidate = clone $pseudo_method_storage->return_type;
 
+                                $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                                    $codebase,
+                                    $return_type_candidate,
+                                    $fq_class_name,
+                                    $fq_class_name
+                                );
+
                                 if (!isset($stmt->inferredType)) {
                                     $stmt->inferredType = $return_type_candidate;
                                 } else {
