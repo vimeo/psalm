@@ -367,7 +367,7 @@ return [
 'ArrayIterator::setFlags' => ['void', 'flags'=>'string'],
 'ArrayIterator::uasort' => ['void', 'cmp_function'=>'callable(mixed,mixed):int'],
 'ArrayIterator::uksort' => ['void', 'cmp_function'=>'callable(mixed,mixed):int'],
-'ArrayIterator::unserialize' => ['string', 'serialized'=>'string'],
+'ArrayIterator::unserialize' => ['void', 'serialized'=>'string'],
 'ArrayIterator::valid' => ['bool'],
 'ArrayObject::__construct' => ['void', 'input='=>'array|object', 'flags='=>'int', 'iterator_class='=>'string'],
 'ArrayObject::append' => ['void', 'value'=>'mixed'],

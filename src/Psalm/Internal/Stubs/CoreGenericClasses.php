@@ -633,7 +633,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @param string $serialized <p>
      * The serialized ArrayIterator object to be unserialized.
      * </p>
-     * @return string The <b>ArrayIterator</b>.
+     * @return void The <b>ArrayIterator</b>.
      * @since 5.3.0
      */
     public function unserialize($serialized) { }
