@@ -192,7 +192,6 @@ function isNull($value): bool {
 
 ```
 
-
 ### `@psalm-ignore-nullable-return`
 
 This can be used to tell Psalm not to worry if a function/method returns null. It’s a bit of a hack, but occasionally useful for scenarios where you either have a very high confidence of a non-null value, or some other function guarantees a non-null value for that particular code path.
@@ -212,39 +211,6 @@ takesFoo(getFoo());
 ### `@psalm-ignore-falsable-return`
 
 This provides the same, but for `false`. Psalm uses this internally for functions like `preg_replace`, which can return false if the given input has encoding errors, but where 99.9% of the time the function operates as expected.
-
-### `@template` and `@template-typeof`
-
-[Phan](https://github.com/phan/phan) first introduced the template annotation to allow classes to implement generic-like features.
-
-Psalm extends this with `@template-typeof` to allow you to type methods that instantiate objects e.g.
-
-```php
-/**
- * @template T
- * @template-typeof T $class_name
- * @return T
- */
-function instantiator(string $class_name) {
-    return new $class_name();
-}
-```
-
-Psalm also uses `@template` annotations in its stubbed versions of PHP array functions e.g.
-
-```php
-/**
- * Takes one array with keys and another with values and combines them
- *
- * @template TKey
- * @template TValue
- *
- * @param array<mixed, TKey> $arr
- * @param array<mixed, TValue> $arr2
- * @return array<TKey, TValue>
- */
-function array_combine(array $arr, array $arr2) {}
-```
 
 ### `@psalm-seal-properties`
 
@@ -268,6 +234,161 @@ class A {
 $a = new A();
 $a->bar = 5; // this call fails
 ```
+
+## Templating
+
+### `@template`
+
+The `@template` tag allows classes and functions to implement type parameter-like functionality found in many other languages.
+
+As a very simple example, this function returns whatever is passed in:
+
+```php
+/** @template T
+ * @psalm-param T $t
+ * @return T
+ */
+function mirror($t) {
+    return $t;
+}
+
+$a = 5;
+$b = mirror(5); // Psalm knows the result is an int
+```
+
+Psalm also uses `@template` annotations in its stubbed versions of PHP array functions e.g.
+
+```php
+/**
+ * Takes one array with keys and another with values and combines them
+ *
+ * @template TKey
+ * @template TValue
+ *
+ * @param array<mixed, TKey> $arr
+ * @param array<mixed, TValue> $arr2
+ * @return array<TKey, TValue>
+ */
+function array_combine(array $arr, array $arr2) {}
+```
+
+### `@param class-string<T>`
+
+Psalm also allows you to parameterise class types
+
+```php
+/**
+ * @template T
+ * @psalm-param class-string<T> $class
+ * @return T
+ */
+function instantiator(string $class) {
+    return new $class();
+}
+
+class Foo {}
+
+$a = instantiator(Foo::class); // Psalm knows the result is an object of type Foo
+```
+
+### Template inheritance
+
+Psalm allows you to extend templated classes with `@extends`/`@template-extends`:
+
+```php
+/**
+ * @template T
+ */
+class ParentClass {}
+
+/**
+ * @extends ParentClass<int>
+ */
+class ChildClass extends ParentClass {}
+```
+
+similarly you can implement interfaces with `@implements`/`@template-implements`
+
+```php
+/**
+ * @template T
+ */
+interface IFoo {}
+
+/**
+ * @implements IFoo<int>
+ */
+class Foo implements IFoo {}
+```
+
+and import traits with `@use`/`@template-use`
+
+```php
+/**
+ * @template T
+ */
+trait MyTrait {}
+
+class Foo {
+    /**
+     * @use MyTrait<int>
+     */
+    use MyTrait;
+}
+```
+
+You can also extend one templated class with another, e.g.
+
+```php
+/**
+ * @template T1
+ */
+class ParentClass {}
+
+/**
+ * @template T2
+ * @extends ParentClass<T2>
+ */
+class ChildClass extends ParentClass {}
+```
+
+### Template constraints
+
+You can use `@template of <type>` to restrict input. For example, to restrict to a given class you can use
+
+```php
+class Foo {}
+class FooChild extends Foo {}
+
+/**
+ * @template T of Foo
+ * @psalm-param T $class
+ * @return array<int, T>
+ */
+function makeArray($t) {
+    return [$t];
+}
+$a = makeArray(new Foo()); // typed as array<int, Foo>
+$b = makeArray(new FooChild()); // typed as array<int, FooChild>
+$c = makeArray(new stdClass()); // type error
+```
+
+### Builtin templated classes and interfaces
+
+Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.
+
+- `interface Traversable<TKey, TValue>`
+- `interface ArrayAccess<TKey, TValue>`
+- `interface IteratorAggregate<TKey, TValue> extends Traversable<TKey, TValue>`
+- `interface Iterator<TKey, TValue> extends Traversable<TKey, TValue>`
+- `interface SeekableIterator<TKey, TValue> extends Iterator<TKey, TValue>`
+
+- `class Generator<TKey, TValue, TSend, TReturn> extends Traversable<TKey, TValue>`
+- `class ArrayObject<TKey, TValue> implements IteratorAggregate<TKey, TValue>, ArrayAccess<TKey, TValue>`
+- `class ArrayIterator<TKey of array-key, TValue> implements SeekableIterator<TKey, TValue>, ArrayAccess<TKey, TValue>`
+- `class DOMNodeList<TNode of DOMNode> implements Traversable<int, TNode>`
+- `class SplDoublyLinkedList<TKey, TValue> implements Iterator<TKey, TValue>, ArrayAccess<TKey, TValue>`
+- `class SplQueue<TValue> extends SplDoublyLinkedList<int, TValue>`
 
 ## Type Syntax
 
