@@ -930,8 +930,8 @@ class SplQueue extends SplDoublyLinkedList {
  * @link https://php.net/manual/en/class.splobjectstorage.php
  * @template TObject as object
  * @template TArrayValue
- * @template-extends ArrayAccess<TObject, TArrayValue>
- * @template-extends Iterator<int, TObject>
+ * @template-implements ArrayAccess<TObject, TArrayValue>
+ * @template-implements Iterator<int, TObject>
  */
 class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess {
     public function __construct() {}
@@ -942,7 +942,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @param TObject $object <p>
      * The object to add.
      * </p>
-     * @param mixed $data [optional] <p>
+     * @param TArrayValue|null $data [optional] <p>
      * The data to associate with the object.
      * </p>
      * @return void
@@ -1008,7 +1008,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
     /**
      * Returns the data associated with the current iterator entry
      * @link https://php.net/manual/en/splobjectstorage.getinfo.php
-     * @return mixed The data associated with the current iterator position.
+     * @return TArrayValue The data associated with the current iterator position.
      * @since 5.3.0
      */
     public function getInfo () {}
@@ -1016,7 +1016,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
     /**
      * Sets the data associated with the current iterator entry
      * @link https://php.net/manual/en/splobjectstorage.setinfo.php
-     * @param mixed $data <p>
+     * @param TArrayValue $data <p>
      * The data to associate with the current iterator entry.
      * </p>
      * @return void
@@ -1109,7 +1109,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @param TObject $object <p>
      * The object to associate data with.
      * </p>
-     * @param mixed $data [optional] <p>
+     * @param TArrayValue|null $data [optional] <p>
      * The data to associate with the object.
      * </p>
      * @return void
@@ -1134,7 +1134,7 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
      * @param TObject $object <p>
      * The object to look for.
      * </p>
-     * @return mixed The data previously associated with the object in the storage.
+     * @return TArrayValue The data previously associated with the object in the storage.
      * @since 5.3.0
      */
     public function offsetGet ($object) {}

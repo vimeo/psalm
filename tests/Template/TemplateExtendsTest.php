@@ -1032,9 +1032,16 @@ class TemplateExtendsTest extends TestCase
                         }
                     }
 
-                    /** @var SplObjectStorage<\stdClass, mixed> */
+                    /** @var SplObjectStorage<\stdClass, string> */
                     $storage = new SplObjectStorage();
-                    new SomeService($storage);',
+                    new SomeService($storage);
+
+                    $c = new \stdClass();
+                    $storage[$c] = "hello";
+                    $b = $storage->offsetGet($c);',
+                [
+                    '$b' => 'string',
+                ]
             ],
             'extendsArrayIterator' => [
                 '<?php
