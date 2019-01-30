@@ -30,6 +30,7 @@ use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\FileSource;
+use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
@@ -1030,12 +1031,36 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr\Closure $stmt,
         Context $context
     ) {
+        $param_names = array_map(
+            function (PhpParser\Node\Param $p) : string {
+                if (!$p->var instanceof PhpParser\Node\Expr\Variable
+                    || !is_string($p->var->name)
+                ) {
+                    return '';
+                }
+                return $p->var->name;
+            },
+            $stmt->params
+        );
+
         foreach ($stmt->uses as $use) {
             if (!is_string($use->var->name)) {
                 continue;
             }
 
             $use_var_id = '$' . $use->var->name;
+
+            if (in_array($use->var->name, $param_names)) {
+                if (IssueBuffer::accepts(
+                    new DuplicateParam(
+                        'Closure use duplicates param name ' . $use_var_id,
+                        new CodeLocation($statements_analyzer->getSource(), $use->var)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    return false;
+                }
+            }
 
             if (!$context->hasVariable($use_var_id, $statements_analyzer)) {
                 if ($use_var_id === '$argv' || $use_var_id === '$argc') {

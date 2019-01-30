@@ -1074,6 +1074,15 @@ class CallableTest extends TestCase
                     new Foo(function() : void {});',
                 'error_message' => 'UndefinedClass',
             ],
+            'useDuplicateName' => [
+                '<?php
+                    $foo = "bar";
+
+                    $a = function (string $foo) use ($foo) : string {
+                      return $foo;
+                    };',
+                'error_message' => 'DuplicateParam'
+            ],
         ];
     }
 }
