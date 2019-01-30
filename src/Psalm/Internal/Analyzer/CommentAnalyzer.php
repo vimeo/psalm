@@ -641,7 +641,7 @@ class CommentAnalyzer
                 if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     $doc_line_parts = self::splitDocLine($method_entry);
 
-                    if ($doc_line_parts[0] === 'static' && !strpos($doc_line_parts[0], '(')) {
+                    if ($doc_line_parts[0] === 'static' && !strpos($doc_line_parts[1], '(')) {
                         $is_static = true;
                         array_shift($doc_line_parts);
                     }
