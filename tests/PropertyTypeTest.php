@@ -1216,7 +1216,8 @@ class PropertyTypeTest extends TestCase
             'callInParentContext' => [
                 '<?php
                     class A {
-                        public int $i = 1;
+                        /** @var int */
+                        public $i = 1;
                     }
 
                     abstract class B
