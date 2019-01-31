@@ -720,7 +720,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         if ($context->collect_exceptions) {
             if ($context->possibly_thrown_exceptions) {
-                $ignored_exceptions = array_change_key_case($codebase->config->ignored_exceptions);
+                $ignored_exceptions = array_change_key_case(
+                    $codebase->config->ignored_exceptions
+                );
+                $ignored_exceptions_and_descendants = array_change_key_case(
+                    $codebase->config->ignored_exceptions_and_descendants
+                );
 
                 $undocumented_throws = [];
 
@@ -728,6 +733,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $is_expected = false;
 
                     foreach ($storage->throws as $expected_exception => $_) {
+                        if ($expected_exception === $possibly_thrown_exception
+                            || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
+                        ) {
+                            $is_expected = true;
+                            break;
+                        }
+                    }
+
+                    foreach ($ignored_exceptions_and_descendants as $expected_exception => $_) {
                         if ($expected_exception === $possibly_thrown_exception
                             || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
                         ) {

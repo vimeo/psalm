@@ -95,7 +95,8 @@
 
     <xs:complexType name="ExceptionsType">
         <xs:sequence>
-            <xs:element name="class" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="class" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="classAndDescendants" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
         </xs:sequence>
     </xs:complexType>
 

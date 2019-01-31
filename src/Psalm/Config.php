@@ -234,6 +234,11 @@ class Config
     /**
      * @var array<string, bool>
      */
+    public $ignored_exceptions_and_descendants = [];
+
+    /**
+     * @var array<string, bool>
+     */
     public $forbidden_functions = [];
 
     /**
@@ -636,10 +641,18 @@ class Config
             }
         }
 
-        if (isset($config_xml->ignoreExceptions) && isset($config_xml->ignoreExceptions->class)) {
-            /** @var \SimpleXMLElement $exception_class */
-            foreach ($config_xml->ignoreExceptions->class as $exception_class) {
-                $config->ignored_exceptions[(string) $exception_class['name']] = true;
+        if (isset($config_xml->ignoreExceptions)) {
+            if (isset($config_xml->ignoreExceptions->class)) {
+                /** @var \SimpleXMLElement $exception_class */
+                foreach ($config_xml->ignoreExceptions->class as $exception_class) {
+                    $config->ignored_exceptions[(string) $exception_class['name']] = true;
+                }
+            }
+            if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
+                /** @var \SimpleXMLElement $exception_class */
+                foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
+                    $config->ignored_exceptions_and_descendants[(string) $exception_class['name']] = true;
+                }
             }
         }
 

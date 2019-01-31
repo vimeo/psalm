@@ -688,6 +688,13 @@ class Populator
                         if (isset($interface_storage->methods[$method_name])) {
                             $interface_method_storage = $interface_storage->methods[$method_name];
 
+                            if (!$method_storage->throws
+                                && $method_storage->inheritdoc
+                                && $interface_method_storage->throws
+                            ) {
+                                $method_storage->throws = $interface_method_storage->throws;
+                            }
+
                             if ($interface_method_storage->return_type
                                 && $interface_method_storage->signature_return_type
                                 && $interface_method_storage->return_type
@@ -934,9 +941,18 @@ class Populator
                     list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
                     $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
 
+                    $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
+
                     // tell the declaring class it's overridden downstream
-                    $declaring_class_storage->methods[strtolower($declaring_method_name)]->overridden_downstream = true;
-                    $declaring_class_storage->methods[strtolower($declaring_method_name)]->overridden_somewhere = true;
+                    $declaring_method_storage->overridden_downstream = true;
+                    $declaring_method_storage->overridden_somewhere = true;
+
+                    if (!$method_storage->throws
+                        && $method_storage->inheritdoc
+                        && $declaring_method_storage->throws
+                    ) {
+                        $method_storage->throws = $declaring_method_storage->throws;
+                    }
 
                     if (count($storage->overridden_method_ids[$method_name]) === 1
                         && $method_storage->signature_return_type
