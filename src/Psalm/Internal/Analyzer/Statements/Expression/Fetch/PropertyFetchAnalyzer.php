@@ -420,45 +420,52 @@ class PropertyFetchAnalyzer
                 $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )
             ) {
-                if ($context->inside_isset) {
-                    return;
-                }
-
-                if ($stmt_var_id === '$this') {
-                    if ($context->collect_mutations) {
+                if ($fq_class_name !== $context->self
+                    && $context->self
+                    && $codebase->properties->propertyExists(
+                        $context->self . '::$' . $prop_name,
+                        $context->calling_method_id,
+                        $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
+                    )
+                ) {
+                    $property_id = $context->self . '::$' . $prop_name;
+                } else {
+                    if ($context->inside_isset) {
                         return;
                     }
 
-                    if (IssueBuffer::accepts(
-                        new UndefinedThisPropertyFetch(
-                            'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($stmt_var_id === '$this') {
+                        if (IssueBuffer::accepts(
+                            new UndefinedThisPropertyFetch(
+                                'Instance property ' . $property_id . ' is not defined',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UndefinedPropertyFetch(
+                                'Instance property ' . $property_id . ' is not defined',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
-                } else {
-                    if (IssueBuffer::accepts(
-                        new UndefinedPropertyFetch(
-                            'Instance property ' . $property_id . ' is not defined',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $property_id
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
+
+                    $stmt->inferredType = Type::getMixed();
+
+                    if ($var_id) {
+                        $context->vars_in_scope[$var_id] = $stmt->inferredType;
                     }
+
+                    return;
                 }
-
-                $stmt->inferredType = Type::getMixed();
-
-                if ($var_id) {
-                    $context->vars_in_scope[$var_id] = $stmt->inferredType;
-                }
-
-                return;
             }
 
             if (!$override_property_visibility) {

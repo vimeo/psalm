@@ -285,13 +285,23 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $template_types = array_merge($template_types ?: [], $class_storage->template_types);
         }
 
-        $non_null_param_types = array_filter(
-            $storage->params,
-            /** @return bool */
-            function (FunctionLikeParameter $p) {
-                return $p->type !== null;
-            }
-        );
+        if ($storage instanceof MethodStorage && $storage->inheritdoc) {
+            $non_null_param_types = array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return $p->type !== null && $p->has_docblock_type;
+                }
+            );
+        } else {
+            $non_null_param_types = array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return $p->type !== null;
+                }
+            );
+        }
 
         $check_stmts = true;
 

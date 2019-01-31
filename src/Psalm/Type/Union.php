@@ -906,7 +906,10 @@ class Union
                             break;
                         }
 
-                        if ($input_key === 'array' && $key === 'iterable') {
+                        if (($atomic_input_type instanceof Type\Atomic\TArray
+                                || $atomic_input_type instanceof Type\Atomic\ObjectLike)
+                            && $key === 'iterable'
+                        ) {
                             $matching_atomic_type = $atomic_input_type;
                             break;
                         }

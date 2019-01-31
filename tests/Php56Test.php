@@ -240,6 +240,17 @@ class Php56Test extends TestCase
                         return intval(...$args);
                     }',
             ],
+            'yieldReturn' => [
+                '<?php
+                    function foo() : Traversable {
+                        if (rand(0, 1)) {
+                            yield "hello";
+                            return;
+                        }
+
+                        yield "goodbye";
+                    }',
+            ],
         ];
     }
 
