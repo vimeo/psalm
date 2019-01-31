@@ -716,4 +716,16 @@ class Context
 
         return isset($this->vars_in_scope[$var_name]);
     }
+
+    public function getScopeSummary() : string
+    {
+        $summary = [];
+        foreach ($this->vars_possibly_in_scope as $k => $_) {
+            $summary[$k] = true;
+        }
+        foreach ($this->vars_in_scope as $k => $v) {
+            $summary[$k] = $v->getId();
+        }
+        return json_encode($summary);
+    }
 }

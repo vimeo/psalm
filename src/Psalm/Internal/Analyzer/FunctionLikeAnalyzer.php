@@ -74,7 +74,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     private $local_return_type;
 
     /**
-     * @var array<string, array>
+     * @var array<string, bool>
      */
     protected static $no_effects_hashes = [];
 
@@ -141,18 +141,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $method_id = (string)$this->getMethodId($context->self);
 
             if ($add_mutations) {
-                $hash = $real_method_id . json_encode([
-                    $context->vars_in_scope,
-                    $context->vars_possibly_in_scope,
-                ]);
+                $hash = md5($real_method_id . '::' . $context->getScopeSummary());
 
                 // if we know that the function has no effects on vars, we don't bother rechecking
                 if (isset(self::$no_effects_hashes[$hash])) {
-                    list(
-                        $context->vars_in_scope,
-                        $context->vars_possibly_in_scope
-                    ) = self::$no_effects_hashes[$hash];
-
                     return null;
                 }
             } elseif ($context->self) {
@@ -790,16 +782,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             if ($hash && $real_method_id && $this instanceof MethodAnalyzer) {
-                $new_hash = $real_method_id . json_encode([
-                    $context->vars_in_scope,
-                    $context->vars_possibly_in_scope,
-                ]);
+                $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
 
                 if ($new_hash === $hash) {
-                    self::$no_effects_hashes[$hash] = [
-                        $context->vars_in_scope,
-                        $context->vars_possibly_in_scope,
-                    ];
+                    self::$no_effects_hashes[$hash] = true;
                 }
             }
         }
