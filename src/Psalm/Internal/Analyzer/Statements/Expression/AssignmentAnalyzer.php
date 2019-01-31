@@ -501,6 +501,7 @@ class AssignmentAnalyzer
                 $statements_analyzer,
                 $assign_var,
                 $context,
+                $assign_value,
                 $assign_value_type
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
@@ -663,6 +664,7 @@ class AssignmentAnalyzer
                     $statements_analyzer,
                     $stmt->var,
                     $context,
+                    $stmt->expr,
                     $result_type ?: Type::getMixed($context->inside_loop)
                 );
             } elseif ($result_type && $array_var_id) {

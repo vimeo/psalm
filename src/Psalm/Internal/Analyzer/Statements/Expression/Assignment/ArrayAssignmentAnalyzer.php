@@ -17,9 +17,10 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 class ArrayAssignmentAnalyzer
 {
     /**
-     * @param   StatementsAnalyzer                   $statements_analyzer
+     * @param   StatementsAnalyzer                  $statements_analyzer
      * @param   PhpParser\Node\Expr\ArrayDimFetch   $stmt
      * @param   Context                             $context
+     * @param   PhpParser\Node\Expr|null            $assign_value
      * @param   Type\Union                          $assignment_value_type
      *
      * @return  void
@@ -29,6 +30,7 @@ class ArrayAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
+        $assign_value,
         Type\Union $assignment_value_type
     ) {
         $nesting = 0;
@@ -42,6 +44,7 @@ class ArrayAssignmentAnalyzer
         self::updateArrayType(
             $statements_analyzer,
             $stmt,
+            $assign_value,
             $assignment_value_type,
             $context
         );
@@ -55,6 +58,7 @@ class ArrayAssignmentAnalyzer
      * @param  StatementsAnalyzer                 $statements_analyzer
      * @param  PhpParser\Node\Expr\ArrayDimFetch $stmt
      * @param  Type\Union                        $assignment_type
+     * @param  PhpParser\Node\Expr|null          $assign_value
      * @param  Context                           $context
      *
      * @return false|null
@@ -62,6 +66,7 @@ class ArrayAssignmentAnalyzer
     public static function updateArrayType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        $assign_value,
         Type\Union $assignment_type,
         Context $context
     ) {
@@ -201,6 +206,7 @@ class ArrayAssignmentAnalyzer
                 true,
                 $array_var_id,
                 $context,
+                $child_stmts ? null : $assign_value,
                 $child_stmts ? null : $assignment_type
             );
 

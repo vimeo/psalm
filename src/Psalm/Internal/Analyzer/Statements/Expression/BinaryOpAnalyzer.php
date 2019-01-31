@@ -1001,6 +1001,7 @@ class BinaryOpAnalyzer
                 ArrayAssignmentAnalyzer::updateArrayType(
                     $statements_source,
                     $left,
+                    $right,
                     $result_type,
                     $context
                 );

@@ -252,6 +252,7 @@ class ArrayFetchAnalyzer
         $in_assignment,
         $array_var_id,
         Context $context,
+        PhpParser\Node\Expr $assign_value = null,
         Type\Union $replacement_type = null
     ) {
         $codebase = $statements_analyzer->getCodebase();
@@ -717,10 +718,10 @@ class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TNamedObject && $stmt->dim) {
+            if ($type instanceof TNamedObject) {
                 if (strtolower($type->value) === 'simplexmlelement') {
                     $array_access_type = Type::getMixed();
-                } elseif (strtolower($type->value) === 'domnodelist') {
+                } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
                     $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                         $stmt->var,
                         new PhpParser\Node\Identifier('item', $stmt->var->getAttributes()),
@@ -747,20 +748,46 @@ class ArrayFetchAnalyzer
 
                     $iterator_class_type = $fake_method_call->inferredType ?? null;
                     $array_access_type = $iterator_class_type ?: Type::getMixed();
-                } elseif (strtolower($type->value) === 'arrayaccess'
-                    || (($codebase->classExists($type->value)
-                        && $codebase->classImplements($type->value, 'ArrayAccess'))
-                    || ($codebase->interfaceExists($type->value)
-                        && $codebase->interfaceExtends($type->value, 'ArrayAccess'))
-                    )
+                } elseif ((strtolower($type->value) === 'arrayaccess'
+                        || (($codebase->classExists($type->value)
+                            && $codebase->classImplements($type->value, 'ArrayAccess'))
+                        || ($codebase->interfaceExists($type->value)
+                            && $codebase->interfaceExtends($type->value, 'ArrayAccess'))
+                        ))
+                    && ($stmt->dim || $in_assignment)
                 ) {
-                    $fake_method_call = new PhpParser\Node\Expr\MethodCall(
-                        $stmt->var,
-                        new PhpParser\Node\Identifier('offsetGet', $stmt->var->getAttributes()),
-                        [
-                            new PhpParser\Node\Arg($stmt->dim)
-                        ]
-                    );
+                    if ($in_assignment) {
+                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                            $stmt->var,
+                            new PhpParser\Node\Identifier('offsetSet', $stmt->var->getAttributes()),
+                            [
+                                new PhpParser\Node\Arg(
+                                    $stmt->dim
+                                        ? $stmt->dim
+                                        : new PhpParser\Node\Expr\ConstFetch(
+                                            new PhpParser\Node\Name('null'),
+                                            $stmt->var->getAttributes()
+                                        )
+                                ),
+                                new PhpParser\Node\Arg(
+                                    $assign_value
+                                        ?: new PhpParser\Node\Expr\ConstFetch(
+                                            new PhpParser\Node\Name('null'),
+                                            $stmt->var->getAttributes()
+                                        )
+                                ),
+                            ]
+                        );
+                    } else {
+                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                            $stmt->var,
+                            new PhpParser\Node\Identifier('offsetGet', $stmt->var->getAttributes()),
+                            [
+                                new PhpParser\Node\Arg($stmt->dim)
+                            ]
+                        );
+                    }
+
 
                     $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
