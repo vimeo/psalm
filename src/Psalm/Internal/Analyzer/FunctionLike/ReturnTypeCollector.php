@@ -224,7 +224,10 @@ class ReturnTypeCollector
                 $value_type = null;
 
                 foreach ($yield_types as $type) {
-                    if ($type instanceof Type\Atomic\TArray || $type instanceof Type\Atomic\TGenericObject) {
+                    if ($type instanceof Type\Atomic\TArray
+                        || $type instanceof Type\Atomic\TIterable
+                        || $type instanceof Type\Atomic\TGenericObject
+                    ) {
                         switch (count($type->type_params)) {
                             case 1:
                                 $key_type_param = Type::getMixed();
