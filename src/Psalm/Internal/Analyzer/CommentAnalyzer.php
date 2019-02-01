@@ -66,11 +66,7 @@ class CommentAnalyzer
                     continue;
                 }
 
-                try {
-                    $line_parts = self::splitDocLine($var_line);
-                } catch (DocblockParseException $e) {
-                    throw $e;
-                }
+                $line_parts = self::splitDocLine($var_line);
 
                 if ($line_parts && $line_parts[0]) {
                     if ($line_parts[0][0] === '$' && $line_parts[0] !== '$this') {
@@ -265,11 +261,7 @@ class CommentAnalyzer
 
             /** @var string $param */
             foreach ($all_params as $line_number => $param) {
-                try {
-                    $line_parts = self::splitDocLine($param);
-                } catch (DocblockParseException $e) {
-                    throw $e;
-                }
+                $line_parts = self::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
                     continue;
@@ -305,11 +297,7 @@ class CommentAnalyzer
         if (isset($comments['specials']['param-out'])) {
             /** @var string $param */
             foreach ($comments['specials']['param-out'] as $line_number => $param) {
-                try {
-                    $line_parts = self::splitDocLine($param);
-                } catch (DocblockParseException $e) {
-                    throw $e;
-                }
+                $line_parts = self::splitDocLine($param);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
                     continue;
@@ -344,11 +332,7 @@ class CommentAnalyzer
 
         if (isset($comments['specials']['global'])) {
             foreach ($comments['specials']['global'] as $line_number => $global) {
-                try {
-                    $line_parts = self::splitDocLine($global);
-                } catch (DocblockParseException $e) {
-                    throw $e;
-                }
+                $line_parts = self::splitDocLine($global);
 
                 if (count($line_parts) === 1 && isset($line_parts[0][0]) && $line_parts[0][0] === '$') {
                     continue;
@@ -516,11 +500,7 @@ class CommentAnalyzer
             return;
         }
 
-        try {
-            $line_parts = self::splitDocLine($return_block);
-        } catch (DocblockParseException $e) {
-            throw $e;
-        }
+        $line_parts = self::splitDocLine($return_block);
 
         if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
             && $line_parts[0][0] !== '{'
@@ -750,11 +730,7 @@ class CommentAnalyzer
     {
         $magic_property_comments = isset($specials[$property_tag]) ? $specials[$property_tag] : [];
         foreach ($magic_property_comments as $line_number => $property) {
-            try {
-                $line_parts = self::splitDocLine($property);
-            } catch (DocblockParseException $e) {
-                throw $e;
-            }
+            $line_parts = self::splitDocLine($property);
 
             if (count($line_parts) === 1 && $line_parts[0][0] === '$') {
                 array_unshift($line_parts, 'mixed');
