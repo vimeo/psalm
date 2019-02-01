@@ -873,7 +873,9 @@ class Union
                                     $input_atomic_type->param_name,
                                     $input_atomic_type->as_type
                                         ? new Union([$input_atomic_type->as_type])
-                                        : Type::getMixed()
+                                        : ($input_atomic_type->as === 'object'
+                                            ? Type::getObject()
+                                            : Type::getMixed())
                                 );
                             }
                         }
