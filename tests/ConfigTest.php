@@ -372,6 +372,7 @@ class ConfigTest extends TestCase
                             <errorLevel type="suppress">
                                 <referencedClass name="Psalm\Badger" />
                                 <referencedClass name="Psalm\*Actor" />
+                                <referencedClass name="*MagicFactory" />
                             </errorLevel>
                         </UndefinedClass>
                         <UndefinedMethod>
@@ -434,6 +435,14 @@ class ConfigTest extends TestCase
             $config->getReportingLevelForClass(
                 'UndefinedClass',
                 'Psalm\GoodActor'
+            )
+        );
+
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForClass(
+                'UndefinedClass',
+                'Psalm\MagicFactory'
             )
         );
 
