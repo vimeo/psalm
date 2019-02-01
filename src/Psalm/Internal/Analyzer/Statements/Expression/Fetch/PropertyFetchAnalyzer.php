@@ -809,9 +809,16 @@ class PropertyFetchAnalyzer
             $property = $class_storage->properties[$prop_name];
 
             if ($var_id) {
-                $context->vars_in_scope[$var_id] = $property->type
-                    ? clone $property->type
-                    : Type::getMixed();
+                if ($property->type) {
+                    $context->vars_in_scope[$var_id] = ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        clone $property->type,
+                        $declaring_property_class,
+                        $declaring_property_class
+                    );
+                } else {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                }
 
                 $stmt->inferredType = clone $context->vars_in_scope[$var_id];
 

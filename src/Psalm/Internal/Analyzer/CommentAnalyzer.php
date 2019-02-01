@@ -787,7 +787,6 @@ class CommentAnalyzer
 
         $quote_char = null;
         $escaped = false;
-        $expectation = false;
 
         for ($i = 0, $l = strlen($return_block); $i < $l; ++$i) {
             $char = $return_block[$i];
@@ -827,7 +826,7 @@ class CommentAnalyzer
             }
 
             if ($char === ':' && $last_char === ')') {
-                $expectation = true;
+                $expects_callable_return = true;
 
                 $type .= $char;
 
@@ -848,8 +847,8 @@ class CommentAnalyzer
                     throw new DocblockParseException('Invalid string ' . $return_block);
                 }
             } elseif ($char === ' ') {
-                if ($brackets || $expectation) {
-                    $expectation = false;
+                if ($brackets) {
+                    $expects_callable_return = false;
                     continue;
                 }
 
@@ -875,8 +874,6 @@ class CommentAnalyzer
                     continue;
                 }
 
-                //var_dump($type);
-
                 $remaining = trim(substr($return_block, $i + 1));
 
                 if ($remaining) {
@@ -886,7 +883,7 @@ class CommentAnalyzer
                 return [$type];
             }
 
-            $expectation = false;
+            $expects_callable_return = false;
 
             $type .= $char;
         }

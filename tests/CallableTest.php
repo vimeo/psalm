@@ -1090,11 +1090,43 @@ class CallableTest extends TestCase
                     };',
                 'error_message' => 'DuplicateParam'
             ],
-            'callableWithSpacesBadVarArg' => [
+            'callableWithSpaceAfterColonBadVarArg' => [
                 '<?php
                     class C {
                         /**
                          * @var callable(string, string): bool $p
+                         */
+                        public $p;
+
+                        public function __construct() {
+                            $this->p = function (string $s, string $t): stdClass {
+                                return new stdClass;
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'callableWithSpaceBeforeColonBadVarArg' => [
+                '<?php
+                    class C {
+                        /**
+                         * @var callable(string, string) :bool $p
+                         */
+                        public $p;
+
+                        public function __construct() {
+                            $this->p = function (string $s, string $t): stdClass {
+                                return new stdClass;
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'callableWithSpacesEitherSideOfColonBadVarArg' => [
+                '<?php
+                    class C {
+                        /**
+                         * @var callable(string, string) : bool $p
                          */
                         public $p;
 

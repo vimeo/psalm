@@ -1254,6 +1254,18 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'staticVarSelf' => [
+                '<?php
+                    class Foo {
+                        /** @var self */
+                        public static $current;
+                    }
+
+                    $a = Foo::$current;',
+                [
+                    '$a' => 'Foo',
+                ]
+            ],
         ];
     }
 
