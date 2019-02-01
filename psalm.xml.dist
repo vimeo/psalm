@@ -59,6 +59,12 @@
         </MissingConstructor>
         <DeprecatedProperty errorLevel="suppress"/>
 
+        <DeprecatedMethod>
+            <errorLevel type="info">
+                <referencedMethod name="PHPUnit\Framework\Assert::assertArraySubset"/>
+            </errorLevel>
+        </DeprecatedMethod>
+
         <UnusedParam>
             <errorLevel type="suppress">
                 <directory name="examples"/>

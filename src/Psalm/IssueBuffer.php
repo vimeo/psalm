@@ -155,7 +155,21 @@ class IssueBuffer
 
         $error_message = $issue_type . ' - ' . $e->getShortLocation() . ' - ' . $e->getMessage();
 
-        $reporting_level = $config->getReportingLevelForFile($issue_type, $e->getFilePath());
+        if ($e instanceof ClassIssue
+            && $config->getReportingLevelForClass($issue_type, $e->fq_classlike_name) === Config::REPORT_INFO
+        ) {
+            $reporting_level = Config::REPORT_INFO;
+        } elseif ($e instanceof MethodIssue
+            && $config->getReportingLevelForMethod($issue_type, $e->method_id) === Config::REPORT_INFO
+        ) {
+            $reporting_level = Config::REPORT_INFO;
+        } elseif ($e instanceof PropertyIssue
+            && $config->getReportingLevelForProperty($issue_type, $e->property_id) === Config::REPORT_INFO
+        ) {
+            $reporting_level = Config::REPORT_INFO;
+        } else {
+            $reporting_level = $config->getReportingLevelForFile($issue_type, $e->getFilePath());
+        }
 
         $parent_issue_type = self::getParentIssueType($issue_type);
 
