@@ -59,10 +59,9 @@ class ComposerLockTest extends TestCase
             'packages-dev' => [],
         ]));
 
-        $this->assertArraySubset(
-            ['vendor/package' => 'Vendor\Package\PluginClass'],
-            $lock->getPlugins()
-        );
+        $plugins = $lock->getPlugins();
+        $this->assertArrayHasKey('vendor/package', $plugins);
+        $this->assertEquals('Vendor\Package\PluginClass', $plugins['vendor/package']);
     }
 
     /**
@@ -85,10 +84,10 @@ class ComposerLockTest extends TestCase
                 ],
             ],
         ]));
-        $this->assertArraySubset(
-            ['vendor/package' => 'Vendor\Package\PluginClass'],
-            $lock->getPlugins()
-        );
+
+        $plugins = $lock->getPlugins();
+        $this->assertArrayHasKey('vendor/package', $plugins);
+        $this->assertEquals('Vendor\Package\PluginClass', $plugins['vendor/package']);
     }
 
     /**
