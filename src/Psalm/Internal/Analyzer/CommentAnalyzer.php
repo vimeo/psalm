@@ -787,10 +787,12 @@ class CommentAnalyzer
 
         $quote_char = null;
         $escaped = false;
+        $expectation = false;
 
         for ($i = 0, $l = strlen($return_block); $i < $l; ++$i) {
             $char = $return_block[$i];
             $next_char = $i < $l - 1 ? $return_block[$i + 1] : null;
+            $last_char = $i > 0 ? $return_block[$i - 1] : null;
 
             if ($quote_char) {
                 if ($char === $quote_char && $i > 1 && !$escaped) {
@@ -824,6 +826,14 @@ class CommentAnalyzer
                 continue;
             }
 
+            if ($char === ':' && $last_char === ')') {
+                $expectation = true;
+
+                $type .= $char;
+
+                continue;
+            }
+
             if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
                 $brackets .= $char;
             } elseif ($char === ']' || $char === '}' || $char === ')' || $char === '>') {
@@ -838,7 +848,8 @@ class CommentAnalyzer
                     throw new DocblockParseException('Invalid string ' . $return_block);
                 }
             } elseif ($char === ' ') {
-                if ($brackets) {
+                if ($brackets || $expectation) {
+                    $expectation = false;
                     continue;
                 }
 
@@ -847,8 +858,6 @@ class CommentAnalyzer
                     $type .= $next_char;
                     continue;
                 }
-
-                $last_char = $i > 0 ? $return_block[$i - 1] : null;
 
                 if ($last_char === '|') {
                     continue;
@@ -866,6 +875,8 @@ class CommentAnalyzer
                     continue;
                 }
 
+                //var_dump($type);
+
                 $remaining = trim(substr($return_block, $i + 1));
 
                 if ($remaining) {
@@ -874,6 +885,8 @@ class CommentAnalyzer
 
                 return [$type];
             }
+
+            $expectation = false;
 
             $type .= $char;
         }

@@ -621,6 +621,13 @@ class CallableTest extends TestCase
                     f([new C, "m"]);
                     f([C::class, "m"]);'
             ],
+            'callableWithSpaces' => [
+                '<?php
+                    /**
+                     * @param callable(string, string) : int $p
+                     */
+                    function f(callable $p): void {}'
+            ],
             'fileExistsCallable' => [
                 '<?php
                     /** @return string[] */
@@ -1082,6 +1089,22 @@ class CallableTest extends TestCase
                       return $foo;
                     };',
                 'error_message' => 'DuplicateParam'
+            ],
+            'callableWithSpacesBadVarArg' => [
+                '<?php
+                    class C {
+                        /**
+                         * @var callable(string, string): bool $p
+                         */
+                        public $p;
+
+                        public function __construct() {
+                            $this->p = function (string $s, string $t): stdClass {
+                                return new stdClass;
+                            };
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }
