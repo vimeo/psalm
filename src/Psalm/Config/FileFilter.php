@@ -259,7 +259,7 @@ class FileFilter
             foreach ($e->referencedClass as $referenced_class) {
                 $class_name = strtolower((string)$referenced_class['name']);
 
-                if (strpos($class_name, '*')) {
+                if (strpos($class_name, '*') !== false) {
                     $regex = '/' . \str_replace('*', '.*', str_replace('\\', '\\\\', $class_name)) . '/i';
                     $filter->fq_classlike_patterns[] = $regex;
                 } else {
