@@ -1358,7 +1358,7 @@ class Reconciler
                 }
             }
 
-            if (!$did_remove_type || !$non_object_types) {
+            if (!$non_object_types) {
                 if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
