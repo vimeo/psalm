@@ -124,12 +124,8 @@ abstract class Type
             return new Union([Atomic::create($only_token, $php_compatible, $template_type_map)]);
         }
 
-        try {
-            $parse_tree = ParseTree::createFromTokens($type_tokens);
-            $parsed_type = self::getTypeFromTree($parse_tree, $php_compatible, $template_type_map);
-        } catch (TypeParseTreeException $e) {
-            throw $e;
-        }
+        $parse_tree = ParseTree::createFromTokens($type_tokens);
+        $parsed_type = self::getTypeFromTree($parse_tree, $php_compatible, $template_type_map);
 
         if (!($parsed_type instanceof Union)) {
             $parsed_type = new Union([$parsed_type]);
