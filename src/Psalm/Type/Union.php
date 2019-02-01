@@ -1059,7 +1059,10 @@ class Union
 
                         $new_types[$unknown_class_string->getKey()] = $unknown_class_string;
                     } elseif ($template_type_part instanceof Type\Atomic\TNamedObject) {
-                        $literal_class_string = new Type\Atomic\TClassString($template_type_part->value);
+                        $literal_class_string = new Type\Atomic\TClassString(
+                            $template_type_part->value,
+                            $template_type_part
+                        );
 
                         $new_types[$literal_class_string->getKey()] = $literal_class_string;
                     }
