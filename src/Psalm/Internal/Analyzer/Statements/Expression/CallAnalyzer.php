@@ -1768,7 +1768,8 @@ class CallAnalyzer
                 $context->inferType(
                     $input_expr,
                     $source_analyzer->getFunctionLikeStorage($statements_analyzer),
-                    $param_type
+                    $param_type,
+                    $codebase
                 );
             }
         }

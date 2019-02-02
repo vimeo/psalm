@@ -308,7 +308,7 @@ class FunctionDocblockManipulator
                 foreach ($parsed_docblock['specials']['param'] as &$param_block) {
                     $doc_parts = CommentAnalyzer::splitDocLine($param_block);
 
-                    if ($doc_parts[1] === '$' . $param_name) {
+                    if (($doc_parts[1] ?? null) === '$' . $param_name) {
                         $param_block = $new_param_block;
                         $found_in_params = true;
                         break;

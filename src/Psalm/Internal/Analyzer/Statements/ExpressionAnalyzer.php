@@ -1325,7 +1325,12 @@ class ExpressionAnalyzer
             }
 
             if ($function_storage) {
-                $context->inferType($part, $function_storage, Type::getString());
+                $context->inferType(
+                    $part,
+                    $function_storage,
+                    new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt, new Type\Atomic\TFloat]),
+                    $statements_analyzer->getCodebase()
+                );
             }
         }
 

@@ -1325,10 +1325,28 @@ class FileManipulationTest extends TestCase
                     }',
                 '<?php
                     /**
+                     * @param string|int|float $a
+                     */
+                    function fooFoo($a): void {
+                        echo $a . "foo";
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButConcatAndStringUsage' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo $a . "foo";
+                        echo substr($a, 4, 2);
+                    }',
+                '<?php
+                    /**
                      * @param string $a
                      */
                     function fooFoo($a): void {
                         echo $a . "foo";
+                        echo substr($a, 4, 2);
                     }',
                 '7.1',
                 ['MissingParamType'],
@@ -1373,10 +1391,28 @@ class FileManipulationTest extends TestCase
                     }',
                 '<?php
                     /**
+                     * @param string|int|float $a
+                     */
+                    function fooFoo($a): void {
+                        echo "$a";
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButTemplatedStringAntStringUsage' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo "$a";
+                        echo substr($a, 4, 2);
+                    }',
+                '<?php
+                    /**
                      * @param string $a
                      */
                     function fooFoo($a): void {
                         echo "$a";
+                        echo substr($a, 4, 2);
                     }',
                 '7.1',
                 ['MissingParamType'],
