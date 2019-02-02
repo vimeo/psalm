@@ -1258,6 +1258,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $method_context = clone $class_context;
         $method_context->collect_exceptions = $config->check_for_throws_docblock;
+        $method_context->infer_types = $codebase->infer_types_from_usage;
 
         $method_analyzer->analyze(
             $method_context,

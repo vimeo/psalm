@@ -553,20 +553,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 && $function_param->location
                 && !isset($implemented_docblock_param_types[$offset])
             ) {
-                $possible_type = null;
+                if ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
+                ) {
+                    $possible_type = $context->possible_param_types[$function_param->name] ?? null;
 
-                if (isset($context->possible_param_types[$function_param->name])) {
-                    $possible_type = $context->possible_param_types[$function_param->name];
+                    if (!$possible_type || $possible_type->hasMixed() || $possible_type->isNull()) {
+                        continue;
+                    }
+
+                    self::addOrUpdateParamType(
+                        $project_analyzer,
+                        $function_param->name,
+                        $possible_type
+                    );
+
+                    continue;
                 }
-
-                $infer_text = $codebase->infer_types_from_usage
-                    ? ', ' . ($possible_type ? 'should be ' . $possible_type : 'could not infer type')
-                    : '';
 
                 if ($this->function instanceof Closure) {
                     IssueBuffer::accepts(
                         new MissingClosureParamType(
-                            'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
+                            'Parameter $' . $function_param->name . ' has no provided type',
                             $function_param->location
                         ),
                         array_merge($this->suppressed_issues, $storage->suppressed_issues)
@@ -574,7 +582,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 } else {
                     IssueBuffer::accepts(
                         new MissingParamType(
-                            'Parameter $' . $function_param->name . ' has no provided type' . $infer_text,
+                            'Parameter $' . $function_param->name . ' has no provided type',
                             $function_param->location
                         ),
                         array_merge($this->suppressed_issues, $storage->suppressed_issues)

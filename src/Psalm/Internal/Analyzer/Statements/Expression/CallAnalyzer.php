@@ -1761,7 +1761,7 @@ class CallAnalyzer
 
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
-        if ($codebase->infer_types_from_usage && $input_expr->inferredType) {
+        if ($context->infer_types && isset($input_expr->inferredType)) {
             $source_analyzer = $statements_analyzer->getSource();
 
             if ($source_analyzer instanceof FunctionLikeAnalyzer) {

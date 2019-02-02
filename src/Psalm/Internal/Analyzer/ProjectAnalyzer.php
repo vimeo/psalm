@@ -750,6 +750,7 @@ class ProjectAnalyzer
         $safe_types = false
     ) {
         $this->codebase->alter_code = true;
+        $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
         $this->php_major_version = $php_major_version;
         $this->php_minor_version = $php_minor_version;

@@ -655,7 +655,7 @@ class IfAnalyzer
                 }
             }
 
-            if ($codebase->infer_types_from_usage) {
+            if ($if_context->infer_types) {
                 $if_scope->possible_param_types = $if_context->possible_param_types;
             }
         } else {
@@ -1167,7 +1167,7 @@ class IfAnalyzer
             $if_scope->reasonable_clauses = [];
         }
 
-        if ($codebase->infer_types_from_usage) {
+        if ($elseif_context->infer_types) {
             $elseif_possible_param_types = $elseif_context->possible_param_types;
 
             if ($if_scope->possible_param_types) {
@@ -1587,7 +1587,7 @@ class IfAnalyzer
             $outer_context->possibly_thrown_exceptions += $else_context->possibly_thrown_exceptions;
         }
 
-        if ($codebase->infer_types_from_usage) {
+        if ($else_context->infer_types) {
             $else_possible_param_types = $else_context->possible_param_types;
 
             if ($if_scope->possible_param_types) {

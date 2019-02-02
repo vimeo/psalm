@@ -961,64 +961,6 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MismatchingDocblockReturnType',
             ],
-            'noStringParamType' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo substr($a, 4, 2);
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
-                    . ' should be string',
-                'error_levels' => ['MixedArgument'],
-            ],
-            'noParamTypeButConcat' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo $a . "foo";
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
-                    . ' should be string',
-                'error_levels' => ['MixedOperand'],
-            ],
-            'noParamTypeButAddition' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo $a + 5;
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
-                    . ' should be int|float',
-                'error_levels' => ['MixedOperand', 'MixedArgument'],
-            ],
-            'noParamTypeButDivision' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo $a / 5;
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
-                    . ' should be int|float',
-                'error_levels' => ['MixedOperand', 'MixedArgument'],
-            ],
-            'noParamTypeButTemplatedString' => [
-                '<?php
-                    function fooFoo($a): void {
-                        echo "$a";
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
-                    . ' should be string',
-                'error_levels' => ['MixedOperand'],
-            ],
-            'noStringIntParamType' => [
-                '<?php
-                    function fooFoo($a): void {
-                        if (is_string($a)) {
-                            echo substr($a, 4, 2);
-                        } else {
-                            echo substr("hello", $a, 2);
-                        }
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2 - Parameter $a has no provided type,'
-                    . ' should be int|string',
-                'error_levels' => ['MixedArgument'],
-            ],
             'intParamTypeDefinedInParent' => [
                 '<?php
                     class A {
@@ -1030,32 +972,6 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingParamType',
                 'error_levels' => ['MethodSignatureMismatch'],
-            ],
-            'alreadyHasCheck' => [
-                '<?php
-                    function takesString(string $s): void {}
-
-                    function shouldTakeString($s): void {
-                      if (is_string($s)) takesString($s);
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4 - Parameter $s has no provided type,'
-                    . ' could not infer',
-                'error_levels' => ['MixedArgument'],
-            ],
-            'isSetBeforeInferrence' => [
-                'input' => '<?php
-                    function takesString(string $s): void {}
-
-                    /** @return mixed */
-                    function returnsMixed() {}
-
-                    function shouldTakeString($s): void {
-                      $s = returnsMixed();
-                      takesString($s);
-                    }',
-                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7 - Parameter $s has no provided type,'
-                    . ' could not infer',
-                'error_levels' => ['MixedArgument', 'InvalidReturnType', 'MixedAssignment'],
             ],
             'psalmInvalidVar' => [
                 '<?php

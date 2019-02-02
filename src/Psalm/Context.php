@@ -266,6 +266,11 @@ class Context
     public $calling_method_id;
 
     /**
+     * @var bool
+     */
+    public $infer_types = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

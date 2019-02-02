@@ -1302,6 +1302,152 @@ class FileManipulationTest extends TestCase
                 [],
                 true,
             ],
+            'noStringParamType' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo substr($a, 4, 2);
+                    }',
+                '<?php
+                    /**
+                     * @param string $a
+                     */
+                    function fooFoo($a): void {
+                        echo substr($a, 4, 2);
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButConcat' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo $a . "foo";
+                    }',
+                '<?php
+                    /**
+                     * @param string $a
+                     */
+                    function fooFoo($a): void {
+                        echo $a . "foo";
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButAddition' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo $a + 5;
+                    }',
+                '<?php
+                    /**
+                     * @param int|float $a
+                     */
+                    function fooFoo($a): void {
+                        echo $a + 5;
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButDivision' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo $a / 5;
+                    }',
+                '<?php
+                    /**
+                     * @param int|float $a
+                     */
+                    function fooFoo($a): void {
+                        echo $a / 5;
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButTemplatedString' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo "$a";
+                    }',
+                '<?php
+                    /**
+                     * @param string $a
+                     */
+                    function fooFoo($a): void {
+                        echo "$a";
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noStringIntParamType' => [
+                '<?php
+                    function fooFoo($a): void {
+                        if (is_string($a)) {
+                            echo substr($a, 4, 2);
+                        } else {
+                            echo substr("hello", $a, 2);
+                        }
+                    }',
+                '<?php
+                    /**
+                     * @param int|string $a
+                     */
+                    function fooFoo($a): void {
+                        if (is_string($a)) {
+                            echo substr($a, 4, 2);
+                        } else {
+                            echo substr("hello", $a, 2);
+                        }
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'alreadyHasCheck' => [
+                '<?php
+                    function takesString(string $s): void {}
+
+                    function shouldTakeString($s): void {
+                        if (is_string($s)) takesString($s);
+                    }',
+                '<?php
+                    function takesString(string $s): void {}
+
+                    function shouldTakeString($s): void {
+                        if (is_string($s)) takesString($s);
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'isSetBeforeInferrence' => [
+                '<?php
+                    function takesString(string $s): void {}
+
+                    /** @return mixed */
+                    function returnsMixed() {}
+
+                    function shouldTakeString($s): void {
+                        $s = returnsMixed();
+                        takesString($s);
+                    }',
+                '<?php
+                    function takesString(string $s): void {}
+
+                    /** @return mixed */
+                    function returnsMixed() {}
+
+                    function shouldTakeString($s): void {
+                        $s = returnsMixed();
+                        takesString($s);
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
         ];
     }
 }

@@ -1308,11 +1308,9 @@ class ExpressionAnalyzer
         PhpParser\Node\Scalar\Encapsed $stmt,
         Context $context
     ) {
-        $codebase = $statements_analyzer->getCodebase();
-
         $function_storage = null;
 
-        if ($codebase->infer_types_from_usage) {
+        if ($context->infer_types) {
             $source_analyzer = $statements_analyzer->getSource();
 
             if ($source_analyzer instanceof FunctionLikeAnalyzer) {

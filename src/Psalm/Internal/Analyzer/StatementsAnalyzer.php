@@ -496,6 +496,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $function_id = strtolower($stmt->name->name);
                     $function_context = new Context($context->self);
                     $config = Config::getInstance();
+                    $function_context->infer_types = $codebase->infer_types_from_usage;
                     $function_context->collect_references = $codebase->collect_references;
                     $function_context->collect_exceptions = $config->check_for_throws_docblock;
                     $this->function_analyzers[$function_id]->analyze($function_context, $context);

@@ -541,7 +541,7 @@ class BinaryOpAnalyzer
             ) {
                 $stmt->inferredType = Type::getBool();
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-                if ($codebase->infer_types_from_usage
+                if ($context->infer_types
                     && isset($stmt->left->inferredType)
                     && isset($stmt->right->inferredType)
                     && ($stmt->left->inferredType->isMixed() || $stmt->right->inferredType->isMixed())
@@ -643,9 +643,9 @@ class BinaryOpAnalyzer
         $config = Config::getInstance();
 
         if ($codebase
-            && $codebase->infer_types_from_usage
             && $statements_source
             && $context
+            && $context->infer_types
             && $left_type
             && $right_type
             && ($left_type->isVanillaMixed() || $right_type->isVanillaMixed())
@@ -1188,7 +1188,7 @@ class BinaryOpAnalyzer
         $right_type = isset($right->inferredType) ? $right->inferredType : null;
         $config = Config::getInstance();
 
-        if ($codebase->infer_types_from_usage
+        if ($context->infer_types
             && $left_type
             && $right_type
             && ($left_type->isMixed() || $right_type->isMixed())
