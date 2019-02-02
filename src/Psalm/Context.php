@@ -388,39 +388,33 @@ class Context
      * @return void
      */
     public function inferType(
-        PhpParser\Node\Expr $expr,
+        string $var_name,
         FunctionLikeStorage $function_storage,
+        Type\Union $original_type,
         Type\Union $inferred_type,
         Codebase $codebase
     ) {
-        if (!isset($expr->inferredType)) {
-            return;
-        }
-
-        $expr_type = $expr->inferredType;
-
-        if ($expr instanceof PhpParser\Node\Expr\Variable
-            && is_string($expr->name)
-            && !isset($this->assigned_var_ids['$' . $expr->name])
-            && array_key_exists($expr->name, $function_storage->param_types)
-            && !$function_storage->param_types[$expr->name]
+        if ($original_type->getId() !== $inferred_type->getId()
+            && !isset($this->assigned_var_ids['$' . $var_name])
+            && array_key_exists($var_name, $function_storage->param_types)
+            && !$function_storage->param_types[$var_name]
         ) {
-            if (isset($this->possible_param_types[$expr->name])) {
+            if (isset($this->possible_param_types[$var_name])) {
                 if (\Psalm\Internal\Analyzer\TypeAnalyzer::isContainedBy(
                     $codebase,
                     $inferred_type,
-                    $this->possible_param_types[$expr->name]
+                    $this->possible_param_types[$var_name]
                 )) {
-                    $this->possible_param_types[$expr->name] = clone $inferred_type;
+                    $this->possible_param_types[$var_name] = clone $inferred_type;
                 } else {
-                    $this->possible_param_types[$expr->name] = Type::combineUnionTypes(
-                        $this->possible_param_types[$expr->name],
+                    $this->possible_param_types[$var_name] = Type::combineUnionTypes(
+                        $this->possible_param_types[$var_name],
                         $inferred_type
                     );
                 }
             } else {
-                $this->possible_param_types[$expr->name] = clone $inferred_type;
-                $this->vars_in_scope['$' . $expr->name] = clone $inferred_type;
+                $this->possible_param_types[$var_name] = clone $inferred_type;
+                $this->vars_in_scope['$' . $var_name] = clone $inferred_type;
             }
         }
     }

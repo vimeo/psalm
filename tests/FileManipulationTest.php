@@ -1318,6 +1318,19 @@ class FileManipulationTest extends TestCase
                 ['MissingParamType'],
                 true,
             ],
+            'stringParamTypeAndConcatNoop' => [
+                '<?php
+                    function fooFoo(string $a): void {
+                        echo $a . "foo";
+                    }',
+                '<?php
+                    function fooFoo(string $a): void {
+                        echo $a . "foo";
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
             'noParamTypeButConcat' => [
                 '<?php
                     function fooFoo($a): void {
@@ -1325,7 +1338,7 @@ class FileManipulationTest extends TestCase
                     }',
                 '<?php
                     /**
-                     * @param string|int|float $a
+                     * @param string|int $a
                      */
                     function fooFoo($a): void {
                         echo $a . "foo";
@@ -1352,6 +1365,24 @@ class FileManipulationTest extends TestCase
                 ['MissingParamType'],
                 true,
             ],
+            'noParamTypeButConcatAndStringUsageReversed' => [
+                '<?php
+                    function fooFoo($a): void {
+                        echo substr($a, 4, 2);
+                        echo $a . "foo";
+                    }',
+                '<?php
+                    /**
+                     * @param string $a
+                     */
+                    function fooFoo($a): void {
+                        echo substr($a, 4, 2);
+                        echo $a . "foo";
+                    }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
             'noParamTypeButAddition' => [
                 '<?php
                     function fooFoo($a): void {
@@ -1364,6 +1395,52 @@ class FileManipulationTest extends TestCase
                     function fooFoo($a): void {
                         echo $a + 5;
                     }',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButAdditionAndDefault' => [
+                '<?php
+                    function fooFoo($a = 5): void {
+                        takesInt($a);
+                    }
+
+                    function takesInt(int $i) {}',
+                '<?php
+                    /**
+                     * @param int $a
+                     */
+                    function fooFoo($a = 5): void {
+                        takesInt($a);
+                    }
+
+                    function takesInt(int $i) {}',
+                '7.1',
+                ['MissingParamType'],
+                true,
+            ],
+            'noParamTypeButIntUseAndNullCheck' => [
+                '<?php
+                    function fooFoo($a): void {
+                        if ($a === null) {
+                            return;
+                        }
+                        takesInt($a);
+                    }
+
+                    function takesInt(int $i) {}',
+                '<?php
+                    /**
+                     * @param null|int $a
+                     */
+                    function fooFoo($a): void {
+                        if ($a === null) {
+                            return;
+                        }
+                        takesInt($a);
+                    }
+
+                    function takesInt(int $i) {}',
                 '7.1',
                 ['MissingParamType'],
                 true,
@@ -1447,13 +1524,17 @@ class FileManipulationTest extends TestCase
                     function takesString(string $s): void {}
 
                     function shouldTakeString($s): void {
-                        if (is_string($s)) takesString($s);
+                        if (is_string($s)) {
+                            takesString($s);
+                        }
                     }',
                 '<?php
                     function takesString(string $s): void {}
 
                     function shouldTakeString($s): void {
-                        if (is_string($s)) takesString($s);
+                        if (is_string($s)) {
+                            takesString($s);
+                        }
                     }',
                 '7.1',
                 ['MissingParamType'],

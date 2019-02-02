@@ -65,8 +65,6 @@ class TestCase extends BaseTestCase
             1,
             false
         );
-
-        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**

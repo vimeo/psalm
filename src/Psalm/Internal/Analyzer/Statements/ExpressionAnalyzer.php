@@ -1324,10 +1324,15 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            if ($function_storage) {
+            if ($function_storage
+                && $part instanceof PhpParser\Node\Expr\Variable
+                && is_string($part->name)
+                && isset($part->inferredType)
+            ) {
                 $context->inferType(
-                    $part,
+                    $part->name,
                     $function_storage,
+                    $part->inferredType,
                     new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt, new Type\Atomic\TFloat]),
                     $statements_analyzer->getCodebase()
                 );

@@ -39,8 +39,6 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             1,
             false
         );
-
-        $this->project_analyzer->getCodebase()->infer_types_from_usage = true;
     }
 
     /**

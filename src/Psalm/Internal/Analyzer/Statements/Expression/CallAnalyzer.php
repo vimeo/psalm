@@ -1764,10 +1764,15 @@ class CallAnalyzer
         if ($context->infer_types && isset($input_expr->inferredType)) {
             $source_analyzer = $statements_analyzer->getSource();
 
-            if ($source_analyzer instanceof FunctionLikeAnalyzer) {
+            if ($source_analyzer instanceof FunctionLikeAnalyzer
+                && $input_expr instanceof PhpParser\Node\Expr\Variable
+                && is_string($input_expr->name)
+                && isset($input_expr->inferredType)
+            ) {
                 $context->inferType(
-                    $input_expr,
+                    $input_expr->name,
                     $source_analyzer->getFunctionLikeStorage($statements_analyzer),
+                    $input_expr->inferredType,
                     $param_type,
                     $codebase
                 );

@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -280,6 +281,26 @@ class IfAnalyzer
                             $context->include_location
                         ) : null
                 );
+
+            if ($if_context->infer_types) {
+                $source_analyzer = $statements_analyzer->getSource();
+
+                if ($source_analyzer instanceof FunctionLikeAnalyzer) {
+                    $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
+
+                    foreach ($reconcilable_if_types as $var_id => $_) {
+                        if (isset($if_context->vars_in_scope[$var_id])) {
+                            $if_context->inferType(
+                                substr($var_id, 1),
+                                $function_storage,
+                                $if_context->vars_in_scope[$var_id],
+                                $if_vars_in_scope_reconciled[$var_id],
+                                $statements_analyzer->getCodebase()
+                            );
+                        }
+                    }
+                }
+            }
 
             $if_context->vars_in_scope = $if_vars_in_scope_reconciled;
 

@@ -551,18 +551,29 @@ class BinaryOpAnalyzer
                     if ($source_analyzer instanceof FunctionLikeAnalyzer) {
                         $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
 
-                        $context->inferType(
-                            $stmt->left,
-                            $function_storage,
-                            new Type\Union([new TInt, new TFloat]),
-                            $codebase
-                        );
-                        $context->inferType(
-                            $stmt->right,
-                            $function_storage,
-                            new Type\Union([new TInt, new TFloat]),
-                            $codebase
-                        );
+                        if ($stmt->left instanceof PhpParser\Node\Expr\Variable
+                            && is_string($stmt->left->name)
+                        ) {
+                            $context->inferType(
+                                $stmt->left->name,
+                                $function_storage,
+                                $stmt->left->inferredType,
+                                new Type\Union([new TInt, new TFloat]),
+                                $codebase
+                            );
+                        }
+
+                        if ($stmt->right instanceof PhpParser\Node\Expr\Variable
+                            && is_string($stmt->right->name)
+                        ) {
+                            $context->inferType(
+                                $stmt->right->name,
+                                $function_storage,
+                                $stmt->right->inferredType,
+                                new Type\Union([new TInt, new TFloat]),
+                                $codebase
+                            );
+                        }
                     }
                 }
 
@@ -667,18 +678,31 @@ class BinaryOpAnalyzer
             ) {
                 $function_storage = $source_analyzer->getFunctionLikeStorage($statements_source);
 
-                $context->inferType(
-                    $left,
-                    $function_storage,
-                    new Type\Union([new TInt, new TFloat]),
-                    $codebase
-                );
-                $context->inferType(
-                    $right,
-                    $function_storage,
-                    new Type\Union([new TInt, new TFloat]),
-                    $codebase
-                );
+                if ($left instanceof PhpParser\Node\Expr\Variable
+                    && is_string($left->name)
+                    && isset($left->inferredType)
+                ) {
+                    $context->inferType(
+                        $left->name,
+                        $function_storage,
+                        $left->inferredType,
+                        new Type\Union([new TInt, new TFloat]),
+                        $codebase
+                    );
+                }
+
+                if ($right instanceof PhpParser\Node\Expr\Variable
+                    && is_string($right->name)
+                    && isset($right->inferredType)
+                ) {
+                    $context->inferType(
+                        $right->name,
+                        $function_storage,
+                        $right->inferredType,
+                        new Type\Union([new TInt, new TFloat]),
+                        $codebase
+                    );
+                }
             }
         }
 
@@ -1218,18 +1242,31 @@ class BinaryOpAnalyzer
             if ($source_analyzer instanceof FunctionLikeAnalyzer) {
                 $function_storage = $source_analyzer->getFunctionLikeStorage($statements_analyzer);
 
-                $context->inferType(
-                    $left,
-                    $function_storage,
-                    new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt, new Type\Atomic\TFloat]),
-                    $codebase
-                );
-                $context->inferType(
-                    $right,
-                    $function_storage,
-                    new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt, new Type\Atomic\TFloat]),
-                    $codebase
-                );
+                if ($left instanceof PhpParser\Node\Expr\Variable
+                    && is_string($left->name)
+                    && isset($left->inferredType)
+                ) {
+                    $context->inferType(
+                        $left->name,
+                        $function_storage,
+                        $left->inferredType,
+                        new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt]),
+                        $codebase
+                    );
+                }
+
+                if ($right instanceof PhpParser\Node\Expr\Variable
+                    && is_string($right->name)
+                    && isset($right->inferredType)
+                ) {
+                    $context->inferType(
+                        $right->name,
+                        $function_storage,
+                        $right->inferredType,
+                        new Type\Union([new Type\Atomic\TString, new Type\Atomic\TInt]),
+                        $codebase
+                    );
+                }
             }
         }
 

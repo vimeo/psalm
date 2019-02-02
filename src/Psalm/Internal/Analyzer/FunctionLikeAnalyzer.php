@@ -64,6 +64,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     protected $return_vars_in_scope = [];
 
     /**
+     * @var array<string, Type\Union>
+     */
+    protected $possible_param_types = [];
+
+    /**
      * @var array<string, array<string, bool>>
      */
     protected $return_vars_possibly_in_scope = [];
@@ -547,6 +552,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
+        $this->addPossibleParamTypes($context, $codebase);
+
         foreach ($storage->params as $offset => $function_param) {
             // only complain if there's no type defined by a parent type
             if (!$function_param->type
@@ -556,7 +563,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['MissingParamType'])
                 ) {
-                    $possible_type = $context->possible_param_types[$function_param->name] ?? null;
+                    $possible_type = $this->possible_param_types[$function_param->name] ?? null;
 
                     if (!$possible_type || $possible_type->hasMixed() || $possible_type->isNull()) {
                         continue;
@@ -918,6 +925,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         } else {
             $this->return_vars_possibly_in_scope[$return_type] = $context->vars_possibly_in_scope;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function addPossibleParamTypes(Context $context, Codebase $codebase)
+    {
+        if ($context->infer_types) {
+            foreach ($context->possible_param_types as $var_id => $type) {
+                if (isset($this->possible_param_types[$var_id])) {
+                    $this->possible_param_types[$var_id] = Type::combineUnionTypes(
+                        $this->possible_param_types[$var_id],
+                        $type,
+                        $codebase
+                    );
+                } else {
+                    $this->possible_param_types[$var_id] = clone $type;
+                }
+            }
         }
     }
 
