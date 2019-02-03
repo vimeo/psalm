@@ -149,6 +149,16 @@ class Php56Test extends TestCase
                         return array_merge([], ...$data);
                     }',
             ],
+            'unpackArg' => [
+                '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @return array<int, string> */
+                    function Baz(string ...$b) {
+                        Foo(...$b);
+                        return $b;
+                    }',
+            ],
             'exponentiation' => [
                 '<?php
                     $a = 2;

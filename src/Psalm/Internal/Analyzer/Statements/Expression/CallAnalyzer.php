@@ -1409,7 +1409,7 @@ class CallAnalyzer
                         $arg->value,
                         $context,
                         $function_param->by_ref,
-                        $function_param->is_variadic
+                        true
                     ) === false) {
                         return false;
                     }
