@@ -725,6 +725,10 @@ class TypeCombination
                         } elseif (get_class($combination->value_types['string']) !== TString::class) {
                             if (get_class($type) === TString::class) {
                                 $combination->value_types[$type_key] = $type;
+                            } elseif ($combination->value_types['string'] instanceof HasClassString
+                                && $type instanceof HasClassString
+                            ) {
+                                $combination->value_types[$type_key] = new TClassString();
                             } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                                 $combination->value_types[$type_key] = new TString();
                             }
