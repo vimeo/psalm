@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -303,194 +304,17 @@ class CallAnalyzer
 
         // if this modifies the array type based on further args
         if ($method_id && in_array($method_id, ['array_push', 'array_unshift'], true) && $function_params) {
-            $array_arg = $args[0]->value;
-
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $array_arg,
-                $context
-            ) === false) {
+            if (self::handleArrayAddition($statements_analyzer, $args, $context) === false) {
                 return false;
-            }
-
-            if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
-                /** @var TArray|ObjectLike */
-                $array_type = $array_arg->inferredType->getTypes()['array'];
-
-                if ($array_type instanceof ObjectLike) {
-                    $array_type = $array_type->getGenericArrayType();
-                }
-
-                $by_ref_type = new Type\Union([clone $array_type]);
-
-                foreach ($args as $argument_offset => $arg) {
-                    if ($argument_offset === 0) {
-                        continue;
-                    }
-
-                    if (ExpressionAnalyzer::analyze(
-                        $statements_analyzer,
-                        $arg->value,
-                        $context
-                    ) === false) {
-                        return false;
-                    }
-
-                    if (!isset($arg->value->inferredType) || $arg->value->inferredType->hasMixed()) {
-                        $by_ref_type = Type::combineUnionTypes(
-                            $by_ref_type,
-                            new Type\Union([new TArray([Type::getInt(), Type::getMixed()])])
-                        );
-                    } elseif ($arg->unpack) {
-                        if ($arg->value->inferredType->hasArray()) {
-                            /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
-                            $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
-
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                            }
-
-                            $by_ref_type = Type::combineUnionTypes(
-                                $by_ref_type,
-                                new Type\Union(
-                                    [
-                                        new TArray(
-                                            [
-                                                Type::getInt(),
-                                                clone $array_atomic_type->type_params[1]
-                                            ]
-                                        ),
-                                    ]
-                                )
-                            );
-                        }
-                    } else {
-                        $by_ref_type = Type::combineUnionTypes(
-                            $by_ref_type,
-                            new Type\Union(
-                                [
-                                    new TArray(
-                                        [
-                                            Type::getInt(),
-                                            clone $arg->value->inferredType
-                                        ]
-                                    ),
-                                ]
-                            )
-                        );
-                    }
-                }
-
-                ExpressionAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $by_ref_type,
-                    $context,
-                    false
-                );
             }
 
             return;
         }
 
         if ($method_id && $method_id === 'array_splice' && $function_params && count($args) > 1) {
-            $array_arg = $args[0]->value;
-
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $array_arg,
-                $context
-            ) === false) {
+            if (self::handleArraySplice($statements_analyzer, $args, $context) === false) {
                 return false;
             }
-
-            $offset_arg = $args[1]->value;
-
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $offset_arg,
-                $context
-            ) === false) {
-                return false;
-            }
-
-            if (!isset($args[2])) {
-                return;
-            }
-
-            $length_arg = $args[2]->value;
-
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $length_arg,
-                $context
-            ) === false) {
-                return false;
-            }
-
-            if (!isset($args[3])) {
-                return;
-            }
-
-            $replacement_arg = $args[3]->value;
-
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $replacement_arg,
-                $context
-            ) === false) {
-                return false;
-            }
-
-            if (isset($replacement_arg->inferredType)
-                && !$replacement_arg->inferredType->hasArray()
-                && $replacement_arg->inferredType->hasString()
-                && $replacement_arg->inferredType->isSingle()
-            ) {
-                $replacement_arg->inferredType = new Type\Union([
-                    new Type\Atomic\TArray([Type::getInt(), $replacement_arg->inferredType])
-                ]);
-            }
-
-            if (isset($array_arg->inferredType)
-                && $array_arg->inferredType->hasArray()
-                && isset($replacement_arg->inferredType)
-                && $replacement_arg->inferredType->hasArray()
-            ) {
-                /** @var TArray|ObjectLike */
-                $array_type = $array_arg->inferredType->getTypes()['array'];
-
-                if ($array_type instanceof ObjectLike) {
-                    $array_type = $array_type->getGenericArrayType();
-                }
-
-                /** @var TArray|ObjectLike */
-                $replacement_array_type = $replacement_arg->inferredType->getTypes()['array'];
-
-                if ($replacement_array_type instanceof ObjectLike) {
-                    $replacement_array_type = $replacement_array_type->getGenericArrayType();
-                }
-
-                $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
-
-                ExpressionAnalyzer::assignByRefParam(
-                    $statements_analyzer,
-                    $array_arg,
-                    $by_ref_type,
-                    $context,
-                    false
-                );
-
-                return;
-            }
-
-            ExpressionAnalyzer::assignByRefParam(
-                $statements_analyzer,
-                $array_arg,
-                Type::getArray(),
-                $context,
-                false
-            );
 
             return;
         }
@@ -522,199 +346,454 @@ class CallAnalyzer
                         || $arg->value instanceof PhpParser\Node\Expr\Assign
                     )
                 ) {
+                    if (self::handleByRefFunctionArg(
+                        $statements_analyzer,
+                        $method_id,
+                        $argument_offset,
+                        $arg,
+                        $context
+                    ) === false) {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                $toggled_class_exists = false;
+
+                if ($method_id === 'class_exists'
+                    && $argument_offset === 0
+                    && !$context->inside_class_exists
+                ) {
+                    $context->inside_class_exists = true;
+                    $toggled_class_exists = true;
+                }
+
+                if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                    return false;
+                }
+
+                if ($context->collect_references
+                    && ($arg->value instanceof PhpParser\Node\Expr\AssignOp
+                        || $arg->value instanceof PhpParser\Node\Expr\PreInc
+                        || $arg->value instanceof PhpParser\Node\Expr\PreDec)
+                ) {
                     $var_id = ExpressionAnalyzer::getVarId(
-                        $arg->value,
+                        $arg->value->var,
                         $statements_analyzer->getFQCLN(),
                         $statements_analyzer
                     );
 
-                    $builtin_array_functions = [
-                        'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
-                        'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
-                        'end', 'next', 'prev', 'array_pop', 'array_shift',
-                    ];
-
-                    if (($var_id && isset($context->vars_in_scope[$var_id]))
-                        || ($method_id
-                            && in_array(
-                                $method_id,
-                                $builtin_array_functions,
-                                true
-                            ))
-                    ) {
-                        // if the variable is in scope, get or we're in a special array function,
-                        // figure out its type before proceeding
-                        if (ExpressionAnalyzer::analyze(
-                            $statements_analyzer,
-                            $arg->value,
-                            $context
-                        ) === false) {
-                            return false;
-                        }
+                    if ($var_id) {
+                        $context->hasVariable($var_id, $statements_analyzer);
                     }
+                }
 
-                    // special handling for array sort
-                    if ($argument_offset === 0
-                        && $method_id
-                        && in_array(
-                            $method_id,
-                            $builtin_array_functions,
-                            true
-                        )
-                    ) {
-                        if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
-                            self::handleByRefArrayAdjustment($statements_analyzer, $arg, $context);
+                if ($toggled_class_exists) {
+                    $context->inside_class_exists = false;
+                }
 
-                            continue;
-                        }
+                continue;
+            }
 
-                        // noops
-                        if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
-                            continue;
-                        }
+            if (self::evaluateAribitraryParam(
+                $statements_analyzer,
+                $arg,
+                $context
+            ) === false) {
+                return false;
+            }
+        }
+    }
 
-                        if (isset($arg->value->inferredType)
-                            && $arg->value->inferredType->hasArray()
-                        ) {
-                            /** @var TArray|ObjectLike */
-                            $array_type = $arg->value->inferredType->getTypes()['array'];
+    /**
+     * @return false|null
+     */
+    private static function evaluateAribitraryParam(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Arg $arg,
+        Context $context
+    ) {
+        // there are a bunch of things we want to evaluate even when we don't
+        // know what function/method is being called
+        if ($arg->value instanceof PhpParser\Node\Expr\Closure
+            || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+            || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+            || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+            || $arg->value instanceof PhpParser\Node\Expr\Assign
+        ) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                return false;
+            }
+        }
 
-                            if ($array_type instanceof ObjectLike) {
-                                $array_type = $array_type->getGenericArrayType();
-                            }
+        if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+            && $arg->value->name instanceof PhpParser\Node\Identifier
+        ) {
+            $var_id = '$' . $arg->value->name->name;
+        } else {
+            $var_id = ExpressionAnalyzer::getVarId(
+                $arg->value,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
+            );
+        }
 
-                            if (in_array($method_id, ['shuffle', 'sort', 'rsort', 'usort'], true)) {
-                                $tvalue = $array_type->type_params[1];
-                                $by_ref_type = new Type\Union([new TArray([Type::getInt(), clone $tvalue])]);
-                            } else {
-                                $by_ref_type = new Type\Union([clone $array_type]);
-                            }
+        if ($var_id) {
+            if (!$context->hasVariable($var_id, $statements_analyzer)
+                || $context->vars_in_scope[$var_id]->isNull()
+            ) {
+                // we don't know if it exists, assume it's passed by reference
+                $context->vars_in_scope[$var_id] = Type::getMixed();
+                $context->vars_possibly_in_scope[$var_id] = true;
 
-                            ExpressionAnalyzer::assignByRefParam(
-                                $statements_analyzer,
-                                $arg->value,
-                                $by_ref_type,
-                                $context,
-                                false
-                            );
+                if (strpos($var_id, '-') === false
+                    && strpos($var_id, '[') === false
+                    && !$statements_analyzer->hasVariable($var_id)
+                ) {
+                    $location = new CodeLocation($statements_analyzer, $arg->value);
+                    $statements_analyzer->registerVariable(
+                        $var_id,
+                        $location,
+                        null
+                    );
 
-                            continue;
-                        }
-                    }
-
-                    if ($method_id === 'socket_select') {
-                        if (ExpressionAnalyzer::analyze(
-                            $statements_analyzer,
-                            $arg->value,
-                            $context
-                        ) === false) {
-                            return false;
-                        }
-                    }
-                } else {
-                    $toggled_class_exists = false;
-
-                    if ($method_id === 'class_exists'
-                        && $argument_offset === 0
-                        && !$context->inside_class_exists
-                    ) {
-                        $context->inside_class_exists = true;
-                        $toggled_class_exists = true;
-                    }
-
-                    if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
-                        return false;
-                    }
-
-                    if ($context->collect_references
-                        && ($arg->value instanceof PhpParser\Node\Expr\AssignOp
-                            || $arg->value instanceof PhpParser\Node\Expr\PreInc
-                            || $arg->value instanceof PhpParser\Node\Expr\PreDec)
-                    ) {
-                        $var_id = ExpressionAnalyzer::getVarId(
-                            $arg->value->var,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer
-                        );
-
-                        if ($var_id) {
-                            $context->hasVariable($var_id, $statements_analyzer);
-                        }
-                    }
-
-                    if ($toggled_class_exists) {
-                        $context->inside_class_exists = false;
-                    }
+                    $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
                 }
             } else {
-                // there are a bunch of things we want to evaluate anyway
-                if ($arg->value instanceof PhpParser\Node\Expr\Closure
-                    || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
-                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
-                    || $arg->value instanceof PhpParser\Node\Expr\Assign
-                ) {
-                    if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
-                        return false;
-                    }
-                }
+                $context->removeVarFromConflictingClauses(
+                    $var_id,
+                    $context->vars_in_scope[$var_id],
+                    $statements_analyzer
+                );
 
-                if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
-                    && $arg->value->name instanceof PhpParser\Node\Identifier
-                ) {
-                    $var_id = '$' . $arg->value->name->name;
-                } else {
-                    $var_id = ExpressionAnalyzer::getVarId(
-                        $arg->value,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer
-                    );
-                }
-
-                if ($var_id) {
-                    if (!$context->hasVariable($var_id, $statements_analyzer)
-                        || $context->vars_in_scope[$var_id]->isNull()
-                    ) {
-                        // we don't know if it exists, assume it's passed by reference
-                        $context->vars_in_scope[$var_id] = Type::getMixed();
-                        $context->vars_possibly_in_scope[$var_id] = true;
-
-                        if (strpos($var_id, '-') === false
-                            && strpos($var_id, '[') === false
-                            && !$statements_analyzer->hasVariable($var_id)
-                        ) {
-                            $location = new CodeLocation($statements_analyzer, $arg->value);
-                            $statements_analyzer->registerVariable(
-                                $var_id,
-                                $location,
-                                null
-                            );
-
-                            $statements_analyzer->registerVariableUses([$location->getHash() => $location]);
-                        }
-                    } else {
-                        $context->removeVarFromConflictingClauses(
-                            $var_id,
-                            $context->vars_in_scope[$var_id],
-                            $statements_analyzer
+                foreach ($context->vars_in_scope[$var_id]->getTypes() as $type) {
+                    if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
+                        $context->vars_in_scope[$var_id]->removeType('array');
+                        $context->vars_in_scope[$var_id]->addType(
+                            new TArray(
+                                [Type::getArrayKey(), Type::getMixed()]
+                            )
                         );
-
-                        foreach ($context->vars_in_scope[$var_id]->getTypes() as $type) {
-                            if ($type instanceof TArray && $type->type_params[1]->isEmpty()) {
-                                $context->vars_in_scope[$var_id]->removeType('array');
-                                $context->vars_in_scope[$var_id]->addType(
-                                    new TArray(
-                                        [Type::getArrayKey(), Type::getMixed()]
-                                    )
-                                );
-                            }
-                        }
                     }
                 }
             }
         }
+    }
 
-        return null;
+    /**
+     * @param string|null $method_id
+     * @return false|null
+     */
+    private static function handleByRefFunctionArg(
+        StatementsAnalyzer $statements_analyzer,
+        $method_id,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context
+    ) {
+        $var_id = ExpressionAnalyzer::getVarId(
+            $arg->value,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer
+        );
+
+        $builtin_array_functions = [
+            'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
+            'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
+            'end', 'next', 'prev', 'array_pop', 'array_shift',
+        ];
+
+        if (($var_id && isset($context->vars_in_scope[$var_id]))
+            || ($method_id
+                && in_array(
+                    $method_id,
+                    $builtin_array_functions,
+                    true
+                ))
+        ) {
+            // if the variable is in scope, get or we're in a special array function,
+            // figure out its type before proceeding
+            if (ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $arg->value,
+                $context
+            ) === false) {
+                return false;
+            }
+        }
+
+        // special handling for array sort
+        if ($argument_offset === 0
+            && $method_id
+            && in_array(
+                $method_id,
+                $builtin_array_functions,
+                true
+            )
+        ) {
+            if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
+                self::handleByRefArrayAdjustment($statements_analyzer, $arg, $context);
+
+                return;
+            }
+
+            // noops
+            if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
+                return;
+            }
+
+            if (isset($arg->value->inferredType)
+                && $arg->value->inferredType->hasArray()
+            ) {
+                /** @var TArray|ObjectLike */
+                $array_type = $arg->value->inferredType->getTypes()['array'];
+
+                if ($array_type instanceof ObjectLike) {
+                    $array_type = $array_type->getGenericArrayType();
+                }
+
+                if (in_array($method_id, ['shuffle', 'sort', 'rsort', 'usort'], true)) {
+                    $tvalue = $array_type->type_params[1];
+                    $by_ref_type = new Type\Union([new TArray([Type::getInt(), clone $tvalue])]);
+                } else {
+                    $by_ref_type = new Type\Union([clone $array_type]);
+                }
+
+                ExpressionAnalyzer::assignByRefParam(
+                    $statements_analyzer,
+                    $arg->value,
+                    $by_ref_type,
+                    $context,
+                    false
+                );
+
+                return;
+            }
+        }
+
+        if ($method_id === 'socket_select') {
+            if (ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $arg->value,
+                $context
+            ) === false) {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * @param   StatementsAnalyzer                      $statements_analyzer
+     * @param   array<int, PhpParser\Node\Arg>          $args
+     * @param   Context                                 $context
+     *
+     * @return  false|null
+     */
+    private static function handleArrayAddition(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        Context $context
+    ) {
+        $array_arg = $args[0]->value;
+
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $array_arg,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if (isset($array_arg->inferredType) && $array_arg->inferredType->hasArray()) {
+            /** @var TArray|ObjectLike */
+            $array_type = $array_arg->inferredType->getTypes()['array'];
+
+            if ($array_type instanceof ObjectLike) {
+                $array_type = $array_type->getGenericArrayType();
+            }
+
+            $by_ref_type = new Type\Union([clone $array_type]);
+
+            foreach ($args as $argument_offset => $arg) {
+                if ($argument_offset === 0) {
+                    continue;
+                }
+
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $arg->value,
+                    $context
+                ) === false) {
+                    return false;
+                }
+
+                if (!isset($arg->value->inferredType) || $arg->value->inferredType->hasMixed()) {
+                    $by_ref_type = Type::combineUnionTypes(
+                        $by_ref_type,
+                        new Type\Union([new TArray([Type::getInt(), Type::getMixed()])])
+                    );
+                } elseif ($arg->unpack) {
+                    if ($arg->value->inferredType->hasArray()) {
+                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                        $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
+
+                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                        }
+
+                        $by_ref_type = Type::combineUnionTypes(
+                            $by_ref_type,
+                            new Type\Union(
+                                [
+                                    new TArray(
+                                        [
+                                            Type::getInt(),
+                                            clone $array_atomic_type->type_params[1]
+                                        ]
+                                    ),
+                                ]
+                            )
+                        );
+                    }
+                } else {
+                    $by_ref_type = Type::combineUnionTypes(
+                        $by_ref_type,
+                        new Type\Union(
+                            [
+                                new TArray(
+                                    [
+                                        Type::getInt(),
+                                        clone $arg->value->inferredType
+                                    ]
+                                ),
+                            ]
+                        )
+                    );
+                }
+            }
+
+            ExpressionAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $by_ref_type,
+                $context,
+                false
+            );
+        }
+
+        return;
+    }
+
+    /**
+     * @param   StatementsAnalyzer                      $statements_analyzer
+     * @param   array<int, PhpParser\Node\Arg>          $args
+     * @param   Context                                 $context
+     *
+     * @return  false|null
+     */
+    private static function handleArraySplice(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        Context $context
+    ) {
+        $array_arg = $args[0]->value;
+
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $array_arg,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        $offset_arg = $args[1]->value;
+
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $offset_arg,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if (!isset($args[2])) {
+            return;
+        }
+
+        $length_arg = $args[2]->value;
+
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $length_arg,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if (!isset($args[3])) {
+            return;
+        }
+
+        $replacement_arg = $args[3]->value;
+
+        if (ExpressionAnalyzer::analyze(
+            $statements_analyzer,
+            $replacement_arg,
+            $context
+        ) === false) {
+            return false;
+        }
+
+        if (isset($replacement_arg->inferredType)
+            && !$replacement_arg->inferredType->hasArray()
+            && $replacement_arg->inferredType->hasString()
+            && $replacement_arg->inferredType->isSingle()
+        ) {
+            $replacement_arg->inferredType = new Type\Union([
+                new Type\Atomic\TArray([Type::getInt(), $replacement_arg->inferredType])
+            ]);
+        }
+
+        if (isset($array_arg->inferredType)
+            && $array_arg->inferredType->hasArray()
+            && isset($replacement_arg->inferredType)
+            && $replacement_arg->inferredType->hasArray()
+        ) {
+            /** @var TArray|ObjectLike */
+            $array_type = $array_arg->inferredType->getTypes()['array'];
+
+            if ($array_type instanceof ObjectLike) {
+                $array_type = $array_type->getGenericArrayType();
+            }
+
+            /** @var TArray|ObjectLike */
+            $replacement_array_type = $replacement_arg->inferredType->getTypes()['array'];
+
+            if ($replacement_array_type instanceof ObjectLike) {
+                $replacement_array_type = $replacement_array_type->getGenericArrayType();
+            }
+
+            $by_ref_type = TypeCombination::combineTypes([$array_type, $replacement_array_type]);
+
+            ExpressionAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $by_ref_type,
+                $context,
+                false
+            );
+
+            return;
+        }
+
+        ExpressionAnalyzer::assignByRefParam(
+            $statements_analyzer,
+            $array_arg,
+            Type::getArray(),
+            $context,
+            false
+        );
     }
 
     /**
@@ -907,8 +986,10 @@ class CallAnalyzer
             $existing_generic_params[$key][0] = clone $type[0];
         }
 
+        $function_param_count = count($function_params);
+
         foreach ($args as $argument_offset => $arg) {
-            $function_param = count($function_params) > $argument_offset
+            $function_param = $function_param_count > $argument_offset
                 ? $function_params[$argument_offset]
                 : ($last_param && $last_param->is_variadic ? $last_param : null);
 
@@ -916,265 +997,37 @@ class CallAnalyzer
                 && $function_param->by_ref
                 && $method_id !== 'extract'
             ) {
-                if ($arg->value instanceof PhpParser\Node\Scalar
-                    || $arg->value instanceof PhpParser\Node\Expr\Array_
-                    || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    || (
-                        (
-                        $arg->value instanceof PhpParser\Node\Expr\ConstFetch
-                            || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-                            || $arg->value instanceof PhpParser\Node\Expr\MethodCall
-                        ) && (
-                            !isset($arg->value->inferredType)
-                            || !$arg->value->inferredType->by_ref
-                        )
-                    )
-                ) {
-                    if (IssueBuffer::accepts(
-                        new InvalidPassByReference(
-                            'Parameter ' . ($argument_offset + 1) . ' of ' . $method_id . ' expects a variable',
-                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    continue;
-                }
-
-                if (!in_array(
+                if (self::handlePossiblyMatchingByRefParam(
+                    $statements_analyzer,
+                    $codebase,
                     $method_id,
-                    [
-                        'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
-                        'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
-                        'end', 'next', 'prev', 'array_pop', 'array_shift',
-                        'array_push', 'array_unshift', 'socket_select', 'array_splice',
-                    ],
-                    true
-                )) {
-                    $by_ref_type = null;
-
-                    if ($last_param) {
-                        if ($argument_offset < count($function_params)) {
-                            $by_ref_type = $function_params[$argument_offset]->type;
-                            if (isset($function_storage->param_out_types[$argument_offset])) {
-                                $by_ref_type = $function_storage->param_out_types[$argument_offset];
-                            }
-                        } else {
-                            $by_ref_type = $last_param->type;
-                        }
-
-                        if ($template_types && $by_ref_type) {
-                            if ($generic_params === null) {
-                                $generic_params = [];
-                            }
-
-                            $original_by_ref_type = $by_ref_type;
-
-                            $by_ref_type = clone $by_ref_type;
-
-                            $by_ref_type->replaceTemplateTypesWithStandins(
-                                $template_types,
-                                $generic_params,
-                                $codebase,
-                                isset($arg->value->inferredType)
-                                    ? $arg->value->inferredType
-                                    : null
-                            );
-
-                            if ($generic_params) {
-                                $original_by_ref_type->replaceTemplateTypesWithArgTypes(
-                                    $generic_params
-                                );
-
-                                $by_ref_type = $original_by_ref_type;
-                            }
-                        }
-                    }
-
-                    $by_ref_type = $by_ref_type ?: Type::getMixed();
-
-                    ExpressionAnalyzer::assignByRefParam(
-                        $statements_analyzer,
-                        $arg->value,
-                        $by_ref_type,
-                        $context,
-                        $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id))
-                    );
+                    $cased_method_id,
+                    $last_param,
+                    $function_params,
+                    $function_storage,
+                    $argument_offset,
+                    $arg,
+                    $context,
+                    $generic_params,
+                    $template_types
+                ) === false) {
+                    return false;
                 }
             }
 
-            if (isset($arg->value->inferredType)) {
-                if ($function_param && $function_param->type) {
-                    $param_type = clone $function_param->type;
-
-                    if ($function_param->is_variadic) {
-                        if (!$param_type->hasArray()) {
-                            continue;
-                        }
-
-                        $array_atomic_type = $param_type->getTypes()['array'];
-
-                        if (!$array_atomic_type instanceof TArray) {
-                            continue;
-                        }
-
-                        $param_type = clone $array_atomic_type->type_params[1];
-                    }
-
-                    if ($function_storage) {
-                        if ($existing_generic_params) {
-                            $empty_generic_params = [];
-
-                            $param_type->replaceTemplateTypesWithStandins(
-                                $existing_generic_params,
-                                $empty_generic_params,
-                                $codebase,
-                                $arg->value->inferredType
-                            );
-                        }
-
-                        if ($template_types) {
-                            if ($generic_params === null) {
-                                $generic_params = [];
-                            }
-
-                            $arg_type = $arg->value->inferredType;
-
-                            if ($arg->unpack) {
-                                if ($arg->value->inferredType->hasArray()) {
-                                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
-                                    $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
-
-                                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                                    }
-
-                                    $arg_type = $array_atomic_type->type_params[1];
-                                } else {
-                                    $arg_type = Type::getMixed();
-                                }
-                            }
-
-                            $param_type->replaceTemplateTypesWithStandins(
-                                $template_types,
-                                $generic_params,
-                                $codebase,
-                                $arg_type
-                            );
-                        }
-                    }
-
-                    if (!$context->check_variables) {
-                        break;
-                    }
-
-                    $fleshed_out_type = ExpressionAnalyzer::fleshOutType(
-                        $codebase,
-                        $param_type,
-                        $fq_class_name,
-                        $fq_class_name
-                    );
-
-                    if ($arg->unpack) {
-                        if ($arg->value->inferredType->hasArray()) {
-                            /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
-                            $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
-
-                            if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                                $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                            }
-
-                            if (self::checkFunctionArgumentType(
-                                $statements_analyzer,
-                                $array_atomic_type->type_params[1],
-                                $fleshed_out_type,
-                                $cased_method_id,
-                                $argument_offset,
-                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                                $arg->value,
-                                $context,
-                                $function_param->by_ref,
-                                $function_param->is_variadic
-                            ) === false) {
-                                return false;
-                            }
-                        } elseif ($arg->value->inferredType->hasMixed()) {
-                            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-
-                            if (IssueBuffer::accepts(
-                                new MixedArgument(
-                                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                        . ' cannot be mixed, expecting array',
-                                    new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                // fall through
-                            }
-                        } else {
-                            foreach ($arg->value->inferredType->getTypes() as $atomic_type) {
-                                if (!$atomic_type->isIterable($codebase)) {
-                                    if (IssueBuffer::accepts(
-                                        new InvalidArgument(
-                                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                                . ' expects array, ' . $atomic_type->getId() . ' provided',
-                                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                                        ),
-                                        $statements_analyzer->getSuppressedIssues()
-                                    )) {
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-
-                        break;
-                    }
-
-                    if (self::checkFunctionArgumentType(
-                        $statements_analyzer,
-                        $arg->value->inferredType,
-                        $fleshed_out_type,
-                        $cased_method_id,
-                        $argument_offset,
-                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $arg->value,
-                        $context,
-                        $function_param->by_ref,
-                        $function_param->is_variadic
-                    ) === false) {
-                        return false;
-                    }
-                }
-            } elseif ($function_param) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
-
-                $param_type = $function_param->type;
-
-                if ($function_param->is_variadic
-                    && $param_type
-                    && $param_type->hasArray()
-                ) {
-                    /** @var TArray */
-                    $array_type = $param_type->getTypes()['array'];
-
-                    $param_type = $array_type->type_params[1];
-                }
-
-                if ($param_type && !$param_type->hasMixed()) {
-                    if (IssueBuffer::accepts(
-                        new MixedArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' cannot be mixed, expecting ' . $param_type,
-                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                        ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
-                }
+            if (self::checkFunctionLikeArgumentMatches(
+                $statements_analyzer,
+                $cased_method_id,
+                $fq_class_name,
+                $function_param,
+                $argument_offset,
+                $arg,
+                $context,
+                $existing_generic_params,
+                $generic_params,
+                $template_types
+            ) === false) {
+                return false;
             }
         }
 
@@ -1252,6 +1105,366 @@ class CallAnalyzer
 
                     break;
                 }
+            }
+        }
+    }
+
+    /**
+     * @param  string|null $cased_method_id
+     * @param  string|null $fq_class_name
+     * @param  FunctionLikeParameter|null $function_param
+     * @param  FunctionLikeParameter|null $last_param
+     * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
+     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @return false|null
+     */
+    private static function checkFunctionLikeArgumentMatches(
+        StatementsAnalyzer $statements_analyzer,
+        $cased_method_id,
+        $fq_class_name,
+        $function_param,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        array $existing_generic_params,
+        array &$generic_params = null,
+        array $template_types = null
+    ) {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if (!isset($arg->value->inferredType)) {
+            if ($function_param) {
+                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+
+                $param_type = $function_param->type;
+
+                if ($function_param->is_variadic
+                    && $param_type
+                    && $param_type->hasArray()
+                ) {
+                    /** @var TArray */
+                    $array_type = $param_type->getTypes()['array'];
+
+                    $param_type = $array_type->type_params[1];
+                }
+
+                if ($param_type && !$param_type->hasMixed()) {
+                    if (IssueBuffer::accepts(
+                        new MixedArgument(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                . ' cannot be mixed, expecting ' . $param_type,
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+
+            return;
+        }
+
+        if (self::checkFunctionLikeTypeMatches(
+            $statements_analyzer,
+            $codebase,
+            $cased_method_id,
+            $fq_class_name,
+            $function_param,
+            $arg->value->inferredType,
+            $argument_offset,
+            $arg,
+            $context,
+            $existing_generic_params,
+            $generic_params,
+            $template_types
+        ) === false) {
+            return false;
+        }
+    }
+
+    /**
+     * @param  string|null $method_id
+     * @param  string|null $cased_method_id
+     * @param  FunctionLikeParameter|null $function_param
+     * @param  FunctionLikeParameter|null $last_param
+     * @param  array<int, FunctionLikeParameter> $function_params
+     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @param  FunctionLikeStorage|null $function_storage
+     * @return false|null
+     */
+    private static function handlePossiblyMatchingByRefParam(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        $method_id,
+        $cased_method_id,
+        $last_param,
+        $function_params,
+        $function_storage,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        array &$generic_params = null,
+        array $template_types = null
+    ) {
+        if ($arg->value instanceof PhpParser\Node\Scalar
+            || $arg->value instanceof PhpParser\Node\Expr\Array_
+            || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            || (
+                (
+                $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                ) && (
+                    !isset($arg->value->inferredType)
+                    || !$arg->value->inferredType->by_ref
+                )
+            )
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidPassByReference(
+                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                ),
+                $statements_analyzer->getSuppressedIssues()
+            )) {
+                return false;
+            }
+
+            return;
+        }
+
+        if (!in_array(
+            $method_id,
+            [
+                'shuffle', 'sort', 'rsort', 'usort', 'ksort', 'asort',
+                'krsort', 'arsort', 'natcasesort', 'natsort', 'reset',
+                'end', 'next', 'prev', 'array_pop', 'array_shift',
+                'array_push', 'array_unshift', 'socket_select', 'array_splice',
+            ],
+            true
+        )) {
+            $by_ref_type = null;
+
+            if ($last_param) {
+                if ($argument_offset < count($function_params)) {
+                    $by_ref_type = $function_params[$argument_offset]->type;
+                    if (isset($function_storage->param_out_types[$argument_offset])) {
+                        $by_ref_type = $function_storage->param_out_types[$argument_offset];
+                    }
+                } else {
+                    $by_ref_type = $last_param->type;
+                }
+
+                if ($template_types && $by_ref_type) {
+                    if ($generic_params === null) {
+                        $generic_params = [];
+                    }
+
+                    $original_by_ref_type = $by_ref_type;
+
+                    $by_ref_type = clone $by_ref_type;
+
+                    $by_ref_type->replaceTemplateTypesWithStandins(
+                        $template_types,
+                        $generic_params,
+                        $codebase,
+                        isset($arg->value->inferredType)
+                            ? $arg->value->inferredType
+                            : null
+                    );
+
+                    if ($generic_params) {
+                        $original_by_ref_type->replaceTemplateTypesWithArgTypes(
+                            $generic_params
+                        );
+
+                        $by_ref_type = $original_by_ref_type;
+                    }
+                }
+            }
+
+            $by_ref_type = $by_ref_type ?: Type::getMixed();
+
+            ExpressionAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $arg->value,
+                $by_ref_type,
+                $context,
+                $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id))
+            );
+        }
+    }
+
+    /**
+     * @param  string|null $cased_method_id
+     * @param  string|null $fq_class_name
+     * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
+     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @param  FunctionLikeParameter|null $function_param
+     * @return false|null
+     */
+    private static function checkFunctionLikeTypeMatches(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        $cased_method_id,
+        $fq_class_name,
+        $function_param,
+        Type\Union $arg_type,
+        int $argument_offset,
+        PhpParser\Node\Arg $arg,
+        Context $context,
+        array $existing_generic_params = null,
+        array &$generic_params = null,
+        array $template_types = null
+    ) {
+        if ($function_param && $function_param->type) {
+            $param_type = clone $function_param->type;
+
+            if ($function_param->is_variadic) {
+                if (!$param_type->hasArray()) {
+                    return;
+                }
+
+                $array_atomic_type = $param_type->getTypes()['array'];
+
+                if (!$array_atomic_type instanceof TArray) {
+                    return;
+                }
+
+                $param_type = clone $array_atomic_type->type_params[1];
+            }
+
+            if ($existing_generic_params) {
+                $empty_generic_params = [];
+
+                $param_type->replaceTemplateTypesWithStandins(
+                    $existing_generic_params,
+                    $empty_generic_params,
+                    $codebase,
+                    $arg->value->inferredType
+                );
+            }
+
+            if ($template_types) {
+                if ($generic_params === null) {
+                    $generic_params = [];
+                }
+
+                $arg_type_param = $arg_type;
+
+                if ($arg->unpack) {
+                    if ($arg_type->hasArray()) {
+                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                        $array_atomic_type = $arg_type->getTypes()['array'];
+
+                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                        }
+
+                        $arg_type_param = $array_atomic_type->type_params[1];
+                    } else {
+                        $arg_type_param = Type::getMixed();
+                    }
+                }
+
+                $param_type->replaceTemplateTypesWithStandins(
+                    $template_types,
+                    $generic_params,
+                    $codebase,
+                    $arg_type_param
+                );
+            }
+
+            if (!$context->check_variables) {
+                return;
+            }
+
+            $fleshed_out_type = ExpressionAnalyzer::fleshOutType(
+                $codebase,
+                $param_type,
+                $fq_class_name,
+                $fq_class_name
+            );
+
+            if ($arg->unpack) {
+                if ($arg_type->hasArray()) {
+                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                    $array_atomic_type = $arg_type->getTypes()['array'];
+
+                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                    }
+
+                    if (self::checkFunctionArgumentType(
+                        $statements_analyzer,
+                        $array_atomic_type->type_params[1],
+                        $fleshed_out_type,
+                        $cased_method_id,
+                        $argument_offset,
+                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                        $arg->value,
+                        $context,
+                        $function_param->by_ref,
+                        $function_param->is_variadic
+                    ) === false) {
+                        return false;
+                    }
+
+                    return;
+                }
+
+                if ($arg_type->hasMixed()) {
+                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+
+                    if (IssueBuffer::accepts(
+                        new MixedArgument(
+                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                . ' cannot be mixed, expecting array',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    return;
+                }
+
+                foreach ($arg_type->getTypes() as $atomic_type) {
+                    if (!$atomic_type->isIterable($codebase)) {
+                        if (IssueBuffer::accepts(
+                            new InvalidArgument(
+                                'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                    . ' expects array, ' . $atomic_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
+                }
+
+                return;
+            }
+
+            if (self::checkFunctionArgumentType(
+                $statements_analyzer,
+                $arg_type,
+                $fleshed_out_type,
+                $cased_method_id,
+                $argument_offset,
+                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                $arg->value,
+                $context,
+                $function_param->by_ref,
+                $function_param->is_variadic
+            ) === false) {
+                return false;
             }
         }
     }
