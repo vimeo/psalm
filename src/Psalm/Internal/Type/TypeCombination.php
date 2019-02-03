@@ -728,7 +728,24 @@ class TypeCombination
                             } elseif ($combination->value_types['string'] instanceof HasClassString
                                 && $type instanceof HasClassString
                             ) {
-                                $combination->value_types[$type_key] = new TClassString();
+                                $a_named_object = $combination->value_types['string']->hasSingleNamedObject();
+                                $b_named_object = $type->hasSingleNamedObject();
+
+                                if ($a_named_object && $b_named_object) {
+                                    $a_object = $combination->value_types['string']->getSingleNamedObject();
+                                    $b_object = $type->getSingleNamedObject();
+
+                                    if ($a_object->value === $b_object->value) {
+                                        $combination->value_types[$type_key] = new TClassString(
+                                            $a_object->value,
+                                            $a_object
+                                        );
+                                    } else {
+                                        $combination->value_types[$type_key] = new TClassString();
+                                    }
+                                } else {
+                                    $combination->value_types[$type_key] = new TClassString();
+                                }
                             } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
                                 $combination->value_types[$type_key] = new TString();
                             }
