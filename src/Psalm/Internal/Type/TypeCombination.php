@@ -6,6 +6,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\HasClassString;
 use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -707,8 +708,8 @@ class TypeCombination
                         if (!isset($combination->value_types['string'])) {
                             if ($combination->strings) {
                                 $has_non_literal_class_string = false;
-                                foreach ($combination->strings as $literal_string) {
-                                    if (!$literal_string instanceof TLiteralClassString) {
+                                foreach ($combination->strings as $string_type) {
+                                    if (!$string_type instanceof TLiteralClassString) {
                                         $has_non_literal_class_string = true;
                                     }
                                 }

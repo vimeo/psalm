@@ -438,11 +438,24 @@ class Union
             $this->id = null;
 
             return true;
-        } elseif ($type_string === 'string' && $this->literal_string_types) {
-            foreach ($this->literal_string_types as $literal_key => $_) {
-                unset($this->types[$literal_key]);
+        }
+
+        if ($type_string === 'string') {
+            if ($this->literal_string_types) {
+                foreach ($this->literal_string_types as $literal_key => $_) {
+                    unset($this->types[$literal_key]);
+                }
+                $this->literal_string_types = [];
             }
-            $this->literal_string_types = [];
+
+            if ($this->typed_class_strings) {
+                foreach ($this->typed_class_strings as $typed_class_key => $_) {
+                    unset($this->types[$typed_class_key]);
+                }
+                $this->typed_class_strings = [];
+            }
+
+            unset($this->types['class-string']);
         } elseif ($type_string === 'int' && $this->literal_int_types) {
             foreach ($this->literal_int_types as $literal_key => $_) {
                 unset($this->types[$literal_key]);
@@ -499,6 +512,20 @@ class Union
     {
         foreach ($this->types as $type) {
             if ($type->isObjectType()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasNamedObject()
+    {
+        foreach ($this->types as $type) {
+            if ($type instanceof TNamedObject) {
                 return true;
             }
         }

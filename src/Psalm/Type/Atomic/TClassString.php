@@ -4,7 +4,7 @@ namespace Psalm\Type\Atomic;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-class TClassString extends TString
+class TClassString extends TString implements HasClassString
 {
     /**
      * @var string
@@ -104,5 +104,19 @@ class TClassString extends TString
     public function canBeFullyExpressedInPhp()
     {
         return false;
+    }
+
+    public function hasSingleNamedObject() : bool
+    {
+        return (bool) $this->as_type;
+    }
+
+    public function getSingleNamedObject() : TNamedObject
+    {
+        if (!$this->as_type) {
+            throw new \UnexpectedValueException('Bad object');
+        }
+
+        return $this->as_type;
     }
 }
