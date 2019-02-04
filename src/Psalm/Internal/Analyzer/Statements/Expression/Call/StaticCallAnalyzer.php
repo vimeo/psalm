@@ -646,6 +646,19 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     // fall through
                 }
 
+                $found_generic_params = MethodCallAnalyzer::getClassTemplateParams(
+                    $codebase,
+                    $class_storage,
+                    $stmt->class instanceof PhpParser\Node\Name
+                        && $stmt->class->parts === ['parent']
+                        && $context->self
+                        ? $context->self
+                        : $fq_class_name,
+                    $method_name_lc,
+                    $lhs_type_part,
+                    null
+                );
+
                 if (self::checkMethodArgs(
                     $method_id,
                     $args,

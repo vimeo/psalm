@@ -1057,6 +1057,39 @@ class TemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'extendsAndCallsParent' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    abstract class Foo
+                    {
+                        /**
+                         * @param T::class $str
+                         *
+                         * @return T::class
+                         */
+                        public static function DoThing(string $str)
+                        {
+                            return $str;
+                        }
+                    }
+                    /**
+                     * @template-extends Foo<DateTimeInterface>
+                     */
+                    class Bar extends Foo
+                    {
+                        /**
+                         * @param class-string<DateTimeInterface> $str
+                         *
+                         * @return class-string<DateTimeInterface>
+                         */
+                        public static function DoThing(string $str)
+                        {
+                            return parent::DoThing($str);
+                        }
+                    }'
+            ],
         ];
     }
 
