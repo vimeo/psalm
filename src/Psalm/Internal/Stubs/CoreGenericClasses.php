@@ -162,7 +162,8 @@ interface ArrayAccess {
      * @param TKey $offset <p>
      * The offset to retrieve.
      * </p>
-     * @return TValue Can return all value types.
+     * @return TValue|null Can return all value types.
+     * @psalm-ignore-nullable-return
      * @since 5.0.0
      */
     public function offsetGet($offset);
