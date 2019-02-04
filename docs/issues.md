@@ -337,7 +337,7 @@ echo (new A)->foo;
 
 ### InternalClass
 
-Emmitted when attempting to access a class marked as internal an unrelated namespace or class.
+Emitted when attempting to access a class marked as internal an unrelated namespace or class.
 
 ```php
 namespace A {
@@ -358,7 +358,7 @@ namespace B {
 
 ### InternalMethod
 
-Emmitted when attempting to access a method marked as internal an unrelated namespace or class.
+Emitted when attempting to access a method marked as internal an unrelated namespace or class.
 
 ```php
 namespace A {
@@ -381,7 +381,7 @@ namespace B {
 
 ### InternalProperty
 
-Emmitted when attempting to access a property marked as internal from an unrelated namespace or class.
+Emitted when attempting to access a property marked as internal from an unrelated namespace or class.
 
 ```php
 namespace A {
@@ -433,7 +433,7 @@ $arr[0] = 3;
 
 ### InvalidArrayOffset
 
-Emitted when when attempting to access an array using a value that's not a valid offet for that array
+Emitted when attempting to access an array using a value that's not a valid offset for that array
 
 ```php
 $a = [5, 20, 18];
