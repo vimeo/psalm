@@ -9,6 +9,7 @@ use Psalm\Context;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\IssueBuffer;
 use Psalm\Type;
+use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TString;
 
@@ -36,9 +37,8 @@ class ArrayAnalyzer
             return null;
         }
 
-        $item_key_type = null;
-
-        $item_value_type = null;
+        $item_key_atomic_types = [];
+        $item_value_atomic_types = [];
 
         $property_types = [];
         $class_strings = [];
@@ -73,11 +73,7 @@ class ArrayAnalyzer
                         $key_type = Type::getInt(false, (int) $item->key->value);
                     }
 
-                    if ($item_key_type) {
-                        $item_key_type = Type::combineUnionTypes($key_type, $item_key_type, $codebase, false, true, 30);
-                    } else {
-                        $item_key_type = $key_type;
-                    }
+                    $item_key_atomic_types = array_merge($item_key_atomic_types, array_values($key_type->getTypes()));
 
                     if ($item->key->inferredType->isSingleStringLiteral()) {
                         $item_key_literal_type = $item->key->inferredType->getSingleStringLiteral();
@@ -96,7 +92,7 @@ class ArrayAnalyzer
                 }
             } else {
                 $item_key_value = $int_offset + $int_offset_diff;
-                $item_key_type = Type::getInt();
+                $item_key_atomic_types[] = new Type\Atomic\TInt();
             }
 
             if ($item_key_value !== null) {
@@ -119,7 +115,7 @@ class ArrayAnalyzer
                 return false;
             }
 
-            if ($item_value_type && $item_value_type->hasMixed() && !$can_create_objectlike) {
+            if ($item_value_atomic_types && !$can_create_objectlike) {
                 continue;
             }
 
@@ -130,29 +126,44 @@ class ArrayAnalyzer
                     $can_create_objectlike = false;
                 }
 
-                if ($item_value_type) {
-                    $item_value_type = Type::combineUnionTypes(
-                        $item->value->inferredType,
-                        clone $item_value_type,
-                        $codebase,
-                        false,
-                        true,
-                        30
-                    );
-                } else {
-                    $item_value_type = $item->value->inferredType;
-                }
+                $item_value_atomic_types = array_merge(
+                    $item_value_atomic_types,
+                    array_values($item->value->inferredType->getTypes())
+                );
             } else {
-                $item_value_type = Type::getMixed();
+                $item_value_atomic_types[] = new Type\Atomic\TMixed();
 
                 if ($item_key_value !== null && count($property_types) <= 50) {
-                    $property_types[$item_key_value] = $item_value_type;
+                    $property_types[$item_key_value] = Type::getMixed();
                 } else {
                     $can_create_objectlike = false;
                 }
             }
         }
 
+        if ($item_key_atomic_types) {
+            $item_key_type = TypeCombination::combineTypes(
+                $item_key_atomic_types,
+                $codebase,
+                false,
+                true,
+                30
+            );
+        } else {
+            $item_key_type = null;
+        }
+
+        if ($item_value_atomic_types) {
+            $item_value_type = TypeCombination::combineTypes(
+                $item_value_atomic_types,
+                $codebase,
+                false,
+                true,
+                30
+            );
+        } else {
+            $item_value_type = null;
+        }
         // if this array looks like an object-like array, let's return that instead
         if ($item_value_type
             && $item_key_type
