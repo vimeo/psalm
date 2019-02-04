@@ -144,5 +144,5 @@ function usort(array &$arr, callable $callback): bool {}
  * @param array<string, T> $arr
  * @return array<string, T>
  */
-function array_change_key_case(array $arr) {}
+function array_change_key_case(array $arr, int $case = CASE_LOWER) {}
 
