@@ -1763,20 +1763,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($docblock_info->templates) {
             $storage->template_types = [];
 
-            foreach ($docblock_info->templates as $template_type) {
-                if (count($template_type) === 3) {
-                    if (trim($template_type[2])) {
-                        $storage->template_types[$template_type[0]] = [
-                            Type::parseTokens(
-                                Type::fixUpLocalType(
-                                    $template_type[2],
-                                    $this->aliases,
-                                    null,
-                                    $this->type_aliases
-                                )
-                            ),
-                            $fq_classlike_name
-                        ];
+            foreach ($docblock_info->templates as $template_map) {
+                if (count($template_map) === 3) {
+                    if (trim($template_map[2])) {
+                        $template_type = Type::parseTokens(
+                            Type::fixUpLocalType(
+                                $template_map[2],
+                                $this->aliases,
+                                null,
+                                $this->type_aliases
+                            )
+                        );
                     } else {
                         if (IssueBuffer::accepts(
                             new InvalidDocblock(
@@ -1785,10 +1782,31 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             )
                         )) {
                         }
+
+                        $template_type = Type::getMixed();
+                    }
+
+                    if (!$template_type->isSingle()) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                'Template type cannot be a union in docblock for '
+                                    . implode('.', $this->fq_classlike_names),
+                                new CodeLocation($this->file_scanner, $stmt, null, true)
+                            )
+                        )) {
+                            $storage->has_docblock_issues = true;
+                        }
+
+                        $template_type = Type::getMixed();
                     }
                 } else {
-                    $storage->template_types[$template_type[0]] = [Type::getMixed(), $fq_classlike_name];
+                    $template_type = Type::getMixed();
                 }
+
+                $storage->template_types[$template_map[0]] = [
+                    $template_type,
+                    $fq_classlike_name
+                ];
             }
 
             $template_types = array_merge($template_types ?: [], $storage->template_types);
