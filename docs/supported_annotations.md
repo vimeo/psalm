@@ -241,6 +241,8 @@ $a->bar = 5; // this call fails
 
 The `@template` tag allows classes and functions to implement type parameter-like functionality found in many other languages.
 
+A notable point is that while `@template` tag order matters (i.e. for key-value pair extending), names don't matter.
+
 As a very simple example, this function returns whatever is passed in:
 
 ```php
