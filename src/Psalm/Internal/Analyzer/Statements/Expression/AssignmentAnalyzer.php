@@ -208,9 +208,17 @@ class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($assign_value_type->hasMixed()) {
+            $root_var_id = ExpressionAnalyzer::getRootVarId(
+                $assign_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer
+            );
+
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
-            if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch) {
+            if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
+                && !strpos($root_var_id ?? '', '->')
+            ) {
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
                         'Cannot assign ' . $var_id . ' to a mixed type',
