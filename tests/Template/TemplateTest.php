@@ -2018,12 +2018,20 @@ class TemplateTest extends TestCase
                     $templated_list->add(5, []);',
                 'error_message' => 'InvalidArgument',
             ],
-            'unionTemplateType' => [
+            'classTemplateUnionType' => [
                 '<?php
                     /**
                      * @template T0 as int|string
                      */
                     class Foo {}',
+                'error_message' => 'InvalidDocblock'
+            ],
+            'functionTemplateUnionType' => [
+                '<?php
+                    /**
+                     * @template T0 as int|string
+                     */
+                    function foo() : void {}',
                 'error_message' => 'InvalidDocblock'
             ],
         ];
