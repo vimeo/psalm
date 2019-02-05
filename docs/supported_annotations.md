@@ -246,7 +246,8 @@ While `@template` tag order matters (i.e. for key-value pair extending), names d
 As a very simple example, this function returns whatever is passed in:
 
 ```php
-/** @template T
+/**
+ * @template T
  * @psalm-param T $t
  * @return T
  */
