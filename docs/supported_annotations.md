@@ -375,6 +375,66 @@ $b = makeArray(new FooChild()); // typed as array<int, FooChild>
 $c = makeArray(new stdClass()); // type error
 ```
 
+Templated types aren't limited to key-value pairs, and you can re-use templates across multiple arguments of a template-supporting type
+```php
+/**
+* @template T0 as int|string
+*
+* @template-implements IteratorAggregate<T0, int>
+*/
+abstract class Foo implements IteratorAggregate {
+  /**
+  * @var int
+  */
+  protected $rand_min;
+
+  /**
+  * @var int
+  */
+  protected $rand_max;
+
+  public function __construct(int $rand_min, int $rand_max) {
+    $this->rand_min = $rand_min;
+    $this->rand_max = $rand_max;
+  }
+
+  /**
+  * @return Generator<T0, int, mixed, T0>
+  */
+  public function getIterator() : Generator {
+    $j = random_int($this->rand_min, $this->rand_max);
+    for($i = $this->rand_min; $i <= $j; $i += 1) {
+      yield $this->getFuzzyType($i) => $i ** $i;
+    }
+
+    return $this->getFuzzyType($j);
+  }
+
+  /**
+  * @return T0
+  */
+  abstract protected function getFuzzyType(int $i);
+}
+
+/**
+* @template-extends Foo<int>
+*/
+class Bar extends Foo {
+  protected function getFuzzyType(int $i) : int {
+    return $i;
+  }
+}
+
+/**
+* @template-extends Foo<string>
+*/
+class Baz extends Foo {
+  protected function getFuzzyType(int $i) : string {
+    return static::class . '[' . $i . ']';
+  }
+}
+```
+
 ### Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.
