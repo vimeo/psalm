@@ -742,10 +742,6 @@ class ForeachAnalyzer
                 return;
             }
 
-            if ($generic_storage->stubbed && !$iterator_atomic_type instanceof Type\Atomic\TGenericObject) {
-                return;
-            }
-
             if ($generic_storage->template_types
                 || $iterator_atomic_type instanceof Type\Atomic\TGenericObject
             ) {
