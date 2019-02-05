@@ -241,7 +241,7 @@ $a->bar = 5; // this call fails
 
 The `@template` tag allows classes and functions to implement type parameter-like functionality found in many other languages.
 
-A notable point is that while `@template` tag order matters (i.e. for key-value pair extending), names don't matter.
+While `@template` tag order matters (i.e. for key-value pair extending), names don't matter outside the scope of the class or function in which they're declared.
 
 As a very simple example, this function returns whatever is passed in:
 
@@ -375,22 +375,22 @@ $b = makeArray(new FooChild()); // typed as array<int, FooChild>
 $c = makeArray(new stdClass()); // type error
 ```
 
-Templated types aren't limited to key-value pairs, and you can re-use templates across multiple arguments of a template-supporting type
+Templated types aren't limited to key-value pairs, and you can re-use templates across multiple arguments of a template-supporting type:
 ```php
 /**
-* @template T0 as int|string
-*
-* @template-implements IteratorAggregate<T0, int>
-*/
+ * @template T0 as int|string
+ *
+ * @template-implements IteratorAggregate<T0, int>
+ */
 abstract class Foo implements IteratorAggregate {
   /**
-  * @var int
-  */
+   * @var int
+   */
   protected $rand_min;
 
   /**
-  * @var int
-  */
+   * @var int
+   */
   protected $rand_max;
 
   public function __construct(int $rand_min, int $rand_max) {
@@ -399,8 +399,8 @@ abstract class Foo implements IteratorAggregate {
   }
 
   /**
-  * @return Generator<T0, int, mixed, T0>
-  */
+   * @return Generator<T0, int, mixed, T0>
+   */
   public function getIterator() : Generator {
     $j = random_int($this->rand_min, $this->rand_max);
     for($i = $this->rand_min; $i <= $j; $i += 1) {
@@ -411,14 +411,14 @@ abstract class Foo implements IteratorAggregate {
   }
 
   /**
-  * @return T0
-  */
+   * @return T0
+   */
   abstract protected function getFuzzyType(int $i);
 }
 
 /**
-* @template-extends Foo<int>
-*/
+ * @template-extends Foo<int>
+ */
 class Bar extends Foo {
   protected function getFuzzyType(int $i) : int {
     return $i;
@@ -426,8 +426,8 @@ class Bar extends Foo {
 }
 
 /**
-* @template-extends Foo<string>
-*/
+ * @template-extends Foo<string>
+ */
 class Baz extends Foo {
   protected function getFuzzyType(int $i) : string {
     return static::class . '[' . $i . ']';
