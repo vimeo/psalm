@@ -379,7 +379,7 @@ $c = makeArray(new stdClass()); // type error
 Templated types aren't limited to key-value pairs, and you can re-use templates across multiple arguments of a template-supporting type:
 ```php
 /**
- * @template T0 as int|string
+ * @template T0 as array-key
  *
  * @template-implements IteratorAggregate<T0, int>
  */
