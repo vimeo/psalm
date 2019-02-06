@@ -5,9 +5,9 @@ namespace Amp;
 /**
  * @template TReturn
  * @param callable():\Generator<mixed, mixed, mixed, TReturn> $gen
- * @return Promise<TReturn>
+ * @return callable():Promise<TReturn>
  */
-function coroutine(callable $gen) : Promise {}
+function coroutine(callable $gen) : callable {}
 
 /**
  * @template TReturn
