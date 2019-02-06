@@ -42,10 +42,12 @@ class ProtocolStreamReader implements ProtocolReader
     {
         $input = new ResourceInputStream($input);
         asyncCall(
-            function () use ($input): \Generator {
-                while (($chunk = yield $input->read()) !== null) {
+            function () use ($input) : \Generator {
+                while ($this->is_accepting_new_requests && ($chunk = yield $input->read()) !== null) {
                     /** @var string $chunk */
-                    $this->readMessages($chunk);
+                    if ($this->readMessages($chunk) > 0) {
+                        $this->emit('readMessageGroup');
+                    }
                 }
 
                 $this->emitClose();
