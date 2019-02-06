@@ -56,7 +56,7 @@ class TextDocument
     {
         return call(
             /**
-             * @return \Generator<int, Promise, mixed, TextDocumentItem>
+             * @return \Generator<int, mixed, mixed, TextDocumentItem>
              */
             function () use ($textDocument) {
                 $result = yield $this->handler->request(
@@ -64,6 +64,7 @@ class TextDocument
                     ['textDocument' => $textDocument]
                 );
 
+                /** @var TextDocumentItem */
                 return $this->mapper->map($result, new TextDocumentItem);
             }
         );

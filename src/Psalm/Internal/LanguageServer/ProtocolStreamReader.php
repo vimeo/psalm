@@ -42,6 +42,9 @@ class ProtocolStreamReader implements ProtocolReader
     {
         $input = new ResourceInputStream($input);
         asyncCall(
+            /**
+             * @return \Generator<int, string, string, void>
+             */
             function () use ($input) : \Generator {
                 while ($this->is_accepting_new_requests && ($chunk = yield $input->read()) !== null) {
                     /** @var string $chunk */

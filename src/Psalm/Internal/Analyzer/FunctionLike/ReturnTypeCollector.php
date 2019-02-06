@@ -182,6 +182,7 @@ class ReturnTypeCollector
                     )
                 );
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
+                $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->cond));
                 $return_types = array_merge(
                     $return_types,
                     self::getReturnTypes(
@@ -303,6 +304,13 @@ class ReturnTypeCollector
             }
 
             return [new Atomic\TMixed()];
+        } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
+            return array_merge(
+                self::getYieldTypeFromExpression($stmt->left),
+                self::getYieldTypeFromExpression($stmt->right)
+            );
+        } elseif ($stmt instanceof PhpParser\Node\Expr\Assign) {
+            return self::getYieldTypeFromExpression($stmt->expr);
         }
 
         return [];

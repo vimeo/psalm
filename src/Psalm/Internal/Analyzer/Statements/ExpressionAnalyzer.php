@@ -8,6 +8,7 @@ use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -1218,6 +1219,30 @@ class ExpressionAnalyzer
             }
         } else {
             $stmt->inferredType = Type::getNull();
+        }
+
+        $source = $statements_analyzer->getSource();
+
+        if ($source instanceof FunctionLikeAnalyzer
+            && !($source->getSource() instanceof TraitAnalyzer)
+        ) {
+            $source->addPossibleParamTypes($context, $codebase);
+
+            $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+            if ($storage->return_type) {
+                foreach ($storage->return_type->getTypes() as $atomic_return_type) {
+                    if ($atomic_return_type instanceof Type\Atomic\TGenericObject
+                        && $atomic_return_type->value === 'Generator'
+                    ) {
+                        if (!$atomic_return_type->type_params[2]->isMixed()
+                            && !$atomic_return_type->type_params[2]->isVoid()
+                        ) {
+                            $stmt->inferredType = clone $atomic_return_type->type_params[2];
+                        }
+                    }
+                }
+            }
         }
 
         return null;
