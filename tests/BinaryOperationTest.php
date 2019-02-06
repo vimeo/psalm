@@ -253,7 +253,7 @@ class BinaryOperationTest extends TestCase
                 '<?php
                     $a = gmp_init(2);
                     $b = "a" + $a;',
-                'error_message' => 'InvalidOperand - src/somefile.php:3 - Cannot add GMP to non-numeric type',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Cannot add GMP to non-numeric type',
             ],
             'stringIncrement' => [
                 '<?php

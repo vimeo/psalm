@@ -700,7 +700,7 @@ class SwitchTypeTest extends TestCase
                         case 0:
                             echo "I never get here";
                     }',
-                'error_message' => 'ParadoxicalCondition - src/somefile.php:7',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
             'impossibleCaseValue' => [
                 '<?php
@@ -716,7 +716,7 @@ class SwitchTypeTest extends TestCase
                         case "c":
                             echo "impossible";
                     }',
-                'error_message' => 'TypeDoesNotContainType - src/somefile.php:11',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
             'impossibleCaseDefault' => [
                 '<?php
@@ -732,7 +732,7 @@ class SwitchTypeTest extends TestCase
                         default:
                             echo "impossible";
                     }',
-                'error_message' => 'ParadoxicalCondition - src/somefile.php:11',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
             'breakWithoutSettingVar' => [
                 '<?php
@@ -761,7 +761,7 @@ class SwitchTypeTest extends TestCase
                                 break;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src/somefile.php:5 - string(InvalidArgumentException) cannot be identical to class-string',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5 - string(InvalidArgumentException) cannot be identical to class-string',
             ],
         ];
     }
