@@ -11,10 +11,11 @@ function coroutine(callable $gen) : Promise {}
 
 /**
  * @template TReturn
- * @param callable():(\Generator<mixed, mixed, mixed, TReturn>|null) $gen
+ * @param callable():(\Generator<mixed, mixed, mixed, TReturn>|TReturn) $gen
  * @return Promise<TReturn>
  */
 function call(callable $gen) : Promise {}
+
 
 /**
  * @template TReturn
@@ -33,6 +34,10 @@ interface Promise {
  * @template-implements Promise<TReturn>
  */
 class Success implements Promise {
+    /**
+     * @param TReturn|null $value
+     */
+    public function __construct($value = null) {}
     /**
      * @param callable(\Throwable|null $exception, TReturn|null $result):void
      * @return void
