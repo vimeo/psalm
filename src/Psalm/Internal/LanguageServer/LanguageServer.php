@@ -103,7 +103,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             /** @return void */
             asyncCoroutine(
                 /**
-                 * @return Generator<int, \Amp\Promise, mixed, void>
+                 * @return \Generator<int, \Amp\Promise, mixed, void>
                  */
                 function (Message $msg) {
                     if (!$msg->body) {
