@@ -101,53 +101,58 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $this->protocolReader->on(
             'message',
             /** @return void */
-            asyncCoroutine(function (Message $msg) {
-                if (!$msg->body) {
-                    return;
-                }
-
-                // Ignore responses, this is the handler for requests and notifications
-                if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
-                    return;
-                }
-
-                $result = null;
-                $error = null;
-                try {
-                    // Invoke the method handler to get a result
-                    /**
-                     * @var Promise
-                     * @psalm-suppress UndefinedClass
-                     */
-                    $dispatched = $this->dispatch($msg->body);
-                    $result = yield $dispatched;
-                } catch (AdvancedJsonRpc\Error $e) {
-                    // If a ResponseError is thrown, send it back in the Response
-                    $error = $e;
-                } catch (Throwable $e) {
-                    // If an unexpected error occurred, send back an INTERNAL_ERROR error response
-                    $error = new AdvancedJsonRpc\Error(
-                        (string) $e,
-                        AdvancedJsonRpc\ErrorCode::INTERNAL_ERROR,
-                        null,
-                        $e
-                    );
-                }
-                // Only send a Response for a Request
-                // Notifications do not send Responses
+            asyncCoroutine(
                 /**
-                 * @psalm-suppress UndefinedPropertyFetch
-                 * @psalm-suppress MixedArgument
+                 * @return Generator<int, \Amp\Promise, mixed, void>
                  */
-                if (AdvancedJsonRpc\Request::isRequest($msg->body)) {
-                    if ($error !== null) {
-                        $responseBody = new AdvancedJsonRpc\ErrorResponse($msg->body->id, $error);
-                    } else {
-                        $responseBody = new AdvancedJsonRpc\SuccessResponse($msg->body->id, $result);
+                function (Message $msg) {
+                    if (!$msg->body) {
+                        return;
                     }
-                    yield $this->protocolWriter->write(new Message($responseBody));
+
+                    // Ignore responses, this is the handler for requests and notifications
+                    if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
+                        return;
+                    }
+
+                    $result = null;
+                    $error = null;
+                    try {
+                        // Invoke the method handler to get a result
+                        /**
+                         * @var Promise
+                         * @psalm-suppress UndefinedClass
+                         */
+                        $dispatched = $this->dispatch($msg->body);
+                        $result = yield $dispatched;
+                    } catch (AdvancedJsonRpc\Error $e) {
+                        // If a ResponseError is thrown, send it back in the Response
+                        $error = $e;
+                    } catch (Throwable $e) {
+                        // If an unexpected error occurred, send back an INTERNAL_ERROR error response
+                        $error = new AdvancedJsonRpc\Error(
+                            (string) $e,
+                            AdvancedJsonRpc\ErrorCode::INTERNAL_ERROR,
+                            null,
+                            $e
+                        );
+                    }
+                    // Only send a Response for a Request
+                    // Notifications do not send Responses
+                    /**
+                     * @psalm-suppress UndefinedPropertyFetch
+                     * @psalm-suppress MixedArgument
+                     */
+                    if (AdvancedJsonRpc\Request::isRequest($msg->body)) {
+                        if ($error !== null) {
+                            $responseBody = new AdvancedJsonRpc\ErrorResponse($msg->body->id, $error);
+                        } else {
+                            $responseBody = new AdvancedJsonRpc\SuccessResponse($msg->body->id, $result);
+                        }
+                        yield $this->protocolWriter->write(new Message($responseBody));
+                    }
                 }
-            })
+            )
         );
 
         $this->protocolReader->on(
