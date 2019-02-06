@@ -819,7 +819,7 @@ class Union
 
     /**
      * @param  array<string, array{Union, ?string}> $template_types
-     * @param  array<string, array{Union, ?string}> $generic_params
+     * @param  array<string, array{Union, ?string, ?int}> $generic_params
      * @param  Type\Union|null      $input_type
      *
      * @return void
@@ -830,7 +830,8 @@ class Union
         Codebase $codebase = null,
         Type\Union $input_type = null,
         bool $replace = true,
-        bool $add_upper_bound = false
+        bool $add_upper_bound = false,
+        int $depth = 0
     ) {
         $keys_to_unset = [];
 
@@ -853,16 +854,24 @@ class Union
                             $generic_param->setFromDocblock();
 
                             if (isset($generic_params[$key][0])) {
-                                $generic_param = Type::combineUnionTypes(
-                                    $generic_params[$key][0],
-                                    $generic_param,
-                                    $codebase
-                                );
+                                $existing_depth = $generic_params[$key][2] ?? -1;
+                                if ($existing_depth > $depth) {
+                                    continue;
+                                }
+
+                                if ($existing_depth === $depth) {
+                                    $generic_param = Type::combineUnionTypes(
+                                        $generic_params[$key][0],
+                                        $generic_param,
+                                        $codebase
+                                    );
+                                }
                             }
 
                             $generic_params[$key] = [
                                 $generic_param,
-                                $atomic_type->defining_class
+                                $atomic_type->defining_class,
+                                $depth
                             ];
                         }
                     } elseif ($add_upper_bound && $input_type) {
@@ -916,7 +925,8 @@ class Union
 
                         $generic_params[$atomic_type->param_name] = [
                             $generic_param,
-                            $atomic_type->defining_class
+                            $atomic_type->defining_class,
+                            $depth
                         ];
                     }
                 }
@@ -1001,7 +1011,8 @@ class Union
                     $codebase,
                     $matching_atomic_type,
                     $replace,
-                    $add_upper_bound
+                    $add_upper_bound,
+                    $depth + 1
                 );
             }
         }

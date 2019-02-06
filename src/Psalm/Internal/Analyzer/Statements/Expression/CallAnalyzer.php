@@ -191,7 +191,7 @@ class CallAnalyzer
     /**
      * @param  string|null                      $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  array<string, array{Type\Union, ?string}>|null   &$generic_params
+     * @param  array<string, array{Type\Union, ?string, ?int}>|null   &$generic_params
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
      * @param  StatementsAnalyzer                $statements_analyzer
@@ -872,7 +872,7 @@ class CallAnalyzer
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   FunctionLikeStorage|null                $function_storage
      * @param   ClassLikeStorage|null                   $class_storage
-     * @param   array<string, array{Type\Union, ?string}>|null          $generic_params
+     * @param   array<string, array{Type\Union, ?string, ?int}>|null  $generic_params
      * @param   CodeLocation                            $code_location
      * @param   Context                                 $context
      *
@@ -1115,7 +1115,7 @@ class CallAnalyzer
      * @param  FunctionLikeParameter|null $function_param
      * @param  FunctionLikeParameter|null $last_param
      * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
-     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
      * @param  array<string, array{Type\Union, ?string}> $template_types
      * @return false|null
      */
@@ -1190,7 +1190,7 @@ class CallAnalyzer
      * @param  FunctionLikeParameter|null $function_param
      * @param  FunctionLikeParameter|null $last_param
      * @param  array<int, FunctionLikeParameter> $function_params
-     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
      * @param  array<string, array{Type\Union, ?string}> $template_types
      * @param  FunctionLikeStorage|null $function_storage
      * @return false|null
@@ -1302,7 +1302,7 @@ class CallAnalyzer
      * @param  string|null $cased_method_id
      * @param  string|null $fq_class_name
      * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
-     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
      * @param  array<string, array{Type\Union, ?string}> $template_types
      * @param  FunctionLikeParameter|null $function_param
      * @return false|null

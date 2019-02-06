@@ -1579,7 +1579,35 @@ class TemplateTest extends TestCase
                      * @template T as I1&I2
                      * @param T $b
                      */
-                    function templatedBar(I2 $b) : void {}'
+                    function templatedBar(I2 $b) : void {}',
+            ],
+            'matchMostSpecificTemplate' => [
+                '<?php
+                    /**
+                     * @template TReturn
+                     * @param callable():(\Generator<mixed, mixed, mixed, TReturn>|TReturn) $gen
+                     * @return array<int, TReturn>
+                     */
+                    function call(callable $gen) : array {
+                        $return = $gen();
+                        if ($return instanceof Generator) {
+                            return [$gen->getReturn()];
+                        }
+                        return [$gen];
+                    }
+
+                    $arr = call(
+                        /**
+                         * @return Generator<mixed, mixed, mixed, string>
+                         */
+                        function() {
+                            yield 1;
+                            return "hello";
+                        }
+                    );',
+                [
+                    '$arr' => 'array<int, string>',
+                ]
             ],
         ];
     }

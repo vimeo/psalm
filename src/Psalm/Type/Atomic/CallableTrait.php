@@ -160,7 +160,7 @@ trait CallableTrait
 
     /**
      * @param  array<string, array{Union, ?string}>     $template_types
-     * @param  array<string, array{Union, ?string}>     $generic_params
+     * @param  array<string, array{Union, ?string, ?int}>     $generic_params
      * @param  Atomic|null              $input_type
      *
      * @return void
@@ -171,7 +171,8 @@ trait CallableTrait
         Codebase $codebase = null,
         Atomic $input_type = null,
         bool $replace = true,
-        bool $add_upper_bound = false
+        bool $add_upper_bound = false,
+        int $depth = 0
     ) {
         if ($this->params) {
             foreach ($this->params as $offset => $param) {
@@ -193,7 +194,8 @@ trait CallableTrait
                     $codebase,
                     $input_param_type,
                     $replace,
-                    !$add_upper_bound
+                    !$add_upper_bound,
+                    $depth
                 );
             }
         }

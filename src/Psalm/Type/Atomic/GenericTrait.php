@@ -140,7 +140,7 @@ trait GenericTrait
 
     /**
      * @param  array<string, array{Union, ?string}>     $template_types
-     * @param  array<string, array{Union, ?string}>     $generic_params
+     * @param  array<string, array{Union, ?string, ?int}>     $generic_params
      * @param  Atomic|null              $input_type
      *
      * @return void
@@ -151,7 +151,8 @@ trait GenericTrait
         Codebase $codebase = null,
         Atomic $input_type = null,
         bool $replace = true,
-        bool $add_upper_bound = false
+        bool $add_upper_bound = false,
+        int $depth = 0
     ) {
         foreach ($this->type_params as $offset => $type_param) {
             $input_type_param = null;
@@ -179,7 +180,8 @@ trait GenericTrait
                 $codebase,
                 $input_type_param,
                 $replace,
-                $add_upper_bound
+                $add_upper_bound,
+                $depth + 1
             );
         }
     }

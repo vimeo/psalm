@@ -624,7 +624,7 @@ abstract class Atomic
 
     /**
      * @param  array<string, array{Type\Union, ?string}> $template_types
-     * @param  array<string, array{Type\Union, ?string}> $generic_params
+     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
      * @param  Type\Atomic|null          $input_type
      *
      * @return void
@@ -635,7 +635,8 @@ abstract class Atomic
         Codebase $codebase = null,
         Type\Atomic $input_type = null,
         bool $replace = true,
-        bool $add_upper_bound = false
+        bool $add_upper_bound = false,
+        int $depth = 0
     ) {
         // do nothing
     }
