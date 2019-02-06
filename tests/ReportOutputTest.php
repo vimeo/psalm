@@ -246,17 +246,16 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
         );
 
         $this->assertSame(
-            'FILE: somefile.php
-
-+----------+------+---------------------------------+---------------------------------------------------------------+
-| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |
-+----------+------+---------------------------------+---------------------------------------------------------------+
-| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |
-| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'string|null\' for psalmCanVerify |
-| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |
-| ERROR    | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |
-+----------+------+---------------------------------+---------------------------------------------------------------+
-',
+            'FILE: somefile.php' . "\n" .
+            "\n" .
+            '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL .
+            '| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |' . PHP_EOL .
+            '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL .
+            '| ERROR    | 3    | UndefinedVariable               | Cannot find referenced variable $as_you                       |' . PHP_EOL .
+            '| ERROR    | 2    | MixedInferredReturnType         | Could not verify return type \'string|null\' for psalmCanVerify |' . PHP_EOL .
+            '| ERROR    | 7    | UndefinedConstant               | Const CHANGE_ME is not defined                                |' . PHP_EOL .
+            '| ERROR    | 15   | PossiblyUndefinedGlobalVariable | Possibly undefined global variable $a, first seen on line 10  |' . PHP_EOL .
+            '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL,
             IssueBuffer::getOutput(ProjectAnalyzer::TYPE_COMPACT, false)
         );
 
