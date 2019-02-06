@@ -57,15 +57,15 @@ class ConfigFileTest extends TestCase
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->addPlugin('a\b\c');
 
-        $this->assertSame(
+        $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0" encoding="UTF-8"?>
             <psalm
                 name="bar"
             >
                 <plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins>
-            </psalm>' . PHP_EOL,
+            </psalm>',
             file_get_contents($this->file_path)
-        );
+        ));
     }
 
     /**
@@ -83,11 +83,11 @@ class ConfigFileTest extends TestCase
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
         $config_file->addPlugin('a\b\c');
 
-        $this->assertSame(
+        $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0"?>
-            <psalm><plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins></psalm>' . PHP_EOL,
+            <psalm><plugins><pluginClass xmlns="' . ConfigFile::NS . '" class="a\b\c"/></plugins></psalm>',
             file_get_contents($this->file_path)
-        );
+        ));
     }
 
     /**
@@ -200,5 +200,24 @@ class ConfigFileTest extends TestCase
             $noPlugins,
             file_get_contents($this->file_path)
         );
+    }
+
+    /**
+    * @param string $expected_template
+    * @param string $contents
+    *
+    * @return bool
+    */
+    protected static function compareContentWithTemplateAndTrailingLineEnding($expected_template, $contents)
+    {
+        $passed = false;
+
+        foreach ([PHP_EOL, "\n", "\r", "\r\n"] as $eol) {
+            if (! $passed && $contents === ($expected_template . $eol)) {
+                $passed = true;
+            }
+        }
+
+        return $passed;
     }
 }
