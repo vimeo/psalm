@@ -50,11 +50,14 @@ class TextDocument
      * to request the current content of a text document identified by the URI
      *
      * @param TextDocumentIdentifier $textDocument The document to get the content for
-     * @return Promise <TextDocumentItem> The document's current content
+     * @return Promise<TextDocumentItem> The document's current content
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise
     {
         return call(
+            /**
+             * @return \Generator<int, Promise, mixed, TextDocumentItem>
+             */
             function () use ($textDocument) {
                 $result = yield $this->handler->request(
                     'textDocument/xcontent',
