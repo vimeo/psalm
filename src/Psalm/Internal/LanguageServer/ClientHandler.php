@@ -4,7 +4,9 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc;
+use Amp\Deferred;
 use Amp\Promise;
+use function Amp\call;
 
 /**
  * @internal
@@ -38,54 +40,48 @@ class ClientHandler
      *
      * @param string $method The method to call
      * @param array|object $params The method parameters
-     * @return Promise Resolved with the result of the request or rejected with an error
+     * @return Promise <mixed> Resolved with the result of the request or rejected with an error
      */
     public function request(string $method, $params): Promise
     {
         $id = $this->idGenerator->generate();
 
-        $promise = $this->protocolWriter->write(
-            new Message(
-                new AdvancedJsonRpc\Request($id, $method, (object)$params)
-            )
-        );
+        return call(function () use ($id, $method, $params) {
+            yield $this->protocolWriter->write(
+                new Message(
+                    new AdvancedJsonRpc\Request($id, $method, (object) $params)
+                )
+            );
 
-        $promise->onResolve(
-            /**
-             * @return Promise
-             */
-            function () use ($id) {
-                $deferred = new \Amp\Deferred();
+            $deferred = new Deferred();
 
-                $listener =
+            $listener =
+                /**
+                 * @param callable $listener
+                 * @return void
+                 */
+                function (Message $msg) use ($id, $deferred, &$listener) {
+                    error_log('request handler');
                     /**
-                     * @param callable $listener
-                     * @return void
+                     * @psalm-suppress UndefinedPropertyFetch
+                     * @psalm-suppress MixedArgument
                      */
-                    function (Message $msg) use ($id, $deferred, &$listener) {
-                        /**
-                         * @psalm-suppress UndefinedPropertyFetch
-                         * @psalm-suppress MixedArgument
-                         */
-                        if ($msg->body
-                            && AdvancedJsonRpc\Response::isResponse($msg->body)
-                            && $msg->body->id === $id
-                        ) {
-                            // Received a response
-                            $this->protocolReader->removeListener('message', $listener);
-                            if (AdvancedJsonRpc\SuccessResponse::isSuccessResponse($msg->body)) {
-                                $deferred->resolve($msg->body->result);
-                            } else {
-                                $deferred->fail($msg->body->error);
-                            }
+                    if ($msg->body
+                        && AdvancedJsonRpc\Response::isResponse($msg->body)
+                        && $msg->body->id === $id
+                    ) {
+                        // Received a response
+                        $this->protocolReader->removeListener('message', $listener);
+                        if (AdvancedJsonRpc\SuccessResponse::isSuccessResponse($msg->body)) {
+                            $deferred->resolve($msg->body->result);
+                        } else {
+                            $deferred->fail($msg->body->error);
                         }
-                    };
-                $this->protocolReader->on('message', $listener);
-                return $deferred->promise();
-            }
-        );
-
-        return $promise;
+                    }
+                };
+            $this->protocolReader->on('message', $listener);
+            return $deferred->promise();
+        });
     }
 
     /**

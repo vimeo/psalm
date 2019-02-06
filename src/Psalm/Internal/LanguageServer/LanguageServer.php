@@ -26,9 +26,10 @@ use Psalm\Internal\LanguageServer\Server\TextDocument;
 use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};
 use AdvancedJsonRpc;
 use Amp\Promise;
-use function Amp\coroutine;
 use Throwable;
 use Webmozart\PathUtil\Path;
+use function Amp\call;
+use function Amp\asyncCoroutine;
 
 /**
  * @internal
@@ -100,70 +101,60 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         $this->protocolReader->on(
             'message',
             /** @return void */
-            function (Message $msg) {
-                \Amp\call(
-                    /** @return \Generator<int, Promise, mixed, void> */
-                    function () use ($msg) {
-                        if (!$msg->body) {
-                            return;
-                        }
+            asyncCoroutine(function (Message $msg) {
+                if (!$msg->body) {
+                    return;
+                }
 
-                        // Ignore responses, this is the handler for requests and notifications
-                        if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
-                            return;
-                        }
+                // Ignore responses, this is the handler for requests and notifications
+                if (AdvancedJsonRpc\Response::isResponse($msg->body)) {
+                    return;
+                }
 
-                        $result = null;
-                        $error = null;
-                        try {
-                            // Invoke the method handler to get a result
-                            /**
-                             * @var Promise
-                             * @psalm-suppress UndefinedClass
-                             */
-                            $dispatched = $this->dispatch($msg->body);
-                            $result = yield $dispatched;
-                        } catch (AdvancedJsonRpc\Error $e) {
-                            // If a ResponseError is thrown, send it back in the Response
-                            $error = $e;
-                        } catch (Throwable $e) {
-                            // If an unexpected error occurred, send back an INTERNAL_ERROR error response
-                            $error = new AdvancedJsonRpc\Error(
-                                (string)$e,
-                                AdvancedJsonRpc\ErrorCode::INTERNAL_ERROR,
-                                null,
-                                $e
-                            );
-                        }
-                        // Only send a Response for a Request
-                        // Notifications do not send Responses
-                        /**
-                         * @psalm-suppress UndefinedPropertyFetch
-                         * @psalm-suppress MixedArgument
-                         */
-                        if (AdvancedJsonRpc\Request::isRequest($msg->body)) {
-                            if ($error !== null) {
-                                $responseBody = new AdvancedJsonRpc\ErrorResponse($msg->body->id, $error);
-                            } else {
-                                $responseBody = new AdvancedJsonRpc\SuccessResponse($msg->body->id, $result);
-                            }
-                            $this->protocolWriter->write(new Message($responseBody));
-                        }
+                $result = null;
+                $error = null;
+                try {
+                    // Invoke the method handler to get a result
+                    /**
+                     * @var Promise
+                     * @psalm-suppress UndefinedClass
+                     */
+                    $dispatched = $this->dispatch($msg->body);
+                    $result = yield $dispatched;
+                } catch (AdvancedJsonRpc\Error $e) {
+                    // If a ResponseError is thrown, send it back in the Response
+                    $error = $e;
+                } catch (Throwable $e) {
+                    // If an unexpected error occurred, send back an INTERNAL_ERROR error response
+                    $error = new AdvancedJsonRpc\Error(
+                        (string) $e,
+                        AdvancedJsonRpc\ErrorCode::INTERNAL_ERROR,
+                        null,
+                        $e
+                    );
+                }
+                // Only send a Response for a Request
+                // Notifications do not send Responses
+                /**
+                 * @psalm-suppress UndefinedPropertyFetch
+                 * @psalm-suppress MixedArgument
+                 */
+                if (AdvancedJsonRpc\Request::isRequest($msg->body)) {
+                    if ($error !== null) {
+                        $responseBody = new AdvancedJsonRpc\ErrorResponse($msg->body->id, $error);
+                    } else {
+                        $responseBody = new AdvancedJsonRpc\SuccessResponse($msg->body->id, $result);
                     }
-                );
-            }
+                    yield $this->protocolWriter->write(new Message($responseBody));
+                }
+            })
         );
 
         $this->protocolReader->on(
             'readMessageGroup',
             /** @return void */
             function () {
-                \Amp\call(
-                    /** @return null */
-                    function () {
-                        $this->doAnalysis();
-                    }
-                );
+                $this->doAnalysis();
             }
         );
 
@@ -186,7 +177,7 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
         string $rootPath = null,
         int $processId = null
     ): Promise {
-        return \Amp\call(
+        return call(
             /** @return \Generator<int, true, mixed, InitializeResult> */
             function () use ($capabilities, $rootPath, $processId) {
                 // Eventually, this might block on something. Leave it as a generator.
@@ -441,23 +432,5 @@ class LanguageServer extends AdvancedJsonRpc\Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
         return $filepath;
-    }
-
-    /**
-     * Throws an exception on the next tick.
-     * Useful for letting a promise crash the process on rejection.
-     *
-     * @param Throwable $err
-     * @return void
-     * @psalm-suppress PossiblyUnusedMethod
-     */
-    public static function crash(Throwable $err)
-    {
-        \Amp\Loop::defer(
-            /** @return void */
-            function () use ($err) {
-                throw $err;
-            }
-        );
     }
 }

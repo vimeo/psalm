@@ -36,7 +36,7 @@
     </ignoreExceptions>
 
     <stubs>
-        <file name="src/Psalm/Internal/Stubs/SabreEvent.php"/>
+        <file name="src/Psalm/Internal/Stubs/Amp.php"/>
     </stubs>
 
     <plugins>
