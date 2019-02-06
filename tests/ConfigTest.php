@@ -172,7 +172,25 @@ class ConfigTest extends TestCase
     public function testIgnoreSymlinkedProjectDirectory()
     {
         @unlink(__DIR__ . '/symlinktest/ignored/b');
-        symlink(__DIR__ . '/symlinktest/a', __DIR__ . '/symlinktest/ignored/b');
+
+        $no_symlinking_error = 'symlink(): Cannot create symlink, error code(1314)';
+        $last_error = error_get_last();
+        $check_symlink_error =
+            ! is_array($last_error) ||
+            ! isset($last_error['message']) ||
+            $no_symlinking_error !== $last_error['message'];
+
+        @symlink(__DIR__ . '/symlinktest/a', __DIR__ . '/symlinktest/ignored/b');
+
+        if ($check_symlink_error) {
+            $last_error = error_get_last();
+
+            if (is_array($last_error) && isset($last_error['message']) && $no_symlinking_error === $last_error['message']) {
+                $this->markTestSkipped($no_symlinking_error);
+
+                return;
+            }
+        }
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
