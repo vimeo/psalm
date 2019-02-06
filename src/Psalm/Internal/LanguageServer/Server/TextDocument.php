@@ -42,7 +42,7 @@ use Psalm\Internal\LanguageServer\Index\ReadableIndex;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Amp\Promise;
-use function Amp\coroutine;
+use Amp\Success;
 use function Psalm\Internal\LanguageServer\{waitForEvent, isVendored};
 
 /**
@@ -174,45 +174,36 @@ class TextDocument
      */
     public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        return \Amp\call(
-            /**
-             * @return \Generator<int, true, mixed, Hover|Location>
-             */
-            function () use ($textDocument, $position) {
-                if (false) {
-                    yield true;
-                }
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-                $file_path = LanguageServer::uriToPath($textDocument->uri);
+        try {
+            $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+            $this->codebase->file_provider->openFile($file_path);
+            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+            return new Success(new Hover([]));
+        }
 
-                try {
-                    $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
-                } catch (\Psalm\Exception\UnanalyzedFileException $e) {
-                    $this->codebase->file_provider->openFile($file_path);
-                    $this->server->queueFileAnalysis($file_path, $textDocument->uri);
-                    return new Hover([]);
-                }
+        if ($reference_location === null) {
+            return new Success(new Hover([]));
+        }
 
-                if ($reference_location === null) {
-                    return new Hover([]);
-                }
+        list($reference) = $reference_location;
 
-                list($reference) = $reference_location;
+        $code_location = $this->codebase->getSymbolLocation($file_path, $reference);
 
-                $code_location = $this->codebase->getSymbolLocation($file_path, $reference);
+        if (!$code_location) {
+            return new Success(new Hover([]));
+        }
 
-                if (!$code_location) {
-                    return new Hover([]);
-                }
-
-                return new Location(
-                    LanguageServer::pathToUri($code_location->file_path),
-                    new Range(
-                        new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
-                        new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1)
-                    )
-                );
-            }
+        return new Success(
+            new Location(
+                LanguageServer::pathToUri($code_location->file_path),
+                new Range(
+                    new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
+                    new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1)
+                )
+            )
         );
     }
 
@@ -226,40 +217,29 @@ class TextDocument
      */
     public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        return \Amp\call(
-            /**
-             * @return \Generator<int, true, mixed, Hover>
-             */
-            function () use ($textDocument, $position) {
-                if (false) {
-                    yield true;
-                }
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
 
-                $file_path = LanguageServer::uriToPath($textDocument->uri);
+        try {
+            $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
+        } catch (\Psalm\Exception\UnanalyzedFileException $e) {
+            $this->codebase->file_provider->openFile($file_path);
+            $this->server->queueFileAnalysis($file_path, $textDocument->uri);
+            return new Success(new Hover([]));
+        }
 
-                try {
-                    $reference_location = $this->codebase->getReferenceAtPosition($file_path, $position);
-                } catch (\Psalm\Exception\UnanalyzedFileException $e) {
-                    $this->codebase->file_provider->openFile($file_path);
-                    $this->server->queueFileAnalysis($file_path, $textDocument->uri);
-                    return new Hover([]);
-                }
+        if ($reference_location === null) {
+            return new Success(new Hover([]));
+        }
 
-                if ($reference_location === null) {
-                    return new Hover([]);
-                }
+        list($reference, $range) = $reference_location;
 
-                list($reference, $range) = $reference_location;
-
-                $contents = [];
-                $contents[] = new MarkedString(
-                    'php',
-                    $this->codebase->getSymbolInformation($file_path, $reference)
-                );
-
-                return new Hover($contents, $range);
-            }
+        $contents = [];
+        $contents[] = new MarkedString(
+            'php',
+            $this->codebase->getSymbolInformation($file_path, $reference)
         );
+
+        return new Success(new Hover($contents, $range));
     }
 
     /**
@@ -278,92 +258,81 @@ class TextDocument
      */
     public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
     {
-        return \Amp\call(
-            /**
-             * @return \Generator<int, true, mixed, array<empty, empty>|CompletionList>
-             */
-            function () use ($textDocument, $position) {
-                if (false) {
-                    yield true;
+        $file_path = LanguageServer::uriToPath($textDocument->uri);
+
+        $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
+
+        if (!$completion_data) {
+            error_log('completion not found at ' . $position->line . ':' . $position->character);
+            return new Success([]);
+        }
+
+        list($recent_type, $gap) = $completion_data;
+
+        error_log('gap: "' . $gap . '" and type: "' . $recent_type . '"');
+
+        $completion_items = [];
+
+        if ($gap === '->' || $gap === '::') {
+            $instance_completion_items = [];
+            $static_completion_items = [];
+
+            try {
+                $class_storage = $this->codebase->classlike_storage_provider->get($recent_type);
+
+                foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
+                    $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
+
+                    $instance_completion_items[] = new CompletionItem(
+                        (string)$method_storage,
+                        CompletionItemKind::METHOD,
+                        null,
+                        null,
+                        null,
+                        null,
+                        $method_storage->cased_name . '()'
+                    );
                 }
 
-                $file_path = LanguageServer::uriToPath($textDocument->uri);
+                foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
+                    $property_storage = $this->codebase->properties->getStorage(
+                        $declaring_class . '::$' . $property_name
+                    );
 
-                $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
-
-                if (!$completion_data) {
-                    error_log('completion not found at ' . $position->line . ':' . $position->character);
-                    return [];
+                    $instance_completion_items[] = new CompletionItem(
+                        $property_storage->getInfo() . ' $' . $property_name,
+                        CompletionItemKind::PROPERTY,
+                        null,
+                        null,
+                        null,
+                        null,
+                        ($gap === '::' ? '$' : '') . $property_name
+                    );
                 }
 
-                list($recent_type, $gap) = $completion_data;
-
-                error_log('gap: "' . $gap . '" and type: "' . $recent_type . '"');
-
-                $completion_items = [];
-
-                if ($gap === '->' || $gap === '::') {
-                    $instance_completion_items = [];
-                    $static_completion_items = [];
-
-                    try {
-                        $class_storage = $this->codebase->classlike_storage_provider->get($recent_type);
-
-                        foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
-                            $method_storage = $this->codebase->methods->getStorage($declaring_method_id);
-
-                            $instance_completion_items[] = new CompletionItem(
-                                (string)$method_storage,
-                                CompletionItemKind::METHOD,
-                                null,
-                                null,
-                                null,
-                                null,
-                                $method_storage->cased_name . '()'
-                            );
-                        }
-
-                        foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                            $property_storage = $this->codebase->properties->getStorage(
-                                $declaring_class . '::$' . $property_name
-                            );
-
-                            $instance_completion_items[] = new CompletionItem(
-                                $property_storage->getInfo() . ' $' . $property_name,
-                                CompletionItemKind::PROPERTY,
-                                null,
-                                null,
-                                null,
-                                null,
-                                ($gap === '::' ? '$' : '') . $property_name
-                            );
-                        }
-
-                        foreach ($class_storage->class_constant_locations as $const_name => $_) {
-                            $static_completion_items[] = new CompletionItem(
-                                'const ' . $const_name,
-                                CompletionItemKind::VARIABLE,
-                                null,
-                                null,
-                                null,
-                                null,
-                                $const_name
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        error_log($e->getMessage());
-                        return [];
-                    }
-
-                    $completion_items = $gap === '->'
-                        ? $instance_completion_items
-                        : array_merge($instance_completion_items, $static_completion_items);
-
-                    error_log('Found ' . count($completion_items) . ' items');
+                foreach ($class_storage->class_constant_locations as $const_name => $_) {
+                    $static_completion_items[] = new CompletionItem(
+                        'const ' . $const_name,
+                        CompletionItemKind::VARIABLE,
+                        null,
+                        null,
+                        null,
+                        null,
+                        $const_name
+                    );
                 }
-
-                return new CompletionList($completion_items, false);
+            } catch (\Exception $e) {
+                error_log($e->getMessage());
+                return new Success([]);
             }
-        );
+
+            $completion_items = $gap === '->'
+                ? $instance_completion_items
+                : array_merge($instance_completion_items, $static_completion_items);
+
+            error_log('Found ' . count($completion_items) . ' items');
+        }
+
+        return new Success(new CompletionList($completion_items, false));
     }
 }

@@ -7,6 +7,7 @@ use Psalm\Internal\LanguageServer\ClientHandler;
 use LanguageServerProtocol\{Diagnostic, TextDocumentItem, TextDocumentIdentifier};
 use Amp\Promise;
 use JsonMapper;
+use function Amp\call;
 
 /**
  * Provides method handlers for all textDocument/* methods
@@ -53,21 +54,15 @@ class TextDocument
      */
     public function xcontent(TextDocumentIdentifier $textDocument): Promise
     {
-        $promise = $this->handler->request(
-            'textDocument/xcontent',
-            ['textDocument' => $textDocument]
-        );
+        return call(
+            function () use ($textDocument) {
+                $result = yield $this->handler->request(
+                    'textDocument/xcontent',
+                    ['textDocument' => $textDocument]
+                );
 
-        $promise->onResolve(
-            /**
-             * @param object $result
-             * @return object
-             */
-            function ($result) {
                 return $this->mapper->map($result, new TextDocumentItem);
             }
         );
-
-        return $promise;
     }
 }
