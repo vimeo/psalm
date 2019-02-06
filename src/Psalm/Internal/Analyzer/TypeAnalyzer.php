@@ -307,8 +307,30 @@ class TypeAnalyzer
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[] = $input_type_part;
 
+        if ($input_type_part instanceof TGenericParam) {
+            foreach ($input_type_part->as->getTypes() as $g) {
+                if ($g instanceof TNamedObject && $g->extra_types) {
+                    $intersection_input_types = array_merge(
+                        $intersection_input_types,
+                        $g->extra_types
+                    );
+                }
+            }
+        }
+
         $intersection_container_types = $container_type_part->extra_types ?: [];
         $intersection_container_types[] = $container_type_part;
+
+        if ($container_type_part instanceof TGenericParam) {
+            foreach ($container_type_part->as->getTypes() as $g) {
+                if ($g instanceof TNamedObject && $g->extra_types) {
+                    $intersection_container_types = array_merge(
+                        $intersection_container_types,
+                        $g->extra_types
+                    );
+                }
+            }
+        }
 
         foreach ($intersection_container_types as $intersection_container_type) {
             if ($intersection_container_type instanceof TIterable) {

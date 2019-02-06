@@ -1559,6 +1559,28 @@ class TemplateTest extends TestCase
                         return new C(new $t);
                     }',
             ],
+            'templateIntersectionLeft' => [
+                '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /**
+                     * @template T as I1&I2
+                     * @param T $a
+                     */
+                    function templatedBar(I1 $a) : void {}'
+            ],
+            'templateIntersectionRight' => [
+                '<?php
+                    interface I1 {}
+                    interface I2 {}
+
+                    /**
+                     * @template T as I1&I2
+                     * @param T $b
+                     */
+                    function templatedBar(I2 $b) : void {}'
+            ],
         ];
     }
 
