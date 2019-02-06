@@ -831,6 +831,21 @@ class ForeachTest extends \Psalm\Tests\TestCase
                         foreach ($list as $item) {}
                     }'
             ],
+            'loopOverArrayChunk' => [
+                '<?php
+                    /**
+                    * @return array<int, array{0:int, 1:int}>
+                    */
+                    function Foo(int $a, int $b, int ...$ints) : array {
+                      array_unshift($ints, $a, $b);
+
+                      return array_chunk($ints, 2);
+                    }
+
+                    foreach(Foo(1, 2, 3, 4, 5) as $ints) {
+                      echo $ints[0], ", ", ($ints[1] ?? "n/a"), "\n";
+                    }'
+            ],
         ];
     }
 
