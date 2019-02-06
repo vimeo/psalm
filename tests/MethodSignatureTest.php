@@ -615,7 +615,7 @@ class MethodSignatureTest extends TestCase
                     class C implements I {
                         public function foo(bool $b): void {}
                     }',
-                'error_message' => 'MethodSignatureMismatch - src/somefile.php:6 - Method C::foo has more required',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:6 - Method C::foo has more required',
             ],
             'inheritParamTypes' => [
                 '<?php
