@@ -834,7 +834,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
             'loopOverArrayChunk' => [
                 '<?php
                     /**
-                    * @return array<int, array{0:int, 1:int}>
+                    * @return array<int, array<array-key, int>>
                     */
                     function Foo(int $a, int $b, int ...$ints) : array {
                       array_unshift($ints, $a, $b);
