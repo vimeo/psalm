@@ -77,6 +77,10 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['PossiblyInvalidArgument'],
             ],
+            'arrayFilterAllowTrim' => [
+                '<?php
+                    $foo = array_filter(["hello ", " "], "trim");',
+            ],
             'typedArrayWithDefault' => [
                 '<?php
                     class A {}
