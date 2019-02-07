@@ -1231,7 +1231,14 @@ class ArrayAssignmentTest extends TestCase
 
                     $c = new C();
                     $c[] = "hello";',
-                 'error_message' => 'NullArgument',
+                'error_message' => 'NullArgument',
+            ],
+            'storageKeyMustBeObject' => [
+                '<?php
+                    $key = [1,2,3];
+                    $storage = new \SplObjectStorage();
+                    $storage[$key] = "test";',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }

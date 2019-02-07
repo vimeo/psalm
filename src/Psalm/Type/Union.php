@@ -843,7 +843,15 @@ class Union
                     $first_atomic_type = array_values($template_types[$key][0]->getTypes())[0];
 
                     if ($replace) {
-                        $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
+                        if ($first_atomic_type instanceof Type\Atomic\TMixed
+                            && !$atomic_type->as->hasMixed()
+                        ) {
+                            $this->types[$first_atomic_type->getKey()] = clone array_values(
+                                $atomic_type->as->getTypes()
+                            )[0];
+                        } else {
+                            $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
+                        }
 
                         if ($first_atomic_type->getKey() !== $key) {
                             $keys_to_unset[] = $key;
