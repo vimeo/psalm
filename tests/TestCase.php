@@ -65,6 +65,8 @@ class TestCase extends BaseTestCase
             1,
             false
         );
+
+        $this->project_analyzer->setPhpVersion('7.3');
     }
 
     /**
