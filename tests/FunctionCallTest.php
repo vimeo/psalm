@@ -1332,6 +1332,15 @@ class FunctionCallTest extends TestCase
                         foo($x);
                     }',
             ],
+            'rangeWithNoStepAndString' => [
+                '<?php
+
+                    function foo(string $bar) : void {}
+
+                    foreach (range("a", "z") as $x) {
+                        foo($x);
+                    }',
+            ],
             'rangeWithFloatStep' => [
                 '<?php
 
