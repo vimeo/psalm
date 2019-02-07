@@ -420,7 +420,7 @@ class Analyzer
     }
 
     /**
-     * @param array<string, array<int, array{0: int, 1: int, 2: int, 3: int}>> $diff_map
+     * @param array<string, array<int, array{int, int, int, int}>> $diff_map
      * @return void
      */
     public function shiftFileOffsets(array $diff_map)
@@ -449,7 +449,10 @@ class Analyzer
                 $matched = false;
 
                 foreach ($file_diff_map as list($from, $to, $file_offset, $line_offset)) {
-                    if ($issue_data['from'] >= $from && $issue_data['from'] <= $to) {
+                    if ($issue_data['from'] >= $from
+                        && $issue_data['from'] <= $to
+                        && !$matched
+                    ) {
                         $issue_data['from'] += $file_offset;
                         $issue_data['to'] += $file_offset;
                         $issue_data['snippet_from'] += $file_offset;

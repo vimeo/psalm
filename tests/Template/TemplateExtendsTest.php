@@ -1135,6 +1135,26 @@ class TemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'useGenericParentMethod' => [
+                '<?php
+                    /**
+                     * @template-extends ArrayObject<string, string>
+                     */
+                    class Foo extends ArrayObject
+                    {
+                        public function bar() : void {
+                            $c = $this->getArrayCopy();
+                            foreach ($c as $d) {
+                                echo $d;
+                            }
+
+                            $c = parent::getArrayCopy();
+                            foreach ($c as $d) {
+                                echo $d;
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 

@@ -1123,6 +1123,44 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[306], [306, 452]],
             ],
+            'addPropertyDocblock' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {}
+
+                            class B
+                            {
+                                private $bar = [];
+                                private $baz = [];
+
+                                public static function get() : A
+                                {
+                                    return new A();
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class A {}
+
+                            class B
+                            {
+                                /**
+                                 * @var array<string, string>
+                                 */
+                                private $bar = [];
+                                private $baz = [];
+
+                                public static function get() : A
+                                {
+                                    return new A();
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[152, 203], [337]],
+            ],
         ];
     }
 }

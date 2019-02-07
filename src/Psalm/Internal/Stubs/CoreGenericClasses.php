@@ -547,7 +547,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * Get array copy
      * @link http://php.net/manual/en/arrayiterator.getarraycopy.php
-     * @return array A copy of the array, or array of public properties
+     * @return array<TKey, TValue> A copy of the array, or array of public properties
      * if ArrayIterator refers to an object.
      * @since 5.0.0
      */
