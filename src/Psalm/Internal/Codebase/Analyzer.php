@@ -446,6 +446,8 @@ class Analyzer
                     continue;
                 }
 
+                $matched = false;
+
                 foreach ($file_diff_map as list($from, $to, $file_offset, $line_offset)) {
                     if ($issue_data['from'] >= $from && $issue_data['from'] <= $to) {
                         $issue_data['from'] += $file_offset;
@@ -454,9 +456,12 @@ class Analyzer
                         $issue_data['snippet_to'] += $file_offset;
                         $issue_data['line_from'] += $line_offset;
                         $issue_data['line_to'] += $line_offset;
-                    } else {
-                        unset($file_issues[$i]);
+                        $matched = true;
                     }
+                }
+
+                if (!$matched) {
+                    unset($file_issues[$i]);
                 }
             }
         }
