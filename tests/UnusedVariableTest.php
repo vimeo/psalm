@@ -42,13 +42,7 @@ class UnusedVariableTest extends TestCase
     public function testValidCode($code, array $error_levels = [])
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP7-') !== false) {
-            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.');
-
-                return;
-            }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

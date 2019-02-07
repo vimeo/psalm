@@ -1412,6 +1412,42 @@ class FunctionCallTest extends TestCase
                     '$d' => 'float',
                     '$e' => 'int|float',
                 ],
+            ],
+            'hashInit70' => [
+                '<?php
+                    $h = hash_init("sha256");',
+                [
+                    '$h' => 'resource',
+                ],
+                [],
+                '7.1'
+            ],
+            'hashInit71' => [
+                '<?php
+                    $h = hash_init("sha256");',
+                [
+                    '$h' => 'resource',
+                ],
+                [],
+                '7.1'
+            ],
+            'hashInit72' => [
+                '<?php
+                    $h = hash_init("sha256");',
+                [
+                    '$h' => 'HashContext',
+                ],
+                [],
+                '7.2'
+            ],
+            'hashInit73' => [
+                '<?php
+                    $h = hash_init("sha256");',
+                [
+                    '$h' => 'HashContext',
+                ],
+                [],
+                '7.3'
             ]
         ];
     }

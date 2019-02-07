@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Internal\Codebase;
 
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Type;
 use Psalm\Storage\FunctionLikeParameter;
 
@@ -11,6 +12,18 @@ use Psalm\Storage\FunctionLikeParameter;
  */
 class CallMap
 {
+    const PHP_MAJOR_VERSION = 7;
+    const PHP_MINOR_VERSION = 3;
+
+    /**
+     * @var ?int
+     */
+    private static $loaded_php_major_version = null;
+    /**
+     * @var ?int
+     */
+    private static $loaded_php_minor_version = null;
+
     /**
      * @var array<array<string,string>>|null
      */
@@ -128,15 +141,23 @@ class CallMap
      * @psalm-suppress MixedInferredReturnType as the use of require buggers things up
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
+     * @psalm-suppress MixedReturnStatement
      */
     public static function getCallMap()
     {
-        if (self::$call_map !== null) {
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+        $analyzer_major_version = $codebase->php_major_version;
+        $analyzer_minor_version = $codebase->php_minor_version;
+
+        if (self::$call_map !== null
+            && $analyzer_major_version === self::$loaded_php_major_version
+            && $analyzer_minor_version === self::$loaded_php_minor_version
+        ) {
             return self::$call_map;
         }
 
         /** @var array<string, array<int|string, string>> */
-        $call_map = require_once(__DIR__ . '/../CallMap.php');
+        $call_map = require(__DIR__ . '/../CallMap.php');
 
         self::$call_map = [];
 
@@ -144,6 +165,32 @@ class CallMap
             $cased_key = strtolower($key);
             self::$call_map[$cased_key] = $value;
         }
+
+        if ($analyzer_minor_version < self::PHP_MINOR_VERSION) {
+            for ($i = self::PHP_MINOR_VERSION; $i > $analyzer_minor_version; $i--) {
+                /**
+                 * @var array{
+                 *     old: array<string, array<int|string, string>>,
+                 *     new: array<string, array<int|string, string>>
+                 * }
+                 * @psalm-suppress UnresolvableInclude
+                 */
+                $diff_call_map = require(__DIR__ . '/../CallMap_7' . $i . '_delta.php');
+
+                foreach ($diff_call_map['new'] as $key => $_) {
+                    $cased_key = strtolower($key);
+                    unset(self::$call_map[$cased_key]);
+                }
+
+                foreach ($diff_call_map['old'] as $key => $value) {
+                    $cased_key = strtolower($key);
+                    self::$call_map[$cased_key] = $value;
+                }
+            }
+        }
+
+        self::$loaded_php_major_version = $analyzer_major_version;
+        self::$loaded_php_minor_version = $analyzer_minor_version;
 
         return self::$call_map;
     }

@@ -86,6 +86,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var class-string<\Psalm\Plugin\Hook\AfterClassLikeVisitInterface>[] */
     private $after_classlike_check_plugins;
 
+    /** @var int */
+    private $php_major_version;
+
+    /** @var int */
+    private $php_minor_version;
+
     /**
      * @var array<string, array<int, string>>
      */
@@ -104,6 +110,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         $this->aliases = $this->file_aliases = new Aliases();
         $this->file_storage = $file_storage;
         $this->after_classlike_check_plugins = $this->config->after_visit_classlikes;
+        $this->php_major_version = $codebase->php_major_version;
+        $this->php_minor_version = $codebase->php_minor_version;
     }
 
     /**
@@ -1000,7 +1008,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->class_template_types,
                     $this->type_aliases
                 ),
-                false,
+                null,
                 $this->class_template_types
             );
         } catch (TypeParseTreeException $e) {
@@ -1097,7 +1105,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->class_template_types,
                     $this->type_aliases
                 ),
-                false,
+                null,
                 $this->class_template_types
             );
         } catch (TypeParseTreeException $e) {
@@ -1192,7 +1200,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->class_template_types,
                     $this->type_aliases
                 ),
-                false,
+                null,
                 $this->class_template_types
             );
         } catch (TypeParseTreeException $e) {
@@ -1651,7 +1659,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $return_type_string = $return_type_fq_classlike_name . $suffix;
             }
 
-            $storage->return_type = Type::parseString($return_type_string, true);
+            $storage->return_type = Type::parseString(
+                $return_type_string,
+                [$this->php_major_version, $this->php_minor_version]
+            );
             $storage->return_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
             $storage->return_type_location = new CodeLocation(
@@ -1934,7 +1945,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                         $storage->return_type = Type::parseTokens(
                             $fixed_type_tokens,
-                            false,
+                            null,
                             $this->function_template_types + $this->class_template_types
                         );
                         $storage->return_type->setFromDocblock();
@@ -2005,7 +2016,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         null,
                         $this->type_aliases
                     ),
-                    false
+                    null
                 );
             } catch (TypeParseTreeException $e) {
                 if (IssueBuffer::accepts(
@@ -2042,7 +2053,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                             $this->function_template_types + $this->class_template_types,
                             $this->type_aliases
                         ),
-                        false,
+                        null,
                         $this->function_template_types + $this->class_template_types
                     );
 
@@ -2144,7 +2155,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             if ($param_type_string) {
-                $param_type = Type::parseString($param_type_string, true, []);
+                $param_type = Type::parseString(
+                    $param_type_string,
+                    [$this->php_major_version, $this->php_minor_version],
+                    []
+                );
 
                 if ($is_nullable) {
                     $param_type->addType(new Type\Atomic\TNull);
@@ -2266,7 +2281,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $this->function_template_types + $this->class_template_types,
                         $this->type_aliases
                     ),
-                    false,
+                    null,
                     $this->function_template_types + $this->class_template_types
                 );
             } catch (TypeParseTreeException $e) {
@@ -2455,7 +2470,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $property_type_string = $property_type_fq_classlike_name . $suffix;
             }
 
-            $signature_type = Type::parseString($property_type_string, true);
+            $signature_type = Type::parseString(
+                $property_type_string,
+                [$this->php_major_version, $this->php_minor_version]
+            );
             $signature_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
             $signature_type_location = new CodeLocation(

@@ -781,57 +781,46 @@ class TypeParseTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestValidCallMapType
-     *
-     * @param string $return_type
-     * @param string $param_type_1
-     * @param string $param_type_2
-     * @param string $param_type_3
-     * @param string $param_type_4
-     *
      * @return void
      */
-    public function testValidCallMapType(
-        $return_type,
-        $param_type_1 = '',
-        $param_type_2 = '',
-        $param_type_3 = '',
-        $param_type_4 = ''
-    ) {
-        if ($return_type && $return_type !== 'void') {
-            if (stripos($return_type, 'oci-') !== false) {
-                return;
-            }
-
-            \Psalm\Type::parseString($return_type);
-        }
-
-        if ($param_type_1 && $param_type_1 !== 'mixed') {
-            if (stripos($param_type_1, 'oci-') !== false) {
-                return;
-            }
-
-            \Psalm\Type::parseString($param_type_1);
-        }
-
-        if ($param_type_2 && $param_type_2 !== 'mixed') {
-            \Psalm\Type::parseString($param_type_2);
-        }
-
-        if ($param_type_3 && $param_type_3 !== 'mixed') {
-            \Psalm\Type::parseString($param_type_3);
-        }
-
-        if ($param_type_4 && $param_type_4 !== 'mixed') {
-            \Psalm\Type::parseString($param_type_4);
-        }
-    }
-
-    /**
-     * @return array<string, array<int|string, string>>
-     */
-    public function providerTestValidCallMapType()
+    public function testValidCallMapType()
     {
-        return \Psalm\Internal\Codebase\CallMap::getCallMap();
+        $callmap_types = \Psalm\Internal\Codebase\CallMap::getCallMap();
+
+        foreach ($callmap_types as $signature) {
+            $return_type = $signature[0] ?? null;
+            $param_type_1 = $signature[1] ?? null;
+            $param_type_2 = $signature[2] ?? null;
+            $param_type_3 = $signature[3] ?? null;
+            $param_type_4 = $signature[4] ?? null;
+
+            if ($return_type && $return_type !== 'void') {
+                if (stripos($return_type, 'oci-') !== false) {
+                    return;
+                }
+
+                \Psalm\Type::parseString($return_type);
+            }
+
+            if ($param_type_1 && $param_type_1 !== 'mixed') {
+                if (stripos($param_type_1, 'oci-') !== false) {
+                    return;
+                }
+
+                \Psalm\Type::parseString($param_type_1);
+            }
+
+            if ($param_type_2 && $param_type_2 !== 'mixed') {
+                \Psalm\Type::parseString($param_type_2);
+            }
+
+            if ($param_type_3 && $param_type_3 !== 'mixed') {
+                \Psalm\Type::parseString($param_type_3);
+            }
+
+            if ($param_type_4 && $param_type_4 !== 'mixed') {
+                \Psalm\Type::parseString($param_type_4);
+            }
+        }
     }
 }

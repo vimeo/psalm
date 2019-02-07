@@ -35,13 +35,7 @@ class FileManipulationTest extends TestCase
     public function testValidCode($input_code, $output_code, $php_version, array $issues_to_fix, $safe_types)
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP7-') !== false) {
-            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.');
-
-                return;
-            }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -69,7 +63,7 @@ class FileManipulationTest extends TestCase
             $input_code
         );
 
-        list($php_major_version, $php_minor_version) = explode('.', $php_version);
+        $this->project_analyzer->setPhpVersion($php_version);
 
         $keyed_issues_to_fix = [];
 
@@ -79,8 +73,6 @@ class FileManipulationTest extends TestCase
 
         $this->project_analyzer->setIssuesToFix($keyed_issues_to_fix);
         $this->project_analyzer->alterCodeAfterCompletion(
-            (int) $php_major_version,
-            (int) $php_minor_version,
             false,
             $safe_types
         );

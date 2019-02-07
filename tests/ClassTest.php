@@ -128,7 +128,7 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
-            'PHP7-subclassOfInvalidArgumentExceptionWithSimplerArg' => [
+            'subclassOfInvalidArgumentExceptionWithSimplerArg' => [
                 '<?php
                     class A extends InvalidArgumentException {
                         /**

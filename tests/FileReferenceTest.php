@@ -43,13 +43,7 @@ class FileReferenceTest extends TestCase
     public function testReferenceLocations($input_code, $symbol, $expected_locations)
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP7-') !== false) {
-            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.');
-
-                return;
-            }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -94,13 +88,7 @@ class FileReferenceTest extends TestCase
     public function testReferencedMethods($input_code, array $expected_referenced_methods)
     {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP7-') !== false) {
-            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.');
-
-                return;
-            }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

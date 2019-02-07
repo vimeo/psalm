@@ -98,7 +98,7 @@ class CommentAnalyzer
                 }
 
                 try {
-                    $defined_type = Type::parseTokens($var_type_tokens, false, $template_type_map ?: []);
+                    $defined_type = Type::parseTokens($var_type_tokens, null, $template_type_map ?: []);
                 } catch (TypeParseTreeException $e) {
                     if (is_int($came_from_line_number)) {
                         throw new DocblockParseException(

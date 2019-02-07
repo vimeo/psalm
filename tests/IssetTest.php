@@ -65,6 +65,12 @@ class IssetTest extends TestCase
             ],
             'issetKeyedOffset' => [
                 '<?php
+                    function getArray() : array {
+                        return [];
+                    }
+
+                    $foo = getArray();
+
                     if (!isset($foo["a"])) {
                         $foo["a"] = "hello";
                     }',
@@ -72,9 +78,6 @@ class IssetTest extends TestCase
                     '$foo[\'a\']' => 'string|mixed',
                 ],
                 'error_levels' => [],
-                'scope_vars' => [
-                    '$foo' => \Psalm\Type::getArray(),
-                ],
             ],
             'issetKeyedOffsetORFalse' => [
                 '<?php
@@ -91,14 +94,17 @@ class IssetTest extends TestCase
             ],
             'nullCoalesceKeyedOffset' => [
                 '<?php
+                    function getArray() : array {
+                        return [];
+                    }
+
+                    $foo = getArray();
+
                     $foo["a"] = $foo["a"] ?? "hello";',
                 'assertions' => [
                     '$foo[\'a\']' => 'string|mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
-                'scope_vars' => [
-                    '$foo' => \Psalm\Type::getArray(),
-                ],
             ],
             'noRedundantConditionOnMixed' => [
                 '<?php

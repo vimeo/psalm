@@ -875,13 +875,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         );
         $manipulator->setParamType(
             $param_name,
-            !$docblock_only && $project_analyzer->php_major_version >= 7
+            !$docblock_only && $project_analyzer->getCodebase()->php_major_version >= 7
                 ? $inferred_return_type->toPhpString(
                     $this->source->getNamespace(),
                     $this->source->getAliasedClassesFlipped(),
                     $this->source->getFQCLN(),
-                    $project_analyzer->php_major_version,
-                    $project_analyzer->php_minor_version
+                    $project_analyzer->getCodebase()->php_major_version,
+                    $project_analyzer->getCodebase()->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $this->source->getNamespace(),

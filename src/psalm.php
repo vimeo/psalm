@@ -49,6 +49,7 @@ $valid_long_options = [
     'update-baseline',
     'use-ini-defaults',
     'version',
+    'php-version:',
 ];
 
 gc_collect_cycles();
@@ -463,6 +464,14 @@ $project_analyzer = new ProjectAnalyzer(
     isset($options['report']) && is_string($options['report']) ? $options['report'] : null,
     !isset($options['show-snippet']) || $options['show-snippet'] !== "false"
 );
+
+if (isset($options['php-version'])) {
+    if (!is_string($options['php-version'])) {
+        die('Expecting a version number in the format x.y' . PHP_EOL);
+    }
+
+    $project_analyzer->setPhpVersion($options['php-version']);
+}
 
 $project_analyzer->getCodebase()->diff_methods = isset($options['diff-methods']);
 

@@ -296,6 +296,26 @@ class Php71Test extends TestCase
                     iterator(new A());',
                 'error_message' => 'InvalidArgument',
             ],
+            'voidDoesntWorkIn70' => [
+                '<?php
+                    function foo(): void {
+
+                    }',
+                'error_message' => 'ReservedWord',
+                [],
+                false,
+                '7.0'
+            ],
+            'objectDoesntWorkIn71' => [
+                '<?php
+                    function foo(): object {
+                        return new stdClass();
+                    }',
+                'error_message' => 'ReservedWord',
+                [],
+                false,
+                '7.0'
+            ],
         ];
     }
 }

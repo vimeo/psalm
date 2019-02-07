@@ -22,16 +22,15 @@ trait InvalidCodeAnalysisTestTrait
      *
      * @return void
      */
-    public function testInvalidCode($code, $error_message, $error_levels = [], $strict_mode = false)
-    {
+    public function testInvalidCode(
+        $code,
+        $error_message,
+        $error_levels = [],
+        $strict_mode = false,
+        string $php_version = '7.3'
+    ) {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP7-') !== false) {
-            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.');
-
-                return;
-            }
-        } elseif (strpos($test_name, 'PHP71-') !== false) {
+        if (strpos($test_name, 'PHP71-') !== false) {
             if (version_compare(PHP_VERSION, '7.1.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.1.');
 
@@ -55,6 +54,8 @@ trait InvalidCodeAnalysisTestTrait
 
             Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
         }
+
+        $this->project_analyzer->setPhpVersion($php_version);
 
         $this->expectException('\Psalm\Exception\CodeException');
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');

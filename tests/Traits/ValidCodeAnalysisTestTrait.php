@@ -18,22 +18,19 @@ trait ValidCodeAnalysisTestTrait
      * @param string $code
      * @param array<string, string> $assertions
      * @param array<string|int, string> $error_levels
-     * @param array<string, Union> $scope_vars
      *
      * @small
      *
      * @return void
      */
-    public function testValidCode($code, $assertions = [], $error_levels = [], $scope_vars = [])
-    {
+    public function testValidCode(
+        $code,
+        $assertions = [],
+        $error_levels = [],
+        string $php_version = '7.3'
+    ) {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP7-') !== false) {
-            if (version_compare(PHP_VERSION, '7.0.0dev', '<')) {
-                $this->markTestSkipped('Test case requires PHP 7.');
-
-                return;
-            }
-        } elseif (strpos($test_name, 'PHP71-') !== false) {
+        if (strpos($test_name, 'PHP71-') !== false) {
             if (version_compare(PHP_VERSION, '7.1.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 7.1.');
 
@@ -55,9 +52,8 @@ trait ValidCodeAnalysisTestTrait
         }
 
         $context = new Context();
-        foreach ($scope_vars as $var => $value) {
-            $context->vars_in_scope[$var] = $value;
-        }
+
+        $this->project_analyzer->setPhpVersion($php_version);
 
         $file_path = self::$src_dir_path . 'somefile.php';
 

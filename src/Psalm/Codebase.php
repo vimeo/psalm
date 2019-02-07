@@ -160,6 +160,16 @@ class Codebase
     public $diff_methods = false;
 
     /**
+     * @var int
+     */
+    public $php_major_version = PHP_MAJOR_VERSION;
+
+    /**
+     * @var int
+     */
+    public $php_minor_version = PHP_MINOR_VERSION;
+
+    /**
      * @param bool $collect_references
      * @param bool $debug_output
      */

@@ -12,7 +12,7 @@ class TryCatchTest extends TestCase
     public function providerValidCodeParse()
     {
         return [
-            'PHP7-addThrowableInterfaceType' => [
+            'addThrowableInterfaceType' => [
                 '<?php
                     interface CustomThrowable {}
                     class CustomException extends Exception implements CustomThrowable {}
@@ -24,7 +24,7 @@ class TryCatchTest extends TestCase
                         echo $e->getMessage();
                     }',
             ],
-            'PHP7-rethrowInterfaceExceptionWithoutInvalidThrow' => [
+            'rethrowInterfaceExceptionWithoutInvalidThrow' => [
                 '<?php
                     interface CustomThrowable {}
                     class CustomException extends Exception implements CustomThrowable {}

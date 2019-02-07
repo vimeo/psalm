@@ -319,6 +319,8 @@ class TypeReconciliationTest extends TestCase
 
                     class B extends A { }
 
+                    $a = new A();
+
                     $out = null;
 
                     if ($a instanceof B) {
@@ -329,10 +331,6 @@ class TypeReconciliationTest extends TestCase
                     }',
                 'assertions' => [
                     '$out' => 'null|A',
-                ],
-                'error_levels' => [],
-                'scope_vars' => [
-                    '$a' => Type::parseString('A'),
                 ],
             ],
             'notInstanceOfProperty' => [
@@ -364,9 +362,6 @@ class TypeReconciliationTest extends TestCase
                     '$out' => 'null|B',
                 ],
                 'error_levels' => [],
-                'scope_vars' => [
-                    '$a' => Type::parseString('A'),
-                ],
             ],
             'notInstanceOfPropertyElseif' => [
                 '<?php
@@ -378,6 +373,8 @@ class TypeReconciliationTest extends TestCase
                         /** @var string|B */
                         public $foo = "";
                     }
+
+                    $a = new A();
 
                     $out = null;
 
@@ -394,9 +391,6 @@ class TypeReconciliationTest extends TestCase
                     '$out' => 'null|B',
                 ],
                 'error_levels' => [],
-                'scope_vars' => [
-                    '$a' => Type::parseString('A'),
-                ],
             ],
             'typeArguments' => [
                 '<?php

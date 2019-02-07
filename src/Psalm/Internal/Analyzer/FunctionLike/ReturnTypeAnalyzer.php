@@ -702,13 +702,13 @@ class ReturnTypeAnalyzer
             $function
         );
         $manipulator->setReturnType(
-            !$docblock_only && $project_analyzer->php_major_version >= 7
+            !$docblock_only && $project_analyzer->getCodebase()->php_major_version >= 7
                 ? $inferred_return_type->toPhpString(
                     $source->getNamespace(),
                     $source->getAliasedClassesFlipped(),
                     $source->getFQCLN(),
-                    $project_analyzer->php_major_version,
-                    $project_analyzer->php_minor_version
+                    $project_analyzer->getCodebase()->php_major_version,
+                    $project_analyzer->getCodebase()->php_minor_version
                 ) : null,
             $inferred_return_type->toNamespacedString(
                 $source->getNamespace(),

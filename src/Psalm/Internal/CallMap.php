@@ -4171,7 +4171,7 @@ return [
 'hash_hmac' => ['string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'raw_output='=>'bool'],
 'hash_hmac_algos' => ['array<int,string>'],
 'hash_hmac_file' => ['string', 'algo'=>'string', 'filename'=>'string', 'key'=>'string', 'raw_output='=>'bool'],
-'hash_init' => ['HashContext|resource', 'algo'=>'string', 'options='=>'int', 'key='=>'string'],
+'hash_init' => ['HashContext', 'algo'=>'string', 'options='=>'int', 'key='=>'string'],
 'hash_pbkdf2' => ['string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'raw_output='=>'bool'],
 'hash_update' => ['bool', 'context'=>'HashContext', 'data'=>'string'],
 'hash_update_file' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'scontext='=>'?HashContext'],

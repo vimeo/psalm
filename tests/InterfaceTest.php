@@ -397,7 +397,7 @@ class InterfaceTest extends TestCase
 
                     function takesIterable(iterable $i): void {}',
             ],
-            'PHP7-interfaceInstanceofInterfaceOrClass' => [
+            'interfaceInstanceofInterfaceOrClass' => [
                 '<?php
                     interface A {}
                     class B extends Exception {}

@@ -160,15 +160,12 @@ if (array_key_exists('issues', $options)) {
     $keyed_issues = [];
 }
 
-$php_major_version = PHP_MAJOR_VERSION;
-$php_minor_version = PHP_MINOR_VERSION;
-
 if (isset($options['php-version'])) {
-    if (!is_string($options['php-version']) || !preg_match('/^(5\.[456]|7\.[012])$/', $options['php-version'])) {
+    if (!is_string($options['php-version'])) {
         die('Expecting a version number in the format x.y' . PHP_EOL);
     }
 
-    list($php_major_version, $php_minor_version) = explode('.', $options['php-version']);
+    $project_analyzer->setPhpVersion($options['php-version']);
 }
 
 $plugins = [];
@@ -187,8 +184,6 @@ foreach ($plugins as $plugin_path) {
 }
 
 $project_analyzer->alterCodeAfterCompletion(
-    (int) $php_major_version,
-    (int) $php_minor_version,
     array_key_exists('dry-run', $options),
     array_key_exists('safe-types', $options)
 );

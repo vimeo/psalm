@@ -109,16 +109,6 @@ class ProjectAnalyzer
     private $issues_to_fix = [];
 
     /**
-     * @var int
-     */
-    public $php_major_version = PHP_MAJOR_VERSION;
-
-    /**
-     * @var int
-     */
-    public $php_minor_version = PHP_MINOR_VERSION;
-
-    /**
      * @var bool
      */
     public $dry_run = false;
@@ -743,18 +733,29 @@ class ProjectAnalyzer
      * @return void
      */
     public function alterCodeAfterCompletion(
-        $php_major_version,
-        $php_minor_version,
         $dry_run = false,
         $safe_types = false
     ) {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
-        $this->php_major_version = $php_major_version;
-        $this->php_minor_version = $php_minor_version;
         $this->dry_run = $dry_run;
         $this->only_replace_php_types_with_non_docblock_types = $safe_types;
+    }
+
+    /**
+     * @return void
+     */
+    public function setPhpVersion(string $version)
+    {
+        if (!preg_match('/^(5\.[456]|7\.[01234])(\..*)?$/', $version)) {
+            throw new \UnexpectedValueException('Expecting a version number in the format x.y');
+        }
+
+        list($php_major_version, $php_minor_version) = explode('.', $version);
+
+        $this->codebase->php_major_version = (int) $php_major_version;
+        $this->codebase->php_minor_version = (int) $php_minor_version;
     }
 
     /**

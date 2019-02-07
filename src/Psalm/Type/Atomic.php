@@ -67,14 +67,14 @@ abstract class Atomic
 
     /**
      * @param  string $value
-     * @param  bool   $php_compatible
+     * @param  array{int,int}|null   $php_version
      * @param  array<string, array{Union, ?string}> $template_type_map
      *
      * @return Atomic
      */
     public static function create(
         $value,
-        $php_compatible = false,
+        array $php_version = null,
         array $template_type_map = []
     ) {
         switch ($value) {
@@ -91,13 +91,27 @@ abstract class Atomic
                 return new TBool();
 
             case 'void':
-                return new TVoid();
+                if ($php_version === null
+                    || ($php_version[0] > 7)
+                    || ($php_version[0] === 7 && $php_version[1] >= 1)
+                ) {
+                    return new TVoid();
+                }
+
+                break;
 
             case 'array-key':
                 return new TArrayKey();
 
             case 'iterable':
-                return new TIterable();
+                if ($php_version === null
+                    || ($php_version[0] > 7)
+                    || ($php_version[0] === 7 && $php_version[1] >= 1)
+                ) {
+                    return new TIterable();
+                }
+
+                break;
 
             case 'never-return':
             case 'never-returns':
@@ -105,7 +119,14 @@ abstract class Atomic
                 return new TNever();
 
             case 'object':
-                return new TObject();
+                if ($php_version === null
+                    || ($php_version[0] > 7)
+                    || ($php_version[0] === 7 && $php_version[1] >= 2)
+                ) {
+                    return new TObject();
+                }
+
+                break;
 
             case 'callable':
                 return new TCallable();
@@ -117,28 +138,28 @@ abstract class Atomic
                 return new TNonEmptyArray([new Union([new TMixed]), new Union([new TMixed])]);
 
             case 'resource':
-                return $php_compatible ? new TNamedObject($value) : new TResource();
+                return $php_version !== null ? new TNamedObject($value) : new TResource();
 
             case 'numeric':
-                return $php_compatible ? new TNamedObject($value) : new TNumeric();
+                return $php_version !== null ? new TNamedObject($value) : new TNumeric();
 
             case 'true':
-                return $php_compatible ? new TNamedObject($value) : new TTrue();
+                return $php_version !== null ? new TNamedObject($value) : new TTrue();
 
             case 'false':
-                return $php_compatible ? new TNamedObject($value) : new TFalse();
+                return $php_version !== null ? new TNamedObject($value) : new TFalse();
 
             case 'empty':
-                return $php_compatible ? new TNamedObject($value) : new TEmpty();
+                return $php_version !== null ? new TNamedObject($value) : new TEmpty();
 
             case 'scalar':
-                return $php_compatible ? new TNamedObject($value) : new TScalar();
+                return $php_version !== null ? new TNamedObject($value) : new TScalar();
 
             case 'null':
-                return $php_compatible ? new TNamedObject($value) : new TNull();
+                return $php_version !== null ? new TNamedObject($value) : new TNull();
 
             case 'mixed':
-                return $php_compatible ? new TNamedObject($value) : new TMixed();
+                return $php_version !== null ? new TNamedObject($value) : new TMixed();
 
             case 'class-string':
                 return new TClassString();
@@ -151,22 +172,21 @@ abstract class Atomic
 
             case '$this':
                 return new TNamedObject('static');
-
-            default:
-                if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
-                    throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');
-                }
-
-                if (is_numeric($value[0])) {
-                    throw new \Psalm\Exception\TypeParseTreeException('First character of type cannot be numeric');
-                }
-
-                if (isset($template_type_map[$value])) {
-                    return new TGenericParam($value, $template_type_map[$value][0], $template_type_map[$value][1]);
-                }
-
-                return new TNamedObject($value);
         }
+
+        if (strpos($value, '-') && substr($value, 0, 4) !== 'OCI-') {
+            throw new \Psalm\Exception\TypeParseTreeException('no hyphens allowed');
+        }
+
+        if (is_numeric($value[0])) {
+            throw new \Psalm\Exception\TypeParseTreeException('First character of type cannot be numeric');
+        }
+
+        if (isset($template_type_map[$value])) {
+            return new TGenericParam($value, $template_type_map[$value][0], $template_type_map[$value][1]);
+        }
+
+        return new TNamedObject($value);
     }
 
     /**
