@@ -50,6 +50,7 @@ class StubTest extends TestCase
                 new Provider\FakeParserCacheProvider()
             )
         );
+        $project_analyzer->setPhpVersion('7.3');
 
         $config->visitComposerAutoloadFiles($project_analyzer, false);
 

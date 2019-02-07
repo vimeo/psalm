@@ -40,6 +40,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
             1,
             false
         );
+        $this->project_analyzer->setPhpVersion('7.3');
     }
 
     /**

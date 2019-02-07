@@ -28,6 +28,7 @@ class UnusedVariableTest extends TestCase
             )
         );
 
+        $this->project_analyzer->setPhpVersion('7.3');
         $this->project_analyzer->getCodebase()->reportUnusedCode();
     }
 

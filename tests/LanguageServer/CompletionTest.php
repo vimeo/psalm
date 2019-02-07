@@ -41,7 +41,7 @@ class CompletionTest extends \Psalm\Tests\TestCase
             1,
             false
         );
-
+        $this->project_analyzer->setPhpVersion('7.3');
         $this->project_analyzer->getCodebase()->server_mode = true;
     }
 

@@ -76,6 +76,8 @@ class DocumentationTest extends TestCase
                 new Provider\FakeParserCacheProvider()
             )
         );
+
+        $this->project_analyzer->setPhpVersion('7.3');
     }
 
     /**

@@ -80,13 +80,17 @@ class ConfigTest extends TestCase
      */
     private function getProjectAnalyzerWithConfig(Config $config)
     {
-        return new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+        $p = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
             $config,
             new \Psalm\Internal\Provider\Providers(
                 $this->file_provider,
                 new Provider\FakeParserCacheProvider()
             )
         );
+
+        $p->setPhpVersion('7.3');
+
+        return $p;
     }
 
     /**

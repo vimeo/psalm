@@ -29,6 +29,7 @@ class UnusedCodeTest extends TestCase
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
+        $this->project_analyzer->setPhpVersion('7.3');
     }
 
     /**
