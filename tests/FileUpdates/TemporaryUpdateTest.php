@@ -1083,6 +1083,45 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 ],
                 'error_positions' => [[238, 238], []],
             ],
+            'fixClassRef' => [
+                [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class SomeClass {}
+
+                            class B {
+                                /** @var ?string */
+                                private static $s = null;
+
+                                public function foo() : void {
+                                    new SomeClas();
+                                }
+
+                                public function bar() : void {
+                                    self::$s = "hello";
+                                }
+                            }',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class SomeClass {}
+
+                            class B {
+                                /** @var ?string */
+                                private static $s = null;
+
+                                public function foo() : void {
+                                    new SomeClas();
+                                }
+
+                                public function bar() : void {
+                                    self::$si = "hello";
+                                }
+                            }',
+                    ],
+                ],
+                'error_positions' => [[306], [306, 452]],
+            ],
         ];
     }
 }
