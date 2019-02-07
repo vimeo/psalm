@@ -803,6 +803,21 @@ class ExpressionAnalyzer
                     $offset = '$' . $stmt->dim->name;
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ConstFetch) {
                     $offset = implode('\\', $stmt->dim->name->parts);
+                } elseif (isset($stmt->dim->inferredType)) {
+                    if ($stmt->dim->inferredType->isSingleStringLiteral()) {
+                        $offset = '\'' . $stmt->dim->inferredType->getSingleStringLiteral()->value . '\'';
+                    } elseif ($stmt->dim->inferredType->isSingleIntLiteral()) {
+                        $offset = $stmt->dim->inferredType->getSingleIntLiteral()->value;
+                    }
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $stmt->dim->name instanceof PhpParser\Node\Identifier
+                ) {
+                    /** @var string|null */
+                    $resolved_name = $stmt->dim->class->getAttribute('resolvedName');
+
+                    if ($resolved_name) {
+                        $offset = $resolved_name . '::' . $stmt->dim->name;
+                    }
                 }
 
                 return $root_var_id && $offset !== null ? $root_var_id . '[' . $offset . ']' : null;
