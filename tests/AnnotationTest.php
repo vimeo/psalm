@@ -1195,6 +1195,13 @@ class AnnotationTest extends TestCase
                     $a = $_GET["foo"];',
                 'error_message' => 'UndefinedClass',
             ],
+            'badPsalmType' => [
+                '<?php
+                    /**
+                     * @psalm-type Foo = array{a:}
+                     */',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

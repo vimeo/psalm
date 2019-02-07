@@ -354,8 +354,8 @@ abstract class Type
                     $property_maybe_undefined = $property_branch->possibly_undefined;
                     $property_key = $property_branch->value;
                 } else {
-                    throw new \InvalidArgumentException(
-                        'Unexpected number of property parts (' . count($property_branch->children) . ')'
+                    throw new TypeParseTreeException(
+                        'Missing property type'
                     );
                 }
 
