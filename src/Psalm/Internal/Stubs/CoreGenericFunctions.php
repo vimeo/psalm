@@ -154,3 +154,9 @@ function array_change_key_case(array $arr, int $case = CASE_LOWER) {}
  * @return array<int, array<array-key, T>>
  */
 function array_chunk(array $arr, int $size, bool $preserve_keys = false) {}
+
+
+/**
+* @param resource|HashContext
+*/
+function hash_update($hash, string $data) : bool {}
