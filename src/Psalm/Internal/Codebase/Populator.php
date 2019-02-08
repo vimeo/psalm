@@ -764,6 +764,29 @@ class Populator
             );
         }
 
+        foreach ($storage->referenced_classlikes as $fq_class_name) {
+            try {
+                $classlike_storage = $this->classlike_storage_provider->get($fq_class_name);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            if (!$classlike_storage->location) {
+                continue;
+            }
+
+            try {
+                $included_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
+            } catch (\InvalidArgumentException $e) {
+                continue;
+            }
+
+            $storage->declaring_function_ids = array_merge(
+                $included_file_storage->declaring_function_ids,
+                $storage->declaring_function_ids
+            );
+        }
+
         $storage->required_file_paths = $all_required_file_paths;
 
         foreach ($all_required_file_paths as $required_file_path) {

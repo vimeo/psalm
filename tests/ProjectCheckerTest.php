@@ -192,7 +192,7 @@ class ProjectAnalyzerTest extends TestCase
 
         $bat_replacement_contents = '<?php
 
-namespace Foo;
+namespace Vimeo\Test\DummyProject;
 
 class Bat
 {
