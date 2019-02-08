@@ -13,7 +13,10 @@ class Bar
     }
 }
 
-function someFunction() : void
+/**
+ * @return void
+ */
+function someFunction()
 {
     echo "here";
 }
