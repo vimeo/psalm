@@ -1609,6 +1609,77 @@ class TemplateTest extends TestCase
                     '$arr' => 'array<int, string>',
                 ]
             ],
+            'templatedClassStringParam' => [
+                '<?php
+                    abstract class C {
+                        public function foo() : void{}
+                    }
+
+                    class E {
+                        /**
+                         * @template T as C
+                         * @param class-string<T> $c_class
+                         *
+                         * @return C
+                         * @psalm-return T
+                         */
+                        public static function get(string $c_class) : C {
+                            $c = new $c_class;
+                            $c->foo();
+                            return $c;
+                        }
+                    }
+
+                    /**
+                     * @param class-string<C> $c_class
+                     */
+                    function bar(string $c_class) : void {
+                        $c = E::get($c_class);
+                        $c->foo();
+                    }
+
+                    /**
+                     * @psalm-suppress TypeCoercion
+                     */
+                    function bat(string $c_class) : void {
+                        $c = E::get($c_class);
+                        $c->foo();
+                    }'
+            ],
+            'SKIPPED-templatedClassStringParamMoreSpecific' => [
+                '<?php
+                    abstract class C {
+                        public function foo() : void{}
+                    }
+
+                    class D extends C {
+                        public function faa() : void{}
+                    }
+
+                    class E {
+                        /**
+                         * @template T as C
+                         * @param class-string<T> $c_class
+                         *
+                         * @return C
+                         * @psalm-return T
+                         */
+                        public static function get(string $c_class) : C {
+                            $c = new $c_class;
+                            $c->foo();
+                            return $c;
+                        }
+                    }
+
+                    /**
+                     * @param class-string<D> $d_class
+                     */
+                    function moreSpecific(string $d_class) : void {
+                        $d = E::get($d_class);
+                        $d->foo();
+                        $d->faa();
+                    }'
+            ],
         ];
     }
 

@@ -1058,7 +1058,11 @@ class Union
                 $template_type = null;
 
                 if (isset($template_types[$key]) && $atomic_type->defining_class === $template_types[$key][1]) {
-                    $template_type = clone $template_types[$key][0];
+                    if (!$atomic_type->as->isMixed() && $template_types[$key][0]->isMixed()) {
+                        $template_type = clone $atomic_type->as;
+                    } else {
+                        $template_type = clone $template_types[$key][0];
+                    }
                 } elseif ($codebase && $atomic_type->defining_class) {
                     foreach ($template_types as $replacement_key => $template_type_map) {
                         if (!$template_type_map[1]) {
