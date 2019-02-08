@@ -1646,7 +1646,7 @@ class TemplateTest extends TestCase
                         $c->foo();
                     }'
             ],
-            'SKIPPED-templatedClassStringParamMoreSpecific' => [
+            'templatedClassStringParamMoreSpecific' => [
                 '<?php
                     abstract class C {
                         public function foo() : void{}

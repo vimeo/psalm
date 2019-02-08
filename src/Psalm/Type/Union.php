@@ -912,6 +912,14 @@ class Union
                                 $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
                                     $input_atomic_type->value
                                 );
+                            } elseif ($input_atomic_type instanceof Type\Atomic\TClassString) {
+                                if ($input_atomic_type->as_type) {
+                                    $valid_input_atomic_types[] = clone $input_atomic_type->as_type;
+                                } elseif ($input_atomic_type->as !== 'object') {
+                                    $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
+                                        $input_atomic_type->as
+                                    );
+                                }
                             } elseif ($input_atomic_type instanceof Type\Atomic\TGenericParamClass) {
                                 $valid_input_atomic_types[] = new Type\Atomic\TGenericParam(
                                     $input_atomic_type->param_name,
