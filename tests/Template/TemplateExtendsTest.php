@@ -1147,11 +1147,6 @@ class TemplateExtendsTest extends TestCase
                             foreach ($c as $d) {
                                 echo $d;
                             }
-
-                            $c = parent::getArrayCopy();
-                            foreach ($c as $d) {
-                                echo $d;
-                            }
                         }
                     }',
             ],
