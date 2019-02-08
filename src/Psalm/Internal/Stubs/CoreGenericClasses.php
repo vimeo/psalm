@@ -1151,3 +1151,21 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
     public function getHash($object) {}
 
 }
+
+/**
+* @template T as object
+*
+* @property-read class-string<T> $name
+*/
+class ReflectionClass implements Reflector {
+
+    /**
+    * @var class-string<T>
+    */
+    public string $name;
+
+    /**
+    * @param T|class-string<T>
+    */
+    public function __construct($argument) {}
+}
