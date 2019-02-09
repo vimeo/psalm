@@ -1168,4 +1168,28 @@ class ReflectionClass implements Reflector {
     * @param T|class-string<T>
     */
     public function __construct($argument) {}
+
+    /**
+    * @return class-string<T>
+    */
+    public function getName() : string;
+
+    /**
+    * @param mixed ...$args
+    *
+    * @return T
+    */
+    public function newInstance(...$args) : object {}
+
+    /**
+    * @param array<int, mixed> $args
+    *
+    * @return T
+    */
+    public function newInstanceArgs(array $args) : object {}
+
+    /**
+    * @return T
+    */
+    public function newInstanceWithoutConstructor() : object;
 }
