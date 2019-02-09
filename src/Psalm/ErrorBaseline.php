@@ -6,6 +6,27 @@ use Psalm\Internal\Provider\FileProvider;
 class ErrorBaseline
 {
     /**
+     * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
+     * @return int
+     */
+    public static function countTotalIssues(array $existingIssues)
+    {
+        $totalIssues = 0;
+
+        foreach ($existingIssues as $existingIssue) {
+            $totalIssues += array_reduce(
+                $existingIssue,
+                function (int $carry, array $existingIssue): int {
+                    return $carry + (int)$existingIssue['o'];
+                },
+                0
+            );
+        }
+
+        return $totalIssues;
+    }
+
+    /**
      * @param FileProvider $fileProvider
      * @param string $baselineFile
      * @param array<array{file_name: string, type: string, severity: string, selected_text: string}> $issues

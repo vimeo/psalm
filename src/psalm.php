@@ -573,11 +573,25 @@ if (isset($options['update-baseline'])) {
     }
 
     try {
+        $issue_current_baseline = ErrorBaseline::read(
+            new \Psalm\Internal\Provider\FileProvider,
+            (string)Config::getInstance()->error_baseline
+        );
+        $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
+
         $issue_baseline = ErrorBaseline::update(
             new \Psalm\Internal\Provider\FileProvider,
             $baselineFile,
             IssueBuffer::getIssuesData()
         );
+        $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
+
+        $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
+
+        if ($total_fixed_issues > 0) {
+            echo str_repeat('-', 30) . "\n";
+            echo $total_fixed_issues . ' errors fixed' . "\n";
+        }
     } catch (\Psalm\Exception\ConfigException $exception) {
         die('Could not update baseline file: ' . $exception->getMessage());
     }
