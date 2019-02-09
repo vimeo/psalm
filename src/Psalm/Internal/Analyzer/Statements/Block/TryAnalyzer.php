@@ -357,6 +357,11 @@ class TryAnalyzer
                     $catch_context->vars_possibly_in_scope,
                     $context->vars_possibly_in_scope
                 );
+            } elseif ($stmt->finally) {
+                $context->vars_possibly_in_scope = array_merge(
+                    $catch_context->vars_possibly_in_scope,
+                    $context->vars_possibly_in_scope
+                );
             }
         }
 
