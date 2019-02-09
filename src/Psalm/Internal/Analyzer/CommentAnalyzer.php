@@ -535,8 +535,11 @@ class CommentAnalyzer
 
         $info = new ClassLikeDocblockComment();
 
-        if (isset($comments['specials']['template'])) {
-            foreach ($comments['specials']['template'] as $template_line) {
+        if (isset($comments['specials']['template']) || isset($comments['specials']['psalm-template'])) {
+            $all_templates = (isset($comments['specials']['template']) ? $comments['specials']['template'] : [])
+                + (isset($comments['specials']['psalm-template']) ? $comments['specials']['psalm-template'] : []);
+
+            foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
                 if (count($template_type) > 2
