@@ -100,6 +100,26 @@ class ErrorBaselineTest extends TestCase
     /**
      * @return void
      */
+    public function testCountTotalIssuesShouldReturnCorrectNumber()
+    {
+        $existingIssues = [
+            'sample/sample-file.php' => [
+                'MixedAssignment' => ['o' => 2, 's' => ['bar']],
+                'MixedOperand' => ['o' => 2, 's' => []],
+            ],
+            'sample/sample-file2.php' => [
+                'TypeCoercion' => ['o' => 1, 's' => []],
+            ],
+        ];
+
+        $totalIssues = ErrorBaseline::countTotalIssues($existingIssues);
+
+        $this->assertEquals($totalIssues, 5);
+    }
+
+    /**
+     * @return void
+     */
     public function testCreateShouldAggregateIssuesPerFile()
     {
         $baselineFile = 'baseline.xml';
