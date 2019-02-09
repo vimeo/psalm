@@ -1283,12 +1283,17 @@ class ExpressionAnalyzer
             $yield_from_type = null;
 
             foreach ($stmt->expr->inferredType->getTypes() as $atomic_type) {
-                if ($yield_from_type === null
-                    && $atomic_type instanceof Type\Atomic\TGenericObject
-                    && strtolower($atomic_type->value) === 'generator'
-                    && isset($atomic_type->type_params[3])
-                ) {
-                    $yield_from_type = clone $atomic_type->type_params[3];
+                if ($yield_from_type === null) {
+                    if ($atomic_type instanceof Type\Atomic\TGenericObject
+                        && strtolower($atomic_type->value) === 'generator'
+                        && isset($atomic_type->type_params[3])
+                    ) {
+                        $yield_from_type = clone $atomic_type->type_params[3];
+                    } elseif ($atomic_type instanceof Type\Atomic\TArray) {
+                        $yield_from_type = clone $atomic_type->type_params[1];
+                    } elseif ($atomic_type instanceof Type\Atomic\ObjectLike) {
+                        $yield_from_type = $atomic_type->getGenericValueType();
+                    }
                 } else {
                     $yield_from_type = Type::getMixed();
                 }

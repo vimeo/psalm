@@ -225,6 +225,10 @@ class ReturnTypeCollector
                 $value_type = null;
 
                 foreach ($yield_types as $type) {
+                    if ($type instanceof Type\Atomic\ObjectLike) {
+                        $type = $type->getGenericArrayType();
+                    }
+
                     if ($type instanceof Type\Atomic\TArray
                         || $type instanceof Type\Atomic\TIterable
                         || $type instanceof Type\Atomic\TGenericObject
