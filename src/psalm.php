@@ -584,7 +584,7 @@ if (isset($options['update-baseline'])) {
     try {
         $issue_current_baseline = ErrorBaseline::read(
             new \Psalm\Internal\Provider\FileProvider,
-            (string)Config::getInstance()->error_baseline
+            $baselineFile
         );
         $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
 
