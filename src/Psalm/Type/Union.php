@@ -838,6 +838,7 @@ class Union
         foreach ($this->types as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TGenericParam
                 && isset($template_types[$key])
+                && $atomic_type->defining_class === $template_types[$key][1]
             ) {
                 if ($template_types[$key][0]->getId() !== $key) {
                     $first_atomic_type = array_values($template_types[$key][0]->getTypes())[0];

@@ -1150,6 +1150,106 @@ class TemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'templateExtendsDifferentNameWithStaticCall' => [
+                '<?php
+                    /** @template T */
+                    class Container {
+                        /** @var T */
+                        private $t;
+
+                        /** @param T $t */
+                        private function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @param T $t
+                         * @return static<T>
+                         */
+                        public static function getContainer($t) {
+                            return new static($t);
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function getValue()
+                        {
+                            return $this->t;
+                        }
+                    }
+
+                    /**
+                     * @template T1 as object
+                     * @template-extends Container<T1>
+                     */
+                    class ObjectContainer extends Container {}
+
+                    /**
+                     * @template T2 as A
+                     * @template-extends ObjectContainer<T2>
+                     */
+                    class AContainer extends ObjectContainer {}
+
+                    class A {
+                        function foo() : void {}
+                    }
+
+                    $b = AContainer::getContainer(new A());',
+                [
+                    '$b' => 'AContainer<A>',
+                ],
+            ],
+            'templateExtendsSameNameWithStaticCall' => [
+                '<?php
+                    /** @template T */
+                    class Container {
+                        /** @var T */
+                        private $t;
+
+                        /** @param T $t */
+                        private function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @param T $t
+                         * @return static<T>
+                         */
+                        public static function getContainer($t) {
+                            return new static($t);
+                        }
+
+                        /**
+                         * @return T
+                         */
+                        public function getValue()
+                        {
+                            return $this->t;
+                        }
+                    }
+
+                    /**
+                     * @template T as object
+                     * @template-extends Container<T>
+                     */
+                    class ObjectContainer extends Container {}
+
+                    /**
+                     * @template T as A
+                     * @template-extends ObjectContainer<T>
+                     */
+                    class AContainer extends ObjectContainer {}
+
+                    class A {
+                        function foo() : void {}
+                    }
+
+                    $b = AContainer::getContainer(new A());',
+                [
+                    '$b' => 'AContainer<A>',
+                ],
+            ],
         ];
     }
 
