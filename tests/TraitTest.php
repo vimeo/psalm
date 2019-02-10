@@ -780,6 +780,13 @@ class TraitTest extends TestCase
                         }
                     }'
             ],
+            'noCrashOnUndefinedIgnoredTrait' => [
+                '<?php
+                    /** @psalm-suppress UndefinedTrait */
+                    class C {
+                        use UnknownTrait;
+                    }'
+            ],
         ];
     }
 

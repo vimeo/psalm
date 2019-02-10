@@ -636,7 +636,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $this->source->getAliases()
                     );
 
-                    $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
+                    try {
+                        $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+
                     $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
                     $trait_aliases = $codebase->classlikes->getTraitAliases($fq_trait_name);
                     $trait_analyzer = new TraitAnalyzer(
