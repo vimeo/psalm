@@ -221,6 +221,7 @@
             <xs:element name="MixedArrayAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayOffset" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedAssignment" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MixedFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedInferredReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedOperand" type="IssueHandlerType" minOccurs="0" />

@@ -1882,6 +1882,16 @@ class FunctionCallTest extends TestCase
                     usort($a, "strcmp");',
                 'error_message' => 'InvalidArgument',
             ],
+            'functionCallOnMixed' => [
+                '<?php
+                    /**
+                     * @var mixed $s
+                     * @psalm-suppress MixedAssignment
+                     */
+                    $s = 1;
+                    $s();',
+                'error_message' => 'MixedFunctionCall',
+            ],
         ];
     }
 }

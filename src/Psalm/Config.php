@@ -38,6 +38,7 @@ class Config
         'MixedArrayAssignment',
         'MixedArrayOffset',
         'MixedAssignment',
+        'MixedFunctionCall',
         'MixedInferredReturnType',
         'MixedMethodCall',
         'MixedOperand',

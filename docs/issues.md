@@ -1023,6 +1023,16 @@ Emitted when assigning a variable to a value for which Psalm cannot infer a type
 $a = $_GET['foo'];
 ```
 
+### MixedFunctionCall
+
+Emitted when calling a function on a value whose type Psalm cannot infer.
+
+```php
+/** @psalm-suppress MixedAssignment */
+$a = $_GET['foo'];
+$a();
+```
+
 ### MixedInferredReturnType
 
 Emitted when Psalm cannot determine a function's return type

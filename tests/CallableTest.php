@@ -804,7 +804,10 @@ class CallableTest extends TestCase
 
 
                     $foo =
-                        /** @param mixed $bar */
+                        /**
+                         * @param mixed $bar
+                         * @psalm-suppress MixedFunctionCall
+                         */
                         function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {

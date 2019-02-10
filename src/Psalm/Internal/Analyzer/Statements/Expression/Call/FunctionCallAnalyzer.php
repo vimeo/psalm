@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\ForbiddenCode;
+use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\NullFunctionCall;
 use Psalm\Issue\PossiblyInvalidFunctionCall;
@@ -119,7 +120,16 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $has_valid_function_call_type = true;
                     } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TGenericParam) {
                         $has_valid_function_call_type = true;
-                        // @todo maybe emit issue here
+
+                        if (IssueBuffer::accepts(
+                            new MixedFunctionCall(
+                                'Cannot call function on mixed',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     } elseif ($var_type_part instanceof TCallableObject
                         || $var_type_part instanceof TCallableString
                     ) {
