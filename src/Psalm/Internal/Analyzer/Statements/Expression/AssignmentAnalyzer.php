@@ -248,7 +248,8 @@ class AssignmentAnalyzer
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
                                 . $context->byref_constraints[$var_id]->type
-                                . ' because it is passed by reference',
+                                . ' because it is passed by reference, '
+                                . $assign_value_type->getId() . ' type found',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var)
                         ),
                         $statements_analyzer->getSuppressedIssues()

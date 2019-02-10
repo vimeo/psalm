@@ -97,6 +97,10 @@ class IssueBuffer
             }
         }
 
+        if ($e->getLocation()->getLineNumber() === -1) {
+            return false;
+        }
+
         if (self::$recording_level > 0) {
             self::$recorded_issues[self::$recording_level][] = $e;
 

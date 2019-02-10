@@ -1278,6 +1278,40 @@ class PropertyTypeTest extends TestCase
                         }
                     }'
             ],
+            'propertySetInGrandparentExplicitly' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var string
+                         */
+                        public $s;
+
+                        public function __construct(string $s) {
+                            $this->s = $s;
+                        }
+                    }
+                    class B extends A {}
+                    class C extends B {
+                        public function __construct(string $s) {
+                            A::__construct($s);
+                        }
+                    }'
+            ],
+            'propertySetInGrandparentImplicitly' => [
+                '<?php
+                    class A {
+                        /**
+                         * @var string
+                         */
+                        public $s;
+
+                        public function __construct(string $s) {
+                            $this->s = $s;
+                        }
+                    }
+                    class B extends A {}
+                    class C extends B {}'
+            ],
         ];
     }
 
@@ -1655,7 +1689,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A {}',
-                'error_message' => 'InaccessibleMethod',
+                'error_message' => 'InaccessibleMethod - src/somefile.php:11',
             ],
             'classInheritsPrivateConstructorWithImplementedConstructor' => [
                 '<?php

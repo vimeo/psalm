@@ -434,7 +434,6 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-
                 $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
                     $property_id
                 );

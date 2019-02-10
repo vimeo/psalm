@@ -1087,7 +1087,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         string $fq_class_name,
-        string $method_name,
+        string $method_name = null,
         Type\Atomic $lhs_type_part = null,
         string $lhs_var_id = null
     ) {
@@ -1097,6 +1097,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if (!$template_types) {
             if ($calling_class_storage->template_type_extends
+                && $method_name
                 && !empty($class_storage->overridden_method_ids[$method_name])
                 && !isset($class_storage->methods[$method_name]->return_type)
             ) {

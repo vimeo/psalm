@@ -1250,6 +1250,96 @@ class TemplateExtendsTest extends TestCase
                     '$b' => 'AContainer<A>',
                 ],
             ],
+            'returnParentExtendedTemplateProperty' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Container {
+                        /**
+                         * @var T
+                         */
+                        public $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template-extends Container<int>
+                     */
+                    class IntContainer extends Container {
+                        public function __construct(int $i) {
+                            parent::__construct($i);
+                        }
+
+                        public function getValue() : int {
+                            return $this->t;
+                        }
+                    }',
+            ],
+            'childSetInConstructor' => [
+                '<?php
+                    /**
+                     * @template T0
+                     */
+                    class Container {
+                        /**
+                         * @var T0
+                         */
+                        public $t;
+
+                        /**
+                         * @param T0 $t
+                         */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template T1 as object
+                     * @template-extends Container<T1>
+                     */
+                    class ObjectContainer extends Container {}',
+            ],
+            'grandChildSetInConstructor' => [
+                '<?php
+                    /**
+                     * @template T0
+                     */
+                    class Container {
+                        /**
+                         * @var T0
+                         */
+                        public $t;
+
+                        /**
+                         * @param T0 $t
+                         */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template T1 as object
+                     * @template-extends Container<T1>
+                     */
+                    class ObjectContainer extends Container {}
+
+                    /**
+                     * @template T2 as A
+                     * @template-extends ObjectContainer<T2>
+                     */
+                    class AContainer extends ObjectContainer {}
+
+                    class A {}',
+            ],
         ];
     }
 

@@ -519,6 +519,27 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 )
                 : $property_type;
 
+            /**
+             * @psalm-suppress ReferenceConstraintViolation
+             */
+            $class_template_params = MethodCallAnalyzer::getClassTemplateParams(
+                $codebase,
+                $property_class_storage,
+                $fq_class_name,
+                null,
+                new Type\Atomic\TNamedObject($fq_class_name),
+                '$this'
+            );
+
+            if ($class_template_params) {
+                $generic_params = [];
+                $fleshed_out_type->replaceTemplateTypesWithStandins(
+                    $class_template_params,
+                    $generic_params,
+                    $codebase
+                );
+            }
+
             if ($property_type_location && !$fleshed_out_type->isMixed()) {
                 $fleshed_out_type->check(
                     $this,
@@ -834,11 +855,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $fake_constructor_stmts = [
                     new PhpParser\Node\Stmt\Expression(
                         new PhpParser\Node\Expr\StaticCall(
-                            new PhpParser\Node\Name(['parent']),
+                            new PhpParser\Node\Name\FullyQualified($constructor_declaring_fqcln),
                             new PhpParser\Node\Identifier('__construct'),
                             $fake_constructor_stmt_args,
                             [
-                                'line' => $class->extends->getLine(),
+                                'startLine' => $class->extends->getLine(),
                                 'startFilePos' => $class->extends->getAttribute('startFilePos'),
                                 'endFilePos' => $class->extends->getAttribute('endFilePos'),
                             ]
@@ -852,6 +873,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
                         'params' => $fake_constructor_params,
                         'stmts' => $fake_constructor_stmts,
+                    ],
+                    [
+                        'startLine' => $class->extends->getLine(),
+                        'startFilePos' => $class->extends->getAttribute('startFilePos'),
+                        'endFilePos' => $class->extends->getAttribute('endFilePos'),
                     ]
                 );
 

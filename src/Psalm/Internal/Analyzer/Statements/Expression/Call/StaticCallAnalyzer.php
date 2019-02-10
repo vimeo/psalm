@@ -84,82 +84,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     $fq_class_name = $class_storage->name;
-
-                    if ($stmt->name instanceof PhpParser\Node\Identifier
-                        && $class_storage->user_defined
-                        && ($context->collect_mutations || $context->collect_initializations)
-                    ) {
-                        $method_id = $fq_class_name . '::' . strtolower($stmt->name->name);
-
-                        $appearing_method_id = $codebase->getAppearingMethodId($method_id);
-
-                        if (!$appearing_method_id) {
-                            if (IssueBuffer::accepts(
-                                new UndefinedMethod(
-                                    'Method ' . $method_id . ' does not exist',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $method_id
-                                ),
-                                $statements_analyzer->getSuppressedIssues()
-                            )) {
-                                return false;
-                            }
-
-                            return;
-                        }
-
-                        list($appearing_method_class_name) = explode('::', $appearing_method_id);
-
-                        $old_context_include_location = $context->include_location;
-                        $old_self = $context->self;
-                        $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-                        $context->self = $appearing_method_class_name;
-
-                        if ($context->collect_mutations) {
-                            $file_analyzer->getMethodMutations($method_id, $context);
-                        } else {
-                            // collecting initializations
-                            $local_vars_in_scope = [];
-                            $local_vars_possibly_in_scope = [];
-
-                            foreach ($context->vars_in_scope as $var => $_) {
-                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                                    $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
-                                }
-                            }
-
-                            foreach ($context->vars_possibly_in_scope as $var => $_) {
-                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
-                                    $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                                }
-                            }
-
-                            if (!isset($context->initialized_methods[$method_id])) {
-                                if ($context->initialized_methods === null) {
-                                    $context->initialized_methods = [];
-                                }
-
-                                $context->initialized_methods[$method_id] = true;
-
-                                $file_analyzer->getMethodMutations($method_id, $context);
-
-                                foreach ($local_vars_in_scope as $var => $type) {
-                                    $context->vars_in_scope[$var] = $type;
-                                }
-
-                                foreach ($local_vars_possibly_in_scope as $var => $type) {
-                                    $context->vars_possibly_in_scope[$var] = $type;
-                                }
-                            }
-                        }
-
-                        $context->include_location = $old_context_include_location;
-                        $context->self = $old_self;
-
-                        if (isset($context->vars_in_scope['$this']) && $old_self) {
-                            $context->vars_in_scope['$this'] = Type::parseString($old_self);
-                        }
-                    }
                 } elseif ($context->self) {
                     if ($stmt->class->parts[0] === 'static' && isset($context->vars_in_scope['$this'])) {
                         $fq_class_name = (string) $context->vars_in_scope['$this'];
@@ -542,6 +466,82 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
 
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+                if ($class_storage->user_defined
+                    && $context->self
+                    && ($context->collect_mutations || $context->collect_initializations)
+                ) {
+                    $appearing_method_id = $codebase->getAppearingMethodId($method_id);
+
+                    if (!$appearing_method_id) {
+                        if (IssueBuffer::accepts(
+                            new UndefinedMethod(
+                                'Method ' . $method_id . ' does not exist',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $method_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+
+                        return;
+                    }
+
+                    list($appearing_method_class_name) = explode('::', $appearing_method_id);
+
+                    if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
+                        $old_context_include_location = $context->include_location;
+                        $old_self = $context->self;
+                        $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+                        $context->self = $appearing_method_class_name;
+
+                        if ($context->collect_mutations) {
+                            $file_analyzer->getMethodMutations($method_id, $context);
+                        } else {
+                            // collecting initializations
+                            $local_vars_in_scope = [];
+                            $local_vars_possibly_in_scope = [];
+
+                            foreach ($context->vars_in_scope as $var => $_) {
+                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                    $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                                }
+                            }
+
+                            foreach ($context->vars_possibly_in_scope as $var => $_) {
+                                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                                    $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                                }
+                            }
+
+                            if (!isset($context->initialized_methods[$method_id])) {
+                                if ($context->initialized_methods === null) {
+                                    $context->initialized_methods = [];
+                                }
+
+                                $context->initialized_methods[$method_id] = true;
+
+                                $file_analyzer->getMethodMutations($method_id, $context);
+
+                                foreach ($local_vars_in_scope as $var => $type) {
+                                    $context->vars_in_scope[$var] = $type;
+                                }
+
+                                foreach ($local_vars_possibly_in_scope as $var => $type) {
+                                    $context->vars_possibly_in_scope[$var] = $type;
+                                }
+                            }
+                        }
+
+                        $context->include_location = $old_context_include_location;
+                        $context->self = $old_self;
+
+                        if (isset($context->vars_in_scope['$this']) && $old_self) {
+                            $context->vars_in_scope['$this'] = Type::parseString($old_self);
+                        }
+                    }
+                }
 
                 if ($class_storage->deprecated) {
                     if (IssueBuffer::accepts(
