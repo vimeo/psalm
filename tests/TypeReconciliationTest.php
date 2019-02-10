@@ -1205,7 +1205,7 @@ class TypeReconciliationTest extends TestCase
                         echo $a;
                     }',
             ],
-            'removeNonCallable' => [
+            'PHP71-removeNonCallable' => [
                 '<?php
                     $f = rand(0, 1) ? "strlen" : 1.1;
                     if (is_callable($f)) {
