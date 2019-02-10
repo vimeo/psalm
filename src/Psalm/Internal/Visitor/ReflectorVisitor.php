@@ -245,6 +245,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {
             $this->registerFunctionLike($node);
 
+            if ($node instanceof PhpParser\Node\Expr\Closure) {
+                $this->codebase->scanner->queueClassLikeForScanning('Closure', $this->file_path);
+            }
+
             if (!$this->scan_deep) {
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
