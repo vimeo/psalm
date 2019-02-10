@@ -1704,6 +1704,16 @@ class Reconciler
             return $existing_var_type;
         }
 
+        if ($new_var_type === 'callable') {
+            foreach ($existing_var_atomic_types as $atomic_key => $type) {
+                if ($type instanceof Type\Atomic\TLiteralString
+                    && \Psalm\Internal\Codebase\CallMap::inCallMap($type->value)
+                ) {
+                    $existing_var_type->removeType($atomic_key);
+                }
+            }
+        }
+
         if ($new_var_type === 'non-empty-countable') {
             if (isset($existing_var_atomic_types['array'])) {
                 $array_atomic_type = $existing_var_atomic_types['array'];
@@ -1782,6 +1792,8 @@ class Reconciler
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TInt);
+        } elseif ($new_var_type === 'iterable') {
+            $existing_var_type->removeType('array');
         } elseif (strtolower($new_var_type) === 'int'
             && isset($existing_var_type->getTypes()['array-key'])
         ) {

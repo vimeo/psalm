@@ -1186,6 +1186,20 @@ class TypeReconciliationTest extends TestCase
                         return is_object($maybe) ? get_class($maybe) : $maybe;
                     }'
             ],
+            'removeIterable' => [
+                '<?php
+                    $s = rand(0,1) ? "foo" : [1];
+                    if (!is_iterable($s)) {
+                        strlen($s);
+                    }',
+            ],
+            'removeCallable' => [
+                '<?php
+                    $s = rand(0,1) ? "strlen" : [1];
+                    if (!is_callable($s)) {
+                        array_pop($s);
+                    }'
+            ],
         ];
     }
 
