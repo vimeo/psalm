@@ -13,6 +13,7 @@
   - [Issue types](issues.md)
 - [Typing in Psalm](typing_in_psalm.md)
   - [Supported Annotations](supported_annotations.md)
+  - [Templated Annotations](templated_annotations.md)
 - [Plugins](plugins.md)
 - [Checking non-PHP files](checking_non_php_files.md)
 - [How Psalm works](how_psalm_works.md)
