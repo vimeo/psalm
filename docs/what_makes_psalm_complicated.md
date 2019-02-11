@@ -14,14 +14,14 @@ This is a somewhat informal list that might aid others.
   what effect do different PHP elements have on user-asserted logic in if conditionals, ternarys etc.
 - **Generics & Templated code**  
   Figuring out how templated code should work (`@template` tags), how much it should work like it does in other languages (Hack, TypeScript etc.)
-  
+
 ## Supporting the community
 - **Supporting formal PHPDoc annotations**
 - **Supporting informal PHPDoc annotations**  
   e.g. `ArrayIterator|string[]` to denote an `ArrayIterator` over strings
 - **non-Composer projects**  
   e.g. WordPress
-  
+
 ## Making Psalm fast
 - **Parser-based reflection**  
   requires scanning everything necessary for analysis
