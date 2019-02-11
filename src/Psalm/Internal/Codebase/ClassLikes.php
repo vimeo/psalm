@@ -126,6 +126,7 @@ class ClassLikes
 
         foreach ($predefined_classes as $predefined_class) {
             $predefined_class = preg_replace('/^\\\/', '', $predefined_class);
+            /** @psalm-suppress TypeCoercion */
             $reflection_class = new \ReflectionClass($predefined_class);
 
             if (!$reflection_class->isUserDefined()) {
@@ -140,6 +141,7 @@ class ClassLikes
 
         foreach ($predefined_interfaces as $predefined_interface) {
             $predefined_interface = preg_replace('/^\\\/', '', $predefined_interface);
+            /** @psalm-suppress TypeCoercion */
             $reflection_class = new \ReflectionClass($predefined_interface);
 
             if (!$reflection_class->isUserDefined()) {

@@ -502,6 +502,7 @@ class Scanner
                         echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
                     }
 
+                    /** @psalm-suppress TypeCoercion */
                     $reflected_class = new \ReflectionClass($fq_classlike_name);
                     $this->reflection->registerClass($reflected_class);
                     $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
@@ -704,6 +705,7 @@ class Scanner
                 echo 'Using reflection to locate file for ' . $fq_class_name . "\n";
             }
 
+            /** @psalm-suppress TypeCoercion */
             $reflected_class = new \ReflectionClass($fq_class_name);
         } catch (\ReflectionException $e) {
             error_reporting($old_level);
