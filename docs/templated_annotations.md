@@ -1,6 +1,6 @@
-## Templating
+# Templating
 
-### `@template`
+## `@template`
 
 The `@template` tag allows classes and functions to implement type parameter-like functionality found in many other languages.
 
@@ -38,7 +38,7 @@ Psalm also uses `@template` annotations in its stubbed versions of PHP array fun
 function array_combine(array $arr, array $arr2) {}
 ```
 
-### `@param class-string<T>`
+## `@param class-string<T>`
 
 Psalm also allows you to parameterise class types
 
@@ -57,7 +57,7 @@ class Foo {}
 $a = instantiator(Foo::class); // Psalm knows the result is an object of type Foo
 ```
 
-### Template inheritance
+## Template inheritance
 
 Psalm allows you to extend templated classes with `@extends`/`@template-extends`:
 
@@ -118,7 +118,7 @@ class ParentClass {}
 class ChildClass extends ParentClass {}
 ```
 
-### Template constraints
+## Template constraints
 
 You can use `@template of <type>` to restrict input. For example, to restrict to a given class you can use
 
@@ -199,7 +199,7 @@ class Baz extends Foo {
 }
 ```
 
-### Builtin templated classes and interfaces
+## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.
 
