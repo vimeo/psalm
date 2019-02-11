@@ -1748,6 +1748,8 @@ class Reconciler
         }
 
         if ($new_var_type === 'callable') {
+            $existing_var_type->removeType('callable');
+
             foreach ($existing_var_atomic_types as $atomic_key => $type) {
                 if ($type instanceof Type\Atomic\TLiteralString
                     && \Psalm\Internal\Codebase\CallMap::inCallMap($type->value)
