@@ -14,6 +14,12 @@ Add a `psalm.xml` config:
 
 where `config_level` represents how strict you want Psalm to be. `1` is the strictest, `8` is the most lenient.
 
+Example:
+```console
+$ ./vendor/bin/psalm --init src 3
+Config file created successfully. Please re-run psalm.
+```
+
 Then run Psalm:
 
 ```bash
