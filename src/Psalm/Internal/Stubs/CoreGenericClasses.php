@@ -1153,19 +1153,19 @@ class SplObjectStorage implements Countable, Iterator, Serializable, ArrayAccess
 }
 
 /**
-* @template T as object
-*
-* @property-read class-string<T> $name
-*/
+ * @template T as object
+ *
+ * @property-read class-string<T> $name
+ */
 class ReflectionClass implements Reflector {
 
     /**
     * @var class-string<T>
     */
-    public string $name;
+    public $name;
 
     /**
-    * @param T|class-string<T>
+    * @param T|class-string<T> $argument
     */
     public function __construct($argument) {}
 
