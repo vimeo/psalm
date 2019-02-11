@@ -20,6 +20,9 @@ function mirror($t) {
 
 $a = 5;
 $b = mirror(5); // Psalm knows the result is an int
+
+$c = "foo";
+$d = mirror($c); // Psalm knows the result is string
 ```
 
 Psalm also uses `@template` annotations in its stubbed versions of PHP array functions e.g.
