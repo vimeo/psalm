@@ -5,8 +5,9 @@
 - [Introduction](#introduction)
 - [Installation](installation.md)
 - [Configuration](configuration.md)
-- [Running Psalm via command line](running_psalm.md)
-- [Running Psalm in your IDE](language_server.md)
+- Using Psalm
+  - [Running Psalm via command line](running_psalm.md)
+  - [Running Psalm in your IDE](language_server.md)
 - [Using Psalter](fixing_code.md)
 - [Supported Annotations](supported_annotations.md)
 - [Dealing with code issues](dealing_with_code_issues.md)
