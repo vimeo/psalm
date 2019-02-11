@@ -693,6 +693,44 @@ class Reconciler
             return Type::getMixed();
         }
 
+        if ($new_var_type === 'iterable' && !$existing_var_type->hasMixed()) {
+            $iterable_types = [];
+            $did_remove_type = false;
+
+            foreach ($existing_var_atomic_types as $type) {
+                if ($type->isIterable($codebase)) {
+                    $iterable_types[] = $type;
+                } elseif ($type instanceof TObject) {
+                    $iterable_types[] = new Type\Atomic\TCallableObject();
+                    $did_remove_type = true;
+                } else {
+                    $did_remove_type = true;
+                }
+            }
+
+            if ((!$iterable_types || !$did_remove_type) && !$is_equality) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $new_var_type,
+                        !$did_remove_type,
+                        $code_location,
+                        $suppressed_issues
+                    );
+                }
+            }
+
+            if ($iterable_types) {
+                return new Type\Union($iterable_types);
+            }
+
+            $failed_reconciliation = 2;
+
+            return Type::getMixed();
+        }
+
         if ($new_var_type === 'numeric' && !$existing_var_type->hasMixed()) {
             $numeric_types = [];
             $did_remove_type = false;
@@ -1717,6 +1755,12 @@ class Reconciler
                     $existing_var_type->removeType($atomic_key);
                 }
             }
+
+            return $existing_var_type;
+        }
+
+        if ($new_var_type === 'iterable') {
+            $existing_var_type->removeType('array');
         }
 
         if ($new_var_type === 'non-empty-countable') {
@@ -1797,8 +1841,6 @@ class Reconciler
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TInt);
-        } elseif ($new_var_type === 'iterable') {
-            $existing_var_type->removeType('array');
         } elseif (strtolower($new_var_type) === 'int'
             && isset($existing_var_type->getTypes()['array-key'])
         ) {
