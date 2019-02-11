@@ -400,6 +400,34 @@ abstract class Atomic
             }
         }
 
+        if ($this instanceof Type\Atomic\Fn
+            || $this instanceof Type\Atomic\TCallable
+        ) {
+            if ($this->params) {
+                foreach ($this->params as $param) {
+                    if ($param->type) {
+                        $param->type->check(
+                            $source,
+                            $code_location,
+                            $suppressed_issues,
+                            $phantom_classes,
+                            $inferred
+                        );
+                    }
+                }
+            }
+
+            if ($this->return_type) {
+                $this->return_type->check(
+                    $source,
+                    $code_location,
+                    $suppressed_issues,
+                    $phantom_classes,
+                    $inferred
+                );
+            }
+        }
+
         if ($this instanceof Type\Atomic\TArray
             || $this instanceof Type\Atomic\TGenericObject
             || $this instanceof Type\Atomic\TIterable
@@ -556,9 +584,36 @@ abstract class Atomic
             }
         }
 
-        if ($this instanceof Type\Atomic\TArray || $this instanceof Type\Atomic\TGenericObject) {
+        if ($this instanceof Type\Atomic\TArray
+            || $this instanceof Type\Atomic\TGenericObject
+            || $this instanceof Type\Atomic\TIterable
+        ) {
             foreach ($this->type_params as $type_param) {
                 $type_param->queueClassLikesForScanning(
+                    $codebase,
+                    $file_storage,
+                    $phantom_classes
+                );
+            }
+        }
+
+        if ($this instanceof Type\Atomic\Fn
+            || $this instanceof Type\Atomic\TCallable
+        ) {
+            if ($this->params) {
+                foreach ($this->params as $param) {
+                    if ($param->type) {
+                        $param->type->queueClassLikesForScanning(
+                            $codebase,
+                            $file_storage,
+                            $phantom_classes
+                        );
+                    }
+                }
+            }
+
+            if ($this->return_type) {
+                $this->return_type->queueClassLikesForScanning(
                     $codebase,
                     $file_storage,
                     $phantom_classes
