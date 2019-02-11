@@ -93,7 +93,7 @@ Allows you to specify whether or not to use the typed iterator docblock format s
   allowCoercionFromStringToClassConst="[bool]"
 >
 ```
-When `true`, strings can be coerced to [`class-string`](supported_annotations.md#class-constants), with Psalm emitting a `TypeCoercion` issue. If disabled, that issue changes to a more serious one. Defaults to `true`.
+When `true`, strings can be coerced to [`class-string`](supported_annotations.md#param-class-stringt), with Psalm emitting a `TypeCoercion` issue. If disabled, that issue changes to a more serious one. Defaults to `true`.
 
 #### `allowStringToStandInForClass`
 ```xml
