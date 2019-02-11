@@ -11,7 +11,24 @@ class TypeParseTest extends TestCase
      */
     public function setUp()
     {
-        //pae::setUp();
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+
+        $config = new TestConfig();
+
+        $providers = new \Psalm\Internal\Provider\Providers(
+            $this->file_provider,
+            new \Psalm\Tests\Internal\Provider\FakeParserCacheProvider()
+        );
+
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+            $config,
+            $providers,
+            false,
+            true,
+            \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_CONSOLE,
+            1,
+            false
+        );
     }
 
     /**
