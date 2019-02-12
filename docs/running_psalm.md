@@ -5,7 +5,7 @@ Once you've set up your config file, you can run Psalm from your project's root 
 ./vendor/bin/psalm
 ```
 
-and Psalm will scan all files in the project referenced by `<inspectFiles>`.
+and Psalm will scan all files in the project referenced by `<projectFiles>`.
 
 If you want to run on specific files, use
 ```bash
