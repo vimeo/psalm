@@ -134,6 +134,10 @@ class IssueBuffer
             return 'UndefinedMethod';
         }
 
+        if ($issue_type === 'UninitializedProperty') {
+            return 'PropertyNotSetInConstructor';
+        }
+
         return null;
     }
 

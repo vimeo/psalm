@@ -1312,6 +1312,24 @@ class PropertyTypeTest extends TestCase
                     class B extends A {}
                     class C extends B {}'
             ],
+            'unitializedPropertySuppressPropertyNotSetInConstructor' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo;
+
+                        public function __construct() {
+                            $this->setFoo(); // public method that circumvents checks
+                            echo strlen($this->foo);
+                        }
+
+                        public function setFoo() : void {
+                            $this->foo = "foo";
+                        }
+                    }',
+                [],
+                ['PropertyNotSetInConstructor']
+            ],
         ];
     }
 
@@ -2039,6 +2057,50 @@ class PropertyTypeTest extends TestCase
 
                     Y::$b = 5;',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'unitializedProperty' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo;
+
+                        public function __construct() {
+                            echo strlen($this->foo);
+                            $this->foo = "foo";
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty'
+            ],
+            'unitializedObjectProperty' => [
+                '<?php
+                    class Foo {
+                        /** @var int */
+                        public $bar = 5;
+                    }
+                    function takesInt(int $i) : void {}
+                    class A {
+                        /** @var Foo */
+                        public $foo;
+
+                        public function __construct(Foo $foo) {
+                            takesInt($this->foo->bar);
+                            $this->foo = $foo;
+                        }
+                    }',
+                'error_message' => 'UninitializedProperty'
+            ],
+            'possiblyNullArg' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $foo;
+
+                        public function __construct() {
+                            echo strlen($this->foo);
+                            $this->foo = "foo";
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument'
             ],
         ];
     }

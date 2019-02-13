@@ -308,6 +308,7 @@
             <xs:element name="UndefinedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedAbstractMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnimplementedInterfaceMethod" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UninitializedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedExpression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />

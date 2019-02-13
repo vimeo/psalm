@@ -21,6 +21,7 @@ use Psalm\Issue\PossiblyNullPropertyFetch;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedPropertyFetch;
 use Psalm\Issue\UndefinedThisPropertyFetch;
+use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
@@ -98,6 +99,46 @@ class PropertyFetchAnalyzer
                     $stmt->name,
                     (string) $stmt->inferredType
                 );
+            }
+
+            if ($stmt_var_id === '$this'
+                && !$stmt->inferredType->initialized
+                && $context->collect_initializations
+                && isset($stmt->var->inferredType)
+                && $stmt->var->inferredType->hasObjectType()
+                && $stmt->name instanceof PhpParser\Node\Identifier
+            ) {
+                $source = $statements_analyzer->getSource();
+
+                $property_id = null;
+
+                foreach ($stmt->var->inferredType->getTypes() as $lhs_type_part) {
+                    if ($lhs_type_part instanceof TNamedObject) {
+                        if (!$codebase->classExists($lhs_type_part->value)) {
+                            continue;
+                        }
+
+                        $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
+                    }
+                }
+
+                if ($property_id
+                    && $source instanceof FunctionLikeAnalyzer
+                    && $source->getMethodName() === '__construct'
+                ) {
+                    if (IssueBuffer::accepts(
+                        new UninitializedProperty(
+                            'Cannot use unitialized property ' . $var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $var_id
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    $stmt->inferredType->addType(new Type\Atomic\TNull);
+                }
             }
 
             if (isset($stmt->var->inferredType)

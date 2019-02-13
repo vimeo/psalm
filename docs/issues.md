@@ -2080,6 +2080,22 @@ interface I {
 class A implements I {}
 ```
 
+### UninitializedProperty
+
+Emitted when a property is used in a constructor before it is initialized
+
+```php
+class A {
+    /** @var string */
+    public $foo;
+
+    public function __construct() {
+        echo strlen($this->foo);
+        $this->foo = "foo";
+    }
+}
+```
+
 ### UnrecognizedExpression
 
 Emitted when Psalm encounters an expression that it doesn't know how to handle. This should never happen.

@@ -204,12 +204,11 @@ class UnusedCodeTest extends TestCase
                          * @param int[] $as
                          */
                         public function __construct(array $as) {
+                            $this->i = new B();
 
                             foreach ($as as $a) {
                                 $this->a($a, 1);
                             }
-
-                            $this->i = new B();
                         }
 
                         private function a(int $a, int $b): self
