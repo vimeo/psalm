@@ -471,7 +471,7 @@ class PropertyFetchAnalyzer
                 ) {
                     $property_id = $context->self . '::$' . $prop_name;
                 } else {
-                    if ($context->inside_isset) {
+                    if ($context->inside_isset || $context->collect_initializations) {
                         return;
                     }
 
