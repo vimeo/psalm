@@ -193,8 +193,10 @@ class IssueBuffer
             return false;
         }
 
+        $emitted_key = $issue_type . '-' . $e->getShortLocation() . ':' . $e->getLocation()->getColumn();
+
         if ($reporting_level === Config::REPORT_INFO) {
-            if (!self::alreadyEmitted($error_message)) {
+            if (!self::alreadyEmitted($emitted_key)) {
                 self::$issues_data[] = $e->toArray(Config::REPORT_INFO);
             }
 
@@ -205,7 +207,7 @@ class IssueBuffer
             throw new Exception\CodeException($error_message);
         }
 
-        if (!self::alreadyEmitted($error_message)) {
+        if (!self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
             self::$issues_data[] = $e->toArray(Config::REPORT_ERROR);
         }
@@ -241,12 +243,12 @@ class IssueBuffer
     public static function addIssues(array $issues_data)
     {
         foreach ($issues_data as $issue) {
-            $error_message = $issue['type']
-                . ' - ' . $issue['file_name']
+            $emitted_key = $issue['type']
+                . '-' . $issue['file_name']
                 . ':' . $issue['line_from']
-                . ' - ' . $issue['message'];
+                . ':' . $issue['column_from'];
 
-            if (!self::alreadyEmitted($error_message)) {
+            if (!self::alreadyEmitted($emitted_key)) {
                 self::$issues_data[] = $issue;
             }
         }
