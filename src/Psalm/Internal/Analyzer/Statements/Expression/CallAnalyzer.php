@@ -1912,7 +1912,7 @@ class CallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 } elseif ($types_can_be_identical) {
                     if (IssueBuffer::accepts(
@@ -2108,7 +2108,7 @@ class CallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
-                        return false;
+                        // fall through
                     }
                 }
             } elseif ($types_can_be_identical) {
@@ -2120,7 +2120,7 @@ class CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
             } elseif (IssueBuffer::accepts(
                 new InvalidArgument(
@@ -2130,9 +2130,13 @@ class CallAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
-        } elseif ($input_expr instanceof PhpParser\Node\Scalar\String_
+
+            return;
+        }
+
+        if ($input_expr instanceof PhpParser\Node\Scalar\String_
             || $input_expr instanceof PhpParser\Node\Expr\Array_
             || $input_expr instanceof PhpParser\Node\Expr\BinaryOp\Concat
         ) {
