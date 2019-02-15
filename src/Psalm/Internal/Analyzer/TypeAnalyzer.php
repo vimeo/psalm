@@ -519,6 +519,27 @@ class TypeAnalyzer
             return false;
         }
 
+        if ($container_type_part instanceof ObjectLike
+            && $input_type_part instanceof TArray
+        ) {
+            $all_string_literals = true;
+
+            $properties = [];
+
+            foreach ($input_type_part->type_params[0]->getTypes() as $atomic_key_type) {
+                if ($atomic_key_type instanceof TLiteralString) {
+                    $properties[$atomic_key_type->value] = $input_type_part->type_params[1];
+                } else {
+                    $all_string_literals = false;
+                    break;
+                }
+            }
+
+            if ($all_string_literals) {
+                $input_type_part = new ObjectLike($properties);
+            }
+        }
+
         if ($input_type_part->shallowEquals($container_type_part)
             || (($input_type_part instanceof TNamedObject
                     || $input_type_part instanceof TGenericParam

@@ -1264,6 +1264,17 @@ class Union
         return reset($this->literal_string_types);
     }
 
+    public function allStringLiterals() : bool
+    {
+        foreach ($this->types as $atomic_key_type) {
+            if (!$atomic_key_type instanceof TLiteralString) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * @return bool true if this is a int literal with only one possible value
      */

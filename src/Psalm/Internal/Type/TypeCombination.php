@@ -241,6 +241,19 @@ class TypeCombination
 
         if (count($combination->objectlike_entries)) {
             if (!$combination->has_mixed || $combination->mixed_from_loop_isset) {
+                if (isset($combination->type_params['array'])
+                    && $combination->type_params['array'][0]->allStringLiterals()
+                ) {
+                    foreach ($combination->type_params['array'][0]->getTypes() as $atomic_key_type) {
+                        if ($atomic_key_type instanceof TLiteralString) {
+                            $combination->objectlike_entries[$atomic_key_type->value]
+                                = $combination->type_params['array'][1];
+                        }
+                    }
+
+                    unset($combination->type_params['array']);
+                }
+
                 if (!isset($combination->type_params['array'])
                     || $combination->type_params['array'][1]->isEmpty()
                 ) {
