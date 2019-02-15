@@ -52,7 +52,11 @@ class FunctionReturnTypeProvider
      */
     public function register(string $class)
     {
-        $callable = \Closure::fromCallable([$class, 'get']);
+        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
+            $callable = \Closure::fromCallable([$class, 'get']);
+        } else {
+            $callable = (new \ReflectionClass($class))->getMethod('get')->getClosure(new $class);
+        }
 
         foreach ($class::getFunctionIds() as $function_id) {
             self::$handlers[$function_id] = $callable;
