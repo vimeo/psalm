@@ -343,7 +343,15 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
 
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
-                if (!$in_call_map || $is_stubbed) {
+                if ($codebase->functions->return_type_provider->has($function_id)) {
+                    $stmt->inferredType = $codebase->functions->return_type_provider->getReturnType(
+                        $statements_analyzer,
+                        $function_id,
+                        $stmt->args,
+                        $context,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    );
+                } elseif (!$in_call_map || $is_stubbed) {
                     if ($function_storage && $function_storage->template_types) {
                         foreach ($function_storage->template_types as $template_name => $_) {
                             if (!isset($generic_params[$template_name])) {
@@ -417,9 +425,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $statements_analyzer,
                         $function_id,
                         $stmt->args,
-                        $context,
-                        $code_location,
-                        $statements_analyzer->getSuppressedIssues()
+                        $context
                     );
                 }
             }
