@@ -339,6 +339,10 @@ class Reconciler
             if (($new_var_type === 'isset' && !$is_negation)
                 || ($new_var_type === 'empty' && $is_negation)
             ) {
+                if ($key === '$_SESSION') {
+                    return Type::getArray();
+                }
+
                 return Type::getMixed($inside_loop);
             }
 

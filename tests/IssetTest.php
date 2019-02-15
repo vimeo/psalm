@@ -511,6 +511,10 @@ class IssetTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment', 'MixedArrayOffset', 'InvalidArrayOffset'],
             ],
+            'sessionNullCoalesce' => [
+                '<?php
+                    $a = $_SESSION ?? [];'
+            ],
         ];
     }
 
