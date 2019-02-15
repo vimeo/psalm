@@ -48,6 +48,7 @@ class FunctionReturnTypeProvider
 
     /**
      * @param  class-string<FunctionReturnTypeProviderInterface> $class
+     * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
     public function register(string $class)
