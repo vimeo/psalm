@@ -12,7 +12,7 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
-    public function testPhpStormGenericsWithValidArgument()
+    public function testPhpStormGenericsWithValidArrayIteratorArgument()
     {
         Config::getInstance()->allow_phpstorm_generics = true;
 
@@ -26,6 +26,29 @@ class AnnotationTest extends TestCase
                     $s = $i->offsetGet("a");
                     takesString($s);
 
+                    foreach ($i as $s2) {
+                        takesString($s2);
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
+    public function testPhpStormGenericsWithValidTraversableArgument()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function takesString(string $s): void {}
+
+                /** @param Traversable|string[] $i */
+                function takesTraversableOfString(Traversable $i): void {
                     foreach ($i as $s2) {
                         takesString($s2);
                     }

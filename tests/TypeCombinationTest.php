@@ -20,6 +20,7 @@ class TypeCombinationTest extends TestCase
     {
         foreach ($types as $k => $type) {
             $types[$k] = self::getAtomic($type);
+            $types[$k]->setFromDocblock();
         }
 
         /** @psalm-suppress InvalidArgument */

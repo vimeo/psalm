@@ -204,6 +204,11 @@ class TypeCombination
         if (isset($combination->type_params['array'])
             && (isset($combination->named_object_types['Traversable'])
                 || isset($combination->type_params['Traversable']))
+            && (($codebase && !$codebase->config->allow_phpstorm_generics)
+                || isset($combination->type_params['Traversable'])
+                || (isset($combination->named_object_types['Traversable'])
+                    && $combination->named_object_types['Traversable']->from_docblock)
+            )
         ) {
             $array_param_types = $combination->type_params['array'];
             $traversable_param_types = $combination->type_params['Traversable'] ?? [Type::getMixed(), Type::getMixed()];
