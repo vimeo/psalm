@@ -1256,6 +1256,10 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                                     continue;
                                 }
 
+                                if (!$codebase->classlikes->classExists($callable_fq_class_name)) {
+                                    continue;
+                                }
+
                                 if (!$codebase->methods->methodExists(
                                     $mapping_function_id_part,
                                     $context->calling_method_id,

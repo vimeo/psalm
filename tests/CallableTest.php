@@ -671,6 +671,12 @@ class CallableTest extends TestCase
 
                     acceptsIntToBool(Closure::fromCallable($anonInvokable));'
             ],
+            'noExceptionWhenSuppressingUndefinedClass' => [
+                '<?php
+                    class one { public function two(string $_p): void {} }
+                    /** @psalm-suppress UndefinedClass */
+                    array_map(["two", "three"], ["one", "two"]);',
+            ],
         ];
     }
 
@@ -1141,6 +1147,12 @@ class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'badArrayMapArrayCallable' => [
+                '<?php
+                    class one { public function two(string $_p): void {} }
+                    array_map(["two", "three"], ["one", "two"]);',
+                'error_message' => 'UndefinedClass'
             ],
         ];
     }
