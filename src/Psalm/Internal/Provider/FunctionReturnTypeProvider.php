@@ -53,6 +53,7 @@ class FunctionReturnTypeProvider
     public function register(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
+            /** @psalm-suppress UndefinedMethod */
             $callable = \Closure::fromCallable([$class, 'get']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('get')->getClosure(new $class);
