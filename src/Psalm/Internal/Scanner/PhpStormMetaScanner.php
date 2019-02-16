@@ -74,6 +74,8 @@ class PhpStormMetaScanner
                         $map[$array_item->key->value] = new Type\Union([
                             new Type\Atomic\TNamedObject(implode('\\', $array_item->value->class->parts))
                         ]);
+                    } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
+                        $map[$array_item->key->value] = $array_item->value->value;
                     }
                 }
             }
@@ -130,8 +132,22 @@ class PhpStormMetaScanner
                         ) {
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
 
-                            if (isset($map[$offset_arg_value])) {
-                                return clone $map[$offset_arg_value];
+                            if ($mapped_type = $map[$offset_arg_value] ?? null) {
+                                if ($mapped_type instanceof Type\Union) {
+                                    return clone $mapped_type;
+                                }
+                            }
+
+                            if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
+                                if (strpos($mapped_type, '@') !== false) {
+                                    $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
+
+                                    if (strpos($mapped_type, '.') === false) {
+                                        return new Type\Union([
+                                            new Type\Atomic\TNamedObject($mapped_type)
+                                        ]);
+                                    }
+                                }
                             }
                         }
 
@@ -242,8 +258,22 @@ class PhpStormMetaScanner
                         ) {
                             $offset_arg_value = $call_arg_type->getSingleStringLiteral()->value;
 
-                            if (isset($map[$offset_arg_value])) {
-                                return clone $map[$offset_arg_value];
+                            if ($mapped_type = $map[$offset_arg_value] ?? null) {
+                                if ($mapped_type instanceof Type\Union) {
+                                    return clone $mapped_type;
+                                }
+                            }
+
+                            if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
+                                if (strpos($mapped_type, '@') !== false) {
+                                    $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
+
+                                    if (strpos($mapped_type, '.') === false) {
+                                        return new Type\Union([
+                                            new Type\Atomic\TNamedObject($mapped_type)
+                                        ]);
+                                    }
+                                }
                             }
                         }
 
@@ -275,7 +305,8 @@ class PhpStormMetaScanner
                             return clone $call_arg_type;
                         }
 
-                        $storage = $statements_analyzer->getCodebase()->methods->getStorage(
+                        $storage = $statements_analyzer->getCodebase()->functions->getStorage(
+                            $statements_analyzer,
                             $function_id
                         );
 
@@ -311,7 +342,8 @@ class PhpStormMetaScanner
                             }
                         }
 
-                        $storage = $statements_analyzer->getCodebase()->methods->getStorage(
+                        $storage = $statements_analyzer->getCodebase()->functions->getStorage(
+                            $statements_analyzer,
                             $function_id
                         );
 

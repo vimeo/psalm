@@ -196,6 +196,8 @@ class StubTest extends TestCase
                     $b1 = \create("object");
                     $b2 = \create("exception");
 
+                    $e2 = \create(\LogicException::class);
+
                     $c1 = (new \Ns\MyClass)->foo(5);
                     $c2 = (new \Ns\MyClass)->bar(["hello"]);
 
