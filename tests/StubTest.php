@@ -131,19 +131,15 @@ class StubTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/phpstorm.meta.php" />
+                    </stubs>
                 </psalm>'
             )
         );
 
         $file_path = getcwd() . '/src/somefile.php';
-
-        $codebase = $this->project_analyzer->getCodebase();
-
-        $meta_statements = $codebase->statements_provider->getStatementsForFile(
-            __DIR__ . DIRECTORY_SEPARATOR . 'Plugin' . DIRECTORY_SEPARATOR . 'phpstorm.meta.php'
-        );
-
-        \Psalm\Internal\Scanner\PhpStormMetaScanner::scan($meta_statements, $codebase);
 
         $this->addFile(
             $file_path,

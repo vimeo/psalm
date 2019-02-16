@@ -1213,12 +1213,6 @@ class Config
         $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
 
         if (file_exists($phpstorm_meta_path)) {
-            $meta_statements = $codebase->statements_provider->getStatementsForFile(
-                $phpstorm_meta_path
-            );
-
-            PhpStormMetaScanner::scan($meta_statements, $codebase);
-
             $stub_files[] = $phpstorm_meta_path;
         }
 

@@ -18,35 +18,10 @@ use Psalm\Type;
 class PhpStormMetaScanner
 {
     /**
-     * @param  array<PhpParser\Node\Stmt>  $stmts
-     * @return void
-     */
-    public static function scan(array $stmts, Codebase $codebase)
-    {
-        foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Namespace_
-                && $stmt->name
-                && $stmt->name->parts === ['PHPSTORM_META']
-            ) {
-                foreach ($stmt->stmts as $meta_stmt) {
-                    if ($meta_stmt instanceof PhpParser\Node\Stmt\Expression
-                        && $meta_stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                        && $meta_stmt->expr->name instanceof PhpParser\Node\Name
-                        && $meta_stmt->expr->name->parts === ['override']
-                        && count($meta_stmt->expr->args) > 1
-                    ) {
-                        self::handleOverride($meta_stmt->expr->args, $codebase);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * @param  array<PhpParser\Node\Arg> $args
      * @return void
      */
-    private static function handleOverride(array $args, Codebase $codebase)
+    public static function handleOverride(array $args, Codebase $codebase)
     {
         $identifier = $args[0]->value;
 

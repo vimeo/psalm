@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Internal\Codebase\PropertyMap;
+use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\DocComment;
@@ -451,6 +452,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     {
         if ($node instanceof PhpParser\Node\Stmt\Namespace_) {
             $this->aliases = $this->file_aliases;
+
+            if ($this->codebase->register_stub_files
+                && $node->name
+                && $node->name->parts === ['PHPSTORM_META']
+            ) {
+                foreach ($node->stmts as $meta_stmt) {
+                    if ($meta_stmt instanceof PhpParser\Node\Stmt\Expression
+                        && $meta_stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                        && $meta_stmt->expr->name instanceof PhpParser\Node\Name
+                        && $meta_stmt->expr->name->parts === ['override']
+                        && count($meta_stmt->expr->args) > 1
+                    ) {
+                        PhpStormMetaScanner::handleOverride($meta_stmt->expr->args, $this->codebase);
+                    }
+                }
+            }
         } elseif ($node instanceof PhpParser\Node\Stmt\ClassLike) {
             if (!$this->fq_classlike_names) {
                 throw new \LogicException('$this->fq_classlike_names should not be empty');

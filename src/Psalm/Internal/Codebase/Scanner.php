@@ -498,6 +498,10 @@ class Scanner
 
             if (!isset($this->classlike_files[$fq_classlike_name_lc])) {
                 if ($classlikes->doesClassLikeExist($fq_classlike_name_lc)) {
+                    if ($fq_classlike_name_lc === 'self') {
+                        continue;
+                    }
+
                     if ($this->debug_output) {
                         echo 'Using reflection to get metadata for ' . $fq_classlike_name . "\n";
                     }
@@ -673,6 +677,10 @@ class Scanner
 
         if (isset($this->classlike_files[$fq_class_name_lc])) {
             return true;
+        }
+
+        if ($fq_class_name === 'self') {
+            return false;
         }
 
         if (isset($this->existing_classlikes_lc[$fq_class_name_lc])) {
