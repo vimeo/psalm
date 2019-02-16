@@ -5,7 +5,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Type;
@@ -23,8 +23,8 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
      * @param  CodeLocation                 $code_location
      * @param  array                        $suppressed_issues
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
@@ -109,7 +109,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
             ) {
                 $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
-                    $statements_analyzer,
+                    $statements_source,
                     $function_call_arg->value
                 );
 
@@ -117,7 +117,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
 
                 $mapping_return_type = null;
 
-                $codebase = $statements_analyzer->getCodebase();
+                $codebase = $statements_source->getCodebase();
 
                 foreach ($mapping_function_ids as $mapping_function_id) {
                     $mapping_function_id = strtolower($mapping_function_id);
@@ -159,7 +159,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $mapping_function_id_part,
                                     $context->calling_method_id,
                                     new CodeLocation(
-                                        $statements_analyzer->getSource(),
+                                        $statements_source,
                                         $function_call_arg->value
                                     )
                                 )) {
@@ -184,10 +184,12 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $mapping_return_type = $return_type;
                                 }
                             } else {
-                                if (!$codebase->functions->functionExists(
-                                    $statements_analyzer,
-                                    $mapping_function_id_part
-                                )) {
+                                if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+                                    || !$codebase->functions->functionExists(
+                                        $statements_source,
+                                        $mapping_function_id_part
+                                    )
+                                ) {
                                     $mapping_return_type = Type::getMixed();
                                     continue;
                                 }
@@ -195,7 +197,7 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                 $part_match_found = true;
 
                                 $function_storage = $codebase->functions->getStorage(
-                                    $statements_analyzer,
+                                    $statements_source,
                                     $mapping_function_id_part
                                 );
 

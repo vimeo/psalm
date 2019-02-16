@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use Psalm\Internal\Codebase\CallMap;
 
 class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
@@ -19,8 +19,8 @@ class ArrayColumnReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,

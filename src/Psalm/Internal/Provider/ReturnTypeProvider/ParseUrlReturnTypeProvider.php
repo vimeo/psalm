@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 
 class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
@@ -19,8 +19,8 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
@@ -31,7 +31,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 $component_type = $call_args[1]->value->inferredType;
 
                 if (!$component_type->hasMixed()) {
-                    $codebase = $statements_analyzer->getCodebase();
+                    $codebase = $statements_source->getCodebase();
 
                     $acceptable_string_component_type = new Type\Union([
                         new Type\Atomic\TLiteralInt(PHP_URL_SCHEME),
@@ -57,7 +57,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             new Type\Atomic\TNull
                         ]);
 
-                        $codebase = $statements_analyzer->getCodebase();
+                        $codebase = $statements_source->getCodebase();
 
                         if ($codebase->config->ignore_internal_nullable_issues) {
                             $nullable_string->ignore_nullable_issues = true;
@@ -76,7 +76,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                             new Type\Atomic\TNull
                         ]);
 
-                        $codebase = $statements_analyzer->getCodebase();
+                        $codebase = $statements_source->getCodebase();
 
                         if ($codebase->config->ignore_internal_nullable_issues) {
                             $nullable_int->ignore_nullable_issues = true;
@@ -93,7 +93,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                 new Type\Atomic\TNull
             ]);
 
-            $codebase = $statements_analyzer->getCodebase();
+            $codebase = $statements_source->getCodebase();
 
             if ($codebase->config->ignore_internal_nullable_issues) {
                 $nullable_string_or_int->ignore_nullable_issues = true;
@@ -118,7 +118,7 @@ class ParseUrlReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
             new Type\Atomic\TFalse
         ]);
 
-        $codebase = $statements_analyzer->getCodebase();
+        $codebase = $statements_source->getCodebase();
 
         if ($codebase->config->ignore_internal_falsable_issues) {
             $nullable_string_or_int->ignore_falsable_issues = true;

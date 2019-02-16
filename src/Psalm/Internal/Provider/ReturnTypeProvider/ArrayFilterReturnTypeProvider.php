@@ -7,7 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\IssueBuffer;
 use Psalm\Issue\InvalidReturnType;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -22,8 +22,8 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
@@ -71,7 +71,7 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                             'No return type could be found in the closure passed to array_filter',
                             $code_location
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues()
                     );
 
                     return Type::getArray();
@@ -87,24 +87,26 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                         && $stmt instanceof PhpParser\Node\Stmt\Return_
                         && $stmt->expr
                     ) {
-                        $codebase = $statements_analyzer->getCodebase();
+                        $codebase = $statements_source->getCodebase();
 
-                        AssertionFinder::scrapeAssertions($stmt->expr, null, $statements_analyzer, $codebase);
+                        AssertionFinder::scrapeAssertions($stmt->expr, null, $statements_source, $codebase);
 
                         $assertions = isset($stmt->expr->assertions) ? $stmt->expr->assertions : null;
 
                         if (isset($assertions['$' . $first_param->var->name])) {
                             $changed_var_ids = [];
 
+                            assert($statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer);
+
                             $reconciled_types = Reconciler::reconcileKeyedTypes(
                                 ['$inner_type' => $assertions['$' . $first_param->var->name]],
                                 ['$inner_type' => $inner_type],
                                 $changed_var_ids,
                                 ['$inner_type' => true],
-                                $statements_analyzer,
+                                $statements_source,
                                 [],
                                 false,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                new CodeLocation($statements_source, $stmt)
                             );
 
                             if (isset($reconciled_types['$inner_type'])) {

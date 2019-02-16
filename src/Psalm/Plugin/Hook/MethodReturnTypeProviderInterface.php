@@ -6,8 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\CallMap;
+use Psalm\StatementsSource;
 
 interface MethodReturnTypeProviderInterface
 {
@@ -19,8 +18,8 @@ interface MethodReturnTypeProviderInterface
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_srouce,
         string $method_id,
         string $appearing_method_id,
         string $declaring_method_id,

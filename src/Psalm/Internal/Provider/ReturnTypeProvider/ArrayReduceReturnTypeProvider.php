@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
@@ -23,8 +23,8 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
@@ -34,7 +34,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             return Type::getMixed();
         }
 
-        $codebase = $statements_analyzer->getCodebase();
+        $codebase = $statements_source->getCodebase();
 
         $array_arg = $call_args[0]->value;
         $function_call_arg = $call_args[1]->value;
@@ -94,9 +94,9 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     if (IssueBuffer::accepts(
                         new InvalidArgument(
                             'The closure passed to array_reduce needs two params',
-                            new CodeLocation($statements_analyzer->getSource(), $function_call_arg)
+                            new CodeLocation($statements_source, $function_call_arg)
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -126,9 +126,9 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                             'The first param of the closure passed to array_reduce must take '
                                 . $reduce_return_type . ' but only accepts ' . $carry_param->type,
                             $carry_param->type_location
-                                ?: new CodeLocation($statements_analyzer->getSource(), $function_call_arg)
+                                ?: new CodeLocation($statements_source, $function_call_arg)
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -150,9 +150,9 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                             'The second param of the closure passed to array_reduce must take '
                                 . $array_arg_type->type_params[1] . ' but only accepts ' . $item_param->type,
                             $item_param->type_location
-                                ?: new CodeLocation($statements_analyzer->getSource(), $function_call_arg)
+                                ?: new CodeLocation($statements_source, $function_call_arg)
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_source->getSuppressedIssues()
                     )) {
                         // fall through
                     }
@@ -169,7 +169,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             || $function_call_arg instanceof PhpParser\Node\Expr\BinaryOp\Concat
         ) {
             $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
-                $statements_analyzer,
+                $statements_source,
                 $function_call_arg
             );
 
@@ -207,7 +207,7 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $mapping_function_id_part,
                                 $context->calling_method_id,
                                 new CodeLocation(
-                                    $statements_analyzer->getSource(),
+                                    $statements_source,
                                     $function_call_arg
                                 )
                             )) {
@@ -228,17 +228,19 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                                 $return_type
                             );
                         } else {
-                            if (!$codebase->functions->functionExists(
-                                $statements_analyzer,
-                                $mapping_function_id_part
-                            )) {
+                            if (!$statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer
+                                || !$codebase->functions->functionExists(
+                                    $statements_source,
+                                    $mapping_function_id_part
+                                )
+                            ) {
                                 return Type::getMixed();
                             }
 
                             $part_match_found = true;
 
                             $function_storage = $codebase->functions->getStorage(
-                                $statements_analyzer,
+                                $statements_source,
                                 $mapping_function_id_part
                             );
 

@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 
 class MethodReturnTypeProvider
 {
@@ -14,7 +14,7 @@ class MethodReturnTypeProvider
      * @var array<
      *   string,
      *   \Closure(
-     *     StatementsAnalyzer,
+     *     StatementsSource,
      *     string,
      *     string,
      *     string,
@@ -32,6 +32,16 @@ class MethodReturnTypeProvider
     }
 
     /**
+     * @param  \Closure(
+     *     StatementsSource,
+     *     string,
+     *     string,
+     *     string,
+     *     array<PhpParser\Node\Arg>,
+     *     Context,
+     *     CodeLocation
+     *   ) : Type\Union $c
+     *
      * @return void
      */
     public function registerClosure(string $method_id, \Closure $c)
@@ -48,7 +58,7 @@ class MethodReturnTypeProvider
      * @param  array<PhpParser\Node\Arg>  $call_args
      */
     public function getReturnType(
-        StatementsAnalyzer $statements_analyzer,
+        StatementsSource $statements_source,
         string $method_id,
         string $appearing_method_id,
         string $declaring_method_id,
@@ -57,7 +67,7 @@ class MethodReturnTypeProvider
         CodeLocation $code_location
     ) : Type\Union {
         return self::$handlers[strtolower($method_id)](
-            $statements_analyzer,
+            $statements_source,
             $method_id,
             $appearing_method_id,
             $declaring_method_id,

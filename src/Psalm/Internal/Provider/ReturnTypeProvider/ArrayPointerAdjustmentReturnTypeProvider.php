@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 
 class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {
@@ -18,8 +18,8 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
@@ -48,7 +48,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements \Psalm\Plugin\Hook\Fun
 
         $value_type->addType(new Type\Atomic\TFalse);
 
-        $codebase = $statements_analyzer->getCodebase();
+        $codebase = $statements_source->getCodebase();
 
         if ($codebase->config->ignore_internal_falsable_issues) {
             $value_type->ignore_falsable_issues = true;

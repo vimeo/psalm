@@ -7,7 +7,7 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
@@ -24,8 +24,8 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      */
-    public static function get(
-        StatementsAnalyzer $statements_analyzer,
+    public static function getFunctionReturnType(
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
@@ -37,7 +37,7 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
             $key_type = null;
             $value_type = null;
 
-            $codebase = $statements_analyzer->getCodebase();
+            $codebase = $statements_source->getCodebase();
 
             foreach ($call_args[0]->value->inferredType->getTypes() as $call_arg_atomic_type) {
                 if ($call_arg_atomic_type instanceof Type\Atomic\TNamedObject
@@ -47,9 +47,11 @@ class IteratorToArrayReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionRe
                         new Type\Atomic\TIterable([Type::getMixed(), Type::getMixed()])
                     )
                 ) {
+                    assert($statements_source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer);
+
                     $has_valid_iterator = true;
                     ForeachAnalyzer::handleIterable(
-                        $statements_analyzer,
+                        $statements_source,
                         $call_arg_atomic_type,
                         $call_args[0]->value,
                         $codebase,

@@ -6,7 +6,7 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
-use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\StatementsSource;
 use \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface;
 
 class FunctionReturnTypeProvider
@@ -15,7 +15,7 @@ class FunctionReturnTypeProvider
      * @var array<
      *   string,
      *   \Closure(
-     *     StatementsAnalyzer,
+     *     StatementsSource,
      *     string,
      *     array<PhpParser\Node\Arg>,
      *     Context,
@@ -55,9 +55,9 @@ class FunctionReturnTypeProvider
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'get']);
+            $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('get')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getFunctionReturnType')->getClosure(new $class);
         }
 
         foreach ($class::getFunctionIds() as $function_id) {
@@ -66,6 +66,15 @@ class FunctionReturnTypeProvider
     }
 
     /**
+     * /**
+     * @param \Closure(
+     *     StatementsSource,
+     *     string,
+     *     array<PhpParser\Node\Arg>,
+     *     Context,
+     *     CodeLocation
+     *   ) : Type\Union $c
+     *
      * @return void
      */
     public function registerClosure(string $function_id, \Closure $c)
@@ -82,14 +91,14 @@ class FunctionReturnTypeProvider
      * @param  array<PhpParser\Node\Arg>  $call_args
      */
     public function getReturnType(
-        StatementsAnalyzer $statements_analyzer,
+        StatementsSource $statements_source,
         string $function_id,
         array $call_args,
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
         return self::$handlers[strtolower($function_id)](
-            $statements_analyzer,
+            $statements_source,
             $function_id,
             $call_args,
             $context,
