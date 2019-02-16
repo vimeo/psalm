@@ -26,6 +26,7 @@
             <file name="tests/performance/a.test"/>
             <file name="tests/performance/b.test"/>
             <file name="tests/ErrorBaselineTest.php"/>
+            <file name="tests/Plugin/phpstorm.meta.php" />
         </ignoreFiles>
     </projectFiles>
 
@@ -75,6 +76,7 @@
             <errorLevel type="suppress">
                 <directory name="examples"/>
                 <directory name="tests"/>
+                <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php" />
             </errorLevel>
         </UnusedClass>
 

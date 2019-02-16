@@ -676,45 +676,63 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $self_fq_class_name = $fq_class_name;
 
-                $return_type_candidate = $codebase->methods->getMethodReturnType(
-                    $method_id,
-                    $self_fq_class_name,
-                    $args
-                );
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                if ($return_type_candidate) {
-                    $return_type_candidate = clone $return_type_candidate;
-
-                    if ($found_generic_params) {
-                        $return_type_candidate->replaceTemplateTypesWithArgTypes(
-                            $found_generic_params
-                        );
-                    }
-
-                    $return_type_candidate = ExpressionAnalyzer::fleshOutType(
-                        $codebase,
-                        $return_type_candidate,
-                        $self_fq_class_name,
-                        $fq_class_name
-                    );
-
-                    $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                if ($appearing_method_id
+                    && $declaring_method_id
+                    && $codebase->methods->return_type_provider->has($appearing_method_id)
+                ) {
+                    $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                        $statements_analyzer,
                         $method_id,
-                        $secondary_return_type_location
+                        $appearing_method_id,
+                        $declaring_method_id,
+                        $stmt->args,
+                        $context,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    );
+                } else {
+                    $return_type_candidate = $codebase->methods->getMethodReturnType(
+                        $method_id,
+                        $self_fq_class_name,
+                        $args
                     );
 
-                    if ($secondary_return_type_location) {
-                        $return_type_location = $secondary_return_type_location;
-                    }
+                    if ($return_type_candidate) {
+                        $return_type_candidate = clone $return_type_candidate;
 
-                    // only check the type locally if it's defined externally
-                    if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                        $return_type_candidate->check(
-                            $statements_analyzer,
-                            new CodeLocation($source, $stmt),
-                            $statements_analyzer->getSuppressedIssues(),
-                            $context->phantom_classes
+                        if ($found_generic_params) {
+                            $return_type_candidate->replaceTemplateTypesWithArgTypes(
+                                $found_generic_params
+                            );
+                        }
+
+                        $return_type_candidate = ExpressionAnalyzer::fleshOutType(
+                            $codebase,
+                            $return_type_candidate,
+                            $self_fq_class_name,
+                            $fq_class_name
                         );
+
+                        $return_type_location = $codebase->methods->getMethodReturnTypeLocation(
+                            $method_id,
+                            $secondary_return_type_location
+                        );
+
+                        if ($secondary_return_type_location) {
+                            $return_type_location = $secondary_return_type_location;
+                        }
+
+                        // only check the type locally if it's defined externally
+                        if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
+                            $return_type_candidate->check(
+                                $statements_analyzer,
+                                new CodeLocation($source, $stmt),
+                                $statements_analyzer->getSuppressedIssues(),
+                                $context->phantom_classes
+                            );
+                        }
                     }
                 }
 
@@ -753,9 +771,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($config->after_method_checks) {
                     $file_manipulations = [];
-
-                    $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                     if ($appearing_method_id && $declaring_method_id) {
                         foreach ($config->after_method_checks as $plugin_fq_class_name) {

@@ -4,8 +4,7 @@ namespace Psalm\Internal\Codebase;
 use PhpParser;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\CodeLocation;
-use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Internal\Provider\{ClassLikeStorageProvider, FileReferenceProvider, MethodReturnTypeProvider};
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -43,6 +42,9 @@ class Methods
      */
     private $classlikes;
 
+    /** @var MethodReturnTypeProvider */
+    public $return_type_provider;
+
     /**
      * @param ClassLikeStorageProvider $storage_provider
      */
@@ -56,6 +58,7 @@ class Methods
         $this->config = $config;
         $this->file_reference_provider = $file_reference_provider;
         $this->classlikes = $classlikes;
+        $this->return_type_provider = new MethodReturnTypeProvider();
     }
 
     /**

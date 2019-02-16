@@ -121,6 +121,96 @@ class StubTest extends TestCase
     /**
      * @return void
      */
+    public function testPhpStormMetaParsingFile()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $meta_statements = $codebase->statements_provider->getStatementsForFile(
+            __DIR__ . DIRECTORY_SEPARATOR . 'Plugin' . DIRECTORY_SEPARATOR . 'phpstorm.meta.php'
+        );
+
+        \Psalm\Internal\Scanner\PhpStormMetaScanner::scan($meta_statements, $codebase);
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns {
+                    class MyClass {
+                        /**
+                         * @return mixed
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function create(string $s) {}
+
+                        /**
+                         * @param mixed $s
+                         * @return mixed
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function foo($s) {}
+
+                        /**
+                         * @return mixed
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function bar(array $a) {}
+                    }
+                }
+                namespace {
+                    /**
+                     * @return mixed
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function create(string $s) {}
+
+                    /**
+                     * @param mixed $s
+                     * @return mixed
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function foo($s) {}
+
+                    /**
+                     * @return mixed
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function bar(array $a) {}
+
+                    $a1 = (new \Ns\MyClass)->create("object");
+                    $a2 = (new \Ns\MyClass)->create("exception");
+
+                    $b1 = \create("object");
+                    $b2 = \create("exception");
+
+                    $c1 = (new \Ns\MyClass)->foo(5);
+                    $c2 = (new \Ns\MyClass)->bar(["hello"]);
+
+                    $d1 = \foo(5);
+                    $d2 = \bar(["hello"]);
+                }'
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+    }
+
+    /**
+     * @return void
+     */
     public function testNamespacedStubClass()
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -863,8 +863,24 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             $codebase->methods->getDeclaringMethodId($method_id) ?: $method_id
         );
 
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
         if ($method_name_lc === '__tostring') {
             $return_type_candidate = Type::getString();
+        } elseif ($appearing_method_id
+            && $declaring_method_id
+            && $codebase->methods->return_type_provider->has($appearing_method_id)
+        ) {
+            $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                $statements_analyzer,
+                $method_id,
+                $appearing_method_id,
+                $declaring_method_id,
+                $stmt->args,
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+            );
         } elseif ($call_map_id && CallMap::inCallMap($call_map_id)) {
             if (($class_template_params || $class_storage->stubbed)
                 && isset($class_storage->methods[$method_name_lc])
@@ -1043,9 +1059,6 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if ($config->after_method_checks) {
             $file_manipulations = [];
-
-            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($appearing_method_id && $declaring_method_id) {
                 foreach ($config->after_method_checks as $plugin_fq_class_name) {

@@ -29,21 +29,21 @@ class FunctionReturnTypeProvider
     {
         self::$handlers = [];
 
-        $this->register(ReturnTypeProvider\ArrayColumnReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayFilterReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayMapReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayMergeReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayPointerAdjustmentReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayPopReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayRandReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArrayReduceReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ArraySliceReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\FilterVarReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\ParseUrlReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\RangeReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\StrReplaceReturnTypeProvider::class);
-        $this->register(ReturnTypeProvider\VersionCompareReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayColumnReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayFilterReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayMapReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayMergeReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayPointerAdjustmentReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayPopReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayRandReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayReduceReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArraySliceReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\FilterVarReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ParseUrlReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\RangeReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\StrReplaceReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\VersionCompareReturnTypeProvider::class);
     }
 
     /**
@@ -51,7 +51,7 @@ class FunctionReturnTypeProvider
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
-    public function register(string $class)
+    public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
@@ -63,6 +63,14 @@ class FunctionReturnTypeProvider
         foreach ($class::getFunctionIds() as $function_id) {
             self::$handlers[$function_id] = $callable;
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function registerClosure(string $function_id, \Closure $c)
+    {
+        self::$handlers[$function_id] = $c;
     }
 
     public function has(string $function_id) : bool

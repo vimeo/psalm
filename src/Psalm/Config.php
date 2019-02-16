@@ -9,6 +9,7 @@ use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Plugin\Hook;
 use Psalm\PluginRegistrationSocket;
 use SimpleXMLElement;
@@ -1208,6 +1209,18 @@ class Config
         }
 
         $stub_files = array_merge([$generic_stubs_path, $generic_classes_path], $this->stub_files);
+
+        $phpstorm_meta_path = $this->base_dir . DIRECTORY_SEPARATOR . '.phpstorm.meta.php';
+
+        if (file_exists($phpstorm_meta_path)) {
+            $meta_statements = $codebase->statements_provider->getStatementsForFile(
+                $phpstorm_meta_path
+            );
+
+            PhpStormMetaScanner::scan($meta_statements, $codebase);
+
+            $stub_files[] = $phpstorm_meta_path;
+        }
 
         foreach ($stub_files as $file_path) {
             $codebase->scanner->addFileToShallowScan($file_path);
