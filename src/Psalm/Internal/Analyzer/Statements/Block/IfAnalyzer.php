@@ -15,7 +15,6 @@ use Psalm\Context;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Scope\IfScope;
-use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Algebra;
 use Psalm\Type\Reconciler;

@@ -3,11 +3,6 @@ declare(strict_types = 1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
-use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
-use PhpParser\{
-    Node,
-    NodeTraverser
-};
 use Psalm\Internal\LanguageServer\{
     LanguageServer,
     LanguageClient,
@@ -16,7 +11,6 @@ use Psalm\Internal\LanguageServer\{
     DefinitionResolver,
     CompletionProvider
 };
-use Psalm\Internal\LanguageServer\NodeVisitor\VariableReferencesCollector;
 use LanguageServerProtocol\{
     CompletionList,
     SymbolLocationInformation,
@@ -38,12 +32,8 @@ use LanguageServerProtocol\{
     CompletionItemKind
 };
 use Psalm\Codebase;
-use Psalm\Internal\LanguageServer\Index\ReadableIndex;
-use Psalm\Internal\Analyzer\FileAnalyzer;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Amp\Promise;
 use Amp\Success;
-use function Psalm\Internal\LanguageServer\{waitForEvent, isVendored};
 
 /**
  * Provides method handlers for all textDocument/* methods

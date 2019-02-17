@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Storage\FunctionLikeParameter;
-use Psalm\Type\Union;
-
 /**
  * Represents a closure where we know the return type and params
  */

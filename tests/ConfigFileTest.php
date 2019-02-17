@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use DOMDocument;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Config;
 

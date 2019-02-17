@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-use Psalm\Config;
 use Psalm\Storage\ClassLikeStorage;
 
 class ClassLikeStorageInstanceCacheProvider extends \Psalm\Internal\Provider\ClassLikeStorageCacheProvider

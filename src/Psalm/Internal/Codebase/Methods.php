@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Internal\Provider\{ClassLikeStorageProvider, FileReferenceProvider, MethodReturnTypeProvider};
 use Psalm\Storage\ClassLikeStorage;

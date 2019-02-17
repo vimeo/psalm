@@ -9,7 +9,6 @@ use Psalm\Config\ProjectFileFilter;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\Internal\Scanner\PhpStormMetaScanner;
 use Psalm\Plugin\Hook;
 use Psalm\PluginRegistrationSocket;
 use SimpleXMLElement;
@@ -254,7 +253,7 @@ class Config
     public $plugin_paths = [];
 
     /**
-     * @var array<array{class:string,config:?SimpleXmlElement}>
+     * @var array<array{class:string,config:?SimpleXMLElement}>
      */
     private $plugin_classes = [];
 
@@ -831,7 +830,7 @@ class Config
     }
 
     /** @return void */
-    public function addPluginClass(string $class_name, SimpleXmlElement $plugin_config = null)
+    public function addPluginClass(string $class_name, SimpleXMLElement $plugin_config = null)
     {
         $this->plugin_classes[] = ['class' => $class_name, 'config' => $plugin_config];
     }

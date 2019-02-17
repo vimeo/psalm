@@ -3,7 +3,6 @@ namespace Psalm\Internal\Analyzer;
 
 use Psalm\Aliases;
 use Psalm\Codebase;
-use Psalm\Config;
 use Psalm\StatementsSource;
 use Psalm\Type;
 

@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use LSS\XML2Array;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Context;

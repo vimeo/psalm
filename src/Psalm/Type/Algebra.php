@@ -6,10 +6,7 @@ use Psalm\Codebase;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
-use Psalm\CodeLocation;
 use Psalm\FileSource;
-use Psalm\IssueBuffer;
-use Psalm\Type\Algebra;
 
 class Algebra
 {

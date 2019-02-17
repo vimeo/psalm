@@ -2,9 +2,7 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Codebase;
-use Psalm\Config;
 
 /**
  * @psalm-type  IssueData = array{

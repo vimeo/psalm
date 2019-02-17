@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Type;
 
-use Psalm\Internal\Analyzer\AlgebraAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;

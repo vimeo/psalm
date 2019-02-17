@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Provider;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 /**
  * @internal

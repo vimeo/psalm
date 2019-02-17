@@ -16,7 +16,6 @@ use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;

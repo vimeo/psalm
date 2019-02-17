@@ -3,7 +3,6 @@ namespace Psalm\Tests;
 
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
-use Psalm\Context;
 use Psalm\Tests\Internal\Provider;
 
 class ProjectAnalyzerTest extends TestCase

@@ -2,7 +2,6 @@
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use SimpleXMLElement;
 

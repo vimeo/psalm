@@ -1,22 +1,16 @@
 <?php
 namespace Psalm\Internal\Analyzer;
 
-use JsonRPC\Server;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\LanguageServer\{LanguageServer, ProtocolStreamReader, ProtocolStreamWriter};
-use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
-use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Type;
-use Amp\Loop;
 
 /**
  * @internal

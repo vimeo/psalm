@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic;
-
 class TLiteralFloat extends TFloat
 {
     /** @var float */

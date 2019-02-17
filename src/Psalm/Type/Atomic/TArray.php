@@ -2,7 +2,6 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 
 /**
  * Represents an array with generic type parameters.

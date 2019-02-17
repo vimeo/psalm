@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\Codebase\Reflection;
 use Psalm\Type;
 
 class TypeParseTest extends TestCase

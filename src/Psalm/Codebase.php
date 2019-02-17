@@ -13,7 +13,6 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
-use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 class Codebase
 {

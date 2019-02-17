@@ -8,7 +8,6 @@ use PhpParser\Node\Stmt\Function_;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
