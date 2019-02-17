@@ -234,7 +234,7 @@ return [
 'apcu_cas' => ['bool', 'key'=>'string', 'old'=>'int', 'new'=>'int'],
 'apcu_clear_cache' => ['bool'],
 'apcu_dec' => ['int', 'key'=>'string', 'step='=>'int', '&w_success='=>'bool', 'ttl='=>'int'],
-'apcu_delete' => ['bool|array<int,string>', 'key'=>'string|string[]|APCUIterator'],
+'apcu_delete' => ['bool', 'key'=>'string|string[]|APCUIterator'],
 'apcu_enabled' => ['bool'],
 'apcu_entry' => ['mixed', 'key'=>'string', 'generator'=>'callable', 'ttl='=>'int'],
 'apcu_exists' => ['bool', 'keys'=>'string'],
