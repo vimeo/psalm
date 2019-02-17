@@ -981,7 +981,6 @@ class ExpressionAnalyzer
                             'Cannot handle ' . $return_type->value . ' when $self_class is empty'
                         );
                     }
-                    var_dump('here');
 
                     $return_type->value = $self_class;
                 } else {
