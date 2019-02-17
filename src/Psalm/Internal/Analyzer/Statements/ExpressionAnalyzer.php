@@ -977,6 +977,15 @@ class ExpressionAnalyzer
                     }
 
                     $return_type->value = $self_class;
+                } elseif ($return_type_lc === 'parent') {
+                    if (!$self_class) {
+                        throw new \UnexpectedValueException(
+                            'Cannot handle ' . $return_type->value . ' when $self_class is empty'
+                        );
+                    }
+                    var_dump('here');
+
+                    $return_type->value = $self_class;
                 } else {
                     $return_type->value = $codebase->classlikes->getUnAliasedName($return_type->value);
                 }

@@ -1386,8 +1386,8 @@ class CallAnalyzer
             $fleshed_out_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $param_type,
-                $fq_class_name,
-                $fq_class_name
+                $fq_class_name ?: $context->self,
+                $fq_class_name ?: $context->self
             );
 
             if ($arg->unpack) {

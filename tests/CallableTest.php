@@ -677,6 +677,31 @@ class CallableTest extends TestCase
                     /** @psalm-suppress UndefinedClass */
                     array_map(["two", "three"], ["one", "two"]);',
             ],
+            'callableSelfArg' => [
+                '<?php
+                    class Clazz {
+                        /**
+                         * @param callable(static) $f
+                         */
+                        function func1(callable $f): void {
+                            $f($this);
+                        }
+
+                        /**
+                         * @param callable(self) $f
+                         */
+                        function func2(callable $f): void {
+                            $f($this);
+                        }
+
+                        /**
+                         * @param callable(parent) $f
+                         */
+                        function func3(callable $f): void {
+                            $f($this);
+                        }
+                    }',
+            ],
         ];
     }
 
