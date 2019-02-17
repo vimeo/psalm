@@ -551,6 +551,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             return false;
         }
 
+        if ($context->collect_initializations) {
+            $statements_analyzer->addSuppressedIssues([
+                'DocblockTypeContradiction',
+                'RedundantCondition',
+                'RedundantConditionGivenDocblockType',
+            ]);
+        }
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
         $this->addPossibleParamTypes($context, $codebase);
