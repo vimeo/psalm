@@ -3,7 +3,6 @@ require_once('command_functions.php');
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Config;
-use Psalm\IssueBuffer;
 
 gc_disable();
 

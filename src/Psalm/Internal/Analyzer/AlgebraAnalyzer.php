@@ -2,10 +2,8 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
-use Psalm\FileSource;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;

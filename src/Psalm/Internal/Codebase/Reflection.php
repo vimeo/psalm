@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Codebase;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;

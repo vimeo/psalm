@@ -1,7 +1,6 @@
 <?php
 namespace Psalm;
 
-use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Storage\FunctionLikeStorage;

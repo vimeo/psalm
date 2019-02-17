@@ -2,8 +2,6 @@
 
 namespace Psalm\Internal\Diff;
 
-use PhpParser;
-
 /**
  * Borrows from https://github.com/nikic/PHP-Parser/blob/master/lib/PhpParser/Internal/Differ.php
  *

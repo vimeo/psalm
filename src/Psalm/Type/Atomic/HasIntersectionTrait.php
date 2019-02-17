@@ -1,10 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-use Psalm\Codebase;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
-use Psalm\Type\Union;
 
 trait HasIntersectionTrait
 {

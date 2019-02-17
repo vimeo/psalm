@@ -3,7 +3,6 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\StatementsSource;
 
 /**
  * @internal

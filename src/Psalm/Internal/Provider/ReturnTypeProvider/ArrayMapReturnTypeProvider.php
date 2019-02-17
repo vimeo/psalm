@@ -9,7 +9,6 @@ use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Type;
-use Psalm\Type\Reconciler;
 
 class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

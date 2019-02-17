@@ -2,16 +2,7 @@
 
 namespace Psalm;
 
-use Psalm\Aliases;
-use Psalm\DocComment;
 use Psalm\Exception\DocblockParseException;
-use Psalm\Exception\IncorrectDocblockException;
-use Psalm\Exception\TypeParseTreeException;
-use Psalm\FileSource;
-use Psalm\Internal\Scanner\ClassLikeDocblockComment;
-use Psalm\Internal\Scanner\FunctionDocblockComment;
-use Psalm\Internal\Scanner\VarDocblockComment;
-use Psalm\Type;
 
 class DocComment
 {

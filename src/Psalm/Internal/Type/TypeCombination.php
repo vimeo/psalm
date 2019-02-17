@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Internal\Type;
 
-use Psalm\Exception\TypeParseTreeException;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Codebase;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -12,7 +10,6 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -30,14 +27,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
-use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
-use Psalm\Type\Atomic\TVoid;
-use Psalm\Internal\Type\ParseTree;
 use Psalm\Internal\Type\TypeCombination;
 use Psalm\Type\Union;
 

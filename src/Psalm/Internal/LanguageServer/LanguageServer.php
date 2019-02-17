@@ -4,7 +4,6 @@ declare(strict_types = 1);
 namespace Psalm\Internal\LanguageServer;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Config;
 use LanguageServerProtocol\{
     ServerCapabilities,
     ClientCapabilities,
@@ -14,20 +13,11 @@ use LanguageServerProtocol\{
     CompletionOptions,
     SignatureHelpOptions
 };
-use Psalm\Internal\LanguageServer\FilesFinder\{FilesFinder, ClientFilesFinder, FileSystemFilesFinder};
-use Psalm\Internal\LanguageServer\ContentRetriever\{
-    ContentRetriever,
-    ClientContentRetriever,
-    FileSystemContentRetriever
-};
-use Psalm\Internal\LanguageServer\Index\{DependenciesIndex, GlobalIndex, Index, ProjectIndex, StubsIndex};
-use Psalm\Internal\LanguageServer\Cache\{FileSystemCache, ClientCache};
 use Psalm\Internal\LanguageServer\Server\TextDocument;
 use LanguageServerProtocol\{Range, Position, Diagnostic, DiagnosticSeverity};
 use AdvancedJsonRpc;
 use Amp\Promise;
 use Throwable;
-use Webmozart\PathUtil\Path;
 use function Amp\call;
 use function Amp\asyncCoroutine;
 

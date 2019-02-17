@@ -2,14 +2,10 @@
 namespace Psalm\Internal\Scanner;
 
 use PhpParser;
-use PhpParser\NodeTraverser;
 use Psalm\Context;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
-use Psalm\FileSource;
-use Psalm\Storage\FileStorage;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Visitor\ReflectorVisitor;
 use Psalm\Type;
 
 /**

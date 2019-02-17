@@ -3,7 +3,6 @@ namespace Psalm\Plugin\Hook;
 
 use PhpParser\Node;
 use Psalm\Codebase;
-use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;

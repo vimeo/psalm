@@ -9,7 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
-use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;

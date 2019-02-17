@@ -27,7 +27,6 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericParam;
-use Psalm\Type\Atomic\TGenericParamClass;
 use Psalm\Type\Atomic\THtmlEscapedString;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TInt;

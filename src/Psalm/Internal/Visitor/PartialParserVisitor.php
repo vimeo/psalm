@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Visitor;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 
 /**
  * Given a list of file diffs, this scans an AST to find the sections it can replace, and parses

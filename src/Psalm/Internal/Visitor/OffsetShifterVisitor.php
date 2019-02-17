@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Visitor;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 
 /**
  * Shifts all nodes in a given AST by a set amount

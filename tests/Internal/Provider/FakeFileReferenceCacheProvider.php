@@ -1,8 +1,6 @@
 <?php
 namespace Psalm\Tests\Internal\Provider;
 
-use Psalm\Config;
-
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.

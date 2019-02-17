@@ -1,14 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
-use Prophecy\Argument;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Plugin\PluginEntryPointInterface;
-use Psalm\Plugin\RegistrationInterface;
 use Psalm\Tests\Internal\Provider;
-use SimpleXMLElement;
 
 class PluginTest extends TestCase
 {

@@ -1,7 +1,6 @@
 <?php
 namespace Psalm\Internal\PluginManager\Command;
 
-use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\PluginManager\PluginListFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

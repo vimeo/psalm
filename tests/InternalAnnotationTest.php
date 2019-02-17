@@ -1,9 +1,6 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Config;
-use Psalm\Context;
-
 class InternalAnnotationTest extends TestCase
 {
     use Traits\InvalidCodeAnalysisTestTrait;

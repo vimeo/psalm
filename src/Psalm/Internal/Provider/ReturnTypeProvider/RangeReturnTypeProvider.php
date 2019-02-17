@@ -6,9 +6,7 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
-use Psalm\Internal\Type\TypeCombination;
 use Psalm\StatementsSource;
-use Psalm\Internal\Analyzer\TypeAnalyzer;
 
 class RangeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface
 {

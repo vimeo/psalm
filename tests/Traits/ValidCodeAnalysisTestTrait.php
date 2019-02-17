@@ -3,7 +3,6 @@ namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\Type\Union;
 
 trait ValidCodeAnalysisTestTrait
 {

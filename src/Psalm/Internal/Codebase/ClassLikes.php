@@ -4,7 +4,6 @@ namespace Psalm\Internal\Codebase;
 use PhpParser;
 use Psalm\Aliases;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
-use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Issue\PossiblyUnusedMethod;

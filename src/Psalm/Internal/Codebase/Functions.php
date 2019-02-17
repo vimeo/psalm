@@ -2,7 +2,6 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\{FileStorageProvider, FunctionReturnTypeProvider};
 use Psalm\StatementsSource;

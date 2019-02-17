@@ -4,7 +4,6 @@ namespace Psalm\Internal\Scope;
 use PhpParser;
 use Psalm\Internal\Clause;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Type;
 
 /**

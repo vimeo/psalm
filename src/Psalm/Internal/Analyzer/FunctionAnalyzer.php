@@ -2,19 +2,10 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
-use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
-use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\CodeLocation;
-use Psalm\Issue\InvalidArgument;
-use Psalm\Issue\InvalidReturnType;
-use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 use Psalm\Type;
-use Psalm\Type\Reconciler;
-use Psalm\Internal\Type\TypeCombination;
 
 /**
  * @internal
