@@ -588,14 +588,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($function_id === 'define') {
             $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
             $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
-            if ($first_arg_value instanceof PhpParser\Node\Scalar\String_ && $second_arg_value) {
+            $const_name = StatementsAnalyzer::getConstName($first_arg_value);
+            if ($const_name !== null && $second_arg_value) {
                 $const_type = StatementsAnalyzer::getSimpleType(
                     $this->codebase,
                     $second_arg_value,
                     $this->aliases
                 ) ?: Type::getMixed();
-                $const_name = $first_arg_value->value;
-
                 if ($this->functionlike_storages && !$this->config->hoist_constants) {
                     $functionlike_storage =
                         $this->functionlike_storages[count($this->functionlike_storages) - 1];

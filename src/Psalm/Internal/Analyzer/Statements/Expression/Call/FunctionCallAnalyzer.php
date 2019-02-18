@@ -607,10 +607,11 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     return false;
                 }
             } elseif ($function->parts === ['define']) {
-                if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                $const_name = StatementsAnalyzer::getConstName($first_arg->value);
+
+                if ($const_name !== null) {
                     $second_arg = $stmt->args[1];
                     ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
-                    $const_name = $first_arg->value->value;
 
                     $statements_analyzer->setConstType(
                         $const_name,
