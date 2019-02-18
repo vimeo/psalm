@@ -128,6 +128,7 @@ class VariableFetchAnalyzer
                 '_SESSION',
                 '_REQUEST',
                 '_ENV',
+                'http_response_header'
             ],
             true
         )

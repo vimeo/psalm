@@ -828,6 +828,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $root_type->addType(
                                 new Type\Atomic\TArray($atomic_root_type->type_params)
                             );
+                        } elseif ($atomic_root_type instanceof Type\Atomic\TNonEmptyMixed) {
+                            $root_type->addType(
+                                new Type\Atomic\TMixed()
+                            );
                         }
                     }
 

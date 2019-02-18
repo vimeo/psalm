@@ -350,7 +350,7 @@ class LoopAnalyzer
         }
 
         foreach ($loop_scope->loop_parent_context->vars_in_scope as $var_id => $type) {
-            if ($type->hasMixed() || !isset($loop_scope->loop_context->vars_in_scope[$var_id])) {
+            if (!isset($loop_scope->loop_context->vars_in_scope[$var_id])) {
                 continue;
             }
 
@@ -366,10 +366,6 @@ class LoopAnalyzer
 
         if (!$does_always_break) {
             foreach ($loop_scope->loop_parent_context->vars_in_scope as $var_id => $type) {
-                if ($type->hasMixed()) {
-                    continue;
-                }
-
                 if (!isset($inner_context->vars_in_scope[$var_id])) {
                     unset($loop_scope->loop_parent_context->vars_in_scope[$var_id]);
                     continue;
