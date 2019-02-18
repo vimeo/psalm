@@ -1477,13 +1477,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
             $const_name = $first_arg_value->value;
         } elseif (isset($first_arg_value->inferredType)) {
-            $possible_value_types = $first_arg_value->inferredType->getTypes();
-            if (count($possible_value_types) === 1) {
-                reset($possible_value_types);
-                $possible_value_type = current($possible_value_types);
-                if ($possible_value_type instanceof Type\Atomic\TLiteralString) {
-                    $const_name = $possible_value_type->value;
-                }
+            if ($first_arg_value->inferredType->isSingleStringLiteral()) {
+                $const_name = $first_arg_value->inferredType->getSingleStringLiteral()->value;
             }
         }
 
