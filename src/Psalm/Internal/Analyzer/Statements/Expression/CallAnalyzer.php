@@ -139,7 +139,8 @@ class CallAnalyzer
                 }
 
                 if (!$declaring_method_id) {
-                    throw new \UnexpectedValueException('Could not find declaring method for ' . $method_id);
+                    // can happen for __call
+                    return;
                 }
             }
 

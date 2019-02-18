@@ -2157,6 +2157,20 @@ class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument'
             ],
+            'noCrashOnMagicCall' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        private $a;
+
+                        public function __construct() {
+                            $this->setA();
+                        }
+
+                        public function __call(string $var, array $args) {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor'
+            ],
         ];
     }
 }
