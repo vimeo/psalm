@@ -1240,8 +1240,8 @@ class TypeAnalyzer
     ) {
         $all_types_contain = true;
 
-        if ($container_type_part instanceof TGenericObject) {
-            if (!$input_type_part instanceof TGenericObject) {
+        if ($container_type_part instanceof TGenericObject || $container_type_part instanceof TIterable) {
+            if (!$input_type_part instanceof TGenericObject && !$input_type_part instanceof TIterable) {
                 if ($input_type_part instanceof TNamedObject
                     && $codebase->classExists($input_type_part->value)
                 ) {

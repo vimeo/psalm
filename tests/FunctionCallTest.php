@@ -1892,6 +1892,50 @@ class FunctionCallTest extends TestCase
                     $s();',
                 'error_message' => 'MixedFunctionCall',
             ],
+            'iterableOfObjectCannotAcceptIterableOfInt' => [
+                '<?php
+                    /** @param iterable<string,object> $_p */
+                    function accepts(iterable $_p): void {}
+
+                    /** @return iterable<int,int> */
+                    function iterable() { yield 1; }
+
+                    accepts(iterable());',
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableOfObjectCannotAcceptTraversableOfInt' => [
+                '<?php
+                    /** @param iterable<string,object> $_p */
+                    function accepts(iterable $_p): void {}
+
+                    /** @return Traversable<int,int> */
+                    function traversable() { yield 1; }
+
+                    accepts(traversable());',
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableOfObjectCannotAcceptGeneratorOfInt' => [
+                '<?php
+                    /** @param iterable<string,object> $_p */
+                    function accepts(iterable $_p): void {}
+
+                    /** @return Generator<int,int,mixed,void> */
+                    function generator() { yield 1; }
+
+                    accepts(generator());',
+                'error_message' => 'InvalidArgument',
+            ],
+            'iterableOfObjectCannotAcceptArrayOfInt' => [
+                '<?php
+                    /** @param iterable<string,object> $_p */
+                    function accepts(iterable $_p): void {}
+
+                    /** @return array<int,int> */
+                    function arr() { return [1]; }
+
+                    accepts(arr());',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
