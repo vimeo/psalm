@@ -770,7 +770,7 @@ class PropertyFetchAnalyzer
         ) {
             $var_id = ExpressionAnalyzer::getVarId(
                 $stmt,
-                $statements_analyzer->getFQCLN(),
+                $context->self ?: $statements_analyzer->getFQCLN(),
                 $statements_analyzer
             );
 
