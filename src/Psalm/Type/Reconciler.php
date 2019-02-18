@@ -427,6 +427,7 @@ class Reconciler
                         && IssueBuffer::accepts(
                             new ParadoxicalCondition(
                                 'Found a paradox when evaluating ' . $key
+                                    . ' of type ' . $existing_var_type->getId()
                                     . ' and trying to reconcile it with a ' . $new_var_type . ' assertion',
                                 $code_location
                             ),
@@ -452,6 +453,7 @@ class Reconciler
                         && IssueBuffer::accepts(
                             new RedundantCondition(
                                 'Found a redundant condition when evaluating ' . $key
+                                    . ' of type ' . $existing_var_type->getId()
                                     . ' and trying to reconcile it with a ' . $new_var_type . ' assertion',
                                 $code_location
                             ),
@@ -1606,6 +1608,7 @@ class Reconciler
                         && IssueBuffer::accepts(
                             new ParadoxicalCondition(
                                 'Found a paradox when evaluating ' . $key
+                                    . ' of type ' . $existing_var_type->getId()
                                     . ' and trying to reconcile it with a non-' . $new_var_type . ' assertion',
                                 $code_location
                             ),
@@ -1631,6 +1634,7 @@ class Reconciler
                         && IssueBuffer::accepts(
                             new RedundantCondition(
                                 'Found a redundant condition when evaluating ' . $key
+                                    . ' of type ' . $existing_var_type->getId()
                                     . ' and trying to reconcile it with a non-' . $new_var_type . ' assertion',
                                 $code_location
                             ),
