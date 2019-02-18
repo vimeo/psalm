@@ -18,11 +18,12 @@ function array_keys(array $arr, $search_value = null, bool $strict = false) {}
 function array_values(array $arr) {}
 
 /**
- * @psalm-template T
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
  *
- * @param array<mixed, T> $arr
+ * @param array<TKey, TValue> $arr
  * @param int $sort_flags
- * @return array<int, T>
+ * @return array<TKey, TValue>
  */
 function array_unique(array $arr, int $sort_flags = 0) {}
 
