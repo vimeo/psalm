@@ -143,7 +143,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     && $stmt->expr->name instanceof PhpParser\Node\Name
                     && $stmt->expr->name->parts === ['define']
                     && isset($stmt->expr->args[1])
-                    && $stmt->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
                 ) {
                     $const_name = static::getConstName($stmt->expr->args[0]->value);
                     if ($const_name !== null) {
