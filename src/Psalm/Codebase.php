@@ -4,6 +4,7 @@ namespace Psalm;
 use LanguageServerProtocol\{Position, Range};
 use PhpParser;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -1147,5 +1148,11 @@ class Codebase
     public function removeTemporaryFileChanges(string $file_path)
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
+    }
+    public function isTypeContainedByType(
+        Type\Union $input_type,
+        Type\Union $container_type
+    ): bool {
+        return TypeAnalyzer::isContainedBy($this, $input_type, $container_type);
     }
 }
