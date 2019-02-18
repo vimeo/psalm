@@ -366,14 +366,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @return null|string
-     */
-    public function getNamespace()
-    {
-        return $this->source->getNamespace();
-    }
-
-    /**
      * @return array<string, string>
      */
     public function getAliasedClassesFlipped()

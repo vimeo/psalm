@@ -147,12 +147,27 @@ class ExpressionAnalyzer
                     $stmt->inferredType = Type::getLiteralClassString($context->self);
                     break;
 
+                case '__namespace__':
+                    $namespace = $statements_analyzer->getNamespace();
+                    if ($namespace === null &&
+                    IssueBuffer::accepts(
+                        new UndefinedConstant(
+                            'Cannot get __namespace__ outside a namespace',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        ),
+                        $statements_analyzer->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+
+                    $stmt->inferredType = Type::getString($namespace);
+                    break;
+
                 case '__file__':
                 case '__dir__':
                 case '__function__':
                 case '__trait__':
                 case '__method__':
-                case '__namespace__':
                     $stmt->inferredType = Type::getString();
                     break;
             }
