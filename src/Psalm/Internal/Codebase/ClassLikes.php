@@ -664,8 +664,10 @@ class ClassLikes
                     if (IssueBuffer::accepts(
                         new UnusedClass(
                             'Class ' . $classlike_storage->name . ' is never used',
-                            $classlike_storage->location
-                        )
+                            $classlike_storage->location,
+                            $classlike_storage->name
+                        ),
+                        $classlike_storage->suppressed_issues
                     )) {
                         // fall through
                     }
