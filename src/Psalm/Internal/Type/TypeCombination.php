@@ -512,7 +512,7 @@ class TypeCombination
             if (!isset($combination->type_params['iterable'])) {
                 $combination->type_params['iterable']
                     = $combination->type_params['Traversable'] ?? [Type::getMixed(), Type::getMixed()];
-            } else {
+            } elseif (isset($combination->type_params['Traversable'])) {
                 foreach ($combination->type_params['Traversable'] as $i => $array_type_param) {
                     $iterable_type_param = $combination->type_params['iterable'][$i];
                     $combination->type_params['iterable'][$i] = Type::combineUnionTypes(
@@ -520,6 +520,8 @@ class TypeCombination
                         $array_type_param
                     );
                 }
+            } else {
+                $combination->type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
             }
 
             /** @psalm-suppress PossiblyNullArrayAccess */
