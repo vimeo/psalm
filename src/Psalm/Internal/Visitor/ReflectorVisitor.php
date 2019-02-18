@@ -588,20 +588,22 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($function_id === 'define') {
             $first_arg_value = isset($node->args[0]) ? $node->args[0]->value : null;
             $second_arg_value = isset($node->args[1]) ? $node->args[1]->value : null;
-            $const_name = StatementsAnalyzer::getConstName($first_arg_value);
-            if ($const_name !== null && $second_arg_value) {
-                $const_type = StatementsAnalyzer::getSimpleType(
-                    $this->codebase,
-                    $second_arg_value,
-                    $this->aliases
-                ) ?: Type::getMixed();
-                if ($this->functionlike_storages && !$this->config->hoist_constants) {
-                    $functionlike_storage =
-                        $this->functionlike_storages[count($this->functionlike_storages) - 1];
-                    $functionlike_storage->defined_constants[$const_name] = $const_type;
-                } else {
-                    $this->file_storage->constants[$const_name] = $const_type;
-                    $this->file_storage->declaring_constants[$const_name] = $this->file_path;
+            if ($first_arg_value && $second_arg_value) {
+                $const_name = StatementsAnalyzer::getConstName($first_arg_value);
+                if ($const_name !== null) {
+                    $const_type = StatementsAnalyzer::getSimpleType(
+                        $this->codebase,
+                        $second_arg_value,
+                        $this->aliases
+                    ) ?: Type::getMixed();
+                    if ($this->functionlike_storages && !$this->config->hoist_constants) {
+                        $functionlike_storage =
+                            $this->functionlike_storages[count($this->functionlike_storages) - 1];
+                        $functionlike_storage->defined_constants[$const_name] = $const_type;
+                    } else {
+                        $this->file_storage->constants[$const_name] = $const_type;
+                        $this->file_storage->declaring_constants[$const_name] = $this->file_path;
+                    }
                 }
             }
         }

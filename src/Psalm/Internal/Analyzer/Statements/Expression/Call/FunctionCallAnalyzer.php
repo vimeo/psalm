@@ -607,17 +607,21 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     return false;
                 }
             } elseif ($function->parts === ['define']) {
-                $const_name = StatementsAnalyzer::getConstName($first_arg->value);
+                if ($first_arg) {
+                    $const_name = StatementsAnalyzer::getConstName($first_arg->value);
 
-                if ($const_name !== null) {
-                    $second_arg = $stmt->args[1];
-                    ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
+                    if ($const_name !== null) {
+                        $second_arg = $stmt->args[1];
+                        ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
 
-                    $statements_analyzer->setConstType(
-                        $const_name,
-                        isset($second_arg->value->inferredType) ? $second_arg->value->inferredType : Type::getMixed(),
-                        $context
-                    );
+                        $statements_analyzer->setConstType(
+                            $const_name,
+                            isset($second_arg->value->inferredType) ?
+                                $second_arg->value->inferredType :
+                                Type::getMixed(),
+                            $context
+                        );
+                    }
                 } else {
                     $context->check_consts = false;
                 }
