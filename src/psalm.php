@@ -29,7 +29,7 @@ $valid_long_options = [
     'diff',
     'diff-methods',
     'disable-extension:',
-    'find-dead-code',
+    'find-dead-code::',
     'find-references-to:',
     'help',
     'ignore-baseline',
@@ -67,7 +67,10 @@ array_map(
         if (substr($arg, 0, 2) === '--' && $arg !== '--') {
             $arg_name = preg_replace('/=.*$/', '', substr($arg, 2));
 
-            if (!in_array($arg_name, $valid_long_options) && !in_array($arg_name . ':', $valid_long_options)) {
+            if (!in_array($arg_name, $valid_long_options)
+                && !in_array($arg_name . ':', $valid_long_options)
+                && !in_array($arg_name . '::', $valid_long_options)
+            ) {
                 echo 'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
                     . 'Type --help to see a list of supported arguments'. PHP_EOL;
                 exit(1);
@@ -165,8 +168,8 @@ Options:
     --output-format=console
         Changes the output format. Possible values: compact, console, emacs, json, pylint, xml
 
-    --find-dead-code
-        Look for dead code
+    --find-dead-code[=auto]
+        Look for dead code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'
 
     --find-references-to=[class|method|property]
         Searches the codebase for references to the given fully-qualified class or method,
@@ -391,7 +394,15 @@ $show_info = isset($options['show-info'])
 
 $is_diff = isset($options['diff']);
 
-$find_dead_code = isset($options['find-dead-code']);
+/** @var false|'always'|'auto' $find_dead_code */
+$find_dead_code = false;
+if (isset($options['find-dead-code'])) {
+    if ($options['find-dead-code'] === 'always') {
+        $find_dead_code = 'always';
+    } else {
+        $find_dead_code = 'auto';
+    }
+}
 
 $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
     ? $options['find-references-to']
@@ -514,7 +525,7 @@ if ($paths_to_check === null) {
 
 if ($find_references_to) {
     $project_analyzer->findReferencesTo($find_references_to);
-} elseif ($find_dead_code && !$paths_to_check && !$is_diff) {
+} elseif (($find_dead_code === 'always') || ($find_dead_code === 'auto' && !$paths_to_check && !$is_diff)) {
     if ($threads > 1) {
         if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;
