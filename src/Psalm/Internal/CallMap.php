@@ -1648,7 +1648,7 @@ return [
 'date_timestamp_set' => ['DateTime|false', 'object'=>'DateTime', 'unixtimestamp'=>'int'],
 'date_timezone_get' => ['DateTimeZone', 'obj'=>'DateTimeInterface'],
 'date_timezone_set' => ['DateTime|false', 'object'=>'DateTime', 'timezone'=>'DateTimeZone'],
-'datefmt_create' => ['IntlDateFormatter', 'locale'=>'string', 'datetype'=>'int', 'timetype'=>'int', 'timezone='=>'int', 'calendar='=>'int|IntlCalendar', 'pattern='=>'string'],
+'datefmt_create' => ['IntlDateFormatter', 'locale'=>'string', 'datetype'=>'int', 'timetype'=>'int', 'timezone='=>'string|null', 'calendar='=>'int|IntlCalendar|null', 'pattern='=>'string'],
 'datefmt_format' => ['string', 'fmt'=>'IntlDateFormatter', 'value'=>'DateTime|IntlCalendar|array|int'],
 'datefmt_format_object' => ['string', 'object'=>'object', 'format='=>'mixed', 'locale='=>'string'],
 'datefmt_get_calendar' => ['int', 'fmt'=>'IntlDateFormatter'],
