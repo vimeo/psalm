@@ -101,6 +101,31 @@ class ThrowsAnnotationTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testNoThrowWhenSuppressing()
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @psalm-suppress MissingThrowsDocblock
+                 */
+                function foo() : void {
+                    if (rand(0, 1)) {
+                        throw new \UnexpectedValueException();
+                    }
+                }'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage MissingThrowsDocblock
      *

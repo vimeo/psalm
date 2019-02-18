@@ -793,7 +793,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                                 null,
                                 true
                             )
-                        )
+                        ),
+                        $this->getSuppressedIssues()
                     )) {
                         // fall through
                     }
