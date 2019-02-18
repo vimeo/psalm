@@ -653,11 +653,11 @@ class AssignmentAnalyzer
         $var_type = isset($stmt->var->inferredType) ? clone $stmt->var->inferredType : null;
         $expr_type = isset($stmt->expr->inferredType) ? $stmt->expr->inferredType : null;
 
-        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus ||
-            $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus ||
-            $stmt instanceof PhpParser\Node\Expr\AssignOp\Mod ||
-            $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul ||
-            $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Minus
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mod
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul
+            || $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
         ) {
             BinaryOpAnalyzer::analyzeNonDivArithmenticOp(
                 $statements_analyzer,
@@ -696,6 +696,29 @@ class AssignmentAnalyzer
                 $stmt->expr,
                 $context,
                 $result_type
+            );
+
+            if ($result_type && $array_var_id) {
+                $context->vars_in_scope[$array_var_id] = $result_type;
+                $stmt->inferredType = clone $context->vars_in_scope[$array_var_id];
+            }
+        } elseif (isset($stmt->var->inferredType)
+            && isset($stmt->expr->inferredType)
+            && ($stmt->var->inferredType->hasInt() || $stmt->expr->inferredType->hasInt())
+            && ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseOr
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseXor
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftLeft
+                || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
+            )
+        ) {
+            BinaryOpAnalyzer::analyzeNonDivArithmenticOp(
+                $statements_analyzer,
+                $stmt->var,
+                $stmt->expr,
+                $stmt,
+                $result_type,
+                $context
             );
 
             if ($result_type && $array_var_id) {

@@ -310,6 +310,21 @@ class EmptyTest extends TestCase
                         }
                     }',
             ],
+            'doubleEmptyCheckTwoArrays' => [
+                '<?php
+                    function foo(array $a, array $b) : void {
+                        if (empty($a) && empty($b)) {}
+                    }'
+            ],
+            'SKIPPED-doubleEmptyCheckOnObjectLike' => [
+                '<?php
+                    /**
+                     * @param array{a: array, b: array} $arr
+                     */
+                    function foo(array $arr) : void {
+                        if (empty($arr["a"]) && empty($arr["b"])) {}
+                    }'
+            ],
         ];
     }
 

@@ -36,6 +36,15 @@ class AssignmentTest extends TestCase
                     echo $w;
                     echo $e;',
             ],
+            'bitwiseAssignment' => [
+                '<?php
+                    $x = 0;
+                    $x |= (int) (rand(0, 1) !== 2);
+                    $x |= 1;
+                    if ($x) {
+                        echo $x;
+                    }',
+            ],
         ];
     }
 
