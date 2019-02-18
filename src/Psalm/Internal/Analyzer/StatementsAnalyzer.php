@@ -1467,7 +1467,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @param  mixed $first_arg_value
+     * @param  PhpParser\Node\Expr $first_arg_value
      *
      * @return null|string
      */
