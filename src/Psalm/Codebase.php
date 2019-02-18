@@ -1149,6 +1149,10 @@ class Codebase
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
     }
+    
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function isTypeContainedByType(
         Type\Union $input_type,
         Type\Union $container_type
