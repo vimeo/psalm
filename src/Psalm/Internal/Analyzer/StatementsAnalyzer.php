@@ -145,14 +145,15 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     && isset($stmt->expr->args[1])
                     && $stmt->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
                 ) {
-                    $const_name = $stmt->expr->args[0]->value->value;
-
-                    $this->setConstType(
-                        $const_name,
-                        self::getSimpleType($codebase, $stmt->expr->args[1]->value, $this->getAliases(), $this)
-                            ?: Type::getMixed(),
-                        $context
-                    );
+                    $const_name = static::getConstName($stmt->expr->args[0]->value);
+                    if ($const_name !== null) {
+                        $this->setConstType(
+                            $const_name,
+                            self::getSimpleType($codebase, $stmt->expr->args[1]->value, $this->getAliases(), $this)
+                                ?: Type::getMixed(),
+                            $context
+                        );
+                    }
                 }
             }
         }
@@ -1463,5 +1464,37 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     public function getFunctionAnalyzers()
     {
         return $this->function_analyzers;
+    }
+
+    /**
+     * @param  mixed $first_arg_value
+     *
+     * @return null|string
+     */
+    public static function getConstName($first_arg_value)
+    {
+        $const_name = null;
+
+        if ($first_arg_value instanceof PhpParser\Node\Scalar\String_) {
+            $const_name = $first_arg_value->value;
+        } elseif (isset($first_arg_value->inferredType)) {
+            $possible_value_types = $first_arg_value->inferredType->getTypes();
+            if (count($possible_value_types) === 1) {
+                reset($possible_value_types);
+                $possible_value_type = current($possible_value_types);
+                if ($possible_value_type instanceof Type\Atomic\TLiteralString) {
+                    $const_name = $possible_value_type->value;
+                }
+            }
+        }
+
+        if ($const_name !== null) {
+            $namespace_pos = strrpos($const_name, '\\');
+            if (false !== $namespace_pos) {
+                $const_name = substr($const_name, $namespace_pos + 1);
+            }
+        }
+
+        return $const_name;
     }
 }
