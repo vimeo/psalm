@@ -59,29 +59,6 @@ return [
             return $contents;
         },
         function ($filePath, $prefix, $contents) {
-            if ($filePath === 'src/Psalm/Internal/PropertyMap.php'
-                || $filePath === 'src/Psalm/Internal/CallMap.php'
-                || $filePath === 'src/Psalm/Internal/Stubs/CoreGenericFunctions.php'
-                || $filePath === 'src/Psalm/Internal/Stubs/CoreGenericClasses.php'
-            ) {
-                $contents = str_replace(
-                    ['namespace ' . $prefix . ';', $prefix . '\\\\', $prefix . '\\'],
-                    '',
-                    $contents
-                );
-
-                $contents = str_replace(
-                    ['\'phpparser\\\\', 'PhpParser\\\\'],
-                    ['\'' . strtolower($prefix) . '\\\\phpparser\\\\', $prefix . '\\\\PhpParser\\\\'],
-                    $contents
-                );
-
-                return str_replace('Psalm\\\\', $prefix . '\\\\Psalm\\\\', $contents);
-            }
-
-            return $contents;
-        },
-        function ($filePath, $prefix, $contents) {
             if ($filePath === 'src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php') {
                 return str_replace(
                     'case \'Psalm\\\\',
@@ -126,5 +103,11 @@ return [
     'whitelist' => [
         \Composer\Autoload\ClassLoader::class,
         'Psalm\Plugin\*',
-    ]
+    ],
+    'files-whitelist' => [
+        'src/Psalm/Internal/PropertyMap.php',
+        'src/Psalm/Internal/CallMap.php',
+        'src/Psalm/Internal/Stubs/CoreGenericFunctions.php',
+        'src/Psalm/Internal/Stubs/CoreGenericClasses.php',
+    ],
 ];
