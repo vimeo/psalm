@@ -807,7 +807,7 @@ class ArrayFetchAnalyzer
                 } else {
                     $non_array_types[] = (string)$type;
                 }
-            } else {
+            } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
             }
         }
