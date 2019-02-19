@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Type;
 
@@ -173,6 +174,13 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
                                     $mapping_function_id_part,
                                     $self_class
                                 ) ?: Type::getMixed();
+
+                                $return_type = ExpressionAnalyzer::fleshOutType(
+                                    $codebase,
+                                    $return_type,
+                                    $self_class,
+                                    $self_class
+                                );
 
                                 if ($mapping_return_type) {
                                     $mapping_return_type = Type::combineUnionTypes(
