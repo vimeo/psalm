@@ -1249,9 +1249,16 @@ class CallAnalyzer
         )) {
             $by_ref_type = null;
 
+            $check_null_ref = true;
+
             if ($last_param) {
                 if ($argument_offset < count($function_params)) {
                     $by_ref_type = $function_params[$argument_offset]->type;
+
+                    if ($by_ref_type && $by_ref_type->isNullable()) {
+                        $check_null_ref = false;
+                    }
+
                     if (isset($function_storage->param_out_types[$argument_offset])) {
                         $by_ref_type = $function_storage->param_out_types[$argument_offset];
                     }
@@ -1295,7 +1302,7 @@ class CallAnalyzer
                 $by_ref_type,
                 $context,
                 $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id)),
-                true
+                $check_null_ref
             );
         }
     }

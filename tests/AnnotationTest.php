@@ -839,7 +839,6 @@ class AnnotationTest extends TestCase
                         $s .= "foo";
                     }
 
-                    $a = null;
                     addFoo($a);
 
                     echo strlen($a);',
