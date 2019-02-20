@@ -66,7 +66,7 @@ class MethodReturnTypeProvider
         Context $context,
         CodeLocation $code_location
     ) : Type\Union {
-        return self::$handlers[strtolower($method_id)](
+        return self::$handlers[strtolower($appearing_method_id)](
             $statements_source,
             $method_id,
             $appearing_method_id,
