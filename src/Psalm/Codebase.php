@@ -1179,7 +1179,7 @@ class Codebase
      * If you consider `Type\Union` as a set of types, this will tell you if intersection
      * of `$input_type` with `$container_type` is not empty.
      *
-     * $input_type ∩ $container_type ≠ ∅ , e.g. they are not dijoint.
+     * $input_type ∩ $container_type ≠ ∅ , e.g. they are not disjoint.
      *
      * Useful for emitting issues like PossiblyInvalidArgument, where argument at the call
      * site should be a subtype of the function parameter type, but it's has some types that are
