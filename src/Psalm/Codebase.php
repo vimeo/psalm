@@ -1162,8 +1162,6 @@ class Codebase
      *
      * Useful for emitting issues like InvalidArgument, where argument at the call site
      * should be a subset of the function parameter type.
-     *
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function isTypeContainedByType(
         Type\Union $input_type,
@@ -1184,8 +1182,6 @@ class Codebase
      * Useful for emitting issues like PossiblyInvalidArgument, where argument at the call
      * site should be a subtype of the function parameter type, but it's has some types that are
      * not a subtype of the required type.
-     *
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function canTypeBeContainedByType(
         Type\Union $input_type,
@@ -1207,7 +1203,6 @@ class Codebase
      * ```
      *
      * @return array{Type\Union,Type\Union}
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function getKeyValueParamsForTraversableObject(Type\Atomic $type): array
     {
