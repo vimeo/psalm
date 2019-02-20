@@ -1152,6 +1152,17 @@ class Codebase
     }
 
     /**
+     * Checks if type is a subtype of other
+     *
+     * Given two types, checks if `$input_type` is a subtype of `$container_type`.
+     * If you consider `Type\Union` as a set of types, this will tell you
+     * if `$input_type` is fully contained in `$container_type`,
+     *
+     * $input_type ⊆ $container_type
+     *
+     * Useful for emitting issues like InvalidArgument, where argument at the call site
+     * should be a subset of the function parameter type.
+     *
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function isTypeContainedByType(
@@ -1162,6 +1173,18 @@ class Codebase
     }
 
     /**
+     * Checks if type has any part that is a subtype of other
+     *
+     * Given two types, checks if *any part* of `$input_type` is a subtype of `$container_type`.
+     * If you consider `Type\Union` as a set of types, this will tell you if intersection
+     * of `$input_type` with `$container_type` is not empty.
+     *
+     * $input_type ∩ $container_type ≠ ∅ , e.g. they are not dijoint.
+     *
+     * Useful for emitting issues like PossiblyInvalidArgument, where argument at the call
+     * site should be a subtype of the function parameter type, but it's has some types that are
+     * not a subtype of the required type.
+     *
      * @psalm-suppress PossiblyUnusedMethod
      */
     public function canTypeBeContainedByType(
@@ -1172,6 +1195,17 @@ class Codebase
     }
 
     /**
+     * Extracts key and value types from a traversable object (or iterable)
+     *
+     * Given an iterable type (*but not TArray*) returns a tuple of it's key/value types.
+     * First element of the tuple holds key type, second has the value type.
+     *
+     * Example:
+     * ```php
+     * $codebase->getKeyValueParamsForTraversableObject(Type::parseString('iterable<int,string>'))
+     * //  returns [Union(TInt), Union(TString)]
+     * ```
+     *
      * @return array{Type\Union,Type\Union}
      * @psalm-suppress PossiblyUnusedMethod
      */
