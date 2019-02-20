@@ -1294,7 +1294,8 @@ class CallAnalyzer
                 $arg->value,
                 $by_ref_type,
                 $context,
-                $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id))
+                $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id)),
+                true
             );
         }
     }

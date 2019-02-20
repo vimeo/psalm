@@ -104,6 +104,9 @@ class ReturnTypeAnalyzer
         /** @var PhpParser\Node\Stmt[] */
         $function_stmts = $function->getStmts();
 
+        $ignore_nullable_issues = false;
+        $ignore_falsable_issues = false;
+
         $inferred_return_type_parts = ReturnTypeCollector::getReturnTypes(
             $function_stmts,
             $inferred_yield_types,

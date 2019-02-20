@@ -113,7 +113,7 @@ class FunctionCallTest extends TestCase
             ],
             'byRefNewString' => [
                 '<?php
-                    function fooFoo(string &$v): void {}
+                    function fooFoo(?string &$v): void {}
                     fooFoo($a);',
             ],
             'byRefVariableFunctionExistingArray' => [
@@ -1452,7 +1452,15 @@ class FunctionCallTest extends TestCase
                 ],
                 [],
                 '7.3'
-            ]
+            ],
+            'nullableByRef' => [
+                '<?php
+                    function foo(?string &$s) : void {}
+
+                    function bar() : void {
+                        foo($bar);
+                    }'
+            ],
         ];
     }
 
@@ -1935,6 +1943,15 @@ class FunctionCallTest extends TestCase
 
                     accepts(arr());',
                 'error_message' => 'InvalidArgument',
+            ],
+            'nonNullableByRef' => [
+                '<?php
+                    function foo(string &$s) : void {}
+
+                    function bar() : void {
+                        foo($bar);
+                    }',
+                'error_message' => 'NullArgument',
             ],
         ];
     }

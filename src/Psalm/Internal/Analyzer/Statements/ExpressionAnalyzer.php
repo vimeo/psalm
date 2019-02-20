@@ -632,7 +632,8 @@ class ExpressionAnalyzer
         PhpParser\Node\Expr $stmt,
         Type\Union $by_ref_type,
         Context $context,
-        $constrain_type = true
+        bool $constrain_type = true,
+        bool $prevent_null = false
     ) {
         $var_id = self::getVarId(
             $stmt,
@@ -651,6 +652,24 @@ class ExpressionAnalyzer
                 if (!$statements_analyzer->hasVariable($var_id)) {
                     $location = new CodeLocation($statements_analyzer, $stmt);
                     $statements_analyzer->registerVariable($var_id, $location, null);
+
+                    if ($constrain_type
+                        && $prevent_null
+                        && !$by_ref_type->isMixed()
+                        && !$by_ref_type->isNullable()
+                        && !strpos($var_id, '->')
+                        && !strpos($var_id, '::')
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new \Psalm\Issue\NullArgument(
+                                'Not expecting null argument passed by reference',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
 
                     if ($context->collect_references) {
                         $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
