@@ -862,6 +862,10 @@ class Populator
                 if ($iterator_name === 'iterable') {
                     $generic_iterator = new Type\Atomic\TIterable($generic_params);
                 } else {
+                    if (strtolower($iterator_name) === 'generator') {
+                        $generic_params[] = Type::getMixed();
+                        $generic_params[] = Type::getMixed();
+                    }
                     $generic_iterator = new Type\Atomic\TGenericObject($iterator_name, $generic_params);
                 }
 

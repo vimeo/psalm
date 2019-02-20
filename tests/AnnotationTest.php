@@ -89,6 +89,30 @@ class AnnotationTest extends TestCase
     /**
      * @return void
      */
+    public function testPhpStormGenericsWithGeneratorArray()
+    {
+        Config::getInstance()->allow_phpstorm_generics = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    /**
+                     * @return stdClass[]|Generator
+                     */
+                    function getCollection(): Generator
+                    {
+                        yield new stdClass;
+                    }
+                }'
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return void
+     */
     public function testPhpStormGenericsWithValidIterableArgument()
     {
         Config::getInstance()->allow_phpstorm_generics = true;
