@@ -3,6 +3,7 @@ namespace Psalm;
 
 use LanguageServerProtocol\{Position, Range};
 use PhpParser;
+use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\TypeAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -1149,7 +1150,7 @@ class Codebase
     {
         $this->file_provider->removeTemporaryFileChanges($file_path);
     }
-    
+
     /**
      * @psalm-suppress PossiblyUnusedMethod
      */
@@ -1158,5 +1159,32 @@ class Codebase
         Type\Union $container_type
     ): bool {
         return TypeAnalyzer::isContainedBy($this, $input_type, $container_type);
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public function canTypeBeContainedByType(
+        Type\Union $input_type,
+        Type\Union $container_type
+    ): bool {
+        return TypeAnalyzer::canBeContainedBy($this, $input_type, $container_type);
+    }
+
+    /**
+     * @return array{Type\Union,Type\Union}
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public function getKeyValueParamsForTraversableObject(Type\Atomic $type): array
+    {
+        $key_type = null;
+        $value_type = null;
+
+        ForeachAnalyzer::getKeyValueParamsForTraversableObject($type, $this, $key_type, $value_type);
+
+        return [
+            $key_type ?? Type::getMixed(),
+            $value_type ?? Type::getMixed(),
+        ];
     }
 }
