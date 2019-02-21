@@ -1211,6 +1211,7 @@ class CallAnalyzer
         array $template_types = null
     ) {
         if ($arg->value instanceof PhpParser\Node\Scalar
+            || $arg->value instanceof PhpParser\Node\Expr\Cast
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
             || (
