@@ -608,14 +608,18 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 }
             } elseif ($function->parts === ['define']) {
                 if ($first_arg) {
-                    $const_name = StatementsAnalyzer::getConstName($first_arg->value);
+                    $fq_const_name = StatementsAnalyzer::getConstName(
+                        $first_arg->value,
+                        $codebase,
+                        $statements_analyzer->getAliases()
+                    );
 
-                    if ($const_name !== null) {
+                    if ($fq_const_name !== null) {
                         $second_arg = $stmt->args[1];
                         ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
 
                         $statements_analyzer->setConstType(
-                            $const_name,
+                            $fq_const_name,
                             isset($second_arg->value->inferredType) ?
                                 $second_arg->value->inferredType :
                                 Type::getMixed(),
