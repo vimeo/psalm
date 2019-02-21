@@ -794,6 +794,10 @@ abstract class Type
                 continue;
             }
 
+            if (strpos($string_type_token, '$')) {
+                $string_type_token = preg_replace('/(.+)\$.*/', '$1', $string_type_token);
+            }
+
             $type_tokens[$i] = $string_type_token = self::fixScalarTerms($string_type_token);
 
             if (isset(self::PSALM_RESERVED_WORDS[$string_type_token])) {
@@ -817,10 +821,6 @@ abstract class Type
 
             if ($string_type_token[0] === '$') {
                 continue;
-            }
-
-            if (strpos($string_type_token, '$')) {
-                $string_type_token = preg_replace('/(.+)\$.*/', '$1', $string_type_token);
             }
 
             if (isset($type_aliases[$string_type_token])) {
