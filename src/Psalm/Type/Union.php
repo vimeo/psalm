@@ -124,6 +124,10 @@ class Union
     {
         $from_docblock = false;
 
+        if (!$types) {
+            throw new \UnexpectedValueException('Cannot construct a union with empty types');
+        }
+
         foreach ($types as $type) {
             $key = $type->getKey();
             $this->types[$key] = $type;
@@ -1109,16 +1113,18 @@ class Union
                     $new_types[$template_type_part->getKey()] = $template_type_part;
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass) {
-                $keys_to_unset[] = $key;
                 $template_type = isset($template_types[$atomic_type->param_name])
                     ? clone $template_types[$atomic_type->param_name][0]
                     : Type::getMixed();
 
                 foreach ($template_type->types as $template_type_part) {
-                    if ($template_type_part instanceof Type\Atomic\TMixed) {
+                    if ($template_type_part instanceof Type\Atomic\TMixed
+                        || $template_type_part instanceof Type\Atomic\TObject
+                    ) {
                         $unknown_class_string = new Type\Atomic\TClassString();
 
                         $new_types[$unknown_class_string->getKey()] = $unknown_class_string;
+                        $keys_to_unset[] = $key;
                     } elseif ($template_type_part instanceof Type\Atomic\TNamedObject) {
                         $literal_class_string = new Type\Atomic\TClassString(
                             $template_type_part->value,
@@ -1126,6 +1132,7 @@ class Union
                         );
 
                         $new_types[$literal_class_string->getKey()] = $literal_class_string;
+                        $keys_to_unset[] = $key;
                     }
                 }
             } else {
