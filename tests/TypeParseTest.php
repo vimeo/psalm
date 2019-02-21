@@ -388,6 +388,17 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testCallableWithParamNames()
+    {
+        $this->assertSame(
+            'callable(int, string):void',
+            (string)Type::parseString('callable(int $foo, string $bar) : void')
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testCallableReturningIntersection()
     {
         $this->assertSame(

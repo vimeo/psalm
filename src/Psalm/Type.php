@@ -417,6 +417,10 @@ abstract class Type
                         $is_variadic = $child_tree->variadic;
                         $is_optional = $child_tree->has_default;
                     } else {
+                        if ($child_tree instanceof ParseTree\Value && strpos($child_tree->value, '$') > 0) {
+                            $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
+                        }
+
                         $tree_type = self::getTypeFromTree($child_tree, null, $template_type_map);
                     }
 
@@ -813,6 +817,10 @@ abstract class Type
 
             if ($string_type_token[0] === '$') {
                 continue;
+            }
+
+            if (strpos($string_type_token, '$')) {
+                $string_type_token = preg_replace('/(.+)\$.*/', '$1', $string_type_token);
             }
 
             if (isset($type_aliases[$string_type_token])) {
