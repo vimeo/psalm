@@ -452,6 +452,21 @@ class FunctionCallTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
+            'countMoreThan0CanBeInverted' => [
+                '<?php
+                    $a = [];
+
+                    if (rand(0, 1)) {
+                        $a[] = "hello";
+                    }
+
+                    if (count($a) > 0) {
+                        exit;
+                    }',
+                    'assertions' => [
+                        '$a' => 'array<empty, empty>',
+                    ],
+            ],
             'uasort' => [
                 '<?php
                     uasort(
