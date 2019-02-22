@@ -1340,6 +1340,29 @@ class TemplateExtendsTest extends TestCase
 
                     class A {}',
             ],
+            'extendArrayObjectWithTemplateParams' => [
+                '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template-extends \ArrayObject<TKey,TValue>
+                     */
+                    class C extends \ArrayObject {
+                        /**
+                         * @param array<TKey,TValue> $kv
+                         */
+                        public function __construct(array $kv) {
+                            parent::__construct($kv);
+                        }
+                    }
+
+                    $c = new C(["a" => 1]);
+                    $i = $c->getIterator();',
+                [
+                    '$c' => 'C<string, int>',
+                    '$i' => 'ArrayIterator<string, int>',
+                ]
+            ],
         ];
     }
 
