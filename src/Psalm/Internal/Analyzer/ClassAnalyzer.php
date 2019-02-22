@@ -279,6 +279,28 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
+        if ($storage->template_types) {
+            foreach ($storage->template_types as $param_name => $_) {
+                $fq_classlike_name = Type::getFQCLNFromString(
+                    $param_name,
+                    $this->getAliases()
+                );
+
+                if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
+                    if (IssueBuffer::accepts(
+                        new ReservedWord(
+                            'Cannot use ' . $param_name . ' as template name since the class already exists',
+                            new CodeLocation($this, $this->class),
+                            'resource'
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
+
         if ($storage->template_type_extends) {
             foreach ($storage->template_type_extends as $type_map) {
                 foreach ($type_map as $atomic_type) {

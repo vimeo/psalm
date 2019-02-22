@@ -284,6 +284,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $statements_analyzer = new StatementsAnalyzer($this);
 
+        if ($storage->template_types) {
+            foreach ($storage->template_types as $param_name => $_) {
+                $fq_classlike_name = Type::getFQCLNFromString(
+                    $param_name,
+                    $this->getAliases()
+                );
+
+                if ($codebase->classOrInterfaceExists($fq_classlike_name)) {
+                    if (IssueBuffer::accepts(
+                        new ReservedWord(
+                            'Cannot use ' . $param_name . ' as template name since the class already exists',
+                            new CodeLocation($this, $this->function),
+                            'resource'
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
+                }
+            }
+        }
+
         $template_types = $storage->template_types;
 
         if ($class_storage && $class_storage->template_types) {

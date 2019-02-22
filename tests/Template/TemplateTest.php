@@ -2172,6 +2172,44 @@ class TemplateTest extends TestCase
                     function foo() : void {}',
                 'error_message' => 'InvalidDocblock'
             ],
+            'copyScopedClassInFunction' => [
+                '<?php
+                    /**
+                     * @template Throwable as DOMNode
+                     *
+                     * @param class-string<Throwable> $foo
+                     */
+                    function Foo(string $foo) : string {
+                        return $foo;
+                    }',
+                'error_message' => 'ReservedWord',
+            ],
+            'copyScopedClassInNamespacedFunction' => [
+                '<?php
+                    namespace Foo;
+
+                    class Bar {}
+
+                    /**
+                     * @template Bar as DOMNode
+                     *
+                     * @param class-string<Bar> $foo
+                     */
+                    function Foo(string $foo) : string {
+                        return $foo;
+                    }',
+                'error_message' => 'ReservedWord',
+            ],
+            'copyScopedClassInNamespacedClass' => [
+                '<?php
+                    namespace Foo;
+
+                    /**
+                     * @template Bar as DOMNode
+                     */
+                    class Bar {}',
+                'error_message' => 'ReservedWord',
+            ],
         ];
     }
 }
