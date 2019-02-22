@@ -1,22 +1,21 @@
 <?php
 namespace Psalm\Type\Atomic;
 
-class TGenericParamClass extends TClassString
+use Psalm\Type\Union;
+
+class TTemplateParam extends \Psalm\Type\Atomic
 {
+    use HasIntersectionTrait;
+
     /**
      * @var string
      */
     public $param_name;
 
     /**
-     * @var string
+     * @var Union
      */
     public $as;
-
-    /**
-     * @var ?TNamedObject
-     */
-    public $as_type;
 
     /**
      * @var ?string
@@ -26,16 +25,16 @@ class TGenericParamClass extends TClassString
     /**
      * @param string $param_name
      */
-    public function __construct(
-        string $param_name,
-        string $as = 'object',
-        TNamedObject $as_type = null,
-        string $defining_class = null
-    ) {
+    public function __construct($param_name, Union $extends, string $defining_class = null)
+    {
         $this->param_name = $param_name;
-        $this->as = $as;
-        $this->as_type = $as_type;
+        $this->as = $extends;
         $this->defining_class = $defining_class;
+    }
+
+    public function __toString()
+    {
+        return $this->param_name;
     }
 
     /**
@@ -43,23 +42,29 @@ class TGenericParamClass extends TClassString
      */
     public function getKey()
     {
-        return 'class-string<' . $this->param_name . '>';
+        if ($this->extra_types) {
+            return $this->param_name . '&' . implode('&', $this->extra_types);
+        }
+
+        return $this->param_name;
     }
 
     /**
      * @return string
      */
-    public function __toString()
+    public function getAssertionString()
     {
-        return 'class-string<' . $this->param_name . '>';
+        return $this->as->getId();
     }
 
-    /**
-     * @return string
-     */
     public function getId()
     {
-        return $this->getKey();
+        if ($this->extra_types) {
+            return '(' . $this->param_name. ' as ' . $this->as->getId()
+                . ')&' . implode('&', $this->extra_types);
+        }
+
+        return $this->param_name . ' as ' . $this->as->getId();
     }
 
     /**
@@ -69,7 +74,7 @@ class TGenericParamClass extends TClassString
      * @param  int           $php_major_version
      * @param  int           $php_minor_version
      *
-     * @return string|null
+     * @return null
      */
     public function toPhpString(
         $namespace,
@@ -78,12 +83,7 @@ class TGenericParamClass extends TClassString
         $php_major_version,
         $php_minor_version
     ) {
-        return 'string';
-    }
-
-    public function canBeFullyExpressedInPhp()
-    {
-        return false;
+        return null;
     }
 
     /**
@@ -96,6 +96,21 @@ class TGenericParamClass extends TClassString
      */
     public function toNamespacedString($namespace, array $aliased_classes, $this_class, $use_phpdoc_format)
     {
-        return $this->param_name . '::class';
+        $intersection_types = $this->getNamespacedIntersectionTypes(
+            $namespace,
+            $aliased_classes,
+            $this_class,
+            $use_phpdoc_format
+        );
+
+        return $this->param_name . $intersection_types;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canBeFullyExpressedInPhp()
+    {
+        return false;
     }
 }

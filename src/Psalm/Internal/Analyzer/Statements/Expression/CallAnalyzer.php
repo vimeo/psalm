@@ -1503,7 +1503,7 @@ class CallAnalyzer
                         if (is_string($template_name)
                             && $class_name_lc === strtolower($class_storage->name)
                         ) {
-                            if ($type instanceof Type\Atomic\TGenericParam
+                            if ($type instanceof Type\Atomic\TTemplateParam
                                 && $type->defining_class
                                 && isset(
                                     $calling_class_storage
@@ -2425,7 +2425,7 @@ class CallAnalyzer
 
                 if ($type_part->extra_types) {
                     foreach ($type_part->extra_types as $extra_type) {
-                        if ($extra_type instanceof Type\Atomic\TGenericParam) {
+                        if ($extra_type instanceof Type\Atomic\TTemplateParam) {
                             throw new \UnexpectedValueException('Shouldn’t get a generic param here');
                         }
                         $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;

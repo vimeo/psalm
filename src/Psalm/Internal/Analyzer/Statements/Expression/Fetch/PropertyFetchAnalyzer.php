@@ -273,7 +273,7 @@ class PropertyFetchAnalyzer
                 continue;
             }
 
-            if ($lhs_type_part instanceof Type\Atomic\TGenericParam) {
+            if ($lhs_type_part instanceof Type\Atomic\TTemplateParam) {
                 $extra_types = $lhs_type_part->extra_types;
 
                 $lhs_type_part = array_values(

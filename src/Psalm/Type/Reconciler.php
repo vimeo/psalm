@@ -24,7 +24,7 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -2599,7 +2599,7 @@ class Reconciler
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
                         } elseif ($existing_key_type_part instanceof TMixed
-                            || $existing_key_type_part instanceof TGenericParam
+                            || $existing_key_type_part instanceof TTemplateParam
                             || $existing_key_type_part instanceof TObject
                             || ($existing_key_type_part instanceof TNamedObject
                                 && strtolower($existing_key_type_part->value) === 'stdclass')

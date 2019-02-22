@@ -130,7 +130,7 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @return array<int, TNamedObject|TGenericParam|TIterable>|null
+     * @return array<int, TNamedObject|TTemplateParam|TIterable>|null
      */
     public function getIntersectionTypes()
     {
@@ -151,7 +151,7 @@ class TNamedObject extends Atomic
         $new_types = [];
 
         foreach ($this->extra_types as $extra_type) {
-            if ($extra_type instanceof TGenericParam && isset($template_types[$extra_type->param_name])) {
+            if ($extra_type instanceof TTemplateParam && isset($template_types[$extra_type->param_name])) {
                 $template_type = clone $template_types[$extra_type->param_name][0];
 
                 foreach ($template_type->getTypes() as $template_type_part) {

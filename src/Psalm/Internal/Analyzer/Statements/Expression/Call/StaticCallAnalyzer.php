@@ -224,7 +224,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 )) {
                     return false;
                 }
-            } elseif ($lhs_type_part instanceof Type\Atomic\TGenericParam
+            } elseif ($lhs_type_part instanceof Type\Atomic\TTemplateParam
                 && !$lhs_type_part->as->isMixed()
                 && !$lhs_type_part->as->hasObject()
             ) {
@@ -255,7 +255,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 }
             } else {
                 if ($lhs_type_part instanceof Type\Atomic\TMixed
-                    || $lhs_type_part instanceof Type\Atomic\TGenericParam
+                    || $lhs_type_part instanceof Type\Atomic\TTemplateParam
                     || $lhs_type_part instanceof Type\Atomic\TClassString
                 ) {
                     if (IssueBuffer::accepts(

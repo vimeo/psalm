@@ -17,7 +17,7 @@ use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\GetClassT;
 use Psalm\Type\Atomic\GetTypeT;
 use Psalm\Type\Atomic\THtmlEscapedString;
@@ -291,8 +291,8 @@ class TypeAnalyzer
 
     /**
      * @param  Codebase       $codebase
-     * @param  TNamedObject|TGenericParam|TIterable  $input_type_part
-     * @param  TNamedObject|TGenericParam|TIterable  $container_type_part
+     * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
+     * @param  TNamedObject|TTemplateParam|TIterable  $container_type_part
      * @param  bool           $allow_interface_equality
      *
      * @return bool
@@ -306,7 +306,7 @@ class TypeAnalyzer
         $intersection_input_types = $input_type_part->extra_types ?: [];
         $intersection_input_types[] = $input_type_part;
 
-        if ($input_type_part instanceof TGenericParam) {
+        if ($input_type_part instanceof TTemplateParam) {
             foreach ($input_type_part->as->getTypes() as $g) {
                 if ($g instanceof TNamedObject && $g->extra_types) {
                     $intersection_input_types = array_merge(
@@ -320,7 +320,7 @@ class TypeAnalyzer
         $intersection_container_types = $container_type_part->extra_types ?: [];
         $intersection_container_types[] = $container_type_part;
 
-        if ($container_type_part instanceof TGenericParam) {
+        if ($container_type_part instanceof TTemplateParam) {
             foreach ($container_type_part->as->getTypes() as $g) {
                 if ($g instanceof TNamedObject && $g->extra_types) {
                     $intersection_container_types = array_merge(
@@ -334,7 +334,7 @@ class TypeAnalyzer
         foreach ($intersection_container_types as $intersection_container_type) {
             if ($intersection_container_type instanceof TIterable) {
                 $intersection_container_type_lower = 'iterable';
-            } elseif ($intersection_container_type instanceof TGenericParam) {
+            } elseif ($intersection_container_type instanceof TTemplateParam) {
                 if ($intersection_container_type->as->isMixed()) {
                     continue;
                 }
@@ -367,7 +367,7 @@ class TypeAnalyzer
             foreach ($intersection_input_types as $intersection_input_type) {
                 if ($intersection_input_type instanceof TIterable) {
                     $intersection_input_type_lower = 'iterable';
-                } elseif ($intersection_input_type instanceof TGenericParam) {
+                } elseif ($intersection_input_type instanceof TTemplateParam) {
                     if ($intersection_input_type->as->isMixed()) {
                         continue;
                     }
@@ -479,7 +479,7 @@ class TypeAnalyzer
         &$type_coerced_from_scalar = null
     ) {
         if ($container_type_part instanceof TMixed
-            || ($container_type_part instanceof TGenericParam
+            || ($container_type_part instanceof TTemplateParam
                 && $container_type_part->as->isMixed()
                 && !$container_type_part->extra_types)
         ) {
@@ -500,7 +500,7 @@ class TypeAnalyzer
         }
 
         if ($input_type_part instanceof TMixed
-            || ($input_type_part instanceof TGenericParam
+            || ($input_type_part instanceof TTemplateParam
                 && $input_type_part->as->isMixed()
                 && !$input_type_part->extra_types)
         ) {
@@ -541,10 +541,10 @@ class TypeAnalyzer
 
         if ($input_type_part->shallowEquals($container_type_part)
             || (($input_type_part instanceof TNamedObject
-                    || $input_type_part instanceof TGenericParam
+                    || $input_type_part instanceof TTemplateParam
                     || $input_type_part instanceof TIterable)
                 && ($container_type_part instanceof TNamedObject
-                    || $container_type_part instanceof TGenericParam
+                    || $container_type_part instanceof TTemplateParam
                     || $container_type_part instanceof TIterable)
                 && self::isObjectContainedByObject(
                     $codebase,
@@ -566,11 +566,11 @@ class TypeAnalyzer
             );
         }
 
-        if ($container_type_part instanceof TGenericParam) {
+        if ($container_type_part instanceof TTemplateParam) {
             $container_type_part = array_values($container_type_part->as->getTypes())[0];
         }
 
-        if ($input_type_part instanceof TGenericParam) {
+        if ($input_type_part instanceof TTemplateParam) {
             $input_type_part = array_values($input_type_part->as->getTypes())[0];
         }
 
@@ -1567,7 +1567,7 @@ class TypeAnalyzer
 
             // don't try to simplify intersection types
             if (($type_part instanceof TNamedObject
-                    || $type_part instanceof TGenericParam
+                    || $type_part instanceof TTemplateParam
                     || $type_part instanceof TIterable)
                 && $type_part->extra_types
             ) {

@@ -26,7 +26,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -934,14 +934,14 @@ class BinaryOpAnalyzer
 
         if ($left_type_part instanceof TMixed
             || $right_type_part instanceof TMixed
-            || $left_type_part instanceof TGenericParam
-            || $right_type_part instanceof TGenericParam
+            || $left_type_part instanceof TTemplateParam
+            || $right_type_part instanceof TTemplateParam
         ) {
             if ($statements_source && $codebase) {
                 $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
             }
 
-            if ($left_type_part instanceof TMixed || $left_type_part instanceof TGenericParam) {
+            if ($left_type_part instanceof TMixed || $left_type_part instanceof TTemplateParam) {
                 if ($statements_source && IssueBuffer::accepts(
                     new MixedOperand(
                         'Left operand cannot be mixed',
@@ -1416,7 +1416,7 @@ class BinaryOpAnalyzer
             $has_valid_right_operand = false;
 
             foreach ($left_type->getTypes() as $left_type_part) {
-                if ($left_type_part instanceof Type\Atomic\TGenericParam) {
+                if ($left_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Left operand cannot be mixed',
@@ -1465,7 +1465,7 @@ class BinaryOpAnalyzer
             }
 
             foreach ($right_type->getTypes() as $right_type_part) {
-                if ($right_type_part instanceof Type\Atomic\TGenericParam) {
+                if ($right_type_part instanceof Type\Atomic\TTemplateParam) {
                     if (IssueBuffer::accepts(
                         new MixedOperand(
                             'Right operand cannot be a template param',

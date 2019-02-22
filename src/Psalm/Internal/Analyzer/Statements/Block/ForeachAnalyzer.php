@@ -354,7 +354,7 @@ class ForeachAnalyzer
         $invalid_iterator_types = [];
 
         foreach ($iterator_type->getTypes() as $iterator_atomic_type) {
-            if ($iterator_atomic_type instanceof Type\Atomic\TGenericParam) {
+            if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $iterator_atomic_type = array_values($iterator_atomic_type->as->getTypes())[0];
             }
 
@@ -528,7 +528,7 @@ class ForeachAnalyzer
         }
 
         foreach ($iterator_atomic_types as $iterator_atomic_type) {
-            if ($iterator_atomic_type instanceof Type\Atomic\TGenericParam) {
+            if ($iterator_atomic_type instanceof Type\Atomic\TTemplateParam) {
                 throw new \UnexpectedValueException('Shouldn’t get a generic param here');
             }
 
@@ -814,7 +814,7 @@ class ForeachAnalyzer
         if (isset($template_type_extends[$template_class_lc][$template_name])) {
             $extended_type = $template_type_extends[$template_class_lc][$template_name];
 
-            if (!$extended_type instanceof Type\Atomic\TGenericParam) {
+            if (!$extended_type instanceof Type\Atomic\TTemplateParam) {
                 return new Type\Union([$extended_type]);
             }
 

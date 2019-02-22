@@ -840,7 +840,7 @@ class Union
         $keys_to_unset = [];
 
         foreach ($this->types as $key => $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TGenericParam
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 && isset($template_types[$key])
                 && $atomic_type->defining_class === $template_types[$key][1]
             ) {
@@ -899,7 +899,7 @@ class Union
                         }
                     }
                 }
-            } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass
                 && isset($template_types[$atomic_type->param_name])
             ) {
                 if ($replace) {
@@ -925,8 +925,8 @@ class Union
                                         $input_atomic_type->as
                                     );
                                 }
-                            } elseif ($input_atomic_type instanceof Type\Atomic\TGenericParamClass) {
-                                $valid_input_atomic_types[] = new Type\Atomic\TGenericParam(
+                            } elseif ($input_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
+                                $valid_input_atomic_types[] = new Type\Atomic\TTemplateParam(
                                     $input_atomic_type->param_name,
                                     $input_atomic_type->as_type
                                         ? new Union([$input_atomic_type->as_type])
@@ -1065,7 +1065,7 @@ class Union
         $is_mixed = false;
 
         foreach ($this->types as $key => $atomic_type) {
-            if ($atomic_type instanceof Type\Atomic\TGenericParam) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam) {
                 $keys_to_unset[] = $key;
 
                 $template_type = null;
@@ -1112,7 +1112,7 @@ class Union
 
                     $new_types[$template_type_part->getKey()] = $template_type_part;
                 }
-            } elseif ($atomic_type instanceof Type\Atomic\TGenericParamClass) {
+            } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                 $template_type = isset($template_types[$atomic_type->param_name])
                     ? clone $template_types[$atomic_type->param_name][0]
                     : Type::getMixed();

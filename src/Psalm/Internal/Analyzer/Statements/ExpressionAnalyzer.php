@@ -45,7 +45,7 @@ use Psalm\Type\Atomic\ObjectLike;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -959,7 +959,7 @@ class ExpressionAnalyzer
         $static_class_type = null
     ) {
         if ($return_type instanceof TNamedObject
-            || $return_type instanceof TGenericParam
+            || $return_type instanceof TTemplateParam
         ) {
             if ($return_type->extra_types) {
                 $new_intersection_types = [];
@@ -1504,7 +1504,7 @@ class ExpressionAnalyzer
                 if (!$clone_type_part instanceof TNamedObject
                     && !$clone_type_part instanceof TObject
                     && !$clone_type_part instanceof TMixed
-                    && !$clone_type_part instanceof TGenericParam
+                    && !$clone_type_part instanceof TTemplateParam
                 ) {
                     if (IssueBuffer::accepts(
                         new InvalidClone(

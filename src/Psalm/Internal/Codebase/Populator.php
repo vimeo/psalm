@@ -323,14 +323,14 @@ class Populator
                                     continue;
                                 }
 
-                                if ($type instanceof Type\Atomic\TGenericParam
+                                if ($type instanceof Type\Atomic\TTemplateParam
                                     && $type->defining_class
                                     && ($referenced_type
                                         = $storage->template_type_extends
                                             [strtolower($type->defining_class)]
                                             [$type->param_name]
                                             ?? null)
-                                    && (!$referenced_type instanceof Type\Atomic\TGenericParam)
+                                    && (!$referenced_type instanceof Type\Atomic\TTemplateParam)
                                 ) {
                                     $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
                                 } else {
@@ -406,14 +406,14 @@ class Populator
                                     continue;
                                 }
 
-                                if ($type instanceof Type\Atomic\TGenericParam
+                                if ($type instanceof Type\Atomic\TTemplateParam
                                     && $type->defining_class
                                     && ($referenced_type
                                         = $storage->template_type_extends
                                             [strtolower($type->defining_class)]
                                             [$type->param_name]
                                             ?? null)
-                                    && (!$referenced_type instanceof Type\Atomic\TGenericParam)
+                                    && (!$referenced_type instanceof Type\Atomic\TTemplateParam)
                                 ) {
                                     $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
                                 } else {
@@ -539,14 +539,14 @@ class Populator
                                     continue;
                                 }
 
-                                if ($type instanceof Type\Atomic\TGenericParam
+                                if ($type instanceof Type\Atomic\TTemplateParam
                                     && $type->defining_class
                                     && ($referenced_type
                                         = $storage->template_type_extends
                                             [strtolower($type->defining_class)]
                                             [$type->param_name]
                                             ?? null)
-                                    && (!$referenced_type instanceof Type\Atomic\TGenericParam)
+                                    && (!$referenced_type instanceof Type\Atomic\TTemplateParam)
                                 ) {
                                     $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
                                 } else {

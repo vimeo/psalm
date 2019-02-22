@@ -14,7 +14,7 @@ use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -321,7 +321,7 @@ abstract class Type
 
             foreach ($intersection_types as $intersection_type) {
                 if (!$intersection_type instanceof TNamedObject
-                    && !$intersection_type instanceof TGenericParam
+                    && !$intersection_type instanceof TTemplateParam
                     && !$intersection_type instanceof TIterable
                 ) {
                     throw new TypeParseTreeException(
@@ -330,10 +330,10 @@ abstract class Type
                 }
             }
 
-            /** @var TNamedObject|TGenericParam */
+            /** @var TNamedObject|TTemplateParam */
             $first_type = array_shift($intersection_types);
 
-            /** @var array<int, TNamedObject|TGenericParam> $intersection_types */
+            /** @var array<int, TNamedObject|TTemplateParam> $intersection_types */
             $first_type->extra_types = $intersection_types;
 
             return $first_type;
@@ -528,9 +528,9 @@ abstract class Type
         string $param_name,
         Union $as,
         string $defining_class = null
-    ) : Atomic\TGenericParamClass {
+    ) : Atomic\TTemplateParamClass {
         if ($as->hasMixed()) {
-            return new Atomic\TGenericParamClass(
+            return new Atomic\TTemplateParamClass(
                 $param_name,
                 'object',
                 null,
@@ -546,7 +546,7 @@ abstract class Type
 
         foreach ($as->getTypes() as $t) {
             if ($t instanceof TObject) {
-                return new Atomic\TGenericParamClass(
+                return new Atomic\TTemplateParamClass(
                     $param_name,
                     'object',
                     null,
@@ -561,7 +561,7 @@ abstract class Type
                 );
 
                 $as->substitute(new Union([$t]), new Union([$traversable]));
-                return new Atomic\TGenericParamClass(
+                return new Atomic\TTemplateParamClass(
                     $param_name,
                     $traversable->value,
                     $traversable,
@@ -575,7 +575,7 @@ abstract class Type
                 );
             }
 
-            return new Atomic\TGenericParamClass(
+            return new Atomic\TTemplateParamClass(
                 $param_name,
                 $t->value,
                 $t,

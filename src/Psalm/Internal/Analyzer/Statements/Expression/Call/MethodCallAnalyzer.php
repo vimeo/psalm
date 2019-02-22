@@ -401,7 +401,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     ) {
         $config = $codebase->config;
 
-        if ($lhs_type_part instanceof Type\Atomic\TGenericParam
+        if ($lhs_type_part instanceof Type\Atomic\TTemplateParam
             && !$lhs_type_part->as->isMixed()
         ) {
             $extra_types = $lhs_type_part->extra_types;
@@ -441,7 +441,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 case Type\Atomic\TSingleLetter::class:
                 case Type\Atomic\TLiteralString::class:
                 case Type\Atomic\TLiteralClassString::class:
-                case Type\Atomic\TGenericParamClass::class:
+                case Type\Atomic\TTemplateParamClass::class:
                 case Type\Atomic\TNumericString::class:
                 case Type\Atomic\THtmlEscapedString::class:
                 case Type\Atomic\TClassString::class:
@@ -449,7 +449,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $invalid_method_call_types[] = (string)$lhs_type_part;
                     return;
 
-                case Type\Atomic\TGenericParam::class:
+                case Type\Atomic\TTemplateParam::class:
                 case Type\Atomic\TEmptyMixed::class:
                 case Type\Atomic\TMixed::class:
                 case Type\Atomic\TNonEmptyMixed::class:
@@ -697,7 +697,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
 
             foreach ($intersection_types as $intersection_type) {
-                if ($intersection_type instanceof Type\Atomic\TGenericParam) {
+                if ($intersection_type instanceof Type\Atomic\TTemplateParam) {
                     if (!$intersection_type->as->isMixed()
                         && !$intersection_type->as->hasObject()
                     ) {
@@ -1169,7 +1169,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 ) {
                     $type_extends = $e[strtolower($class_storage->name)][$type_name];
 
-                    if ($type_extends instanceof Type\Atomic\TGenericParam) {
+                    if ($type_extends instanceof Type\Atomic\TTemplateParam) {
                         if (isset($calling_class_storage->template_types[$type_extends->param_name])) {
                             $mapped_offset = array_search(
                                 $type_extends->param_name,
@@ -1227,7 +1227,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     && isset($e[strtolower($class_storage->name)][$type_name])
                 ) {
                     $type_extends = $e[strtolower($class_storage->name)][$type_name];
-                    if (!$type_extends instanceof Type\Atomic\TGenericParam) {
+                    if (!$type_extends instanceof Type\Atomic\TTemplateParam) {
                         $class_template_params[$type_name] = [
                             new Type\Union([$type_extends]),
                             $class_storage->name,

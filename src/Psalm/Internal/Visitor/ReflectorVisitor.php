@@ -2116,7 +2116,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         }
 
                         $param->type = new Type\Union([
-                            new Type\Atomic\TGenericParamClass(
+                            new Type\Atomic\TTemplateParamClass(
                                 $template_typeof['template_type'],
                                 $template_type && !$template_type->isMixed()
                                     ? (string)$template_type

@@ -33,7 +33,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -678,7 +678,7 @@ class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TMixed || $type instanceof TGenericParam || $type instanceof TEmpty) {
+            if ($type instanceof TMixed || $type instanceof TTemplateParam || $type instanceof TEmpty) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 if (!$context->inside_isset) {

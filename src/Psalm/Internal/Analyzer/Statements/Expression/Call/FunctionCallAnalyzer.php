@@ -21,7 +21,7 @@ use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TGenericParam;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -116,7 +116,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                         $function_exists = true;
                         $has_valid_function_call_type = true;
-                    } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TGenericParam) {
+                    } elseif ($var_type_part instanceof TMixed || $var_type_part instanceof TTemplateParam) {
                         $has_valid_function_call_type = true;
 
                         if (IssueBuffer::accepts(

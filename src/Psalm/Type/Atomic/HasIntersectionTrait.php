@@ -6,7 +6,7 @@ use Psalm\Type\Atomic;
 trait HasIntersectionTrait
 {
     /**
-     * @var array<int, TNamedObject|TGenericParam|TIterable>|null
+     * @var array<int, TNamedObject|TTemplateParam|TIterable>|null
      */
     public $extra_types;
 
@@ -28,7 +28,7 @@ trait HasIntersectionTrait
             '&',
             array_map(
                 /**
-                 * @param TNamedObject|TGenericParam|TIterable $extra_type
+                 * @param TNamedObject|TTemplateParam|TIterable $extra_type
                  * @return string
                  */
                 function (Atomic $extra_type) use (

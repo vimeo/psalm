@@ -118,9 +118,9 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 $new_type = null;
 
                 foreach ($stmt->class->inferredType->getTypes() as $lhs_type_part) {
-                    if ($lhs_type_part instanceof Type\Atomic\TGenericParamClass) {
+                    if ($lhs_type_part instanceof Type\Atomic\TTemplateParamClass) {
                         if (!isset($stmt->inferredType)) {
-                            $new_type_part = new Type\Atomic\TGenericParam(
+                            $new_type_part = new Type\Atomic\TTemplateParam(
                                 $lhs_type_part->param_name,
                                 $lhs_type_part->as_type
                                     ? new Type\Union([$lhs_type_part->as_type])
@@ -192,7 +192,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                             // fall through
                         }
                     } elseif ($lhs_type_part instanceof Type\Atomic\TMixed
-                        || $lhs_type_part instanceof Type\Atomic\TGenericParam
+                        || $lhs_type_part instanceof Type\Atomic\TTemplateParam
                     ) {
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(
@@ -427,7 +427,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
         foreach ($template_type_extends as $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
                 if (is_string($extended_template_name)
-                    && $extended_type instanceof Type\Atomic\TGenericParam
+                    && $extended_type instanceof Type\Atomic\TTemplateParam
                     && $extended_type->param_name === $template_name
                 ) {
                     return self::getGenericParamForOffset(
