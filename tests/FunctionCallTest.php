@@ -1645,6 +1645,18 @@ class FunctionCallTest extends TestCase
                     );',
                 'error_message' => 'UndefinedFunction',
             ],
+            'arrayMapWithNonCallableStringArray' => [
+                '<?php
+                    $foo = ["one", "two"];
+                    array_map($foo, ["hello"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayMapWithNonCallableIntArray' => [
+                '<?php
+                    $foo = [1, 2];
+                    array_map($foo, ["hello"]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'objectLikeKeyChecksAgainstDifferentGeneric' => [
                 '<?php
                     /**

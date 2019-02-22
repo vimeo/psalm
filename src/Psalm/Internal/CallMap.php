@@ -305,7 +305,7 @@ return [
 'array_key_last' => ['int|string|null', 'array'=>'array'],
 'array_key_exists' => ['bool', 'key'=>'string|int', 'search'=>'array'],
 'array_keys' => ['array<int,string>|array<int,int>', 'input'=>'array', 'search_value='=>'mixed', 'strict='=>'bool'],
-'array_map' => ['array', 'callback'=>'?callable', 'input1'=>'array', '...args='=>'array'],
+'array_map' => ['array', 'callback'=>'callable', 'input1'=>'array', '...args='=>'array'],
 'array_merge' => ['array', 'arr1'=>'array', '...args='=>'array'],
 'array_merge_recursive' => ['array', 'arr1'=>'array', '...args='=>'array'],
 'array_multisort' => ['bool', '&rw_array1'=>'array', 'array1_sort_order='=>'array|int', 'array1_sort_flags='=>'array|int', '...args='=>'array|int'],

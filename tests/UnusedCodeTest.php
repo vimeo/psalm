@@ -123,7 +123,7 @@ class UnusedCodeTest extends TestCase
                         }
 
                         private function modify(string $name, string $value): void {
-                            call_user_func(array($this, "modify_" . $name), $value);
+                            call_user_func([$this, "modify" . $name], $value);
                         }
 
                         public function modifyFoo(string $value): void {

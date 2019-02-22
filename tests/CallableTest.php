@@ -118,7 +118,7 @@ class CallableTest extends TestCase
                     $take_string = function(string $s): string { return $s; };
                     $take_string("string");',
             ],
-            'callableMethod' => [
+            'callableMethodStringCallable' => [
                 '<?php
                     class A {
                         public static function bar(string $a): string {
@@ -129,7 +129,18 @@ class CallableTest extends TestCase
                     function foo(callable $c): void {}
 
                     foo("A::bar");
-                    foo(A::class . "::bar");
+                    foo(A::class . "::bar");',
+            ],
+            'callableMethodArrayCallable' => [
+                '<?php
+                    class A {
+                        public static function bar(string $a): string {
+                            return $a . "b";
+                        }
+                    }
+
+                    function foo(callable $c): void {}
+
                     foo(["A", "bar"]);
                     foo([A::class, "bar"]);
                     $a = new A();
@@ -674,7 +685,10 @@ class CallableTest extends TestCase
             'noExceptionWhenSuppressingUndefinedClass' => [
                 '<?php
                     class one { public function two(string $_p): void {} }
-                    /** @psalm-suppress UndefinedClass */
+                    /**
+                     * @psalm-suppress UndefinedClass
+                     * @psalm-suppress InvalidArgument
+                     */
                     array_map(["two", "three"], ["one", "two"]);',
             ],
             'callableSelfArg' => [
@@ -725,6 +739,21 @@ class CallableTest extends TestCase
                         /** @return array<int, Foo> */
                         public function bat() {
                             return array_map([Foo::class, "baz"], [1]);
+                        }
+                    }'
+            ],
+            'dynamicCallableArray' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        private $value = "default";
+
+                        private function modify(string $name, string $value): void {
+                            call_user_func([$this, "modify" . $name], $value);
+                        }
+
+                        public function modifyFoo(string $value): void {
+                            $this->value = $value;
                         }
                     }'
             ],
@@ -818,7 +847,7 @@ class CallableTest extends TestCase
                     function foo(callable $c): void {}
 
                     foo([A::class, "::barr"]);',
-                'error_message' => 'UndefinedMethod',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArrayWithoutClass' => [
                 '<?php
@@ -831,7 +860,7 @@ class CallableTest extends TestCase
                     function foo(callable $c): void {}
 
                     foo(["A", "::barr"]);',
-                'error_message' => 'UndefinedMethod',
+                'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodClass' => [
                 '<?php
@@ -1203,7 +1232,7 @@ class CallableTest extends TestCase
                 '<?php
                     class one { public function two(string $_p): void {} }
                     array_map(["two", "three"], ["one", "two"]);',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }
