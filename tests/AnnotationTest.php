@@ -885,6 +885,15 @@ class AnnotationTest extends TestCase
                     'MixedAssignment'
                 ]
             ],
+            'extraneousDocblockParamName' => [
+                '<?php
+                    /**
+                     * @param string $foo
+                     * @param string[] $bar
+                     * @param string[] $barb
+                     */
+                    function f(string $foo, array $barb): void {}',
+            ],
         ];
     }
 
@@ -1252,7 +1261,7 @@ class AnnotationTest extends TestCase
                 '<?php
                     /** @param string[] $_bar */
                     function f(array $_barb): void {}',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'InvalidDocblockParamName',
             ],
         ];
     }

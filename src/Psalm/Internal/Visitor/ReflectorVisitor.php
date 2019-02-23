@@ -2405,14 +2405,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage_param->type_location = $code_location;
         }
 
-        $params_without_type = array_filter(
+        $params_without_docblock_type = array_filter(
             $storage->params,
             function (FunctionLikeParameter $p) : bool {
-                return !$p->type || $p->type === $p->signature_type;
+                return !$p->has_docblock_type && (!$p->type || $p->type->hasArray());
             }
         );
 
-        if ($params_without_type) {
+        if ($params_without_docblock_type) {
             foreach ($unused_docblock_params as $param_name => $code_location) {
                 if (IssueBuffer::accepts(
                     new InvalidDocblockParamName(
