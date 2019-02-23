@@ -1636,7 +1636,6 @@ class IfAnalyzer
      * if/elseif/else blocks
      *
      * @param  PhpParser\Node\Expr $stmt
-     * @param  bool $inside_and
      *
      * @return PhpParser\Node\Expr|null
      */

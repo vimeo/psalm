@@ -1114,7 +1114,6 @@ class CallAnalyzer
      * @param  string|null $cased_method_id
      * @param  string|null $fq_class_name
      * @param  FunctionLikeParameter|null $function_param
-     * @param  FunctionLikeParameter|null $last_param
      * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
      * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
      * @param  array<string, array{Type\Union, ?string}> $template_types
@@ -1188,7 +1187,6 @@ class CallAnalyzer
     /**
      * @param  string|null $method_id
      * @param  string|null $cased_method_id
-     * @param  FunctionLikeParameter|null $function_param
      * @param  FunctionLikeParameter|null $last_param
      * @param  array<int, FunctionLikeParameter> $function_params
      * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params

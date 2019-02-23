@@ -81,8 +81,6 @@ class FileReferenceTest extends TestCase
      * @dataProvider providerReferencedMethods
      *
      * @param string $input_code
-     * @param string $symbol
-     * @param array<int, string> $expected_locations
      *
      * @return void
      */

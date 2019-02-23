@@ -51,7 +51,6 @@ class Reconciler
      * @param  array<string, bool>       $referenced_var_ids
      * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
-     * @param  array<string>             $suppressed_issues
      * @param   array<string, array{0:Type\Union, 1:null|string}> $template_type_map
      *
      * @return array<string, Type\Union>

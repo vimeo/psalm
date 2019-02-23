@@ -26,6 +26,7 @@ use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\MisplacedRequiredParam;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\IssueBuffer;
@@ -2414,12 +2415,14 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($params_without_type) {
             foreach ($unused_docblock_params as $param_name => $code_location) {
                 if (IssueBuffer::accepts(
-                    new InvalidDocblock(
+                    new InvalidDocblockParamName(
                         'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
                         $code_location
                     )
                 )) {
                 }
+
+                $storage->has_docblock_issues = true;
             }
         }
     }

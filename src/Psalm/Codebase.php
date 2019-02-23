@@ -171,7 +171,6 @@ class Codebase
     public $php_minor_version = PHP_MINOR_VERSION;
 
     /**
-     * @param bool $collect_references
      * @param bool $debug_output
      */
     public function __construct(

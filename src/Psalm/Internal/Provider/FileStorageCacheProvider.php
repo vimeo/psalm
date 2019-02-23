@@ -51,7 +51,6 @@ class FileStorageCacheProvider
     }
 
     /**
-     * @param  string $file_path
      * @param  string $file_contents
      *
      * @return void

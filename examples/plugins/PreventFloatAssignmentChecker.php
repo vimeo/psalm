@@ -23,8 +23,6 @@ class PreventFloatAssignmentChecker implements AfterExpressionAnalysisInterface
      *
      * @param  PhpParser\Node\Expr  $expr
      * @param  Context              $context
-     * @param  StatementsSource           $file_soure
-     * @param  string[]             $suppressed_issues
      * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false

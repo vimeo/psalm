@@ -136,6 +136,10 @@ class IssueBuffer
             return 'PropertyNotSetInConstructor';
         }
 
+        if ($issue_type === 'InvalidDocblockParamName') {
+            return 'InvalidDocblock';
+        }
+
         return null;
     }
 

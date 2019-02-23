@@ -100,9 +100,6 @@ class ClassLikes
      */
     private $scanner;
 
-    /**
-     * @param bool $debug_output
-     */
     public function __construct(
         Config $config,
         ClassLikeStorageProvider $storage_provider,

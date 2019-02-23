@@ -331,7 +331,6 @@ class StatementsProvider
 
     /**
      * @param  string  $file_contents
-     * @param  bool    $server_mode
      * @param  string   $file_path
      * @param  array<int, \PhpParser\Node\Stmt> $existing_statements
      * @param  array<int, array{0:int, 1:int, 2: int, 3: int, 4: int, 5:string}> $file_changes

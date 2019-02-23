@@ -61,7 +61,6 @@ class ClientHandler
 
                 $listener =
                     /**
-                     * @param callable $listener
                      * @return void
                      */
                     function (Message $msg) use ($id, $deferred, &$listener) {

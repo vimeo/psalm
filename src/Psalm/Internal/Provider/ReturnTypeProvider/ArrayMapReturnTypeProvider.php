@@ -21,7 +21,6 @@ class ArrayMapReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnTyp
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
      * @param  CodeLocation                 $code_location
-     * @param  array                        $suppressed_issues
      */
     public static function getFunctionReturnType(
         StatementsSource $statements_source,

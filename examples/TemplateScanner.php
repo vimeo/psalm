@@ -13,7 +13,6 @@ class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
     const VIEW_CLASS = 'Your\\View\\Class';
 
     /**
-     * @param array<mixed, PhpParser\Node> $stmts
      * @param bool $storage_from_cache
      * @param bool $debug_output
      *

@@ -38,8 +38,6 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     /**
      * @param  string                      $function_id
      * @param  array<PhpParser\Node\Arg>   $call_args
-     * @param  CodeLocation                $code_location
-     * @param  array                       $suppressed_issues
      *
      * @return Type\Union
      */

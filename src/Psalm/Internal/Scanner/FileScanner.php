@@ -41,7 +41,6 @@ class FileScanner implements FileSource
     }
 
     /**
-     * @param array<mixed, PhpParser\Node> $stmts
      * @param bool $storage_from_cache
      * @param bool $debug_output
      *

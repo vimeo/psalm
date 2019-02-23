@@ -499,6 +499,19 @@ Emitted when there's an error in a docblock type
 $a = [];
 ```
 
+### InvalidDocblockParamName
+
+Emitted when a docblock param name doesn’t match up with a named param in the function.
+
+```php
+/**
+ * @param string[] $bar
+ */
+function foo(array $barb): void {
+    //
+}
+```
+
 ### InvalidFalsableReturnType
 
 Emitted when a function can return a nullable value, but its given return type says otherwise

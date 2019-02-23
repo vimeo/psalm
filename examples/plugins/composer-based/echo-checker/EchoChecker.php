@@ -16,7 +16,6 @@ class EchoChecker implements AfterStatementAnalysisInterface
     /**
      * Called after a statement has been checked
      *
-     * @param  string[]             $suppressed_issues
      * @param  FileManipulation[]   $file_replacements
      *
      * @return null|false

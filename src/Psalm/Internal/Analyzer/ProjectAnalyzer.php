@@ -136,8 +136,6 @@ class ProjectAnalyzer
     ];
 
     /**
-     * @param FileProvider  $file_provider
-     * @param Providers     $cache_provider
      * @param bool          $use_color
      * @param bool          $show_info
      * @param string        $output_format
@@ -206,9 +204,7 @@ class ProjectAnalyzer
     }
 
     /**
-     * @param  string $base_dir
      * @param  string|null $address
-     * @param  bool $socket_server_mode
      * @return void
      */
     public function server($address = '127.0.0.1:12345', bool $socket_server_mode = false)

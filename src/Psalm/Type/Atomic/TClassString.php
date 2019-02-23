@@ -13,9 +13,6 @@ class TClassString extends TString implements HasClassString
      */
     public $as_type;
 
-    /**
-     * @param string $param_name
-     */
     public function __construct(string $as = 'object', TNamedObject $as_type = null)
     {
         $this->as = $as;
