@@ -1248,6 +1248,12 @@ class AnnotationTest extends TestCase
                      */',
                 'error_message' => 'InvalidDocblock',
             ],
+            'mismatchingDocblockParamName' => [
+                '<?php
+                    /** @param string[] $_bar */
+                    function f(array $_barb): void {}',
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }

@@ -2245,6 +2245,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
         $cased_method_id = $base . $storage->cased_name;
 
+        $unused_docblock_params = [];
+
         foreach ($docblock_params as $docblock_param) {
             $param_name = $docblock_param['name'];
             $docblock_param_variadic = false;
@@ -2265,7 +2267,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
+            $code_location = new CodeLocation(
+                $this->file_scanner,
+                $function,
+                null,
+                true,
+                CodeLocation::FUNCTION_PHPDOC_PARAM_TYPE,
+                $docblock_param['type']
+            );
+
+            $code_location->setCommentLine($docblock_param['line_number']);
+
             if ($storage_param === null) {
+                $unused_docblock_params[$param_name] = $code_location;
+
                 if (!$docblock_param_variadic || $storage->params || $this->scan_deep) {
                     continue;
                 }
@@ -2284,17 +2299,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                 $storage->params[] = $storage_param;
             }
-
-            $code_location = new CodeLocation(
-                $this->file_scanner,
-                $function,
-                null,
-                true,
-                CodeLocation::FUNCTION_PHPDOC_PARAM_TYPE,
-                $docblock_param['type']
-            );
-
-            $code_location->setCommentLine($docblock_param['line_number']);
 
             try {
                 $new_param_type = Type::parseTokens(
@@ -2398,6 +2402,25 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $storage_param->type = $new_param_type;
             $storage_param->type_location = $code_location;
+        }
+
+        $params_without_type = array_filter(
+            $storage->params,
+            function (FunctionLikeParameter $p) : bool {
+                return !$p->type || $p->type === $p->signature_type;
+            }
+        );
+
+        if ($params_without_type) {
+            foreach ($unused_docblock_params as $param_name => $code_location) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblock(
+                        'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
+                        $code_location
+                    )
+                )) {
+                }
+            }
         }
     }
 

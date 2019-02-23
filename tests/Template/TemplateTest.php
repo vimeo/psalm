@@ -804,7 +804,7 @@ class TemplateTest extends TestCase
                         private $bar;
 
                         /**
-                         * @param T&Foo $closure
+                         * @param T&Foo $bar
                          */
                         public function __construct(Foo $bar)
                         {
