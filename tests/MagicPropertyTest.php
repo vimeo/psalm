@@ -405,6 +405,35 @@ class MagicPropertyTest extends TestCase
                         $o->foo = "hello";
                     }',
             ],
+            'psalmPropertyDocblock' => [
+                '<?php
+                    namespace Bar;
+
+                    /**
+                     * @psalm-property string $foo
+                     */
+                    class A {
+                        /** @param string $name */
+                        public function __get($name): ?string {
+                            if ($name === "foo") {
+                                return "hello";
+                            }
+
+                            return null;
+                        }
+
+                        /**
+                         * @param string $name
+                         * @param mixed $value
+                         */
+                        public function __set($name, $value): void {
+                        }
+                    }
+
+                    $a = new A();
+                    $a->foo = "hello";
+                    $a->bar = "hello"; // not a property',
+            ],
         ];
     }
 
