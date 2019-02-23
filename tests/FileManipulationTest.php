@@ -84,7 +84,7 @@ class FileManipulationTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,string,string,string[],bool}>
      */
     public function providerValidCodeParse()
     {

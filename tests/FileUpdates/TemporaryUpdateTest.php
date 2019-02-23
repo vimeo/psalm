@@ -122,7 +122,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{array<int, array<string, string>>,error_positions:array<int, array<int>>, error_levels?:array<string, string>}>
      */
     public function providerTestErrorFix()
     {

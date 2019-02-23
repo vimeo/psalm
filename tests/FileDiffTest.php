@@ -69,6 +69,9 @@ class FileDiffTest extends TestCase
      * @param string $a
      * @param string $b
      * @param string[] $same_methods
+     * @param string[] $same_signatures
+     * @param string[] $changed_methods
+     * @param array<array-key,array{int,int}> $diff_map_offsets
      *
      * @return void
      */
@@ -192,7 +195,7 @@ class FileDiffTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>}>
      */
     public function getChanges()
     {

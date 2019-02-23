@@ -81,6 +81,7 @@ class FileReferenceTest extends TestCase
      * @dataProvider providerReferencedMethods
      *
      * @param string $input_code
+     * @param array<string,array<string,bool>> $expected_referenced_methods
      *
      * @return void
      */
@@ -105,7 +106,7 @@ class FileReferenceTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,string,array<int,string>}>
      */
     public function providerReferenceLocations()
     {
@@ -132,7 +133,7 @@ class FileReferenceTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,array<string,array<string,bool>>}>
      */
     public function providerReferencedMethods()
     {

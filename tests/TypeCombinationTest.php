@@ -57,7 +57,7 @@ class TypeCombinationTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,array<int,string>}>
      */
     public function providerTestValidTypeCombination()
     {

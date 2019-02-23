@@ -188,7 +188,7 @@ echo $a;';
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,message:string,line:int,error:string}>
      */
     public function providerTestJsonOutputErrors()
     {

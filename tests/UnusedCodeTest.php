@@ -81,7 +81,7 @@ class UnusedCodeTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
@@ -104,7 +104,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string, array{string}>
      */
     public function providerValidCodeParse()
     {
@@ -339,7 +339,7 @@ class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,error_message:string}>
      */
     public function providerInvalidCodeParse()
     {

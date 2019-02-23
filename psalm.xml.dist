@@ -21,7 +21,7 @@
             <directory name="tests/stubs"/>
             <directory name="tests/DummyProject"/>
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php"/>
-            <file name="vendor/symfony/console/Command/Command.php" />
+            <file name="vendor/symfony/console/Command/Command.php"/>
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
             <file name="tests/performance/a.test"/>
             <file name="tests/performance/b.test"/>
@@ -40,8 +40,8 @@
     </stubs>
 
     <plugins>
-        <plugin filename="examples/plugins/FunctionCasingChecker.php" />
-    </plugins>
+        <plugin filename="examples/plugins/FunctionCasingChecker.php"/>
+    <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins>
 
     <issueHandlers>
         <MisplacedRequiredParam errorLevel="suppress"/>
@@ -75,7 +75,7 @@
             <errorLevel type="suppress">
                 <directory name="examples"/>
                 <directory name="tests"/>
-                <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php" />
+                <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>
         </UnusedClass>
 
@@ -90,7 +90,7 @@
                 <file name="src/Psalm/Internal/LanguageServer/LanguageClient.php"/>
                 <file name="src/Psalm/Storage/FunctionLikeStorage.php"/>
                 <file name="src/Psalm/Type/Atomic/TNonEmptyArray.php"/>
-                <file name="src/Psalm/Storage/PropertyStorage.php" />
+                <file name="src/Psalm/Storage/PropertyStorage.php"/>
             </errorLevel>
         </PossiblyUnusedProperty>
 
