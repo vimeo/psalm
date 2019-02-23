@@ -85,7 +85,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             $this->file_provider->registerFile($file_path, $contents);
         }
 
-        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->reloadFiles($this->project_analyzer, array_keys($end_files));
@@ -98,7 +98,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{file_stages:array<int,array<string,string>>,error_message:string}>
      */
     public function providerTestInvalidUpdates()
     {

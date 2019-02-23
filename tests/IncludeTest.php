@@ -80,7 +80,7 @@ class IncludeTest extends TestCase
 
         $config = $codebase->config;
 
-        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase->scanFiles();
@@ -92,7 +92,7 @@ class IncludeTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>}>
      */
     public function providerTestValidIncludes()
     {
@@ -495,7 +495,7 @@ class IncludeTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
      */
     public function providerTestInvalidIncludes()
     {

@@ -117,7 +117,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{start_files:array<string,string>,middle_files:array<string,string>,end_files:array<string,string>,error_counts:array<int,int>,error_levels?:array<string,string>}>
      */
     public function providerTestErrorFix()
     {
@@ -264,7 +264,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                             }
                         }',
                 ],
-                'error_positions' => [0, 1, 0],
+                'error_counts' => [0, 1, 0],
             ],
         ];
     }

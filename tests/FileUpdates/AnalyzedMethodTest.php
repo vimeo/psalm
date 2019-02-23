@@ -105,7 +105,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,4?:array<string,string>}>
      */
     public function providerTestValidUpdates()
     {

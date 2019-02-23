@@ -222,14 +222,12 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame('type: int|null', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(12, 30));
-        assert(!is_null($symbol_at_position));
 
         $this->assertNotNull($symbol_at_position);
 
         $this->assertSame('type: int', $symbol_at_position[0]);
 
         $symbol_at_position = $codebase->getReferenceAtPosition('somefile.php', new Position(17, 30));
-        assert(!is_null($symbol_at_position));
 
         $this->assertNotNull($symbol_at_position);
 

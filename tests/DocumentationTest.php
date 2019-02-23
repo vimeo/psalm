@@ -126,7 +126,7 @@ class DocumentationTest extends TestCase
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
-        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';
@@ -144,7 +144,7 @@ class DocumentationTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,string,string[],bool}>
      */
     public function providerInvalidCodeParse()
     {

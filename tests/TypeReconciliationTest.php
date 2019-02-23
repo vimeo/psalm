@@ -182,7 +182,7 @@ class TypeReconciliationTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,string,string}>
      */
     public function providerTestReconcilation()
     {
@@ -233,7 +233,7 @@ class TypeReconciliationTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return array<string,array{string,string}>
      */
     public function providerTestTypeIsContainedBy()
     {
