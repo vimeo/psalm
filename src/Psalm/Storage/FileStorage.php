@@ -87,6 +87,9 @@ class FileStorage
      */
     public $classlike_aliases = [];
 
+    /** @var array<string,mixed> */
+    public $custom_metadata = [];
+
     /**
      * @param string $file_path
      */

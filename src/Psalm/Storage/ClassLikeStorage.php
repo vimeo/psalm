@@ -327,6 +327,9 @@ class ClassLikeStorage
      */
     public $has_docblock_issues = false;
 
+    /** @var array<string,mixed> */
+    public $custom_metadata = [];
+
     /**
      * @param string $name
      */

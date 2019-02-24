@@ -66,6 +66,9 @@ class FunctionLikeParameter
      */
     public $is_variadic;
 
+    /** @var array<string,mixed> */
+    public $custom_metadata = [];
+
     /**
      * @param string        $name
      * @param bool       $by_ref

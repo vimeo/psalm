@@ -2,8 +2,15 @@
 namespace Psalm\Tests;
 
 use Generator;
+use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\FileManipulation;
+use Psalm\FileSource;
+use Psalm\PluginRegistrationSocket;
+use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\Storage\ClassLikeStorage;
+use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
 
 class CodebaseTest extends TestCase
@@ -110,5 +117,66 @@ class CodebaseTest extends TestCase
     {
         yield ['iterable<int,string>', ['int', 'string']];
         yield ['iterable<int|string,bool|float', ['int|string', 'bool|float']];
+    }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function customMetadataIsPersisted()
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class C {
+                    /** @var string */
+                    private $prop = "";
+
+                    /** @return void */
+                    public function m(int $_i = 1) {}
+                }
+            '
+        );
+        $hook = new class implements AfterClassLikeVisitInterface
+        {
+            /**
+             * @param FileManipulation[] $file_replacements
+             * @return void
+             */
+            public static function afterClassLikeVisit(
+                ClassLike $stmt,
+                ClassLikeStorage $storage,
+                FileSource $statements_source,
+                Codebase $codebase,
+                array &$file_replacements = []
+            ) {
+                /** @var ClassLikeStorage $storage */
+                if ($storage->name === 'C') {
+                    $storage->custom_metadata['a'] = 'b';
+                    $storage->methods['m']->custom_metadata['c'] = 'd';
+                    $storage->properties['prop']->custom_metadata['e'] = 'f';
+                    $storage->methods['m']->params[0]->custom_metadata['g'] = 'h';
+                    /** @var Codebase $codebase */
+                    $codebase->file_storage_provider->get('somefile.php')->custom_metadata['i'] = 'j';
+                }
+            }
+        };
+        (new PluginRegistrationSocket($this->codebase->config))
+            ->registerHooksFromClass(get_class($hook));
+        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageInstanceCacheProvider;
+
+        $this->analyzeFile('somefile.php', new Context);
+
+        $this->codebase->classlike_storage_provider->remove('C');
+        $this->codebase->exhumeClassLikeStorage('C', 'somefile.php');
+
+        $class_storage = $this->codebase->classlike_storage_provider->get('C');
+        $file_storage = $this->codebase->file_storage_provider->get('somefile.php');
+
+        $this->assertEquals('b', $class_storage->custom_metadata['a']);
+        $this->assertEquals('d', $class_storage->methods['m']->custom_metadata['c']);
+        $this->assertEquals('f', $class_storage->properties['prop']->custom_metadata['e']);
+        $this->assertEquals('h', $class_storage->methods['m']->params[0]->custom_metadata['g']);
+        $this->assertEquals('j', $file_storage->custom_metadata['i']);
     }
 }
