@@ -422,6 +422,7 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\FuncCall
             || $arg->value instanceof PhpParser\Node\Expr\MethodCall
             || $arg->value instanceof PhpParser\Node\Expr\Assign
+            || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                 return false;

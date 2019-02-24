@@ -866,6 +866,17 @@ class UnusedVariableTest extends TestCase
                     };
                     foo($listener);',
             ],
+            'newVariableConstructor' => [
+                '<?php
+                    /**
+                     * @param class-string<ArrayObject> $type
+                     */
+                    function bar(string $type) : ArrayObject {
+                        $data = [["foo"], ["bar"]];
+
+                        return new $type($data[0]);
+                    }',
+            ],
         ];
     }
 
