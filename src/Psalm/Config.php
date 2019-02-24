@@ -306,6 +306,12 @@ class Config
      */
     public $after_visit_classlikes = [];
 
+    /**
+     * Static methods to be called after codebase has been populated
+     * @var class-string<Hook\AfterCodebasePopulatedInterface>[]
+     */
+    public $after_codebase_populated = [];
+
     /** @var array<string, mixed> */
     private $predefined_constants;
 
