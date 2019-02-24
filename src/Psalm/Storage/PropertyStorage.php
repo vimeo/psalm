@@ -67,6 +67,9 @@ class PropertyStorage
      */
     public $referencing_locations;
 
+    /** @var array<string,mixed> */
+    public $custom_metadata = [];
+
     public function getInfo() : string
     {
         switch ($this->visibility) {
