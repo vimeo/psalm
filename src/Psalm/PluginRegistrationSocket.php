@@ -60,5 +60,9 @@ class PluginRegistrationSocket implements RegistrationInterface
         if (is_subclass_of($handler, Hook\AfterClassLikeVisitInterface::class)) {
             $this->config->after_visit_classlikes[$handler] = $handler;
         }
+
+        if (is_subclass_of($handler, Hook\AfterCodebasePopulatedInterface::class)) {
+            $this->config->after_codebase_populated[$handler] = $handler;
+        }
     }
 }
