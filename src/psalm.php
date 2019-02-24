@@ -651,8 +651,8 @@ if ($type_map_location) {
 
     foreach ($file_map as $file_path => $map) {
         $file_name = $config->shortenFileName($file_path);
-        foreach ($map[0] as [,$reference]) {
-            $expected_references[$reference] = true;
+        foreach ($map[0] as $map_parts) {
+            $expected_references[$map_parts[1]] = true;
         }
         $map[2] = [];
         $name_file_map[$file_name] = $map;
