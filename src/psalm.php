@@ -50,6 +50,7 @@ $valid_long_options = [
     'use-ini-defaults',
     'version',
     'php-version:',
+    'generate-json-map:',
 ];
 
 gc_collect_cycles();
@@ -216,6 +217,8 @@ Options:
     --update-baseline
         Update the baseline by removing fixed issues. This will not add new issues to the baseline
 
+    --generate-json-map=PATH
+        Generate a map of node references and types in JSON format, saved to the given path.
 HELP;
 
     exit;
@@ -271,6 +274,12 @@ if (isset($options['disable-extension'])) {
 
 if ($threads > 1) {
     $ini_handler->disableExtension('grpc');
+}
+
+$type_map_location = null;
+
+if (isset($options['generate-type-map']) && is_string($options['generate-type-map'])) {
+    $type_map_location = $options['generate-type-map'];
 }
 
 // If XDebug is enabled, restart without it
@@ -486,6 +495,11 @@ if (isset($options['php-version'])) {
 
 $project_analyzer->getCodebase()->diff_methods = isset($options['diff-methods']);
 
+if ($type_map_location) {
+    $project_analyzer->getCodebase()->store_node_types = true;
+}
+
+
 $start_time = microtime(true);
 
 $config->visitComposerAutoloadFiles($project_analyzer, $debug);
@@ -626,6 +640,71 @@ if (!empty(Config::getInstance()->error_baseline) && !isset($options['ignore-bas
     } catch (\Psalm\Exception\ConfigException $exception) {
         die('Error while reading baseline: ' . $exception->getMessage());
     }
+}
+
+if ($type_map_location) {
+    $file_map = $providers->file_reference_provider->getFileMaps();
+
+    $name_file_map = [];
+
+    $expected_references = [];
+
+    foreach ($file_map as $file_path => $map) {
+        $file_name = $config->shortenFileName($file_path);
+        foreach ($map[0] as [,$reference]) {
+            $expected_references[$reference] = true;
+        }
+        $map[2] = [];
+        $name_file_map[$file_name] = $map;
+    }
+
+    $reference_dictionary = [];
+
+    foreach ($providers->classlike_storage_provider->getAll() as $storage) {
+        if (!$storage->location) {
+            continue;
+        }
+
+        $fq_classlike_name = $storage->name;
+
+        if (isset($expected_references[$fq_classlike_name])) {
+            $reference_dictionary[$fq_classlike_name]
+                = $storage->location->file_name
+                    . ':' . $storage->location->getLineNumber()
+                    . ':' . $storage->location->getColumn();
+        }
+
+        foreach ($storage->methods as $method_name => $method_storage) {
+            if (!$method_storage->location) {
+                continue;
+            }
+
+            if (isset($expected_references[$fq_classlike_name . '::' . $method_name . '()'])) {
+                $reference_dictionary[$fq_classlike_name . '::' . $method_name . '()']
+                    = $method_storage->location->file_name
+                        . ':' . $method_storage->location->getLineNumber()
+                        . ':' . $method_storage->location->getColumn();
+            }
+        }
+
+        foreach ($storage->properties as $property_name => $property_storage) {
+            if (!$property_storage->location) {
+                continue;
+            }
+
+            if (isset($expected_references[$fq_classlike_name . '::$' . $property_name])) {
+                $reference_dictionary[$fq_classlike_name . '::$' . $property_name]
+                    = $property_storage->location->file_name
+                        . ':' . $property_storage->location->getLineNumber()
+                        . ':' . $property_storage->location->getColumn();
+            }
+        }
+    }
+
+    $providers->file_provider->setContents(
+        $type_map_location,
+        json_encode(['files' => $name_file_map, 'references' => $reference_dictionary])
+    );
 }
 
 IssueBuffer::finish(

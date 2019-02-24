@@ -515,6 +515,17 @@ class ExpressionAnalyzer
                     ) === false) {
                         return false;
                     }
+
+                    if ($codebase->store_node_types
+                        && $fq_class_name
+                        && $codebase->classOrInterfaceExists($fq_class_name)
+                    ) {
+                        $codebase->analyzer->addNodeReference(
+                            $statements_analyzer->getFilePath(),
+                            $stmt->class,
+                            $fq_class_name
+                        );
+                    }
                 }
             }
 

@@ -608,7 +608,7 @@ class Analyzer
     public function addNodeType(string $file_path, PhpParser\Node $node, string $node_type)
     {
         $this->type_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
-            (int)$node->getAttribute('endFilePos'),
+            (int)$node->getAttribute('endFilePos') + 1,
             $node_type
         ];
     }
@@ -619,7 +619,7 @@ class Analyzer
     public function addNodeReference(string $file_path, PhpParser\Node $node, string $reference)
     {
         $this->reference_map[$file_path][(int)$node->getAttribute('startFilePos')] = [
-            (int)$node->getAttribute('endFilePos'),
+            (int)$node->getAttribute('endFilePos') + 1,
             $reference
         ];
     }

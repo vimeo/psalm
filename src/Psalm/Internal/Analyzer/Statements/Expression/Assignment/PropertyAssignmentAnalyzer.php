@@ -395,7 +395,7 @@ class PropertyAssignmentAnalyzer
                     continue;
                 }
 
-                if ($codebase->server_mode
+                if ($codebase->store_node_types
                     && (!$context->collect_initializations
                         && !$context->collect_mutations)
                 ) {
@@ -565,7 +565,7 @@ class PropertyAssignmentAnalyzer
 
         $has_valid_assignment_value_type = false;
 
-        if ($codebase->server_mode
+        if ($codebase->store_node_types
             && (!$context->collect_initializations
                 && !$context->collect_mutations)
             && count($class_property_types) === 1

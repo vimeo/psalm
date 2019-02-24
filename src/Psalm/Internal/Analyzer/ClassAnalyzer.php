@@ -195,7 +195,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if ($codebase->server_mode && $fq_class_name) {
+                if ($codebase->store_node_types && $fq_class_name) {
                     $codebase->analyzer->addNodeReference(
                         $this->getFilePath(),
                         $class->extends,
@@ -242,7 +242,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 return false;
             }
 
-            if ($codebase->server_mode && $fq_class_name) {
+            if ($codebase->store_node_types && $fq_class_name) {
                 $bounds = $interface_location->getSelectionBounds();
 
                 $codebase->analyzer->addOffsetReference(

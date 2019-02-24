@@ -47,7 +47,7 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     return;
                 }
 
-                if ($codebase->server_mode && $extended_interface_name) {
+                if ($codebase->store_node_types && $extended_interface_name) {
                     $bounds = $parent_reference_location->getSelectionBounds();
 
                     $codebase->analyzer->addOffsetReference(

@@ -336,7 +336,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $signature_type = $function_param->signature_type;
             $signature_type_location = $function_param->signature_type_location;
 
-            if ($signature_type && $signature_type_location) {
+            if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
                 list($start, $end) = $signature_type_location->getSelectionBounds();
 
                 $codebase->analyzer->addOffsetReference(

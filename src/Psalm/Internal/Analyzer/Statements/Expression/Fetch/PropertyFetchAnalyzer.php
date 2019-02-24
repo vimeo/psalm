@@ -90,7 +90,7 @@ class PropertyFetchAnalyzer
 
             $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
 
-            if ($codebase->server_mode
+            if ($codebase->store_node_types
                 && (!$context->collect_initializations
                     && !$context->collect_mutations)
             ) {
@@ -162,7 +162,7 @@ class PropertyFetchAnalyzer
                                 : null
                         );
 
-                        if ($codebase->server_mode) {
+                        if ($codebase->store_node_types) {
                             $codebase->analyzer->addNodeReference(
                                 $statements_analyzer->getFilePath(),
                                 $stmt->name,
@@ -230,7 +230,7 @@ class PropertyFetchAnalyzer
             if ($stmt_var_type->hasMixed()) {
                 $stmt->inferredType = Type::getMixed();
 
-                if ($codebase->server_mode
+                if ($codebase->store_node_types
                     && (!$context->collect_initializations
                         && !$context->collect_mutations)
                 ) {
@@ -447,7 +447,7 @@ class PropertyFetchAnalyzer
                 continue;
             }
 
-            if ($codebase->server_mode) {
+            if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
@@ -622,7 +622,7 @@ class PropertyFetchAnalyzer
             }
         }
 
-        if ($codebase->server_mode
+        if ($codebase->store_node_types
             && (!$context->collect_initializations
                 && !$context->collect_mutations)
             && isset($stmt->inferredType)
@@ -776,7 +776,7 @@ class PropertyFetchAnalyzer
 
             $property_id = $fq_class_name . '::$' . $prop_name;
 
-            if ($codebase->server_mode) {
+            if ($codebase->store_node_types) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
@@ -797,7 +797,7 @@ class PropertyFetchAnalyzer
                     );
                 }
 
-                if ($codebase->server_mode
+                if ($codebase->store_node_types
                     && (!$context->collect_initializations
                         && !$context->collect_mutations)
                     && isset($stmt->inferredType)
@@ -863,7 +863,7 @@ class PropertyFetchAnalyzer
 
                 $stmt->inferredType = clone $context->vars_in_scope[$var_id];
 
-                if ($codebase->server_mode
+                if ($codebase->store_node_types
                     && (!$context->collect_initializations
                         && !$context->collect_mutations)
                 ) {

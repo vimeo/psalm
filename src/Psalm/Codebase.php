@@ -144,6 +144,11 @@ class Codebase
     public $server_mode = false;
 
     /**
+     * @var bool
+     */
+    public $store_node_types = false;
+
+    /**
      * Whether or not to infer types from usage. Computationally expensive, so turned off by default
      *
      * @var bool
@@ -312,6 +317,7 @@ class Codebase
     public function enterServerMode()
     {
         $this->server_mode = true;
+        $this->store_node_types = true;
     }
 
     /**
@@ -1038,7 +1044,7 @@ class Codebase
                 break;
             }
 
-            if ($offset > $end_pos + 1) {
+            if ($offset > $end_pos) {
                 continue;
             }
 
@@ -1053,7 +1059,7 @@ class Codebase
                     break;
                 }
 
-                if ($offset > $end_pos + 1) {
+                if ($offset > $end_pos) {
                     continue;
                 }
 
@@ -1103,13 +1109,13 @@ class Codebase
                 continue;
             }
 
-            if ($offset - $end_pos === 3 || $offset - $end_pos === 4) {
+            if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
                 $recent_type = $possible_type;
 
                 break;
             }
 
-            if ($offset - $end_pos > 4) {
+            if ($offset - $end_pos > 3) {
                 break;
             }
         }
@@ -1120,7 +1126,7 @@ class Codebase
             return null;
         }
 
-        $gap = substr($file_contents, $end_pos + 1, $offset - $end_pos - 1);
+        $gap = substr($file_contents, $end_pos, $offset - $end_pos);
 
         return [$recent_type, $gap];
     }

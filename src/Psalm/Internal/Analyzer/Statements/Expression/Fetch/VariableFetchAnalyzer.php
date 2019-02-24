@@ -77,18 +77,12 @@ class VariableFetchAnalyzer
 
             $stmt->inferredType = clone $context->vars_in_scope['$this'];
 
-            if ($codebase->server_mode
+            if ($codebase->store_node_types
                     && (!$context->collect_initializations
                         && !$context->collect_mutations)
                 && isset($stmt->inferredType)
             ) {
                 $codebase->analyzer->addNodeType(
-                    $statements_analyzer->getFilePath(),
-                    $stmt,
-                    (string) $stmt->inferredType
-                );
-
-                $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt,
                     (string) $stmt->inferredType
@@ -293,7 +287,7 @@ class VariableFetchAnalyzer
         } else {
             $stmt->inferredType = clone $context->vars_in_scope[$var_name];
 
-            if ($codebase->server_mode
+            if ($codebase->store_node_types
                     && (!$context->collect_initializations
                         && !$context->collect_mutations)
                 && isset($stmt->inferredType)
@@ -303,20 +297,6 @@ class VariableFetchAnalyzer
                     $stmt,
                     (string) $stmt->inferredType
                 );
-
-                $types = $stmt->inferredType->getTypes();
-
-                if (count($types) === 1) {
-                    $reference_type = reset($types);
-
-                    if ($reference_type instanceof Type\Atomic\TNamedObject) {
-                        $codebase->analyzer->addNodeReference(
-                            $statements_analyzer->getFilePath(),
-                            $stmt,
-                            $reference_type->value
-                        );
-                    }
-                }
             }
         }
 
