@@ -155,7 +155,7 @@ class ProjectAnalyzerTest extends TestCase
 
         ob_start();
         $this->project_analyzer->check('tests/DummyProject');
-        $output = ob_get_clean();
+        ob_end_clean();
 
         $this->assertTrue($hook::$called);
     }
