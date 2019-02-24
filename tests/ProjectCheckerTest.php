@@ -1,8 +1,10 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
+use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 
 class ProjectAnalyzerTest extends TestCase
@@ -119,6 +121,43 @@ class ProjectAnalyzerTest extends TestCase
             'Psalm was able to infer types for 100.000% of analyzed code (2 files)',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary()
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function testAfterCodebasePopulatedIsInvoked()
+    {
+        $hook = new class implements AfterCodebasePopulatedInterface
+        {
+            /** @var bool */
+            public static $called = false;
+            /** @return void */
+            public static function afterCodebasePopulated(Codebase $codebase)
+            {
+                self::$called = true;
+            }
+        };
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/DummyProject" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->after_codebase_populated[] = get_class($hook);
+
+        ob_start();
+        $this->project_analyzer->check('tests/DummyProject');
+        $output = ob_get_clean();
+
+        $this->assertTrue($hook::$called);
     }
 
     /**
