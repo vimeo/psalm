@@ -392,6 +392,14 @@ class ProjectAnalyzer
 
         $this->config->visitStubFiles($this->codebase, $this->debug_output);
 
+        $plugin_classes = $this->config->after_codebase_populated;
+
+        if ($plugin_classes) {
+            foreach ($plugin_classes as $plugin_fq_class_name) {
+                $plugin_fq_class_name::afterCodebasePopulated($this->codebase);
+            }
+        }
+
         $this->codebase->analyzer->analyzeFiles($this, $this->threads, $this->codebase->alter_code);
 
         if ($this->parser_cache_provider) {
