@@ -3,6 +3,8 @@ namespace Psalm\Storage;
 
 class FileStorage
 {
+    use CustomMetadataTrait;
+
     /**
      * @var array<string, string>
      */
@@ -86,9 +88,6 @@ class FileStorage
      * @var array<string, string>
      */
     public $classlike_aliases = [];
-
-    /** @var array<string,mixed> */
-    public $custom_metadata = [];
 
     /**
      * @param string $file_path

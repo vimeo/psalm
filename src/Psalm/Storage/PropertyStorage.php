@@ -7,6 +7,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 class PropertyStorage
 {
+    use CustomMetadataTrait;
+
     /**
      * @var bool
      */
@@ -66,9 +68,6 @@ class PropertyStorage
      * @var array<string, array<int, CodeLocation>>|null
      */
     public $referencing_locations;
-
-    /** @var array<string,mixed> */
-    public $custom_metadata = [];
 
     public function getInfo() : string
     {

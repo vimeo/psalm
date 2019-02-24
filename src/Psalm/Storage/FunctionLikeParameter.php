@@ -6,6 +6,8 @@ use Psalm\Type;
 
 class FunctionLikeParameter
 {
+    use CustomMetadataTrait;
+
     /**
      * @var string
      */
@@ -65,9 +67,6 @@ class FunctionLikeParameter
      * @var bool
      */
     public $is_variadic;
-
-    /** @var array<string,mixed> */
-    public $custom_metadata = [];
 
     /**
      * @param string        $name
