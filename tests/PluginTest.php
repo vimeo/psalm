@@ -1,9 +1,14 @@
 <?php
 namespace Psalm\Tests;
 
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\PluginRegistrationSocket;
+use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
+use Psalm\Plugin\PluginEntryPointInterface;
+use Psalm\Plugin\RegistrationInterface;
 use Psalm\Tests\Internal\Provider;
 
 class PluginTest extends TestCase
@@ -467,6 +472,39 @@ class PluginTest extends TestCase
         $this->assertContains(
             'ExtendingPlugin',
             $this->project_analyzer->getCodebase()->config->after_function_checks
+        );
+    }
+
+    /** @return void */
+    public function testAfterCodebasePopulatedHookIsLoaded()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>'
+            )
+        );
+
+        $hook = new class implements AfterCodebasePopulatedInterface
+        {
+            /** @return void */
+            public static function afterCodebasePopulated(Codebase $codebase)
+            {
+            }
+        };
+
+        $config = $this->project_analyzer->getCodebase()->config;
+
+        (new PluginRegistrationSocket($config))->registerHooksFromClass(get_class($hook));
+
+        $this->assertContains(
+            get_class($hook),
+            $this->project_analyzer->getCodebase()->config->after_codebase_populated
         );
     }
 }
