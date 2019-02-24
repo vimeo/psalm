@@ -7,6 +7,8 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 
 class FunctionLikeStorage
 {
+    use CustomMetadataTrait;
+
     /**
      * @var CodeLocation|null
      */
@@ -151,9 +153,6 @@ class FunctionLikeStorage
      * @var string|null
      */
     public $return_type_description;
-
-    /** @var array<string,mixed> */
-    public $custom_metadata = [];
 
     public function __toString()
     {

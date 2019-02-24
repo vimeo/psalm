@@ -6,6 +6,8 @@ use Psalm\Type;
 
 class ClassLikeStorage
 {
+    use CustomMetadataTrait;
+
     /**
      * A lookup table for public class constants
      *
@@ -326,9 +328,6 @@ class ClassLikeStorage
      * @var bool
      */
     public $has_docblock_issues = false;
-
-    /** @var array<string,mixed> */
-    public $custom_metadata = [];
 
     /**
      * @param string $name
