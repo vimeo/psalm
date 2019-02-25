@@ -642,13 +642,17 @@ class ArrayFetchAnalyzer
                 if ($type instanceof TSingleLetter) {
                     $valid_offset_type = Type::getInt(false, 0);
                 } elseif ($type instanceof TLiteralString) {
-                    $valid_offsets = [];
+                    if (!strlen($type->value)) {
+                        $valid_offset_type = Type::getEmpty();
+                    } else {
+                        $valid_offsets = [];
 
-                    for ($i = -strlen($type->value), $l = strlen($type->value); $i < $l; $i++) {
-                        $valid_offsets[] = new TLiteralInt($i);
+                        for ($i = -strlen($type->value), $l = strlen($type->value); $i < $l; $i++) {
+                            $valid_offsets[] = new TLiteralInt($i);
+                        }
+
+                        $valid_offset_type = new Type\Union($valid_offsets);
                     }
-
-                    $valid_offset_type = new Type\Union($valid_offsets);
                 } else {
                     $valid_offset_type = Type::getInt();
                 }
