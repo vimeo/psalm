@@ -571,6 +571,12 @@ class ArrayAccessTest extends TestCase
                     echo $a[-6];',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'emptyStringAccess' => [
+                '<?php
+                    $a = "";
+                    echo $a[0];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
         ];
     }
 }
