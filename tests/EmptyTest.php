@@ -316,13 +316,23 @@ class EmptyTest extends TestCase
                         if (empty($a) && empty($b)) {}
                     }'
             ],
-            'SKIPPED-doubleEmptyCheckOnObjectLike' => [
+            'doubleEmptyCheckOnObjectLike' => [
                 '<?php
                     /**
                      * @param array{a: array, b: array} $arr
                      */
                     function foo(array $arr) : void {
                         if (empty($arr["a"]) && empty($arr["b"])) {}
+                    }'
+            ],
+            'doubleEmptyCheckOnObjectLikeVariableOffsets' => [
+                '<?php
+                    function foo(int $i, int $j) : void {
+                        $arr = [];
+                        $arr[0] = rand(0, 1);
+                        $arr[1] = rand(0, 1);
+
+                        if (empty($arr[$i]) && empty($arr[$j])) {}
                     }'
             ],
         ];

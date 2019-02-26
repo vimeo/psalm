@@ -76,10 +76,10 @@ class IfAnalyzer
         $pre_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];
 
-        if ($first_if_cond_expr &&
-            ExpressionAnalyzer::analyze($statements_analyzer, $first_if_cond_expr, $context) === false
-        ) {
-            return false;
+        if ($first_if_cond_expr) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $first_if_cond_expr, $context) === false) {
+                return false;
+            }
         }
 
         $first_cond_assigned_var_ids = $context->assigned_var_ids;

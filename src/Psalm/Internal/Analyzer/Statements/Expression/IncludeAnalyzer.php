@@ -248,7 +248,7 @@ class IncludeAnalyzer
 
                 return dirname($evaled_path, $dir_level);
             }
-        } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name instanceof PhpParser\Node\Name) {
+        } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
             $const_name = implode('', $stmt->name->parts);
 
             if (defined($const_name)) {

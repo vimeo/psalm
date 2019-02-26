@@ -5,6 +5,7 @@ use PhpParser;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
@@ -628,6 +629,43 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     }
                 } else {
                     $context->check_consts = false;
+                }
+            } elseif ($first_arg
+                && $function_id
+                && strpos($function_id, 'is_') === 0
+                && $function_id !== 'is_a'
+            ) {
+                if (isset($stmt->assertions)) {
+                    $assertions = $stmt->assertions;
+                } else {
+                    $assertions = AssertionFinder::processFunctionCall(
+                        $stmt,
+                        $context->self,
+                        $statements_analyzer,
+                        $context->inside_negation
+                    );
+                }
+
+                $changed_vars = [];
+
+                $referenced_var_ids = array_map(
+                    function (array $_) : bool {
+                        return true;
+                    },
+                    $assertions
+                );
+
+                if ($assertions) {
+                    Reconciler::reconcileKeyedTypes(
+                        $assertions,
+                        $context->vars_in_scope,
+                        $changed_vars,
+                        $referenced_var_ids,
+                        $statements_analyzer,
+                        [],
+                        $context->inside_loop,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    );
                 }
             }
         }

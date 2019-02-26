@@ -270,6 +270,11 @@ class Context
     public $infer_types = false;
 
     /**
+     * @var bool
+     */
+    public $inside_negation = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)
@@ -699,10 +704,7 @@ class Context
      */
     public function hasVariable($var_name, StatementsAnalyzer $statements_analyzer = null)
     {
-        if (!$var_name ||
-            (!isset($this->vars_possibly_in_scope[$var_name]) &&
-                !isset($this->vars_in_scope[$var_name]))
-        ) {
+        if (!$var_name) {
             return false;
         }
 
@@ -710,6 +712,12 @@ class Context
 
         if ($stripped_var[0] === '$' && ($stripped_var !== '$this' || $var_name !== $stripped_var)) {
             $this->referenced_var_ids[$var_name] = true;
+
+            if (!isset($this->vars_possibly_in_scope[$var_name])
+                && !isset($this->vars_in_scope[$var_name])
+            ) {
+                return false;
+            }
 
             if ($this->collect_references && $statements_analyzer) {
                 if (isset($this->unreferenced_vars[$var_name])) {

@@ -318,7 +318,25 @@ class TraitTest extends TestCase
                         public function foo() : void {}
                     }',
             ],
-            'isAClassTraitUser' => [
+            'isAClassTraitUserStringClass' => [
+                '<?php
+                    trait T {
+                        public function f(): void {
+                            if (is_a(static::class, "B")) { }
+                        }
+                    }
+
+                    class A {
+                        use T;
+                    }
+
+                    class B {
+                        use T;
+
+                        public function foo() : void {}
+                    }',
+            ],
+            'isAClassTraitUserClassConstant' => [
                 '<?php
                     trait T {
                         public function f(): void {

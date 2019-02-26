@@ -1233,7 +1233,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             $class_storage->name,
                             0,
                         ];
-                    } elseif ($type_extends->as) {
+                    } else {
                         $class_template_params[$type_name] = [
                             $type_extends->as,
                             $class_storage->name,

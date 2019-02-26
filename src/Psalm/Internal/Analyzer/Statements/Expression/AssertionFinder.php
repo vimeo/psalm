@@ -1354,7 +1354,7 @@ class AssertionFinder
      *
      * @return array<string, array<int, array<int, string>>>
      */
-    protected static function processFunctionCall(
+    public static function processFunctionCall(
         PhpParser\Node\Expr\FuncCall $expr,
         $this_class_name,
         FileSource $source,
@@ -1412,7 +1412,19 @@ class AssertionFinder
                     if ($fq_class_name[0] === '\\') {
                         $fq_class_name = substr($fq_class_name, 1);
                     }
-                    $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $fq_class_name]];
+
+                    $first_arg = $expr->args[0]->value;
+
+                    if (isset($first_arg->inferredType)
+                        && $first_arg->inferredType->isSingleStringLiteral()
+                        && $source instanceof StatementsAnalyzer
+                        && $source->getSource()->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer
+                        && $first_arg->inferredType->getSingleStringLiteral()->value === $this_class_name
+                    ) {
+                        // do nothing
+                    } else {
+                        $if_types[$first_var_name] = [[$prefix . $is_a_prefix . $fq_class_name]];
+                    }
                 } elseif ($second_arg instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $second_arg->class instanceof PhpParser\Node\Name
                     && $second_arg->name instanceof PhpParser\Node\Identifier

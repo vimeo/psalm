@@ -1371,6 +1371,8 @@ class ExpressionAnalyzer
     ) {
         $stmt->inferredType = Type::getBool();
 
+        $context->inside_negation = !$context->inside_negation;
+
         if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
         }
