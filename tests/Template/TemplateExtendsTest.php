@@ -1408,7 +1408,7 @@ class TemplateExtendsTest extends TestCase
                             return new Foo();
                         }
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:29 - The return type \'A\Bar\' for',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:36 - The return type \'A\Bar\' for',
             ],
             'extendTemplateAndDoesNotOverrideWithWrongArg' => [
                 '<?php

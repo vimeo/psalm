@@ -163,8 +163,6 @@ class IssueBuffer
             return false;
         }
 
-        $error_message = $issue_type . ' - ' . $e->getShortLocation() . ' - ' . $e->getMessage();
-
         if ($e instanceof ClassIssue
             && $config->getReportingLevelForClass($issue_type, $e->fq_classlike_name) === Config::REPORT_INFO
         ) {
@@ -206,7 +204,9 @@ class IssueBuffer
         }
 
         if ($config->throw_exception) {
-            throw new Exception\CodeException($error_message);
+            throw new Exception\CodeException(
+                $issue_type . ' - ' . $e->getShortLocation() . ':' . $e->getLocation()->getColumn() . ' - ' . $e->getMessage()
+            );
         }
 
         if (!self::alreadyEmitted($emitted_key)) {

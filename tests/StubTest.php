@@ -538,7 +538,7 @@ class StubTest extends TestCase
 
     /**
      * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UndefinedFunction - /src/somefile.php:2 - Function barBar does not exist
+     * @expectedExceptionMessage UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist
      *
      * @return                   void
      */

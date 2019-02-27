@@ -57,7 +57,7 @@ trait InvalidCodeAnalysisTestTrait
 
         $this->project_analyzer->setPhpVersion($php_version);
 
-        $this->expectException('\Psalm\Exception\CodeException');
+        $this->expectException(\Psalm\Exception\CodeException::class);
         $this->expectExceptionMessageRegExp('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $file_path = self::$src_dir_path . 'somefile.php';

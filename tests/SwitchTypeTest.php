@@ -761,7 +761,7 @@ class SwitchTypeTest extends TestCase
                                 break;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5 - string(InvalidArgumentException) cannot be identical to class-string',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34 - string(InvalidArgumentException) cannot be identical to class-string',
             ],
         ];
     }

@@ -1887,7 +1887,7 @@ class TemplateTest extends TestCase
                             type($closure);
                         }
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20 - Argument 1 of type expects string, callable(State):(T as mixed)&Foo provided',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34 - Argument 1 of type expects string, callable(State):(T as mixed)&Foo provided',
             ],
             'classTemplateAsIncorrectClass' => [
                 '<?php

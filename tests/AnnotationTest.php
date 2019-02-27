@@ -1001,7 +1001,7 @@ class AnnotationTest extends TestCase
                     }
 
                     fooBar("hello");',
-                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:8 - Too many arguments for method fooBar '
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - Too many arguments for method fooBar '
                     . '- expecting 0 but saw 1',
             ],
             'missingParamVar' => [
@@ -1011,7 +1011,7 @@ class AnnotationTest extends TestCase
                      */
                     function fooBar(): void {
                     }',
-                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5 - Badly-formatted @param',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - Badly-formatted @param',
             ],
             'missingReturnTypeWithBadDocblock' => [
                 '<?php
@@ -1278,9 +1278,9 @@ class AnnotationTest extends TestCase
             ],
             'mismatchingDocblockParamName' => [
                 '<?php
-                    /** @param string[] $_bar */
-                    function f(array $_barb): void {}',
-                'error_message' => 'InvalidDocblockParamName',
+                    /** @param string[] $bar */
+                    function f(array $barb): void {}',
+                'error_message' => 'InvalidDocblockParamName - src/somefile.php:2:41',
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 '<?php

@@ -351,7 +351,7 @@ class DoTest extends \Psalm\Tests\TestCase
                     } while (rand(0, 1));
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Possibly undefined ' .
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
             ],
         ];

@@ -99,7 +99,7 @@ class IssueSuppressionTest extends TestCase
                             new C();
                         }
                     }',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8 - Class or interface C',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33 - Class or interface C',
             ],
             'undefinedClassOneLineInFileAfter' => [
                 '<?php
@@ -108,7 +108,7 @@ class IssueSuppressionTest extends TestCase
                      */
                     new B();
                     new C();',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6 - Class or interface C',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Class or interface C',
             ],
         ];
     }

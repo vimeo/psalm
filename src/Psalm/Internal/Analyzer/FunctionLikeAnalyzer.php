@@ -13,6 +13,7 @@ use Psalm\Internal\Codebase\CallMap;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
+use Psalm\Issue\InvalidDocblockParamName;
 use Psalm\Issue\InvalidParamDefault;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
@@ -556,6 +557,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 $function_param->location,
                 null
             );
+        }
+
+        if ($storage->unused_docblock_params) {
+            foreach ($storage->unused_docblock_params as $param_name => $param_location) {
+                if (IssueBuffer::accepts(
+                    new InvalidDocblockParamName(
+                        'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
+                        $param_location
+                    )
+                )) {
+                }
+            }
         }
 
         if (ReturnTypeAnalyzer::checkReturnType(

@@ -880,7 +880,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     }
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3 - Possibly undefined ' .
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
             ],
             'possibleUndefinedVariableInForeachAndIfWithBreak' => [
@@ -893,7 +893,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     }
 
                     echo $a;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9 - Possibly undefined ' .
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:26 - Possibly undefined ' .
                     'global variable $a, first seen on line 4',
             ],
             'possibleUndefinedVariableInForeachAndIf' => [
@@ -905,7 +905,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
 
                         echo $a;
                     }',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7 - Possibly undefined ' .
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:30 - Possibly undefined ' .
                     'global variable $a, first seen on line 4',
             ],
             'implicitFourthLoopWithBadReturnType' => [

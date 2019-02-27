@@ -126,7 +126,7 @@ class ForTest extends \Psalm\Tests\TestCase
                     }
 
                     echo $array;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4 - Possibly undefined ' .
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Possibly undefined ' .
                     'global variable $array, first seen on line 4',
             ],
             'forLoopInvalidation' => [

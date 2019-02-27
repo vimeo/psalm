@@ -154,6 +154,11 @@ class FunctionLikeStorage
      */
     public $return_type_description;
 
+    /**
+     * @var array<string, CodeLocation>|null
+     */
+    public $unused_docblock_params;
+
     public function __toString()
     {
         $symbol_text = 'function ' . $this->cased_name . '(' . implode(
