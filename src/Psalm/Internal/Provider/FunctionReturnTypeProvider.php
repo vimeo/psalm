@@ -14,13 +14,13 @@ class FunctionReturnTypeProvider
     /**
      * @var array<
      *   string,
-     *   \Closure(
+     *   array<\Closure(
      *     StatementsSource,
      *     string,
      *     array<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation
-     *   ) : Type\Union
+     *   ) : ?Type\Union>
      * >
      */
     private static $handlers = [];
@@ -61,7 +61,7 @@ class FunctionReturnTypeProvider
         }
 
         foreach ($class::getFunctionIds() as $function_id) {
-            self::$handlers[$function_id] = $callable;
+            self::$handlers[$function_id][] = $callable;
         }
     }
 
@@ -73,13 +73,13 @@ class FunctionReturnTypeProvider
      *     array<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation
-     *   ) : Type\Union $c
+     *   ) : ?Type\Union $c
      *
      * @return void
      */
     public function registerClosure(string $function_id, \Closure $c)
     {
-        self::$handlers[$function_id] = $c;
+        self::$handlers[$function_id][] = $c;
     }
 
     public function has(string $function_id) : bool
@@ -89,6 +89,7 @@ class FunctionReturnTypeProvider
 
     /**
      * @param  array<PhpParser\Node\Arg>  $call_args
+     * @return ?Type\Union
      */
     public function getReturnType(
         StatementsSource $statements_source,
@@ -96,13 +97,21 @@ class FunctionReturnTypeProvider
         array $call_args,
         Context $context,
         CodeLocation $code_location
-    ) : Type\Union {
-        return self::$handlers[strtolower($function_id)](
-            $statements_source,
-            $function_id,
-            $call_args,
-            $context,
-            $code_location
-        );
+    ) {
+        foreach (self::$handlers[strtolower($function_id)] as $function_handler) {
+            $return_type = $function_handler(
+                $statements_source,
+                $function_id,
+                $call_args,
+                $context,
+                $code_location
+            );
+
+            if ($return_type) {
+                return $return_type;
+            }
+        }
+
+        return null;
     }
 }

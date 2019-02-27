@@ -342,6 +342,8 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
 
             if ($stmt->name instanceof PhpParser\Node\Name && $function_id) {
+                $stmt->inferredType = null;
+
                 if ($codebase->functions->return_type_provider->has($function_id)) {
                     $stmt->inferredType = $codebase->functions->return_type_provider->getReturnType(
                         $statements_analyzer,
@@ -350,82 +352,86 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $context,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                     );
-                } elseif (!$in_call_map || $is_stubbed) {
-                    if ($function_storage && $function_storage->template_types) {
-                        foreach ($function_storage->template_types as $template_name => $_) {
-                            if (!isset($generic_params[$template_name])) {
-                                $generic_params[$template_name] = [Type::getMixed(), null];
+                }
+
+                if (!$stmt->inferredType) {
+                    if (!$in_call_map || $is_stubbed) {
+                        if ($function_storage && $function_storage->template_types) {
+                            foreach ($function_storage->template_types as $template_name => $_) {
+                                if (!isset($generic_params[$template_name])) {
+                                    $generic_params[$template_name] = [Type::getMixed(), null];
+                                }
                             }
                         }
-                    }
 
-                    if ($function_storage && $context->collect_exceptions) {
-                        $context->possibly_thrown_exceptions += $function_storage->throws;
-                    }
+                        if ($function_storage && $context->collect_exceptions) {
+                            $context->possibly_thrown_exceptions += $function_storage->throws;
+                        }
 
-                    try {
-                        if ($function_storage && $function_storage->return_type) {
-                            $return_type = clone $function_storage->return_type;
+                        try {
+                            if ($function_storage && $function_storage->return_type) {
+                                $return_type = clone $function_storage->return_type;
 
-                            if ($generic_params && $function_storage->template_types) {
-                                $return_type->replaceTemplateTypesWithArgTypes(
-                                    $generic_params
-                                );
-                            }
-
-                            $return_type_location = $function_storage->return_type_location;
-
-                            if ($config->after_function_checks) {
-                                $file_manipulations = [];
-
-                                foreach ($config->after_function_checks as $plugin_fq_class_name) {
-                                    $plugin_fq_class_name::afterFunctionCallAnalysis(
-                                        $stmt,
-                                        $function_id,
-                                        $context,
-                                        $statements_analyzer->getSource(),
-                                        $codebase,
-                                        $file_manipulations,
-                                        $return_type
+                                if ($generic_params && $function_storage->template_types) {
+                                    $return_type->replaceTemplateTypesWithArgTypes(
+                                        $generic_params
                                     );
                                 }
 
-                                if ($file_manipulations) {
-                                    FileManipulationBuffer::add(
-                                        $statements_analyzer->getFilePath(),
-                                        $file_manipulations
+                                $return_type_location = $function_storage->return_type_location;
+
+                                if ($config->after_function_checks) {
+                                    $file_manipulations = [];
+
+                                    foreach ($config->after_function_checks as $plugin_fq_class_name) {
+                                        $plugin_fq_class_name::afterFunctionCallAnalysis(
+                                            $stmt,
+                                            $function_id,
+                                            $context,
+                                            $statements_analyzer->getSource(),
+                                            $codebase,
+                                            $file_manipulations,
+                                            $return_type
+                                        );
+                                    }
+
+                                    if ($file_manipulations) {
+                                        FileManipulationBuffer::add(
+                                            $statements_analyzer->getFilePath(),
+                                            $file_manipulations
+                                        );
+                                    }
+                                }
+
+                                /** @var Type\Union $return_type */
+                                $stmt->inferredType = $return_type;
+                                $return_type->by_ref = $function_storage->returns_by_ref;
+
+                                // only check the type locally if it's defined externally
+                                if ($return_type_location &&
+                                    !$is_stubbed && // makes lookups or array_* functions quicker
+                                    !$config->isInProjectDirs($return_type_location->file_path)
+                                ) {
+                                    $return_type->check(
+                                        $statements_analyzer,
+                                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                        $statements_analyzer->getSuppressedIssues(),
+                                        $context->phantom_classes
                                     );
                                 }
                             }
-
-                            /** @var Type\Union $return_type */
-                            $stmt->inferredType = $return_type;
-                            $return_type->by_ref = $function_storage->returns_by_ref;
-
-                            // only check the type locally if it's defined externally
-                            if ($return_type_location &&
-                                !$is_stubbed && // makes lookups or array_* functions quicker
-                                !$config->isInProjectDirs($return_type_location->file_path)
-                            ) {
-                                $return_type->check(
-                                    $statements_analyzer,
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                    $statements_analyzer->getSuppressedIssues(),
-                                    $context->phantom_classes
-                                );
-                            }
+                        } catch (\InvalidArgumentException $e) {
+                            // this can happen when the function was defined in the Config startup script
+                            $stmt->inferredType = Type::getMixed();
                         }
-                    } catch (\InvalidArgumentException $e) {
-                        // this can happen when the function was defined in the Config startup script
-                        $stmt->inferredType = Type::getMixed();
+                    } else {
+                        $stmt->inferredType = FunctionAnalyzer::getReturnTypeFromCallMapWithArgs(
+                            $statements_analyzer,
+                            $function_id,
+                            $stmt->args,
+                            $context
+                        );
                     }
-                } else {
-                    $stmt->inferredType = FunctionAnalyzer::getReturnTypeFromCallMapWithArgs(
-                        $statements_analyzer,
-                        $function_id,
-                        $stmt->args,
-                        $context
-                    );
                 }
             }
 

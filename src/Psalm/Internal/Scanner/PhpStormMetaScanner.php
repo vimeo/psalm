@@ -76,28 +76,38 @@ class PhpStormMetaScanner
             && $identifier->args
             && $identifier->args[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
-            $method_id = implode('\\', $identifier->class->parts) . '::' . $identifier->name;
+            $meta_fq_classlike_name = implode('\\', $identifier->class->parts);
+
+            $meta_method_name = $identifier->name->name;
 
             if ($map) {
                 $offset = $identifier->args[0]->value->value;
 
                 $codebase->methods->return_type_provider->registerClosure(
-                    $method_id,
+                    $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
+                     * @return ?Type\Union
                      */
                     function (
-                        StatementsAnalyzer $statements_analyzer,
-                        string $method_id,
-                        string $_appearing_method_id,
-                        string $_declaring_method_id,
+                        StatementsAnalyzer $_statements_analyzer,
+                        string $fq_classlike_name,
+                        string $method_name,
                         array $call_args,
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
                         $map,
-                        $offset
-                    ) : Type\Union {
+                        $offset,
+                        $meta_fq_classlike_name,
+                        $meta_method_name
+                    ) {
+                        if ($meta_method_name !== $method_name
+                            || $meta_fq_classlike_name !== $fq_classlike_name
+                        ) {
+                            return null;
+                        }
+
                         if (($call_arg_type = $call_args[$offset]->value->inferredType ?? null)
                             && $call_arg_type->isSingleStringLiteral()
                         ) {
@@ -122,60 +132,68 @@ class PhpStormMetaScanner
                             }
                         }
 
-                        $storage = $statements_analyzer->getCodebase()->methods->getStorage(
-                            $method_id
-                        );
-
-                        return $storage->return_type ?: Type::getMixed();
+                        return null;
                     }
                 );
             } elseif ($type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
-                    $method_id,
+                    $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
+                     * @return ?Type\Union
                      */
                     function (
-                        StatementsAnalyzer $statements_analyzer,
-                        string $method_id,
-                        string $_appearing_method_id,
-                        string $_declaring_method_id,
+                        StatementsAnalyzer $_statements_analyzer,
+                        string $fq_classlike_name,
+                        string $method_name,
                         array $call_args,
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
                         $map,
-                        $type_offset
-                    ) : Type\Union {
+                        $type_offset,
+                        $meta_fq_classlike_name,
+                        $meta_method_name
+                    ) {
+                        if ($meta_method_name !== $method_name
+                            || $meta_fq_classlike_name !== $fq_classlike_name
+                        ) {
+                            return null;
+                        }
+
                         if (($call_arg_type = $call_args[$type_offset]->value->inferredType ?? null)) {
                             return clone $call_arg_type;
                         }
 
-                        $storage = $statements_analyzer->getCodebase()->methods->getStorage(
-                            $method_id
-                        );
-
-                        return $storage->return_type ?: Type::getMixed();
+                        return null;
                     }
                 );
             } elseif ($element_type_offset !== null) {
                 $codebase->methods->return_type_provider->registerClosure(
-                    $method_id,
+                    $meta_fq_classlike_name,
                     /**
                      * @param array<PhpParser\Node\Arg> $call_args
+                     * @return ?Type\Union
                      */
                     function (
-                        StatementsAnalyzer $statements_analyzer,
-                        string $method_id,
-                        string $_appearing_method_id,
-                        string $_declaring_method_id,
+                        StatementsAnalyzer $_statements_analyzer,
+                        string $fq_classlike_name,
+                        string $method_name,
                         array $call_args,
                         Context $_context,
                         CodeLocation $_code_location
                     ) use (
                         $map,
-                        $element_type_offset
-                    ) : Type\Union {
+                        $element_type_offset,
+                        $meta_fq_classlike_name,
+                        $meta_method_name
+                    ) {
+                        if ($meta_method_name !== $method_name
+                            || $meta_fq_classlike_name !== $fq_classlike_name
+                        ) {
+                            return null;
+                        }
+
                         if (($call_arg_type = $call_args[$element_type_offset]->value->inferredType ?? null)) {
                             if ($call_arg_type->hasArray()) {
                                 /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
@@ -189,11 +207,7 @@ class PhpStormMetaScanner
                             }
                         }
 
-                        $storage = $statements_analyzer->getCodebase()->methods->getStorage(
-                            $method_id
-                        );
-
-                        return $storage->return_type ?: Type::getMixed();
+                        return null;
                     }
                 );
             }

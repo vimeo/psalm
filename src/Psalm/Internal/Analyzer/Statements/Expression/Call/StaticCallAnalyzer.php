@@ -674,23 +674,20 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 $self_fq_class_name = $fq_class_name;
 
-                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                $return_type_candidate = null;
 
-                if ($appearing_method_id
-                    && $declaring_method_id
-                    && $codebase->methods->return_type_provider->has($appearing_method_id)
-                ) {
+                if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                         $statements_analyzer,
-                        $method_id,
-                        $appearing_method_id,
-                        $declaring_method_id,
+                        $fq_class_name,
+                        $stmt->name->name,
                         $stmt->args,
                         $context,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                     );
-                } else {
+                }
+
+                if (!$return_type_candidate) {
                     $return_type_candidate = $codebase->methods->getMethodReturnType(
                         $method_id,
                         $self_fq_class_name,
@@ -769,6 +766,9 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if ($config->after_method_checks) {
                     $file_manipulations = [];
+
+                    $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                     if ($appearing_method_id && $declaring_method_id) {
                         foreach ($config->after_method_checks as $plugin_fq_class_name) {
