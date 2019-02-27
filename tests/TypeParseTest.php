@@ -139,6 +139,14 @@ class TypeParseTest extends TestCase
     /**
      * @return void
      */
+    public function testNonEmptyArrray()
+    {
+        $this->assertSame('non-empty-array<array-key, int>', (string) Type::parseString('non-empty-array<int>'));
+    }
+
+    /**
+     * @return void
+     */
     public function testGeneric()
     {
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));

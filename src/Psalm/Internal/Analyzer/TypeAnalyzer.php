@@ -1433,6 +1433,12 @@ class TypeAnalyzer
                     continue;
                 }
 
+                if ($input_param->isEmpty()
+                    && $container_type_part instanceof Type\Atomic\TNonEmptyArray
+                ) {
+                    return false;
+                }
+
                 if (!$input_param->isEmpty() &&
                     !self::isContainedBy(
                         $codebase,
@@ -1451,6 +1457,17 @@ class TypeAnalyzer
                     $all_types_contain = false;
                 }
             }
+        }
+
+        if ($container_type_part instanceof Type\Atomic\TNonEmptyArray
+            && !$input_type_part instanceof Type\Atomic\TNonEmptyArray
+            && !($input_type_part instanceof ObjectLike && $input_type_part->sealed)
+        ) {
+            if ($all_types_contain) {
+                $type_coerced = true;
+            }
+
+            return false;
         }
 
         if ($all_types_contain) {

@@ -207,7 +207,9 @@ abstract class Type
 
             $generic_type_value = self::fixScalarTerms($generic_type);
 
-            if ($generic_type_value === 'array' && count($generic_params) === 1) {
+            if (($generic_type_value === 'array' || $generic_type_value === 'non-empty-array')
+                && count($generic_params) === 1
+            ) {
                 array_unshift($generic_params, new Union([new TArrayKey]));
             } elseif (($generic_type_value === 'iterable' || $generic_type_value === 'Traversable')
                 && count($generic_params) === 1
@@ -229,6 +231,10 @@ abstract class Type
 
             if ($generic_type_value === 'array') {
                 return new TArray($generic_params);
+            }
+
+            if ($generic_type_value === 'non-empty-array') {
+                return new Type\Atomic\TNonEmptyArray($generic_params);
             }
 
             if ($generic_type_value === 'iterable') {

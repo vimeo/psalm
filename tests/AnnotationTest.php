@@ -894,6 +894,25 @@ class AnnotationTest extends TestCase
                      */
                     function f(string $foo, array $barb): void {}',
             ],
+            'nonEmptyArray' => [
+                '<?php
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr) : void {
+                        foreach ($arr as $a) {}
+                        echo $a;
+                    }
+
+                    foo(["a", "b", "c"]);
+
+                    /** @param array<string> $arr */
+                    function bar(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foo($arr);
+                    }'
+            ],
         ];
     }
 
@@ -1262,6 +1281,31 @@ class AnnotationTest extends TestCase
                     /** @param string[] $_bar */
                     function f(array $_barb): void {}',
                 'error_message' => 'InvalidDocblockParamName',
+            ],
+            'nonEmptyArrayCalledWithEmpty' => [
+                '<?php
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr) : void {
+                        foreach ($arr as $a) {}
+                        echo $a;
+                    }
+
+                    foo([]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nonEmptyArrayCalledWithArray' => [
+                '<?php
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr) : void {
+                        foreach ($arr as $a) {}
+                        echo $a;
+                    }
+
+                    /** @param array<string> $arr */
+                    function bar(array $arr) {
+                        foo($arr);
+                    }',
+                'error_message' => 'TypeCoercion',
             ],
         ];
     }
