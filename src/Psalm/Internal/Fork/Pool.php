@@ -233,7 +233,7 @@ class Pool
                 function ($data) {
                     /** @var array */
                     $result = unserialize($data);
-                    /** @psalm-suppress RedundantConditionGivenDocblockType */
+                    /** @psalm-suppress DocblockTypeContradiction */
                     if (!\is_array($result)) {
                         error_log(
                             'Child terminated without returning a serialized array - response type=' . gettype($result)

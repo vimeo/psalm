@@ -283,7 +283,7 @@ class RedundantConditionTest extends TestCase
                         if ($bar !== null) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['RedundantConditionGivenDocblockType'],
+                'error_levels' => ['DocblockTypeContradiction'],
             ],
             'isObjectAssertionOnDocblockType' => [
                 '<?php

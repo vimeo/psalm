@@ -1894,7 +1894,7 @@ class Reconciler
                         $old_var_type_string,
                         $key,
                         $new_var_type,
-                        true,
+                        false,
                         $code_location,
                         $suppressed_issues
                     );

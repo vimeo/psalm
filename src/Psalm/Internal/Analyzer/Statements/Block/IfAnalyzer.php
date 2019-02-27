@@ -276,7 +276,9 @@ class IfAnalyzer
                     $context->check_variables
                         ? new CodeLocation(
                             $statements_analyzer->getSource(),
-                            $stmt->cond,
+                            $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                                ? $stmt->cond->expr
+                                : $stmt->cond,
                             $context->include_location
                         ) : null
                 );
@@ -341,7 +343,9 @@ class IfAnalyzer
                 $context->check_variables
                     ? new CodeLocation(
                         $statements_analyzer->getSource(),
-                        $stmt->cond,
+                        $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                            ? $stmt->cond->expr
+                            : $stmt->cond,
                         $context->include_location
                     ) : null
             );
@@ -698,7 +702,9 @@ class IfAnalyzer
                     $outer_context->inside_loop,
                     new CodeLocation(
                         $statements_analyzer->getSource(),
-                        $stmt->cond,
+                        $stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
+                            ? $stmt->cond->expr
+                            : $stmt->cond,
                         $outer_context->include_location,
                         false
                     )
@@ -859,7 +865,9 @@ class IfAnalyzer
                 $elseif_context->inside_loop,
                 new CodeLocation(
                     $statements_analyzer->getSource(),
-                    $elseif->cond,
+                    $elseif->cond instanceof PhpParser\Node\Expr\BooleanNot
+                        ? $elseif->cond->expr
+                        : $elseif->cond,
                     $outer_context->include_location,
                     false
                 )
@@ -1022,7 +1030,13 @@ class IfAnalyzer
                 $statements_analyzer,
                 [],
                 $elseif_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $elseif->cond, $outer_context->include_location)
+                new CodeLocation(
+                    $statements_analyzer->getSource(),
+                    $elseif->cond instanceof PhpParser\Node\Expr\BooleanNot
+                        ? $elseif->cond->expr
+                        : $elseif->cond,
+                    $outer_context->include_location
+                )
             );
 
             $elseif_context->vars_in_scope = $elseif_vars_reconciled;

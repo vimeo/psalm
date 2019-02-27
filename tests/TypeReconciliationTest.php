@@ -311,7 +311,7 @@ class TypeReconciliationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'error_levels' => ['RedundantConditionGivenDocblockType'],
+                'error_levels' => ['DocblockTypeContradiction'],
             ],
             'notInstanceof' => [
                 '<?php

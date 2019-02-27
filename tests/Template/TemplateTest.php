@@ -74,7 +74,7 @@ class TemplateTest extends TestCase
                 'error_levels' => [
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
-                    'RedundantConditionGivenDocblockType',
+                    'DocblockTypeContradiction',
                     'TypeCoercion'
                 ],
             ],
