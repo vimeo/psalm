@@ -11436,7 +11436,7 @@ return [
 'Sodium\add' => ['void', '&left'=>'string', 'right'=>'string'],
 'Sodium\bin2hex' => ['string', 'binary'=>'string'],
 'Sodium\compare' => ['int', 'left'=>'string', 'right'=>'string'],
-'Sodium\crypto_aead_aes256gcm_decrypt' => ['string', 'msg'=>'string', 'nonce'=>'string', 'key'=>'string', 'ad='=>'string'],
+'Sodium\crypto_aead_aes256gcm_decrypt' => ['string|false', 'msg'=>'string', 'nonce'=>'string', 'key'=>'string', 'ad='=>'string'],
 'Sodium\crypto_aead_aes256gcm_encrypt' => ['string', 'msg'=>'string', 'nonce'=>'string', 'key'=>'string', 'ad='=>'string'],
 'Sodium\crypto_aead_aes256gcm_is_available' => ['bool'],
 'Sodium\crypto_aead_chacha20poly1305_decrypt' => ['string', 'msg'=>'string', 'nonce'=>'string', 'key'=>'string', 'ad='=>'string'],
