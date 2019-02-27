@@ -236,4 +236,26 @@ trait CallableTrait
             $this->return_type->replaceTemplateTypesWithArgTypes($template_types);
         }
     }
+
+    /**
+     * @return void
+     */
+    public function setFromDocblock()
+    {
+        $this->from_docblock = true;
+
+        if ($this->params) {
+            foreach ($this->params as $param) {
+                if (!$param->type) {
+                    continue;
+                }
+
+                $param->type->setFromDocblock();
+            }
+        }
+
+        if ($this->return_type) {
+            $this->return_type->setFromDocblock();
+        }
+    }
 }

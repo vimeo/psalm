@@ -234,6 +234,16 @@ class Php71Test extends TestCase
                       return $i;
                     }',
             ],
+            'noReservedWordInDocblock' => [
+                '<?php
+                    /**
+                     * @param Closure():(resource|false) $op
+                     * @return resource|false
+                     */
+                    function create_resource($op) {
+                        return $op();
+                    }'
+            ],
         ];
     }
 
