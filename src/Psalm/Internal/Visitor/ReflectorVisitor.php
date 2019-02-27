@@ -2280,7 +2280,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $code_location->setCommentLine($docblock_param['line_number']);
 
             if ($storage_param === null) {
-                $unused_docblock_params[$param_name] = $code_location;
+                $param_location = new CodeLocation(
+                    $this->file_scanner,
+                    $function,
+                    null,
+                    true,
+                    CodeLocation::FUNCTION_PARAM_VAR,
+                    $docblock_param['type']
+                );
+
+                $param_location->setCommentLine($docblock_param['line_number']);
+                $unused_docblock_params[$param_name] = $param_location;
 
                 if (!$docblock_param_variadic || $storage->params || $this->scan_deep) {
                     continue;
