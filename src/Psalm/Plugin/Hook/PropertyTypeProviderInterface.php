@@ -20,11 +20,9 @@ interface PropertyTypeProviderInterface
      * @return ?Type\Union
      */
     public static function getPropertyType(
-        StatementsSource $statements_source,
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context,
-        CodeLocation $code_location
+        Context $context
     );
 }

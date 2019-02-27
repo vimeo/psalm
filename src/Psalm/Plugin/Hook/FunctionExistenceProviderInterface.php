@@ -21,8 +21,6 @@ interface FunctionExistenceProviderInterface
      */
     public static function doesFunctionExist(
         StatementsSource $statements_source,
-        string $function_id,
-        Context $context,
-        CodeLocation $code_location
+        string $function_id
     );
 }

@@ -1086,7 +1086,10 @@ class TypeAnalyzer
                         continue;
                     }
 
-                    if (!$codebase->properties->propertyExists($input_type_part . '::$' . $property_name)) {
+                    if (!$codebase->properties->propertyExists(
+                        $input_type_part . '::$' . $property_name,
+                        true
+                    )) {
                         $all_types_contain = false;
 
                         continue;

@@ -2610,7 +2610,7 @@ class Reconciler
                             } else {
                                 $property_id = $existing_key_type_part->value . '::$' . $property_name;
 
-                                if (!$codebase->properties->propertyExists($property_id)) {
+                                if (!$codebase->properties->propertyExists($property_id, false)) {
                                     return null;
                                 }
 

@@ -3,7 +3,12 @@ namespace Psalm\Internal\Codebase;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Internal\Provider\{ClassLikeStorageProvider, FileReferenceProvider, MethodReturnTypeProvider};
+use Psalm\Internal\Provider\{
+    ClassLikeStorageProvider,
+    FileReferenceProvider,
+    MethodReturnTypeProvider,
+    MethodExistenceProvider
+};
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -44,6 +49,9 @@ class Methods
     /** @var MethodReturnTypeProvider */
     public $return_type_provider;
 
+    /** @var MethodExistenceProvider */
+    public $method_existence_provider;
+
     /**
      * @param ClassLikeStorageProvider $storage_provider
      */
@@ -58,6 +66,7 @@ class Methods
         $this->file_reference_provider = $file_reference_provider;
         $this->classlikes = $classlikes;
         $this->return_type_provider = new MethodReturnTypeProvider();
+        $this->method_existence_provider = new MethodExistenceProvider();
     }
 
     /**
@@ -79,6 +88,14 @@ class Methods
         list($fq_class_name, $method_name) = explode('::', $method_id);
         $method_name = strtolower($method_name);
         $method_id = $fq_class_name . '::' . $method_name;
+
+        if ($this->method_existence_provider->has($fq_class_name)) {
+            $method_exists = $this->method_existence_provider->doesMethodExist($fq_class_name, $method_name, $code_location);
+
+            if ($method_exists !== null) {
+                return $method_exists;
+            }
+        }
 
         $old_method_id = null;
 

@@ -77,13 +77,13 @@ class PropertyAssignmentAnalyzer
             $property_id = $context->self . '::$' . $prop_name;
             $property_ids[] = $property_id;
 
-            if (!$codebase->properties->propertyExists($property_id)) {
+            if (!$codebase->properties->propertyExists($property_id, false, $context)) {
                 return null;
             }
 
             $property_exists = true;
 
-            $class_property_type = $codebase->properties->getPropertyType($property_id, true);
+            $class_property_type = $codebase->properties->getPropertyType($property_id, true, $context);
 
             $class_property_types[] = $class_property_type ? clone $class_property_type : Type::getMixed();
 
@@ -289,7 +289,7 @@ class PropertyAssignmentAnalyzer
                 $property_ids[] = $property_id;
 
                 if ($codebase->methodExists($fq_class_name . '::__set')
-                    && (!$codebase->properties->propertyExists($property_id)
+                    && (!$codebase->properties->propertyExists($property_id, false, $context)
                         || ($lhs_var_id !== '$this'
                             && $fq_class_name !== $context->self
                             && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -352,7 +352,7 @@ class PropertyAssignmentAnalyzer
                     $self_property_id = $context->self . '::$' . $prop_name;
 
                     if ($self_property_id !== $property_id
-                        && $codebase->properties->propertyExists($self_property_id)
+                        && $codebase->properties->propertyExists($self_property_id, false, $context)
                     ) {
                         $property_id = $self_property_id;
                     }
@@ -360,7 +360,8 @@ class PropertyAssignmentAnalyzer
 
                 if (!$codebase->properties->propertyExists(
                     $property_id,
-                    $context->calling_method_id,
+                    false,
+                    $context,
                     new CodeLocation($statements_analyzer->getSource(), $stmt)
                 )) {
                     if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
@@ -472,7 +473,7 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-                $class_property_type = $codebase->properties->getPropertyType($property_id, true);
+                $class_property_type = $codebase->properties->getPropertyType($property_id, true, $context);
 
                 if (!$class_property_type) {
                     $class_property_type = Type::getMixed();
@@ -782,7 +783,7 @@ class PropertyAssignmentAnalyzer
 
         $property_id = $fq_class_name . '::$' . $prop_name;
 
-        if (!$codebase->properties->propertyExists($property_id, $context->calling_method_id)) {
+        if (!$codebase->properties->propertyExists($property_id, false, $context)) {
             if (IssueBuffer::accepts(
                 new UndefinedPropertyAssignment(
                     'Static property ' . $property_id . ' is not defined',
@@ -819,7 +820,7 @@ class PropertyAssignmentAnalyzer
             $context->vars_in_scope[$var_id] = $assignment_value_type;
         }
 
-        $class_property_type = $codebase->properties->getPropertyType($property_id, true);
+        $class_property_type = $codebase->properties->getPropertyType($property_id, true, $context);
 
         if (!$class_property_type) {
             $class_property_type = Type::getMixed();

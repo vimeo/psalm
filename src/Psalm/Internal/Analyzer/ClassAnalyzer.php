@@ -649,7 +649,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property && !isset($stmt->type)) {
-                $this->checkForMissingPropertyType($this, $stmt);
+                $this->checkForMissingPropertyType($this, $stmt, $class_context);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -690,7 +690,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
-                            $this->checkForMissingPropertyType($trait_analyzer, $trait_stmt);
+                            $this->checkForMissingPropertyType($trait_analyzer, $trait_stmt, $class_context);
                         }
                     }
                 }
@@ -1121,7 +1121,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
      */
     private function checkForMissingPropertyType(
         StatementsSource $source,
-        PhpParser\Node\Stmt\Property $stmt
+        PhpParser\Node\Stmt\Property $stmt,
+        Context $context
     ) {
         $comment = $stmt->getDocComment();
 
@@ -1146,7 +1147,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $fq_class_name = $declaring_property_class;
 
             // gets inherited property type
-            $class_property_type = $codebase->properties->getPropertyType($property_id);
+            $class_property_type = $codebase->properties->getPropertyType($property_id, false, $context);
 
             if ($class_property_type) {
                 return;

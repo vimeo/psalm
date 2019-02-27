@@ -2,8 +2,13 @@
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
-use Psalm\Internal\Provider\ClassLikeStorageProvider;
-use Psalm\Internal\Provider\FileReferenceProvider;
+use Psalm\Context;
+use Psalm\Internal\Provider\{
+    ClassLikeStorageProvider,
+    FileReferenceProvider,
+    PropertyExistenceProvider,
+    PropertyTypeProvider
+};
 use Psalm\Type;
 
 /**
@@ -28,26 +33,35 @@ class Properties
      */
     public $file_reference_provider;
 
+    /**
+     * @var PropertyExistenceProvider
+     */
+    public $property_existence_provider;
+
+    /**
+     * @var PropertyTypeProvider
+     */
+    public $property_type_provider;
+
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
+        $this->property_existence_provider = new PropertyExistenceProvider();
+        $this->property_type_provider = new PropertyTypeProvider();
     }
 
     /**
      * Whether or not a given property exists
      *
-     * @param  string $property_id
-     * @param  ?string $calling_method_id
-     * @param  string $calling_method_id
-     *
      * @return bool
      */
     public function propertyExists(
-        $property_id,
-        $calling_method_id = null,
+        string $property_id,
+        bool $read_mode,
+        Context $context = null,
         CodeLocation $code_location = null
     ) {
         // remove trailing backslash if it exists
@@ -55,14 +69,28 @@ class Properties
 
         list($fq_class_name, $property_name) = explode('::$', $property_id);
 
+        if ($this->property_existence_provider->has($fq_class_name)) {
+            $property_exists = $this->property_existence_provider->doesPropertyExist(
+                $fq_class_name,
+                $property_name,
+                $read_mode,
+                $context,
+                $code_location
+            );
+
+            if ($property_exists !== null) {
+                return $property_exists;
+            }
+        }
+
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
         if (isset($class_storage->declaring_property_ids[$property_name])) {
             $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
 
-            if ($calling_method_id) {
+            if ($context && $context->calling_method_id) {
                 $this->file_reference_provider->addReferenceToClassMethod(
-                    $calling_method_id,
+                    $context->calling_method_id,
                     strtolower($declaring_property_class) . '::$' . $property_name
                 );
             }
@@ -81,9 +109,9 @@ class Properties
             return true;
         }
 
-        if ($calling_method_id) {
+        if ($context && $context->calling_method_id) {
             $this->file_reference_provider->addReferenceToClassMethod(
-                $calling_method_id,
+                $context->calling_method_id,
                 strtolower($fq_class_name) . '::$' . $property_name
             );
         }
@@ -156,12 +184,25 @@ class Properties
      * @param  string $property_id
      * @return  ?Type\Union
      */
-    public function getPropertyType($property_id, bool $property_set = false)
+    public function getPropertyType($property_id, bool $property_set, Context $context)
     {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
         list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        if ($this->property_type_provider->has($fq_class_name)) {
+            $property_type = $this->property_type_provider->getPropertyType(
+                $fq_class_name,
+                $property_name,
+                !$property_set,
+                $context
+            );
+
+            if ($property_type !== null) {
+                return $property_type;
+            }
+        }
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
