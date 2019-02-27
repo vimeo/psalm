@@ -750,14 +750,7 @@ class ArrayFetchAnalyzer
 
                     $iterator_class_type = $fake_method_call->inferredType ?? null;
                     $array_access_type = $iterator_class_type ?: Type::getMixed();
-                } elseif ((strtolower($type->value) === 'arrayaccess'
-                        || (($codebase->classExists($type->value)
-                            && $codebase->classImplements($type->value, 'ArrayAccess'))
-                        || ($codebase->interfaceExists($type->value)
-                            && $codebase->interfaceExtends($type->value, 'ArrayAccess'))
-                        ))
-                    && ($stmt->dim || $in_assignment)
-                ) {
+                } else {
                     if ($in_assignment) {
                         $fake_method_call = new PhpParser\Node\Expr\MethodCall(
                             $stmt->var,
@@ -785,7 +778,14 @@ class ArrayFetchAnalyzer
                             $stmt->var,
                             new PhpParser\Node\Identifier('offsetGet', $stmt->var->getAttributes()),
                             [
-                                new PhpParser\Node\Arg($stmt->dim)
+                                new PhpParser\Node\Arg(
+                                    $stmt->dim
+                                        ? $stmt->dim
+                                        : new PhpParser\Node\Expr\ConstFetch(
+                                            new PhpParser\Node\Name('null'),
+                                            $stmt->var->getAttributes()
+                                        )
+                                )
                             ]
                         );
                     }
@@ -808,8 +808,6 @@ class ArrayFetchAnalyzer
 
                     $iterator_class_type = $fake_method_call->inferredType ?? null;
                     $array_access_type = $iterator_class_type ?: Type::getMixed();
-                } else {
-                    $non_array_types[] = (string)$type;
                 }
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
