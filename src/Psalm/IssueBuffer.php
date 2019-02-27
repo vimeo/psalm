@@ -205,7 +205,10 @@ class IssueBuffer
 
         if ($config->throw_exception) {
             throw new Exception\CodeException(
-                $issue_type . ' - ' . $e->getShortLocation() . ':' . $e->getLocation()->getColumn() . ' - ' . $e->getMessage()
+                $issue_type
+                    . ' - ' . $e->getShortLocation()
+                    . ':' . $e->getLocation()->getColumn()
+                    . ' - ' . $e->getMessage()
             );
         }
 
