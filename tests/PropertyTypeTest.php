@@ -1798,7 +1798,7 @@ class PropertyTypeTest extends TestCase
                     }
 
                     class B extends A {}',
-                'error_message' => 'InaccessibleMethod - src/somefile.php:11',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
             ],
             'classInheritsPrivateConstructorWithImplementedConstructor' => [
                 '<?php
