@@ -507,4 +507,74 @@ class PluginTest extends TestCase
             $this->project_analyzer->getCodebase()->config->after_codebase_populated
         );
     }
+
+    /** @return void */
+    public function testPropertyProviderHooks()
+    {
+        require_once __DIR__ . '/Plugin/PropertyPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\PropertyPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {}
+
+                $foo = new Foo();
+                echo $foo->magic_property;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /** @return void */
+    public function testMethodProviderHooks()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $foo = new \Psalm\Test\Plugin\Foo();
+                echo $foo->magicMethod();'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

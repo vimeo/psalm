@@ -7,7 +7,8 @@ use Psalm\Internal\Provider\{
     ClassLikeStorageProvider,
     FileReferenceProvider,
     PropertyExistenceProvider,
-    PropertyTypeProvider
+    PropertyTypeProvider,
+    PropertyVisibilityProvider
 };
 use Psalm\Type;
 
@@ -43,6 +44,11 @@ class Properties
      */
     public $property_type_provider;
 
+    /**
+     * @var PropertyVisibilityProvider
+     */
+    public $property_visibility_provider;
+
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider
@@ -50,6 +56,7 @@ class Properties
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
         $this->property_existence_provider = new PropertyExistenceProvider();
+        $this->property_visibility_provider = new PropertyVisibilityProvider();
         $this->property_type_provider = new PropertyTypeProvider();
     }
 

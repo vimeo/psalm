@@ -515,7 +515,7 @@ class PropertyFetchAnalyzer
             if (!$override_property_visibility) {
                 if (ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
-                    $context->self,
+                    $context,
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $statements_analyzer->getSuppressedIssues()

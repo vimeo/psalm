@@ -7,9 +7,9 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
 
-class PropertyExistenceProvider
+class PropertyVisibilityProvider
 {
     /**
      * @var array<
@@ -17,7 +17,7 @@ class PropertyExistenceProvider
      *   array<\Closure(
      *     string,
      *     string,
-     *     bool=,
+     *     bool,
      *     ?Context=,
      *     ?CodeLocation=
      *   ) : ?bool>
@@ -31,7 +31,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  class-string<PropertyExistenceProviderInterface> $class
+     * @param  class-string<PropertyVisibilityProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -39,9 +39,9 @@ class PropertyExistenceProvider
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
+            $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('isPropertyVisible')->getClosure(new $class);
         }
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
@@ -75,7 +75,7 @@ class PropertyExistenceProvider
      * @param  array<PhpParser\Node\Arg>  $call_args
      * @return ?bool
      */
-    public function doesPropertyExist(
+    public function isPropertyVisible(
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
@@ -83,7 +83,7 @@ class PropertyExistenceProvider
         CodeLocation $code_location = null
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_exists = $property_handler(
+            $property_visible = $property_handler(
                 $fq_classlike_name,
                 $property_name,
                 $read_mode,
@@ -91,8 +91,8 @@ class PropertyExistenceProvider
                 $code_location
             );
 
-            if ($property_exists !== null) {
-                return $property_exists;
+            if ($property_visible !== null) {
+                return $property_visible;
             }
         }
 

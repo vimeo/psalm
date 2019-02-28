@@ -38,9 +38,9 @@ class PropertyTypeProvider
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
+            $callable = \Closure::fromCallable([$class, 'getPropertyType']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getPropertyType')->getClosure(new $class);
         }
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
