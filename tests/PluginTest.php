@@ -572,7 +572,7 @@ class PluginTest extends TestCase
             $file_path,
             '<?php
                 $foo = new \Psalm\Test\Plugin\Foo();
-                echo $foo->magicMethod();'
+                echo $foo->magicMethod("hello");'
         );
 
         $this->analyzeFile($file_path, new Context());

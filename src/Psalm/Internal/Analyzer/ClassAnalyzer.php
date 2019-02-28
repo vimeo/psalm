@@ -485,7 +485,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             $property_class_name = $codebase->properties->getDeclaringClassForProperty(
-                $appearing_property_id
+                $appearing_property_id,
+                true
             );
             $property_class_storage = $classlike_storage_provider->get((string)$property_class_name);
 
@@ -806,7 +807,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         foreach ($storage->appearing_property_ids as $property_name => $appearing_property_id) {
             $property_class_name = (string) $codebase->properties->getDeclaringClassForProperty(
-                $appearing_property_id
+                $appearing_property_id,
+                true
             );
             $property_class_storage = $classlike_storage_provider->get($property_class_name);
 
@@ -1135,7 +1137,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $property_id = $fq_class_name . '::$' . $property_name;
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $property_id
+                $property_id,
+                true
             );
 
             if (!$declaring_property_class) {

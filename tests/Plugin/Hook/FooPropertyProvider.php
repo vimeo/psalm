@@ -44,8 +44,8 @@ class FooPropertyProvider
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context,
-        CodeLocation $code_location
+        Context $context = null,
+        CodeLocation $code_location = null
     ) {
         return true;
     }

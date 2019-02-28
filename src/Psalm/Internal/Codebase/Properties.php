@@ -131,9 +131,21 @@ class Properties
      *
      * @return string|null
      */
-    public function getDeclaringClassForProperty($property_id)
+    public function getDeclaringClassForProperty($property_id, bool $read_mode)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        if ($this->property_existence_provider->has($fq_class_name)) {
+            if ($this->property_existence_provider->doesPropertyExist(
+                $fq_class_name,
+                $property_name,
+                $read_mode,
+                null,
+                null
+            )) {
+                return $fq_class_name;
+            }
+        }
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -149,9 +161,21 @@ class Properties
      *
      * @return string|null
      */
-    public function getAppearingClassForProperty($property_id)
+    public function getAppearingClassForProperty($property_id, bool $read_mode)
     {
         list($fq_class_name, $property_name) = explode('::$', $property_id);
+
+        if ($this->property_existence_provider->has($fq_class_name)) {
+            if ($this->property_existence_provider->doesPropertyExist(
+                $fq_class_name,
+                $property_name,
+                $read_mode,
+                null,
+                null
+            )) {
+                return $fq_class_name;
+            }
+        }
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 

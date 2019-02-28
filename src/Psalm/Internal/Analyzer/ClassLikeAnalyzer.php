@@ -490,10 +490,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-            $property_id
+            $property_id,
+            true
         );
         $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
-            $property_id
+            $property_id,
+            true
         );
 
         if (!$declaring_property_class || !$appearing_property_class) {
@@ -503,7 +505,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         }
 
         // if the calling class is the same, we know the property exists, so it must be visible
-        if ($appearing_property_class === $calling_context->self) {
+        if ($appearing_property_class === $context->self) {
             return $emit_issues ? null : true;
         }
 
@@ -524,10 +526,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                 return $emit_issues ? null : true;
 
             case self::VISIBILITY_PRIVATE:
-                if (!$calling_context->self || $appearing_property_class !== $calling_context) {
+                if (!$context->self || $appearing_property_class !== $context->self) {
                     if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(
-                            'Cannot access private property ' . $property_id . ' from context ' . $calling_context,
+                            'Cannot access private property ' . $property_id . ' from context ' . $context->self,
                             $code_location
                         ),
                         $suppressed_issues
@@ -545,7 +547,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
                     return null;
                 }
 
-                if (!$calling_context->self) {
+                if (!$context->self) {
                     if ($emit_issues && IssueBuffer::accepts(
                         new InaccessibleProperty(
                             'Cannot access protected property ' . $property_id,

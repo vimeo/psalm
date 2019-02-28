@@ -524,41 +524,46 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty($property_id);
+            $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
+                $property_id,
+                true
+            );
 
             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                 $declaring_property_class
             );
 
-            $property_storage = $declaring_class_storage->properties[$prop_name];
+            if (isset($declaring_class_storage->properties[$prop_name])) {
+                $property_storage = $declaring_class_storage->properties[$prop_name];
 
-            if ($property_storage->deprecated) {
-                if (IssueBuffer::accepts(
-                    new DeprecatedProperty(
-                        $property_id . ' is marked deprecated',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    // fall through
-                }
-            }
-
-            if ($property_storage->internal && $context->self) {
-                $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
-                $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
-
-                if (strtolower($self_root) !== strtolower($declaring_root)) {
+                if ($property_storage->deprecated) {
                     if (IssueBuffer::accepts(
-                        new InternalProperty(
-                            $property_id . ' is marked internal',
+                        new DeprecatedProperty(
+                            $property_id . ' is marked deprecated',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $property_id
                         ),
                         $statements_analyzer->getSuppressedIssues()
                     )) {
                         // fall through
+                    }
+                }
+
+                if ($property_storage->internal && $context->self) {
+                    $self_root = preg_replace('/^([^\\\]+).*/', '$1', $context->self);
+                    $declaring_root = preg_replace('/^([^\\\]+).*/', '$1', $declaring_property_class);
+
+                    if (strtolower($self_root) !== strtolower($declaring_root)) {
+                        if (IssueBuffer::accepts(
+                            new InternalProperty(
+                                $property_id . ' is marked internal',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_id
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 }
             }
@@ -839,7 +844,7 @@ class PropertyFetchAnalyzer
 
             if (ClassLikeAnalyzer::checkPropertyVisibility(
                 $property_id,
-                $context->self,
+                $context,
                 $statements_analyzer,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer->getSuppressedIssues()
@@ -848,7 +853,8 @@ class PropertyFetchAnalyzer
             }
 
             $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                $fq_class_name . '::$' . $prop_name
+                $fq_class_name . '::$' . $prop_name,
+                true
             );
 
             $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);

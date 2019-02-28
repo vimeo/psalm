@@ -435,7 +435,8 @@ class PropertyAssignmentAnalyzer
                 }
 
                 $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
-                    $property_id
+                    $property_id,
+                    false
                 );
 
                 $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
@@ -800,7 +801,7 @@ class PropertyAssignmentAnalyzer
 
         if (ClassLikeAnalyzer::checkPropertyVisibility(
             $property_id,
-            $context->self,
+            $context,
             $statements_analyzer,
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer->getSuppressedIssues()
@@ -809,7 +810,8 @@ class PropertyAssignmentAnalyzer
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-            $fq_class_name . '::$' . $prop_name->name
+            $fq_class_name . '::$' . $prop_name->name,
+            false
         );
 
         $class_storage = $codebase->classlike_storage_provider->get((string)$declaring_property_class);

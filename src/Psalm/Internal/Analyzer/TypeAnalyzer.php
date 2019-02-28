@@ -1096,7 +1096,8 @@ class TypeAnalyzer
                     }
 
                     $property_declaring_class = (string) $codebase->properties->getDeclaringClassForProperty(
-                        $input_type_part . '::$' . $property_name
+                        $input_type_part . '::$' . $property_name,
+                        true
                     );
 
                     $class_storage = $codebase->classlike_storage_provider->get($property_declaring_class);
