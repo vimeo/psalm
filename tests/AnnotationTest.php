@@ -1280,7 +1280,7 @@ class AnnotationTest extends TestCase
                 '<?php
                     /** @param string[] $bar */
                     function f(array $barb): void {}',
-                'error_message' => 'InvalidDocblockParamName - src/somefile.php:2:41',
+                'error_message' => 'InvalidDocblockParamName - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:41',
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 '<?php
