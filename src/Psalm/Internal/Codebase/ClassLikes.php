@@ -751,7 +751,7 @@ class ClassLikes
             } else {
                 $declaring_method_id = $classlike_storage->declaring_method_ids[$method_name];
 
-                list($declaring_fq_classlike_name) = explode('::', $declaring_method_id);
+                list($declaring_fq_classlike_name, $declaring_method_name) = explode('::', $declaring_method_id);
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
@@ -759,7 +759,7 @@ class ClassLikes
                     continue;
                 }
 
-                $method_storage = $declaring_classlike_storage->methods[$method_name];
+                $method_storage = $declaring_classlike_storage->methods[$declaring_method_name];
             }
 
             if (($method_storage->referencing_locations === null
