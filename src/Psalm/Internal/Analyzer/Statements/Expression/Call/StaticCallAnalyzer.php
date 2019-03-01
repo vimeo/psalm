@@ -460,7 +460,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 );
 
                 if (!$does_method_exist) {
-                    return false;
+                    return;
                 }
 
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
