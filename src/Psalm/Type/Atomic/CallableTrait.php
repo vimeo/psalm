@@ -141,7 +141,16 @@ trait CallableTrait
         $return_type_string = '';
 
         if ($this->params !== null) {
-            $param_string = '(' . implode(', ', $this->params) . ')';
+            $param_string .= '(';
+            foreach ($this->params as $i => $param) {
+                if ($i) {
+                    $param_string .= ', ';
+                }
+
+                $param_string .= $param->getId();
+            }
+
+            $param_string .= ')';
         }
 
         if ($this->return_type !== null) {

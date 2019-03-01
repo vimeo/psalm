@@ -109,6 +109,13 @@ class FunctionLikeParameter
             . ($this->is_optional ? '=' : '');
     }
 
+    public function getId()
+    {
+        return ($this->type ? $this->type->getId() : 'mixed')
+            . ($this->is_variadic ? '...' : '')
+            . ($this->is_optional ? '=' : '');
+    }
+
     public function __clone()
     {
         if ($this->type) {

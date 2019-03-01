@@ -425,8 +425,8 @@ class ExpressionAnalyzer
                             $statements_analyzer->getCodebase(),
                             $atomic_type,
                             new TString(),
-                            true,
                             false,
+                            true,
                             $has_scalar_match
                         )
                         && !$has_scalar_match
