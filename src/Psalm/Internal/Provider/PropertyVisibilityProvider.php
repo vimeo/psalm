@@ -7,9 +7,9 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
 
-class MethodReturnTypeProvider
+class PropertyVisibilityProvider
 {
     /**
      * @var array<
@@ -18,10 +18,10 @@ class MethodReturnTypeProvider
      *     StatementsSource,
      *     string,
      *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union>
+     *     bool,
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?bool>
      * >
      */
     private static $handlers = [];
@@ -29,13 +29,10 @@ class MethodReturnTypeProvider
     public function __construct()
     {
         self::$handlers = [];
-
-        $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
-        $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
     }
 
     /**
-     * @param  class-string<MethodReturnTypeProviderInterface> $class
+     * @param  class-string<PropertyVisibilityProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -46,9 +43,9 @@ class MethodReturnTypeProvider
              * @psalm-suppress UndefinedMethod
              * @var \Closure
              */
-            $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
+            $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('getMethodReturnType')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('isPropertyVisible')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
@@ -62,14 +59,15 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param  \Closure(
+     * /**
+     * @param \Closure(
      *     StatementsSource,
      *     string,
      *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union $c
+     *     bool,
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?bool $c
      *
      * @return void
      */
@@ -84,29 +82,29 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>  $call_args
-     * @return  ?Type\Union
+     * @param  array<PhpParser\Node\Arg>  $call_args
+     * @return ?bool
      */
-    public function getReturnType(
-        StatementsSource $statements_source,
+    public function isPropertyVisible(
+        StatementsSource $source,
         string $fq_classlike_name,
-        string $method_name,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
+        string $property_name,
+        bool $read_mode,
+        Context $context = null,
+        CodeLocation $code_location = null
     ) {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
-            $result = $class_handler(
-                $statements_source,
+        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
+            $property_visible = $property_handler(
+                $source,
                 $fq_classlike_name,
-                strtolower($method_name),
-                $call_args,
+                $property_name,
+                $read_mode,
                 $context,
                 $code_location
             );
 
-            if ($result) {
-                return $result;
+            if ($property_visible !== null) {
+                return $property_visible;
             }
         }
 

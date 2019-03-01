@@ -61,10 +61,15 @@ class FunctionReturnTypeProvider
             $callable = \Closure::fromCallable([$class, 'getFunctionReturnType']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('getFunctionReturnType')->getClosure(new $class);
+
+            if (!$callable) {
+                throw new \UnexpectedValueException('Callable must not be null');
+            }
         }
 
         foreach ($class::getFunctionIds() as $function_id) {
-            self::$handlers[$function_id][] = $callable;
+            /** @psalm-suppress MixedTypeCoercion */
+            $this->registerClosure($function_id, $callable);
         }
     }
 

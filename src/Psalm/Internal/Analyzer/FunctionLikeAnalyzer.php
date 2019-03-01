@@ -1162,9 +1162,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getMethodParamsById(Codebase $codebase, $method_id, array $args)
-    {
+    public static function getMethodParamsById(
+        StatementsAnalyzer $statements_analyzer,
+        $method_id,
+        array $args
+    ) {
         $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
+
+        $codebase = $statements_analyzer->getCodebase();
 
         if ($fq_class_name) {
             $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
@@ -1172,7 +1177,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
             if ($class_storage->user_defined || $class_storage->stubbed) {
-                $method_params = $codebase->methods->getMethodParams($method_id);
+                $method_params = $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args);
 
                 return $method_params;
             }

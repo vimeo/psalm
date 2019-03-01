@@ -9,12 +9,16 @@ class PluginRegistrationSocket implements RegistrationInterface
     /** @var Config */
     private $config;
 
+    /** @var Codebase */
+    private $codebase;
+
     /**
      * @internal
      */
-    public function __construct(Config $config)
+    public function __construct(Config $config, Codebase $codebase)
     {
         $this->config = $config;
+        $this->codebase = $codebase;
     }
 
     /** @return void */
@@ -63,6 +67,46 @@ class PluginRegistrationSocket implements RegistrationInterface
 
         if (is_subclass_of($handler, Hook\AfterCodebasePopulatedInterface::class)) {
             $this->config->after_codebase_populated[$handler] = $handler;
+        }
+
+        if (is_subclass_of($handler, Hook\PropertyExistenceProviderInterface::class)) {
+            $this->codebase->properties->property_existence_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\PropertyVisibilityProviderInterface::class)) {
+            $this->codebase->properties->property_visibility_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\PropertyTypeProviderInterface::class)) {
+            $this->codebase->properties->property_type_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\MethodExistenceProviderInterface::class)) {
+            $this->codebase->methods->existence_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\MethodVisibilityProviderInterface::class)) {
+            $this->codebase->methods->visibility_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\MethodReturnTypeProviderInterface::class)) {
+            $this->codebase->methods->return_type_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\MethodParamsProviderInterface::class)) {
+            $this->codebase->methods->params_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\FunctionExistenceProviderInterface::class)) {
+            $this->codebase->functions->existence_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\FunctionParamsProviderInterface::class)) {
+            $this->codebase->functions->params_provider->registerClass($handler);
+        }
+
+        if (is_subclass_of($handler, Hook\FunctionReturnTypeProviderInterface::class)) {
+            $this->codebase->functions->return_type_provider->registerClass($handler);
         }
     }
 }

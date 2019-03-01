@@ -346,7 +346,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if (!$codebase->methods->methodExists($method_id)
                     || !MethodAnalyzer::isMethodVisible(
                         $method_id,
-                        $context->self,
+                        $context,
                         $statements_analyzer->getSource()
                     )
                 ) {
@@ -490,7 +490,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            //
                         }
 
                         return;
@@ -586,7 +586,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                 if (MethodAnalyzer::checkMethodVisibility(
                     $method_id,
-                    $context->self,
+                    $context,
                     $statements_analyzer->getSource(),
                     new CodeLocation($source, $stmt),
                     $statements_analyzer->getSuppressedIssues()

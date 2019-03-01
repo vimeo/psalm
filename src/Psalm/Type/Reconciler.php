@@ -2610,12 +2610,13 @@ class Reconciler
                             } else {
                                 $property_id = $existing_key_type_part->value . '::$' . $property_name;
 
-                                if (!$codebase->properties->propertyExists($property_id)) {
+                                if (!$codebase->properties->propertyExists($property_id, true)) {
                                     return null;
                                 }
 
                                 $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
-                                    $property_id
+                                    $property_id,
+                                    true
                                 );
 
                                 $class_storage = $codebase->classlike_storage_provider->get(

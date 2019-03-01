@@ -861,7 +861,7 @@ class Config
     {
         $codebase = $project_analyzer->getCodebase();
 
-        $socket = new PluginRegistrationSocket($this);
+        $socket = new PluginRegistrationSocket($this, $codebase);
         // initialize plugin classes earlier to let them hook into subsequent load process
         foreach ($this->plugin_classes as $plugin_class_entry) {
             $plugin_class_name = $plugin_class_entry['class'];

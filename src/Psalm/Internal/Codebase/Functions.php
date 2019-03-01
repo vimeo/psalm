@@ -3,7 +3,12 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Provider\{FileStorageProvider, FunctionReturnTypeProvider};
+use Psalm\Internal\Provider\{
+    FileStorageProvider,
+    FunctionReturnTypeProvider,
+    FunctionExistenceProvider,
+    FunctionParamsProvider
+};
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 
@@ -25,6 +30,12 @@ class Functions
     /** @var FunctionReturnTypeProvider */
     public $return_type_provider;
 
+    /** @var FunctionExistenceProvider */
+    public $existence_provider;
+
+    /** @var FunctionParamsProvider */
+    public $params_provider;
+
     /**
      * @var Reflection
      */
@@ -35,6 +46,8 @@ class Functions
         $this->file_storage_provider = $storage_provider;
         $this->reflection = $reflection;
         $this->return_type_provider = new FunctionReturnTypeProvider();
+        $this->existence_provider = new FunctionExistenceProvider();
+        $this->params_provider = new FunctionParamsProvider();
 
         self::$stubbed_functions = [];
     }
@@ -127,12 +140,20 @@ class Functions
     }
 
     /**
-     * @param  string $function_id
-     *
      * @return bool
      */
-    public function functionExists(StatementsAnalyzer $statements_analyzer, $function_id)
-    {
+    public function functionExists(
+        StatementsAnalyzer $statements_analyzer,
+        string $function_id
+    ) {
+        if ($this->existence_provider->has($function_id)) {
+            $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
+
+            if ($function_exists !== null) {
+                return $function_exists;
+            }
+        }
+
         $file_storage = $this->file_storage_provider->get($statements_analyzer->getRootFilePath());
 
         if (isset($file_storage->declaring_function_ids[$function_id])) {

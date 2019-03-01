@@ -555,7 +555,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$codebase->methods->methodExists($method_id)
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
-                $context->self,
+                $context,
                 $statements_analyzer->getSource()
             )
         ) {
@@ -858,8 +858,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 return;
         }
 
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
         $call_map_id = strtolower(
-            $codebase->methods->getDeclaringMethodId($method_id) ?: $method_id
+            $declaring_method_id ?: $method_id
         );
 
         if ($method_name_lc === '__tostring') {
@@ -878,6 +880,21 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 );
             }
 
+            if (!$return_type_candidate && $declaring_method_id && $declaring_method_id !== $method_id) {
+                list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+                if ($codebase->methods->return_type_provider->has($declaring_fq_class_name)) {
+                    $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                        $statements_analyzer,
+                        $declaring_fq_class_name,
+                        $declaring_method_name,
+                        $stmt->args,
+                        $context,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    );
+                }
+            }
+
             if (!$return_type_candidate) {
                 if ($call_map_id && CallMap::inCallMap($call_map_id)) {
                     if (($class_template_params || $class_storage->stubbed)
@@ -894,18 +911,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             );
                         }
                     } else {
-                        if ($call_map_id === 'domnode::appendchild'
-                            && isset($args[0]->value->inferredType)
-                            && $args[0]->value->inferredType->hasObjectType()
-                        ) {
-                            $return_type_candidate = clone $args[0]->value->inferredType;
-                        } elseif ($call_map_id === 'simplexmlelement::asxml' && !count($args)) {
-                            $return_type_candidate = Type::parseString('string|false');
-                        } else {
-                            $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
-                            if ($return_type_candidate->isFalsable()) {
-                                $return_type_candidate->ignore_falsable_issues = true;
-                            }
+                        $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
+                        if ($return_type_candidate->isFalsable()) {
+                            $return_type_candidate->ignore_falsable_issues = true;
                         }
                     }
 
@@ -921,7 +929,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($check_visibility) {
                         if (MethodAnalyzer::checkMethodVisibility(
                             $method_id,
-                            $context->self,
+                            $context,
                             $statements_analyzer->getSource(),
                             $name_code_location,
                             $statements_analyzer->getSuppressedIssues()

@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\StatementsSource;
 
-interface MethodReturnTypeProviderInterface
+interface PropertyTypeProviderInterface
 {
     /**
      * @return array<string>
@@ -19,12 +19,11 @@ interface MethodReturnTypeProviderInterface
      * @param  array<PhpParser\Node\Arg>    $call_args
      * @return ?Type\Union
      */
-    public static function getMethodReturnType(
-        StatementsSource $source,
+    public static function getPropertyType(
         string $fq_classlike_name,
-        string $method_name_lowercase,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
+        string $property_name,
+        bool $read_mode,
+        StatementsSource $source = null,
+        Context $context = null
     );
 }

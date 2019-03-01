@@ -1086,14 +1086,18 @@ class TypeAnalyzer
                         continue;
                     }
 
-                    if (!$codebase->properties->propertyExists($input_type_part . '::$' . $property_name)) {
+                    if (!$codebase->properties->propertyExists(
+                        $input_type_part . '::$' . $property_name,
+                        true
+                    )) {
                         $all_types_contain = false;
 
                         continue;
                     }
 
                     $property_declaring_class = (string) $codebase->properties->getDeclaringClassForProperty(
-                        $input_type_part . '::$' . $property_name
+                        $input_type_part . '::$' . $property_name,
+                        true
                     );
 
                     $class_storage = $codebase->classlike_storage_provider->get($property_declaring_class);

@@ -7,20 +7,19 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
 
-class MethodReturnTypeProvider
+class PropertyTypeProvider
 {
     /**
      * @var array<
      *   string,
      *   array<\Closure(
-     *     StatementsSource,
      *     string,
      *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
+     *     bool,
+     *     ?StatementsSource=,
+     *     ?Context=
      *   ) : ?Type\Union>
      * >
      */
@@ -29,13 +28,10 @@ class MethodReturnTypeProvider
     public function __construct()
     {
         self::$handlers = [];
-
-        $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
-        $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
     }
 
     /**
-     * @param  class-string<MethodReturnTypeProviderInterface> $class
+     * @param  class-string<PropertyTypeProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -46,9 +42,9 @@ class MethodReturnTypeProvider
              * @psalm-suppress UndefinedMethod
              * @var \Closure
              */
-            $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
+            $callable = \Closure::fromCallable([$class, 'getPropertyType']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('getMethodReturnType')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getPropertyType')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
@@ -62,13 +58,13 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param  \Closure(
-     *     StatementsSource,
+     * /**
+     * @param \Closure(
      *     string,
      *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
+     *     bool,
+     *     ?StatementsSource=,
+     *     ?Context=
      *   ) : ?Type\Union $c
      *
      * @return void
@@ -84,29 +80,27 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>  $call_args
-     * @return  ?Type\Union
+     * @param  array<PhpParser\Node\Arg>  $call_args
+     * @return ?Type\Union
      */
-    public function getReturnType(
-        StatementsSource $statements_source,
+    public function getPropertyType(
         string $fq_classlike_name,
-        string $method_name,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
+        string $property_name,
+        bool $read_mode,
+        StatementsSource $source = null,
+        Context $context = null
     ) {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
-            $result = $class_handler(
-                $statements_source,
+        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
+            $property_type = $property_handler(
                 $fq_classlike_name,
-                strtolower($method_name),
-                $call_args,
-                $context,
-                $code_location
+                $property_name,
+                $read_mode,
+                $source,
+                $context
             );
 
-            if ($result) {
-                return $result;
+            if ($property_type !== null) {
+                return $property_type;
             }
         }
 

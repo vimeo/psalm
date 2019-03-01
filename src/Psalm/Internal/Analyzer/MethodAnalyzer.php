@@ -232,7 +232,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @param  string           $method_id
-     * @param  string|null      $calling_context
+     * @param  Context          $context
      * @param  StatementsSource $source
      * @param  CodeLocation     $code_location
      * @param  array            $suppressed_issues
@@ -241,7 +241,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      */
     public static function checkMethodVisibility(
         $method_id,
-        $calling_context,
+        Context $context,
         StatementsSource $source,
         CodeLocation $code_location,
         array $suppressed_issues
@@ -249,6 +249,33 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         $codebase = $source->getCodebase();
         $codebase_methods = $codebase->methods;
         $codebase_classlikes = $codebase->classlikes;
+
+        list($fq_classlike_name, $method_name) = explode('::', $method_id);
+
+        if ($codebase_methods->visibility_provider->has($fq_classlike_name)) {
+            $method_visible = $codebase_methods->visibility_provider->isMethodVisible(
+                $source,
+                $fq_classlike_name,
+                $method_name,
+                $context,
+                $code_location
+            );
+
+            if ($method_visible === false) {
+                if (IssueBuffer::accepts(
+                    new InaccessibleMethod(
+                        'Cannot access method ' . $codebase_methods->getCasedMethodId($method_id) .
+                            ' from context ' . $context->self,
+                        $code_location
+                    ),
+                    $suppressed_issues
+                )) {
+                    return false;
+                }
+            } elseif ($method_visible === true) {
+                return false;
+            }
+        }
 
         $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
@@ -275,7 +302,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             list($appearing_method_class, $appearing_method_name) = explode('::', $appearing_method_id);
 
             // if the calling class is the same, we know the method exists, so it must be visible
-            if ($appearing_method_class === $calling_context) {
+            if ($appearing_method_class === $context->self) {
                 return null;
             }
 
@@ -302,11 +329,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 return null;
 
             case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
-                if (!$calling_context || $appearing_method_class !== $calling_context) {
+                if (!$context->self || $appearing_method_class !== $context->self) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access private method ' . $codebase_methods->getCasedMethodId($method_id) .
-                                ' from context ' . $calling_context,
+                                ' from context ' . $context->self,
                             $code_location
                         ),
                         $suppressed_issues
@@ -318,7 +345,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 return null;
 
             case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
-                if (!$calling_context) {
+                if (!$context->self) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $method_id,
@@ -333,18 +360,18 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 if ($appearing_method_class
-                    && $codebase_classlikes->classExtends($appearing_method_class, $calling_context)
+                    && $codebase_classlikes->classExtends($appearing_method_class, $context->self)
                 ) {
                     return null;
                 }
 
                 if ($appearing_method_class
-                    && !$codebase_classlikes->classExtends($calling_context, $appearing_method_class)
+                    && !$codebase_classlikes->classExtends($context->self, $appearing_method_class)
                 ) {
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access protected method ' . $codebase_methods->getCasedMethodId($method_id) .
-                                ' from context ' . $calling_context,
+                                ' from context ' . $context->self,
                             $code_location
                         ),
                         $suppressed_issues
@@ -359,17 +386,33 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * @param  string           $method_id
-     * @param  string|null      $calling_context
+     * @param  Context          $context
      * @param  StatementsSource $source
      *
      * @return bool
      */
     public static function isMethodVisible(
         $method_id,
-        $calling_context,
+        Context $context,
         StatementsSource $source
     ) {
         $codebase = $source->getCodebase();
+
+        list($fq_classlike_name, $method_name) = explode('::', $method_id);
+
+        if ($codebase->methods->visibility_provider->has($fq_classlike_name)) {
+            $method_visible = $codebase->methods->visibility_provider->isMethodVisible(
+                $source,
+                $fq_classlike_name,
+                $method_name,
+                $context,
+                null
+            );
+
+            if ($method_visible !== null) {
+                return $method_visible;
+            }
+        }
 
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -386,7 +429,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             list($appearing_method_class) = explode('::', $appearing_method_id);
 
             // if the calling class is the same, we know the method exists, so it must be visible
-            if ($appearing_method_class === $calling_context) {
+            if ($appearing_method_class === $context->self) {
                 return true;
             }
         }
@@ -404,21 +447,21 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 return true;
 
             case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
-                return $calling_context && $appearing_method_class === $calling_context;
+                return $context->self && $appearing_method_class === $context->self;
 
             case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
-                if (!$calling_context) {
+                if (!$context->self) {
                     return false;
                 }
 
                 if ($appearing_method_class
-                    && $codebase->classExtends($appearing_method_class, $calling_context)
+                    && $codebase->classExtends($appearing_method_class, $context->self)
                 ) {
                     return true;
                 }
 
                 if ($appearing_method_class
-                    && !$codebase->classExtends($calling_context, $appearing_method_class)
+                    && !$codebase->classExtends($context->self, $appearing_method_class)
                 ) {
                     return false;
                 }

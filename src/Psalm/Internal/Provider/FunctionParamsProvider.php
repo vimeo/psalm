@@ -7,9 +7,9 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\FunctionParamsProviderInterface;
 
-class MethodReturnTypeProvider
+class FunctionParamsProvider
 {
     /**
      * @var array<
@@ -17,11 +17,10 @@ class MethodReturnTypeProvider
      *   array<\Closure(
      *     StatementsSource,
      *     string,
-     *     string,
      *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union>
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -29,13 +28,10 @@ class MethodReturnTypeProvider
     public function __construct()
     {
         self::$handlers = [];
-
-        $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
-        $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
     }
 
     /**
-     * @param  class-string<MethodReturnTypeProviderInterface> $class
+     * @param  class-string<FunctionParamsProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -46,18 +42,18 @@ class MethodReturnTypeProvider
              * @psalm-suppress UndefinedMethod
              * @var \Closure
              */
-            $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
+            $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('getMethodReturnType')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getFunctionParams')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
             }
         }
 
-        foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+        foreach ($class::getFunctionIds() as $function_id) {
             /** @psalm-suppress MixedTypeCoercion */
-            $this->registerClosure($fq_classlike_name, $callable);
+            $this->registerClosure($function_id, $callable);
         }
     }
 
@@ -65,11 +61,10 @@ class MethodReturnTypeProvider
      * @param  \Closure(
      *     StatementsSource,
      *     string,
-     *     string,
      *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union $c
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
      * @return void
      */
@@ -85,21 +80,19 @@ class MethodReturnTypeProvider
 
     /**
      * @param array<PhpParser\Node\Arg>  $call_args
-     * @return  ?Type\Union
+     * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public function getReturnType(
+    public function getFunctionParams(
         StatementsSource $statements_source,
-        string $fq_classlike_name,
-        string $method_name,
+        string $function_id,
         array $call_args,
-        Context $context,
-        CodeLocation $code_location
+        Context $context = null,
+        CodeLocation $code_location = null
     ) {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
+        foreach (self::$handlers[strtolower($function_id)] as $class_handler) {
             $result = $class_handler(
                 $statements_source,
-                $fq_classlike_name,
-                strtolower($method_name),
+                $function_id,
                 $call_args,
                 $context,
                 $code_location

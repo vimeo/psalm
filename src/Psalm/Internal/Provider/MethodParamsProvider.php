@@ -7,21 +7,21 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\MethodParamsProviderInterface;
 
-class MethodReturnTypeProvider
+class MethodParamsProvider
 {
     /**
      * @var array<
      *   string,
      *   array<\Closure(
-     *     StatementsSource,
      *     string,
      *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union>
+     *     ?array<PhpParser\Node\Arg>=,
+     *     ?StatementsSource=,
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -29,13 +29,10 @@ class MethodReturnTypeProvider
     public function __construct()
     {
         self::$handlers = [];
-
-        $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
-        $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
     }
 
     /**
-     * @param  class-string<MethodReturnTypeProviderInterface> $class
+     * @param  class-string<MethodParamsProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -46,9 +43,9 @@ class MethodReturnTypeProvider
              * @psalm-suppress UndefinedMethod
              * @var \Closure
              */
-            $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
+            $callable = \Closure::fromCallable([$class, 'getMethodParams']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('getMethodReturnType')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getMethodParams')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
@@ -63,13 +60,13 @@ class MethodReturnTypeProvider
 
     /**
      * @param  \Closure(
-     *     StatementsSource,
      *     string,
      *     string,
-     *     array<PhpParser\Node\Arg>,
-     *     Context,
-     *     CodeLocation
-     *   ) : ?Type\Union $c
+     *     ?array<PhpParser\Node\Arg>=,
+     *     ?StatementsSource=,
+     *     ?Context=,
+     *     ?CodeLocation=
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
      * @return void
      */
@@ -84,23 +81,23 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param array<PhpParser\Node\Arg>  $call_args
-     * @return  ?Type\Union
+     * @param ?array<PhpParser\Node\Arg>  $call_args
+     * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public function getReturnType(
-        StatementsSource $statements_source,
+    public function getMethodParams(
         string $fq_classlike_name,
-        string $method_name,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
+        string $method_name_lowercase,
+        array $call_args = null,
+        StatementsSource $statements_source = null,
+        Context $context = null,
+        CodeLocation $code_location = null
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
             $result = $class_handler(
-                $statements_source,
                 $fq_classlike_name,
-                strtolower($method_name),
+                $method_name_lowercase,
                 $call_args,
+                $statements_source,
                 $context,
                 $code_location
             );

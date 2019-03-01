@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\StatementsSource;
 
-interface MethodReturnTypeProviderInterface
+interface PropertyVisibilityProviderInterface
 {
     /**
      * @return array<string>
@@ -16,14 +16,13 @@ interface MethodReturnTypeProviderInterface
     public static function getClassLikeNames() : array;
 
     /**
-     * @param  array<PhpParser\Node\Arg>    $call_args
-     * @return ?Type\Union
+     * @return ?bool
      */
-    public static function getMethodReturnType(
+    public static function isPropertyVisible(
         StatementsSource $source,
         string $fq_classlike_name,
-        string $method_name_lowercase,
-        array $call_args,
+        string $property_name,
+        bool $read_mode,
         Context $context,
         CodeLocation $code_location
     );

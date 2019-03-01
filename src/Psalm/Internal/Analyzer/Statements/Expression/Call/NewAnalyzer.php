@@ -345,7 +345,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
                     if (MethodAnalyzer::checkMethodVisibility(
                         $method_id,
-                        $context->self,
+                        $context,
                         $statements_analyzer->getSource(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $statements_analyzer->getSuppressedIssues()

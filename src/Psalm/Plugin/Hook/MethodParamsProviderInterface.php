@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\Type;
 use Psalm\StatementsSource;
 
-interface MethodReturnTypeProviderInterface
+interface MethodParamsProviderInterface
 {
     /**
      * @return array<string>
@@ -17,14 +17,14 @@ interface MethodReturnTypeProviderInterface
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
-     * @return ?Type\Union
+     * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public static function getMethodReturnType(
-        StatementsSource $source,
+    public static function getMethodParams(
         string $fq_classlike_name,
         string $method_name_lowercase,
-        array $call_args,
-        Context $context,
-        CodeLocation $code_location
+        array $call_args = null,
+        StatementsSource $statements_source = null,
+        Context $context = null,
+        CodeLocation $code_location = null
     );
 }
