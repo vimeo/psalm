@@ -1837,6 +1837,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $template_type = Type::getMixed();
                 }
 
+                if (isset($template_types[$template_map[0]])) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            'Duplicate template param in docblock for '
+                                . $cased_function_id,
+                            new CodeLocation($this->file_scanner, $stmt, null, true)
+                        )
+                    )) {
+                    }
+
+                    $storage->has_docblock_issues = true;
+                    return;
+                }
+
                 $storage->template_types[$template_map[0]] = [
                     $template_type,
                     $fq_classlike_name
