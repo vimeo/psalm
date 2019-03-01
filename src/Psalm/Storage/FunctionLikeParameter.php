@@ -109,7 +109,7 @@ class FunctionLikeParameter
             . ($this->is_optional ? '=' : '');
     }
 
-    public function getId()
+    public function getId() : string
     {
         return ($this->type ? $this->type->getId() : 'mixed')
             . ($this->is_variadic ? '...' : '')
