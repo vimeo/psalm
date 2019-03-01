@@ -164,7 +164,6 @@ class FileDiffTest extends TestCase
                 $b_doc = $b_stmt->getDocComment();
 
                 $this->assertNotNull($b_doc, var_export($a_doc, true));
-                assert(!is_null($b_doc));
 
                 $this->assertNotSame($a_doc, $b_doc);
 
@@ -188,7 +187,10 @@ class FileDiffTest extends TestCase
             if (isset($a_stmt->stmts)) {
                 $this->assertTrue(isset($b_stmt->stmts));
 
-                /** @psalm-suppress UndefinedPropertyFetch */
+                /**
+                 * @psalm-suppress UndefinedPropertyFetch
+                 * @psalm-suppress MixedArgument
+                 */
                 $this->assertTreesEqual($a_stmt->stmts, $b_stmt->stmts);
             }
         }
