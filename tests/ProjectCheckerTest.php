@@ -151,7 +151,10 @@ class ProjectAnalyzerTest extends TestCase
             )
         );
 
-        $this->project_analyzer->getCodebase()->config->after_codebase_populated[] = get_class($hook);
+        $hook_class = get_class($hook);
+
+        /** @psalm-suppress TypeCoercion see vimeo/psalm#1397 */
+        $this->project_analyzer->getCodebase()->config->after_codebase_populated[] = $hook_class;
 
         ob_start();
         $this->project_analyzer->check('tests/DummyProject');

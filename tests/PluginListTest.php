@@ -10,11 +10,13 @@ use Psalm\Internal\PluginManager\PluginList;
 /** @group PluginManager */
 class PluginListTest extends TestCase
 {
-    /** @var ObjectProphecy */
+    /** @var ObjectProphecy<ConfigFile> */
     private $config_file;
-    /** @var ObjectProphecy */
+
+    /** @var ObjectProphecy<Config> */
     private $config;
-    /** @var ObjectProphecy */
+
+    /** @var ObjectProphecy<ComposerLock> */
     private $composer_lock;
 
     public function setUp()
