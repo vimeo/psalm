@@ -39,7 +39,10 @@ class PropertyExistenceProvider
     public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /** @psalm-suppress UndefinedMethod */
+            /**
+             * @psalm-suppress UndefinedMethod
+             * @var \Closure
+             */
             $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);

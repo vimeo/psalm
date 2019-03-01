@@ -29,6 +29,9 @@ class MethodReturnTypeProvider
     public function __construct()
     {
         self::$handlers = [];
+
+        $this->registerClass(ReturnTypeProvider\DomNodeAppendChild::class);
+        $this->registerClass(ReturnTypeProvider\SimpleXmlElementAsXml::class);
     }
 
     /**
@@ -39,7 +42,10 @@ class MethodReturnTypeProvider
     public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /** @psalm-suppress UndefinedMethod */
+            /**
+             * @psalm-suppress UndefinedMethod
+             * @var \Closure
+             */
             $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('getMethodReturnType')->getClosure(new $class);
@@ -84,7 +90,7 @@ class MethodReturnTypeProvider
     public function getReturnType(
         StatementsSource $statements_source,
         string $fq_classlike_name,
-        string $method_name_lowercase,
+        string $method_name,
         array $call_args,
         Context $context,
         CodeLocation $code_location
@@ -93,7 +99,7 @@ class MethodReturnTypeProvider
             $result = $class_handler(
                 $statements_source,
                 $fq_classlike_name,
-                $method_name_lowercase,
+                strtolower($method_name),
                 $call_args,
                 $context,
                 $code_location

@@ -39,7 +39,10 @@ class PropertyVisibilityProvider
     public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /** @psalm-suppress UndefinedMethod */
+            /**
+             * @psalm-suppress UndefinedMethod
+             * @var \Closure
+             */
             $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('isPropertyVisible')->getClosure(new $class);

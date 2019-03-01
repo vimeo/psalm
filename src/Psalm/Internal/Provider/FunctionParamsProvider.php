@@ -38,7 +38,10 @@ class FunctionParamsProvider
     public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /** @psalm-suppress UndefinedMethod */
+            /**
+             * @psalm-suppress UndefinedMethod
+             * @var \Closure
+             */
             $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('getFunctionParams')->getClosure(new $class);

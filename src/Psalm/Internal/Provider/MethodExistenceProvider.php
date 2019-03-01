@@ -37,7 +37,10 @@ class MethodExistenceProvider
     public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /** @psalm-suppress UndefinedMethod */
+            /**
+             * @psalm-suppress UndefinedMethod
+             * @var \Closure
+             */
             $callable = \Closure::fromCallable([$class, 'doesMethodExist']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('doesMethodExist')->getClosure(new $class);
