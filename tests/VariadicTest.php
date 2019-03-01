@@ -32,7 +32,7 @@ class VariadicTest extends TestCase
     }
 
     /**
-     * @return array
+     * @return iterable<string,array{string,1?:array<string,string>,2?:string[]}>
      */
     public function providerValidCodeParse()
     {

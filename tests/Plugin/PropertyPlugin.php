@@ -4,6 +4,7 @@ namespace Psalm\Test\Plugin;
 use Psalm\Plugin;
 use SimpleXMLElement;
 
+/** @psalm-suppress UnusedClass */
 class PropertyPlugin implements \Psalm\Plugin\PluginEntryPointInterface
 {
     /** @return void */
