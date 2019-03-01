@@ -269,20 +269,22 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function getMethodMutations($method_id, Context $this_context)
+    public function getMethodMutations($method_id, Context $this_context, bool $from_project_analyzer = false)
     {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
         if (isset($this->class_analyzers_to_analyze[strtolower($fq_class_name)])) {
             $class_analyzer_to_examine = $this->class_analyzers_to_analyze[strtolower($fq_class_name)];
         } else {
-            $this->project_analyzer->getMethodMutations($method_id, $this_context);
+            if (!$from_project_analyzer) {
+                $this->project_analyzer->getMethodMutations($method_id, $this_context);
+            }
 
             return;
         }
 
         $call_context = new Context($this_context->self);
-        $call_context->collect_mutations = true;
+        $call_context->collect_mutations = $this_context->collect_mutations;
         $call_context->collect_initializations = $this_context->collect_initializations;
         $call_context->initialized_methods = $this_context->initialized_methods;
         $call_context->include_location = $this_context->include_location;

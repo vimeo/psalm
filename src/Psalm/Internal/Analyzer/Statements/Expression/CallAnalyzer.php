@@ -105,43 +105,48 @@ class CallAnalyzer
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-            if (!$declaring_method_id) {
-                if (isset($context->vars_in_scope['$this'])) {
-                    foreach ($context->vars_in_scope['$this']->getTypes() as $atomic_type) {
-                        if ($atomic_type instanceof TNamedObject) {
+            if (isset($context->vars_in_scope['$this'])) {
+                foreach ($context->vars_in_scope['$this']->getTypes() as $atomic_type) {
+                    if ($atomic_type instanceof TNamedObject) {
+                        if ($fq_class_name === $atomic_type->value) {
+                            $alt_declaring_method_id = $declaring_method_id;
+                        } else {
                             $fq_class_name = $atomic_type->value;
+
                             $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                            $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                        }
 
-                            if ($declaring_method_id) {
-                                break;
-                            }
+                        if ($alt_declaring_method_id) {
+                            $declaring_method_id = $alt_declaring_method_id;
+                            break;
+                        }
 
-                            if (!$atomic_type->extra_types) {
-                                continue;
-                            }
+                        if (!$atomic_type->extra_types) {
+                            continue;
+                        }
 
-                            foreach ($atomic_type->extra_types as $intersection_type) {
-                                if ($intersection_type instanceof TNamedObject) {
-                                    $fq_class_name = $intersection_type->value;
-                                    $method_id = $fq_class_name . '::' . strtolower($method_name);
+                        foreach ($atomic_type->extra_types as $intersection_type) {
+                            if ($intersection_type instanceof TNamedObject) {
+                                $fq_class_name = $intersection_type->value;
+                                $method_id = $fq_class_name . '::' . strtolower($method_name);
 
-                                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                                $alt_declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                                    if ($declaring_method_id) {
-                                        break;
-                                    }
+                                if ($alt_declaring_method_id) {
+                                    $declaring_method_id = $alt_declaring_method_id;
+                                    break 2;
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                if (!$declaring_method_id) {
-                    // can happen for __call
-                    return;
-                }
+            if (!$declaring_method_id) {
+                // can happen for __call
+                return;
             }
 
             if (isset($context->initialized_methods[$declaring_method_id])) {
@@ -158,9 +163,7 @@ class CallAnalyzer
 
             $class_analyzer = $source->getSource();
 
-            if ($class_analyzer instanceof ClassLikeAnalyzer &&
-                ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE || $method_storage->final)
-            ) {
+            if ($class_analyzer instanceof ClassLikeAnalyzer && !$method_storage->is_static) {
                 $local_vars_in_scope = [];
                 $local_vars_possibly_in_scope = [];
 
@@ -176,7 +179,16 @@ class CallAnalyzer
                     }
                 }
 
-                $class_analyzer->getMethodMutations(strtolower($method_name), $context);
+                if ($fq_class_name === $source->getFQCLN()) {
+                    $class_analyzer->getMethodMutations(strtolower($method_name), $context);
+                } else {
+                    list($declaring_fq_class_name) = explode('::', $declaring_method_id);
+
+                    $old_self = $context->self;
+                    $context->self = $declaring_fq_class_name;
+                    $project_analyzer->getMethodMutations($declaring_method_id, $context);
+                    $context->self = $old_self;
+                }
 
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;

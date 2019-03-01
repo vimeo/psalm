@@ -23,6 +23,7 @@
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php"/>
             <file name="vendor/symfony/console/Command/Command.php" />
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
+            <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <file name="tests/performance/a.test"/>
             <file name="tests/performance/b.test"/>
             <file name="tests/ErrorBaselineTest.php"/>

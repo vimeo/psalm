@@ -965,7 +965,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new PropertyNotSetInConstructor(
                             'Property ' . $property_id . ' is not defined in constructor of ' .
-                                $this->fq_class_name . ' or in any private methods called in the constructor',
+                                $this->fq_class_name . ' or in any methods called in the constructor',
                             $property_storage->location,
                             $property_id
                         ),
