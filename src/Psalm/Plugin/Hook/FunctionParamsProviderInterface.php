@@ -16,12 +16,14 @@ interface FunctionParamsProviderInterface
     public static function getFunctionIds() : array;
 
     /**
+     * @param  array<PhpParser\Node\Arg>    $call_args
      * @return ?array<\Psalm\Storage\FunctionLikeParameter>
      */
     public static function getFunctionParams(
         StatementsSource $statements_source,
         string $function_id,
-        Context $context,
-        CodeLocation $code_location
+        array $call_args,
+        Context $context = null,
+        CodeLocation $code_location = null
     );
 }

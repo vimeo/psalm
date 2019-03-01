@@ -18,7 +18,8 @@ class PropertyTypeProvider
      *     string,
      *     string,
      *     bool,
-     *     Context
+     *     ?StatementsSource=,
+     *     ?Context=
      *   ) : ?Type\Union>
      * >
      */
@@ -41,10 +42,15 @@ class PropertyTypeProvider
             $callable = \Closure::fromCallable([$class, 'getPropertyType']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('getPropertyType')->getClosure(new $class);
+
+            if (!$callable) {
+                throw new \UnexpectedValueException('Callable must not be null');
+            }
         }
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            self::$handlers[strtolower($fq_classlike_name)][] = $callable;
+            /** @psalm-suppress MixedTypeCoercion */
+            $this->registerClosure($fq_classlike_name, $callable);
         }
     }
 
@@ -54,7 +60,8 @@ class PropertyTypeProvider
      *     string,
      *     string,
      *     bool,
-     *     Context
+     *     ?StatementsSource=,
+     *     ?Context=
      *   ) : ?Type\Union $c
      *
      * @return void
@@ -77,13 +84,15 @@ class PropertyTypeProvider
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context
+        StatementsSource $source = null,
+        Context $context = null
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_type = $property_handler(
                 $fq_classlike_name,
                 $property_name,
                 $read_mode,
+                $source,
                 $context
             );
 

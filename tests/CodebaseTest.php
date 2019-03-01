@@ -161,7 +161,7 @@ class CodebaseTest extends TestCase
                 }
             }
         };
-        (new PluginRegistrationSocket($this->codebase->config))
+        (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
             ->registerHooksFromClass(get_class($hook));
         $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageInstanceCacheProvider;
 

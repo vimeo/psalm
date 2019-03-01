@@ -1150,7 +1150,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             $fq_class_name = $declaring_property_class;
 
             // gets inherited property type
-            $class_property_type = $codebase->properties->getPropertyType($property_id, false, $context);
+            $class_property_type = $codebase->properties->getPropertyType($property_id, false, $source, $context);
 
             if ($class_property_type) {
                 return;

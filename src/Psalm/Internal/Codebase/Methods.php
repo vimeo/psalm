@@ -7,8 +7,11 @@ use Psalm\Internal\Provider\{
     ClassLikeStorageProvider,
     FileReferenceProvider,
     MethodReturnTypeProvider,
-    MethodExistenceProvider
+    MethodExistenceProvider,
+    MethodParamsProvider,
+    MethodVisibilityProvider
 };
+use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
@@ -49,8 +52,14 @@ class Methods
     /** @var MethodReturnTypeProvider */
     public $return_type_provider;
 
+    /** @var MethodParamsProvider */
+    public $params_provider;
+
     /** @var MethodExistenceProvider */
-    public $method_existence_provider;
+    public $existence_provider;
+
+    /** @var MethodVisibilityProvider */
+    public $visibility_provider;
 
     /**
      * @param ClassLikeStorageProvider $storage_provider
@@ -66,7 +75,9 @@ class Methods
         $this->file_reference_provider = $file_reference_provider;
         $this->classlikes = $classlikes;
         $this->return_type_provider = new MethodReturnTypeProvider();
-        $this->method_existence_provider = new MethodExistenceProvider();
+        $this->existence_provider = new MethodExistenceProvider();
+        $this->visibility_provider = new MethodVisibilityProvider();
+        $this->params_provider = new MethodParamsProvider();
     }
 
     /**
@@ -81,7 +92,8 @@ class Methods
     public function methodExists(
         $method_id,
         $calling_method_id = null,
-        CodeLocation $code_location = null
+        CodeLocation $code_location = null,
+        StatementsSource $source = null
     ) {
         // remove trailing backslash if it exists
         $method_id = preg_replace('/^\\\\/', '', $method_id);
@@ -89,8 +101,13 @@ class Methods
         $method_name = strtolower($method_name);
         $method_id = $fq_class_name . '::' . $method_name;
 
-        if ($this->method_existence_provider->has($fq_class_name)) {
-            $method_exists = $this->method_existence_provider->doesMethodExist($fq_class_name, $method_name, $code_location);
+        if ($this->existence_provider->has($fq_class_name)) {
+            $method_exists = $this->existence_provider->doesMethodExist(
+                $fq_class_name,
+                $method_name,
+                $source,
+                $code_location
+            );
 
             if ($method_exists !== null) {
                 return $method_exists;
@@ -203,11 +220,27 @@ class Methods
 
     /**
      * @param  string $method_id
+     * @param  array<PhpParser\Node\Arg> $args
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public function getMethodParams($method_id)
+    public function getMethodParams($method_id, StatementsSource $source = null, array $args = null)
     {
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        if ($this->params_provider->has($fq_class_name)) {
+            $method_params = $this->params_provider->getMethodParams(
+                $fq_class_name,
+                $method_name,
+                $args,
+                $source
+            );
+
+            if ($method_params !== null) {
+                return $method_params;
+            }
+        }
+
         if ($declaring_method_id = $this->getDeclaringMethodId($method_id)) {
             $storage = $this->getStorage($declaring_method_id);
 
@@ -289,7 +322,13 @@ class Methods
      */
     public function isVariadic($method_id)
     {
-        $method_id = (string) $this->getDeclaringMethodId($method_id);
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        if (!$declaring_method_id) {
+            return false;
+        }
+
+        $method_id = $declaring_method_id;
 
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
@@ -599,7 +638,7 @@ class Methods
         $method_id = $this->getDeclaringMethodId($original_method_id);
 
         if ($method_id === null) {
-            throw new \UnexpectedValueException('Cannot get declaring method id for ' . $original_method_id);
+            return $original_method_id;
         }
 
         $storage = $this->getStorage($method_id);
@@ -638,6 +677,19 @@ class Methods
      */
     public function getClassLikeStorageForMethod($method_id)
     {
+        list($fq_class_name, $method_name) = explode('::', $method_id);
+
+        if ($this->existence_provider->has($fq_class_name)) {
+            if ($this->existence_provider->doesMethodExist(
+                $fq_class_name,
+                $method_name,
+                null,
+                null
+            )) {
+                return $this->classlike_storage_provider->get($fq_class_name);
+            }
+        }
+
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {

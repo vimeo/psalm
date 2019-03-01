@@ -270,26 +270,38 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
 
             if ($function_exists) {
-                if (!$in_call_map || $is_stubbed) {
-                    $function_storage = $codebase_functions->getStorage(
+                $function_params = null;
+
+                if ($codebase->functions->params_provider->has($function_id)) {
+                    $function_params = $codebase->functions->params_provider->getFunctionParams(
                         $statements_analyzer,
-                        strtolower($function_id)
-                    );
-
-                    $function_params = $function_storage->params;
-
-                    if (!$is_predefined) {
-                        $defined_constants = $function_storage->defined_constants;
-                        $global_variables = $function_storage->global_variables;
-                    }
-                }
-
-                if ($in_call_map && !$is_stubbed) {
-                    $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
-                        $codebase,
                         $function_id,
                         $stmt->args
                     );
+                }
+
+                if ($function_params === null) {
+                    if (!$in_call_map || $is_stubbed) {
+                        $function_storage = $codebase_functions->getStorage(
+                            $statements_analyzer,
+                            strtolower($function_id)
+                        );
+
+                        $function_params = $function_storage->params;
+
+                        if (!$is_predefined) {
+                            $defined_constants = $function_storage->defined_constants;
+                            $global_variables = $function_storage->global_variables;
+                        }
+                    }
+
+                    if ($in_call_map && !$is_stubbed) {
+                        $function_params = FunctionLikeAnalyzer::getFunctionParamsFromCallMapById(
+                            $codebase,
+                            $function_id,
+                            $stmt->args
+                        );
+                    }
                 }
 
                 if ($codebase->store_node_types) {

@@ -20,9 +20,9 @@ interface MethodReturnTypeProviderInterface
      * @return ?Type\Union
      */
     public static function getMethodReturnType(
-        StatementsSource $statements_source,
+        StatementsSource $source,
         string $fq_classlike_name,
-        string $method_name,
+        string $method_name_lowercase,
         array $call_args,
         Context $context,
         CodeLocation $code_location

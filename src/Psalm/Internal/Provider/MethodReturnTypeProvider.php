@@ -7,6 +7,7 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
+use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
 
 class MethodReturnTypeProvider
 {
@@ -28,6 +29,30 @@ class MethodReturnTypeProvider
     public function __construct()
     {
         self::$handlers = [];
+    }
+
+    /**
+     * @param  class-string<MethodReturnTypeProviderInterface> $class
+     * @psalm-suppress PossiblyUnusedParam
+     * @return void
+     */
+    public function registerClass(string $class)
+    {
+        if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
+            /** @psalm-suppress UndefinedMethod */
+            $callable = \Closure::fromCallable([$class, 'getMethodReturnType']);
+        } else {
+            $callable = (new \ReflectionClass($class))->getMethod('getMethodReturnType')->getClosure(new $class);
+
+            if (!$callable) {
+                throw new \UnexpectedValueException('Callable must not be null');
+            }
+        }
+
+        foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+            /** @psalm-suppress MixedTypeCoercion */
+            $this->registerClosure($fq_classlike_name, $callable);
+        }
     }
 
     /**
@@ -59,7 +84,7 @@ class MethodReturnTypeProvider
     public function getReturnType(
         StatementsSource $statements_source,
         string $fq_classlike_name,
-        string $method_name,
+        string $method_name_lowercase,
         array $call_args,
         Context $context,
         CodeLocation $code_location
@@ -68,7 +93,7 @@ class MethodReturnTypeProvider
             $result = $class_handler(
                 $statements_source,
                 $fq_classlike_name,
-                $method_name,
+                $method_name_lowercase,
                 $call_args,
                 $context,
                 $code_location

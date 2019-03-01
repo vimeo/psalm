@@ -7,21 +7,20 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\Plugin\Hook\FunctionParamsProviderInterface;
 
-class PropertyExistenceProvider
+class FunctionParamsProvider
 {
     /**
      * @var array<
      *   string,
      *   array<\Closure(
+     *     StatementsSource,
      *     string,
-     *     string,
-     *     bool,
-     *     ?StatementsSource=,
+     *     array<PhpParser\Node\Arg>,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?bool>
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -32,38 +31,37 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  class-string<PropertyExistenceProviderInterface> $class
+     * @param  class-string<FunctionParamsProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
     public function registerClass(string $class)
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
-            /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
+            /** @psalm-suppress UndefinedFunction */
+            $callable = \Closure::fromCallable([$class, 'getFunctionParams']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getFunctionParams')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
             }
         }
 
-        foreach ($class::getClassLikeNames() as $fq_classlike_name) {
+        foreach ($class::getFunctionIds() as $function_id) {
             /** @psalm-suppress MixedTypeCoercion */
-            $this->registerClosure($fq_classlike_name, $callable);
+            $this->registerClosure($function_id, $callable);
         }
     }
 
     /**
-     * @param \Closure(
+     * @param  \Closure(
+     *     StatementsSource,
      *     string,
-     *     string,
-     *     bool,
-     *     ?StatementsSource=,
+     *     array<PhpParser\Node\Arg>,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?bool $c
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
      * @return void
      */
@@ -78,29 +76,27 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>  $call_args
-     * @return ?bool
+     * @param array<PhpParser\Node\Arg>  $call_args
+     * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public function doesPropertyExist(
-        string $fq_classlike_name,
-        string $property_name,
-        bool $read_mode,
-        StatementsSource $source = null,
+    public function getFunctionParams(
+        StatementsSource $statements_source,
+        string $function_id,
+        array $call_args,
         Context $context = null,
         CodeLocation $code_location = null
     ) {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_exists = $property_handler(
-                $fq_classlike_name,
-                $property_name,
-                $read_mode,
-                $source,
+        foreach (self::$handlers[strtolower($function_id)] as $class_handler) {
+            $result = $class_handler(
+                $statements_source,
+                $function_id,
+                $call_args,
                 $context,
                 $code_location
             );
 
-            if ($property_exists !== null) {
-                return $property_exists;
+            if ($result) {
+                return $result;
             }
         }
 

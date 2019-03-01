@@ -498,9 +498,11 @@ class PluginTest extends TestCase
             }
         };
 
-        $config = $this->project_analyzer->getCodebase()->config;
+        $codebase = $this->project_analyzer->getCodebase();
 
-        (new PluginRegistrationSocket($config))->registerHooksFromClass(get_class($hook));
+        $config = $codebase->config;
+
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
 
         $this->assertContains(
             get_class($hook),
@@ -549,6 +551,8 @@ class PluginTest extends TestCase
     /** @return void */
     public function testMethodProviderHooks()
     {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__) . DIRECTORY_SEPARATOR,
@@ -571,8 +575,170 @@ class PluginTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                $foo = new \Psalm\Test\Plugin\Foo();
-                echo $foo->magicMethod("hello");'
+                namespace Ns;
+
+                class Foo {}
+
+                $foo = new Foo();
+                echo $foo->magicMethod("hello");
+                echo $foo::magicMethod("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /** @return void */
+    public function testFunctionProviderHooks()
+    {
+        require_once __DIR__ . '/Plugin/FunctionPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\FunctionPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                magicFunction("hello");'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidPropertyAssignmentValue
+     *
+     * @return                   void
+     */
+    public function testPropertyProviderHooksInvalidAssignment()
+    {
+        require_once __DIR__ . '/Plugin/PropertyPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\PropertyPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {}
+
+                $foo = new Foo();
+                $foo->magic_property = 5;'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     *
+     * @return                   void
+     */
+    public function testMethodProviderHooksInvalidArg()
+    {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {}
+
+                $foo = new Foo();
+                echo $foo->magicMethod(5);'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage InvalidScalarArgument
+     *
+     * @return                   void
+     */
+    public function testFunctionProviderHooksInvalidArg()
+    {
+        require_once __DIR__ . '/Plugin/FunctionPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\FunctionPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                magicFunction(5);'
         );
 
         $this->analyzeFile($file_path, new Context());

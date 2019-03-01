@@ -7,9 +7,9 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\Plugin\Hook\MethodParamsProviderInterface;
 
-class PropertyExistenceProvider
+class MethodParamsProvider
 {
     /**
      * @var array<
@@ -17,11 +17,11 @@ class PropertyExistenceProvider
      *   array<\Closure(
      *     string,
      *     string,
-     *     bool,
+     *     ?array<PhpParser\Node\Arg>=,
      *     ?StatementsSource=,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?bool>
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter>>
      * >
      */
     private static $handlers = [];
@@ -32,7 +32,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  class-string<PropertyExistenceProviderInterface> $class
+     * @param  class-string<MethodParamsProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -40,9 +40,9 @@ class PropertyExistenceProvider
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
+            $callable = \Closure::fromCallable([$class, 'getMethodParams']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('getMethodParams')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
@@ -56,14 +56,14 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param \Closure(
+     * @param  \Closure(
      *     string,
      *     string,
-     *     bool,
+     *     ?array<PhpParser\Node\Arg>=,
      *     ?StatementsSource=,
      *     ?Context=,
      *     ?CodeLocation=
-     *   ) : ?bool $c
+     *   ) : ?array<int, \Psalm\Storage\FunctionLikeParameter> $c
      *
      * @return void
      */
@@ -78,29 +78,29 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  array<PhpParser\Node\Arg>  $call_args
-     * @return ?bool
+     * @param ?array<PhpParser\Node\Arg>  $call_args
+     * @return  ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
-    public function doesPropertyExist(
+    public function getMethodParams(
         string $fq_classlike_name,
-        string $property_name,
-        bool $read_mode,
-        StatementsSource $source = null,
+        string $method_name_lowercase,
+        array $call_args = null,
+        StatementsSource $statements_source = null,
         Context $context = null,
         CodeLocation $code_location = null
     ) {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_exists = $property_handler(
+        foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
+            $result = $class_handler(
                 $fq_classlike_name,
-                $property_name,
-                $read_mode,
-                $source,
+                $method_name_lowercase,
+                $call_args,
+                $statements_source,
                 $context,
                 $code_location
             );
 
-            if ($property_exists !== null) {
-                return $property_exists;
+            if ($result) {
+                return $result;
             }
         }
 

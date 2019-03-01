@@ -13,8 +13,10 @@ use Psalm\Plugin\Hook\{
     PropertyTypeProviderInterface
 };
 
-class FooPropertyProvider
-    implements PropertyExistenceProviderInterface, PropertyVisibilityProviderInterface, PropertyTypeProviderInterface
+class FooPropertyProvider implements
+    PropertyExistenceProviderInterface,
+    PropertyVisibilityProviderInterface,
+    PropertyTypeProviderInterface
 {
     /**
      * @return array<string>
@@ -31,6 +33,7 @@ class FooPropertyProvider
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
+        StatementsSource $source = null,
         Context $context = null,
         CodeLocation $code_location = null
     ) {
@@ -41,6 +44,7 @@ class FooPropertyProvider
      * @return ?bool
      */
     public static function isPropertyVisible(
+        StatementsSource $source,
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
@@ -58,7 +62,8 @@ class FooPropertyProvider
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context
+        StatementsSource $source = null,
+        Context $context = null
     ) {
         return Type::getString();
     }

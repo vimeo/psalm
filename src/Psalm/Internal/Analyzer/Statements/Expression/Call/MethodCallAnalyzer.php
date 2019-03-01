@@ -555,7 +555,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         if (!$codebase->methods->methodExists($method_id)
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
-                $context->self,
+                $context,
                 $statements_analyzer->getSource()
             )
         ) {
@@ -921,7 +921,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if ($check_visibility) {
                         if (MethodAnalyzer::checkMethodVisibility(
                             $method_id,
-                            $context->self,
+                            $context,
                             $statements_analyzer->getSource(),
                             $name_code_location,
                             $statements_analyzer->getSuppressedIssues()

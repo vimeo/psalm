@@ -18,9 +18,9 @@ interface MethodVisibilityProviderInterface
      * @return ?bool
      */
     public static function isMethodVisible(
-        StatementsSource $statements_source,
+        StatementsSource $source,
         string $fq_classlike_name,
-        string $method_name,
+        string $method_name_lowercase,
         Context $context,
         CodeLocation $code_location
     );

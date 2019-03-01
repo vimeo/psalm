@@ -19,7 +19,8 @@ interface MethodExistenceProviderInterface
      */
     public static function doesMethodExist(
         string $fq_classlike_name,
-        string $method_name,
-        CodeLocation $code_location
+        string $method_name_lowercase,
+        StatementsSource $source = null,
+        CodeLocation $code_location = null
     );
 }

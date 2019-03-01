@@ -39,10 +39,15 @@ class FunctionExistenceProvider
             $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('doesFunctionExist')->getClosure(new $class);
+
+            if (!$callable) {
+                throw new \UnexpectedValueException('Callable must not be null');
+            }
         }
 
         foreach ($class::getFunctionIds() as $function_id) {
-            self::$handlers[$function_id][] = $callable;
+            /** @psalm-suppress MixedTypeCoercion */
+            $this->registerClosure($function_id, $callable);
         }
     }
 

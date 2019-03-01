@@ -23,6 +23,7 @@ interface PropertyTypeProviderInterface
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
-        Context $context
+        StatementsSource $source = null,
+        Context $context = null
     );
 }

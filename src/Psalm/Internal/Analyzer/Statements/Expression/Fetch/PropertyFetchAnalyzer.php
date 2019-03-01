@@ -157,6 +157,7 @@ class PropertyFetchAnalyzer
                         $codebase->properties->propertyExists(
                             $property_id,
                             false,
+                            $statements_analyzer,
                             $context,
                             $context->collect_references
                                 ? new CodeLocation($statements_analyzer->getSource(), $stmt)
@@ -401,12 +402,12 @@ class PropertyFetchAnalyzer
             $property_id = $fq_class_name . '::$' . $prop_name;
 
             if ($codebase->methodExists($fq_class_name . '::__get')
-                && (!$codebase->properties->propertyExists($property_id, false, $context)
+                && (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)
                     || ($stmt_var_id !== '$this'
                         && $fq_class_name !== $context->self
                         && ClassLikeAnalyzer::checkPropertyVisibility(
                             $property_id,
-                            $context->self,
+                            $context,
                             $statements_analyzer,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $statements_analyzer->getSuppressedIssues(),
@@ -459,6 +460,7 @@ class PropertyFetchAnalyzer
             if (!$codebase->properties->propertyExists(
                 $property_id,
                 false,
+                $statements_analyzer,
                 $context,
                 $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )
@@ -468,6 +470,7 @@ class PropertyFetchAnalyzer
                     && $codebase->properties->propertyExists(
                         $context->self . '::$' . $prop_name,
                         false,
+                        $statements_analyzer,
                         $context,
                         $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
                     )
@@ -568,7 +571,12 @@ class PropertyFetchAnalyzer
                 }
             }
 
-            $class_property_type = $codebase->properties->getPropertyType($property_id, false, $context);
+            $class_property_type = $codebase->properties->getPropertyType(
+                $property_id,
+                false,
+                $statements_analyzer,
+                $context
+            );
 
             if (!$class_property_type) {
                 if (IssueBuffer::accepts(
@@ -801,6 +809,7 @@ class PropertyFetchAnalyzer
                     $codebase->properties->propertyExists(
                         $property_id,
                         false,
+                        $statements_analyzer,
                         $context,
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     );
@@ -824,6 +833,7 @@ class PropertyFetchAnalyzer
             if (!$codebase->properties->propertyExists(
                 $property_id,
                 false,
+                $statements_analyzer,
                 $context,
                 $context->collect_references ? new CodeLocation($statements_analyzer->getSource(), $stmt) : null
             )

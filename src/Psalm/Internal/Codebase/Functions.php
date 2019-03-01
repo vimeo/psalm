@@ -6,7 +6,8 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\{
     FileStorageProvider,
     FunctionReturnTypeProvider,
-    FunctionExistenceProvider
+    FunctionExistenceProvider,
+    FunctionParamsProvider
 };
 use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
@@ -30,7 +31,10 @@ class Functions
     public $return_type_provider;
 
     /** @var FunctionExistenceProvider */
-    public $function_existence_provider;
+    public $existence_provider;
+
+    /** @var FunctionParamsProvider */
+    public $params_provider;
 
     /**
      * @var Reflection
@@ -42,7 +46,8 @@ class Functions
         $this->file_storage_provider = $storage_provider;
         $this->reflection = $reflection;
         $this->return_type_provider = new FunctionReturnTypeProvider();
-        $this->function_existence_provider = new FunctionExistenceProvider();
+        $this->existence_provider = new FunctionExistenceProvider();
+        $this->params_provider = new FunctionParamsProvider();
 
         self::$stubbed_functions = [];
     }
@@ -141,8 +146,8 @@ class Functions
         StatementsAnalyzer $statements_analyzer,
         string $function_id
     ) {
-        if ($this->function_existence_provider->has($function_id)) {
-            $function_exists = $this->function_existence_provider->doesFunctionExist($statements_analyzer, $function_id);
+        if ($this->existence_provider->has($function_id)) {
+            $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
 
             if ($function_exists !== null) {
                 return $function_exists;

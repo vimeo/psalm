@@ -210,7 +210,7 @@ class CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $method_params = $method_id
-            ? FunctionLikeAnalyzer::getMethodParamsById($codebase, $method_id, $args)
+            ? FunctionLikeAnalyzer::getMethodParamsById($statements_analyzer, $method_id, $args)
             : null;
 
         if (self::checkFunctionArguments(
@@ -260,7 +260,7 @@ class CallAnalyzer
         if (!$class_storage->user_defined) {
             // check again after we've processed args
             $method_params = FunctionLikeAnalyzer::getMethodParamsById(
-                $codebase,
+                $statements_analyzer,
                 $method_id,
                 $args
             );

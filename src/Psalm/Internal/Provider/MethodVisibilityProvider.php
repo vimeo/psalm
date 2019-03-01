@@ -7,20 +7,19 @@ use Psalm\Context;
 use Psalm\CodeLocation;
 use Psalm\Type;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\Plugin\Hook\MethodVisibilityProviderInterface;
 
-class PropertyExistenceProvider
+class MethodVisibilityProvider
 {
     /**
      * @var array<
      *   string,
      *   array<\Closure(
+     *     StatementsSource,
      *     string,
      *     string,
-     *     bool,
-     *     ?StatementsSource=,
-     *     ?Context=,
-     *     ?CodeLocation=
+     *     Context,
+     *     ?CodeLocation
      *   ) : ?bool>
      * >
      */
@@ -32,7 +31,7 @@ class PropertyExistenceProvider
     }
 
     /**
-     * @param  class-string<PropertyExistenceProviderInterface> $class
+     * @param  class-string<MethodVisibilityProviderInterface> $class
      * @psalm-suppress PossiblyUnusedParam
      * @return void
      */
@@ -40,9 +39,9 @@ class PropertyExistenceProvider
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'doesPropertyExist']);
+            $callable = \Closure::fromCallable([$class, 'isMethodVisible']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesPropertyExist')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('isMethodVisible')->getClosure(new $class);
 
             if (!$callable) {
                 throw new \UnexpectedValueException('Callable must not be null');
@@ -56,13 +55,13 @@ class PropertyExistenceProvider
     }
 
     /**
+     * /**
      * @param \Closure(
+     *     StatementsSource,
      *     string,
      *     string,
-     *     bool,
-     *     ?StatementsSource=,
-     *     ?Context=,
-     *     ?CodeLocation=
+     *     Context,
+     *     ?CodeLocation
      *   ) : ?bool $c
      *
      * @return void
@@ -81,26 +80,24 @@ class PropertyExistenceProvider
      * @param  array<PhpParser\Node\Arg>  $call_args
      * @return ?bool
      */
-    public function doesPropertyExist(
+    public function isMethodVisible(
+        StatementsSource $source,
         string $fq_classlike_name,
-        string $property_name,
-        bool $read_mode,
-        StatementsSource $source = null,
-        Context $context = null,
+        string $method_name,
+        Context $context,
         CodeLocation $code_location = null
     ) {
-        foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
-            $property_exists = $property_handler(
-                $fq_classlike_name,
-                $property_name,
-                $read_mode,
+        foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
+            $method_visible = $method_handler(
                 $source,
+                $fq_classlike_name,
+                $method_name,
                 $context,
                 $code_location
             );
 
-            if ($property_exists !== null) {
-                return $property_exists;
+            if ($method_visible !== null) {
+                return $method_visible;
             }
         }
 

@@ -15,6 +15,7 @@ class PropertyVisibilityProvider
      * @var array<
      *   string,
      *   array<\Closure(
+     *     StatementsSource,
      *     string,
      *     string,
      *     bool,
@@ -42,16 +43,22 @@ class PropertyVisibilityProvider
             $callable = \Closure::fromCallable([$class, 'isPropertyVisible']);
         } else {
             $callable = (new \ReflectionClass($class))->getMethod('isPropertyVisible')->getClosure(new $class);
+
+            if (!$callable) {
+                throw new \UnexpectedValueException('Callable must not be null');
+            }
         }
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            self::$handlers[strtolower($fq_classlike_name)][] = $callable;
+            /** @psalm-suppress MixedTypeCoercion */
+            $this->registerClosure($fq_classlike_name, $callable);
         }
     }
 
     /**
      * /**
      * @param \Closure(
+     *     StatementsSource,
      *     string,
      *     string,
      *     bool,
@@ -76,6 +83,7 @@ class PropertyVisibilityProvider
      * @return ?bool
      */
     public function isPropertyVisible(
+        StatementsSource $source,
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,
@@ -84,6 +92,7 @@ class PropertyVisibilityProvider
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $property_handler) {
             $property_visible = $property_handler(
+                $source,
                 $fq_classlike_name,
                 $property_name,
                 $read_mode,

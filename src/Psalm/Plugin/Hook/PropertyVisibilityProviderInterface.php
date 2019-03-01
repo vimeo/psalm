@@ -19,6 +19,7 @@ interface PropertyVisibilityProviderInterface
      * @return ?bool
      */
     public static function isPropertyVisible(
+        StatementsSource $source,
         string $fq_classlike_name,
         string $property_name,
         bool $read_mode,

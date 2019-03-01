@@ -10,6 +10,7 @@ use Psalm\Internal\Provider\{
     PropertyTypeProvider,
     PropertyVisibilityProvider
 };
+use Psalm\StatementsSource;
 use Psalm\Type;
 
 /**
@@ -68,6 +69,7 @@ class Properties
     public function propertyExists(
         string $property_id,
         bool $read_mode,
+        StatementsSource $source = null,
         Context $context = null,
         CodeLocation $code_location = null
     ) {
@@ -81,6 +83,7 @@ class Properties
                 $fq_class_name,
                 $property_name,
                 $read_mode,
+                $source,
                 $context,
                 $code_location
             );
@@ -215,8 +218,12 @@ class Properties
      * @param  string $property_id
      * @return  ?Type\Union
      */
-    public function getPropertyType($property_id, bool $property_set, Context $context)
-    {
+    public function getPropertyType(
+        $property_id,
+        bool $property_set,
+        StatementsSource $source = null,
+        Context $context = null
+    ) {
         // remove trailing backslash if it exists
         $property_id = preg_replace('/^\\\\/', '', $property_id);
 
@@ -227,6 +234,7 @@ class Properties
                 $fq_class_name,
                 $property_name,
                 !$property_set,
+                $source,
                 $context
             );
 

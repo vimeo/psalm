@@ -478,6 +478,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
 
         if ($codebase->properties->property_visibility_provider->has($fq_class_name)) {
             $property_visible = $codebase->properties->property_visibility_provider->isPropertyVisible(
+                $source,
                 $fq_class_name,
                 $property_name,
                 false,

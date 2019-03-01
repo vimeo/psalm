@@ -17,6 +17,7 @@ class MethodExistenceProvider
      *   array<\Closure(
      *     string,
      *     string,
+     *     ?StatementsSource=,
      *     ?CodeLocation
      *   ) : ?bool>
      * >
@@ -37,13 +38,18 @@ class MethodExistenceProvider
     {
         if (version_compare(PHP_VERSION, '7.1.0') >= 0) {
             /** @psalm-suppress UndefinedMethod */
-            $callable = \Closure::fromCallable([$class, 'doesFunctionExist']);
+            $callable = \Closure::fromCallable([$class, 'doesMethodExist']);
         } else {
-            $callable = (new \ReflectionClass($class))->getMethod('doesFunctionExist')->getClosure(new $class);
+            $callable = (new \ReflectionClass($class))->getMethod('doesMethodExist')->getClosure(new $class);
+
+            if (!$callable) {
+                throw new \UnexpectedValueException('Callable must not be null');
+            }
         }
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
-            self::$handlers[strtolower($fq_classlike_name)][] = $callable;
+            /** @psalm-suppress MixedTypeCoercion */
+            $this->registerClosure($fq_classlike_name, $callable);
         }
     }
 
@@ -52,6 +58,7 @@ class MethodExistenceProvider
      * @param \Closure(
      *     string,
      *     string,
+     *     ?StatementsSource=,
      *     ?CodeLocation
      *   ) : ?bool $c
      *
@@ -73,13 +80,15 @@ class MethodExistenceProvider
      */
     public function doesMethodExist(
         string $fq_classlike_name,
-        string $method_name,
+        string $method_name_lowercase,
+        StatementsSource $source = null,
         CodeLocation $code_location = null
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $method_handler) {
             $method_exists = $method_handler(
                 $fq_classlike_name,
-                $method_name,
+                $method_name_lowercase,
+                $source,
                 $code_location
             );
 

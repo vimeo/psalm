@@ -80,7 +80,7 @@ class FunctionLikeParameter
      */
     public function __construct(
         $name,
-        $by_ref,
+        bool $by_ref,
         Type\Union $type = null,
         CodeLocation $location = null,
         CodeLocation $type_location = null,
