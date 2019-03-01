@@ -1848,13 +1848,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     }
 
                     $storage->has_docblock_issues = true;
-                    return;
+                } else {
+                    $storage->template_types[$template_map[0]] = [
+                        $template_type,
+                        $fq_classlike_name
+                    ];
                 }
-
-                $storage->template_types[$template_map[0]] = [
-                    $template_type,
-                    $fq_classlike_name
-                ];
             }
 
             $template_types = array_merge($template_types ?: [], $storage->template_types);
