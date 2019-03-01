@@ -416,33 +416,35 @@ class ExpressionAnalyzer
                 return false;
             }
 
-            $container_type = Type::getString();
-
-            if (isset($stmt->expr->inferredType)
-                && !$stmt->expr->inferredType->hasMixed()
-                && !isset($stmt->expr->inferredType->getTypes()['resource'])
-                && !TypeAnalyzer::isContainedBy(
-                    $statements_analyzer->getCodebase(),
-                    $stmt->expr->inferredType,
-                    $container_type,
-                    true,
-                    false,
-                    $has_scalar_match
-                )
-                && !$has_scalar_match
-            ) {
-                if (IssueBuffer::accepts(
-                    new InvalidCast(
-                        $stmt->expr->inferredType->getId() . ' cannot be cast to ' . $container_type,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    ),
-                    $statements_analyzer->getSuppressedIssues()
-                )) {
-                    return false;
+            if (isset($stmt->expr->inferredType)) {
+                foreach ($stmt->expr->inferredType->getTypes() as $atomic_type) {
+                    if (!$atomic_type instanceof TMixed
+                        && !$atomic_type instanceof Type\Atomic\TResource
+                        && !$atomic_type instanceof TNull
+                        && !TypeAnalyzer::isAtomicContainedBy(
+                            $statements_analyzer->getCodebase(),
+                            $atomic_type,
+                            new TString(),
+                            true,
+                            false,
+                            $has_scalar_match
+                        )
+                        && !$has_scalar_match
+                    ) {
+                        if (IssueBuffer::accepts(
+                            new InvalidCast(
+                                $atomic_type->getId() . ' cannot be cast to string',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            return false;
+                        }
+                    }
                 }
             }
 
-            $stmt->inferredType = $container_type;
+            $stmt->inferredType = Type::getString();
         } elseif ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
