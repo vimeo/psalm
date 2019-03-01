@@ -7,7 +7,7 @@ use Psalm\Context;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return array
+     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
     abstract public function providerInvalidCodeParse();
 

@@ -7,7 +7,7 @@ class ValueTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
-     * @return array
+     * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
     {
@@ -465,14 +465,14 @@ class ValueTest extends TestCase
                             if ($a == "b" && rand(0, 1)) {}
                         }
                     }',
-                [],
+                'assertions' => [],
                 'error_levels' => ['MissingParamType', 'MixedAssignment'],
             ],
         ];
     }
 
     /**
-     * @return array
+     * @return iterable<string,array{string,error_message:string,2?:string[],3?:bool,4?:string}>
      */
     public function providerInvalidCodeParse()
     {
