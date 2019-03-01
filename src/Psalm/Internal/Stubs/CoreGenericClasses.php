@@ -712,6 +712,8 @@ class DOMDocument extends DOMNode {
  * @link http://php.net/manual/en/class.domelement.php
  */
 class DOMElement extends DOMNode  {
+    public function __construct (string $name, string $value = '', string $namespaceURI = '') {}
+
     /**
      * @return DOMNodeList<DOMElement>
      */
