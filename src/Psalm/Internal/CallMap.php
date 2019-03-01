@@ -197,7 +197,7 @@ return [
 'apache_reset_timeout' => ['bool'],
 'apache_response_headers' => ['array|false'],
 'apache_setenv' => ['bool', 'variable'=>'string', 'value'=>'string', 'walk_to_top='=>'bool'],
-'apc_add' => ['bool', 'key'=>'string', 'ttl='=>'int'],
+'apc_add' => ['bool', 'key'=>'string', 'var'=>'mixed', 'ttl='=>'int'],
 'apc_add\'1' => ['array', 'values'=>'array', 'unused='=>'', 'ttl='=>'int'],
 'apc_bin_dump' => ['string', 'files='=>'array', 'user_vars='=>'array'],
 'apc_bin_dumpfile' => ['int', 'files'=>'array', 'user_vars'=>'array', 'filename'=>'string', 'flags='=>'int', 'context='=>'resource'],
