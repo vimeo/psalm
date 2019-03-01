@@ -460,6 +460,16 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 );
 
                 if (!$does_method_exist) {
+                    if (self::checkFunctionArguments(
+                        $statements_analyzer,
+                        $stmt->args,
+                        null,
+                        null,
+                        $context
+                    ) === false) {
+                        return false;
+                    }
+
                     return;
                 }
 
