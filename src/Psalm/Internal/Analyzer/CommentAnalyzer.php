@@ -542,15 +542,19 @@ class CommentAnalyzer
             foreach ($all_templates as $template_line) {
                 $template_type = preg_split('/[\s]+/', $template_line);
 
-                if (count($template_type) > 2
-                    && in_array(strtolower($template_type[1]), ['as', 'super', 'of'], true)
+                $template_name = array_shift($template_type);
+
+                if (count($template_type) > 1
+                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
                 ) {
+                    $template_modifier = strtolower(array_shift($template_type));
                     $info->templates[] = [
-                        $template_type[0],
-                        strtolower($template_type[1]), $template_type[2]
+                        $template_name,
+                        $template_modifier,
+                        implode(' ', $template_type)
                     ];
                 } else {
-                    $info->templates[] = [$template_type[0]];
+                    $info->templates[] = [$template_name];
                 }
             }
         }
