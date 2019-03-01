@@ -490,7 +490,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            //
                         }
 
                         return;
