@@ -52,6 +52,7 @@ abstract class Type
         'empty' => true,
         'callable' => true,
         'array' => true,
+        'non-empty-array' => true,
         'iterable' => true,
         'null' => true,
         'mixed' => true,

@@ -913,6 +913,27 @@ class AnnotationTest extends TestCase
                         foo($arr);
                     }'
             ],
+            'nonEmptyArrayInNamespace' => [
+                '<?php
+                    namespace ns;
+
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr) : void {
+                        foreach ($arr as $a) {}
+                        echo $a;
+                    }
+
+                    foo(["a", "b", "c"]);
+
+                    /** @param array<string> $arr */
+                    function bar(array $arr) : void {
+                        if (!$arr) {
+                            return;
+                        }
+
+                        foo($arr);
+                    }'
+            ],
         ];
     }
 
@@ -1284,6 +1305,19 @@ class AnnotationTest extends TestCase
             ],
             'nonEmptyArrayCalledWithEmpty' => [
                 '<?php
+                    /** @param non-empty-array<string> $arr */
+                    function foo(array $arr) : void {
+                        foreach ($arr as $a) {}
+                        echo $a;
+                    }
+
+                    foo([]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nonEmptyArrayCalledWithEmptyInNamespace' => [
+                '<?php
+                    namespace ns;
+
                     /** @param non-empty-array<string> $arr */
                     function foo(array $arr) : void {
                         foreach ($arr as $a) {}
