@@ -1540,7 +1540,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->param_types[$param_array->name] = $param_array->type;
             $storage->params[] = $param_array;
 
-            if (!$param_array->is_optional) {
+            if (!$param_array->is_optional && !$param_array->is_variadic) {
                 $required_param_count = $i + 1;
 
                 if (!$param->variadic
