@@ -1283,6 +1283,33 @@ class TypeReconciliationTest extends TestCase
                         return null;
                     }'
             ],
+            'emptyArrayCheck' => [
+                '<?php
+                    /**
+                     * @param non-empty-array $x
+                     */
+                    function example(array $x): void {}
+
+                    /** @var array */
+                    $x = [];
+                    if ($x !== []) {
+                        example($x);
+                    }'
+            ],
+            'emptyArrayCheckInverse' => [
+                '<?php
+                    /**
+                     * @param non-empty-array $x
+                     */
+                    function example(array $x): void {}
+
+                    /** @var array */
+                    $x = [];
+                    if ($x === []) {
+                    } else {
+                        example($x);
+                    }'
+            ],
         ];
     }
 
