@@ -13,7 +13,7 @@ use Psalm\Storage\FunctionLikeParameter;
 class CallMap
 {
     const PHP_MAJOR_VERSION = 7;
-    const PHP_MINOR_VERSION = 3;
+    const PHP_MINOR_VERSION = 4;
 
     /**
      * @var ?int
