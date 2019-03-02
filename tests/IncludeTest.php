@@ -491,6 +491,54 @@ class IncludeTest extends TestCase
                 'hoist_constants' => false,
                 'error_levels' => ['DuplicateClass', 'MissingPropertyType'],
             ],
+            'functionsDefined' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'index.php' => '<?php
+                        include "func.php";
+                        include "Base.php";
+                        include "Child.php";',
+                    getcwd() . DIRECTORY_SEPARATOR . 'func.php' => '<?php
+                        namespace ns;
+
+                        function func(): void {}
+
+                        define("ns\\cons", 0);
+
+                        cons;',
+                    getcwd() . DIRECTORY_SEPARATOR . 'Base.php' => '<?php
+                        namespace ns;
+
+                        func();
+
+                        cons;
+
+                        class Base {
+                            public function __construct() {}
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'Child.php' => '<?php
+                        namespace ns;
+
+                        func();
+
+                        cons;
+
+                        class Child extends Base {
+                            /**
+                             * @var int
+                             */
+                            public $x;
+
+                            public function __construct() {
+                                parent::__construct();
+
+                                $this->x = 5;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'index.php',
+                ],
+            ],
         ];
     }
 

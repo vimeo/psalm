@@ -93,7 +93,12 @@ class MethodMutationTest extends TestCase
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
         $method_context->collect_mutations = true;
-        $this->project_analyzer->getMethodMutations('FooController::barBar', $method_context);
+        $this->project_analyzer->getMethodMutations(
+            'FooController::barBar',
+            $method_context,
+            'somefile.php',
+            'somefile.php'
+        );
 
         $this->assertSame('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);
         $this->assertSame('string', (string)$method_context->vars_in_scope['$this->user_viewdata->name']);
@@ -131,7 +136,12 @@ class MethodMutationTest extends TestCase
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
         $method_context->collect_mutations = true;
-        $this->project_analyzer->getMethodMutations('FooController::__construct', $method_context);
+        $this->project_analyzer->getMethodMutations(
+            'FooController::__construct',
+            $method_context,
+            'somefile.php',
+            'somefile.php'
+        );
 
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
     }
@@ -168,7 +178,12 @@ class MethodMutationTest extends TestCase
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
         $method_context->collect_mutations = true;
-        $this->project_analyzer->getMethodMutations('FooController::__construct', $method_context);
+        $this->project_analyzer->getMethodMutations(
+            'FooController::__construct',
+            $method_context,
+            'somefile.php',
+            'somefile.php'
+        );
 
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
     }

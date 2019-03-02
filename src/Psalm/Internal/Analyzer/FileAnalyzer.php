@@ -277,7 +277,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             $class_analyzer_to_examine = $this->class_analyzers_to_analyze[strtolower($fq_class_name)];
         } else {
             if (!$from_project_analyzer) {
-                $this->project_analyzer->getMethodMutations($method_id, $this_context);
+                $this->project_analyzer->getMethodMutations(
+                    $method_id,
+                    $this_context,
+                    $this->getRootFilePath(),
+                    $this->getRootFileName()
+                );
             }
 
             return;

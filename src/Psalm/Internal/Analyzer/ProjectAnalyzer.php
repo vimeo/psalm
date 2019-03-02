@@ -810,11 +810,17 @@ class ProjectAnalyzer
      *
      * @return void
      */
-    public function getMethodMutations($original_method_id, Context $this_context)
-    {
+    public function getMethodMutations(
+        $original_method_id,
+        Context $this_context,
+        string $root_file_path,
+        string $root_file_name
+    ) {
         list($fq_class_name) = explode('::', $original_method_id);
 
         $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
+
+        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
 
         $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);
 

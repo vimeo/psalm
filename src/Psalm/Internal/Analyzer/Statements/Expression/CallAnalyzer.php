@@ -88,7 +88,12 @@ class CallAnalyzer
                     $context->initialized_methods[$method_id] = true;
                 }
 
-                $project_analyzer->getMethodMutations($method_id, $context);
+                $project_analyzer->getMethodMutations(
+                    $method_id,
+                    $context,
+                    $source->getRootFilePath(),
+                    $source->getRootFileName()
+                );
             }
         } elseif ($context->collect_initializations &&
             $context->self &&
@@ -186,7 +191,12 @@ class CallAnalyzer
 
                     $old_self = $context->self;
                     $context->self = $declaring_fq_class_name;
-                    $project_analyzer->getMethodMutations($declaring_method_id, $context);
+                    $project_analyzer->getMethodMutations(
+                        $declaring_method_id,
+                        $context,
+                        $source->getRootFilePath(),
+                        $source->getRootFileName()
+                    );
                     $context->self = $old_self;
                 }
 
