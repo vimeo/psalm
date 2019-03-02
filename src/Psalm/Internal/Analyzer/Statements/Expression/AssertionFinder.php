@@ -660,7 +660,7 @@ class AssertionFinder
                     if ($var_type->from_docblock) {
                         if (IssueBuffer::accepts(
                             new DocblockTypeContradiction(
-                                $var_type . ' does not contain null',
+                                $var_type . ' does not contain an empty array',
                                 new CodeLocation($source, $conditional)
                             ),
                             $source->getSuppressedIssues()
@@ -670,7 +670,7 @@ class AssertionFinder
                     } else {
                         if (IssueBuffer::accepts(
                             new TypeDoesNotContainNull(
-                                $var_type . ' does not contain null',
+                                $var_type . ' does not contain empty array',
                                 new CodeLocation($source, $conditional)
                             ),
                             $source->getSuppressedIssues()
@@ -995,7 +995,7 @@ class AssertionFinder
                         if ($var_type->from_docblock) {
                             if (IssueBuffer::accepts(
                                 new RedundantConditionGivenDocblockType(
-                                    'Docblock-asserted type ' . $var_type . ' can never contain null',
+                                    'Docblock-asserted type ' . $var_type . ' can never contain an empty array',
                                     new CodeLocation($source, $conditional)
                                 ),
                                 $source->getSuppressedIssues()
@@ -1005,7 +1005,7 @@ class AssertionFinder
                         } else {
                             if (IssueBuffer::accepts(
                                 new RedundantCondition(
-                                    $var_type . ' can never contain null',
+                                    $var_type . ' can never contain an empty array',
                                     new CodeLocation($source, $conditional)
                                 ),
                                 $source->getSuppressedIssues()
