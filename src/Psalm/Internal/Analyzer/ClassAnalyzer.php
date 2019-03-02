@@ -1237,15 +1237,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($actual_method_id !== $declaring_method_id) {
                 // the method is an abstract trait method
 
-                $implementer_method_storage = $method_analyzer->getFunctionLikeStorage();
+                $declaring_method_storage = $method_analyzer->getFunctionLikeStorage();
 
-                if (!$implementer_method_storage instanceof \Psalm\Storage\MethodStorage) {
+                if (!$declaring_method_storage instanceof \Psalm\Storage\MethodStorage) {
                     throw new \LogicException('This should never happen');
                 }
 
-                if ($declaring_method_id && $implementer_method_storage->abstract) {
+                if ($declaring_method_id && $declaring_method_storage->abstract) {
                     $appearing_storage = $classlike_storage_provider->get($class_context->self);
-                    $declaring_method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    $implementer_method_storage = $codebase->methods->getStorage($declaring_method_id);
 
                     MethodAnalyzer::compareMethods(
                         $codebase,
