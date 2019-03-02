@@ -1338,7 +1338,44 @@ class TypeAnalyzer
                 }
             }
 
-            foreach ($input_type_part->type_params as $i => $input_param) {
+            $input_type_params = $input_type_part->type_params;
+
+            if ($input_type_part->value !== $container_type_part->value) {
+                try {
+                    $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+                    $template_extends = $input_class_storage->template_type_extends;
+
+                    if (isset($template_extends[strtolower($container_type_part->value)])) {
+                        $params = $template_extends[strtolower($container_type_part->value)];
+
+                        $new_input_params = [];
+
+                        foreach ($params as $key => $atomic_input_param) {
+                            if (is_string($key)) {
+                                if ($atomic_input_param instanceof TTemplateParam
+                                    && $atomic_input_param->param_name
+                                    && isset($input_class_storage->template_types[$atomic_input_param->param_name])
+                                ) {
+                                    $old_params_offset = (int) array_search(
+                                        $atomic_input_param->param_name,
+                                        array_keys($input_class_storage->template_types)
+                                    );
+
+                                    $new_input_params[] = $input_type_params[$old_params_offset];
+                                } else {
+                                    $new_input_params[] = new Type\Union([$atomic_input_param]);
+                                }
+                            }
+                        }
+
+                        $input_type_params = $new_input_params;
+                    }
+                } catch (\Throwable $t) {
+                    // do nothing
+                }
+            }
+
+            foreach ($input_type_params as $i => $input_param) {
                 if (!isset($container_type_part->type_params[$i])) {
                     break;
                 }
