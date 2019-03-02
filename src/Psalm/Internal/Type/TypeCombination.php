@@ -754,7 +754,21 @@ class TypeCombination
                                             $a_object
                                         );
                                     } else {
-                                        $combination->value_types[$type_key] = new TClassString();
+                                        $union = self::combineTypes([$a_object, $b_object], $codebase);
+
+                                        if ($union->hasSingleNamedObject()) {
+                                            $combined_object = $union->getSingleNamedObject();
+
+                                            $combined_class_string = new TClassString(
+                                                $combined_object->value,
+                                                $combined_object
+                                            );
+
+                                            $combination->value_types[$combined_class_string->getKey()]
+                                                = $combined_class_string;
+                                        } else {
+                                            $combination->value_types[$type_key] = new TClassString();
+                                        }
                                     }
                                 } else {
                                     $combination->value_types[$type_key] = new TClassString();

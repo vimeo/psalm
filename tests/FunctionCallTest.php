@@ -1476,6 +1476,54 @@ class FunctionCallTest extends TestCase
                         foo($bar);
                     }'
             ],
+            'getClassNewInstance' => [
+                '<?php
+                    interface I {}
+                    class C implements I {}
+
+                    class Props {
+                        /** @var class-string<I>[] */
+                        public $arr = [];
+                    }
+
+                    (new Props)->arr[] = get_class(new C);'
+            ],
+            'getClassVariable' => [
+                '<?php
+                    interface I {}
+                    class C implements I {}
+                    $c_instance = new C;
+
+                    class Props {
+                        /** @var class-string<I>[] */
+                        public $arr = [];
+                    }
+
+                    (new Props)->arr[] = get_class($c_instance);'
+            ],
+            'getClassAnonymousNewInstance' => [
+                '<?php
+                    interface I {}
+
+                    class Props {
+                        /** @var class-string<I>[] */
+                        public $arr = [];
+                    }
+
+                    (new Props)->arr[] = get_class(new class implements I{});'
+            ],
+            'getClassAnonymousVariable' => [
+                '<?php
+                    interface I {}
+                    $anon_instance = new class implements I {};
+
+                    class Props {
+                        /** @var class-string<I>[] */
+                        public $arr = [];
+                    }
+
+                    (new Props)->arr[] = get_class($anon_instance);'
+            ],
         ];
     }
 

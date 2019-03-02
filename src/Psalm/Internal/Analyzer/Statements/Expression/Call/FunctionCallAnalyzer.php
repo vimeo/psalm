@@ -525,6 +525,18 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
 
                     $stmt->inferredType = new Type\Union([$atomic_type]);
                 }
+            } elseif (isset($var->inferredType)) {
+                $class_string_types = [];
+
+                foreach ($var->inferredType->getTypes() as $class_type) {
+                    if ($class_type instanceof Type\Atomic\TNamedObject) {
+                        $class_string_types[] = new Type\Atomic\TClassString($class_type->value, clone $class_type);
+                    }
+                }
+
+                if ($class_string_types) {
+                    $stmt->inferredType = new Type\Union($class_string_types);
+                }
             }
         }
 

@@ -441,7 +441,8 @@ class ArrayFetchAnalyzer
                     if ($in_assignment && $replacement_type) {
                         $type->type_params[1] = Type::combineUnionTypes(
                             $type->type_params[1],
-                            $replacement_type
+                            $replacement_type,
+                            $codebase
                         );
                     }
 
