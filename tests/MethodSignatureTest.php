@@ -749,6 +749,18 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'preventInterfaceOverload' => [
+                '<?php
+                    interface I {
+                        public function f(float ...$rest): void;
+                    }
+
+                    class C implements I {
+                        /** @param array<int,float> $f */
+                        public function f($f): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
         ];
     }
 }
