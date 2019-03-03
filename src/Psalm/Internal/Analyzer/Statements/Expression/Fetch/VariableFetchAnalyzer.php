@@ -166,7 +166,7 @@ class VariableFetchAnalyzer
         }
 
         if ($passed_by_reference && $by_ref_type) {
-            ExpressionAnalyzer::assignByRefParam($statements_analyzer, $stmt, $by_ref_type, $context);
+            ExpressionAnalyzer::assignByRefParam($statements_analyzer, $stmt, $by_ref_type, $by_ref_type, $context);
 
             return null;
         }

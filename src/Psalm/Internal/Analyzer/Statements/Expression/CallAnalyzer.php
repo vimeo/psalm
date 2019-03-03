@@ -588,6 +588,7 @@ class CallAnalyzer
                     $statements_analyzer,
                     $arg->value,
                     $by_ref_type,
+                    $by_ref_type,
                     $context,
                     false
                 );
@@ -701,6 +702,7 @@ class CallAnalyzer
                 $statements_analyzer,
                 $array_arg,
                 $by_ref_type,
+                $by_ref_type,
                 $context,
                 false
             );
@@ -804,6 +806,7 @@ class CallAnalyzer
                 $statements_analyzer,
                 $array_arg,
                 $by_ref_type,
+                $by_ref_type,
                 $context,
                 false
             );
@@ -811,10 +814,13 @@ class CallAnalyzer
             return;
         }
 
+        $array_type = Type::getArray();
+
         ExpressionAnalyzer::assignByRefParam(
             $statements_analyzer,
             $array_arg,
-            Type::getArray(),
+            $array_type,
+            $array_type,
             $context,
             false
         );
@@ -1157,7 +1163,7 @@ class CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if (!isset($arg->value->inferredType)) {
-            if ($function_param) {
+            if ($function_param && !$function_param->by_ref) {
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
 
                 $param_type = $function_param->type;
@@ -1270,6 +1276,7 @@ class CallAnalyzer
             true
         )) {
             $by_ref_type = null;
+            $by_ref_out_type = null;
 
             $check_null_ref = true;
 
@@ -1282,7 +1289,7 @@ class CallAnalyzer
                     }
 
                     if (isset($function_storage->param_out_types[$argument_offset])) {
-                        $by_ref_type = $function_storage->param_out_types[$argument_offset];
+                        $by_ref_out_type = $function_storage->param_out_types[$argument_offset];
                     }
                 } else {
                     $by_ref_type = $last_param->type;
@@ -1322,6 +1329,7 @@ class CallAnalyzer
                 $statements_analyzer,
                 $arg->value,
                 $by_ref_type,
+                $by_ref_out_type ?: $by_ref_type,
                 $context,
                 $method_id && (strpos($method_id, '::') !== false || !CallMap::inCallMap($method_id)),
                 $check_null_ref

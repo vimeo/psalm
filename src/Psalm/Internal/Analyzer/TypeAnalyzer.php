@@ -1529,8 +1529,6 @@ class TypeAnalyzer
      * @param  bool   &$all_types_contain
      *
      * @return null|false
-     *
-     * @psalm-suppress ConflictingReferenceConstraint
      */
     private static function compareCallable(
         Codebase $codebase,

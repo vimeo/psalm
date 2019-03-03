@@ -644,6 +644,7 @@ class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Type\Union $by_ref_type,
+        Type\Union $by_ref_out_type,
         Context $context,
         bool $constrain_type = true,
         bool $prevent_null = false
@@ -712,7 +713,7 @@ class ExpressionAnalyzer
                 }
             }
 
-            $context->vars_in_scope[$var_id] = $by_ref_type;
+            $context->vars_in_scope[$var_id] = $by_ref_out_type;
 
             if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
                 $stmt->inferredType = clone $by_ref_type;
@@ -1294,7 +1295,7 @@ class ExpressionAnalyzer
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
         ) {
-            $source->addPossibleParamTypes($context, $codebase);
+            $source->examineParamTypes($statements_analyzer, $context, $codebase);
 
             $storage = $source->getFunctionLikeStorage($statements_analyzer);
 

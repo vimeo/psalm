@@ -82,6 +82,40 @@ class ReferenceConstraintTest extends TestCase
                     'MixedOperand',
                 ],
             ],
+            'paramOutRefineType' => [
+                '<?php
+                    /**
+                     * @param-out string $s
+                     */
+                    function addFoo(?string &$s) : void {
+                        if ($s === null) {
+                            $s = "hello";
+                        }
+                        $s .= "foo";
+                    }
+
+                    addFoo($a);
+
+                    echo strlen($a);',
+            ],
+            'paramOutChangeType' => [
+                '<?php
+                    /**
+                     * @param-out int $s
+                     */
+                    function addFoo(?string &$s) : void {
+                        if ($s === null) {
+                            $s = 5;
+                            return;
+                        }
+                        $s = 4;
+                    }
+
+                    addFoo($a);',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+            ],
         ];
     }
 

@@ -19,6 +19,7 @@ use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
 use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingThrowsDocblock;
+use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
@@ -541,11 +542,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             if ($function_param->by_ref) {
-                $context->byref_constraints['$' . $function_param->name]
-                    = new \Psalm\Internal\ReferenceConstraint(!$param_type->hasMixed() ? $param_type : null);
-            }
-
-            if ($function_param->by_ref) {
                 // register by ref params as having been used, to avoid false positives
                 // @todo change the assignment analysis *just* for byref params
                 // so that we don't have to do this
@@ -598,7 +594,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context, true);
 
-        $this->addPossibleParamTypes($context, $codebase);
+        $this->examineParamTypes($statements_analyzer, $context, $codebase);
 
         foreach ($storage->params as $offset => $function_param) {
             // only complain if there's no type defined by a parent type
@@ -981,7 +977,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     /**
      * @return void
      */
-    public function addPossibleParamTypes(Context $context, Codebase $codebase)
+    public function examineParamTypes(StatementsAnalyzer $statements_analyzer, Context $context, Codebase $codebase)
     {
         if ($context->infer_types) {
             foreach ($context->possible_param_types as $var_id => $type) {
@@ -993,6 +989,44 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     );
                 } else {
                     $this->possible_param_types[$var_id] = clone $type;
+                }
+            }
+        } else {
+            $storage = $this->getFunctionLikeStorage($statements_analyzer);
+
+            foreach ($storage->params as $i => $param) {
+                if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name])) {
+                    $actual_type = $context->vars_in_scope['$' . $param->name];
+                    $param_out_type = $param->type;
+
+                    if (isset($storage->param_out_types[$i])) {
+                        $param_out_type = $storage->param_out_types[$i];
+                    }
+
+                    if ($param_out_type && !$actual_type->isMixed() && $param->location) {
+                        if (!TypeAnalyzer::isContainedBy(
+                            $codebase,
+                            $actual_type,
+                            $param_out_type,
+                            $actual_type->ignore_nullable_issues,
+                            $actual_type->ignore_falsable_issues
+                        )
+                        ) {
+                            if (IssueBuffer::accepts(
+                                new ReferenceConstraintViolation(
+                                    'Variable ' . '$' . $param->name . ' is limited to values of type '
+                                        . $param_out_type->getId()
+                                        . ' because it is passed by reference, '
+                                        . $actual_type->getId() . ' type found. Use @param-out to specify '
+                                        . 'a different output type',
+                                    $param->location
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                // fall through
+                            }
+                        }
+                    }
                 }
             }
         }
