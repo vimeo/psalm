@@ -17,6 +17,7 @@ use Psalm\Issue\DeprecatedTrait;
 use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidTemplateParam;
+use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MissingConstructor;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MissingTemplateParam;
@@ -424,6 +425,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             }
 
                             return null;
+                        }
+
+                        if ($interface_method_storage->is_static && !$implementer_method_storage->is_static) {
+                            if (IssueBuffer::accepts(
+                                new MethodSignatureMismatch(
+                                    'Method ' . $implementer_method_storage->cased_name
+                                    . ' should be static like '
+                                    . $storage->name . '::' . $interface_method_storage->cased_name,
+                                    $code_location
+                                ),
+                                $implementer_method_storage->suppressed_issues
+                            )) {
+                                return false;
+                            }
                         }
 
                         MethodAnalyzer::compareMethods(
