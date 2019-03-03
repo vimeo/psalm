@@ -124,7 +124,7 @@ class ReturnAnalyzer
                 $context
             );
 
-            $source->examineParamTypes($statements_analyzer, $context, $codebase);
+            $source->examineParamTypes($statements_analyzer, $context, $codebase, $stmt);
 
             $storage = $source->getFunctionLikeStorage($statements_analyzer);
 

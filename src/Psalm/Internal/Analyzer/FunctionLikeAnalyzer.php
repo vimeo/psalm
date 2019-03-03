@@ -977,8 +977,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     /**
      * @return void
      */
-    public function examineParamTypes(StatementsAnalyzer $statements_analyzer, Context $context, Codebase $codebase)
-    {
+    public function examineParamTypes(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Codebase $codebase,
+        PhpParser\Node $stmt = null
+    ) {
         if ($context->infer_types) {
             foreach ($context->possible_param_types as $var_id => $type) {
                 if (isset($this->possible_param_types[$var_id])) {
@@ -1019,7 +1023,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                                         . ' because it is passed by reference, '
                                         . $actual_type->getId() . ' type found. Use @param-out to specify '
                                         . 'a different output type',
-                                    $param->location
+                                    $stmt
+                                        ? new CodeLocation($this, $stmt )
+                                        : $param->location
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {

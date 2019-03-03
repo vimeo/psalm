@@ -703,7 +703,7 @@ class ExpressionAnalyzer
                 );
 
                 if ($existing_type->getId() !== 'array<empty, empty>') {
-                    $context->vars_in_scope[$var_id] = clone $by_ref_type;
+                    $context->vars_in_scope[$var_id] = clone $by_ref_out_type;
 
                     if (!isset($stmt->inferredType) || $stmt->inferredType->isEmpty()) {
                         $stmt->inferredType = clone $by_ref_type;
@@ -1295,7 +1295,7 @@ class ExpressionAnalyzer
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
         ) {
-            $source->examineParamTypes($statements_analyzer, $context, $codebase);
+            $source->examineParamTypes($statements_analyzer, $context, $codebase, $stmt);
 
             $storage = $source->getFunctionLikeStorage($statements_analyzer);
 
