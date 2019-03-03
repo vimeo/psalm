@@ -1325,7 +1325,6 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      * @return  Type\Union|null
      */
     public function getConstType(
-        StatementsAnalyzer $statements_analyzer,
         $const_name,
         $is_fully_qualified,
         Context $context
@@ -1358,8 +1357,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             return $context->vars_in_scope[$fq_const_name];
         }
 
-        $file_path = $statements_analyzer->getRootFilePath();
-        $codebase = $statements_analyzer->getCodebase();
+        $file_path = $this->getRootFilePath();
+        $codebase = $this->getCodebase();
 
         $file_storage_provider = $codebase->file_storage_provider;
 

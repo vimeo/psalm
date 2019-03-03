@@ -55,7 +55,6 @@ class ConstFetchAnalyzer
 
             default:
                 $const_type = $statements_analyzer->getConstType(
-                    $statements_analyzer,
                     $const_name,
                     $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
                     $context
