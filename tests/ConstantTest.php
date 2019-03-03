@@ -374,6 +374,13 @@ class ConstantTest extends TestCase
                         echo ns2\cons2;
                     }',
             ],
+            'allowConstantToBeDefinedInNamespaceNadReferenced' => [
+                '<?php
+                    namespace ns;
+                    function func(): void {}
+                    define(__NAMESPACE__."\\cons", 0);
+                    cons;'
+            ],
         ];
     }
 

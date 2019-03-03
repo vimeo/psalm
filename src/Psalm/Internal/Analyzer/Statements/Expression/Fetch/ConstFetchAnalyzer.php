@@ -34,6 +34,7 @@ class ConstFetchAnalyzer
         Context $context
     ) {
         $const_name = implode('\\', $stmt->name->parts);
+
         switch (strtolower($const_name)) {
             case 'null':
                 $stmt->inferredType = Type::getNull();

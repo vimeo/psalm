@@ -1354,8 +1354,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             }
         }
 
-        if ($context->hasVariable($const_name, $statements_analyzer)) {
-            return $context->vars_in_scope[$const_name];
+        if ($context->hasVariable($fq_const_name, $this)) {
+            return $context->vars_in_scope[$fq_const_name];
         }
 
         $file_path = $statements_analyzer->getRootFilePath();
