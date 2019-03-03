@@ -1007,7 +1007,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                         $param_out_type = $storage->param_out_types[$i];
                     }
 
-                    if ($param_out_type && !$actual_type->isMixed() && $param->location) {
+                    if ($param_out_type && !$actual_type->hasMixed() && $param->location) {
                         if (!TypeAnalyzer::isContainedBy(
                             $codebase,
                             $actual_type,
