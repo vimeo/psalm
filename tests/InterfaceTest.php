@@ -740,7 +740,7 @@ class InterfaceTest extends TestCase
                     class C implements I {
                         public function m(): void {}
                     }',
-                'MethodSignatureMismatch'
+                'error_message' => 'MethodSignatureMismatch'
             ],
         ];
     }
