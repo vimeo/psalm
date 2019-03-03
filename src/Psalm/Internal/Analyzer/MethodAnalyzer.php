@@ -519,6 +519,19 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             return null;
         }
 
+        if ($guide_method_storage->is_static && !$implementer_method_storage->is_static) {
+            if (IssueBuffer::accepts(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' should be static like '
+                    . $cased_guide_method_id,
+                    $code_location
+                ),
+                $suppressed_issues
+            )) {
+                return false;
+            }
+        }
+
         if ($prevent_abstract_override
             && !$guide_method_storage->abstract
             && $implementer_method_storage->abstract

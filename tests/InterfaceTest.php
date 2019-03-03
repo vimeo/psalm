@@ -732,6 +732,16 @@ class InterfaceTest extends TestCase
                     new myInterface();',
                 'error_message' => 'InterfaceInstantiation',
             ],
+            'nonStaticInterfaceMethod' => [
+                '<?php
+                    interface I {
+                        public static function m(): void;
+                    }
+                    class C implements I {
+                        public function m(): void {}
+                    }',
+                'MethodSignatureMismatch'
+            ],
         ];
     }
 }
