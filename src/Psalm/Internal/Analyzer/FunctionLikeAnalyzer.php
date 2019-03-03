@@ -1024,7 +1024,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                                         . $actual_type->getId() . ' type found. Use @param-out to specify '
                                         . 'a different output type',
                                     $stmt
-                                        ? new CodeLocation($this, $stmt )
+                                        ? new CodeLocation($this, $stmt)
                                         : $param->location
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
