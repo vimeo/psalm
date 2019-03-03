@@ -4,6 +4,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use PhpParser;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -649,12 +650,11 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         $second_arg = $stmt->args[1];
                         ExpressionAnalyzer::analyze($statements_analyzer, $second_arg->value, $context);
 
-                        $statements_analyzer->setConstType(
+                        NamespaceAnalyzer::setConstType(
                             $fq_const_name,
                             isset($second_arg->value->inferredType) ?
                                 $second_arg->value->inferredType :
-                                Type::getMixed(),
-                            $context
+                                Type::getMixed()
                         );
                     }
                 } else {

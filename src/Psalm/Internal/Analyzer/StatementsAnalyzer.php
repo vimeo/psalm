@@ -1393,7 +1393,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         $context->constants[$const_name] = $const_type;
 
         if ($this->source instanceof NamespaceAnalyzer) {
-            $this->source->setConstType($const_name, $const_type);
+            NamespaceAnalyzer::setConstType($this->source->getNamespace().'\\'.$const_name, $const_type);
         }
     }
 

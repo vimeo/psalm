@@ -130,9 +130,13 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
      *
      * @return void
      */
-    public function setConstType($const_name, Type\Union $const_type)
+    public static function setConstType($const_name, Type\Union $const_type)
     {
-        self::$public_namespace_constants[$this->namespace_name][$const_name] = $const_type;
+        $const_name_parts = explode('\\', $const_name);
+        $const_name = array_pop($const_name_parts);
+        $namespace_name = implode('\\', $const_name_parts);
+
+        self::$public_namespace_constants[$namespace_name][$const_name] = $const_type;
     }
 
     /**

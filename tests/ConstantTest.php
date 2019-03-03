@@ -374,6 +374,16 @@ class ConstantTest extends TestCase
                         echo ns2\cons2;
                     }',
             ],
+            'constantDefinedUnderFunction' => [
+                '<?php
+                    namespace ns;
+
+                    function func(): void {}
+
+                    define(__NAMESPACE__."\\cons", 0);
+
+                    cons;'
+            ],
         ];
     }
 
@@ -383,18 +393,6 @@ class ConstantTest extends TestCase
     public function providerInvalidCodeParse()
     {
         return [
-            'constantDefinedInFunctionButNotCalled' => [
-                '<?php
-                    /**
-                     * @return void
-                     */
-                    function defineConstant() {
-                        define("CONSTANT", 1);
-                    }
-
-                    echo CONSTANT;',
-                'error_message' => 'UndefinedConstant',
-            ],
             'undefinedClassConstantInParamDefault' => [
                 '<?php
                     class A {
