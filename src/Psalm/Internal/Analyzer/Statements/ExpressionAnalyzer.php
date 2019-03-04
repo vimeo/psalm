@@ -691,6 +691,9 @@ class ExpressionAnalyzer
 
                     $context->hasVariable($var_id, $statements_analyzer);
                 }
+            } elseif ($var_id === '$this') {
+                // don't allow changing $this
+                return;
             } else {
                 $existing_type = $context->vars_in_scope[$var_id];
 
