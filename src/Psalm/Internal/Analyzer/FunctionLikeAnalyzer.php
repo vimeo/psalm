@@ -589,6 +589,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 'RedundantConditionGivenDocblockType',
                 'TypeDoesNotContainNull',
                 'TypeDoesNotContainType',
+                'LoopInvalidation',
             ]);
         }
 

@@ -17,6 +17,10 @@ class TGenericObject extends TNamedObject
             $value = substr($value, 1);
         }
 
+        if (!$type_params) {
+            throw new \UnexpectedValueException('Empty type params');
+        }
+
         $this->value = $value;
         $this->type_params = $type_params;
     }

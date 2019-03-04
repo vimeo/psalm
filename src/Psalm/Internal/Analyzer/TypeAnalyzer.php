@@ -1312,7 +1312,7 @@ class TypeAnalyzer
                         $generic_params = [];
 
                         foreach ($extends_list as $key => $value) {
-                            if (is_int($key)) {
+                            if (is_string($key)) {
                                 $generic_params[] = new Type\Union([$value]);
                             }
                         }
