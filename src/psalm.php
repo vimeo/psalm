@@ -228,6 +228,7 @@ Options:
 
     --alter
         Run Psalter
+
 HELP;
 
     exit;
