@@ -781,10 +781,11 @@ class Codebase
     /**
      * @param  string $method_id
      * @param  string $self_class
+     * @param  array<int, PhpParser\Node\Arg> $call_args
      *
      * @return Type\Union|null
      */
-    public function getMethodReturnType($method_id, &$self_class)
+    public function getMethodReturnType($method_id, &$self_class, array $call_args = [])
     {
         return $this->methods->getMethodReturnType($method_id, $self_class);
     }
