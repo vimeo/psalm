@@ -4,7 +4,6 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser;
 use Psalm\Internal\Codebase\CallMap;
 use Psalm\Context;
-use Psalm\CodeLocation;
 use Psalm\Type;
 
 /**

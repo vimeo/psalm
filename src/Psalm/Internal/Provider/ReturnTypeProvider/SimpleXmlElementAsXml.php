@@ -5,12 +5,8 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IssueBuffer;
-use Psalm\Issue\InvalidReturnType;
 use Psalm\StatementsSource;
-use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Type;
-use Psalm\Type\Reconciler;
 
 class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProviderInterface
 {
