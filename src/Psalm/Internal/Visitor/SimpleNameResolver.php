@@ -5,13 +5,11 @@
 namespace Psalm\Internal\Visitor;
 
 use PhpParser;
-use PhpParser\Error;
 use PhpParser\ErrorHandler;
 use PhpParser\NameContext;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeVisitorAbstract;
 
