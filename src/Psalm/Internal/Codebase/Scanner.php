@@ -280,6 +280,10 @@ class Scanner
 
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
+        if ($fq_classlike_name_lc === 'static') {
+            return;
+        }
+
         // avoid checking classes that we know will just end in failure
         if ($fq_classlike_name_lc === 'null' || substr($fq_classlike_name_lc, -5) === '\null') {
             return;
@@ -715,7 +719,7 @@ class Scanner
 
             /** @psalm-suppress TypeCoercion */
             $reflected_class = new \ReflectionClass($fq_class_name);
-        } catch (\ReflectionException $e) {
+        } catch (\Throwable $e) {
             error_reporting($old_level);
 
             // do not cache any results here (as case-sensitive filenames can screw things up)
