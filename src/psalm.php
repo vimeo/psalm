@@ -51,12 +51,21 @@ $valid_long_options = [
     'version',
     'php-version:',
     'generate-json-map:',
+    'alter',
 ];
 
 gc_collect_cycles();
 gc_disable();
 
 $args = array_slice($argv, 1);
+
+// get options from command line
+$options = getopt(implode('', $valid_short_options), $valid_long_options);
+
+if (isset($options['alter'])) {
+    include 'psalter.php';
+    exit;
+}
 
 array_map(
     /**
@@ -88,9 +97,6 @@ array_map(
     },
     $args
 );
-
-// get options from command line
-$options = getopt(implode('', $valid_short_options), $valid_long_options);
 
 if (!array_key_exists('use-ini-defaults', $options)) {
     ini_set('display_errors', '1');
@@ -219,6 +225,9 @@ Options:
 
     --generate-json-map=PATH
         Generate a map of node references and types in JSON format, saved to the given path.
+
+    --alter
+        Run Psalter
 HELP;
 
     exit;
