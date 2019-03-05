@@ -1027,6 +1027,12 @@ class TypeAnalyzer
                 }
 
                 try {
+                    $method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                    if (!$method_id) {
+                        return false;
+                    }
+
                     $codebase->methods->getStorage($method_id);
                 } catch (\Exception $e) {
                     return false;

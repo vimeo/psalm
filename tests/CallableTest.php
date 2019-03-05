@@ -757,6 +757,30 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
+            'publicCallableFromInside' => [
+                '<?php
+                    class Base  {
+                        public function publicMethod() : void {}
+                    }
+
+                    class Example extends Base {
+                        public function test() : Closure {
+                            return Closure::fromCallable([$this, "publicMethod"]);
+                        }
+                    }',
+            ],
+            'protectedCallableFromInside' => [
+                '<?php
+                    class Base  {
+                        protected function protectedMethod() : void {}
+                    }
+
+                    class Example extends Base {
+                        public function test() : Closure {
+                            return Closure::fromCallable([$this, "protectedMethod"]);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1233,6 +1257,19 @@ class CallableTest extends TestCase
                     class one { public function two(string $_p): void {} }
                     array_map(["two", "three"], ["one", "two"]);',
                 'error_message' => 'InvalidArgument'
+            ],
+            'privateCallable' => [
+                '<?php
+                    class Base  {
+                        private function privateMethod() : void {}
+                    }
+
+                    class Example extends Base {
+                        public function test() : Closure {
+                            return Closure::fromCallable([$this, "privateMethod"]);
+                        }
+                    }',
+                'InvalidArgument',
             ],
         ];
     }
