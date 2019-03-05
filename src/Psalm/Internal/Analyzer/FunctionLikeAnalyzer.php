@@ -21,6 +21,7 @@ use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
+use Psalm\Issue\UnusedClosureParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -695,7 +696,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         if ($context->collect_references
             && !$context->collect_initializations
-            && $codebase->find_unused_code
+            && $codebase->find_unused_variables
             && $context->check_variables
         ) {
             foreach ($statements_analyzer->getUnusedVarLocations() as list($var_name, $original_location)) {
@@ -720,14 +721,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 if (!($storage instanceof MethodStorage)
                     || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 ) {
-                    if (IssueBuffer::accepts(
-                        new UnusedParam(
-                            'Param ' . $var_name . ' is never referenced in this method',
-                            $original_location
-                        ),
-                        $this->getSuppressedIssues()
-                    )) {
-                        // fall through
+                    if ($this->function instanceof Closure) {
+                        if (IssueBuffer::accepts(
+                            new UnusedClosureParam(
+                                'Param ' . $var_name . ' is never referenced in this method',
+                                $original_location
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new UnusedParam(
+                                'Param ' . $var_name . ' is never referenced in this method',
+                                $original_location
+                            ),
+                            $this->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
                     }
                 } else {
                     $fq_class_name = (string)$context->self;

@@ -99,6 +99,11 @@ class Codebase
     public $find_unused_code = false;
 
     /**
+     * @var bool
+     */
+    public $find_unused_variables = false;
+
+    /**
      * @var Internal\Codebase\Reflection
      */
     private $reflection;
@@ -338,6 +343,16 @@ class Codebase
     {
         $this->collectReferences();
         $this->find_unused_code = true;
+        $this->find_unused_variables = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function reportUnusedVariables()
+    {
+        $this->collect_references = true;
+        $this->find_unused_variables = true;
     }
 
     /**

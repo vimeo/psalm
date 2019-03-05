@@ -29,7 +29,7 @@ class UnusedVariableTest extends TestCase
         );
 
         $this->project_analyzer->setPhpVersion('7.3');
-        $this->project_analyzer->getCodebase()->reportUnusedCode();
+        $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
     /**
@@ -62,8 +62,6 @@ class UnusedVariableTest extends TestCase
         $context->collect_references = true;
 
         $this->analyzeFile($file_path, $context);
-
-        $this->project_analyzer->checkClassReferences();
     }
 
     /**
@@ -99,8 +97,6 @@ class UnusedVariableTest extends TestCase
         $context->collect_references = true;
 
         $this->analyzeFile($file_path, $context);
-
-        $this->project_analyzer->checkClassReferences();
     }
 
     /**

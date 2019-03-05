@@ -248,6 +248,16 @@ class Config
     public $forbid_echo = false;
 
     /**
+     * @var bool
+     */
+    public $find_unused_code = false;
+
+    /**
+     * @var bool
+     */
+    public $find_unused_variables = false;
+
+    /**
      * @var string[]
      */
     public $plugin_paths = [];
@@ -614,6 +624,17 @@ class Config
         if (isset($config_xml['forbidEcho'])) {
             $attribute_text = (string) $config_xml['forbidEcho'];
             $config->forbid_echo = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['findUnusedCode'])) {
+            $attribute_text = (string) $config_xml['findUnusedCode'];
+            $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
+            $config->find_unused_variables = $config->find_unused_code;
+        }
+
+        if (isset($config_xml['findUnusedVariablesAndParams'])) {
+            $attribute_text = (string) $config_xml['findUnusedVariablesAndParams'];
+            $config->find_unused_variables = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['ignoreInternalFunctionFalseReturn'])) {

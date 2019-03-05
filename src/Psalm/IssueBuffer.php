@@ -140,6 +140,10 @@ class IssueBuffer
             return 'InvalidDocblock';
         }
 
+        if ($issue_type === 'UnusedClosureParam') {
+            return 'UnusedParam';
+        }
+
         return null;
     }
 

@@ -725,7 +725,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         if ($root_scope
             && $context->collect_references
             && !$context->collect_initializations
-            && $codebase->find_unused_code
+            && $codebase->find_unused_variables
             && $context->check_variables
         ) {
             $this->checkUnreferencedVars();

@@ -43,7 +43,7 @@ install:
 
 script:
   - vendor/bin/phpunit
-  - ./psalm --find-dead-code
+  - ./psalm
 
 # Base test matrix (php/env)
 matrix:
@@ -69,7 +69,7 @@ jobs:
         - vendor/bin/phpunit --dump-xdebug-filter build/xdebug-filter.php
       script:
         - vendor/bin/phpunit --prepend build/xdebug-filter.php
-        - ./psalm --find-dead-code
+        - ./psalm
       after_success:
         - travis_retry php vendor/bin/php-coveralls -v
 

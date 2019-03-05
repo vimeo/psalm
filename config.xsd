@@ -46,6 +46,8 @@
         <xs:attribute name="checkForThrowsDocblock" type="xs:string" />
         <xs:attribute name="forbidEcho" type="xs:string" />
         <xs:attribute name="errorBaseline" type="xs:string" />
+        <xs:attribute name="findUnusedCode" type="xs:string" />
+        <xs:attribute name="findUnusedVariablesAndParams" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
@@ -314,6 +316,7 @@
             <xs:element name="UnrecognizedStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnevaluatedCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedProperty" type="PropertyIssueHandlerType" minOccurs="0" />

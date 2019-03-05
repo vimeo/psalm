@@ -9,6 +9,7 @@
     rememberPropertyAssignmentsAfterCall="true"
     checkForThrowsDocblock="false"
     throwExceptionOnError="0"
+    findUnusedCode="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
 >
     <projectFiles>

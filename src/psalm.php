@@ -524,6 +524,10 @@ if (array_key_exists('debug-by-line', $options)) {
     $project_analyzer->debug_lines = true;
 }
 
+if ($config->find_unused_code) {
+    $find_dead_code = 'auto';
+}
+
 if ($find_dead_code || $find_references_to !== null) {
     $project_analyzer->getCodebase()->collectReferences();
 
@@ -534,6 +538,10 @@ if ($find_dead_code || $find_references_to !== null) {
 
 if ($find_dead_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
+}
+
+if ($config->find_unused_variables) {
+    $project_analyzer->getCodebase()->reportUnusedVariables();
 }
 
 /** @var string $plugin_path */
