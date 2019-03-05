@@ -141,15 +141,19 @@ class VariableFetchAnalyzer
             true
         )
         ) {
-            if (isset($context->vars_in_scope['$' . $stmt->name])) {
-                $stmt->inferredType = clone $context->vars_in_scope['$' . $stmt->name];
+            $var_name = '$' . $stmt->name;
+
+            if (isset($context->vars_in_scope[$var_name])) {
+                $stmt->inferredType = clone $context->vars_in_scope[$var_name];
 
                 return null;
             }
 
-            $stmt->inferredType = Type::getArray();
-            $context->vars_in_scope['$' . $stmt->name] = Type::getArray();
-            $context->vars_possibly_in_scope['$' . $stmt->name] = true;
+            $type = $statements_analyzer->getGlobalType($stmt->name) ?: Type::getArray();
+
+            $stmt->inferredType = $type;
+            $context->vars_in_scope[$var_name] = clone $type;
+            $context->vars_possibly_in_scope[$var_name] = true;
 
             return null;
         }
