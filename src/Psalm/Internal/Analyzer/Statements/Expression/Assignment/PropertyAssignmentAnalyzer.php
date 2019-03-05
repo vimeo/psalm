@@ -389,7 +389,7 @@ class PropertyAssignmentAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
                     } else {
                         if (IssueBuffer::accepts(
@@ -400,7 +400,7 @@ class PropertyAssignmentAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues()
                         )) {
-                            return false;
+                            // fall through
                         }
                     }
 
@@ -814,7 +814,7 @@ class PropertyAssignmentAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
-                return false;
+                // fall through
             }
 
             return;

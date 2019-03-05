@@ -1121,7 +1121,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[306], [306, 452]],
+                'error_positions' => [[306], [306, 452, 452]],
             ],
             'addPropertyDocblock' => [
                 [

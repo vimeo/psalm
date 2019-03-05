@@ -846,7 +846,7 @@ class PropertyFetchAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // fall through
                 }
 
                 return;

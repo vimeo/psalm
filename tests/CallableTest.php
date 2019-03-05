@@ -757,7 +757,7 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
-            'publicCallableFromInside' => [
+            'PHP71-publicCallableFromInside' => [
                 '<?php
                     class Base  {
                         public function publicMethod() : void {}
@@ -769,7 +769,7 @@ class CallableTest extends TestCase
                         }
                     }',
             ],
-            'protectedCallableFromInside' => [
+            'PHP71-protectedCallableFromInside' => [
                 '<?php
                     class Base  {
                         protected function protectedMethod() : void {}
@@ -1258,7 +1258,7 @@ class CallableTest extends TestCase
                     array_map(["two", "three"], ["one", "two"]);',
                 'error_message' => 'InvalidArgument'
             ],
-            'privateCallable' => [
+            'PHP71-privateCallable' => [
                 '<?php
                     class Base  {
                         private function privateMethod() : void {}

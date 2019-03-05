@@ -1316,7 +1316,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $statements_analyzer->getSuppressedIssues()
                     )
                 ) {
-                    return false;
+                    // fall through
                 }
 
                 // If a `@property` annotation is set, the type of the value passed to the
@@ -1387,7 +1387,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
-                                return false;
+                                // fall through
                             }
                         } else {
                             if (IssueBuffer::accepts(
@@ -1400,7 +1400,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                                 ),
                                 $statements_analyzer->getSuppressedIssues()
                             )) {
-                                return false;
+                                // fall through
                             }
                         }
                     }
@@ -1421,7 +1421,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $statements_analyzer->getSuppressedIssues()
                     )
                 ) {
-                    return false;
+                    // fall through
                 }
 
                 if (isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
