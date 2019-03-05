@@ -1117,4 +1117,76 @@ class ConfigTest extends TestCase
             );
         }
     }
+
+    /**
+     * @return void
+     */
+    public function testGlobals()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <globals>
+                        <var name="glob1" type="string" />
+                        <var name="glob2" type="array{str:string}" />
+                        <var name="glob3" type="ns\Clazz" />
+                        <var name="glob4" type="string|null" />
+                    </globals>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace {
+                    ord($glob1);
+                    ord($glob2["str"]);
+                    $glob3->func();
+
+                    assert($glob4 !== null);
+                    ord($glob4);
+
+                    function example1(): void {
+                        global $glob1, $glob2, $glob3, $glob4;
+                        ord($glob1);
+                        ord($glob2["str"]);
+                        $glob3->func();
+                        ord($glob4);
+                    }
+
+                    $glob1 = 0;
+                    error_reporting($glob1);
+
+                    function example2(): void {
+                        global $glob1, $glob2, $glob3;
+                        error_reporting($glob1);
+                        ord($glob2["str"]);
+                        $glob3->func();
+                    }
+                }
+                namespace ns {
+                    ord($glob1);
+                    ord($glob2["str"]);
+                    $glob3->func();
+
+                    class Clazz {
+                        public function func(): void {}
+                    }
+
+                    function example3(): void {
+                        global $glob1, $glob2, $glob3;
+                        ord($glob1);
+                        ord($glob2["str"]);
+                        $glob3->func();
+                    }
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

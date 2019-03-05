@@ -110,6 +110,20 @@ class VariableFetchAnalyzer
             return null;
         }
 
+        if ($context->is_global && is_string($stmt->name)) {
+            $var_name = '$' . $stmt->name;
+
+            if (!$context->hasVariable($var_name, $statements_analyzer)) {
+                $type = $statements_analyzer->getGlobalType($stmt->name);
+                if ($type) {
+                    $context->vars_in_scope[$var_name] = $type;
+                    $context->vars_possibly_in_scope[$var_name] = true;
+                    $stmt->inferredType = clone $type;
+                    return null;
+                }
+            }
+        }
+
         if (in_array(
             $stmt->name,
             [
@@ -137,27 +151,6 @@ class VariableFetchAnalyzer
             $context->vars_in_scope['$' . $stmt->name] = Type::getArray();
             $context->vars_possibly_in_scope['$' . $stmt->name] = true;
 
-            return null;
-        }
-
-        if ($context->is_global && ($stmt->name === 'argv' || $stmt->name === 'argc')) {
-            $var_name = '$' . $stmt->name;
-
-            if (!$context->hasVariable($var_name, $statements_analyzer)) {
-                if ($stmt->name === 'argv') {
-                    $context->vars_in_scope[$var_name] = new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::getInt(),
-                            Type::getString(),
-                        ]),
-                    ]);
-                } else {
-                    $context->vars_in_scope[$var_name] = Type::getInt();
-                }
-            }
-
-            $context->vars_possibly_in_scope[$var_name] = true;
-            $stmt->inferredType = clone $context->vars_in_scope[$var_name];
             return null;
         }
 

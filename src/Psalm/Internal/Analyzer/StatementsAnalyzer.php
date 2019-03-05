@@ -1530,4 +1530,26 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         return $const_name;
     }
+
+    /**
+     * @return  Type\Union|null
+     */
+    public function getGlobalType(string $name)
+    {
+        $config = Config::getInstance();
+
+        if (isset($config->globals[$name])) {
+            return Type::parseString($config->globals[$name]);
+        }
+
+        if ($name === 'argv') {
+            return new Type\Union([
+                new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
+            ]);
+        }
+
+        if ($name === 'argc') {
+            return Type::getInt();
+        }
+    }
 }
