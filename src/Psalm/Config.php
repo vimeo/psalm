@@ -346,6 +346,11 @@ class Config
     /** @var string|null */
     public $error_baseline = null;
 
+    /**
+     * @var array<string, string>
+     */
+    public $globals = [];
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -757,6 +762,13 @@ class Config
                         $base_dir
                     );
                 }
+            }
+        }
+
+        if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
+            /** @var \SimpleXMLElement $var */
+            foreach ($config_xml->globals->var as $var) {
+                $config->globals[(string) $var['name']] = (string) $var['type'];
             }
         }
 

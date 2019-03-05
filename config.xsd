@@ -18,6 +18,7 @@
             <xs:element name="forbiddenFunctions" type="ExitFunctionsType" minOccurs="0" maxOccurs="1" />
             <xs:element name="issueHandlers" type="IssueHandlersType" minOccurs="0" maxOccurs="1" />
             <xs:element name="ignoreExceptions" type="ExceptionsType" minOccurs="0" maxOccurs="1" />
+            <xs:element name="globals" type="GlobalsType" minOccurs="0" maxOccurs="1" />
         </xs:choice>
 
         <xs:attribute name="name" type="xs:string" />
@@ -430,5 +431,16 @@
         </xs:sequence>
 
         <xs:attribute name="errorLevel" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="GlobalsType">
+        <xs:sequence>
+            <xs:element name="var" maxOccurs="unbounded" type="IdentifierType" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="IdentifierType">
+        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="type" type="xs:string" use="required" />
     </xs:complexType>
 </xs:schema>
