@@ -1133,6 +1133,7 @@ class ConfigTest extends TestCase
                         <var name="glob2" type="array{str:string}" />
                         <var name="glob3" type="ns\Clazz" />
                         <var name="glob4" type="string|null" />
+                        <var name="_GET" type="array{str:string}" />
                     </globals>
                 </psalm>'
             )
@@ -1147,6 +1148,7 @@ class ConfigTest extends TestCase
                     ord($glob1);
                     ord($glob2["str"]);
                     $glob3->func();
+                    ord($_GET["str"]);
 
                     assert($glob4 !== null);
                     ord($glob4);
@@ -1157,22 +1159,28 @@ class ConfigTest extends TestCase
                         ord($glob2["str"]);
                         $glob3->func();
                         ord($glob4);
+                        ord($_GET["str"]);
                     }
 
                     $glob1 = 0;
                     error_reporting($glob1);
+
+                    $_GET["str"] = 0;
+                    error_reporting($_GET["str"]);
 
                     function example2(): void {
                         global $glob1, $glob2, $glob3;
                         error_reporting($glob1);
                         ord($glob2["str"]);
                         $glob3->func();
+                        ord($_GET["str"]);
                     }
                 }
                 namespace ns {
                     ord($glob1);
                     ord($glob2["str"]);
                     $glob3->func();
+                    ord($_GET["str"]);
 
                     class Clazz {
                         public function func(): void {}
@@ -1183,6 +1191,7 @@ class ConfigTest extends TestCase
                         ord($glob1);
                         ord($glob2["str"]);
                         $glob3->func();
+                        ord($_GET["str"]);
                     }
                 }'
         );
