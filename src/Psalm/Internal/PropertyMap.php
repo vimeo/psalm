@@ -96,6 +96,7 @@ return [
         'h' => 'integer',
         'i' => 'integer',
         's' => 'integer',
+        'f' => 'float', // only present from 7.1 onwards
         'invert' => 'integer',
         'days' => 'mixed',
     ],
