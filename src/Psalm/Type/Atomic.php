@@ -20,6 +20,8 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
@@ -220,7 +222,8 @@ abstract class Atomic
         return $this instanceof TCallable
             || $this instanceof TCallableObject
             || $this instanceof TCallableString
-            || (($this instanceof TArray || $this instanceof ObjectLike) && $this->callable);
+            || $this instanceof TCallableArray
+            || $this instanceof TCallableObjectLikeArray;
     }
 
     /**

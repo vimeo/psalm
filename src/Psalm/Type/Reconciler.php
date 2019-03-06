@@ -21,6 +21,8 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableObjectLikeArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmpty;
 use Psalm\Type\Atomic\TFalse;
@@ -662,10 +664,14 @@ class Reconciler
                 ) {
                     $callable_types[] = $type;
                     $did_remove_type = true;
-                } elseif ($type instanceof TArray || $type instanceof ObjectLike) {
+                } elseif ($type instanceof TArray) {
                     $type = clone $type;
-                    $type->callable = true;
-
+                    $type = new TCallableArray($type->type_params);
+                    $callable_types[] = $type;
+                    $did_remove_type = true;
+                } elseif ($type instanceof ObjectLike) {
+                    $type = clone $type;
+                    $type = new TCallableObjectLikeArray($type->properties);
                     $callable_types[] = $type;
                     $did_remove_type = true;
                 } else {
@@ -854,6 +860,16 @@ class Reconciler
             $failed_reconciliation = 2;
 
             return Type::getMixed();
+        }
+
+        if ($new_var_type === 'array' && isset($existing_var_atomic_types['callable'])) {
+            $existing_var_type->removeType('callable');
+            $existing_var_type->addType(
+                new TCallableObjectLikeArray([
+                    Type::getMixed(),
+                    Type::getString()
+                ])
+            );
         }
 
         if (isset($existing_var_atomic_types['int'])
@@ -1753,12 +1769,14 @@ class Reconciler
         }
 
         if ($new_var_type === 'callable') {
-            $existing_var_type->removeType('callable');
-
             foreach ($existing_var_atomic_types as $atomic_key => $type) {
                 if ($type instanceof Type\Atomic\TLiteralString
                     && \Psalm\Internal\Codebase\CallMap::inCallMap($type->value)
                 ) {
+                    $existing_var_type->removeType($atomic_key);
+                }
+
+                if ($type->isCallableType()) {
                     $existing_var_type->removeType($atomic_key);
                 }
             }

@@ -27,10 +27,7 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public $sealed = false;
 
-    /**
-     * @var bool
-     */
-    public $callable = false;
+    const KEY = 'array';
 
     /**
      * Constructs a new instance of a generic type
@@ -46,7 +43,8 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function __toString()
     {
-        return 'array{' .
+        /** @psalm-suppress MixedOperand */
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -68,7 +66,8 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function getId()
     {
-        return 'array{' .
+        /** @psalm-suppress MixedOperand */
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -107,7 +106,8 @@ class ObjectLike extends \Psalm\Type\Atomic
             );
         }
 
-        return 'array{' .
+        /** @psalm-suppress MixedOperand */
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -321,7 +321,7 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function equals(Atomic $other_type)
     {
-        if (!$other_type instanceof self) {
+        if (get_class($other_type) !== static::class) {
             return false;
         }
 
@@ -341,10 +341,6 @@ class ObjectLike extends \Psalm\Type\Atomic
             if (!$property_type->equals($other_type->properties[$property_name])) {
                 return false;
             }
-        }
-
-        if ($this->callable !== $other_type->callable) {
-            return false;
         }
 
         return true;
