@@ -119,10 +119,7 @@ class ReturnAnalyzer
         if ($source instanceof FunctionLikeAnalyzer
             && !($source->getSource() instanceof TraitAnalyzer)
         ) {
-            $source->addReturnTypes(
-                $stmt->expr ? (string) $stmt->inferredType : '',
-                $context
-            );
+            $source->addReturnTypes($context);
 
             $source->examineParamTypes($statements_analyzer, $context, $codebase, $stmt);
 

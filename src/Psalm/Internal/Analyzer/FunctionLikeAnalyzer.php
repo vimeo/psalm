@@ -62,7 +62,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     protected $source;
 
     /**
-     * @var array<string, array<string, Type\Union>>
+     * @var ?array<string, Type\Union>
      */
     protected $return_vars_in_scope = [];
 
@@ -72,7 +72,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
     protected $possible_param_types = [];
 
     /**
-     * @var array<string, array<string, bool>>
+     * @var ?array<string, bool>
      */
     protected $return_vars_possibly_in_scope = [];
 
@@ -582,7 +582,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             return false;
         }
 
-        if ($context->collect_initializations) {
+        if ($context->collect_initializations || $context->collect_mutations) {
             $statements_analyzer->addSuppressedIssues([
                 'DocblockTypeContradiction',
                 'InvalidReturnStatement',
@@ -854,17 +854,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         }
 
         if ($add_mutations) {
-            if (isset($this->return_vars_in_scope[''])) {
+            if ($this->return_vars_in_scope !== null) {
                 $context->vars_in_scope = TypeAnalyzer::combineKeyedTypes(
                     $context->vars_in_scope,
-                    $this->return_vars_in_scope['']
+                    $this->return_vars_in_scope
                 );
             }
 
-            if (isset($this->return_vars_possibly_in_scope[''])) {
+            if ($this->return_vars_possibly_in_scope !== null) {
                 $context->vars_possibly_in_scope = array_merge(
                     $context->vars_possibly_in_scope,
-                    $this->return_vars_possibly_in_scope['']
+                    $this->return_vars_possibly_in_scope
                 );
             }
 
@@ -967,24 +967,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return  void
      */
-    public function addReturnTypes($return_type, Context $context)
+    public function addReturnTypes(Context $context)
     {
-        if (isset($this->return_vars_in_scope[$return_type])) {
-            $this->return_vars_in_scope[$return_type] = TypeAnalyzer::combineKeyedTypes(
+        if ($this->return_vars_in_scope !== null) {
+            $this->return_vars_in_scope = TypeAnalyzer::combineKeyedTypes(
                 $context->vars_in_scope,
-                $this->return_vars_in_scope[$return_type]
+                $this->return_vars_in_scope
             );
         } else {
-            $this->return_vars_in_scope[$return_type] = $context->vars_in_scope;
+            $this->return_vars_in_scope = $context->vars_in_scope;
         }
 
-        if (isset($this->return_vars_possibly_in_scope[$return_type])) {
-            $this->return_vars_possibly_in_scope[$return_type] = array_merge(
+        if ($this->return_vars_possibly_in_scope !== null) {
+            $this->return_vars_possibly_in_scope = array_merge(
                 $context->vars_possibly_in_scope,
-                $this->return_vars_possibly_in_scope[$return_type]
+                $this->return_vars_possibly_in_scope
             );
         } else {
-            $this->return_vars_possibly_in_scope[$return_type] = $context->vars_possibly_in_scope;
+            $this->return_vars_possibly_in_scope = $context->vars_possibly_in_scope;
         }
     }
 
