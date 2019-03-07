@@ -1089,6 +1089,29 @@ class ExpressionAnalyzer
             }
         }
 
+        if ($return_type instanceof Type\Atomic\TCallable) {
+            if ($return_type->params) {
+                foreach ($return_type->params as $param) {
+                    if ($param->type) {
+                        $param->type = self::fleshOutType(
+                            $codebase,
+                            $param->type,
+                            $self_class,
+                            $static_class_type
+                        );
+                    }
+                }
+            }
+            if ($return_type->return_type) {
+                $return_type->return_type = self::fleshOutType(
+                    $codebase,
+                    $return_type->return_type,
+                    $self_class,
+                    $static_class_type
+                );
+            }
+        }
+
         return $return_type;
     }
 
