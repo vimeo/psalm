@@ -285,7 +285,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if (!$interface_storage->is_interface) {
                 if (IssueBuffer::accepts(
                     new UndefinedInterface(
-                        $parent_fq_class_name . ' is not an interface',
+                        $fq_interface_name . ' is not an interface',
                         $code_location
                     ),
                     array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
