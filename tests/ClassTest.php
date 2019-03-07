@@ -570,6 +570,20 @@ class ClassTest extends TestCase
                     }',
                 'error_message' => 'AbstractInstantiation',
             ],
+            'preventExtendingInterface' => [
+                '<?php
+                    interface Foo {}
+
+                    class Bar extends Foo {}',
+                'error_message' => 'UndefinedClass',
+            ],
+            'preventImplementingClass' => [
+                '<?php
+                    class Foo {}
+
+                    class Bar implements Foo {}',
+                'error_message' => 'UndefinedInterface',
+            ],
         ];
     }
 }

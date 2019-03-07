@@ -3,6 +3,7 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Issue\UndefinedInterface;
 
 /**
  * @internal
@@ -45,6 +46,29 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                 )) {
                     // we should not normally get here
                     return;
+                }
+
+                try {
+                    $extended_interface_storage = $codebase->classlike_storage_provider->get($extended_interface_name);
+                } catch (\InvalidArgumentException $e) {
+                    continue;
+                }
+
+                if (!$extended_interface_storage->is_interface) {
+                    $code_location = new CodeLocation(
+                        $this,
+                        $extended_interface
+                    );
+
+                    if (\Psalm\IssueBuffer::accepts(
+                        new UndefinedInterface(
+                            $extended_interface_name . ' is not an interface',
+                            $code_location
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
 
                 if ($codebase->store_node_types && $extended_interface_name) {

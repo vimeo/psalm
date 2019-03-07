@@ -25,6 +25,8 @@ use Psalm\Issue\OverriddenPropertyAccess;
 use Psalm\Issue\PropertyNotSetInConstructor;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\TooManyTemplateParams;
+use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedInterface;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
@@ -153,14 +155,27 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             try {
                 $parent_class_storage = $classlike_storage_provider->get($parent_fq_class_name);
 
-                if ($parent_class_storage->deprecated) {
-                    $code_location = new CodeLocation(
-                        $this,
-                        $class->extends,
-                        $class_context ? $class_context->include_location : null,
-                        true
-                    );
+                $code_location = new CodeLocation(
+                    $this,
+                    $class->extends,
+                    $class_context ? $class_context->include_location : null,
+                    true
+                );
 
+                if ($parent_class_storage->is_trait || $parent_class_storage->is_interface) {
+                    if (IssueBuffer::accepts(
+                        new UndefinedClass(
+                            $parent_fq_class_name . ' is not a class',
+                            $code_location,
+                            $parent_fq_class_name . ' as class'
+                        ),
+                        array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                    )) {
+                        // fall through
+                    }
+                }
+
+                if ($parent_class_storage->deprecated) {
                     if (IssueBuffer::accepts(
                         new DeprecatedClass(
                             $parent_fq_class_name . ' is marked deprecated',
@@ -266,6 +281,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context ? $class_context->include_location : null,
                 true
             );
+
+            if (!$interface_storage->is_interface) {
+                if (IssueBuffer::accepts(
+                    new UndefinedInterface(
+                        $parent_fq_class_name . ' is not an interface',
+                        $code_location
+                    ),
+                    array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                )) {
+                    // fall through
+                }
+            }
 
             if (isset($storage->template_type_implements_count[strtolower($fq_interface_name)])) {
                 $expected_param_count = $storage->template_type_implements_count[strtolower($fq_interface_name)];
