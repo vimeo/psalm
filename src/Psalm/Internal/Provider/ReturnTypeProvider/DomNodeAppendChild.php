@@ -25,7 +25,8 @@ class DomNodeAppendChild implements \Psalm\Plugin\Hook\MethodReturnTypeProviderI
         string $method_name_lowercase,
         array $call_args,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        array $template_type_parameters = null
     ) {
         if ($method_name_lowercase === 'appendchild'
             && isset($call_args[0]->value->inferredType)

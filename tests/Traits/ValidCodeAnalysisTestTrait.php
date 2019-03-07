@@ -61,8 +61,19 @@ trait ValidCodeAnalysisTestTrait
 
         $actual_vars = [];
         foreach ($assertions as $var => $_) {
+            $exact = false;
+
+            if ($var && strpos($var, '===') === strlen($var) - 3) {
+                $var = substr($var, 0, -3);
+                $exact = true;
+            }
+
             if (isset($context->vars_in_scope[$var])) {
-                $actual_vars[$var] = (string)$context->vars_in_scope[$var];
+                if ($exact) {
+                    $actual_vars[$var . '==='] = $context->vars_in_scope[$var]->getId();
+                } else {
+                    $actual_vars[$var] = (string)$context->vars_in_scope[$var];
+                }
             }
         }
 

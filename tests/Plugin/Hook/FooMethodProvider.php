@@ -78,7 +78,8 @@ class FooMethodProvider implements
         string $method_name,
         array $call_args,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        array $templated_type_parameters = null
     ) {
         return Type::getString();
     }

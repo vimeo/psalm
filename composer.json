@@ -23,7 +23,8 @@
         "webmozart/path-util": "^2.3",
         "symfony/console": "^3.0||^4.0",
         "amphp/amp": "^2.1",
-        "amphp/byte-stream": "^1.5"
+        "amphp/byte-stream": "^1.5",
+        "phpmyadmin/sql-parser": "^4.0"
     },
     "bin": ["psalm", "psalter", "psalm-language-server", "psalm-plugin"],
     "autoload": {
