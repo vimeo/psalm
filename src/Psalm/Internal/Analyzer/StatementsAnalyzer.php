@@ -549,16 +549,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $var_id = '$' . $var->name;
 
                             if ($var->name === 'argv' || $var->name === 'argc') {
-                                if ($var->name === 'argv') {
-                                    $context->vars_in_scope[$var_id] = new Type\Union([
-                                        new Type\Atomic\TArray([
-                                            Type::getInt(),
-                                            Type::getString(),
-                                        ]),
-                                    ]);
-                                } else {
-                                    $context->vars_in_scope[$var_id] = Type::getInt();
+                                $type = $this->getGlobalType($var->name);
+                                if ($type === null) {
+                                    throw new \LogicException('Cannot be null here');
                                 }
+                                $context->vars_in_scope[$var_id] = $type;
                             } elseif (isset($function_storage->global_types[$var_id])) {
                                 $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
                                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -566,7 +561,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $context->vars_in_scope[$var_id] =
                                     $global_context && $global_context->hasVariable($var_id, $this)
                                         ? clone $global_context->vars_in_scope[$var_id]
-                                        : Type::getMixed();
+                                        : ($this->getGlobalType($var->name) ?: Type::getMixed());
 
                                 $context->vars_possibly_in_scope[$var_id] = true;
                             }
