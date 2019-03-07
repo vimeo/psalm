@@ -392,7 +392,7 @@ class CommentAnalyzer
         }
 
         if (strpos(strtolower($comments['description']), '@inheritdoc') !== false
-            || isset($comments['specials']['inheritdoc'])) {
+            || isset($comments['specials']['inheritdoc']) || isset($comments['specials']['inheritDoc'])) {
             $info->inheritdoc = true;
         }
 
