@@ -148,7 +148,8 @@ class ReturnTypeAnalyzer
                     'Not all code paths of ' . $cased_method_id . ' end in a return statement, return type '
                         . $return_type . ' expected',
                     $return_type_location
-                )
+                ),
+                $source->getSuppressedIssues()
             )) {
                 return false;
             }
