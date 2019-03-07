@@ -1711,6 +1711,32 @@ class TemplateTest extends TestCase
                      */
                     function bar(Foo $a) : void {}'
             ],
+            'SKIPPED-templateDefault' => [
+                '<?php
+                    /**
+                     * @template T as string
+                     */
+                    class C {
+                        /** @var T */
+                        public $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        function __construct(string $t = "hello") {
+                            $this->t = $t;
+                        }
+                    }
+
+                    $a = new C("hello");
+                    $b = new C("goodbye");
+                    $c = new C();',
+                'assertions' => [
+                    '$a===' => 'C<string(hello)>',
+                    '$b===' => 'C<string(goodbye)>',
+                    '$c===' => 'C<string(hello)>',
+                ],
+            ],
         ];
     }
 
