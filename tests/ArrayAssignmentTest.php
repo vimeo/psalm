@@ -767,7 +767,7 @@ class ArrayAssignmentTest extends TestCase
 
                     class B extends A {
                         /**
-                         * {@inheritdoc}
+                         * @inheritdoc
                          */
                         public function offsetSet($offset, $value): void
                         {
