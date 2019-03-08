@@ -1711,7 +1711,7 @@ class TemplateTest extends TestCase
                      */
                     function bar(Foo $a) : void {}'
             ],
-            'SKIPPED-templateDefault' => [
+            'templateDefaultSimpleString' => [
                 '<?php
                     /**
                      * @template T as string
@@ -1728,13 +1728,59 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    $a = new C("hello");
-                    $b = new C("goodbye");
                     $c = new C();',
                 'assertions' => [
-                    '$a===' => 'C<string(hello)>',
-                    '$b===' => 'C<string(goodbye)>',
                     '$c===' => 'C<string(hello)>',
+                ],
+            ],
+            'SKIPPED-templateDefaultConstant' => [
+                '<?php
+                    const FOO = "bar";
+
+                    /**
+                     * @template T as string
+                     */
+                    class E {
+                        /** @var T */
+                        public $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        function __construct(string $t = FOO) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    $e = new E();',
+                'assertions' => [
+                    '$e===' => 'E<string(bar)>',
+                ],
+            ],
+            'SKIPPED-templateDefaultClassConstant' => [
+                '<?php
+                    class D {
+                        const FOO = "bar";
+                    }
+
+                    /**
+                     * @template T as string
+                     */
+                    class E {
+                        /** @var T */
+                        public $t;
+
+                        /**
+                         * @param T $t
+                         */
+                        function __construct(string $t = D::FOO) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    $e = new E();',
+                'assertions' => [
+                    '$e===' => 'E<string(bar)>',
                 ],
             ],
         ];

@@ -1135,6 +1135,27 @@ class CallAnalyzer
 
                     break;
                 }
+
+                if ($param->is_optional
+                    && $param->type
+                    && $param->default_type
+                    && !$param->is_variadic
+                    && $template_types
+                ) {
+                    if ($generic_params === null) {
+                        $generic_params = [];
+                    }
+
+                    $param_type = clone $param->type;
+
+                    $param_type->replaceTemplateTypesWithStandins(
+                        $template_types,
+                        $generic_params,
+                        $codebase,
+                        clone $param->default_type,
+                        true
+                    );
+                }
             }
         }
     }
