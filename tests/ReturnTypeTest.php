@@ -915,6 +915,13 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'invalidReturnTypeCorrectLine' => [
+                '<?php
+                    function f1(
+                        int $a
+                    ): string {}',
+                'error_message' => 'InvalidReturnType - src/somefile.php:4:24'
+            ],
         ];
     }
 }
