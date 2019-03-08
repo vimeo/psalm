@@ -820,7 +820,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->scan_deep
                 );
                 $parent_fqcln_lc = strtolower($parent_fqcln);
-                $storage->parent_classes[$parent_fqcln_lc] = $parent_fqcln_lc;
+                $storage->parent_classes[$parent_fqcln_lc] = $parent_fqcln;
                 $this->file_storage->required_classes[strtolower($parent_fqcln)] = $parent_fqcln;
             }
 

@@ -702,15 +702,29 @@ class TypeCombination
                         if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                             $combination->strings[$type_key] = $type;
                         } else {
+                            $shared_classlikes = $codebase ? $combination->getSharedTypes($codebase) : [];
+
                             $combination->strings = null;
 
-                            if (isset($combination->value_types['string'])
-                                && $combination->value_types['string'] instanceof TClassString
+                            if (isset($combination->value_types['class-string'])
                                 && $type instanceof TLiteralClassString
                             ) {
                                 // do nothing
                             } elseif ($type instanceof TLiteralClassString) {
-                                $combination->value_types['string'] = new TClassString();
+                                $type_classlikes = $codebase
+                                    ? self::getClassLikes($codebase, $type->value)
+                                    : [];
+
+                                $mutual = array_intersect_key($type_classlikes, $shared_classlikes);
+
+                                if ($mutual) {
+                                    $first_class = array_keys($mutual)[0];
+
+                                    $class_string_type = new TClassString($first_class, new TNamedObject($first_class));
+                                    $combination->value_types[$class_string_type->getKey()] = $class_string_type;
+                                } else {
+                                    $combination->value_types['class-string'] = new TClassString();
+                                }
                             } else {
                                 $combination->value_types['string'] = new TString();
                             }
@@ -721,16 +735,24 @@ class TypeCombination
                         if (!isset($combination->value_types['string'])) {
                             if ($combination->strings) {
                                 $has_non_literal_class_string = false;
+
+                                $shared_classlikes = $codebase ? $combination->getSharedTypes($codebase) : [];
+
                                 foreach ($combination->strings as $string_type) {
                                     if (!$string_type instanceof TLiteralClassString) {
                                         $has_non_literal_class_string = true;
+                                        break;
                                     }
                                 }
 
                                 if ($has_non_literal_class_string || !$type instanceof TClassString) {
                                     $combination->value_types[$type_key] = new TString();
                                 } else {
-                                    $combination->value_types[$type_key] = new TClassString();
+                                    if (isset($shared_classlikes[$type->as])) {
+                                        $combination->value_types[$type->getKey()] = $type;
+                                    } else {
+                                        $combination->value_types[$type_key] = new TClassString();
+                                    }
                                 }
                             } else {
                                 $combination->value_types[$type_key] = $type;
@@ -815,5 +837,70 @@ class TypeCombination
                 $combination->value_types[$type_key] = $type;
             }
         }
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private function getSharedTypes(Codebase $codebase) : array
+    {
+        /** @var array<string, bool>|null */
+        $shared_classlikes = null;
+
+        if ($this->strings) {
+            foreach ($this->strings as $string_type) {
+                $classlikes = self::getClassLikes($codebase, $string_type->value);
+
+                if ($shared_classlikes === null) {
+                    $shared_classlikes = $classlikes;
+                } elseif ($shared_classlikes) {
+                    $shared_classlikes = array_intersect_key($shared_classlikes, $classlikes);
+                }
+            }
+        }
+
+        foreach ($this->value_types as $value_type) {
+            if ($value_type instanceof TClassString && $value_type->as_type) {
+                $classlikes = self::getClassLikes($codebase, $value_type->as_type->value);
+
+                if ($shared_classlikes === null) {
+                    $shared_classlikes = $classlikes;
+                } elseif ($shared_classlikes) {
+                    $shared_classlikes = array_intersect_key($shared_classlikes, $classlikes);
+                }
+            }
+        }
+
+        return $shared_classlikes ?: [];
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name)
+    {
+        try {
+            $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+        } catch (\InvalidArgumentException $e) {
+            return [];
+        }
+
+        $classlikes = [];
+
+        $classlikes[$fq_classlike_name] = true;
+
+        foreach ($class_storage->parent_classes as $parent_class) {
+            $classlikes[$parent_class] = true;
+        }
+
+        foreach ($class_storage->parent_interfaces as $parent_interface) {
+            $classlikes[$parent_interface] = true;
+        }
+
+        foreach ($class_storage->class_implements as $interface) {
+            $classlikes[$interface] = true;
+        }
+
+        return $classlikes;
     }
 }

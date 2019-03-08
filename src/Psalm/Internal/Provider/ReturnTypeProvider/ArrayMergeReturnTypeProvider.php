@@ -29,6 +29,8 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         $inner_value_types = [];
         $inner_key_types = [];
 
+        $codebase = $statements_source->getCodebase();
+
         $generic_properties = [];
 
         foreach ($call_args as $call_arg) {
@@ -109,8 +111,8 @@ class ArrayMergeReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturnT
         if ($inner_value_types) {
             return new Type\Union([
                 new Type\Atomic\TArray([
-                    TypeCombination::combineTypes($inner_key_types, null, true),
-                    TypeCombination::combineTypes($inner_value_types, null, true),
+                    TypeCombination::combineTypes($inner_key_types, $codebase, true),
+                    TypeCombination::combineTypes($inner_value_types, $codebase, true),
                 ]),
             ]);
         }

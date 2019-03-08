@@ -243,7 +243,7 @@ class Populator
                 $this->file_reference_provider->addFileInheritanceToClass($file_path, $parent_interface_lc);
             }
 
-            foreach ($storage->parent_classes as $parent_class_lc) {
+            foreach ($storage->parent_classes as $parent_class_lc => $_) {
                 $this->file_reference_provider->addFileInheritanceToClass($file_path, $parent_class_lc);
             }
 
