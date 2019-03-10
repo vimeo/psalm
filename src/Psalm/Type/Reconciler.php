@@ -2423,7 +2423,7 @@ class Reconciler
             return;
         }
 
-        $array_key_offset = substr($array_key, 1, -1);
+        $array_key_offset = $array_key[0] === '\'' ? substr($array_key, 1, -1) : $array_key;
 
         $base_key = implode($key_parts);
 
