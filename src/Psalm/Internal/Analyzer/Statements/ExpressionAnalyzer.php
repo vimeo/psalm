@@ -360,12 +360,19 @@ class ExpressionAnalyzer
                 }
             }
 
+            $byref_uses = [];
+
             foreach ($stmt->uses as $use) {
                 if (!is_string($use->var->name)) {
                     continue;
                 }
 
                 $use_var_id = '$' . $use->var->name;
+
+                if ($use->byRef) {
+                    $byref_uses[$use_var_id] = true;
+                }
+
                 // insert the ref into the current context if passed by ref, as whatever we're passing
                 // the closure to could execute it straight away.
                 if (!$context->hasVariable($use_var_id, $statements_analyzer) && $use->byRef) {
@@ -380,7 +387,7 @@ class ExpressionAnalyzer
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
             }
 
-            $closure_analyzer->analyze($use_context, $context);
+            $closure_analyzer->analyze($use_context, $context, false, $byref_uses);
 
             if (!isset($stmt->inferredType)) {
                 $stmt->inferredType = Type::getClosure();

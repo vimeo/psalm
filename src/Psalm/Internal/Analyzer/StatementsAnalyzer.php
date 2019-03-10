@@ -90,6 +90,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     private $used_var_locations = [];
 
     /**
+     * @var ?array<string, bool>
+     */
+    private $byref_uses;
+
+    /**
      * @param SourceAnalyzer $source
      */
     public function __construct(SourceAnalyzer $source)
@@ -754,7 +759,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 continue;
             }
 
-            if (!$function_storage || !array_key_exists(substr($var_id, 1), $function_storage->param_types)) {
+            if ((!$function_storage
+                    || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
+                && !isset($this->byref_uses[$var_id])
+            ) {
                 if (IssueBuffer::accepts(
                     new UnusedVariable(
                         'Variable ' . $var_id . ' is never referenced',
@@ -1546,5 +1554,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         if ($name === 'argc') {
             return Type::getInt();
         }
+    }
+
+    /**
+     * @param array<string, bool> $byref_uses
+     * @return void
+     */
+    public function setByRefUses(array $byref_uses)
+    {
+        $this->byref_uses = $byref_uses;
     }
 }
