@@ -64,6 +64,9 @@ class TypeCombination
     private $objectlike_sealed = true;
 
     /** @var bool */
+    private $objectlike_had_mixed_value = false;
+
+    /** @var bool */
     private $has_mixed = false;
 
     /** @var bool */
@@ -259,13 +262,30 @@ class TypeCombination
                         }
                     }
 
-                    $objectlike = new ObjectLike($combination->objectlike_entries);
-
-                    if ($combination->objectlike_sealed && !isset($combination->type_params['array'])) {
-                        $objectlike->sealed = true;
+                    if ($combination->objectlike_had_mixed_value) {
+                        $combination->objectlike_entries = array_filter(
+                            $combination->objectlike_entries,
+                            function (Type\Union $type) : bool {
+                                return !$type->possibly_undefined;
+                            }
+                        );
                     }
 
-                    $new_types[] = $objectlike;
+                    if ($combination->objectlike_entries) {
+                        $objectlike = new ObjectLike($combination->objectlike_entries);
+
+                        if ($combination->objectlike_sealed && !isset($combination->type_params['array'])) {
+                            $objectlike->sealed = true;
+                        }
+
+                        if ($combination->objectlike_had_mixed_value) {
+                            $objectlike->had_mixed_value = true;
+                        }
+
+                        $new_types[] = $objectlike;
+                    } else {
+                        $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                    }
 
                     // if we're merging an empty array with an object-like, clobber empty array
                     unset($combination->type_params['array']);
@@ -567,6 +587,8 @@ class TypeCombination
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
+            $combination->objectlike_had_mixed_value =
+                $combination->objectlike_had_mixed_value || $type->had_mixed_value;
 
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
@@ -575,7 +597,7 @@ class TypeCombination
 
                 if (!$value_type) {
                     $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;
-                    // it's possibly undefined if there are existing objectlike entries
+                    // it's possibly undefined if there are existing objectlike entries and
                     $combination->objectlike_entries[$candidate_property_name]->possibly_undefined
                         = $existing_objectlike_entries || $candidate_property_type->possibly_undefined;
                 } else {

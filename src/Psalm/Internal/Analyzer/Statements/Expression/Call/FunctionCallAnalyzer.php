@@ -314,6 +314,16 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             }
         }
 
+        $set_inside_conditional = false;
+
+        if ($function instanceof PhpParser\Node\Name
+            && $function->parts === ['assert']
+            && !$context->inside_conditional
+        ) {
+            $context->inside_conditional = true;
+            $set_inside_conditional = true;
+        }
+
         if (self::checkFunctionArguments(
             $statements_analyzer,
             $stmt->args,
@@ -322,6 +332,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
             $context
         ) === false) {
             // fall through
+        }
+
+        if ($set_inside_conditional) {
+            $context->inside_conditional = false;
         }
 
         $generic_params = null;

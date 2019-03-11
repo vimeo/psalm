@@ -27,6 +27,13 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public $sealed = false;
 
+    /**
+     * Whether or not to allow new properties to be asserted on the given array
+     *
+     * @var bool
+     */
+    public $had_mixed_value = false;
+
     const KEY = 'array';
 
     /**
@@ -164,6 +171,10 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericKeyType()
     {
+        if ($this->had_mixed_value) {
+            return Type::getArrayKey();
+        }
+
         $key_types = [];
 
         foreach ($this->properties as $key => $_) {
@@ -184,6 +195,10 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericValueType()
     {
+        if ($this->had_mixed_value) {
+            return Type::getMixed();
+        }
+
         $value_type = null;
 
         foreach ($this->properties as $property) {
@@ -208,6 +223,10 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericArrayType()
     {
+        if ($this->had_mixed_value) {
+            return new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]);
+        }
+
         $key_types = [];
         $value_type = null;
 

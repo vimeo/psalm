@@ -511,6 +511,12 @@ class ArrayFetchAnalyzer
                                     $type->properties[$key_value]
                                 );
                             }
+                        } elseif ($type->had_mixed_value) {
+                            $has_valid_offset = true;
+
+                            $type->properties[$key_value] = new Type\Union([new TMixed]);
+
+                            $array_access_type = Type::getMixed();
                         } else {
                             if (!$context->inside_isset || $type->sealed) {
                                 $object_like_keys = array_keys($type->properties);

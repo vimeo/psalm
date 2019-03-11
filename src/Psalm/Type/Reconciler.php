@@ -1402,8 +1402,12 @@ class Reconciler
             );
         }
 
-        if (!$is_equality && ($new_var_type === 'isset' || $new_var_type === 'array-key-exists')) {
-            return Type::getNull();
+        if (!$is_equality) {
+            if ($new_var_type === 'isset') {
+                return Type::getNull();
+            } elseif ($new_var_type === 'array-key-exists') {
+                return Type::getEmpty();
+            }
         }
 
         $existing_var_atomic_types = $existing_var_type->getTypes();
@@ -2419,6 +2423,10 @@ class Reconciler
         $array_key = array_pop($key_parts);
         array_pop($key_parts);
 
+        if ($array_key === null) {
+            throw new \UnexpectedValueException('Not expecting null array key');
+        }
+
         if ($array_key[0] === '$') {
             return;
         }
@@ -2427,25 +2435,42 @@ class Reconciler
 
         $base_key = implode($key_parts);
 
-        if (isset($existing_types[$base_key])) {
+        if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
             $base_atomic_types = $existing_types[$base_key]->getTypes();
 
-            if (isset($base_atomic_types['array'])) {
-                if ($base_atomic_types['array'] instanceof Type\Atomic\ObjectLike) {
+            if (isset($base_atomic_types['array'])
+                && ($base_atomic_types['array'] instanceof Type\Atomic\ObjectLike
+                    || ($base_atomic_types['array'] instanceof Type\Atomic\TArray
+                        && $base_atomic_types['array']->type_params[0]->isArrayKey()
+                        && $base_atomic_types['array']->type_params[1]->isMixed()))
+            ) {
+                if ($base_atomic_types['array'] instanceof Type\Atomic\TArray) {
+                    $new_objectlike = new Type\Atomic\ObjectLike(
+                        [
+                            $array_key_offset => clone $result_type
+                        ],
+                        null
+                    );
+
+                    $new_objectlike->had_mixed_value = true;
+
+                    $existing_types[$base_key]->addType($new_objectlike);
+                } else {
                     $base_atomic_types['array']->properties[$array_key_offset] = clone $result_type;
-                    $changed_var_ids[] = $base_key . '[' . $array_key . ']';
-
-                    if ($key_parts[count($key_parts) - 1] === ']') {
-                        self::adjustObjectLikeType(
-                            $key_parts,
-                            $existing_types,
-                            $changed_var_ids,
-                            $existing_types[$base_key]
-                        );
-                    }
-
-                    $existing_types[$base_key]->bustCache();
                 }
+
+                $changed_var_ids[] = $base_key . '[' . $array_key . ']';
+
+                if ($key_parts[count($key_parts) - 1] === ']') {
+                    self::adjustObjectLikeType(
+                        $key_parts,
+                        $existing_types,
+                        $changed_var_ids,
+                        $existing_types[$base_key]
+                    );
+                }
+
+                $existing_types[$base_key]->bustCache();
             }
         }
     }
