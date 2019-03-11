@@ -816,12 +816,21 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 }
 
                                 if (!$atomic_root_type->properties) {
-                                    $root_type->addType(
-                                        new Type\Atomic\TArray([
-                                            new Type\Union([new Type\Atomic\TEmpty]),
-                                            new Type\Union([new Type\Atomic\TEmpty]),
-                                        ])
-                                    );
+                                    if ($atomic_root_type->had_mixed_value) {
+                                        $root_type->addType(
+                                            new Type\Atomic\TArray([
+                                                new Type\Union([new Type\Atomic\TArrayKey]),
+                                                new Type\Union([new Type\Atomic\TMixed]),
+                                            ])
+                                        );
+                                    } else {
+                                        $root_type->addType(
+                                            new Type\Atomic\TArray([
+                                                new Type\Union([new Type\Atomic\TEmpty]),
+                                                new Type\Union([new Type\Atomic\TEmpty]),
+                                            ])
+                                        );
+                                    }
                                 }
                             } else {
                                 $root_type->addType(
