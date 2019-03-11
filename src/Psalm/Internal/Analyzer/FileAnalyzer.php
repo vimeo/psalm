@@ -142,6 +142,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         }
 
         $this->context->is_global = true;
+        $this->context->defineGlobals();
 
         try {
             $stmts = $codebase->getStatementsForFile($this->file_path);

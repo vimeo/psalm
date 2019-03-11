@@ -86,6 +86,7 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
             $context = new Context();
             $context->collect_references = $codebase->collect_references;
             $context->is_global = true;
+            $context->defineGlobals();
             $statements_analyzer->analyze($leftover_stmts, $context);
         }
     }

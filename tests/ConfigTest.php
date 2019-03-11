@@ -1200,6 +1200,10 @@ class ConfigTest extends TestCase
                     ord($glob1);
                     ord($glob2["str"]);
                     $glob3->func();
+                }
+                namespace {
+                    ord($glob1 ?? "str");
+                    ord($_GET["str"] ?? "str");
                 }'
         );
 
