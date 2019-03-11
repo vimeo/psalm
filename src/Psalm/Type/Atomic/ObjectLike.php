@@ -28,9 +28,13 @@ class ObjectLike extends \Psalm\Type\Atomic
     public $sealed = false;
 
     /**
+     * Whether or not to allow new properties to be asserted on the given array
+     *
      * @var bool
      */
-    public $callable = false;
+    public $had_mixed_value = false;
+
+    const KEY = 'array';
 
     /**
      * Constructs a new instance of a generic type
@@ -46,7 +50,8 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function __toString()
     {
-        return 'array{' .
+        /** @psalm-suppress MixedOperand */
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -68,7 +73,8 @@ class ObjectLike extends \Psalm\Type\Atomic
 
     public function getId()
     {
-        return 'array{' .
+        /** @psalm-suppress MixedOperand */
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -107,7 +113,8 @@ class ObjectLike extends \Psalm\Type\Atomic
             );
         }
 
-        return 'array{' .
+        /** @psalm-suppress MixedOperand */
+        return static::KEY . '{' .
                 implode(
                     ', ',
                     array_map(
@@ -164,6 +171,10 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericKeyType()
     {
+        if ($this->had_mixed_value) {
+            return Type::getArrayKey();
+        }
+
         $key_types = [];
 
         foreach ($this->properties as $key => $_) {
@@ -184,6 +195,10 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericValueType()
     {
+        if ($this->had_mixed_value) {
+            return Type::getMixed();
+        }
+
         $value_type = null;
 
         foreach ($this->properties as $property) {
@@ -208,6 +223,10 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function getGenericArrayType()
     {
+        if ($this->had_mixed_value) {
+            return new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]);
+        }
+
         $key_types = [];
         $value_type = null;
 
@@ -321,7 +340,7 @@ class ObjectLike extends \Psalm\Type\Atomic
      */
     public function equals(Atomic $other_type)
     {
-        if (!$other_type instanceof self) {
+        if (get_class($other_type) !== static::class) {
             return false;
         }
 
@@ -341,10 +360,6 @@ class ObjectLike extends \Psalm\Type\Atomic
             if (!$property_type->equals($other_type->properties[$property_name])) {
                 return false;
             }
-        }
-
-        if ($this->callable !== $other_type->callable) {
-            return false;
         }
 
         return true;

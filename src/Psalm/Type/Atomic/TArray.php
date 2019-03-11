@@ -16,11 +16,6 @@ class TArray extends \Psalm\Type\Atomic
     public $value = 'array';
 
     /**
-     * @var bool
-     */
-    public $callable = false;
-
-    /**
      * Constructs a new instance of a generic type
      *
      * @param array<int, \Psalm\Type\Union> $type_params
@@ -67,15 +62,14 @@ class TArray extends \Psalm\Type\Atomic
      */
     public function equals(Atomic $other_type)
     {
-        if (!$other_type instanceof self) {
+        if (get_class($other_type) !== static::class) {
             return false;
         }
 
-        if ($this instanceof TNonEmptyArray !== $other_type instanceof TNonEmptyArray
-            || ($this instanceof TNonEmptyArray
-                && $other_type instanceof TNonEmptyArray
-                && $this->count !== $other_type->count
-        )) {
+        if ($this instanceof TNonEmptyArray
+            && $other_type instanceof TNonEmptyArray
+            && $this->count !== $other_type->count
+        ) {
             return false;
         }
 
@@ -87,10 +81,6 @@ class TArray extends \Psalm\Type\Atomic
             if (!$type_param->equals($other_type->type_params[$i])) {
                 return false;
             }
-        }
-
-        if ($this->callable !== $other_type->callable) {
-            return false;
         }
 
         return true;

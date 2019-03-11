@@ -108,11 +108,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      * @param Context       $context
      * @param Context|null  $global_context
      * @param bool          $add_mutations  whether or not to add mutations to this method
+     * @param ?array<string, bool> $byref_uses
      *
      * @return false|null
      */
-    public function analyze(Context $context, Context $global_context = null, $add_mutations = false)
-    {
+    public function analyze(
+        Context $context,
+        Context $global_context = null,
+        $add_mutations = false,
+        array $byref_uses = null
+    ) {
         $storage = $this->storage;
 
         $function_stmts = $this->function->getStmts() ?: [];
@@ -286,6 +291,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
         }
 
         $statements_analyzer = new StatementsAnalyzer($this);
+
+        if ($byref_uses) {
+            $statements_analyzer->setByRefUses($byref_uses);
+        }
 
         if ($storage->template_types) {
             foreach ($storage->template_types as $param_name => $_) {

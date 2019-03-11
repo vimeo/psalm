@@ -64,6 +64,9 @@ class TypeCombination
     private $objectlike_sealed = true;
 
     /** @var bool */
+    private $objectlike_had_mixed_value = false;
+
+    /** @var bool */
     private $has_mixed = false;
 
     /** @var bool */
@@ -259,13 +262,30 @@ class TypeCombination
                         }
                     }
 
-                    $objectlike = new ObjectLike($combination->objectlike_entries);
-
-                    if ($combination->objectlike_sealed && !isset($combination->type_params['array'])) {
-                        $objectlike->sealed = true;
+                    if ($combination->objectlike_had_mixed_value) {
+                        $combination->objectlike_entries = array_filter(
+                            $combination->objectlike_entries,
+                            function (Type\Union $type) : bool {
+                                return !$type->possibly_undefined;
+                            }
+                        );
                     }
 
-                    $new_types[] = $objectlike;
+                    if ($combination->objectlike_entries) {
+                        $objectlike = new ObjectLike($combination->objectlike_entries);
+
+                        if ($combination->objectlike_sealed && !isset($combination->type_params['array'])) {
+                            $objectlike->sealed = true;
+                        }
+
+                        if ($combination->objectlike_had_mixed_value) {
+                            $objectlike->had_mixed_value = true;
+                        }
+
+                        $new_types[] = $objectlike;
+                    } else {
+                        $new_types[] = new Type\Atomic\TArray([Type::getArrayKey(), Type::getMixed()]);
+                    }
 
                     // if we're merging an empty array with an object-like, clobber empty array
                     unset($combination->type_params['array']);
@@ -567,6 +587,8 @@ class TypeCombination
             $existing_objectlike_entries = (bool) $combination->objectlike_entries;
             $possibly_undefined_entries = $combination->objectlike_entries;
             $combination->objectlike_sealed = $combination->objectlike_sealed && $type->sealed;
+            $combination->objectlike_had_mixed_value =
+                $combination->objectlike_had_mixed_value || $type->had_mixed_value;
 
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = isset($combination->objectlike_entries[$candidate_property_name])
@@ -575,7 +597,7 @@ class TypeCombination
 
                 if (!$value_type) {
                     $combination->objectlike_entries[$candidate_property_name] = clone $candidate_property_type;
-                    // it's possibly undefined if there are existing objectlike entries
+                    // it's possibly undefined if there are existing objectlike entries and
                     $combination->objectlike_entries[$candidate_property_name]->possibly_undefined
                         = $existing_objectlike_entries || $candidate_property_type->possibly_undefined;
                 } else {
@@ -702,15 +724,29 @@ class TypeCombination
                         if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                             $combination->strings[$type_key] = $type;
                         } else {
+                            $shared_classlikes = $codebase ? $combination->getSharedTypes($codebase) : [];
+
                             $combination->strings = null;
 
-                            if (isset($combination->value_types['string'])
-                                && $combination->value_types['string'] instanceof TClassString
+                            if (isset($combination->value_types['class-string'])
                                 && $type instanceof TLiteralClassString
                             ) {
                                 // do nothing
                             } elseif ($type instanceof TLiteralClassString) {
-                                $combination->value_types['string'] = new TClassString();
+                                $type_classlikes = $codebase
+                                    ? self::getClassLikes($codebase, $type->value)
+                                    : [];
+
+                                $mutual = array_intersect_key($type_classlikes, $shared_classlikes);
+
+                                if ($mutual) {
+                                    $first_class = array_keys($mutual)[0];
+
+                                    $class_string_type = new TClassString($first_class, new TNamedObject($first_class));
+                                    $combination->value_types[$class_string_type->getKey()] = $class_string_type;
+                                } else {
+                                    $combination->value_types['class-string'] = new TClassString();
+                                }
                             } else {
                                 $combination->value_types['string'] = new TString();
                             }
@@ -721,16 +757,24 @@ class TypeCombination
                         if (!isset($combination->value_types['string'])) {
                             if ($combination->strings) {
                                 $has_non_literal_class_string = false;
+
+                                $shared_classlikes = $codebase ? $combination->getSharedTypes($codebase) : [];
+
                                 foreach ($combination->strings as $string_type) {
                                     if (!$string_type instanceof TLiteralClassString) {
                                         $has_non_literal_class_string = true;
+                                        break;
                                     }
                                 }
 
                                 if ($has_non_literal_class_string || !$type instanceof TClassString) {
                                     $combination->value_types[$type_key] = new TString();
                                 } else {
-                                    $combination->value_types[$type_key] = new TClassString();
+                                    if (isset($shared_classlikes[$type->as])) {
+                                        $combination->value_types[$type->getKey()] = $type;
+                                    } else {
+                                        $combination->value_types[$type_key] = new TClassString();
+                                    }
                                 }
                             } else {
                                 $combination->value_types[$type_key] = $type;
@@ -815,5 +859,70 @@ class TypeCombination
                 $combination->value_types[$type_key] = $type;
             }
         }
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private function getSharedTypes(Codebase $codebase) : array
+    {
+        /** @var array<string, bool>|null */
+        $shared_classlikes = null;
+
+        if ($this->strings) {
+            foreach ($this->strings as $string_type) {
+                $classlikes = self::getClassLikes($codebase, $string_type->value);
+
+                if ($shared_classlikes === null) {
+                    $shared_classlikes = $classlikes;
+                } elseif ($shared_classlikes) {
+                    $shared_classlikes = array_intersect_key($shared_classlikes, $classlikes);
+                }
+            }
+        }
+
+        foreach ($this->value_types as $value_type) {
+            if ($value_type instanceof TClassString && $value_type->as_type) {
+                $classlikes = self::getClassLikes($codebase, $value_type->as_type->value);
+
+                if ($shared_classlikes === null) {
+                    $shared_classlikes = $classlikes;
+                } elseif ($shared_classlikes) {
+                    $shared_classlikes = array_intersect_key($shared_classlikes, $classlikes);
+                }
+            }
+        }
+
+        return $shared_classlikes ?: [];
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private static function getClassLikes(Codebase $codebase, string $fq_classlike_name)
+    {
+        try {
+            $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
+        } catch (\InvalidArgumentException $e) {
+            return [];
+        }
+
+        $classlikes = [];
+
+        $classlikes[$fq_classlike_name] = true;
+
+        foreach ($class_storage->parent_classes as $parent_class) {
+            $classlikes[$parent_class] = true;
+        }
+
+        foreach ($class_storage->parent_interfaces as $parent_interface) {
+            $classlikes[$parent_interface] = true;
+        }
+
+        foreach ($class_storage->class_implements as $interface) {
+            $classlikes[$interface] = true;
+        }
+
+        return $classlikes;
     }
 }

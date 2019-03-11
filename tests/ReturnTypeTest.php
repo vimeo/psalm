@@ -587,6 +587,18 @@ class ReturnTypeTest extends TestCase
                         foo();
                     }',
             ],
+            'suppressInvalidReturnType' => [
+                '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     */
+                    function calculate(string $foo): int {
+                        switch ($foo) {
+                            case "a":
+                                return 0;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -902,6 +914,13 @@ class ReturnTypeTest extends TestCase
                         return 5;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'invalidReturnTypeCorrectLine' => [
+                '<?php
+                    function f1(
+                        int $a
+                    ): string {}',
+                'error_message' => 'InvalidReturnType - src/somefile.php:4:24'
             ],
         ];
     }

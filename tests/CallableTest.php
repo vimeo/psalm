@@ -693,7 +693,9 @@ class CallableTest extends TestCase
             ],
             'callableSelfArg' => [
                 '<?php
-                    class Clazz {
+                    class A {}
+
+                    class B extends A {
                         /**
                          * @param callable(static) $f
                          */
@@ -714,7 +716,48 @@ class CallableTest extends TestCase
                         function func3(callable $f): void {
                             $f($this);
                         }
-                    }',
+                    }
+
+                    class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $b->func1(function(B $x): void {});
+                    $c->func1(function(C $x): void {});
+                    $b->func2(function(B $x): void {});
+                    $c->func2(function(B $x): void {});',
+            ],
+            'callableSelfReturn' => [
+                '<?php
+                    class A {}
+
+                    class B extends A {
+                        /**
+                         * @param callable():static $f
+                         */
+                        function func1(callable $f): void {}
+
+                        /**
+                         * @param callable():self $f
+                         */
+                        function func2(callable $f): void {}
+
+                        /**
+                         * @param callable():parent $f
+                         */
+                        function func3(callable $f): void {}
+                    }
+
+                    class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $b->func1(function(): B { return new B(); });
+                    $c->func1(function(): C { return new C(); });
+                    $b->func2(function(): B { return new B(); });
+                    $c->func2(function(): B { return new B(); });',
             ],
             'selfArrayMapCallableWrongClass' => [
                 '<?php
@@ -780,6 +823,26 @@ class CallableTest extends TestCase
                             return Closure::fromCallable([$this, "protectedMethod"]);
                         }
                     }',
+            ],
+            'callableIsArrayAssertion' => [
+                '<?php
+                    function foo(callable $c) : void {
+                        if (is_array($c)) {
+                            echo $c[1];
+                        }
+                    }'
+            ],
+            'callableOrArrayIsArrayAssertion' => [
+                '<?php
+                    /**
+                     * @param callable|array $c
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo($c) : void {
+                        if (is_array($c)) {
+                            echo $c[2];
+                        }
+                    }'
             ],
         ];
     }

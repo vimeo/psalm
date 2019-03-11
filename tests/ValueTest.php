@@ -468,6 +468,17 @@ class ValueTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MissingParamType', 'MixedAssignment'],
             ],
+            'sqlTypes' => [
+                '<?php
+                    $a = "select * from foo";
+                    $b = "select * from";
+                    $c = "select * from foo where i = :i";',
+                'assertions' => [
+                    '$a===' => 'sql-select-string(select * from foo)',
+                    '$b===' => 'string(select * from)',
+                    '$c===' => 'sql-select-string(select * from foo where i = :i)',
+                ]
+            ],
         ];
     }
 

@@ -820,7 +820,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $this->scan_deep
                 );
                 $parent_fqcln_lc = strtolower($parent_fqcln);
-                $storage->parent_classes[$parent_fqcln_lc] = $parent_fqcln_lc;
+                $storage->parent_classes[$parent_fqcln_lc] = $parent_fqcln;
                 $this->file_storage->required_classes[strtolower($parent_fqcln)] = $parent_fqcln;
             }
 
@@ -1666,6 +1666,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
         if ($parser_return_type) {
             $suffix = '';
 
+            $original_type = $parser_return_type;
+
             if ($parser_return_type instanceof PhpParser\Node\NullableType) {
                 $suffix = '|null';
                 $parser_return_type = $parser_return_type->type;
@@ -1690,10 +1692,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
             $storage->return_type_location = new CodeLocation(
                 $this->file_scanner,
-                $stmt,
-                null,
-                false,
-                CodeLocation::FUNCTION_RETURN_TYPE
+                $original_type
             );
 
             if ($stmt->returnsByRef()) {

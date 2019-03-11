@@ -873,6 +873,14 @@ class UnusedVariableTest extends TestCase
                         return new $type($data[0]);
                     }',
             ],
+            'byRefVariableUsedInAddition' => [
+                '<?php
+                    $i = 0;
+                    $a = function () use (&$i) : void {
+                        $i = 1;
+                    };
+                    $a();',
+            ],
         ];
     }
 

@@ -573,6 +573,151 @@ class AssertTest extends TestCase
                         echo $post->getId();
                     }',
             ],
+            'assertArrayReturnTypeNarrowed' => [
+                '<?php
+                    /** @return array{0:Exception} */
+                    function f(array $a): array {
+                        if ($a[0] instanceof Exception) {
+                            return $a;
+                        }
+
+                        return [new Exception("bad")];
+                    }'
+            ],
+            'assertTypeNarrowedByAssert' => [
+                '<?php
+                    /** @return array{0:Exception,1:Exception} */
+                    function f(array $ret): array {
+                        assert($ret[0] instanceof Exception);
+                        assert($ret[1] instanceof Exception);
+                        return $ret;
+                    }',
+            ],
+            'assertTypeNarrowedByButOtherFetchesAreMixed' => [
+                '<?php
+                    /**
+                     * @return array{0:Exception}
+                     * @psalm-suppress MixedArgument
+                     */
+                    function f(array $ret): array {
+                        assert($ret[0] instanceof Exception);
+                        echo strlen($ret[1]);
+                        return $ret;
+                    }',
+            ],
+            'assertTypeNarrowedByNestedIsset' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedMethodCall
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo(array $array = []): void {
+                        if (array_key_exists("a", $array)) {
+                            echo $array["a"];
+                        }
+
+                        if (array_key_exists("b", $array)) {
+                            echo $array["b"]->format("Y-m-d");
+                        }
+                    }',
+            ],
+            'assertCheckOnNonZeroArrayOffset' => [
+                '<?php
+                    /**
+                     * @param array{string,array|null} $a
+                     * @return string
+                     */
+                    function f(array $a) {
+                        assert(is_array($a[1]));
+                        return $a[0];
+                    }'
+            ],
+            'assertOnParseUrlOutput' => [
+                '<?php
+                    /**
+                     * @param array<"a"|"b"|"c", mixed> $arr
+                     */
+                    function uriToPath(array $arr) : string {
+                        if (!isset($arr["a"]) || $arr["b"] !== "foo") {
+                            throw new \InvalidArgumentException("bad");
+                        }
+
+                        return (string) $arr["c"];
+                    }'
+            ],
+            'combineAfterLoopAssert' => [
+                '<?php
+                    function foo(array $array) : void {
+                        $c = 0;
+
+                        if ($array["a"] === "a") {
+                            foreach ([rand(0, 1), rand(0, 1)] as $i) {
+                                if ($array["b"] === "c") {}
+                                $c++;
+                            }
+                        }
+                    }'
+            ],
+            'assertOnXml' => [
+                '<?php
+                    function f(array $array) : void {
+                        if ($array["foo"] === "ok") {
+                            if ($array["bar"] === "a") {}
+                            if ($array["bar"] === "b") {}
+                        }
+                    }'
+            ],
+            'assertOnBacktrace' => [
+                '<?php
+                    function _validProperty(array $c, array $arr) : void {
+                        if (empty($arr["a"])) {}
+
+                        if ($c && $c["a"] !== "b") {}
+                    }'
+            ],
+            'assertOnRemainderOfArray' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedInferredReturnType
+                     * @psalm-suppress MixedReturnStatement
+                     */
+                    function foo(string $file_name) : int {
+                        while ($data = getData()) {
+                            if (is_numeric($data[0])) {
+                                for ($i = 1; $i < count($data); $i++) {
+                                    return $data[$i];
+                                }
+                            }
+                        }
+
+                        return 5;
+                    }
+
+                    function getData() : ?array {
+                        return rand(0, 1) ? ["a", "b", "c"] : null;
+                    }'
+            ],
+            'notEmptyCheck' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function load(string $objectName, array $config = []) : void {
+                        if (isset($config["className"])) {
+                            $name = $objectName;
+                            $objectName = $config["className"];
+                        }
+                        if (!empty($config)) {}
+                    }'
+            ],
+            'unsetAfterIssetCheck' => [
+                '<?php
+                    function checkbox(array $options = []) : void {
+                        if ($options["a"]) {}
+
+                        unset($options["a"], $options["b"]);
+                    }'
+            ],
         ];
     }
 

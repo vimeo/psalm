@@ -17,6 +17,7 @@ interface MethodReturnTypeProviderInterface
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     * @param  ?array<Type\Union> $template_type_parameters
      * @return ?Type\Union
      */
     public static function getMethodReturnType(
@@ -25,6 +26,7 @@ interface MethodReturnTypeProviderInterface
         string $method_name_lowercase,
         array $call_args,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        array $template_type_parameters = null
     );
 }

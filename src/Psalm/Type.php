@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TSingleLetter;
+use Psalm\Type\Atomic\TSqlSelectString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TVoid;
@@ -923,9 +924,23 @@ abstract class Type
      */
     public static function getString($value = null)
     {
+        $type = null;
+
         if ($value !== null) {
-            $type = new TLiteralString($value);
-        } else {
+            if (stripos($value, 'select ') === 0) {
+                $parser = new \PhpMyAdmin\SqlParser\Parser($value);
+
+                if (!$parser->errors) {
+                    $type = new TSqlSelectString($value);
+                }
+            }
+
+            if (!$type && strlen($value) < 50) {
+                $type = new TLiteralString($value);
+            }
+        }
+
+        if (!$type) {
             $type = new TString();
         }
 

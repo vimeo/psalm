@@ -693,6 +693,14 @@ class Union
     /**
      * @return bool
      */
+    public function isArrayKey()
+    {
+        return isset($this->types['array-key']) && count($this->types) === 1;
+    }
+
+    /**
+     * @return bool
+     */
     public function isNull()
     {
         return count($this->types) === 1 && isset($this->types['null']);

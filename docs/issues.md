@@ -1975,6 +1975,16 @@ Emitted when referencing a variable that doesn't exist
 echo $a;
 ```
 
+### UndefinedInterface
+
+Emitted when referencing an interface that doesn’t exist but does have an identically-named class.
+
+```php
+class C {}
+
+interface I extends C {}
+```
+
 ### UndefinedMethod
 
 Emitted when calling a method that doesn’t exist

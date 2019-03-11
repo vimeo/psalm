@@ -65,6 +65,7 @@ class Reflection
 
         $storage = $this->storage_provider->create($class_name);
         $storage->abstract = $reflected_class->isAbstract();
+        $storage->is_interface = $reflected_class->isInterface();
 
         $storage->potential_declaring_method_ids['__construct'][$class_name_lower . '::__construct'] = true;
 
@@ -83,7 +84,7 @@ class Reflection
             $storage->protected_class_constants = $parent_storage->protected_class_constants;
             $parent_class_name_lc = strtolower($parent_class_name);
             $storage->parent_classes = array_merge(
-                [$parent_class_name_lc => $parent_class_name_lc],
+                [$parent_class_name_lc => $parent_class_name],
                 $parent_storage->parent_classes
             );
 

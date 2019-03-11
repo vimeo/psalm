@@ -876,7 +876,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $stmt->name->name,
                     $stmt->args,
                     $context,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                    $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null
                 );
             }
 

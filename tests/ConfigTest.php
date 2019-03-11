@@ -1193,6 +1193,17 @@ class ConfigTest extends TestCase
                         $glob3->func();
                         ord($_GET["str"]);
                     }
+                }
+                namespace ns2 {
+                    /** @psalm-suppress InvalidGlobal */
+                    global $glob1, $glob2, $glob3;
+                    ord($glob1);
+                    ord($glob2["str"]);
+                    $glob3->func();
+                }
+                namespace {
+                    ord($glob1 ?? "str");
+                    ord($_GET["str"] ?? "str");
                 }'
         );
 

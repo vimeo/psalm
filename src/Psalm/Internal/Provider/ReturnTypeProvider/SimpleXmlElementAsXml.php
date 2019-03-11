@@ -25,7 +25,8 @@ class SimpleXmlElementAsXml implements \Psalm\Plugin\Hook\MethodReturnTypeProvid
         string $method_name_lowercase,
         array $call_args,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
+        array $template_type_parameters = null
     ) {
         if ($method_name_lowercase === 'asxml'
             && !count($call_args)

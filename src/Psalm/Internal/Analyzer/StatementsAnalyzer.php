@@ -90,6 +90,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     private $used_var_locations = [];
 
     /**
+     * @var ?array<string, bool>
+     */
+    private $byref_uses;
+
+    /**
      * @param SourceAnalyzer $source
      */
     public function __construct(SourceAnalyzer $source)
@@ -549,16 +554,11 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $var_id = '$' . $var->name;
 
                             if ($var->name === 'argv' || $var->name === 'argc') {
-                                if ($var->name === 'argv') {
-                                    $context->vars_in_scope[$var_id] = new Type\Union([
-                                        new Type\Atomic\TArray([
-                                            Type::getInt(),
-                                            Type::getString(),
-                                        ]),
-                                    ]);
-                                } else {
-                                    $context->vars_in_scope[$var_id] = Type::getInt();
+                                $type = $this->getGlobalType($var->name);
+                                if ($type === null) {
+                                    throw new \LogicException('Cannot be null here');
                                 }
+                                $context->vars_in_scope[$var_id] = $type;
                             } elseif (isset($function_storage->global_types[$var_id])) {
                                 $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
                                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -566,7 +566,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $context->vars_in_scope[$var_id] =
                                     $global_context && $global_context->hasVariable($var_id, $this)
                                         ? clone $global_context->vars_in_scope[$var_id]
-                                        : Type::getMixed();
+                                        : ($this->getGlobalType($var->name) ?: Type::getMixed());
 
                                 $context->vars_possibly_in_scope[$var_id] = true;
                             }
@@ -759,7 +759,10 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 continue;
             }
 
-            if (!$function_storage || !array_key_exists(substr($var_id, 1), $function_storage->param_types)) {
+            if ((!$function_storage
+                    || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
+                && !isset($this->byref_uses[$var_id])
+            ) {
                 if (IssueBuffer::accepts(
                     new UnusedVariable(
                         'Variable ' . $var_id . ' is never referenced',
@@ -813,12 +816,21 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 }
 
                                 if (!$atomic_root_type->properties) {
-                                    $root_type->addType(
-                                        new Type\Atomic\TArray([
-                                            new Type\Union([new Type\Atomic\TEmpty]),
-                                            new Type\Union([new Type\Atomic\TEmpty]),
-                                        ])
-                                    );
+                                    if ($atomic_root_type->had_mixed_value) {
+                                        $root_type->addType(
+                                            new Type\Atomic\TArray([
+                                                new Type\Union([new Type\Atomic\TArrayKey]),
+                                                new Type\Union([new Type\Atomic\TMixed]),
+                                            ])
+                                        );
+                                    } else {
+                                        $root_type->addType(
+                                            new Type\Atomic\TArray([
+                                                new Type\Union([new Type\Atomic\TEmpty]),
+                                                new Type\Union([new Type\Atomic\TEmpty]),
+                                            ])
+                                        );
+                                    }
                                 }
                             } else {
                                 $root_type->addType(
@@ -1551,5 +1563,14 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         if ($name === 'argc') {
             return Type::getInt();
         }
+    }
+
+    /**
+     * @param array<string, bool> $byref_uses
+     * @return void
+     */
+    public function setByRefUses(array $byref_uses)
+    {
+        $this->byref_uses = $byref_uses;
     }
 }

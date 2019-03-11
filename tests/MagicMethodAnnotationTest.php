@@ -44,37 +44,6 @@ class MagicMethodAnnotationTest extends TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testCannotOverrideParentClassRetunTypeWhenIgnoringPhpDocMethod()
-    {
-        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                class ParentClass {
-                    public static function getMe() : self {
-                        return new self();
-                    }
-                }
-
-                /**
-                 * @method getMe() : Child
-                 */
-                class Child extends ParentClass {}
-
-                $child = Child::getMe();'
-        );
-
-        $context = new Context();
-
-        $this->analyzeFile('somefile.php', $context);
-
-        $this->assertSame('Child', (string) $context->vars_in_scope['$child']);
-    }
-
-    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedMethod
      * @return void
@@ -93,14 +62,12 @@ class MagicMethodAnnotationTest extends TestCase
 
                 $child = new Child();
 
-                $a = $child->getString();'
+                $child->getString();'
         );
 
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
-
-        $this->assertSame('ParentClass', (string) $context->vars_in_scope['$child']);
     }
 
     /**

@@ -523,6 +523,18 @@ class InterfaceTest extends TestCase
                         public function foo(array $f) : void {
                             $this->f = $f;
                         }
+                    }
+
+                    class C2 implements I {
+                        /** @var string[] */
+                        private $f = [];
+
+                        /**
+                         * {@inheritDoc}
+                         */
+                        public function foo(array $f) : void {
+                            $this->f = $f;
+                        }
                     }',
             ],
         ];
