@@ -696,6 +696,19 @@ class AssertTest extends TestCase
                     function getData() : ?array {
                         return rand(0, 1) ? ["a", "b", "c"] : null;
                     }'
+            ],
+            'notEmptyCheck' => [
+                '<?php
+                    /**
+                     * @psalm-suppress MixedAssignment
+                     */
+                    function load(string $objectName, array $config = []) : void {
+                        if (isset($config["className"])) {
+                            $name = $objectName;
+                            $objectName = $config["className"];
+                        }
+                        if (!empty($config)) {}
+                    }'
             ]
         ];
     }

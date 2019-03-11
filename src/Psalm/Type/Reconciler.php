@@ -168,6 +168,7 @@ class Reconciler
             $has_negation = false;
             $has_equality = false;
             $has_isset = false;
+            $has_not_isset = false;
             $has_count_check = false;
 
             foreach ($new_type_parts as $new_type_part_parts) {
@@ -186,6 +187,8 @@ class Reconciler
                     $has_isset = $has_isset
                         || $new_type_part_part === 'isset'
                         || $new_type_part_part === 'array-key-exists';
+
+                    $has_not_isset = $has_not_isset || $new_type_part_part === '!isset';
 
                     $has_count_check = $has_count_check
                         || $new_type_part_part === 'non-empty-countable';
@@ -233,7 +236,8 @@ class Reconciler
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
-                        $result_type
+                        $result_type,
+                        $has_not_isset
                     );
                 }
             } elseif ($code_location
@@ -2417,7 +2421,8 @@ class Reconciler
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
-        Type\Union $result_type
+        Type\Union $result_type,
+        bool $has_not_isset
     ) {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);
@@ -2442,7 +2447,8 @@ class Reconciler
                 && ($base_atomic_types['array'] instanceof Type\Atomic\ObjectLike
                     || ($base_atomic_types['array'] instanceof Type\Atomic\TArray
                         && $base_atomic_types['array']->type_params[0]->isArrayKey()
-                        && $base_atomic_types['array']->type_params[1]->isMixed()))
+                        && $base_atomic_types['array']->type_params[1]->isMixed())
+                        && !$has_not_isset)
             ) {
                 if ($base_atomic_types['array'] instanceof Type\Atomic\TArray) {
                     $new_objectlike = new Type\Atomic\ObjectLike(
@@ -2466,7 +2472,8 @@ class Reconciler
                         $key_parts,
                         $existing_types,
                         $changed_var_ids,
-                        $existing_types[$base_key]
+                        $existing_types[$base_key],
+                        $has_not_isset
                     );
                 }
 
