@@ -745,7 +745,10 @@ class Context
         return json_encode($summary);
     }
 
-    public function defineGlobals() : void
+    /**
+     * @return void
+     */
+    public function defineGlobals()
     {
         $globals = [
             'argv' => new Type\Union([
