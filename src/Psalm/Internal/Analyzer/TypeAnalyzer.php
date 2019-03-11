@@ -1015,6 +1015,13 @@ class TypeAnalyzer
                 if (!$input_type_part->type_params[1]->hasString()) {
                     return false;
                 }
+
+                if (!$input_type_part instanceof Type\Atomic\TCallableArray) {
+                    $type_coerced_from_mixed = true;
+                    $type_coerced = true;
+
+                    return false;
+                }
             } elseif ($input_type_part instanceof ObjectLike) {
                 $method_id = self::getCallableMethodIdFromObjectLike($input_type_part);
 

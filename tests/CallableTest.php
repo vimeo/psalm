@@ -832,6 +832,18 @@ class CallableTest extends TestCase
                         }
                     }'
             ],
+            'callableOrArrayIsArrayAssertion' => [
+                '<?php
+                    /**
+                     * @param callable|array $c
+                     * @psalm-suppress MixedArgument
+                     */
+                    function foo($c) : void {
+                        if (is_array($c)) {
+                            echo $c[2];
+                        }
+                    }'
+            ],
         ];
     }
 

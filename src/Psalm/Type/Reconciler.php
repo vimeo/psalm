@@ -866,14 +866,33 @@ class Reconciler
             return Type::getMixed();
         }
 
+        $is_maybe_callable_array = false;
+
         if ($new_var_type === 'array' && isset($existing_var_atomic_types['callable'])) {
             $existing_var_type->removeType('callable');
-            $existing_var_type->addType(
-                new TCallableObjectLikeArray([
-                    Type::getMixed(),
-                    Type::getString()
-                ])
-            );
+
+            if (!isset($existing_var_atomic_types['array'])) {
+                $existing_var_type->addType(
+                    new TCallableObjectLikeArray([
+                        Type::getMixed(),
+                        Type::getString()
+                    ])
+                );
+            } else {
+                $array_combination = \Psalm\Internal\Type\TypeCombination::combineTypes([
+                    new TCallableObjectLikeArray([
+                        Type::getMixed(),
+                        Type::getString()
+                    ]),
+                    $existing_var_atomic_types['array']
+                ]);
+
+                $existing_var_type->addType(
+                    $array_combination->getTypes()['array']
+                );
+
+                $is_maybe_callable_array = true;
+            }
         }
 
         if (isset($existing_var_atomic_types['int'])
@@ -1149,6 +1168,7 @@ class Reconciler
                 && $code_location
                 && $new_type->getId() === $existing_var_type->getId()
                 && !$is_equality
+                && !$is_maybe_callable_array
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
