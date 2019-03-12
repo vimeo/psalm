@@ -530,7 +530,7 @@ class InterfaceTest extends TestCase
                         private $f = [];
 
                         /**
-                         * {@inheritDoc}
+                         * @inheritDoc
                          */
                         public function foo(array $f) : void {
                             $this->f = $f;
