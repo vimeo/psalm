@@ -35,7 +35,11 @@ class TLiteralString extends TString
      */
     public function getId()
     {
-        return 'string(' . $this->value . ')';
+        $no_newline_value = preg_replace("/\n/m", '\n', $this->value);
+        if (strlen($this->value) > 50) {
+            return 'string(' . substr($no_newline_value, 0, 50) . '...' . ')';
+        }
+        return 'string(' . $no_newline_value . ')';
     }
 
     /**

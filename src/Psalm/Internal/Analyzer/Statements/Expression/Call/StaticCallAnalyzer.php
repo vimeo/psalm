@@ -697,6 +697,26 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     );
                 }
 
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+                if (!$return_type_candidate && $declaring_method_id && $declaring_method_id !== $method_id) {
+                    list($declaring_fq_class_name, $declaring_method_name) = explode('::', $declaring_method_id);
+
+                    if ($codebase->methods->return_type_provider->has($declaring_fq_class_name)) {
+                        $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
+                            $statements_analyzer,
+                            $declaring_fq_class_name,
+                            $declaring_method_name,
+                            $stmt->args,
+                            $context,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                            null,
+                            $fq_class_name,
+                            $stmt->name->name
+                        );
+                    }
+                }
+
                 if (!$return_type_candidate) {
                     $return_type_candidate = $codebase->methods->getMethodReturnType(
                         $method_id,
@@ -778,7 +798,6 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     $file_manipulations = [];
 
                     $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
-                    $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                     if ($appearing_method_id && $declaring_method_id) {
                         foreach ($config->after_method_checks as $plugin_fq_class_name) {

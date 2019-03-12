@@ -1332,7 +1332,7 @@ class CallableTest extends TestCase
                             return Closure::fromCallable([$this, "privateMethod"]);
                         }
                     }',
-                'InvalidArgument',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

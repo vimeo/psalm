@@ -651,7 +651,7 @@ class ArrayFetchAnalyzer
                 } elseif ($type instanceof TLiteralString) {
                     if (!strlen($type->value)) {
                         $valid_offset_type = Type::getEmpty();
-                    } else {
+                    } elseif (strlen($type->value) < 10) {
                         $valid_offsets = [];
 
                         for ($i = -strlen($type->value), $l = strlen($type->value); $i < $l; $i++) {
@@ -659,6 +659,8 @@ class ArrayFetchAnalyzer
                         }
 
                         $valid_offset_type = new Type\Union($valid_offsets);
+                    } else {
+                        $valid_offset_type = Type::getInt();
                     }
                 } else {
                     $valid_offset_type = Type::getInt();

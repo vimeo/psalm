@@ -21,7 +21,9 @@ class MethodReturnTypeProvider
      *     array<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
-     *     ?array<Type\Union>=
+     *     ?array<Type\Union>=,
+     *     ?string=,
+     *     ?string=
      *   ) : ?Type\Union>
      * >
      */
@@ -70,7 +72,9 @@ class MethodReturnTypeProvider
      *     array<PhpParser\Node\Arg>,
      *     Context,
      *     CodeLocation,
-     *     ?array<Type\Union>=
+     *     ?array<Type\Union>=,
+     *     ?string=,
+     *     ?string=
      *   ) : ?Type\Union $c
      *
      * @return void
@@ -97,7 +101,9 @@ class MethodReturnTypeProvider
         array $call_args,
         Context $context,
         CodeLocation $code_location,
-        array $template_type_parameters = null
+        array $template_type_parameters = null,
+        string $called_fq_classlike_name = null,
+        string $called_method_name = null
     ) {
         foreach (self::$handlers[strtolower($fq_classlike_name)] as $class_handler) {
             $result = $class_handler(
@@ -107,7 +113,9 @@ class MethodReturnTypeProvider
                 $call_args,
                 $context,
                 $code_location,
-                $template_type_parameters
+                $template_type_parameters,
+                $called_fq_classlike_name,
+                $called_method_name ? strtolower($called_method_name) : null
             );
 
             if ($result) {

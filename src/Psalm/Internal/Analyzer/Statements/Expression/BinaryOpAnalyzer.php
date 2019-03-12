@@ -1565,9 +1565,9 @@ class BinaryOpAnalyzer
         // put the concatenated string into $result_type
         if ($left_type && $right_type && $left_type->isSingleStringLiteral() && $right_type->isSingleStringLiteral()) {
             $literal = $left_type->getSingleStringLiteral()->value . $right_type->getSingleStringLiteral()->value;
-            if (strlen($literal) <= 10000) {
+            if (strlen($literal) <= 1000) {
                 // Limit these to 10000 bytes to avoid extremely large union types from repeated concatenations, etc
-                $result_type = new Union([new TLiteralString($literal)]);
+                $result_type = Type::getString($literal);
             }
         }
     }

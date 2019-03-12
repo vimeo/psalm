@@ -927,7 +927,7 @@ abstract class Type
         $type = null;
 
         if ($value !== null) {
-            if (stripos($value, 'select ') === 0) {
+            if (stripos($value, 'select ') !== false) {
                 $parser = new \PhpMyAdmin\SqlParser\Parser($value);
 
                 if (!$parser->errors) {
@@ -935,7 +935,7 @@ abstract class Type
                 }
             }
 
-            if (!$type && strlen($value) < 50) {
+            if (!$type && strlen($value) < 1000) {
                 $type = new TLiteralString($value);
             }
         }
