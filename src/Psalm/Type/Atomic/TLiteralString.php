@@ -36,8 +36,8 @@ class TLiteralString extends TString
     public function getId()
     {
         $no_newline_value = preg_replace("/\n/m", '\n', $this->value);
-        if (strlen($this->value) > 50) {
-            return 'string(' . substr($no_newline_value, 0, 50) . '...' . ')';
+        if (strlen($this->value) > 80) {
+            return 'string(' . substr($no_newline_value, 0, 80) . '...' . ')';
         }
         return 'string(' . $no_newline_value . ')';
     }
