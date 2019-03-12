@@ -635,6 +635,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasNumeric()
+    {
+        return isset($this->types['numeric']);
+    }
+
+    /**
+     * @return bool
+     */
     public function hasScalarType()
     {
         return isset($this->types['int'])

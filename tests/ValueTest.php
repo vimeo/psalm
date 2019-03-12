@@ -479,6 +479,15 @@ class ValueTest extends TestCase
                     '$c===' => 'sql-select-string(select * from foo where i = :i)',
                 ]
             ],
+            'numericToStringComparison' => [
+                '<?php
+                    /** @psalm-suppress MissingParamType */
+                    function foo($s) : void {
+                        if (is_numeric($s)) {
+                            if ($s === 1) {}
+                        }
+                    }',
+            ],
         ];
     }
 
