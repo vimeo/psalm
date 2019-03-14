@@ -2,6 +2,7 @@
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
+use Psalm\Codebase;
 use Psalm\CodeLocation;
 use Psalm\Internal\Provider\{
     ClassLikeStorageProvider,
@@ -285,6 +286,8 @@ class Methods
             foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
                 $overridden_storage = $this->getStorage($overridden_method_id);
 
+                list($overriding_fq_class_name) = explode('::', $overridden_method_id);
+
                 $non_null_param_types = array_filter(
                     $overridden_storage->params,
                     /** @return bool */
@@ -300,7 +303,17 @@ class Methods
                             && $overridden_storage->params[$i]->name === $param->name
                         ) {
                             $params[$i] = clone $param;
-                            $params[$i]->type = $overridden_storage->params[$i]->type;
+                            $params[$i]->type = clone $overridden_storage->params[$i]->type;
+
+                            if ($params[$i]->type && $source) {
+                                self::localizeParamType(
+                                    $source->getCodebase(),
+                                    $params[$i]->type,
+                                    $appearing_fq_class_name,
+                                    $overriding_fq_class_name
+                                );
+                            }
+
                             $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
                         }
                     }
@@ -313,6 +326,80 @@ class Methods
         }
 
         throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
+    }
+
+    /**
+     * @return void
+     */
+    private static function localizeParamType(
+        Codebase $codebase,
+        Type\Union $type,
+        string $appearing_fq_class_name,
+        string $base_fq_class_name
+    ) {
+        $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
+        $extends = $class_storage->template_type_extends;
+
+        if (!$extends) {
+            return;
+        }
+
+        foreach ($type->getTypes() as $key => $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam
+                || $atomic_type instanceof Type\Atomic\TTemplateParamClass
+            ) {
+                if ($atomic_type->defining_class
+                    && strcasecmp($atomic_type->defining_class, $base_fq_class_name) === 0
+                ) {
+                    if (isset($extends[strtolower($base_fq_class_name)][$atomic_type->param_name])) {
+                        $extended_param = $extends[strtolower($base_fq_class_name)][$atomic_type->param_name];
+
+                        $type->removeType($key);
+                        $type->addType($extended_param);
+                    }
+                }
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TArray
+                || $atomic_type instanceof Type\Atomic\TIterable
+                || $atomic_type instanceof Type\Atomic\TGenericObject
+            ) {
+                foreach ($atomic_type->type_params as $type_param) {
+                    self::localizeParamType(
+                        $codebase,
+                        $type_param,
+                        $appearing_fq_class_name,
+                        $base_fq_class_name
+                    );
+                }
+            }
+
+            if ($atomic_type instanceof Type\Atomic\TCallable
+                || $atomic_type instanceof Type\Atomic\Fn
+            ) {
+                if ($atomic_type->params) {
+                    foreach ($atomic_type->params as $param) {
+                        if ($param->type) {
+                            self::localizeParamType(
+                                $codebase,
+                                $param->type,
+                                $appearing_fq_class_name,
+                                $base_fq_class_name
+                            );
+                        }
+                    }
+                }
+
+                if ($atomic_type->return_type) {
+                    self::localizeParamType(
+                        $codebase,
+                        $atomic_type->return_type,
+                        $appearing_fq_class_name,
+                        $base_fq_class_name
+                    );
+                }
+            }
+        }
     }
 
     /**

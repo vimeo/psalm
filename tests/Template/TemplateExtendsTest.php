@@ -1379,6 +1379,84 @@ class TemplateExtendsTest extends TestCase
                         return $collection;
                     }',
             ],
+            'dontInheritParamTemplatedTypeSameName' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                      /**
+                       * @param T $t
+                       */
+                      public function add($t) : void;
+                    }
+
+                    /**
+                     * @template T
+                     */
+                    class C implements I {
+                      /** @var array<T> */
+                      private $t;
+
+                      /**
+                       * @param array<T> $t
+                       */
+                      public function __construct(array $t) {
+                        $this->t = $t;
+                      }
+
+                      /**
+                       * @inheritdoc
+                       */
+                      public function add($t) : void {
+                        $this->t[] = $t;
+                      }
+                    }
+
+                    /** @param C<string> $c */
+                    function foo(C $c) : void {
+                        $c->add(new stdClass);
+                    }',
+            ],
+            'dontInheritParamTemplatedTypeDifferentTemplateNames' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    interface I {
+                      /**
+                       * @param T1 $t
+                       */
+                      public function add($t) : void;
+                    }
+
+                    /**
+                     * @template T2
+                     */
+                    class C implements I {
+                      /** @var array<T2> */
+                      private $t;
+
+                      /**
+                       * @param array<T2> $t
+                       */
+                      public function __construct(array $t) {
+                        $this->t = $t;
+                      }
+
+                      /**
+                       * @inheritdoc
+                       */
+                      public function add($t) : void {
+                        $this->t[] = $t;
+                      }
+                    }
+
+                    /** @param C<string> $c */
+                    function foo(C $c) : void {
+                        $c->add(new stdClass);
+                    }',
+            ],
         ];
     }
 
@@ -1997,6 +2075,88 @@ class TemplateExtendsTest extends TestCase
                     /** @template-extends Base<int> */
                     class SpecializedByInheritance extends Base {}',
                 'error_message' => 'InvalidTemplateParam'
+            ],
+            'doInheritParamTemplatedTypeSameName' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                      /**
+                       * @param T $t
+                       */
+                      public function add($t) : void;
+                    }
+
+                    /**
+                     * @template T
+                     * @template-implements I<T>
+                     */
+                    class C implements I {
+                      /** @var array<T> */
+                      private $t;
+
+                      /**
+                       * @param array<T> $t
+                       */
+                      public function __construct(array $t) {
+                        $this->t = $t;
+                      }
+
+                      /**
+                       * @inheritdoc
+                       */
+                      public function add($t) : void {
+                        $this->t[] = $t;
+                      }
+                    }
+
+                    /** @param C<string> $c */
+                    function foo(C $c) : void {
+                        $c->add(new stdClass);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'doInheritParamTemplatedTypeDifferentTemplateNames' => [
+                '<?php
+                    /**
+                     * @template T1
+                     */
+                    interface I {
+                      /**
+                       * @param T1 $t
+                       */
+                      public function add($t) : void;
+                    }
+
+                    /**
+                     * @template T2
+                     * @template-implements I<T2>
+                     */
+                    class C implements I {
+                      /** @var array<T2> */
+                      private $t;
+
+                      /**
+                       * @param array<T2> $t
+                       */
+                      public function __construct(array $t) {
+                        $this->t = $t;
+                      }
+
+                      /**
+                       * @inheritdoc
+                       */
+                      public function add($t) : void {
+                        $this->t[] = $t;
+                      }
+                    }
+
+                    /** @param C<string> $c */
+                    function foo(C $c) : void {
+                        $c->add(new stdClass);
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
