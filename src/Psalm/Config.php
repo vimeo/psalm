@@ -768,7 +768,7 @@ class Config
         if (isset($config_xml->globals) && isset($config_xml->globals->var)) {
             /** @var \SimpleXMLElement $var */
             foreach ($config_xml->globals->var as $var) {
-                $config->globals[(string) $var['name']] = (string) $var['type'];
+                $config->globals['$' . (string) $var['name']] = (string) $var['type'];
             }
         }
 

@@ -110,21 +110,7 @@ class ForeachAnalyzer
             );
 
             if (isset($context->vars_in_scope[$var_comment->var_id])
-                || in_array(
-                    $var_comment->var_id,
-                    [
-                        '$GLOBALS',
-                        '$_SERVER',
-                        '$_GET',
-                        '$_POST',
-                        '$_FILES',
-                        '$_COOKIE',
-                        '$_SESSION',
-                        '$_REQUEST',
-                        '$_ENV',
-                    ],
-                    true
-                )
+                || $statements_analyzer->isSuperGlobal($var_comment->var_id)
             ) {
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
