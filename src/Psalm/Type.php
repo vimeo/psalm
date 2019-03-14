@@ -928,10 +928,16 @@ abstract class Type
 
         if ($value !== null) {
             if (stripos($value, 'select ') !== false) {
-                $parser = new \PhpMyAdmin\SqlParser\Parser($value);
+                try {
+                    $parser = new \PhpMyAdmin\SqlParser\Parser($value);
 
-                if (!$parser->errors) {
-                    $type = new TSqlSelectString($value);
+                    if (!$parser->errors) {
+                        $type = new TSqlSelectString($value);
+                    }
+                } catch (\Throwable $e) {
+                    if (strlen($value) < 1000) {
+                        $type = new TLiteralString($value);
+                    }
                 }
             }
 
