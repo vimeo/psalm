@@ -110,23 +110,7 @@ class VariableFetchAnalyzer
             return null;
         }
 
-        if (in_array(
-            $stmt->name,
-            [
-                'GLOBALS',
-                '_SERVER',
-                '_GET',
-                '_POST',
-                '_FILES',
-                '_COOKIE',
-                '_SESSION',
-                '_REQUEST',
-                '_ENV',
-                'http_response_header'
-            ],
-            true
-        )
-        ) {
+        if (is_string($stmt->name) && $statements_analyzer->isSuperGlobal('$' . $stmt->name)) {
             $var_name = '$' . $stmt->name;
 
             if (isset($context->vars_in_scope[$var_name])) {
@@ -135,7 +119,7 @@ class VariableFetchAnalyzer
                 return null;
             }
 
-            $type = $statements_analyzer->getGlobalType($stmt->name) ?: Type::getArray();
+            $type = $statements_analyzer->getGlobalType($var_name);
 
             $stmt->inferredType = $type;
             $context->vars_in_scope[$var_name] = clone $type;

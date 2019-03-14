@@ -751,21 +751,21 @@ class Context
     public function defineGlobals()
     {
         $globals = [
-            'argv' => new Type\Union([
+            '$argv' => new Type\Union([
                 new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
             ]),
-            'argc' => Type::getInt(),
+            '$argc' => Type::getInt(),
         ];
 
         $config = Config::getInstance();
 
-        foreach ($config->globals as $global_name => $type_string) {
-            $globals[$global_name] = Type::parseString($type_string);
+        foreach ($config->globals as $global_id => $type_string) {
+            $globals[$global_id] = Type::parseString($type_string);
         }
 
-        foreach ($globals as $global_name => $type) {
-            $this->vars_in_scope['$' . $global_name] = $type;
-            $this->vars_possibly_in_scope[$global_name] = true;
+        foreach ($globals as $global_id => $type) {
+            $this->vars_in_scope[$global_id] = $type;
+            $this->vars_possibly_in_scope[$global_id] = true;
         }
     }
 }

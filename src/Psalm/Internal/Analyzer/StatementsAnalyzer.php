@@ -554,11 +554,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                             $var_id = '$' . $var->name;
 
                             if ($var->name === 'argv' || $var->name === 'argc') {
-                                $type = $this->getGlobalType($var->name);
-                                if ($type === null) {
-                                    throw new \LogicException('Cannot be null here');
-                                }
-                                $context->vars_in_scope[$var_id] = $type;
+                                $context->vars_in_scope[$var_id] = $this->getGlobalType($var_id);
                             } elseif (isset($function_storage->global_types[$var_id])) {
                                 $context->vars_in_scope[$var_id] = clone $function_storage->global_types[$var_id];
                                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -566,7 +562,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                                 $context->vars_in_scope[$var_id] =
                                     $global_context && $global_context->hasVariable($var_id, $this)
                                         ? clone $global_context->vars_in_scope[$var_id]
-                                        : ($this->getGlobalType($var->name) ?: Type::getMixed());
+                                        : $this->getGlobalType($var_id);
 
                                 $context->vars_possibly_in_scope[$var_id] = true;
                             }
@@ -1543,26 +1539,49 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
         return $const_name;
     }
 
-    /**
-     * @return  Type\Union|null
-     */
-    public function getGlobalType(string $name)
+    public function isSuperGlobal(string $var_id) : bool
+    {
+        return in_array(
+            $var_id,
+            [
+                '$GLOBALS',
+                '$_SERVER',
+                '$_GET',
+                '$_POST',
+                '$_FILES',
+                '$_COOKIE',
+                '$_SESSION',
+                '$_REQUEST',
+                '$_ENV',
+                '$http_response_header'
+            ],
+            true
+        );
+    }
+
+    public function getGlobalType(string $var_id) : Type\Union
     {
         $config = Config::getInstance();
 
-        if (isset($config->globals[$name])) {
-            return Type::parseString($config->globals[$name]);
+        if (isset($config->globals[$var_id])) {
+            return Type::parseString($config->globals[$var_id]);
         }
 
-        if ($name === 'argv') {
+        if ($var_id === '$argv') {
             return new Type\Union([
                 new Type\Atomic\TArray([Type::getInt(), Type::getString()]),
             ]);
         }
 
-        if ($name === 'argc') {
+        if ($var_id === '$argc') {
             return Type::getInt();
         }
+
+        if ($this->isSuperGlobal($var_id)) {
+            return Type::getArray();
+        }
+
+        return Type::getMixed();
     }
 
     /**
