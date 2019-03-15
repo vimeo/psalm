@@ -205,18 +205,25 @@ class FunctionCallTest extends TestCase
                     '$d' => 'array{0:string, 1:string, 2:string, 3:int, 4:int, 5:int}',
                 ],
             ],
-            'arrayReverse' => [
+            'arrayReverseDontPreserveKey' => [
                 '<?php
-                    $d = array_reverse(["a", "b", 1]);',
+                    $d = array_reverse(["a", "b", 1, "d" => 4]);',
                 'assertions' => [
-                    '$d' => 'array<int, string|int>',
+                    '$d' => 'non-empty-array<int, string|int>',
+                ],
+            ],
+            'arrayReverseDontPreserveKeyExplicitArg' => [
+                '<?php
+                    $d = array_reverse(["a", "b", 1, "d" => 4], false);',
+                'assertions' => [
+                    '$d' => 'non-empty-array<int, string|int>',
                 ],
             ],
             'arrayReversePreserveKey' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1], true);',
                 'assertions' => [
-                    '$d' => 'array<int, string|int>',
+                    '$d' => 'non-empty-array<int, string|int>',
                 ],
             ],
             'arrayDiff' => [
@@ -1523,6 +1530,21 @@ class FunctionCallTest extends TestCase
                     }
 
                     (new Props)->arr[] = get_class($anon_instance);'
+            ],
+            'arrayReversePreserveNonEmptiness' => [
+                '<?php
+                    /** @param string[] $arr */
+                    function getOrderings(array $arr): int {
+                        if ($arr) {
+                            $next = null;
+                            foreach (array_reverse($arr) as $v) {
+                                $next = 1;
+                            }
+                            return $next;
+                        }
+
+                        return 2;
+                    }',
             ],
         ];
     }

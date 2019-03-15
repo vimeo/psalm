@@ -38,6 +38,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\ArrayRandReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArrayReduceReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ArraySliceReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\FilterVarReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\ParseUrlReturnTypeProvider::class);
