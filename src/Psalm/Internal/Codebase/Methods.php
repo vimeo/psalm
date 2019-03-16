@@ -245,23 +245,13 @@ class Methods
         if ($declaring_method_id = $this->getDeclaringMethodId($method_id)) {
             $storage = $this->getStorage($declaring_method_id);
 
-            if ($storage->inheritdoc) {
-                $non_null_param_types = array_filter(
-                    $storage->params,
-                    /** @return bool */
-                    function (FunctionLikeParameter $p) {
-                        return $p->type !== null && $p->has_docblock_type;
-                    }
-                );
-            } else {
-                $non_null_param_types = array_filter(
-                    $storage->params,
-                    /** @return bool */
-                    function (FunctionLikeParameter $p) {
-                        return $p->type !== null;
-                    }
-                );
-            }
+            $non_null_param_types = array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return $p->type !== null && $p->has_docblock_type;
+                }
+            );
 
             $params = $storage->params;
 
@@ -292,14 +282,14 @@ class Methods
                     $overridden_storage->params,
                     /** @return bool */
                     function (FunctionLikeParameter $p) {
-                        return $p->type !== null && $p->type->from_docblock;
+                        return $p->type !== null && $p->has_docblock_type;
                     }
                 );
 
                 if ($non_null_param_types) {
                     foreach ($params as $i => $param) {
                         if (isset($overridden_storage->params[$i]->type)
-                            && $overridden_storage->params[$i]->type->from_docblock
+                            && $overridden_storage->params[$i]->has_docblock_type
                             && $overridden_storage->params[$i]->name === $param->name
                         ) {
                             $params[$i] = clone $param;

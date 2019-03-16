@@ -1056,7 +1056,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment'],
             ],
-            'implementsArrayAccessAllowNullOffset' => [
+            'SKIPPED-implementsArrayAccessAllowNullOffset' => [
                 '<?php
                     /**
                      * @template-implements ArrayAccess<int, string>
@@ -1214,7 +1214,7 @@ class ArrayAssignmentTest extends TestCase
                     $_GET["foo"][0] = "5";',
                 'error_message' => 'MixedArrayAssignment',
             ],
-            'implementsArrayAccessAllowNullOffset' => [
+            'implementsArrayAccessPreventNullOffset' => [
                 '<?php
                     /**
                      * @template-implements ArrayAccess<int, string>

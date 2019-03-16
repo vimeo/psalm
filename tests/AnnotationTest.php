@@ -1325,6 +1325,22 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'TypeCoercion',
             ],
+            'automaticInheritDoc' => [
+                '<?php
+                    class Y {
+                        /**
+                         * @param string[] $arr
+                         */
+                        public function boo(array $arr) : void {}
+                    }
+
+                    class X extends Y {
+                        public function boo(array $arr) : void {}
+                    }
+
+                    (new X())->boo([1, 2]);',
+                'error_message' => 'InvalidScalarArgument'
+            ],
         ];
     }
 }
