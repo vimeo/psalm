@@ -19,7 +19,7 @@ class TLiteralString extends TString
      */
     public function getKey()
     {
-        return 'string(' . $this->value . ')';
+        return $this->getId();
     }
 
     /**
