@@ -221,7 +221,7 @@ class AssignmentAnalyzer
             ) {
                 if (IssueBuffer::accepts(
                     new MixedAssignment(
-                        'Cannot assign ' . $var_id . ' to a mixed type',
+                        'Cannot assign' . ($var_id ? ' ' . $var_id . ' ' : ' ') . 'to a mixed type',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var)
                     ),
                     $statements_analyzer->getSuppressedIssues()

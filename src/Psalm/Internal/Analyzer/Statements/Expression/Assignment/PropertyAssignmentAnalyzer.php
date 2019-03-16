@@ -525,7 +525,7 @@ class PropertyAssignmentAnalyzer
                     if (!$class_property_type->hasMixed() && $assignment_value_type->hasMixed()) {
                         if (IssueBuffer::accepts(
                             new MixedAssignment(
-                                'Cannot assign ' . $var_id . ' to a mixed type',
+                                'Cannot assign' . ($var_id ? ' ' . $var_id . ' ' : ' ') . 'to a mixed type',
                                 new CodeLocation($statements_analyzer->getSource(), $stmt)
                             ),
                             $statements_analyzer->getSuppressedIssues()
