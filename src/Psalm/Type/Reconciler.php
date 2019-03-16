@@ -1454,7 +1454,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         !$did_remove_type,
                         $code_location,
                         $suppressed_issues
@@ -1493,7 +1493,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         !$did_remove_type,
                         $code_location,
                         $suppressed_issues
@@ -1538,7 +1538,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         !$did_remove_type,
                         $code_location,
                         $suppressed_issues
@@ -1578,7 +1578,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         $did_remove_type,
                         $code_location,
                         $suppressed_issues
@@ -1758,7 +1758,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         !$did_remove_type,
                         $code_location,
                         $suppressed_issues
@@ -1856,7 +1856,7 @@ class Reconciler
                             $existing_var_type,
                             $old_var_type_string,
                             $key,
-                            $new_var_type,
+                            '!' . $new_var_type,
                             !$did_remove_type,
                             $code_location,
                             $suppressed_issues
@@ -1907,11 +1907,17 @@ class Reconciler
             // if there wasn't a direct hit, go deeper, eliminating subtypes
             if (!$existing_var_type->removeType($new_var_type)) {
                 foreach ($existing_var_type->getTypes() as $part_name => $existing_var_type_part) {
-                    if (!$existing_var_type_part->isObjectType()) {
+                    if (!$existing_var_type_part->isObjectType() || strpos($new_var_type, '-')) {
+                        $did_remove_type = true;
                         continue;
                     }
 
-                    $new_type_part = new TNamedObject($new_var_type);
+                    $new_type_part = Atomic::create($new_var_type);
+
+                    if (!$new_type_part instanceof TNamedObject) {
+                        $did_remove_type = true;
+                        continue;
+                    }
 
                     if (TypeAnalyzer::isAtomicContainedBy(
                         $codebase,
@@ -1939,7 +1945,7 @@ class Reconciler
                         $existing_var_type,
                         $old_var_type_string,
                         $key,
-                        $new_var_type,
+                        '!' . $new_var_type,
                         false,
                         $code_location,
                         $suppressed_issues

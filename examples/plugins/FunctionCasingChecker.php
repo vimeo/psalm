@@ -82,7 +82,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
         array &$file_replacements = [],
         Union &$return_type_candidate = null
     ) {
-        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+        if ($expr->name instanceof PhpParser\Node\Expr) {
             return;
         }
 
@@ -94,7 +94,9 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                 $function_id
             );
 
-            if ($function_storage->cased_name !== (string)$expr->name) {
+            $function_name_parts = explode('\\', $function_storage->cased_name);
+
+            if (end($function_name_parts) !== end($expr->name->parts)) {
                 if (\Psalm\IssueBuffer::accepts(
                     new IncorrectFunctionCasing(
                         'Function is incorrectly cased, expecting ' . $function_storage->cased_name,

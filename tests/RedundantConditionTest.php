@@ -855,6 +855,16 @@ class RedundantConditionTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => ['MissingParamType']
             ],
+            'negatedInstanceof' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    function foo(A $a) : void {
+                        if (!$a instanceof B) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

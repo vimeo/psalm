@@ -69,7 +69,8 @@ class FileScanner implements FileSource
         foreach ($stmts as $stmt) {
             if (!$stmt instanceof PhpParser\Node\Stmt\ClassLike
                 && !$stmt instanceof PhpParser\Node\Stmt\Function_
-                && !$stmt instanceof PhpParser\Node\Expr\Include_
+                && !($stmt instanceof PhpParser\Node\Stmt\Expression
+                    && $stmt->expr instanceof PhpParser\Node\Expr\Include_)
             ) {
                 $file_storage->has_extra_statements = true;
                 break;

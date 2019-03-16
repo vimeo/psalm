@@ -89,7 +89,12 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                     ) {
                         $codebase = $statements_source->getCodebase();
 
-                        AssertionFinder::scrapeAssertions($stmt->expr, null, $statements_source, $codebase);
+                        AssertionFinder::scrapeAssertions(
+                            $stmt->expr,
+                            null,
+                            $statements_source,
+                            $codebase
+                        );
 
                         $assertions = isset($stmt->expr->assertions) ? $stmt->expr->assertions : null;
 
