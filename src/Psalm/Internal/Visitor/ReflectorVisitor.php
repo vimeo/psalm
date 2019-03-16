@@ -1090,20 +1090,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->template_type_extends_count = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                if (!$type_param->isSingle()) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            '@template-extends type parameter cannot be a union type',
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                    }
-                    return;
-                }
-
-                foreach ($type_param->getTypes() as $type_param_atomic) {
-                    $extended_type_parameters[] = $type_param_atomic;
-                }
+                $extended_type_parameters[] = $type_param;
             }
 
             if ($extended_type_parameters) {
@@ -1185,20 +1172,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->template_type_implements_count[$generic_class_lc] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                if (!$type_param->isSingle()) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            '@template-implements type parameter cannot be a union type',
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                    }
-                    return;
-                }
-
-                foreach ($type_param->getTypes() as $type_param_atomic) {
-                    $implemented_type_parameters[] = $type_param_atomic;
-                }
+                $implemented_type_parameters[] = $type_param;
             }
 
             if ($implemented_type_parameters) {
@@ -1280,20 +1254,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->template_type_uses_count[$generic_class_lc] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                if (!$type_param->isSingle()) {
-                    if (IssueBuffer::accepts(
-                        new InvalidDocblock(
-                            '@template-uses type parameter cannot be a union type',
-                            new CodeLocation($this->file_scanner, $node, null, true)
-                        )
-                    )) {
-                    }
-                    return;
-                }
-
-                foreach ($type_param->getTypes() as $type_param_atomic) {
-                    $used_type_parameters[] = $type_param_atomic;
-                }
+                $used_type_parameters[] = $type_param;
             }
 
             if ($used_type_parameters) {

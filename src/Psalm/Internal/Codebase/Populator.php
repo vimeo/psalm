@@ -323,19 +323,10 @@ class Populator
                                     continue;
                                 }
 
-                                if ($type instanceof Type\Atomic\TTemplateParam
-                                    && $type->defining_class
-                                    && ($referenced_type
-                                        = $storage->template_type_extends
-                                            [strtolower($type->defining_class)]
-                                            [$type->param_name]
-                                            ?? null)
-                                    && (!$referenced_type instanceof Type\Atomic\TTemplateParam)
-                                ) {
-                                    $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
-                                } else {
-                                    $storage->template_type_extends[$t_storage_class][$i] = $type;
-                                }
+                                $storage->template_type_extends[$t_storage_class][$i] = self::extendType(
+                                    $type,
+                                    $storage
+                                );
                             }
                         }
                     }
@@ -343,8 +334,7 @@ class Populator
                     $storage->template_type_extends[$used_trait_lc] = [];
 
                     foreach ($trait_storage->template_types as $template_name => $template_type) {
-                        $storage->template_type_extends[$used_trait_lc][$template_name]
-                            = array_values($template_type[0]->getTypes())[0];
+                        $storage->template_type_extends[$used_trait_lc][$template_name] = $template_type[0];
                     }
                 }
             } elseif ($trait_storage->template_type_extends) {
@@ -354,6 +344,41 @@ class Populator
                 );
             }
         }
+    }
+
+    private static function extendType(
+        Type\Union $type,
+        ClassLikeStorage $storage
+    ) : Type\Union {
+        $extended_types = [];
+
+        foreach ($type->getTypes() as $atomic_type) {
+            if ($atomic_type instanceof Type\Atomic\TTemplateParam
+                && $atomic_type->defining_class
+            ) {
+                $referenced_type
+                    = $storage->template_type_extends
+                        [strtolower($atomic_type->defining_class)]
+                        [$atomic_type->param_name]
+                        ?? null;
+
+                if ($referenced_type) {
+                    foreach ($referenced_type->getTypes() as $atomic_referenced_type) {
+                        if (!$atomic_referenced_type instanceof Type\Atomic\TTemplateParam) {
+                            $extended_types[] = $atomic_referenced_type;
+                        } else {
+                            $extended_types[] = $atomic_type;
+                        }
+                    }
+                } else {
+                    $extended_types[] = $atomic_type;
+                }
+            } else {
+                $extended_types[] = $atomic_type;
+            }
+        }
+
+        return new Type\Union($extended_types);
     }
 
     /**
@@ -406,19 +431,10 @@ class Populator
                                     continue;
                                 }
 
-                                if ($type instanceof Type\Atomic\TTemplateParam
-                                    && $type->defining_class
-                                    && ($referenced_type
-                                        = $storage->template_type_extends
-                                            [strtolower($type->defining_class)]
-                                            [$type->param_name]
-                                            ?? null)
-                                    && (!$referenced_type instanceof Type\Atomic\TTemplateParam)
-                                ) {
-                                    $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
-                                } else {
-                                    $storage->template_type_extends[$t_storage_class][$i] = $type;
-                                }
+                                $storage->template_type_extends[$t_storage_class][$i] = self::extendType(
+                                    $type,
+                                    $storage
+                                );
                             }
                         }
                     }
@@ -427,7 +443,7 @@ class Populator
 
                     foreach ($parent_storage->template_types as $template_name => $template_type) {
                         $storage->template_type_extends[$parent_storage_class][$template_name]
-                            = array_values($template_type[0]->getTypes())[0];
+                            = $template_type[0];
                     }
                 }
             } elseif ($parent_storage->template_type_extends) {
@@ -539,19 +555,10 @@ class Populator
                                     continue;
                                 }
 
-                                if ($type instanceof Type\Atomic\TTemplateParam
-                                    && $type->defining_class
-                                    && ($referenced_type
-                                        = $storage->template_type_extends
-                                            [strtolower($type->defining_class)]
-                                            [$type->param_name]
-                                            ?? null)
-                                    && (!$referenced_type instanceof Type\Atomic\TTemplateParam)
-                                ) {
-                                    $storage->template_type_extends[$t_storage_class][$i] = $referenced_type;
-                                } else {
-                                    $storage->template_type_extends[$t_storage_class][$i] = $type;
-                                }
+                                $storage->template_type_extends[$t_storage_class][$i] = self::extendType(
+                                    $type,
+                                    $storage
+                                );
                             }
                         }
                     }
@@ -560,7 +567,7 @@ class Populator
 
                     foreach ($parent_interface_storage->template_types as $template_name => $template_type) {
                         $storage->template_type_extends[$parent_interface_lc][$template_name]
-                            = array_values($template_type[0]->getTypes())[0];
+                            = $template_type[0];
                     }
                 }
             }
@@ -641,7 +648,7 @@ class Populator
 
                     foreach ($implemented_interface_storage->template_types as $template_name => $template_type) {
                         $storage->template_type_extends[$implemented_interface_lc][$template_name]
-                            = array_values($template_type[0]->getTypes())[0];
+                            = $template_type[0];
                     }
                 }
             }

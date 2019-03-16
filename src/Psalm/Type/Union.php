@@ -855,27 +855,33 @@ class Union
     ) {
         $keys_to_unset = [];
 
+        $new_types = [];
+
         foreach ($this->types as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
                 && isset($template_types[$key])
                 && $atomic_type->defining_class === $template_types[$key][1]
             ) {
                 if ($template_types[$key][0]->getId() !== $key) {
-                    $first_atomic_type = array_values($template_types[$key][0]->getTypes())[0];
+                    $replacement_type = $template_types[$key][0];
 
                     if ($replace) {
-                        if ($first_atomic_type instanceof Type\Atomic\TMixed
+                        if ($replacement_type->hasMixed()
                             && !$atomic_type->as->hasMixed()
                         ) {
-                            $this->types[$first_atomic_type->getKey()] = clone array_values(
-                                $atomic_type->as->getTypes()
-                            )[0];
+                            foreach ($atomic_type->as->getTypes() as $as_atomic_type) {
+                                $this->types[$as_atomic_type->getKey()] = clone $as_atomic_type;
+                            }
                         } else {
-                            $this->types[$first_atomic_type->getKey()] = clone $first_atomic_type;
-                        }
+                            foreach ($replacement_type->getTypes() as $replacement_atomic_type) {
+                                $this->types[$replacement_atomic_type->getKey()] = clone $replacement_atomic_type;
+                            }
 
-                        if ($first_atomic_type->getKey() !== $key) {
-                            $keys_to_unset[] = $key;
+                            foreach ($replacement_type->getTypes() as $replacement_key => $_) {
+                                if ($replacement_key !== $key) {
+                                    $keys_to_unset[] = $key;
+                                }
+                            }
                         }
 
                         if ($input_type) {
@@ -1025,7 +1031,7 @@ class Union
 
                                     foreach ($extends_list as $key => $value) {
                                         if (is_int($key)) {
-                                            $new_generic_params[] = new Type\Union([$value]);
+                                            $new_generic_params[] = $value;
                                         }
                                     }
 

@@ -1457,6 +1457,76 @@ class TemplateExtendsTest extends TestCase
                         $c->add(new stdClass);
                     }',
             ],
+            'templateExtendsUnionType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-extends A<int|string>
+                     */
+                    class B extends A {}',
+            ],
+            'badTemplateImplementsUnionType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface I {
+                        /** @param T $t */
+                        public function __construct($t);
+                    }
+
+                    /**
+                     * @template TT
+                     * @template-implements I<int|string>
+                     */
+                    class B implements I {
+                        /** @var int|string */
+                        public $t;
+
+                        /** @param int|string $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }',
+            ],
+            'badTemplateUseUnionType' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    trait T {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /**
+                     * @template TT
+                     */
+                    class B {
+                        /**
+                         * @template-use T<int|string>
+                         */
+                        use T;
+                    }',
+            ],
         ];
     }
 
@@ -1768,28 +1838,6 @@ class TemplateExtendsTest extends TestCase
                     class B extends A {}',
                 'error_message' => 'InvalidDocblock'
             ],
-            'badTemplateExtendsUnionType' => [
-                '<?php
-                    /**
-                     * @template T
-                     */
-                    class A {
-                        /** @var T */
-                        public $t;
-
-                        /** @param T $t */
-                        public function __construct($t) {
-                            $this->t = $t;
-                        }
-                    }
-
-                    /**
-                     * @template TT
-                     * @template-extends A<int|string>
-                     */
-                    class B extends A {}',
-                'error_message' => 'InvalidDocblock'
-            ],
             'badTemplateImplementsShouldBeExtends' => [
                 '<?php
                     /**
@@ -1859,23 +1907,6 @@ class TemplateExtendsTest extends TestCase
                     /**
                      * @template TT
                      * @template-implements I< >
-                     */
-                    class B implements I {}',
-                'error_message' => 'InvalidDocblock'
-            ],
-            'badTemplateImplementsUnionType' => [
-                '<?php
-                    /**
-                     * @template T
-                     */
-                    interface I {
-                        /** @param T $t */
-                        public function __construct($t);
-                    }
-
-                    /**
-                     * @template TT
-                     * @template-implements I<int|string>
                      */
                     class B implements I {}',
                 'error_message' => 'InvalidDocblock'
@@ -1996,32 +2027,6 @@ class TemplateExtendsTest extends TestCase
                     class B {
                         /**
                          * @template-extends T<int>
-                         */
-                        use T;
-                    }',
-                'error_message' => 'InvalidDocblock'
-            ],
-            'badTemplateUseUnionType' => [
-                '<?php
-                    /**
-                     * @template T
-                     */
-                    trait T {
-                        /** @var T */
-                        public $t;
-
-                        /** @param T $t */
-                        public function __construct($t) {
-                            $this->t = $t;
-                        }
-                    }
-
-                    /**
-                     * @template TT
-                     */
-                    class B {
-                        /**
-                         * @template-use T<int|string>
                          */
                         use T;
                     }',

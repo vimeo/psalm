@@ -786,7 +786,7 @@ class ForeachAnalyzer
 
     /**
      * @param  string $template_name
-     * @param  array<string, array<int|string, Type\Atomic>>  $template_type_extends
+     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array{Type\Union, ?string}>  $class_template_types
      * @param  array<int, Type\Union> $calling_type_params
      * @return Type\Union|null
@@ -814,19 +814,47 @@ class ForeachAnalyzer
         if (isset($template_type_extends[$template_class_lc][$template_name])) {
             $extended_type = $template_type_extends[$template_class_lc][$template_name];
 
-            if (!$extended_type instanceof Type\Atomic\TTemplateParam) {
-                return new Type\Union([$extended_type]);
+            $return_type = null;
+
+            foreach ($extended_type->getTypes() as $extended_atomic_type) {
+                if (!$extended_atomic_type instanceof Type\Atomic\TTemplateParam) {
+                    if (!$return_type) {
+                        $return_type = $extended_type;
+                    } else {
+                        $return_type = Type::combineUnionTypes(
+                            $return_type,
+                            $extended_type
+                        );
+                    }
+
+                    continue;
+                }
+
+                if ($extended_atomic_type->defining_class) {
+                    $candidate_type = self::getExtendedType(
+                        $extended_atomic_type->param_name,
+                        strtolower($extended_atomic_type->defining_class),
+                        $calling_class_lc,
+                        $template_type_extends,
+                        $class_template_types,
+                        $calling_type_params
+                    );
+
+                    if ($candidate_type) {
+                        if (!$return_type) {
+                            $return_type = $candidate_type;
+                        } else {
+                            $return_type = Type::combineUnionTypes(
+                                $return_type,
+                                $candidate_type
+                            );
+                        }
+                    }
+                }
             }
 
-            if ($extended_type->defining_class) {
-                return self::getExtendedType(
-                    $extended_type->param_name,
-                    strtolower($extended_type->defining_class),
-                    $calling_class_lc,
-                    $template_type_extends,
-                    $class_template_types,
-                    $calling_type_params
-                );
+            if ($return_type) {
+                return $return_type;
             }
         }
 

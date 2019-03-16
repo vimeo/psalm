@@ -1496,9 +1496,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if (!$template_type[0]->isMixed()
                     && isset($storage->template_type_extends[strtolower($parent_storage->name)][$i])
                 ) {
-                    $extended_type = new Type\Union([
-                        $storage->template_type_extends[strtolower($parent_storage->name)][$i]
-                    ]);
+                    $extended_type = $storage->template_type_extends[strtolower($parent_storage->name)][$i];
 
                     if (!TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type[0])) {
                         if (IssueBuffer::accepts(

@@ -1553,22 +1553,38 @@ class CallAnalyzer
                         if (is_string($template_name)
                             && $class_name_lc === strtolower($class_storage->name)
                         ) {
-                            if ($type instanceof Type\Atomic\TTemplateParam
-                                && $type->defining_class
-                                && isset(
-                                    $calling_class_storage
+                            $output_type = null;
+
+                            foreach ($type->getTypes() as $atomic_type) {
+                                if ($atomic_type instanceof Type\Atomic\TTemplateParam
+                                    && $atomic_type->defining_class
+                                    && isset(
+                                        $calling_class_storage
+                                            ->template_type_extends
+                                            [strtolower($atomic_type->defining_class)]
+                                            [$atomic_type->param_name]
+                                    )
+                                ) {
+                                    $output_type_candidate = $calling_class_storage
                                         ->template_type_extends
-                                        [strtolower($type->defining_class)]
-                                        [$type->param_name]
-                                )
-                            ) {
-                                $type = $calling_class_storage
-                                    ->template_type_extends
-                                    [strtolower($type->defining_class)]
-                                    [$type->param_name];
+                                        [strtolower($atomic_type->defining_class)]
+                                        [$atomic_type->param_name];
+                                } else {
+                                    $output_type_candidate = new Type\Union([$atomic_type]);
+                                }
+
+                                if (!$output_type) {
+                                    $output_type = $output_type_candidate;
+                                } else {
+                                    $output_type = Type::combineUnionTypes(
+                                        $output_type_candidate,
+                                        $output_type
+                                    );
+                                }
                             }
 
-                            $template_types[$template_name] = [new Type\Union([$type]), $class_storage->name];
+
+                            $template_types[$template_name] = [$output_type ?: Type::getMixed(), $class_storage->name];
                         }
                     }
                 }

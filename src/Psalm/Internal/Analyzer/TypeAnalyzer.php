@@ -1340,7 +1340,7 @@ class TypeAnalyzer
 
                         foreach ($extends_list as $key => $value) {
                             if (is_string($key)) {
-                                $generic_params[] = new Type\Union([$value]);
+                                $generic_params[] = $value;
                             }
                         }
 
@@ -1377,21 +1377,36 @@ class TypeAnalyzer
 
                         $new_input_params = [];
 
-                        foreach ($params as $key => $atomic_input_param) {
+                        foreach ($params as $key => $extended_input_param_type) {
                             if (is_string($key)) {
-                                if ($atomic_input_param instanceof TTemplateParam
-                                    && $atomic_input_param->param_name
-                                    && isset($input_class_storage->template_types[$atomic_input_param->param_name])
-                                ) {
-                                    $old_params_offset = (int) array_search(
-                                        $atomic_input_param->param_name,
-                                        array_keys($input_class_storage->template_types)
-                                    );
+                                $new_input_param = null;
 
-                                    $new_input_params[] = $input_type_params[$old_params_offset];
-                                } else {
-                                    $new_input_params[] = new Type\Union([$atomic_input_param]);
+                                foreach ($extended_input_param_type->getTypes() as $et) {
+                                    if ($et instanceof TTemplateParam
+                                        && $et->param_name
+                                        && isset($input_class_storage->template_types[$et->param_name])
+                                    ) {
+                                        $old_params_offset = (int) array_search(
+                                            $et->param_name,
+                                            array_keys($input_class_storage->template_types)
+                                        );
+
+                                        $candidate_param_type = $input_type_params[$old_params_offset];
+                                    } else {
+                                        $candidate_param_type = new Type\Union([$et]);
+                                    }
+
+                                    if (!$new_input_param) {
+                                        $new_input_param = $candidate_param_type;
+                                    } else {
+                                        $new_input_param = Type::combineUnionTypes(
+                                            $new_input_param,
+                                            $candidate_param_type
+                                        );
+                                    }
                                 }
+
+                                $new_input_params[] = $new_input_param ?: Type::getMixed();
                             }
                         }
 

@@ -613,9 +613,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                 $template_types = [];
 
-                foreach ($map as $key => $atomic_type) {
+                foreach ($map as $key => $type) {
                     if (is_string($key)) {
-                        $template_types[$key] = [new Type\Union([$atomic_type]), $guide_classlike_storage->name];
+                        $template_types[$key] = [$type, $guide_classlike_storage->name];
                     }
                 }
 
@@ -638,10 +638,10 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                 $template_types = [];
 
-                foreach ($map as $key => $atomic_type) {
+                foreach ($map as $key => $type) {
                     if (is_string($key)) {
                         $template_types[$key] = [
-                            new Type\Union([$atomic_type]),
+                            $type,
                             $implementer_method_storage->defining_fqcln
                         ];
                     }
@@ -771,9 +771,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                     $template_types = [];
 
-                    foreach ($map as $key => $atomic_type) {
+                    foreach ($map as $key => $type) {
                         if (is_string($key)) {
-                            $template_types[$key] = [new Type\Union([$atomic_type]), $guide_classlike_storage->name];
+                            $template_types[$key] = [$type, $guide_classlike_storage->name];
                         }
                     }
 

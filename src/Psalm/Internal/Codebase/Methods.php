@@ -296,7 +296,7 @@ class Methods
                             $params[$i]->type = clone $overridden_storage->params[$i]->type;
 
                             if ($params[$i]->type && $source) {
-                                self::localizeParamType(
+                                $params[$i]->type = self::localizeParamType(
                                     $source->getCodebase(),
                                     $params[$i]->type,
                                     $appearing_fq_class_name,
@@ -318,21 +318,20 @@ class Methods
         throw new \UnexpectedValueException('Cannot get method params for ' . $method_id);
     }
 
-    /**
-     * @return void
-     */
     private static function localizeParamType(
         Codebase $codebase,
         Type\Union $type,
         string $appearing_fq_class_name,
         string $base_fq_class_name
-    ) {
+    ) : Type\Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
         $extends = $class_storage->template_type_extends;
 
         if (!$extends) {
-            return;
+            return $type;
         }
+
+        $type = clone $type;
 
         foreach ($type->getTypes() as $key => $atomic_type) {
             if ($atomic_type instanceof Type\Atomic\TTemplateParam
@@ -345,7 +344,11 @@ class Methods
                         $extended_param = $extends[strtolower($base_fq_class_name)][$atomic_type->param_name];
 
                         $type->removeType($key);
-                        $type->addType($extended_param);
+                        $type = Type::combineUnionTypes(
+                            $type,
+                            $extended_param,
+                            $codebase
+                        );
                     }
                 }
             }
@@ -355,7 +358,7 @@ class Methods
                 || $atomic_type instanceof Type\Atomic\TGenericObject
             ) {
                 foreach ($atomic_type->type_params as $type_param) {
-                    self::localizeParamType(
+                    $type_param = self::localizeParamType(
                         $codebase,
                         $type_param,
                         $appearing_fq_class_name,
@@ -370,7 +373,7 @@ class Methods
                 if ($atomic_type->params) {
                     foreach ($atomic_type->params as $param) {
                         if ($param->type) {
-                            self::localizeParamType(
+                            $param->type = self::localizeParamType(
                                 $codebase,
                                 $param->type,
                                 $appearing_fq_class_name,
@@ -381,7 +384,7 @@ class Methods
                 }
 
                 if ($atomic_type->return_type) {
-                    self::localizeParamType(
+                    $atomic_type->return_type = self::localizeParamType(
                         $codebase,
                         $atomic_type->return_type,
                         $appearing_fq_class_name,
@@ -390,6 +393,8 @@ class Methods
                 }
             }
         }
+
+        return $type;
     }
 
     /**

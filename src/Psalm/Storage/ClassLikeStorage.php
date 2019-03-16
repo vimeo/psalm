@@ -273,7 +273,7 @@ class ClassLikeStorage
     public $template_types;
 
     /**
-     * @var array<string, array<int|string, Type\Atomic>>|null
+     * @var array<string, array<int|string, Type\Union>>|null
      */
     public $template_type_extends;
 

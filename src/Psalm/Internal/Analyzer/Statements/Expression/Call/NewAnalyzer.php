@@ -411,7 +411,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
     /**
      * @param  string $template_name
-     * @param  array<string, array<int|string, Type\Atomic>>  $template_type_extends
+     * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
      * @param  array<string, array{Type\Union, ?string}>  $found_generic_params
      * @return array{Type\Union, ?string}
      */
@@ -426,15 +426,17 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
 
         foreach ($template_type_extends as $type_map) {
             foreach ($type_map as $extended_template_name => $extended_type) {
-                if (is_string($extended_template_name)
-                    && $extended_type instanceof Type\Atomic\TTemplateParam
-                    && $extended_type->param_name === $template_name
-                ) {
-                    return self::getGenericParamForOffset(
-                        $extended_template_name,
-                        $template_type_extends,
-                        $found_generic_params
-                    );
+                foreach ($extended_type->getTypes() as $extended_atomic_type) {
+                    if (is_string($extended_template_name)
+                        && $extended_atomic_type instanceof Type\Atomic\TTemplateParam
+                        && $extended_atomic_type->param_name === $template_name
+                    ) {
+                        return self::getGenericParamForOffset(
+                            $extended_template_name,
+                            $template_type_extends,
+                            $found_generic_params
+                        );
+                    }
                 }
             }
         }

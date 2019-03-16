@@ -1056,10 +1056,10 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedAssignment'],
             ],
-            'SKIPPED-implementsArrayAccessAllowNullOffset' => [
+            'implementsArrayAccessAllowNullOffset' => [
                 '<?php
                     /**
-                     * @template-implements ArrayAccess<int, string>
+                     * @template-implements ArrayAccess<?int, string>
                      */
                     class C implements ArrayAccess {
                         public function offsetExists(int $offset) : bool { return true; }
