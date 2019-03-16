@@ -3,6 +3,7 @@ namespace Psalm\Internal\Codebase;
 
 use PhpParser;
 use Psalm\Aliases;
+use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -409,18 +410,24 @@ class ClassLikes
      * @param  string       $possible_parent
      *
      * @return bool
+     * @throws UnpopulatedClasslikeException when called on unpopulated class
+     * @throws \InvalidArgumentException when class does not exist
      */
     public function classExtends($fq_class_name, $possible_parent)
     {
-        $fq_class_name = strtolower($fq_class_name);
+        $fq_class_name_lc = strtolower($fq_class_name);
 
-        if ($fq_class_name === 'generator') {
+        if ($fq_class_name_lc === 'generator') {
             return false;
         }
 
-        $fq_class_name = $this->classlike_aliases[$fq_class_name] ?? $fq_class_name;
+        $fq_class_name_lc = $this->classlike_aliases[$fq_class_name_lc] ?? $fq_class_name_lc;
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+
+        if (!$class_storage->populated) {
+            throw new UnpopulatedClasslikeException($fq_class_name);
+        }
 
         return isset($class_storage->parent_classes[strtolower($possible_parent)]);
     }

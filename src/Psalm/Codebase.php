@@ -677,6 +677,8 @@ class Codebase
      * @param  string       $possible_parent
      *
      * @return bool
+     * @throws \Psalm\Exception\UnpopulatedClasslikeException when called on unpopulated class
+     * @throws \InvalidArgumentException when class does not exist
      */
     public function classExtends($fq_class_name, $possible_parent)
     {

@@ -34,6 +34,7 @@ class ClassLikeStorageProvider
      * @param  string $fq_classlike_name
      *
      * @return ClassLikeStorage
+     * @throws \InvalidArgumentException when class does not exist
      */
     public function get($fq_classlike_name)
     {

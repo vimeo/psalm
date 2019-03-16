@@ -204,6 +204,8 @@ class Reflection
                 continue;
             }
         }
+
+        $storage->populated = true;
     }
 
     /**
