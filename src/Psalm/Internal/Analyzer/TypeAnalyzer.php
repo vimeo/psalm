@@ -103,6 +103,20 @@ class TypeAnalyzer
             }
 
             foreach ($container_type->getTypes() as $container_type_part) {
+                if ($ignore_null
+                    && $container_type_part instanceof TNull
+                    && !$input_type_part instanceof TNull
+                ) {
+                    continue;
+                }
+
+                if ($ignore_false
+                    && $container_type_part instanceof TFalse
+                    && !$input_type_part instanceof TFalse
+                ) {
+                    continue;
+                }
+
                 $atomic_to_string_cast = false;
 
                 $is_atomic_contained_by = self::isAtomicContainedBy(
