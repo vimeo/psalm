@@ -179,4 +179,18 @@ class CodebaseTest extends TestCase
         $this->assertEquals('h', $class_storage->methods['m']->params[0]->custom_metadata['g']);
         $this->assertEquals('j', $file_storage->custom_metadata['i']);
     }
+
+    /**
+     * @test
+     * @return void
+     */
+    public function classExtendsRejectsUnpopulatedClasslikes()
+    {
+        $this->codebase->classlike_storage_provider->create('A');
+        $this->codebase->classlike_storage_provider->create('B');
+
+        $this->expectException(\Psalm\Exception\UnpopulatedClasslikeException::class);
+
+        $this->codebase->classExtends('A', 'B');
+    }
 }
