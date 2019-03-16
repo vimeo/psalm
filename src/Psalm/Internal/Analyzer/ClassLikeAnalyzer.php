@@ -183,7 +183,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $fq_class_name,
         CodeLocation $code_location,
         array $suppressed_issues,
-        $inferred = true
+        $inferred = true,
+        bool $allow_trait = false
     ) {
         $codebase = $statements_source->getCodebase();
         if (empty($fq_class_name)) {
@@ -233,7 +234,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         $interface_exists = $codebase->interfaceExists($fq_class_name);
 
         if (!$class_exists && !$interface_exists) {
-            if (!$codebase->classlikes->traitExists($fq_class_name)) {
+            if (!$allow_trait || !$codebase->classlikes->traitExists($fq_class_name)) {
                 if (IssueBuffer::accepts(
                     new UndefinedClass(
                         'Class or interface ' . $fq_class_name . ' does not exist',

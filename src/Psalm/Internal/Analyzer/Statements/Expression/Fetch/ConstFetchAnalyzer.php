@@ -131,7 +131,8 @@ class ConstFetchAnalyzer
                                 $fq_class_name,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                                 $statements_analyzer->getSuppressedIssues(),
-                                false
+                                false,
+                                true
                             ) === false) {
                                 return false;
                             }

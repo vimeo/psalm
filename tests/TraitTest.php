@@ -1024,6 +1024,16 @@ class TraitTest extends TestCase
                     }',
                 'error_message' => 'InaccessibleMethod'
             ],
+            'preventTraitPropertyType' => [
+                '<?php
+                    trait T {}
+
+                    class X {
+                      /** @var T|null */
+                      public $hm;
+                    }',
+                'error_message' => 'UndefinedClass'
+            ],
         ];
     }
 }
