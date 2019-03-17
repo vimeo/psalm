@@ -901,19 +901,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                     continue;
                                 }
 
-                                if (!$template_type->isSingle()) {
-                                    if (IssueBuffer::accepts(
-                                        new InvalidDocblock(
-                                            'Template type cannot be a union in docblock for '
-                                                . implode('.', $this->fq_classlike_names),
-                                            new CodeLocation($this->file_scanner, $node, null, true)
-                                        )
-                                    )) {
-                                        $storage->has_docblock_issues = true;
-                                        continue;
-                                    }
-                                }
-
                                 $storage->template_types[$template_name] = [
                                     $template_type,
                                     $fq_classlike_name
@@ -1775,20 +1762,6 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 new CodeLocation($this->file_scanner, $stmt, null, true)
                             )
                         )) {
-                        }
-
-                        $template_type = Type::getMixed();
-                    }
-
-                    if (!$template_type->isSingle()) {
-                        if (IssueBuffer::accepts(
-                            new InvalidDocblock(
-                                'Template type cannot be a union in docblock for '
-                                    . implode('.', $this->fq_classlike_names),
-                                new CodeLocation($this->file_scanner, $stmt, null, true)
-                            )
-                        )) {
-                            $storage->has_docblock_issues = true;
                         }
 
                         $template_type = Type::getMixed();

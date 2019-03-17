@@ -430,6 +430,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                     if (is_string($extended_template_name)
                         && $extended_atomic_type instanceof Type\Atomic\TTemplateParam
                         && $extended_atomic_type->param_name === $template_name
+                        && $extended_template_name !== $template_name
                     ) {
                         return self::getGenericParamForOffset(
                             $extended_template_name,

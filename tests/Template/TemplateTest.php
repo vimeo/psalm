@@ -1863,6 +1863,79 @@ class TemplateTest extends TestCase
                         return new CustomReflectionClass($className);
                     }'
             ],
+            'ignoreTooManyArrayArgs' => [
+                '<?php
+
+                    function takesArray(array $arr) : void {}
+
+                    /**
+                     * @psalm-suppress TooManyTemplateParams
+                     * @var array<int, int, int>
+                     */
+                    $b = [1, 2, 3];
+                    takesArray($b);'
+            ],
+            'ignoreTooManyGenericObjectArgs' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class C {
+                        /** @var T */
+                        public $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+                    }
+
+                    /** @param C<int> $c */
+                    function takesC(C $c) : void {}
+
+                    /**
+                     * @psalm-suppress TooManyTemplateParams
+                     * @var C<int, int>
+                     */
+                    $c = new C(5);
+                    takesC($c);'
+            ],
+            'classTemplateUnionType' => [
+                '<?php
+                    /**
+                     * @template T0 as int|string
+                     */
+                    class C {
+                        /**
+                         * @param T0 $t
+                         */
+                        public function foo($t) : void {}
+                    }
+
+                    /** @param C<int> $c */
+                    function foo(C $c) : void {}
+
+                    /** @param C<string> $c */
+                    function bar(C $c) : void {}',
+            ],
+            'functionTemplateUnionType' => [
+                '<?php
+                    /**
+                     * @template T0 as int|string
+                     * @param T0 $t
+                     * @return T0
+                     */
+                    function foo($t) {
+                        return $t;
+                    }
+
+                    $s = foo("hello");
+                    $i = foo(5);',
+                'assertions' => [
+                    '$s' => 'string',
+                    '$i' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -2321,22 +2394,6 @@ class TemplateTest extends TestCase
                     $templated_list = new SplDoublyLinkedList();
                     $templated_list->add(5, []);',
                 'error_message' => 'InvalidArgument',
-            ],
-            'classTemplateUnionType' => [
-                '<?php
-                    /**
-                     * @template T0 as int|string
-                     */
-                    class Foo {}',
-                'error_message' => 'InvalidDocblock'
-            ],
-            'functionTemplateUnionType' => [
-                '<?php
-                    /**
-                     * @template T0 as int|string
-                     */
-                    function foo() : void {}',
-                'error_message' => 'InvalidDocblock'
             ],
             'copyScopedClassInFunction' => [
                 '<?php

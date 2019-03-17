@@ -1391,6 +1391,10 @@ class TypeAnalyzer
                                             array_keys($input_class_storage->template_types)
                                         );
 
+                                        if (!isset($input_type_params[$old_params_offset])) {
+                                            return false;
+                                        }
+
                                         $candidate_param_type = $input_type_params[$old_params_offset];
                                     } else {
                                         $candidate_param_type = new Type\Union([$et]);
@@ -1506,6 +1510,10 @@ class TypeAnalyzer
             }
 
             foreach ($input_type_part->type_params as $i => $input_param) {
+                if ($i > 1) {
+                    break;
+                }
+
                 $container_param = $container_type_part->type_params[$i];
 
                 if ($i === 0
