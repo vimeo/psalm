@@ -66,6 +66,9 @@ class TypeCombination
     /** @var bool */
     private $objectlike_had_mixed_value = false;
 
+    /** @var ?array<int, \Psalm\Storage\FunctionLikeParameter> */
+    private $closure_params;
+
     /** @var bool */
     private $has_mixed = false;
 
@@ -227,6 +230,20 @@ class TypeCombination
                 $combination->type_params['array'],
                 $combination->type_params['Traversable']
             );
+        }
+
+        if (isset($combination->value_types['callable'])
+            && $combination->value_types['callable'] instanceof Type\Atomic\TCallable
+            && $combination->closure_params
+        ) {
+            $combination->value_types['callable']->params = $combination->closure_params;
+        }
+
+        if (isset($combination->named_object_types['Closure'])
+            && $combination->named_object_types['Closure'] instanceof Type\Atomic\Fn
+            && $combination->closure_params
+        ) {
+            $combination->named_object_types['Closure']->params = $combination->closure_params;
         }
 
         if ($combination->empty_mixed && $combination->non_empty_mixed) {
@@ -549,6 +566,53 @@ class TypeCombination
                 $combination->named_object_types['Traversable'],
                 $combination->type_params['Traversable']
             );
+        }
+
+        if ($type instanceof Type\Atomic\Fn
+            || $type instanceof Type\Atomic\TCallable
+        ) {
+            if ($type->params) {
+                if ($combination->closure_params === null) {
+                    $combination->closure_params = $type->params;
+                } else {
+                    $param_count = max(count($combination->closure_params), count($type->params));
+
+                    for ($i = 0, $l = $param_count; $i < $l; $i++) {
+                        $input_param = $type->params[$i] ?? null;
+
+                        if (isset($combination->closure_params[$i])) {
+                            if ($input_param) {
+                                $combination->closure_params[$i]->type = Type::combineUnionTypes(
+                                    $combination->closure_params[$i]->type ?: Type::getMixed(),
+                                    $input_param->type ?: Type::getMixed(),
+                                    $codebase
+                                );
+                            }
+
+                            $combination->closure_params[$i]->is_optional = !$input_param
+                                || ($combination->closure_params[$i]->is_optional && $input_param->is_optional);
+                        } else {
+                            /** @var \Psalm\Storage\FunctionLikeParameter $input_param */
+                            $combination->closure_params[$i] = clone $input_param;
+
+                            $combination->closure_params[$i]->is_optional = true;
+                        }
+                    }
+                }
+            } else {
+                $combination->closure_params = [
+                    new \Psalm\Storage\FunctionLikeParameter(
+                        '',
+                        false,
+                        Type::getMixed(),
+                        null,
+                        null,
+                        false,
+                        false,
+                        true
+                    )
+                ];
+            }
         }
 
         if ($type instanceof TArray
