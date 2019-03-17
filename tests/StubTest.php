@@ -646,7 +646,7 @@ class StubTest extends TestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/stubs/logicexception.php" />
+                        <file name="tests/stubs/DomainException.php" />
                     </stubs>
                 </psalm>'
             )
@@ -657,7 +657,7 @@ class StubTest extends TestCase
         $this->addFile(
             $file_path,
             '<?php
-                $a = new LogicException(5);'
+                $a = new DomainException(5);'
         );
 
         $this->analyzeFile($file_path, new Context());
