@@ -957,6 +957,12 @@ class CallAnalyzer
                 list($fq_class_name) = explode('::', $declaring_method_id);
                 $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
             }
+
+            $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+            if ($appearing_method_id && $declaring_method_id !== $appearing_method_id) {
+                list($fq_class_name) = explode('::', $appearing_method_id);
+            }
         }
 
         if ($function_params) {
