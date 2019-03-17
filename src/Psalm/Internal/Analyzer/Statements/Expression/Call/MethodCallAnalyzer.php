@@ -559,9 +559,29 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $statements_analyzer->getSource()
             )
         ) {
-            if ($codebase->methods->methodExists($fq_class_name . '::__call', $context->calling_method_id)) {
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
+            $interface_has_method = false;
+
+            if ($class_storage->abstract && $class_storage->class_implements) {
+                foreach ($class_storage->class_implements as $interface_fqcln) {
+                    $interface_storage = $codebase->classlike_storage_provider->get($interface_fqcln);
+
+                    if (isset($interface_storage->methods[$method_name_lc])) {
+                        $interface_has_method = true;
+                        $fq_class_name = $interface_fqcln;
+                        $method_id = $fq_class_name . '::' . $method_name_lc;
+                        break;
+                    }
+                }
+            }
+
+            if (!$interface_has_method
+                && $codebase->methods->methodExists(
+                    $fq_class_name . '::__call',
+                    $context->calling_method_id
+                )
+            ) {
                 if (isset($class_storage->pseudo_methods[$method_name_lc])) {
                     $has_valid_method_call_type = true;
                     $existent_method_ids[] = $method_id;
