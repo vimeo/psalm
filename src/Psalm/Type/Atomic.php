@@ -211,7 +211,10 @@ abstract class Atomic
      */
     public function isObjectType()
     {
-        return $this instanceof TObject || $this instanceof TNamedObject;
+        return $this instanceof TObject
+            || $this instanceof TNamedObject
+            || ($this instanceof TTemplateParam
+                && $this->as->hasObjectType());
     }
 
     /**

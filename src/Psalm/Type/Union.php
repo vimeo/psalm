@@ -939,14 +939,6 @@ class Union
                                 $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
                                     $input_atomic_type->value
                                 );
-                            } elseif ($input_atomic_type instanceof Type\Atomic\TClassString) {
-                                if ($input_atomic_type->as_type) {
-                                    $valid_input_atomic_types[] = clone $input_atomic_type->as_type;
-                                } elseif ($input_atomic_type->as !== 'object') {
-                                    $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
-                                        $input_atomic_type->as
-                                    );
-                                }
                             } elseif ($input_atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                                 $valid_input_atomic_types[] = new Type\Atomic\TTemplateParam(
                                     $input_atomic_type->param_name,
@@ -956,6 +948,14 @@ class Union
                                             ? Type::getObject()
                                             : Type::getMixed())
                                 );
+                            } elseif ($input_atomic_type instanceof Type\Atomic\TClassString) {
+                                if ($input_atomic_type->as_type) {
+                                    $valid_input_atomic_types[] = clone $input_atomic_type->as_type;
+                                } elseif ($input_atomic_type->as !== 'object') {
+                                    $valid_input_atomic_types[] = new Type\Atomic\TNamedObject(
+                                        $input_atomic_type->as
+                                    );
+                                }
                             }
                         }
 
