@@ -990,7 +990,7 @@ class Config
 
         $fq_class_name = reset($declared_classes);
 
-        if (!$codebase->classExtends(
+        if (!$codebase->classlikes->classExtends(
             $fq_class_name,
             $must_extend
         )

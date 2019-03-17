@@ -35,6 +35,7 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedVariable;
@@ -1473,6 +1474,9 @@ class ExpressionAnalyzer
             return;
         }
 
+        $has_valid_cast = false;
+        $invalid_casts = [];
+
         foreach ($stmt->inferredType->getTypes() as $atomic_type) {
             if (!$atomic_type instanceof TMixed
                 && !$atomic_type instanceof Type\Atomic\TResource
@@ -1487,9 +1491,27 @@ class ExpressionAnalyzer
                 )
                 && !$has_scalar_match
             ) {
+                $invalid_casts[] = $atomic_type->getId();
+            } else {
+                $has_valid_cast = true;
+            }
+        }
+
+        if ($invalid_casts) {
+            if ($has_valid_cast) {
+                if (IssueBuffer::accepts(
+                    new PossiblyInvalidCast(
+                        $invalid_casts[0] . ' cannot be cast to string',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            } else {
                 if (IssueBuffer::accepts(
                     new InvalidCast(
-                        $atomic_type->getId() . ' cannot be cast to string',
+                        $invalid_casts[0] . ' cannot be cast to string',
                         new CodeLocation($statements_analyzer->getSource(), $stmt)
                     ),
                     $statements_analyzer->getSuppressedIssues()

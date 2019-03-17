@@ -65,6 +65,7 @@
         <PossiblyInvalidArrayAccess errorLevel="info" />
         <PossiblyInvalidArrayAssignment errorLevel="info" />
         <PossiblyInvalidArrayOffset errorLevel="info" />
+        <PossiblyInvalidCast errorLevel="info" />
         <PossiblyInvalidFunctionCall errorLevel="info" />
         <PossiblyInvalidIterator errorLevel="info" />
         <PossiblyInvalidMethodCall errorLevel="info" />

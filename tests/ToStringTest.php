@@ -193,7 +193,7 @@ class ToStringTest extends TestCase
                         $a = [];
                     }
                     $b = (string) $a;',
-                'error_message' => 'InvalidCast',
+                'error_message' => 'PossiblyInvalidCast',
             ],
             'cannotCastInsideString' => [
                 '<?php
