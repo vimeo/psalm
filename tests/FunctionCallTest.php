@@ -209,14 +209,14 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4]);',
                 'assertions' => [
-                    '$d' => 'non-empty-array<int, string|int>',
+                    '$d' => 'non-empty-array<string|int, string|int>',
                 ],
             ],
             'arrayReverseDontPreserveKeyExplicitArg' => [
                 '<?php
                     $d = array_reverse(["a", "b", 1, "d" => 4], false);',
                 'assertions' => [
-                    '$d' => 'non-empty-array<int, string|int>',
+                    '$d' => 'non-empty-array<string|int, string|int>',
                 ],
             ],
             'arrayReversePreserveKey' => [
