@@ -145,3 +145,11 @@ function array_change_key_case(array $arr, int $case = CASE_LOWER) {}
  * @return array<int, array<array-key, T>>
  */
 function array_chunk(array $arr, int $size, bool $preserve_keys = false) {}
+
+/**
+ * @psalm-template TKey as array-key
+ * @param TKey $key
+ * @param array<TKey, mixed> $search
+ * @return bool
+ */
+function array_key_exists($key, array $search) : bool { }

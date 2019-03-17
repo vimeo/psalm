@@ -580,12 +580,66 @@ class TypeAnalyzer
             );
         }
 
+        if ($container_type_part instanceof TTemplateParam && $input_type_part instanceof TTemplateParam) {
+            return self::isContainedBy(
+                $codebase,
+                $input_type_part->as,
+                $container_type_part->as,
+                false,
+                false,
+                $has_scalar_match,
+                $type_coerced,
+                $type_coerced_from_mixed,
+                $to_string_cast,
+                $type_coerced_from_scalar,
+                $allow_interface_equality
+            );
+        }
+
         if ($container_type_part instanceof TTemplateParam) {
-            $container_type_part = array_values($container_type_part->as->getTypes())[0];
+            foreach ($container_type_part->as->getTypes() as $container_as_type_part) {
+                if (self::isAtomicContainedBy(
+                    $codebase,
+                    $input_type_part,
+                    $container_as_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $has_scalar_match,
+                    $type_coerced,
+                    $type_coerced_from_mixed,
+                    $to_string_cast,
+                    $type_coerced_from_scalar
+                )) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         if ($input_type_part instanceof TTemplateParam) {
-            $input_type_part = array_values($input_type_part->as->getTypes())[0];
+            foreach ($input_type_part->as->getTypes() as $input_as_type_part) {
+                if ($input_as_type_part instanceof TNull && $container_type_part instanceof TNull) {
+                    continue;
+                }
+
+                if (self::isAtomicContainedBy(
+                    $codebase,
+                    $input_as_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $has_scalar_match,
+                    $type_coerced,
+                    $type_coerced_from_mixed,
+                    $to_string_cast,
+                    $type_coerced_from_scalar
+                )) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         if ($container_type_part instanceof GetClassT) {
