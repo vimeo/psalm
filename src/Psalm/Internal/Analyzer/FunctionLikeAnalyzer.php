@@ -359,19 +359,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 );
             }
 
-            if ($function_param->type) {
-                if ($function_param->type_location) {
-                    if ($function_param->type->check(
-                        $this,
-                        $function_param->type_location,
-                        $storage->suppressed_issues,
-                        [],
-                        false
-                    ) === false) {
-                        $check_stmts = false;
-                    }
-                }
+            if ($signature_type) {
+                $signature_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $signature_type,
+                    $context->self,
+                    $context->self
+                );
+            }
 
+            if ($function_param->type) {
                 $is_signature_type = $function_param->type === $function_param->signature_type;
 
                 if ($is_signature_type
@@ -390,6 +387,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     $context->self,
                     $context->self
                 );
+
+                if ($function_param->type_location) {
+                    if ($param_type->check(
+                        $this,
+                        $function_param->type_location,
+                        $storage->suppressed_issues,
+                        [],
+                        false
+                    ) === false) {
+                        $check_stmts = false;
+                    }
+                }
             } else {
                 if (!$non_null_param_types && isset($implemented_docblock_param_types[$offset])) {
                     $param_type = clone $implemented_docblock_param_types[$offset];

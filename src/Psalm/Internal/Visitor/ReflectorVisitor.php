@@ -2139,10 +2139,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             } elseif ($param_typehint instanceof PhpParser\Node\Name\FullyQualified) {
                 $param_type_string = (string)$param_typehint;
                 $this->codebase->scanner->queueClassLikeForScanning($param_type_string, $this->file_path);
-            } elseif (strtolower($param_typehint->parts[0]) === 'self') {
-                $param_type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
             } else {
-                $param_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($param_typehint, $this->aliases);
+                if ($this->classlike_storages
+                    && strtolower($param_typehint->parts[0]) === 'self'
+                    && !end($this->classlike_storages)->is_trait
+                ) {
+                    $param_type_string = $this->fq_classlike_names[count($this->fq_classlike_names) - 1];
+                } else {
+                    $param_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($param_typehint, $this->aliases);
+                }
 
                 if (!in_array(strtolower($param_type_string), ['self', 'static', 'parent'], true)) {
                     $this->codebase->scanner->queueClassLikeForScanning($param_type_string, $this->file_path);

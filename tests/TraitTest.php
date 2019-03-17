@@ -839,6 +839,18 @@ class TraitTest extends TestCase
                         public function bar() { return []; }
                     }'
             ],
+            'traitSelfParam' => [
+                '<?php
+                    trait T {
+                        public function bar(self $object): self {
+                            return $this;
+                        }
+                    }
+
+                    class Foo {
+                        use T;
+                    }',
+            ],
         ];
     }
 

@@ -727,22 +727,42 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             if ($prevent_method_signature_mismatch
                 && $guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
-                && !TypeAnalyzer::isContainedByInPhp($guide_param->signature_type, $implementer_param->signature_type)
             ) {
-                if (IssueBuffer::accepts(
-                    new MethodSignatureMismatch(
-                        'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implementer_param->signature_type . '\', expecting \'' .
-                            $guide_param->signature_type . '\' as defined by ' .
-                            $cased_guide_method_id,
-                        $implementer_method_storage->params[$i]->location
-                            ?: $code_location
+                $guide_param_signature_type = $guide_param->signature_type
+                    ? ExpressionAnalyzer::fleshOutType(
+                        $codebase,
+                        $guide_param->signature_type,
+                        $guide_classlike_storage->name,
+                        $guide_classlike_storage->name
                     )
-                )) {
-                    return false;
-                }
+                    : null;
 
-                return null;
+                $implementer_param_signature_type = ExpressionAnalyzer::fleshOutType(
+                    $codebase,
+                    $implementer_param->signature_type,
+                    $implementer_classlike_storage->name,
+                    $implementer_classlike_storage->name
+                );
+
+                if (!TypeAnalyzer::isContainedByInPhp(
+                    $guide_param_signature_type,
+                    $implementer_param_signature_type
+                )) {
+                    if (IssueBuffer::accepts(
+                        new MethodSignatureMismatch(
+                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                $implementer_param_signature_type . '\', expecting \'' .
+                                $guide_param_signature_type . '\' as defined by ' .
+                                $cased_guide_method_id,
+                            $implementer_method_storage->params[$i]->location
+                                ?: $code_location
+                        )
+                    )) {
+                        return false;
+                    }
+
+                    return null;
+                }
             }
 
             if ($guide_classlike_storage->user_defined
