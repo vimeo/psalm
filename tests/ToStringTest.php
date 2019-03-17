@@ -195,6 +195,13 @@ class ToStringTest extends TestCase
                     $b = (string) $a;',
                 'error_message' => 'InvalidCast',
             ],
+            'cannotCastInsideString' => [
+                '<?php
+                    class NotStringCastable {}
+                    $object = new NotStringCastable();
+                    echo "$object";',
+                'error_message' => 'InvalidCast',
+            ],
         ];
     }
 }

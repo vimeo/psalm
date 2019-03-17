@@ -424,31 +424,7 @@ class ExpressionAnalyzer
             }
 
             if (isset($stmt->expr->inferredType)) {
-                foreach ($stmt->expr->inferredType->getTypes() as $atomic_type) {
-                    if (!$atomic_type instanceof TMixed
-                        && !$atomic_type instanceof Type\Atomic\TResource
-                        && !$atomic_type instanceof TNull
-                        && !TypeAnalyzer::isAtomicContainedBy(
-                            $statements_analyzer->getCodebase(),
-                            $atomic_type,
-                            new TString(),
-                            false,
-                            true,
-                            $has_scalar_match
-                        )
-                        && !$has_scalar_match
-                    ) {
-                        if (IssueBuffer::accepts(
-                            new InvalidCast(
-                                $atomic_type->getId() . ' cannot be cast to string',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
-                        }
-                    }
-                }
+                self::castStringAttempt($statements_analyzer, $stmt->expr);
             }
 
             $stmt->inferredType = Type::getString();
@@ -1462,6 +1438,10 @@ class ExpressionAnalyzer
                 return false;
             }
 
+            if (isset($part->inferredType)) {
+                self::castStringAttempt($statements_analyzer, $part);
+            }
+
             if ($function_storage
                 && $part instanceof PhpParser\Node\Expr\Variable
                 && is_string($part->name)
@@ -1480,6 +1460,44 @@ class ExpressionAnalyzer
         $stmt->inferredType = Type::getString();
 
         return null;
+    }
+
+    /**
+     * @return  void
+     */
+    private static function castStringAttempt(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt
+    ) {
+        if (!isset($stmt->inferredType)) {
+            return;
+        }
+
+        foreach ($stmt->inferredType->getTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TMixed
+                && !$atomic_type instanceof Type\Atomic\TResource
+                && !$atomic_type instanceof TNull
+                && !TypeAnalyzer::isAtomicContainedBy(
+                    $statements_analyzer->getCodebase(),
+                    $atomic_type,
+                    new TString(),
+                    false,
+                    true,
+                    $has_scalar_match
+                )
+                && !$has_scalar_match
+            ) {
+                if (IssueBuffer::accepts(
+                    new InvalidCast(
+                        $atomic_type->getId() . ' cannot be cast to string',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
+        }
     }
 
     /**
