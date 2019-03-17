@@ -682,7 +682,7 @@ class Codebase
      */
     public function classExtends($fq_class_name, $possible_parent)
     {
-        return $this->classlikes->classExtends($fq_class_name, $possible_parent);
+        return $this->classlikes->classExtends($fq_class_name, $possible_parent, true);
     }
 
     /**

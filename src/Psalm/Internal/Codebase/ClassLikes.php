@@ -413,7 +413,7 @@ class ClassLikes
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws \InvalidArgumentException when class does not exist
      */
-    public function classExtends($fq_class_name, $possible_parent)
+    public function classExtends($fq_class_name, $possible_parent, bool $from_api = false)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -425,7 +425,7 @@ class ClassLikes
 
         $class_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
 
-        if (!$class_storage->populated) {
+        if ($from_api && !$class_storage->populated) {
             throw new UnpopulatedClasslikeException($fq_class_name);
         }
 
