@@ -202,6 +202,23 @@ class ToStringTest extends TestCase
                     echo "$object";',
                 'error_message' => 'InvalidCast',
             ],
+            'warnAboutNullableCast' => [
+                '<?php
+                    class ClassWithToString {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    function maybeShow(?string $message): void {
+                        if ($message !== null) {
+                            echo $message;
+                        }
+                    }
+
+                    maybeShow(new ClassWithToString());',
+                'error_message' => 'ImplicitToStringCast',
+            ],
         ];
     }
 }
