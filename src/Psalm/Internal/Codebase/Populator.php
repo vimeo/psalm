@@ -935,7 +935,7 @@ class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
-            if (!$parent_storage->is_trait) {
+            if (!$parent_storage->is_trait && $method_name !== '__construct') {
                 $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
             }
 
