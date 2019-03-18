@@ -558,7 +558,8 @@ class TypeAnalyzer
                     || $input_type_part instanceof TTemplateParam
                     || $input_type_part instanceof TIterable)
                 && ($container_type_part instanceof TNamedObject
-                    || $container_type_part instanceof TTemplateParam
+                    || ($container_type_part instanceof TTemplateParam
+                        && $container_type_part->as->hasObjectType())
                     || $container_type_part instanceof TIterable)
                 && self::isObjectContainedByObject(
                     $codebase,
