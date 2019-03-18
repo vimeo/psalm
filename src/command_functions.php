@@ -63,17 +63,21 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
     foreach ($autoload_files as $file) {
         /**
          * @psalm-suppress UnresolvableInclude
-         * @var \Composer\Autoload\ClassLoader
+         * @psalm-suppress MixedAssignment
+         * @var mixed
          */
         $autoloader = require_once $file;
 
-        if (!$first_autoloader) {
+        if (!$first_autoloader
+            && $autoloader instanceof \Composer\Autoload\ClassLoader
+        ) {
             $first_autoloader = $autoloader;
         }
     }
 
     if ($first_autoloader === null) {
-        throw new \LogicException('Cannot be null here');
+        echo 'Failed to find a valid Composer ClassLoader in ' . implode(', ', $autoload_files) . "\n";
+        exit(1);
     }
 
     define('PSALM_VERSION', (string) \Muglug\PackageVersions\Versions::getVersion('vimeo/psalm'));
