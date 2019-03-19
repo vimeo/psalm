@@ -15,7 +15,7 @@
     - [Docblock Type Syntax](docblock_type_syntax.md)
     - [Supported Annotations](supported_annotations.md)
     - [Template Annotations](templated_annotations.md)
-  - [Fixing code](fixing_code.md)
+ - [Fixing code](fixing_code.md)
   
 ## About Psalm
 
