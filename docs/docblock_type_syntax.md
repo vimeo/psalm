@@ -47,8 +47,6 @@ Psalm supports using generic object types like `ArrayObject<int, string>`. Any g
 
 ### Array types
 
-### Typing arrays
-
 In PHP, the `array` type is commonly used to represent three different data structures:
 
  - [List](https://en.wikipedia.org/wiki/List_(abstract_data_type)):
