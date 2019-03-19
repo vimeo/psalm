@@ -67,6 +67,20 @@ class ArgTest extends TestCase
                     function foo($b) : void {}
                     foo(null);',
             ],
+            'allowArrayIntScalarForArrayStringWithScalarIgnored' => [
+                '<?php
+                    /** @param array<int|string> $arr */
+                    function foo(array $arr) : void {
+                    }
+
+                    /** @return array<int, scalar> */
+                    function bar() : array {
+                      return [];
+                    }
+
+                    /** @psalm-suppress InvalidScalarArgument */
+                    foo(bar());',
+            ]
         ];
     }
 

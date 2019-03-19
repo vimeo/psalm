@@ -1564,6 +1564,8 @@ class TypeAnalyzer
                 $input_type_part = $input_type_part->getGenericArrayType();
             }
 
+            $any_scalar_param_match = false;
+
             foreach ($input_type_part->type_params as $i => $input_param) {
                 if ($i > 1) {
                     break;
@@ -1585,6 +1587,8 @@ class TypeAnalyzer
                     return false;
                 }
 
+                $scalar_param_match = false;
+
                 if (!$input_param->isEmpty() &&
                     !self::isContainedBy(
                         $codebase,
@@ -1592,7 +1596,7 @@ class TypeAnalyzer
                         $container_param,
                         $input_param->ignore_nullable_issues,
                         $input_param->ignore_falsable_issues,
-                        $has_scalar_match,
+                        $scalar_param_match,
                         $type_coerced,
                         $type_coerced_from_mixed,
                         $to_string_cast,
@@ -1601,7 +1605,15 @@ class TypeAnalyzer
                     )
                 ) {
                     $all_types_contain = false;
+
+                    if ($scalar_param_match) {
+                        $any_scalar_param_match = true;
+                    }
                 }
+            }
+
+            if ($any_scalar_param_match) {
+                $has_scalar_match = true;
             }
         }
 

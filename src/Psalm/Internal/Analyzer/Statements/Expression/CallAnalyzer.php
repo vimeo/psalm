@@ -2204,15 +2204,17 @@ class CallAnalyzer
                 )) {
                     // fall through
                 }
-            } elseif (IssueBuffer::accepts(
-                new InvalidArgument(
-                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
-                        ', ' . $input_type->getId() . ' provided',
-                    $code_location
-                ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                // fall through
+            } else {
+                if (IssueBuffer::accepts(
+                    new InvalidArgument(
+                        'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId() .
+                            ', ' . $input_type->getId() . ' provided',
+                        $code_location
+                    ),
+                    $statements_analyzer->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
             }
 
             return;
