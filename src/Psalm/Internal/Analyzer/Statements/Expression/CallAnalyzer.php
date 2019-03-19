@@ -2123,7 +2123,11 @@ class CallAnalyzer
             $to_string_cast
         );
 
-        if ($context->strict_types && !$param_type->from_docblock && $cased_method_id !== 'echo') {
+        if ($context->strict_types
+            && !$input_type->hasArray()
+            && !$param_type->from_docblock
+            && $cased_method_id !== 'echo'
+        ) {
             $scalar_type_match_found = false;
 
             if ($to_string_cast) {
