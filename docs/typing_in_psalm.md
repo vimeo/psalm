@@ -4,7 +4,7 @@ Psalm is able to interpret all PHPDoc type annotations, and use them to further 
 
 Types are used to describe acceptable values for properties, variables, function parameters and `return $x`.
 
-Psalm's syntax for docblock types is described in [Docblock Type Syntax](docblock_type_syntax.md).
+## [Docblock Type Syntax](docblock_type_syntax.md)
 
 ## Property declaration types vs Assignment typehints
 
