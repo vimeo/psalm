@@ -97,6 +97,12 @@ Psalm will type it internally as:
 array{0: string, 1: string, foo: stdClass, 28: false}
 ```
 
+You can specify types in that format yourself, e.g.
+
+```php
+/** @return array{foo: string, bar: int} */
+```
+
 ### Value types
 
 Psalm also allows you to specify values in types.
