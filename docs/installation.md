@@ -25,3 +25,5 @@ Then run Psalm:
 ```bash
 ./vendor/bin/psalm
 ```
+
+Psalm will probably find a number of issues - find out how to deal with them in [Dealing with code issues](dealing_with_code_issues.md).
