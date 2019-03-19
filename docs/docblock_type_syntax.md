@@ -49,21 +49,21 @@ Psalm supports using generic object types like `ArrayObject<int, string>`. Any g
 
 In PHP, the `array` type is commonly used to represent three different data structures:
 
- - [List](https://en.wikipedia.org/wiki/List_(abstract_data_type)):
-    ```php
-    $a = [1, 2, 3, 4, 5];
-    ```
+[List](https://en.wikipedia.org/wiki/List_(abstract_data_type)):
+```php
+$a = [1, 2, 3, 4, 5];
+```
 
- - [Associative array](https://en.wikipedia.org/wiki/Associative_array):
-    ```php
-    $a = [0 => 'hello', 5 => 'goodbye'];
-    $b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
-    ```
+[Associative array](https://en.wikipedia.org/wiki/Associative_array):  
+```php
+$a = [0 => 'hello', 5 => 'goodbye'];
+$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
+```
 
- - Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
-    ```php
-    $a = ['name' => 'Psalm', 'type' => 'tool'];
-    ```
+Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
+```php
+$a = ['name' => 'Psalm', 'type' => 'tool'];
+```
 
 PHP treats all these arrays the same, essentially (though there are some optimisations under the hood for the first case).
 
