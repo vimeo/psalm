@@ -73,6 +73,7 @@ class CodeLocation
     const FUNCTION_PHPDOC_PARAM_TYPE = 4;
     const FUNCTION_PARAM_VAR = 5;
     const CATCH_VAR = 6;
+    const FUNCTION_PHPDOC_METHOD = 7;
 
     /**
      * @param bool                 $single_line
@@ -177,6 +178,10 @@ class CodeLocation
                 $preview_offset += strlen($preview_lines[$i]) + 1;
             }
 
+            if (!isset($preview_lines[$i])) {
+                throw new \Exception('Should have offset');
+            }
+
             $key_line = $preview_lines[$i];
 
             $indentation = (int)strpos($key_line, '@');
@@ -206,6 +211,11 @@ class CodeLocation
 
                 case self::FUNCTION_PHPDOC_RETURN_TYPE:
                     $regex = '/@(psalm-)?return[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
+                    $match_offset = 2;
+                    break;
+
+                case self::FUNCTION_PHPDOC_METHOD:
+                    $regex = '/@(psalm-)method[ \t]+.*/';
                     $match_offset = 2;
                     break;
 

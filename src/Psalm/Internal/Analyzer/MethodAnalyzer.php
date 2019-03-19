@@ -677,10 +677,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new LessSpecificImplementedReturnType(
                             'The return type \'' . $guide_method_storage_return_type->getId()
-                            . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
-                            . $implementer_method_storage_return_type->getId() . '\'',
-                            $implementer_method_storage->return_type_location ?: $code_location
+                                . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
+                                . 'return type for ' . $implementer_declaring_method_id . ' \''
+                                . $implementer_method_storage_return_type->getId() . '\'',
+                            $implementer_method_storage->return_type_location
+                                ?: $code_location
                         ),
                         $suppressed_issues
                     )) {
@@ -690,10 +691,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new ImplementedReturnTypeMismatch(
                             'The return type \'' . $guide_method_storage_return_type->getId()
-                            . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
-                            . 'return type for ' . $implementer_declaring_method_id . ' \''
-                            . $implementer_method_storage_return_type->getId() . '\'',
-                            $implementer_method_storage->return_type_location ?: $code_location
+                                . '\' for ' . $cased_guide_method_id . ' is different to the implemented '
+                                . 'return type for ' . $implementer_declaring_method_id . ' \''
+                                . $implementer_method_storage_return_type->getId() . '\'',
+                            $implementer_method_storage->return_type_location
+                                ?: $code_location
                         ),
                         $suppressed_issues
                     )) {

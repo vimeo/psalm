@@ -855,6 +855,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $docblock_info = null;
             try {
                 $docblock_info = CommentAnalyzer::extractClassLikeDocblockInfo(
+                    $node,
                     (string)$doc_comment,
                     $doc_comment->getLine()
                 );
@@ -1466,7 +1467,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 continue;
             }
 
-            $param_array = $this->getTranslatedFunctionParam($param);
+            $param_array = $this->getTranslatedFunctionParam($param, $stmt, $fake_method);
 
             if (isset($existing_params['$' . $param_array->name])) {
                 if (IssueBuffer::accepts(
@@ -1898,7 +1899,9 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                         $stmt,
                         null,
                         false,
-                        CodeLocation::FUNCTION_PHPDOC_RETURN_TYPE,
+                        !$fake_method
+                            ? CodeLocation::FUNCTION_PHPDOC_RETURN_TYPE
+                            : CodeLocation::FUNCTION_PHPDOC_METHOD,
                         $docblock_info->return_type
                     );
                 }
@@ -1968,7 +1971,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->return_type->by_ref = true;
                 }
 
-                if ($docblock_info->return_type_line_number) {
+                if ($docblock_info->return_type_line_number && !$fake_method) {
                     $storage->return_type_location->setCommentLine($docblock_info->return_type_line_number);
                 }
             }
@@ -2006,7 +2009,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $this->improveParamsFromDocblock(
                 $storage,
                 $docblock_info->params,
-                $stmt
+                $stmt,
+                $fake_method
             );
         }
 
@@ -2090,8 +2094,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
      *
      * @return FunctionLikeParameter
      */
-    public function getTranslatedFunctionParam(PhpParser\Node\Param $param)
-    {
+    public function getTranslatedFunctionParam(
+        PhpParser\Node\Param $param,
+        PhpParser\Node\FunctionLike $stmt,
+        bool $fake_method
+    ) : FunctionLikeParameter {
         $param_type = null;
 
         $is_nullable = $param->default !== null &&
@@ -2167,9 +2174,23 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $param->var->name,
             $param->byRef,
             $param_type,
-            new CodeLocation($this->file_scanner, $param, null, false, CodeLocation::FUNCTION_PARAM_VAR),
+            new CodeLocation(
+                $this->file_scanner,
+                $fake_method ? $stmt : $param,
+                null,
+                false,
+                !$fake_method
+                    ? CodeLocation::FUNCTION_PARAM_VAR
+                    : CodeLocation::FUNCTION_PHPDOC_METHOD
+            ),
             $param_typehint
-                ? new CodeLocation($this->file_scanner, $param, null, false, CodeLocation::FUNCTION_PARAM_TYPE)
+                ? new CodeLocation(
+                    $this->file_scanner,
+                    $fake_method ? $stmt : $param,
+                    null,
+                    false,
+                    CodeLocation::FUNCTION_PARAM_TYPE
+                )
                 : null,
             $is_optional,
             $is_nullable,
@@ -2188,7 +2209,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     private function improveParamsFromDocblock(
         FunctionLikeStorage $storage,
         array $docblock_params,
-        PhpParser\Node\FunctionLike $function
+        PhpParser\Node\FunctionLike $function,
+        bool $fake_method
     ) {
         $base = $this->fq_classlike_names
             ? $this->fq_classlike_names[count($this->fq_classlike_names) - 1] . '::'
@@ -2218,16 +2240,20 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
             }
 
-            $code_location = new CodeLocation(
+            $docblock_type_location = new CodeLocation(
                 $this->file_scanner,
                 $function,
                 null,
-                true,
-                CodeLocation::FUNCTION_PHPDOC_PARAM_TYPE,
-                $docblock_param['type']
+                !$fake_method,
+                !$fake_method
+                    ? CodeLocation::FUNCTION_PHPDOC_PARAM_TYPE
+                    : CodeLocation::FUNCTION_PHPDOC_METHOD,
+                $fake_method ? null : $docblock_param['type']
             );
 
-            $code_location->setCommentLine($docblock_param['line_number']);
+            if (!$fake_method) {
+                $docblock_type_location->setCommentLine($docblock_param['line_number']);
+            }
 
             if ($storage_param === null) {
                 $param_location = new CodeLocation(
@@ -2275,7 +2301,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if (IssueBuffer::accepts(
                     new InvalidDocblock(
                         $e->getMessage() . ' in docblock for ' . $cased_method_id,
-                        $code_location
+                        $docblock_type_location
                     )
                 )) {
                 }
@@ -2319,7 +2345,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 }
 
                 $storage_param->type = $new_param_type;
-                $storage_param->type_location = $code_location;
+                $storage_param->type_location = $docblock_type_location;
                 continue;
             }
 
@@ -2361,7 +2387,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             }
 
             $storage_param->type = $new_param_type;
-            $storage_param->type_location = $code_location;
+            $storage_param->type_location = $docblock_type_location;
         }
 
         $params_without_docblock_type = array_filter(
