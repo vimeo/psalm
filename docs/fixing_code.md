@@ -2,6 +2,20 @@
 
 Psalm is good at finding potential issues in large codebases, but once found, it can be something of a gargantuan task to fix all the issues.
 
+It comes with a tool, called Psalter, that helps you fix code.
+
+You can either run it via its binary
+
+```
+vendor/bin/psalter [args]
+```
+
+or via Psalm's binary:
+
+```
+vendor/bin/psalm --alter [args]
+```
+
 ## Safety features
 
 Updating code is inherently risky, doing so automatically is even more so. I've added a few features to make it a little more reassuring:
