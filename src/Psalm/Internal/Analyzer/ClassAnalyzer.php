@@ -989,7 +989,9 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($fq_class_name !== $constructor_appearing_fqcln
                     && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 ) {
-                    $a_class_storage = $classlike_storage_provider->get($constructor_appearing_fqcln);
+                    $a_class_storage = $classlike_storage_provider->get(
+                        $end_type->initialized_class ?: $constructor_appearing_fqcln
+                    );
 
                     if (!isset($a_class_storage->declaring_property_ids[$property_name])) {
                         $constructor_class_property_storage = null;

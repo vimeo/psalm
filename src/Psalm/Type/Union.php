@@ -46,6 +46,13 @@ class Union
     public $initialized = true;
 
     /**
+     * Which class the type was initialised in
+     *
+     * @var ?string
+     */
+    public $initialized_class = null;
+
+    /**
      * Whether or not the type has been checked yet
      *
      * @var bool

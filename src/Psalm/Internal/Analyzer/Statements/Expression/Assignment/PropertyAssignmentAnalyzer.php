@@ -489,7 +489,6 @@ class PropertyAssignmentAnalyzer
                     }
                 }
 
-
                 $class_property_type = $codebase->properties->getPropertyType(
                     $property_id,
                     true,
@@ -571,6 +570,13 @@ class PropertyAssignmentAnalyzer
             }
 
             if ($var_id) {
+                if ($context->collect_initializations
+                    && $var_id
+                    && $lhs_var_id === '$this'
+                ) {
+                    $assignment_value_type->initialized_class = $context->self;
+                }
+
                 // because we don't want to be assigning for property declarations
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }

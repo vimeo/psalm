@@ -98,8 +98,8 @@ class CallAnalyzer
         } elseif ($context->collect_initializations &&
             $context->self &&
             (
-                $context->self === $fq_class_name ||
-                $codebase->classlikes->classExtends(
+                $context->self === $fq_class_name
+                || $codebase->classlikes->classExtends(
                     $context->self,
                     $fq_class_name
                 )
