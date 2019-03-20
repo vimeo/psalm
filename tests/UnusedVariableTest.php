@@ -560,6 +560,17 @@ class UnusedVariableTest extends TestCase
                         echo "token is $token\n";
                     }',
             ],
+            'staticVarUsedLater' => [
+                '<?php
+                    function use_static() : int {
+                        static $x = null;
+                        if ($x) {
+                            return (int) $x;
+                        }
+                        $x = rand(0, 1);
+                        return -1;
+                    }',
+            ],
             'tryCatchWithUseInIf' => [
                 '<?php
                     function example_string() : string {

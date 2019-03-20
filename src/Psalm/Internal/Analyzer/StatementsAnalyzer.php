@@ -883,6 +883,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 $context->vars_in_scope[$var_id] = Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = true;
+                $this->byref_uses[$var_id] = true;
 
                 $location = new CodeLocation($this, $stmt);
 
