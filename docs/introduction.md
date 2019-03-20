@@ -14,7 +14,7 @@ It has a few features that go further than other similar tools:
   Psalm checks that all properties of a given object have values after the constructor is called.
 
 - **Support for complicated array shapes**<br />
-  Psalm has support for [object-like arrays](dockblock_type_syntax.md#object-like-arrays), allowing you to specify types for all keys of an array if you so wish.
+  Psalm has support for [object-like arrays](docblock_type_syntax.md#object-like-arrays), allowing you to specify types for all keys of an array if you so wish.
 
 Psalm also has a few features to make it perform as well as possible on large codebases:
 
