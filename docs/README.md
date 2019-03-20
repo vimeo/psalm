@@ -44,3 +44,23 @@ There are two main inspirations for Psalm:
 
 - Etsy's [Phan](https://github.com/etsy/phan), which uses nikic's [`php-ast`](https://github.com/nikic/php-ast) extension to create an abstract syntax tree
 - Facebook's [Hack](http://hacklang.org/), a PHP-like language that supports many advanced typing features natively, so docblocks aren't necessary.
+
+## Index
+
+- Running Psalm:
+    - [Installation](installation.md)
+    - [Configuration](configuration.md)
+    - [Plugins](plugins.md)
+    - [Command line usage](running_psalm.md)
+    - [IDE support](language_server.md)
+    - Handling errors:
+        - [Dealing with code issues](dealing_with_code_issues.md)
+        - [Issue Types](issues.md)
+    - [Checking non-PHP files](checking_non_php_files.md)
+- Annotating code:
+    - [Typing in Psalm](typing_in_psalm.md)
+    - [Docblock Type Syntax](docblock_type_syntax.md)
+    - [Supported Annotations](supported_annotations.md)
+    - [Template Annotations](templated_annotations.md)
+ - [Fixing code](fixing_code.md)
+ 
