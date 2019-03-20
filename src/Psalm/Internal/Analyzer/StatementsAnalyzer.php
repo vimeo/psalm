@@ -758,6 +758,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             if ((!$function_storage
                     || !array_key_exists(substr($var_id, 1), $function_storage->param_types))
                 && !isset($this->byref_uses[$var_id])
+                && !$this->isSuperGlobal($var_id)
             ) {
                 if (IssueBuffer::accepts(
                     new UnusedVariable(
