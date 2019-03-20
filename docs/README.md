@@ -1,4 +1,4 @@
-# Introduction
+# About Psalm
 
 Psalm is a static analysis tool that attempts to dig into your program and find as many type-related bugs as possible.
 
