@@ -293,15 +293,22 @@ class Methods
                             && $overridden_storage->params[$i]->name === $param->name
                         ) {
                             $params[$i] = clone $param;
+                            /** @var Type\Union $params[$i]->type */
                             $params[$i]->type = clone $overridden_storage->params[$i]->type;
 
-                            if ($params[$i]->type && $source) {
+                            if ($source) {
                                 $params[$i]->type = self::localizeParamType(
                                     $source->getCodebase(),
                                     $params[$i]->type,
                                     $appearing_fq_class_name,
                                     $overriding_fq_class_name
                                 );
+                            }
+
+                            if ($params[$i]->signature_type
+                                && $params[$i]->signature_type->isNullable()
+                            ) {
+                                $params[$i]->type->addType(new Type\Atomic\TNull);
                             }
 
                             $params[$i]->type_location = $overridden_storage->params[$i]->type_location;

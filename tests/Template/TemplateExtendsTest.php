@@ -1598,6 +1598,36 @@ class TemplateExtendsTest extends TestCase
                         }
                     }'
             ],
+            'paramInsideTemplatedFunctionShouldKnowRestriction' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Hasher {
+                        /**
+                         * @param T $value
+                         */
+                        function hash($value): int;
+                    }
+
+                    /**
+                     * @implements Hasher<int>
+                     */
+                    class IntHasher implements Hasher {
+                        function hash($value): int {
+                            return $value % 10;
+                        }
+                    }
+
+                    /**
+                     * @implements Hasher<string>
+                     */
+                    class StringHasher implements Hasher {
+                        function hash($value): int {
+                            return strlen($value);
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -2270,6 +2300,55 @@ class TemplateExtendsTest extends TestCase
                         $c->takeT(new stdClass);
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'implementsAndExtendsWithoutTemplate' => [
+                '<?php
+                    /**
+                     * @template E
+                     */
+                    interface Collection
+                    {
+                        /**
+                         * @return array<E>
+                         */
+                        function toArray();
+                    }
+
+                    /**
+                     * @implements Collection<int>
+                     */
+                    class IntCollection implements Collection
+                    {
+                        function toArray() {
+                            return ["foo"];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'SKIPPED-implementsAndExtendsWithTemplate' => [
+                '<?php
+                    /**
+                     * @template TReal
+                     */
+                    interface Collection
+                    {
+                      /**
+                       * @return array<TReal>
+                       */
+                      function toArray();
+                    }
+
+                    /**
+                     * @template TDummy
+                     * @implements Collection<int>
+                     */
+                    class IntCollection implements Collection
+                    {
+                        function toArray() {
+                            return ["foo"];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }

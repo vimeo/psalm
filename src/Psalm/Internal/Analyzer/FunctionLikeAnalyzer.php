@@ -144,6 +144,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
 
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
+        $overridden_method_ids = [];
+
         if ($this->function instanceof ClassMethod) {
             if (!$storage instanceof MethodStorage) {
                 throw new \UnexpectedValueException('$storage must be MethodStorage');
@@ -324,7 +326,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $template_types = array_merge($template_types ?: [], $class_storage->template_types);
         }
 
-        if ($storage instanceof MethodStorage && $storage->inheritdoc) {
+        $params = $storage->params;
+
+        if ($storage instanceof MethodStorage) {
             $non_null_param_types = array_filter(
                 $storage->params,
                 /** @return bool */
@@ -342,9 +346,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             );
         }
 
+        if ($storage instanceof MethodStorage
+            && is_string($cased_method_id)
+            && $overridden_method_ids
+        ) {
+            $types_without_docblocks = array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return !$p->type || !$p->has_docblock_type;
+                }
+            );
+
+            if ($types_without_docblocks) {
+                $params = $codebase->methods->getMethodParams($cased_method_id, $this);
+            }
+        }
+
         $check_stmts = true;
 
-        foreach ($storage->params as $offset => $function_param) {
+        foreach ($params as $offset => $function_param) {
             $signature_type = $function_param->signature_type;
             $signature_type_location = $function_param->signature_type_location;
 
