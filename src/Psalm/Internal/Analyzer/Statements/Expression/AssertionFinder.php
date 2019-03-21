@@ -1490,18 +1490,10 @@ class AssertionFinder
                                 && $other_type->getSingleStringLiteral()->value === $this_class_name))
                     ) {
                         // do nothing
-                    } elseif (!TypeAnalyzer::isContainedBy(
-                        $codebase,
-                        $var_type,
-                        $other_type,
-                        true,
-                        true
-                    ) && !TypeAnalyzer::isContainedBy(
+                    } elseif (!TypeAnalyzer::canExpressionTypesBeIdentical(
                         $codebase,
                         $other_type,
-                        $var_type,
-                        true,
-                        true
+                        $var_type
                     )) {
                         if ($var_type->from_docblock || $other_type->from_docblock) {
                             if (IssueBuffer::accepts(
