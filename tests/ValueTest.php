@@ -503,6 +503,15 @@ class ValueTest extends TestCase
 
                     if ($c === $b) {}'
             ],
+            'don’tChangeType' => [
+                '<?php
+                    $x = 0;
+                    $y = rand(0, 1);
+                    $x++;
+                    if ($x !== $y) {
+                        chr($x);
+                    }',
+            ],
         ];
     }
 

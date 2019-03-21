@@ -1781,7 +1781,8 @@ class Reconciler
             return Type::getMixed();
         }
 
-        if (isset($existing_var_atomic_types['int'])
+        if (!$is_equality
+            && isset($existing_var_atomic_types['int'])
             && $existing_var_type->from_calculation
             && ($new_var_type === 'int' || $new_var_type === 'float')
         ) {
