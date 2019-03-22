@@ -253,19 +253,14 @@ class Pool
      *
      * @return array
      */
-    public function wait()
+    public function wait(): array
     {
-        global $argv;
-
         // Read all the streams from child processes into an array.
         $content = $this->readResultsFromChildren();
 
-        $command = $argv[0];
-
         // Wait for all children to return
         foreach ($this->child_pid_list as $child_pid) {
-            /** @psalm-suppress ForbiddenCode */
-            $process_lookup = @shell_exec('ps x -p ' . $child_pid . ' | grep "' . $command . '"');
+            $process_lookup = posix_kill($child_pid, 0);
 
             $status = 0;
 
