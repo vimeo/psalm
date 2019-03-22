@@ -533,6 +533,19 @@ class ValueTest extends TestCase
                         }
                     }'
             ],
+            'convertNullArrayKeyToEmptyString' => [
+                '<?php
+                    $a = [
+                        1 => 1,
+                        2 => 2,
+                        null => "hello",
+                    ];
+
+                    $b = $a[""];',
+                'assertions' => [
+                    '$b' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -603,20 +616,6 @@ class ValueTest extends TestCase
                     $a = 4.1;
                     if ($a !== 4.1) {
                         // do something
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
-            'SKIPPED-phpstanPostedArrayTest' => [
-                '<?php
-                    $array = [1, 2, 3];
-                    if (rand(1, 10) === 1) {
-                        $array[] = 4;
-                        $array[] = 5;
-                        $array[] = 6;
-                    }
-
-                    if (count($array) === 7) {
-
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],

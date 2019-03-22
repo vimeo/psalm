@@ -67,6 +67,10 @@ class ArrayAnalyzer
                 if (isset($item->key->inferredType)) {
                     $key_type = $item->key->inferredType;
 
+                    if ($key_type->isNull()) {
+                        $key_type = Type::getString('');
+                    }
+
                     if ($item->key instanceof PhpParser\Node\Scalar\String_
                         && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
                     ) {
@@ -75,15 +79,15 @@ class ArrayAnalyzer
 
                     $item_key_atomic_types = array_merge($item_key_atomic_types, array_values($key_type->getTypes()));
 
-                    if ($item->key->inferredType->isSingleStringLiteral()) {
-                        $item_key_literal_type = $item->key->inferredType->getSingleStringLiteral();
+                    if ($key_type->isSingleStringLiteral()) {
+                        $item_key_literal_type = $key_type->getSingleStringLiteral();
                         $item_key_value = $item_key_literal_type->value;
 
                         if ($item_key_literal_type instanceof Type\Atomic\TLiteralClassString) {
                             $class_strings[$item_key_value] = true;
                         }
-                    } elseif ($item->key->inferredType->isSingleIntLiteral()) {
-                        $item_key_value = $item->key->inferredType->getSingleIntLiteral()->value;
+                    } elseif ($key_type->isSingleIntLiteral()) {
+                        $item_key_value = $key_type->getSingleIntLiteral()->value;
 
                         if ($item_key_value > $int_offset + $int_offset_diff) {
                             $int_offset_diff = $item_key_value - $int_offset;
