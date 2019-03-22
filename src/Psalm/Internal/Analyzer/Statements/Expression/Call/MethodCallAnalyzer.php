@@ -1282,7 +1282,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             }
         } else {
             foreach ($template_types as $type_name => $type_map) {
-                foreach ($type_map as $declaring_class => list($type)) {
+                foreach ($type_map as list($type)) {
                     if ($class_storage !== $calling_class_storage
                         && isset($e[strtolower($class_storage->name)][$type_name])
                     ) {
