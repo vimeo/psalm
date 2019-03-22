@@ -1,6 +1,7 @@
 <?php
 namespace Psalm\Type\Atomic;
 
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -138,7 +139,7 @@ class TNamedObject extends Atomic
     }
 
     /**
-     * @param  array<string, array{Union, ?string}>  $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
      *
      * @return void
      */
@@ -152,7 +153,7 @@ class TNamedObject extends Atomic
 
         foreach ($this->extra_types as $extra_type) {
             if ($extra_type instanceof TTemplateParam && isset($template_types[$extra_type->param_name])) {
-                $template_type = clone $template_types[$extra_type->param_name][0];
+                $template_type = clone $template_types[$extra_type->param_name][$extra_type->defining_class ?: ''][0];
 
                 foreach ($template_type->getTypes() as $template_type_part) {
                     if ($template_type_part instanceof TNamedObject) {

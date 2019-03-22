@@ -395,7 +395,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
     }
 
     /**
-     * @return array<string, array{Type\Union, ?string}>|null
+     * @return array<string, array<string, array{Type\Union}>>|null
      */
     public function getTemplateTypeMap()
     {

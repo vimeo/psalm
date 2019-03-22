@@ -87,7 +87,7 @@ abstract class Type
      *
      * @param  string $type_string
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array{Union, ?string}> $template_type_map
+     * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return Union
      */
@@ -104,7 +104,7 @@ abstract class Type
      *
      * @param  array<int, string> $type_tokens
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array{Union, ?string}> $template_type_map
+     * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return Union
      */
@@ -183,7 +183,7 @@ abstract class Type
     /**
      * @param  ParseTree $parse_tree
      * @param  array{int,int}|null   $php_version
-     * @param  array<string, array{Union, ?string}> $template_type_map
+     * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return  Atomic|TArray|TGenericObject|ObjectLike|Union
      */
@@ -247,10 +247,11 @@ abstract class Type
                 $class_name = (string) $generic_params[0];
 
                 if (isset($template_type_map[$class_name])) {
+                    $first_class = array_keys($template_type_map[$class_name])[0];
                     return self::getGenericParamClass(
                         $class_name,
-                        $template_type_map[$class_name][0],
-                        $template_type_map[$class_name][1]
+                        $template_type_map[$class_name][$first_class][0],
+                        $first_class
                     );
                 }
 
@@ -501,10 +502,12 @@ abstract class Type
             list($fq_classlike_name, $const_name) = explode('::', $parse_tree->value);
 
             if (isset($template_type_map[$fq_classlike_name]) && $const_name === 'class') {
+                $first_class = array_keys($template_type_map[$fq_classlike_name])[0];
+
                 return self::getGenericParamClass(
                     $fq_classlike_name,
-                    $template_type_map[$fq_classlike_name][0],
-                    $template_type_map[$fq_classlike_name][1]
+                    $template_type_map[$fq_classlike_name][$first_class][0],
+                    $first_class
                 );
             }
 

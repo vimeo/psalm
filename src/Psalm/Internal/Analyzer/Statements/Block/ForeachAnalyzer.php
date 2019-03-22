@@ -737,9 +737,13 @@ class ForeachAnalyzer
                     ? $iterator_atomic_type->type_params
                     : array_values(
                         array_map(
-                            /** @param array{0:Type\Union} $arr */
-                            function (array $arr) : Type\Union {
-                                return $arr[0];
+                            /** @param array<string, array{0:Type\Union}> $arr */
+                            function (array $arr) use ($iterator_atomic_type) : Type\Union {
+                                if (isset($arr[$iterator_atomic_type->value])) {
+                                    return $arr[$iterator_atomic_type->value][0];
+                                }
+
+                                return Type::getMixed();
                             },
                             $generic_storage->template_types
                         )
@@ -773,7 +777,7 @@ class ForeachAnalyzer
     /**
      * @param  string $template_name
      * @param  array<string, array<int|string, Type\Union>>  $template_type_extends
-     * @param  array<string, array{Type\Union, ?string}>  $class_template_types
+     * @param  array<string, array<string, array{Type\Union}>>  $class_template_types
      * @param  array<int, Type\Union> $calling_type_params
      * @return Type\Union|null
      */

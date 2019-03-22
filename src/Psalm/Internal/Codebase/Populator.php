@@ -333,8 +333,11 @@ class Populator
                 } else {
                     $storage->template_type_extends[$used_trait_lc] = [];
 
-                    foreach ($trait_storage->template_types as $template_name => $template_type) {
-                        $storage->template_type_extends[$used_trait_lc][$template_name] = $template_type[0];
+                    foreach ($trait_storage->template_types as $template_name => $template_type_map) {
+                        foreach ($template_type_map as $template_type) {
+                            $storage->template_type_extends[$used_trait_lc][$template_name]
+                                = $template_type[0];
+                        }
                     }
                 }
             } elseif ($trait_storage->template_type_extends) {
@@ -441,9 +444,11 @@ class Populator
                 } else {
                     $storage->template_type_extends[$parent_storage_class] = [];
 
-                    foreach ($parent_storage->template_types as $template_name => $template_type) {
-                        $storage->template_type_extends[$parent_storage_class][$template_name]
-                            = $template_type[0];
+                    foreach ($parent_storage->template_types as $template_name => $template_type_map) {
+                        foreach ($template_type_map as $template_type) {
+                            $storage->template_type_extends[$parent_storage_class][$template_name]
+                                = $template_type[0];
+                        }
                     }
                 }
             } elseif ($parent_storage->template_type_extends) {
@@ -565,9 +570,11 @@ class Populator
                 } else {
                     $storage->template_type_extends[$parent_interface_lc] = [];
 
-                    foreach ($parent_interface_storage->template_types as $template_name => $template_type) {
-                        $storage->template_type_extends[$parent_interface_lc][$template_name]
-                            = $template_type[0];
+                    foreach ($parent_interface_storage->template_types as $template_name => $template_type_map) {
+                        foreach ($template_type_map as $template_type) {
+                            $storage->template_type_extends[$parent_interface_lc][$template_name]
+                                = $template_type[0];
+                        }
                     }
                 }
             }
@@ -646,9 +653,11 @@ class Populator
                 } else {
                     $storage->template_type_extends[$implemented_interface_lc] = [];
 
-                    foreach ($implemented_interface_storage->template_types as $template_name => $template_type) {
-                        $storage->template_type_extends[$implemented_interface_lc][$template_name]
-                            = $template_type[0];
+                    foreach ($implemented_interface_storage->template_types as $template_name => $template_type_map) {
+                        foreach ($template_type_map as $template_type) {
+                            $storage->template_type_extends[$implemented_interface_lc][$template_name]
+                                = $template_type[0];
+                        }
                     }
                 }
             }

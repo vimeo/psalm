@@ -1494,22 +1494,26 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         if ($parent_storage->template_types && $storage->template_type_extends) {
-            foreach ($parent_storage->template_types as $i => $template_type) {
-                if (!$template_type[0]->isMixed()
-                    && isset($storage->template_type_extends[strtolower($parent_storage->name)][$i])
-                ) {
-                    $extended_type = $storage->template_type_extends[strtolower($parent_storage->name)][$i];
+            foreach ($parent_storage->template_types as $template_name => $type_map) {
+                foreach ($type_map as $template_type) {
+                    $parent_class_lc = strtolower($parent_storage->name);
+                    if (!$template_type[0]->isMixed()
+                        && isset($storage->template_type_extends[$parent_class_lc][$template_name])
+                    ) {
+                        $extended_type = $storage->template_type_extends[$parent_class_lc][$template_name];
 
-                    if (!TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type[0])) {
-                        if (IssueBuffer::accepts(
-                            new InvalidTemplateParam(
-                                'Extended template param ' . $i . ' expects type ' . $template_type[0]->getId()
-                                    . ', type ' . $extended_type->getId() . ' given',
-                                $code_location
-                            ),
-                            array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
-                        )) {
-                            // fall through
+                        if (!TypeAnalyzer::isContainedBy($codebase, $extended_type, $template_type[0])) {
+                            if (IssueBuffer::accepts(
+                                new InvalidTemplateParam(
+                                    'Extended template param ' . $template_name
+                                        . ' expects type ' . $template_type[0]->getId()
+                                        . ', type ' . $extended_type->getId() . ' given',
+                                    $code_location
+                                ),
+                                array_merge($storage->suppressed_issues, $this->getSuppressedIssues())
+                            )) {
+                                // fall through
+                            }
                         }
                     }
                 }

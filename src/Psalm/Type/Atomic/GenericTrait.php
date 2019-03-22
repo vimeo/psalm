@@ -2,6 +2,7 @@
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -139,8 +140,8 @@ trait GenericTrait
     }
 
     /**
-     * @param  array<string, array{Union, ?string}>     $template_types
-     * @param  array<string, array{Union, ?string, ?int}>     $generic_params
+     * @param  array<string, array<string, array{Type\Union}>>     $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>     $generic_params
      * @param  Atomic|null              $input_type
      *
      * @return void
@@ -187,7 +188,7 @@ trait GenericTrait
     }
 
     /**
-     * @param  array<string, array{Union, ?string}>  $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>  $template_types
      *
      * @return void
      */

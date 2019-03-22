@@ -25,7 +25,7 @@ class Assertion
     }
 
     /**
-     * @param array<string, array{0:\Psalm\Type\Union, 1:null|string}> $template_type_map
+     * @param array<string, array<string, array{0:\Psalm\Type\Union}>> $template_type_map
      */
     public function getUntemplatedCopy(array $template_type_map) : self
     {
@@ -43,7 +43,9 @@ class Assertion
                     if ($template_type_map) {
                         foreach ($rule_tokens as &$rule_token) {
                             if (isset($template_type_map[$rule_token])) {
-                                $rule_token = $template_type_map[$rule_token][0]->getId();
+                                foreach ($template_type_map[$rule_token] as list($type)) {
+                                    $rule_token = $type->getId();
+                                }
                             }
                         }
                     }

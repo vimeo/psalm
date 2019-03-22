@@ -69,10 +69,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
     /** @var Config */
     private $config;
 
-    /** @var array<string, array{Type\Union, ?string}> */
+    /** @var array<string, array<string, array{Type\Union}>> */
     private $class_template_types = [];
 
-    /** @var array<string, array{Type\Union, ?string}> */
+    /** @var array<string, array<string, array{Type\Union}>> */
     private $function_template_types = [];
 
     /** @var FunctionLikeStorage[] */
@@ -903,8 +903,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 }
 
                                 $storage->template_types[$template_name] = [
-                                    $template_type,
-                                    $fq_classlike_name
+                                    $fq_classlike_name => [$template_type]
                                 ];
                             } else {
                                 if (IssueBuffer::accepts(
@@ -916,7 +915,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                                 }
                             }
                         } else {
-                            $storage->template_types[$template_name] = [Type::getMixed(), $fq_classlike_name];
+                            $storage->template_types[$template_name][$fq_classlike_name] = [Type::getMixed()];
                         }
                     }
 
@@ -1784,8 +1783,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     $storage->has_docblock_issues = true;
                 } else {
                     $storage->template_types[$template_map[0]] = [
-                        $template_type,
-                        $fq_classlike_name
+                        '' => [$template_type]
                     ];
                 }
             }
@@ -2047,13 +2045,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     if ($param->name === $template_typeof['param_name']) {
                         $param_type_nullable = $param->type && $param->type->isNullable();
 
-                        $template_type = isset($template_types[$template_typeof['template_type']])
-                            ? $template_types[$template_typeof['template_type']][0]
-                            : null;
+                        $template_type = null;
+                        $template_class = null;
 
-                        $template_class = isset($template_types[$template_typeof['template_type']])
-                            ? $template_types[$template_typeof['template_type']][1]
-                            : null;
+                        if (isset($template_types[$template_typeof['template_type']])) {
+                            foreach ($template_types[$template_typeof['template_type']] as $class => $map) {
+                                $template_type = $map[0];
+                                $template_class = $class;
+                            }
+                        }
 
                         $template_atomic_type = null;
 

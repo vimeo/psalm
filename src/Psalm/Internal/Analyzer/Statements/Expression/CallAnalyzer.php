@@ -214,7 +214,7 @@ class CallAnalyzer
     /**
      * @param  string|null                      $method_id
      * @param  array<int, PhpParser\Node\Arg>   $args
-     * @param  array<string, array{Type\Union, ?string, ?int}>|null   &$generic_params
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>>|null   &$generic_params
      * @param  Context                          $context
      * @param  CodeLocation                     $code_location
      * @param  StatementsAnalyzer                $statements_analyzer
@@ -902,7 +902,7 @@ class CallAnalyzer
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @param   FunctionLikeStorage|null                $function_storage
      * @param   ClassLikeStorage|null                   $class_storage
-     * @param   array<string, array{Type\Union, ?string, ?int}>|null  $generic_params
+     * @param   array<string, array<string, array{Type\Union, 1?:int}>>|null  $generic_params
      * @param   CodeLocation                            $code_location
      * @param   Context                                 $context
      *
@@ -1018,8 +1018,10 @@ class CallAnalyzer
 
         $existing_generic_params = $generic_params ?: [];
 
-        foreach ($existing_generic_params as $key => $type) {
-            $existing_generic_params[$key][0] = clone $type[0];
+        foreach ($existing_generic_params as $template_name => $type_map) {
+            foreach ($type_map as $class => $type) {
+                $existing_generic_params[$template_name][$class][0] = clone $type[0];
+            }
         }
 
         $function_param_count = count($function_params);
@@ -1170,9 +1172,9 @@ class CallAnalyzer
      * @param  string|null $cased_method_id
      * @param  string|null $fq_class_name
      * @param  FunctionLikeParameter|null $function_param
-     * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
-     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
-     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
+     * @param  array<string, array<string, array{Type\Union}>> $template_types
      * @return false|null
      */
     private static function checkFunctionLikeArgumentMatches(
@@ -1245,8 +1247,8 @@ class CallAnalyzer
      * @param  string|null $cased_method_id
      * @param  FunctionLikeParameter|null $last_param
      * @param  array<int, FunctionLikeParameter> $function_params
-     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
-     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
+     * @param  array<string, array<string, array{Type\Union}>> $template_types
      * @param  FunctionLikeStorage|null $function_storage
      * @return false|null
      */
@@ -1367,9 +1369,9 @@ class CallAnalyzer
     /**
      * @param  string|null $cased_method_id
      * @param  string|null $fq_class_name
-     * @param  array<string, array{Type\Union, ?string}> $existing_generic_params
-     * @param  array<string, array{Type\Union, ?string, ?int}> $generic_params
-     * @param  array<string, array{Type\Union, ?string}> $template_types
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
+     * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
+     * @param  array<string, array<string, array{Type\Union}>> $template_types
      * @param  FunctionLikeParameter|null $function_param
      * @return false|null
      */
@@ -1536,7 +1538,7 @@ class CallAnalyzer
     }
 
     /**
-     * @return array<string, array{Type\Union, ?string}>
+     * @return array<string, array<string, array{Type\Union}>>
      */
     private static function getTemplateTypesForFunction(
         FunctionLikeStorage $function_storage,
@@ -1590,7 +1592,7 @@ class CallAnalyzer
                             }
 
 
-                            $template_types[$template_name] = [$output_type ?: Type::getMixed(), $class_storage->name];
+                            $template_types[$template_name][$class_storage->name] = [$output_type ?: Type::getMixed()];
                         }
                     }
                 }
@@ -1601,8 +1603,10 @@ class CallAnalyzer
             }
         }
 
-        foreach ($template_types as $key => $type) {
-            $template_types[$key][0] = clone $type[0];
+        foreach ($template_types as $key => $type_map) {
+            foreach ($type_map as $class => $type) {
+                $template_types[$key][$class][0] = clone $type[0];
+            }
         }
 
         return $template_types;
@@ -2568,7 +2572,7 @@ class CallAnalyzer
      * @param  \Psalm\Storage\Assertion[] $assertions
      * @param  array<int, PhpParser\Node\Arg> $args
      * @param  Context           $context
-     * @param  array<string, array{Type\Union, ?string}> $template_type_map,
+     * @param  array<string, array<string, array{Type\Union}>> $template_type_map,
      * @param  StatementsAnalyzer $statements_analyzer
      *
      * @return void
@@ -2623,12 +2627,12 @@ class CallAnalyzer
                     $rule = substr($rule, 1);
                 }
 
-                if (isset($template_type_map[$rule])) {
-                    if ($template_type_map[$rule][0]->hasMixed()) {
+                if (isset($template_type_map[$rule][''])) {
+                    if ($template_type_map[$rule][''][0]->hasMixed()) {
                         continue;
                     }
 
-                    $replacement_atomic_types = $template_type_map[$rule][0]->getTypes();
+                    $replacement_atomic_types = $template_type_map[$rule][''][0]->getTypes();
 
                     if (count($replacement_atomic_types) > 1) {
                         continue;

@@ -268,7 +268,7 @@ class ClassLikeStorage
     public $overridden_property_ids = [];
 
     /**
-     * @var array<string, array{Type\Union, ?string}>|null
+     * @var array<string, array<string, array{Type\Union}>>|null
      */
     public $template_types;
 

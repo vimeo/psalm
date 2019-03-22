@@ -428,7 +428,7 @@ class TemplateExtendsTest extends TestCase
                     '$id' => 'int',
                 ]
             ],
-            'extendsTwiceSameName' => [
+            'extendsTwiceSameNameCorrect' => [
                 '<?php
                     /**
                      * @template T
@@ -2332,10 +2332,10 @@ class TemplateExtendsTest extends TestCase
                      */
                     interface Collection
                     {
-                      /**
-                       * @return array<TReal>
-                       */
-                      function toArray();
+                        /**
+                         * @return array<TReal>
+                         */
+                        function toArray();
                     }
 
                     /**

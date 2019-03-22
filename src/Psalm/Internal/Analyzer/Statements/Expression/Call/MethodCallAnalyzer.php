@@ -1129,7 +1129,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     }
 
     /**
-     * @return array<string, array{Type\Union, string|null, ?int}>|null
+     * @return array<string, array<string, array{Type\Union, int}>>|null
      */
     public static function getClassTemplateParams(
         Codebase $codebase,
@@ -1182,9 +1182,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 $i = 0;
                 foreach ($calling_class_storage->template_types as $type_name => $_) {
                     if (isset($lhs_type_part->type_params[$i])) {
-                        $class_template_params[$type_name] = [
+                        $class_template_params[$type_name][$calling_class_storage->name] = [
                             $lhs_type_part->type_params[$i],
-                            $calling_class_storage->name,
                             0,
                         ];
                     }
@@ -1267,60 +1266,60 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     }
 
-                    $class_template_params[$type_name] = [
+                    $class_template_params[$type_name][$class_storage->name] = [
                         $output_type_extends ?: Type::getMixed(),
-                        $class_storage->name,
                         0,
                     ];
                 }
 
                 if (!isset($class_template_params[$type_name])) {
-                    $class_template_params[$type_name] = [Type::getMixed(), null, 0];
+                    $class_template_params[$type_name][$class_storage->name] = [Type::getMixed(), 0];
                 }
 
                 $i++;
             }
         } else {
-            foreach ($template_types as $type_name => list($type)) {
-                if ($class_storage !== $calling_class_storage
-                    && isset($e[strtolower($class_storage->name)][$type_name])
-                ) {
-                    $input_type_extends = $e[strtolower($class_storage->name)][$type_name];
+            foreach ($template_types as $type_name => $type_map) {
+                foreach ($type_map as list($type)) {
+                    if ($class_storage !== $calling_class_storage
+                        && isset($e[strtolower($class_storage->name)][$type_name])
+                    ) {
+                        $input_type_extends = $e[strtolower($class_storage->name)][$type_name];
 
-                    $output_type_extends = null;
+                        $output_type_extends = null;
 
-                    foreach ($input_type_extends->getTypes() as $type_extends_atomic) {
-                        if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
-                            if (!$output_type_extends) {
-                                $output_type_extends = $type_extends_atomic->as;
+                        foreach ($input_type_extends->getTypes() as $type_extends_atomic) {
+                            if ($type_extends_atomic instanceof Type\Atomic\TTemplateParam) {
+                                if (!$output_type_extends) {
+                                    $output_type_extends = $type_extends_atomic->as;
+                                } else {
+                                    $output_type_extends = Type::combineUnionTypes(
+                                        $type_extends_atomic->as,
+                                        $output_type_extends
+                                    );
+                                }
                             } else {
-                                $output_type_extends = Type::combineUnionTypes(
-                                    $type_extends_atomic->as,
-                                    $output_type_extends
-                                );
-                            }
-                        } else {
-                            if (!$output_type_extends) {
-                                $output_type_extends = new Type\Union([$type_extends_atomic]);
-                            } else {
-                                $output_type_extends = Type::combineUnionTypes(
-                                    new Type\Union([$type_extends_atomic]),
-                                    $output_type_extends
-                                );
+                                if (!$output_type_extends) {
+                                    $output_type_extends = new Type\Union([$type_extends_atomic]);
+                                } else {
+                                    $output_type_extends = Type::combineUnionTypes(
+                                        new Type\Union([$type_extends_atomic]),
+                                        $output_type_extends
+                                    );
+                                }
                             }
                         }
+
+                        $class_template_params[$type_name][$class_storage->name] = [
+                            $output_type_extends ?: Type::getMixed(),
+                            0,
+                        ];
                     }
 
-                    $class_template_params[$type_name] = [
-                        $output_type_extends ?: Type::getMixed(),
-                        $class_storage->name,
-                        0,
-                    ];
-                }
-
-                if ($lhs_var_id !== '$this') {
-                    if (!isset($class_template_params[$type_name])) {
-                        $class_template_params[$type_name] = [$type, $class_storage->name, 0];
+                    if ($lhs_var_id !== '$this') {
+                        if (!isset($class_template_params[$type_name])) {
+                            $class_template_params[$type_name][$class_storage->name] = [$type, 0];
+                        }
                     }
                 }
             }

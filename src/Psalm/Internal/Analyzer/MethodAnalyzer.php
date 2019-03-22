@@ -615,7 +615,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($map as $key => $type) {
                     if (is_string($key)) {
-                        $template_types[$key] = [$type, $guide_classlike_storage->name];
+                        $template_types[$key][$guide_classlike_storage->name] = [$type];
                     }
                 }
 
@@ -640,9 +640,8 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($map as $key => $type) {
                     if (is_string($key)) {
-                        $template_types[$key] = [
+                        $template_types[$key][$implementer_method_storage->defining_fqcln] = [
                             $type,
-                            $implementer_method_storage->defining_fqcln
                         ];
                     }
                 }
@@ -795,7 +794,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
                     foreach ($map as $key => $type) {
                         if (is_string($key)) {
-                            $template_types[$key] = [$type, $guide_classlike_storage->name];
+                            $template_types[$key][$guide_classlike_storage->name] = [$type, 0];
                         }
                     }
 

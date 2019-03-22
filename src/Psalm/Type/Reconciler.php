@@ -53,7 +53,7 @@ class Reconciler
      * @param  array<string, bool>       $referenced_var_ids
      * @param  StatementsAnalyzer         $statements_analyzer
      * @param  CodeLocation|null         $code_location
-     * @param   array<string, array{0:Type\Union, 1:null|string}> $template_type_map
+     * @param  array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return array<string, Type\Union>
      */
@@ -299,7 +299,7 @@ class Reconciler
      * @param   CodeLocation        $code_location
      * @param   string[]            $suppressed_issues
      * @param   0|1|2               $failed_reconciliation if the types cannot be reconciled, we need to know
-     * @param   array<string, array{0:Type\Union, 1:null|string}> $template_type_map
+     * @param   array<string, array<string, array{Type\Union}>> $template_type_map
      *
      * @return  Type\Union
      */
@@ -1265,7 +1265,7 @@ class Reconciler
     }
 
     /**
-     * @param array<string, array{0:Type\Union, 1:null|string}> $template_type_map
+     * @param array<string, array<string, array{0:Type\Union, 1?: int}>> $template_type_map
      */
     private static function filterTypeWithAnother(
         Codebase $codebase,

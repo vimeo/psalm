@@ -16,7 +16,7 @@ class PluginTest extends TestCase
     /** @var TestConfig */
     protected static $config;
 
-    /** @var \Psalm\Internal\Analyzer\ProjectAnalyzer */
+    /** @var ?\Psalm\Internal\Analyzer\ProjectAnalyzer */
     protected $project_analyzer;
 
     /**
