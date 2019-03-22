@@ -1138,16 +1138,16 @@ class Union
                     }
                 }
 
-                if (!$template_type) {
-                    $template_type = Type::getMixed();
-                }
+                if ($template_type) {
+                    foreach ($template_type->types as $template_type_part) {
+                        if ($template_type_part instanceof Type\Atomic\TMixed) {
+                            $is_mixed = true;
+                        }
 
-                foreach ($template_type->types as $template_type_part) {
-                    if ($template_type_part instanceof Type\Atomic\TMixed) {
-                        $is_mixed = true;
+                        $new_types[$template_type_part->getKey()] = $template_type_part;
                     }
-
-                    $new_types[$template_type_part->getKey()] = $template_type_part;
+                } else {
+                    $new_types[$key] = $atomic_type;
                 }
             } elseif ($atomic_type instanceof Type\Atomic\TTemplateParamClass) {
                 $template_type = isset($template_types[$atomic_type->param_name][$atomic_type->defining_class ?: ''])
