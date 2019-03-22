@@ -84,11 +84,21 @@ jobs:
       php: 7.1
       env: DEPS="low"
       script:
-        - bin/build-phar.sh --phive
+        - |
+          bin/build-phar.sh && \
+          git clone https://${GITHUB_TOKEN}@github.com/psalm/shim.git > /dev/null 2>&1 && \
+          cp build/psalm.phar shim/psalm.phar && \
+          cd shim && \
+          git config user.email "travis@travis-ci.org" && \
+          git config user.name "Travis CI" && \
+          git add psalm.phar && \
+          git commit -m "Updated Psalm shim to commit ${TRAVIS_COMMIT}" && \
+          git push --quiet origin master
       before_deploy:
         - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
         - gpg --batch --yes --import keys.asc
         - echo $SIGNING_KEY | gpg --passphrase-fd 0 -u 8A03EA3B385DBAA1 --armor --detach-sig build/psalm.phar
+        - cd shim && git tag ${TRAVIS_TAG} && git push origin ${TRAVIS_TAG} && cd ..
       deploy:
         skip_cleanup: true
         on:
