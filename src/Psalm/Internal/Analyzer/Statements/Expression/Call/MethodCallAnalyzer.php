@@ -1129,7 +1129,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     }
 
     /**
-     * @return array<string, array<string, array{Type\Union, int}>>|null
+     * @return array<string, array<string, array{Type\Union, 1?:int}>>|null
      */
     public static function getClassTemplateParams(
         Codebase $codebase,
@@ -1187,8 +1187,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 foreach ($calling_class_storage->template_types as $type_name => $_) {
                     if (isset($lhs_type_part->type_params[$i])) {
                         $class_template_params[$type_name][$calling_class_storage->name] = [
-                            $lhs_type_part->type_params[$i],
-                            0,
+                            $lhs_type_part->type_params[$i]
                         ];
                     }
 
@@ -1271,20 +1270,19 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
 
                     $class_template_params[$type_name][$class_storage->name] = [
-                        $output_type_extends ?: Type::getMixed(),
-                        0,
+                        $output_type_extends ?: Type::getMixed()
                     ];
                 }
 
                 if (!isset($class_template_params[$type_name])) {
-                    $class_template_params[$type_name][$class_storage->name] = [Type::getMixed(), 0];
+                    $class_template_params[$type_name][$class_storage->name] = [Type::getMixed()];
                 }
 
                 $i++;
             }
         } else {
             foreach ($template_types as $type_name => $type_map) {
-                foreach ($type_map as list($type)) {
+                foreach ($type_map as $declaring_class => list($type)) {
                     if ($class_storage !== $calling_class_storage
                         && isset($e[strtolower($class_storage->name)][$type_name])
                     ) {
@@ -1315,14 +1313,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
 
                         $class_template_params[$type_name][$class_storage->name] = [
-                            $output_type_extends ?: Type::getMixed(),
-                            0,
+                            $output_type_extends ?: Type::getMixed()
                         ];
                     }
 
                     if ($lhs_var_id !== '$this') {
                         if (!isset($class_template_params[$type_name])) {
-                            $class_template_params[$type_name][$class_storage->name] = [$type, 0];
+                            $class_template_params[$type_name][$class_storage->name] = [$type];
                         }
                     }
                 }
