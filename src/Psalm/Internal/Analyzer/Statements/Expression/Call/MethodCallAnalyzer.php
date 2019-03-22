@@ -1143,35 +1143,39 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $template_types = $class_storage->template_types;
 
-        if (!$template_types) {
-            if ($calling_class_storage->template_type_extends
-                && $method_name
-                && !empty($class_storage->overridden_method_ids[$method_name])
-                && !isset($class_storage->methods[$method_name]->return_type)
-            ) {
-                foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
-                    $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+        if ($calling_class_storage->template_type_extends
+            && $method_name
+            && !empty($class_storage->overridden_method_ids[$method_name])
+            && isset($class_storage->methods[$method_name])
+            && !isset($class_storage->methods[$method_name]->return_type)
+        ) {
+            foreach ($class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
+                $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
 
-                    if (!$overridden_storage->return_type) {
-                        return null;
-                    }
-
-                    if ($overridden_storage->return_type->isNull()) {
-                        return null;
-                    }
-
-                    list($fq_overridden_class) = explode('::', $overridden_method_id);
-
-                    $overridden_class_storage = $codebase->classlike_storage_provider->get($fq_overridden_class);
-
-                    $template_types = $overridden_class_storage->template_types;
-                    $class_storage = $overridden_class_storage;
+                if (!$overridden_storage->return_type) {
+                    return null;
                 }
-            }
 
-            if (!$template_types) {
-                return null;
+                if ($overridden_storage->return_type->isNull()) {
+                    return null;
+                }
+
+                list($fq_overridden_class) = explode('::', $overridden_method_id);
+
+                $overridden_class_storage = $codebase->classlike_storage_provider->get($fq_overridden_class);
+
+                if (!$template_types) {
+                    $template_types = $overridden_class_storage->template_types;
+                } elseif ($overridden_class_storage->template_types) {
+                    $template_types = array_merge($overridden_class_storage->template_types, $template_types);
+                }
+
+                $class_storage = $overridden_class_storage;
             }
+        }
+
+        if (!$template_types) {
+            return null;
         }
 
         $class_template_params = [];
