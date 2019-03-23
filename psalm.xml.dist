@@ -102,6 +102,7 @@
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <directory name="src/Psalm/Plugin"/>
+                <directory name="src/Psalm/SourceControl/Git/"/>
                 <file name="src/Psalm/Internal/LanguageServer/Client/TextDocument.php"/>
                 <file name="src/Psalm/Internal/LanguageServer/Server/TextDocument.php"/>
                 <referencedMethod name="Psalm\Codebase::getParentInterfaces"/>

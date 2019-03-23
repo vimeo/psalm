@@ -645,6 +645,24 @@ class Analyzer
     }
 
     /**
+     * @return array<string, array{int, int}>
+     */
+    public function getTypeCoverageMap(\Psalm\Codebase $codebase)
+    {
+        $type_coverage_map = [];
+
+        foreach ($codebase->file_reference_provider->getTypeCoverage() as $file_path => $counts) {
+            if (!$this->config->reportTypeStatsForFile($file_path)) {
+                continue;
+            }
+
+            $type_coverage_map[$this->config->shortenFileName($file_path)] = $counts;
+        }
+
+        return $type_coverage_map;
+    }
+
+    /**
      * @return array{int, int}
      */
     public function getTotalTypeCoverage(\Psalm\Codebase $codebase)

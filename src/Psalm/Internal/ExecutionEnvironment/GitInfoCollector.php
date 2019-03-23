@@ -1,0 +1,134 @@
+<?php
+
+namespace Psalm\Internal\ExecutionEnvironment;
+
+use Psalm\SourceControl\Git\CommitInfo;
+use Psalm\SourceControl\Git\GitInfo;
+use Psalm\SourceControl\Git\RemoteInfo;
+
+/**
+ * Git repository info collector.
+ *
+ * @author Kitamura Satoshi <with.no.parachute@gmail.com>
+ */
+class GitInfoCollector
+{
+    /**
+     * Git command.
+     *
+     * @var SystemCommandExecutor
+     */
+    protected $executor;
+
+    /**
+     * Constructor.
+     *
+     * @param GitCommand $command Git command
+     */
+    public function __construct()
+    {
+        $this->executor = new SystemCommandExecutor();
+    }
+
+    // API
+
+    /**
+     * Collect git repository info.
+     */
+    public function collect() : GitInfo
+    {
+        $branch = $this->collectBranch();
+        $commit = $this->collectCommit();
+        $remotes = $this->collectRemotes();
+
+        return new GitInfo($branch, $commit, $remotes);
+    }
+
+    /**
+     * Collect branch name.
+     *
+     * @throws \RuntimeException
+     */
+    protected function collectBranch() : string
+    {
+        $branchesResult = $this->executor->execute('git branch');
+
+        foreach ($branchesResult as $result) {
+            if (strpos($result, '* ') === 0) {
+                $exploded = explode('* ', $result, 2);
+
+                return $exploded[1];
+            }
+        }
+
+        throw new \RuntimeException();
+    }
+
+    /**
+     * Collect commit info.
+     *
+     * @throws \RuntimeException
+     */
+    protected function collectCommit() : CommitInfo
+    {
+        $commitResult = $this->executor->execute("git log -1 --pretty=format:'%H%n%aN%n%ae%n%cN%n%ce%n%s'");
+
+        if (count($commitResult) !== 6 || array_keys($commitResult) !== range(0, 5)) {
+            throw new \RuntimeException();
+        }
+
+        $commit = new CommitInfo();
+
+        return $commit
+            ->setId($commitResult[0])
+            ->setAuthorName($commitResult[1])
+            ->setAuthorEmail($commitResult[2])
+            ->setCommitterName($commitResult[3])
+            ->setCommitterEmail($commitResult[4])
+            ->setMessage($commitResult[5]);
+    }
+
+    /**
+     * Collect remotes info.
+     *
+     * @throws \RuntimeException
+     *
+     * @return RemoteInfo[]
+     */
+    protected function collectRemotes()
+    {
+        $remotesResult = $this->executor->execute('git remote -v');
+
+        if (count($remotesResult) === 0) {
+            throw new \RuntimeException();
+        }
+
+        // parse command result
+        $results = [];
+
+        foreach ($remotesResult as $result) {
+            if (strpos($result, ' ') !== false) {
+                list($remote) = explode(' ', $result, 2);
+
+                $results[] = $remote;
+            }
+        }
+
+        // filter
+        $results = array_unique($results);
+
+        // create Remote instances
+        $remotes = [];
+
+        foreach ($results as $result) {
+            if (strpos($result, "\t") !== false) {
+                list($name, $url) = explode("\t", $result, 2);
+
+                $remote = new RemoteInfo();
+                $remotes[] = $remote->setName($name)->setUrl($url);
+            }
+        }
+
+        return $remotes;
+    }
+}

@@ -743,4 +743,34 @@ class PluginTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @return void
+     */
+    public function testAfterAnalysisHooks()
+    {
+        require_once __DIR__ . '/Plugin/AfterAnalysisPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/DummyProject" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Plugin\\AfterAnalysisPlugin" />
+                    </plugins>
+                </psalm>'
+            )
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->project_analyzer->output_format = \Psalm\Internal\Analyzer\ProjectAnalyzer::TYPE_JSON;
+
+        $this->project_analyzer->check('tests/DummyProject', true);
+        \Psalm\IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+    }
 }

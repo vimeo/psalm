@@ -322,6 +322,12 @@ class Config
      */
     public $after_codebase_populated = [];
 
+    /**
+     * Static methods to be called after codebase has been populated
+     * @var class-string<Hook\AfterAnalysisInterface>[]
+     */
+    public $after_analysis = [];
+
     /** @var array<string, mixed> */
     private $predefined_constants;
 

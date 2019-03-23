@@ -108,5 +108,9 @@ class PluginRegistrationSocket implements RegistrationInterface
         if (is_subclass_of($handler, Hook\FunctionReturnTypeProviderInterface::class)) {
             $this->codebase->functions->return_type_provider->registerClass($handler);
         }
+
+        if (is_subclass_of($handler, Hook\AfterAnalysisInterface::class)) {
+            $this->config->after_analysis[$handler] = $handler;
+        }
     }
 }
