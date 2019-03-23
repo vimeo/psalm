@@ -473,7 +473,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                         ),
                         $this->source->getSuppressedIssues()
                     )) {
-                        return false;
+                        // continue
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {

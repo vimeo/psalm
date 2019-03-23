@@ -548,7 +548,7 @@ class ExpressionAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues()
             )) {
-                return false;
+                // continue
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\Print_) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {

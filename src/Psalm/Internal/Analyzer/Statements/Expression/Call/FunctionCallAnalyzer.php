@@ -639,7 +639,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // continue
                 }
             } elseif (isset($codebase->config->forbidden_functions[strtolower((string) $function)])) {
                 if (IssueBuffer::accepts(
@@ -649,7 +649,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                     ),
                     $statements_analyzer->getSuppressedIssues()
                 )) {
-                    return false;
+                    // continue
                 }
             } elseif ($function->parts === ['define']) {
                 if ($first_arg) {
