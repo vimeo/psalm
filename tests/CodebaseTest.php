@@ -1,14 +1,13 @@
 <?php
 namespace Psalm\Tests;
 
-use Generator;
 use PhpParser\Node\Stmt\ClassLike;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
 use Psalm\FileSource;
-use Psalm\PluginRegistrationSocket;
 use Psalm\Plugin\Hook\AfterClassLikeVisitInterface;
+use Psalm\PluginRegistrationSocket;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Tests\Internal\Provider\ClassLikeStorageInstanceCacheProvider;
 use Psalm\Type;
@@ -28,6 +27,7 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider typeContainments
+     *
      * @return void
      */
     public function isTypeContainedByType(string $input, string $container, bool $expected)
@@ -35,14 +35,13 @@ class CodebaseTest extends TestCase
         $input = Type::parseString($input);
         $container = Type::parseString($container);
 
-        $this->assertEquals(
+        $this->assertSame(
             $expected,
             $this->codebase->isTypeContainedByType($input, $container),
             'Expected ' . $input->getId() . ($expected ? ' ' : ' not ')
             . 'to be contained in ' . $container->getId()
         );
     }
-
 
     /** @return iterable<int,array{string,string,bool} */
     public function typeContainments()
@@ -59,6 +58,7 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider typeIntersections
+     *
      * @return void
      */
     public function canTypeBeContainedByType(string $input, string $container, bool $expected)
@@ -66,7 +66,7 @@ class CodebaseTest extends TestCase
         $input = Type::parseString($input);
         $container = Type::parseString($container);
 
-        $this->assertEquals(
+        $this->assertSame(
             $expected,
             $this->codebase->canTypeBeContainedByType($input, $container),
             'Expected ' . $input->getId() . ($expected ? ' ' : ' not ')
@@ -87,7 +87,9 @@ class CodebaseTest extends TestCase
     /**
      * @test
      * @dataProvider iterableParams
+     *
      * @param array{string,string} $expected
+     *
      * @return void
      */
     public function getKeyValueParamsForTraversableObject(string $input, array $expected)
@@ -121,6 +123,7 @@ class CodebaseTest extends TestCase
 
     /**
      * @test
+     *
      * @return void
      */
     public function customMetadataIsPersisted()
@@ -137,10 +140,10 @@ class CodebaseTest extends TestCase
                 }
             '
         );
-        $hook = new class implements AfterClassLikeVisitInterface
-        {
+        $hook = new class implements AfterClassLikeVisitInterface {
             /**
              * @param FileManipulation[] $file_replacements
+             *
              * @return void
              */
             public static function afterClassLikeVisit(
@@ -173,15 +176,16 @@ class CodebaseTest extends TestCase
         $class_storage = $this->codebase->classlike_storage_provider->get('C');
         $file_storage = $this->codebase->file_storage_provider->get('somefile.php');
 
-        $this->assertEquals('b', $class_storage->custom_metadata['a']);
-        $this->assertEquals('d', $class_storage->methods['m']->custom_metadata['c']);
-        $this->assertEquals('f', $class_storage->properties['prop']->custom_metadata['e']);
-        $this->assertEquals('h', $class_storage->methods['m']->params[0]->custom_metadata['g']);
-        $this->assertEquals('j', $file_storage->custom_metadata['i']);
+        $this->assertSame('b', $class_storage->custom_metadata['a']);
+        $this->assertSame('d', $class_storage->methods['m']->custom_metadata['c']);
+        $this->assertSame('f', $class_storage->properties['prop']->custom_metadata['e']);
+        $this->assertSame('h', $class_storage->methods['m']->params[0]->custom_metadata['g']);
+        $this->assertSame('j', $file_storage->custom_metadata['i']);
     }
 
     /**
      * @test
+     *
      * @return void
      */
     public function classExtendsRejectsUnpopulatedClasslikes()

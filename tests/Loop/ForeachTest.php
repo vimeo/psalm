@@ -691,7 +691,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     function doSomethingUseful($object) : void {
                         echo count($object);
                         foreach ($object as $foo) {}
-                    }'
+                    }',
             ],
             'rawIteratorIteration' => [
                 '<?php
@@ -786,7 +786,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                     $collection->add(new Item());
                     foreach ($collection as $item) {
                         echo $item->prop;
-                    }'
+                    }',
             ],
             'foreachIntersectionTraversable' => [
                 '<?php
@@ -807,7 +807,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
 
                             return $max;
                         }
-                    }'
+                    }',
             ],
             'ifSpecificMaybeEmptyValues' => [
                 '<?php
@@ -829,7 +829,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
                 '<?php
                     function foo(DOMNodeList $list) : void {
                         foreach ($list as $item) {}
-                    }'
+                    }',
             ],
             'loopOverArrayChunk' => [
                 '<?php
@@ -844,7 +844,7 @@ class ForeachTest extends \Psalm\Tests\TestCase
 
                     foreach(Foo(1, 2, 3, 4, 5) as $ints) {
                       echo $ints[0], ", ", ($ints[1] ?? "n/a"), "\n";
-                    }'
+                    }',
             ],
         ];
     }

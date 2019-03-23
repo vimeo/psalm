@@ -19,8 +19,8 @@ class ComposerLockTest extends TestCase
             'extra' => [
                 'psalm' => [
                     'pluginClass' => 'Some\Class',
-                ]
-            ]
+                ],
+            ],
         ]));
 
         // counterexamples
@@ -52,7 +52,7 @@ class ComposerLockTest extends TestCase
                     'extra' => (object)[
                         'psalm' => (object) [
                             'pluginClass' => 'Vendor\Package\PluginClass',
-                        ]
+                        ],
                     ],
                 ],
             ],
@@ -61,7 +61,7 @@ class ComposerLockTest extends TestCase
 
         $plugins = $lock->getPlugins();
         $this->assertArrayHasKey('vendor/package', $plugins);
-        $this->assertEquals('Vendor\Package\PluginClass', $plugins['vendor/package']);
+        $this->assertSame('Vendor\Package\PluginClass', $plugins['vendor/package']);
     }
 
     /**
@@ -79,7 +79,7 @@ class ComposerLockTest extends TestCase
                     'extra' => (object)[
                         'psalm' => (object)[
                             'pluginClass' => 'Vendor\Package\PluginClass',
-                        ]
+                        ],
                     ],
                 ],
             ],
@@ -87,7 +87,7 @@ class ComposerLockTest extends TestCase
 
         $plugins = $lock->getPlugins();
         $this->assertArrayHasKey('vendor/package', $plugins);
-        $this->assertEquals('Vendor\Package\PluginClass', $plugins['vendor/package']);
+        $this->assertSame('Vendor\Package\PluginClass', $plugins['vendor/package']);
     }
 
     /**
@@ -102,8 +102,8 @@ class ComposerLockTest extends TestCase
         ];
 
         $lock = new ComposerLock($this->jsonFile((object)[
-            'packages' => [ $nonPlugin ],
-            'packages-dev' => [ $nonPlugin ],
+            'packages' => [$nonPlugin],
+            'packages-dev' => [$nonPlugin],
         ]));
         $this->assertEmpty($lock->getPlugins());
     }

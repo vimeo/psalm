@@ -58,7 +58,7 @@ class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-     /**
+    /**
      * @return void
      */
     public function testPhpStormGenericsWithClassProperty()
@@ -583,7 +583,7 @@ class AnnotationTest extends TestCase
                     }
 
                     $f = foo();
-                    if ($f) {}'
+                    if ($f) {}',
             ],
             'spreadOperatorArrayAnnotation' => [
                 '<?php
@@ -604,7 +604,7 @@ class AnnotationTest extends TestCase
                         return rand(0,1) ? "a" : "b";
                     }
 
-                    acceptsLiteral(returnsLiteral());'
+                    acceptsLiteral(returnsLiteral());',
             ],
             'typeAliasBeforeClass' => [
                 '<?php
@@ -631,7 +631,7 @@ class AnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'typeAliasBeforeFunction' => [
                 '<?php
@@ -658,7 +658,7 @@ class AnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'typeAliasInSeparateBlockBeforeFunction' => [
                 '<?php
@@ -686,7 +686,7 @@ class AnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'almostFreeStandingTypeAlias' => [
                 '<?php
@@ -715,7 +715,7 @@ class AnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'typeAliasUsedTwice' => [
                 '<?php
@@ -785,7 +785,7 @@ class AnnotationTest extends TestCase
                 [
                     'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'objectWithPropertiesAnnotation' => [
                 '<?php
@@ -814,7 +814,7 @@ class AnnotationTest extends TestCase
                         }) as $envVar) {
                             yield $envVar => [getenv($envVar)];
                         }
-                    }'
+                    }',
             ],
             'allowAnnotationOnServer' => [
                 '<?php
@@ -825,7 +825,7 @@ class AnnotationTest extends TestCase
                         }) as $envVar) {
                             yield $envVar => [getenv($envVar)];
                         }
-                    }'
+                    }',
             ],
             'annotationOnForeachItems' => [
                 '<?php
@@ -866,8 +866,8 @@ class AnnotationTest extends TestCase
                     }',
                 [],
                 [
-                    'MixedAssignment'
-                ]
+                    'MixedAssignment',
+                ],
             ],
             'extraneousDocblockParamName' => [
                 '<?php
@@ -895,7 +895,7 @@ class AnnotationTest extends TestCase
                         }
 
                         foo($arr);
-                    }'
+                    }',
             ],
             'nonEmptyArrayInNamespace' => [
                 '<?php
@@ -916,7 +916,7 @@ class AnnotationTest extends TestCase
                         }
 
                         foo($arr);
-                    }'
+                    }',
             ],
         ];
     }
@@ -1028,7 +1028,7 @@ class AnnotationTest extends TestCase
                 'error_message' => 'MissingReturnType',
                 [
                     'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'invalidDocblockReturn' => [
                 '<?php
@@ -1339,7 +1339,7 @@ class AnnotationTest extends TestCase
                     }
 
                     (new X())->boo([1, 2]);',
-                'error_message' => 'InvalidScalarArgument'
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

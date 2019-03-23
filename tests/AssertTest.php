@@ -49,7 +49,7 @@ class AssertTest extends TestCase
                     function bar(?string $s) : string {
                         myAssert($s !== null);
                         return $s;
-                    }'
+                    }',
             ],
             'assertInstanceOfInterface' => [
                 '<?php
@@ -211,7 +211,7 @@ class AssertTest extends TestCase
 
                     if (isValidString($myString)) {
                         echo "Ma chaine " . $myString;
-                    }'
+                    }',
             ],
             'assertIfFalseAnnotation' => [
                 '<?php
@@ -228,7 +228,7 @@ class AssertTest extends TestCase
                         // do something
                     } else {
                         echo "Ma chaine " . $myString;
-                    }'
+                    }',
             ],
             'assertServerVar' => [
                 '<?php
@@ -278,7 +278,7 @@ class AssertTest extends TestCase
                     $bar = getImplementationOfFoo();
                     assertInstanceOf($bar, Bar::class);
 
-                    $bar->sayHello();'
+                    $bar->sayHello();',
             ],
             'dontBleedBadAssertVarIntoContext' => [
                 '<?php
@@ -306,7 +306,7 @@ class AssertTest extends TestCase
                     function takesA(A $a) : void {
                         assertFalse($a->foo());
                         assertFalse($a->bar());
-                    }'
+                    }',
             ],
             'suppressRedundantCondition' => [
                 '<?php
@@ -473,7 +473,7 @@ class AssertTest extends TestCase
                 [
                     '$array' => 'array<array-key, string>',
                     '$iterable' => 'iterable<mixed, string>',
-                ]
+                ],
             ],
             'assertAllArrayOfClass' => [
                 '<?php
@@ -504,7 +504,7 @@ class AssertTest extends TestCase
                     assertAllInstanceOf($array, A::class);',
                 [
                     '$array' => 'array<array-key, A>',
-                ]
+                ],
             ],
             'assertAllIterableOfClass' => [
                 '<?php
@@ -535,7 +535,7 @@ class AssertTest extends TestCase
                     assertAllInstanceOf($iterable, A::class);',
                 [
                     '$iterable' => 'iterable<mixed, A>',
-                ]
+                ],
             ],
             'complicatedAssertAllInstanceOf' => [
                 '<?php
@@ -582,7 +582,7 @@ class AssertTest extends TestCase
                         }
 
                         return [new Exception("bad")];
-                    }'
+                    }',
             ],
             'assertTypeNarrowedByAssert' => [
                 '<?php
@@ -630,7 +630,7 @@ class AssertTest extends TestCase
                     function f(array $a) {
                         assert(is_array($a[1]));
                         return $a[0];
-                    }'
+                    }',
             ],
             'assertOnParseUrlOutput' => [
                 '<?php
@@ -643,7 +643,7 @@ class AssertTest extends TestCase
                         }
 
                         return (string) $arr["c"];
-                    }'
+                    }',
             ],
             'combineAfterLoopAssert' => [
                 '<?php
@@ -656,7 +656,7 @@ class AssertTest extends TestCase
                                 $c++;
                             }
                         }
-                    }'
+                    }',
             ],
             'assertOnXml' => [
                 '<?php
@@ -665,7 +665,7 @@ class AssertTest extends TestCase
                             if ($array["bar"] === "a") {}
                             if ($array["bar"] === "b") {}
                         }
-                    }'
+                    }',
             ],
             'assertOnBacktrace' => [
                 '<?php
@@ -673,7 +673,7 @@ class AssertTest extends TestCase
                         if (empty($arr["a"])) {}
 
                         if ($c && $c["a"] !== "b") {}
-                    }'
+                    }',
             ],
             'assertOnRemainderOfArray' => [
                 '<?php
@@ -695,7 +695,7 @@ class AssertTest extends TestCase
 
                     function getData() : ?array {
                         return rand(0, 1) ? ["a", "b", "c"] : null;
-                    }'
+                    }',
             ],
             'notEmptyCheck' => [
                 '<?php
@@ -708,7 +708,7 @@ class AssertTest extends TestCase
                             $objectName = $config["className"];
                         }
                         if (!empty($config)) {}
-                    }'
+                    }',
             ],
             'unsetAfterIssetCheck' => [
                 '<?php
@@ -716,7 +716,7 @@ class AssertTest extends TestCase
                         if ($options["a"]) {}
 
                         unset($options["a"], $options["b"]);
-                    }'
+                    }',
             ],
         ];
     }
@@ -875,7 +875,7 @@ class AssertTest extends TestCase
                     function takesA(A $a) : void {
                         assertInstanceOf(A::class, $a);
                     }',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'RedundantCondition',
             ],
             'detectAssertSameTypeDoesNotContainType' => [
                 '<?php
@@ -893,7 +893,7 @@ class AssertTest extends TestCase
                     $a = 5;
                     $b = "hello";
                     assertSame($a, $b);',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'detectAssertAlwaysSame' => [
                 '<?php
@@ -911,7 +911,7 @@ class AssertTest extends TestCase
                     $a = 5;
                     $b = 5;
                     assertSame($a, $b);',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'RedundantCondition',
             ],
             'detectNeverCanBeSameAfterAssertion' => [
                 '<?php
@@ -929,7 +929,7 @@ class AssertTest extends TestCase
                     $c = "helloa";
                     $d = rand(0, 1) ? "hello" : "goodbye";
                     assertSame($c, $d);',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'detectNeverCanBeNotSameAfterAssertion' => [
                 '<?php
@@ -947,7 +947,7 @@ class AssertTest extends TestCase
                     $c = "helloa";
                     $d = rand(0, 1) ? "hello" : "goodbye";
                     assertNotSame($c, $d);',
-                'error_message' => 'RedundantCondition'
+                'error_message' => 'RedundantCondition',
             ],
             'detectNeverCanBeEqualAfterAssertion' => [
                 '<?php
@@ -965,7 +965,7 @@ class AssertTest extends TestCase
                     $c = "helloa";
                     $d = rand(0, 1) ? "hello" : "goodbye";
                     assertEqual($c, $d);',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'detectIntFloatNeverCanBeEqualAfterAssertion' => [
                 '<?php
@@ -983,7 +983,7 @@ class AssertTest extends TestCase
                     $c = 4;
                     $d = rand(0, 1) ? 5.0 : 6.0;
                     assertEqual($c, $d);',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'detectFloatIntNeverCanBeEqualAfterAssertion' => [
                 '<?php
@@ -1001,7 +1001,7 @@ class AssertTest extends TestCase
                     $c = 4.0;
                     $d = rand(0, 1) ? 5 : 6;
                     assertEqual($c, $d);',
-                'error_message' => 'TypeDoesNotContainType'
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

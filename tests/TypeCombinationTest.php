@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Type;
 use Psalm\Internal\Type\TypeCombination;
+use Psalm\Type;
 
 class TypeCombinationTest extends TestCase
 {

@@ -199,7 +199,7 @@ class TemplateExtendsTest extends TestCase
                     $b = $a->getValue();',
                 [
                     '$a' => 'KeyValueContainer<string, int>',
-                    '$b' => 'int'
+                    '$b' => 'int',
                 ],
             ],
             'templateExtendsDifferentName' => [
@@ -261,7 +261,7 @@ class TemplateExtendsTest extends TestCase
                     $b = $a->getValue();',
                 [
                     '$a' => 'KeyValueContainer<string, int>',
-                    '$b' => 'int'
+                    '$b' => 'int',
                 ],
             ],
             'extendsWithNonTemplate' => [
@@ -312,7 +312,7 @@ class TemplateExtendsTest extends TestCase
                     '$fc' => 'FooContainer',
                     '$f1' => 'Foo',
                     '$f2' => 'Foo',
-                ]
+                ],
             ],
             'supportBareExtends' => [
                 '<?php
@@ -362,7 +362,7 @@ class TemplateExtendsTest extends TestCase
                     '$fc' => 'FooContainer',
                     '$f1' => 'Foo',
                     '$f2' => 'Foo',
-                ]
+                ],
             ],
             'allowExtendingParameterisedTypeParam' => [
                 '<?php
@@ -387,7 +387,7 @@ class TemplateExtendsTest extends TestCase
                         public function uri($obj) : string {
                             return "hello";
                         }
-                    }'
+                    }',
             ],
             'extendsWithNonTemplateWithoutImplementing' => [
                 '<?php
@@ -426,7 +426,7 @@ class TemplateExtendsTest extends TestCase
                 [
                     '$au' => 'AppUser',
                     '$id' => 'int',
-                ]
+                ],
             ],
             'extendsTwiceSameNameCorrect' => [
                 '<?php
@@ -471,7 +471,7 @@ class TemplateExtendsTest extends TestCase
                     $a = $fc->getValue();',
                 [
                     '$a' => 'int',
-                ]
+                ],
             ],
             'extendsTwiceDifferentNameUnbrokenChain' => [
                 '<?php
@@ -516,7 +516,7 @@ class TemplateExtendsTest extends TestCase
                     $a = $fc->getValue();',
                 [
                     '$a' => 'int',
-                ]
+                ],
             ],
             'templateExtendsOnceAndBound' => [
                 '<?php
@@ -536,7 +536,7 @@ class TemplateExtendsTest extends TestCase
                 [
                     '$a' => 'AnotherRepo',
                     '$b' => 'null|SpecificEntity',
-                ]
+                ],
             ],
             'templateExtendsTwiceAndBound' => [
                 '<?php
@@ -562,7 +562,7 @@ class TemplateExtendsTest extends TestCase
                 [
                     '$a' => 'SpecificRepo',
                     '$b' => 'null|SpecificEntity',
-                ]
+                ],
             ],
             'multipleArgConstraints' => [
                 '<?php
@@ -590,7 +590,7 @@ class TemplateExtendsTest extends TestCase
                         function(A $_a) : void {},
                         function(A $_a) : void {},
                         new AChild()
-                    );'
+                    );',
             ],
             'templatedInterfaceExtendedMethodInheritReturnType' => [
                 '<?php
@@ -609,7 +609,7 @@ class TemplateExtendsTest extends TestCase
                     $i = (new SomeIterator())->getIterator();',
                 [
                     '$i' => 'Traversable<int, Foo>',
-                ]
+                ],
             ],
             'templateCountOnExtendedAndImplemented' => [
                 '<?php
@@ -630,7 +630,7 @@ class TemplateExtendsTest extends TestCase
                     /**
                      * @template-extends Repository<SomeEntity>
                      */
-                    class SomeRepository extends Repository {}'
+                    class SomeRepository extends Repository {}',
             ],
             'iterateOverExtendedArrayObjectWithParam' => [
                 '<?php
@@ -1012,7 +1012,7 @@ class TemplateExtendsTest extends TestCase
                     $a = (new Service)->first();',
                 [
                     '$a' => 'null|int',
-                ]
+                ],
             ],
             'splObjectStorage' => [
                 '<?php
@@ -1041,7 +1041,7 @@ class TemplateExtendsTest extends TestCase
                     $b = $storage->offsetGet($c);',
                 [
                     '$b' => 'string',
-                ]
+                ],
             ],
             'extendsArrayIterator' => [
                 '<?php
@@ -1088,7 +1088,7 @@ class TemplateExtendsTest extends TestCase
                         {
                             return parent::DoThing($str);
                         }
-                    }'
+                    }',
             ],
             'genericStaticAndSelf' => [
                 '<?php
@@ -1361,7 +1361,7 @@ class TemplateExtendsTest extends TestCase
                 [
                     '$c' => 'C<string, int>',
                     '$i' => 'ArrayIterator<string, int>',
-                ]
+                ],
             ],
             'extendsParamCountDifference' => [
                 '<?php
@@ -1596,7 +1596,7 @@ class TemplateExtendsTest extends TestCase
                                 $action($bar);
                             }
                         }
-                    }'
+                    }',
             ],
             'paramInsideTemplatedFunctionShouldKnowRestriction' => [
                 '<?php
@@ -1626,7 +1626,7 @@ class TemplateExtendsTest extends TestCase
                         function hash($value): int {
                             return strlen($value);
                         }
-                    }'
+                    }',
             ],
             'implementsAndExtendsWithTemplate' => [
                 '<?php
@@ -1922,7 +1922,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-extends A<Z>
                      */
                     class B extends A {}',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'badTemplateExtendsInt' => [
                 '<?php
@@ -1944,7 +1944,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-extends int
                      */
                     class B extends A {}',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateExtendsBadFormat' => [
                 '<?php
@@ -1966,7 +1966,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-extends A< >
                      */
                     class B extends A {}',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateImplementsShouldBeExtends' => [
                 '<?php
@@ -1988,7 +1988,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-implements A<int>
                      */
                     class B extends A {}',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateImplements' => [
                 '<?php
@@ -2005,7 +2005,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-implements I<Z>
                      */
                     class B implements I {}',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'badTemplateImplementsInt' => [
                 '<?php
@@ -2022,7 +2022,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-implements int
                      */
                     class B implements I {}',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateImplementsBadFormat' => [
                 '<?php
@@ -2039,7 +2039,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-implements I< >
                      */
                     class B implements I {}',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateExtendsShouldBeImplements' => [
                 '<?php
@@ -2056,7 +2056,7 @@ class TemplateExtendsTest extends TestCase
                      * @template-extends I<string>
                      */
                     class B implements I {}',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateUse' => [
                 '<?php
@@ -2082,7 +2082,7 @@ class TemplateExtendsTest extends TestCase
                          */
                         use T;
                     }',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
             'badTemplateUseBadFormat' => [
                 '<?php
@@ -2108,7 +2108,7 @@ class TemplateExtendsTest extends TestCase
                          */
                         use T;
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateUseInt' => [
                 '<?php
@@ -2134,7 +2134,7 @@ class TemplateExtendsTest extends TestCase
                          */
                         use T;
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'badTemplateExtendsShouldBeUse' => [
                 '<?php
@@ -2160,7 +2160,7 @@ class TemplateExtendsTest extends TestCase
                          */
                         use T;
                     }',
-                'error_message' => 'InvalidDocblock'
+                'error_message' => 'InvalidDocblock',
             ],
             'templateExtendsWithoutAllParams' => [
                 '<?php
@@ -2175,7 +2175,7 @@ class TemplateExtendsTest extends TestCase
                      * @extends A<int>
                      */
                     class CC extends A {}',
-                'error_message' => 'MissingTemplateParam'
+                'error_message' => 'MissingTemplateParam',
             ],
             'templateImplementsWithoutAllParams' => [
                 '<?php
@@ -2190,7 +2190,7 @@ class TemplateExtendsTest extends TestCase
                      * @implements I<int>
                      */
                     class CC implements I {}',
-                'error_message' => 'MissingTemplateParam'
+                'error_message' => 'MissingTemplateParam',
             ],
             'extendsTemplateButLikeBadly' => [
                 '<?php
@@ -2209,7 +2209,7 @@ class TemplateExtendsTest extends TestCase
 
                     /** @template-extends Base<int> */
                     class SpecializedByInheritance extends Base {}',
-                'error_message' => 'InvalidTemplateParam'
+                'error_message' => 'InvalidTemplateParam',
             ],
             'doInheritParamTemplatedTypeSameName' => [
                 '<?php

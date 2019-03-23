@@ -268,7 +268,7 @@ class DoTest extends \Psalm\Tests\TestCase
                     $i = 0;
                     do {
                         $i++;
-                    } while ($a = $a->getParent());'
+                    } while ($a = $a->getParent());',
             ],
             'doWithContinue' => [
                 '<?php

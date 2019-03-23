@@ -62,7 +62,7 @@ class IssueSuppressionTest extends TestCase
                             },
                             $bar
                         );
-                    }'
+                    }',
             ],
             'crossClosureBoundariesOnReturn' => [
                 '<?php
@@ -77,7 +77,7 @@ class IssueSuppressionTest extends TestCase
                             },
                             $bar
                         );
-                    }'
+                    }',
             ],
         ];
     }

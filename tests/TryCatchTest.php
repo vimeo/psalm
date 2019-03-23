@@ -161,7 +161,7 @@ class TryCatchTest extends TestCase
                         if (!empty($errors)) {
                             return $errors;
                         }
-                    }'
+                    }',
             ],
             'typeDoesNotContainTypeInCatch' => [
                 '<?php
@@ -200,7 +200,7 @@ class TryCatchTest extends TestCase
                                 echo "here";
                             }
                         }
-                    }'
+                    }',
             ],
         ];
     }

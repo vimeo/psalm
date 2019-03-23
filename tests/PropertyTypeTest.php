@@ -1007,7 +1007,7 @@ class PropertyTypeTest extends TestCase
                         public static function aa(): ?string {
                             return "bar";
                         }
-                    }'
+                    }',
             ],
             'allowLessSpecificReturnTypeForInterfaceMethod' => [
                 '<?php
@@ -1105,7 +1105,7 @@ class PropertyTypeTest extends TestCase
                     if ($a->instance) {
                         $a->instance->bar();
                         echo $a->instance->bat;
-                    }'
+                    }',
             ],
             'staticPropertyOfStaticTypeMethodCall' => [
                 '<?php
@@ -1126,7 +1126,7 @@ class PropertyTypeTest extends TestCase
                         }
 
                         public function bar() : void {}
-                    }'
+                    }',
             ],
             'classStringPropertyType' => [
                 '<?php
@@ -1135,7 +1135,7 @@ class PropertyTypeTest extends TestCase
                         public $member = [
                             InvalidArgumentException::class => 1,
                         ];
-                    }'
+                    }',
             ],
             'allowPrivatePropertySetAfterInstanceof' => [
                 '<?php
@@ -1194,7 +1194,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 [],
-                'error_levels' => []
+                'error_levels' => [],
             ],
             'inheritDocPropertyTypes' => [
                 '<?php
@@ -1286,7 +1286,7 @@ class PropertyTypeTest extends TestCase
                     $a = Foo::$current;',
                 [
                     '$a' => 'Foo',
-                ]
+                ],
             ],
             'noMixedErrorWhenAssignmentExpectsMixed' => [
                 '<?php
@@ -1298,7 +1298,7 @@ class PropertyTypeTest extends TestCase
                         public function foo($b) : void {
                             $this->bar["a"] = $b;
                         }
-                    }'
+                    }',
             ],
             'propertySetInGrandparentExplicitly' => [
                 '<?php
@@ -1317,7 +1317,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct(string $s) {
                             A::__construct($s);
                         }
-                    }'
+                    }',
             ],
             'propertySetInGrandparentImplicitly' => [
                 '<?php
@@ -1332,7 +1332,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }
                     class B extends A {}
-                    class C extends B {}'
+                    class C extends B {}',
             ],
             'unitializedPropertySuppressPropertyNotSetInConstructor' => [
                 '<?php
@@ -1350,7 +1350,7 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 [],
-                ['PropertyNotSetInConstructor']
+                ['PropertyNotSetInConstructor'],
             ],
             'setObjectLikePropertyType' => [
                 '<?php
@@ -1369,7 +1369,7 @@ class PropertyTypeTest extends TestCase
                         public function ChangeThing(string $property) : void {
                             $this->changed[$property] = true;
                         }
-                    }'
+                    }',
             ],
             'noRedundantConditionWhenCheckingInitializations' => [
                 '<?php
@@ -1405,7 +1405,7 @@ class PropertyTypeTest extends TestCase
                             }
                             $this->func2();
                         }
-                    }'
+                    }',
             ],
             'noRedundantConditionWhenCheckingInitializationsEdgeCases' => [
                 '<?php
@@ -1441,7 +1441,7 @@ class PropertyTypeTest extends TestCase
                             }
                             $this->func2();
                         }
-                    }'
+                    }',
             ],
             'propertySetInProtectedMethodWithConstant' => [
                 '<?php
@@ -2265,7 +2265,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = "foo";
                         }
                     }',
-                'error_message' => 'UninitializedProperty'
+                'error_message' => 'UninitializedProperty',
             ],
             'unitializedObjectProperty' => [
                 '<?php
@@ -2283,7 +2283,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = $foo;
                         }
                     }',
-                'error_message' => 'UninitializedProperty'
+                'error_message' => 'UninitializedProperty',
             ],
             'possiblyNullArg' => [
                 '<?php
@@ -2296,7 +2296,7 @@ class PropertyTypeTest extends TestCase
                             $this->foo = "foo";
                         }
                     }',
-                'error_message' => 'PossiblyNullArgument'
+                'error_message' => 'PossiblyNullArgument',
             ],
             'noCrashOnMagicCall' => [
                 '<?php
@@ -2310,7 +2310,7 @@ class PropertyTypeTest extends TestCase
 
                         public function __call(string $var, array $args) {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
         ];
     }

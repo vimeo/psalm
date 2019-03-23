@@ -1,5 +1,4 @@
 <?php
-
 namespace Vimeo\Test\DummyProject;
 
 class Bar
@@ -9,7 +8,7 @@ class Bar
 
     public function __construct()
     {
-        $this->x = "hello";
+        $this->x = 'hello';
     }
 }
 
@@ -18,5 +17,5 @@ class Bar
  */
 function someFunction()
 {
-    echo "here";
+    echo 'here';
 }

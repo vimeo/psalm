@@ -93,7 +93,7 @@ class ArgTest extends TestCase
 
                     /** @psalm-suppress InvalidScalarArgument */
                     foo(bar());',
-            ]
+            ],
         ];
     }
 

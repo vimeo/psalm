@@ -1,7 +1,5 @@
 <?php
 
-use Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface;
-
 class BasePlugin implements Psalm\Plugin\Hook\AfterFunctionCallAnalysisInterface
 {
     public static function afterFunctionCallAnalysis(

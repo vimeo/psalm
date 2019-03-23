@@ -2,12 +2,12 @@
 namespace Psalm\Tests;
 
 use Psalm\Codebase;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
 use Psalm\Tests\Internal\Provider;
 
-class ProjectAnalyzerTest extends TestCase
+class ProjectCheckerTest extends TestCase
 {
     /** @var TestConfig */
     protected static $config;
@@ -101,10 +101,10 @@ class ProjectAnalyzerTest extends TestCase
      */
     public function testAfterCodebasePopulatedIsInvoked()
     {
-        $hook = new class implements AfterCodebasePopulatedInterface
-        {
+        $hook = new class implements AfterCodebasePopulatedInterface {
             /** @var bool */
             public static $called = false;
+
             /** @return void */
             public static function afterCodebasePopulated(Codebase $codebase)
             {

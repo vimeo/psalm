@@ -71,7 +71,7 @@ class ForTest extends \Psalm\Tests\TestCase
                           $v[$k] = $x;
                         }
                       }
-                    }'
+                    }',
             ],
             'whileTrueWithBreak' => [
                 '<?php

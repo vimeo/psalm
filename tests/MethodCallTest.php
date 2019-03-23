@@ -168,7 +168,7 @@ class MethodCallTest extends TestCase
                     $formatted = $dt->format($format);
                     if (false !== $formatted) {}
                     function takesString(string $s) : void {}
-                    takesString($formatted);'
+                    takesString($formatted);',
             ],
             'domElement' => [
                 '<?php
@@ -191,7 +191,7 @@ class MethodCallTest extends TestCase
                         foreach ($elements as $element) {
                             $element->getElementsByTagName("bat");
                         }
-                    }'
+                    }',
             ],
             'reflectionParameter' => [
                 '<?php
@@ -203,7 +203,7 @@ class MethodCallTest extends TestCase
                         }
 
                         return $type->getName();
-                    }'
+                    }',
             ],
             'PDOMethod' => [
                 '<?php
@@ -248,7 +248,7 @@ class MethodCallTest extends TestCase
                         (is_object($a) && method_exists($a, "getS")) ? (string)$a->getS() : "";
 
                         return $user->getId();
-                    }'
+                    }',
             ],
             'defineVariableCreatedInArgToMixed' => [
                 '<?php
@@ -279,7 +279,7 @@ class MethodCallTest extends TestCase
 
                             return static::existing();
                         }
-                    }'
+                    }',
             ],
             'varSelfCall' => [
                 '<?php
@@ -492,7 +492,7 @@ class MethodCallTest extends TestCase
 
                     $q = new A;
                     $q->foo(bar());',
-                'error_message' => 'UndefinedFunction'
+                'error_message' => 'UndefinedFunction',
             ],
             'noIntersectionMethod' => [
                 '<?php
@@ -503,7 +503,7 @@ class MethodCallTest extends TestCase
                     function f($p): void {
                         $p->zugzug();
                     }',
-                'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Method (B&A)::zugzug does not exist'
+                'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Method (B&A)::zugzug does not exist',
             ],
             'noInstanceCallAsStatic' => [
                 '<?php
@@ -528,7 +528,7 @@ class MethodCallTest extends TestCase
                             $bar::baz();
                         }
                     }',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }

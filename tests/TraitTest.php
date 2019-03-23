@@ -610,7 +610,7 @@ class TraitTest extends TestCase
 
                     class C {
                         use A;
-                    }'
+                    }',
             ],
             'noRedundantConditionForTraitStatic' => [
                 '<?php
@@ -643,7 +643,7 @@ class TraitTest extends TestCase
 
                     class Bat {
                         use Foo;
-                    }'
+                    }',
             ],
             'nonMemoizedAssertions' => [
                 '<?php
@@ -677,7 +677,7 @@ class TraitTest extends TestCase
                         public function __construct(bool $bool) {
                            $this->value = $bool;
                         }
-                    }'
+                    }',
             ],
             'manyTraitAliases' => [
                 '<?php
@@ -713,7 +713,7 @@ class TraitTest extends TestCase
                     $b->foo();
                     $b->foobar();
 
-                    $b->bad();'
+                    $b->bad();',
             ],
             'inheritedProtectedTraitMethodAccess' => [
                 '<?php
@@ -731,7 +731,7 @@ class TraitTest extends TestCase
                         public function foo() : void {
                             $this->bar();
                         }
-                    }'
+                    }',
             ],
             'inheritedPublicTraitMethodAccess' => [
                 '<?php
@@ -745,7 +745,7 @@ class TraitTest extends TestCase
                         }
                     }
 
-                    (new A)->bar();'
+                    (new A)->bar();',
             ],
             'allowImplementMethodMadePublicInClass' => [
                 '<?php
@@ -796,14 +796,14 @@ class TraitTest extends TestCase
 
                             return null;
                         }
-                    }'
+                    }',
             ],
             'noCrashOnUndefinedIgnoredTrait' => [
                 '<?php
                     /** @psalm-suppress UndefinedTrait */
                     class C {
                         use UnknownTrait;
-                    }'
+                    }',
             ],
             'reconcileStaticTraitProperties' => [
                 '<?php
@@ -837,7 +837,7 @@ class TraitTest extends TestCase
 
                         /** @return array */
                         public function bar() { return []; }
-                    }'
+                    }',
             ],
             'traitSelfParam' => [
                 '<?php
@@ -1037,7 +1037,7 @@ class TraitTest extends TestCase
                             $this->traitFoo(); // should fail
                         }
                     }',
-                'error_message' => 'InaccessibleMethod'
+                'error_message' => 'InaccessibleMethod',
             ],
             'preventTraitPropertyType' => [
                 '<?php
@@ -1047,7 +1047,7 @@ class TraitTest extends TestCase
                       /** @var T|null */
                       public $hm;
                     }',
-                'error_message' => 'UndefinedClass'
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }

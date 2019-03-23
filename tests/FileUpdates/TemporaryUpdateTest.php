@@ -4,8 +4,8 @@ namespace Psalm\Tests\FileUpdates;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\TestConfig;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
 class TemporaryUpdateTest extends \Psalm\Tests\TestCase
 {
@@ -272,7 +272,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 'error_positions' => [[373], [374], [375]],
                 [
                     'MixedAssignment' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'fixReturnType' => [
                 [
@@ -322,7 +322,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 'error_positions' => [[189, 144, 332, 290], [338, 296], []],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'resolveNamesInDifferentFunction' => [
                 [
@@ -366,7 +366,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 'error_positions' => [[333], []],
                 [
                     'InvalidDocblock' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'bridgeStatements' => [
                 [
@@ -412,7 +412,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 'error_positions' => [[136, 273], [279], [186, 144]],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'colonReturnType' => [
                 [
@@ -448,7 +448,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                 'error_positions' => [[136, 273], [144, 136, 275]],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'noChangeJustWeirdDocblocks' => [
                 [

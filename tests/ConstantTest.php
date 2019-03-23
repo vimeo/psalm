@@ -219,7 +219,7 @@ class ConstantTest extends TestCase
                 '<?php
                     echo fread(STDIN, 100);
                     fwrite(STDOUT, "asd");
-                    fwrite(STDERR, "zcx");'
+                    fwrite(STDERR, "zcx");',
             ],
             'classStringArrayOffset' => [
                 '<?php
@@ -379,7 +379,7 @@ class ConstantTest extends TestCase
                     namespace ns;
                     function func(): void {}
                     define(__NAMESPACE__."\\cons", 0);
-                    cons;'
+                    cons;',
             ],
         ];
     }

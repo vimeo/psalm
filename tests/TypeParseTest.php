@@ -787,7 +787,7 @@ class TypeParseTest extends TestCase
             new Type\Atomic\TLiteralInt(1),
             new Type\Atomic\TLiteralInt(2),
             new Type\Atomic\TLiteralInt(3),
-            new Type\Atomic\TLiteralFloat(4.5)
+            new Type\Atomic\TLiteralFloat(4.5),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -809,7 +809,7 @@ class TypeParseTest extends TestCase
             new Type\Atomic\TLiteralInt(1),
             new Type\Atomic\TLiteralInt(2),
             new Type\Atomic\TLiteralInt(3),
-            new Type\Atomic\TLiteralFloat(4.5)
+            new Type\Atomic\TLiteralFloat(4.5),
         ]);
 
         $this->assertSame($resolved_type->getId(), $docblock_type->getId());
@@ -840,7 +840,7 @@ class TypeParseTest extends TestCase
         /** @psalm-suppress UnusedParam */
         function someFunction(string $param, array $param2, int $param3 = null) : string
         {
-            return "hello";
+            return 'hello';
         }
 
         $reflectionFunc = new \ReflectionFunction('Psalm\Tests\someFunction');

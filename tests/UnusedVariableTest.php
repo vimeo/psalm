@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 
 class UnusedVariableTest extends TestCase
@@ -363,7 +363,7 @@ class UnusedVariableTest extends TestCase
                             $a = 1;
                     }
 
-                    echo $a;'
+                    echo $a;',
             ],
             'throwWithMessageCall' => [
                 '<?php
@@ -733,7 +733,7 @@ class UnusedVariableTest extends TestCase
                     }
 
                     echo $a;
-                    echo $b;'
+                    echo $b;',
             ],
             'varCheckAfterNestedAssignmentAndBreak' => [
                 '<?php

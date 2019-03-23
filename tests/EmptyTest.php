@@ -177,7 +177,7 @@ class EmptyTest extends TestCase
             'alwaysBoolResult' => [
                 '<?php
                     function takesBool(bool $p): void {}
-                    takesBool(empty($q));'
+                    takesBool(empty($q));',
             ],
             'noRedundantConditionAfterFalsyIntChecks' => [
                 '<?php
@@ -314,7 +314,7 @@ class EmptyTest extends TestCase
                 '<?php
                     function foo(array $a, array $b) : void {
                         if (empty($a) && empty($b)) {}
-                    }'
+                    }',
             ],
             'doubleEmptyCheckOnObjectLike' => [
                 '<?php
@@ -323,7 +323,7 @@ class EmptyTest extends TestCase
                      */
                     function foo(array $arr) : void {
                         if (empty($arr["a"]) && empty($arr["b"])) {}
-                    }'
+                    }',
             ],
             'doubleEmptyCheckOnObjectLikeVariableOffsets' => [
                 '<?php
@@ -333,7 +333,7 @@ class EmptyTest extends TestCase
                         $arr[1] = rand(0, 1);
 
                         if (empty($arr[$i]) && empty($arr[$j])) {}
-                    }'
+                    }',
             ],
         ];
     }

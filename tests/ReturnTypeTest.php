@@ -529,7 +529,7 @@ class ReturnTypeTest extends TestCase
                         }
 
                         return 0;
-                    }'
+                    }',
             ],
             'stopAfterFirstReturn' => [
                 '<?php
@@ -920,7 +920,7 @@ class ReturnTypeTest extends TestCase
                     function f1(
                         int $a
                     ): string {}',
-                'error_message' => 'InvalidReturnType - src/somefile.php:4:24'
+                'error_message' => 'InvalidReturnType - src/somefile.php:4:24',
             ],
         ];
     }

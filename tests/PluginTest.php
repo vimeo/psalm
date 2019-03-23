@@ -2,13 +2,11 @@
 namespace Psalm\Tests;
 
 use Psalm\Codebase;
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
-use Psalm\PluginRegistrationSocket;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Plugin\Hook\AfterCodebasePopulatedInterface;
-use Psalm\Plugin\PluginEntryPointInterface;
-use Psalm\Plugin\RegistrationInterface;
+use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Internal\Provider;
 
 class PluginTest extends TestCase
@@ -490,8 +488,7 @@ class PluginTest extends TestCase
             )
         );
 
-        $hook = new class implements AfterCodebasePopulatedInterface
-        {
+        $hook = new class implements AfterCodebasePopulatedInterface {
             /** @return void */
             public static function afterCodebasePopulated(Codebase $codebase)
             {

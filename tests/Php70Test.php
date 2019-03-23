@@ -254,7 +254,7 @@ class Php70Test extends TestCase
                      */
                     function Bar() : Generator {
                         yield from [1];
-                    }'
+                    }',
             ],
             'generatorWithNestedYield' => [
                 '<?php

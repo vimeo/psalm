@@ -6,8 +6,9 @@ use Psalm\Context;
 class BadFormatTest extends TestCase
 {
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ParseError - somefile.php:9
+     *
      * @return void
      */
     public function testMissingSemicolon()
@@ -30,8 +31,9 @@ class BadFormatTest extends TestCase
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ParseError - somefile.php:3
+     *
      * @return void
      */
     public function testClassMethodWithNoStmts()
@@ -48,8 +50,9 @@ class BadFormatTest extends TestCase
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ParseError - somefile.php:5
+     *
      * @return void
      */
     public function testTypingReturnType()
@@ -70,8 +73,9 @@ class BadFormatTest extends TestCase
     }
 
     /**
-     * @expectedException Psalm\Exception\CodeException
+     * @expectedException \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ParseError - somefile.php:6
+     *
      * @return void
      */
     public function testOverriddenUse()

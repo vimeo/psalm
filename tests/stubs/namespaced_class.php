@@ -1,23 +1,29 @@
 <?php
-
 namespace Foo;
 
-const BAR = "bat";
+const BAR = 'bat';
 
-class SystemClass  {
+class SystemClass
+{
     const HELLO = 'hello';
 
     /**
      * @param int       $a
      * @param string    $b
+     *
      * @return string
      */
-    public function foo($a, $b) {}
+    public function foo($a, $b)
+    {
+    }
 
     /**
      * @param int       $a
      * @param string    $b
+     *
      * @return string
      */
-    public static function bar($a, $b) {}
+    public static function bar($a, $b)
+    {
+    }
 }

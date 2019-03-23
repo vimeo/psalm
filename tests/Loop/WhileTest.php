@@ -241,7 +241,7 @@ class WhileTest extends \Psalm\Tests\TestCase
                         } elseif ($a) {
                             $a--;
                         }
-                    }'
+                    }',
             ],
             'invalidateBothByRefAssignments' => [
                 '<?php

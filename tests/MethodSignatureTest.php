@@ -348,7 +348,7 @@ class MethodSignatureTest extends TestCase
                         public function foo(I $i) : I {
                             return new C();
                         }
-                    }'
+                    }',
             ],
             'allowInterfaceImplementation' => [
                 '<?php
@@ -403,7 +403,7 @@ class MethodSignatureTest extends TestCase
                         public function getIterator(): Iterator {
                             return new ArrayIterator([]);
                         }
-                    }'
+                    }',
             ],
             'allowExtraVariadic' => [
                 '<?php
@@ -419,7 +419,7 @@ class MethodSignatureTest extends TestCase
                     (new C)->f("b");
                     (new C)->f("b", 3);
                     (new C)->f("b", 3, 0.5);
-                    (new C)->f("b", 3, 0.5, 0.8);'
+                    (new C)->f("b", 3, 0.5, 0.8);',
             ],
         ];
     }
@@ -619,7 +619,7 @@ class MethodSignatureTest extends TestCase
                             return new B();
                         }
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch'
+                'error_message' => 'ImplementedReturnTypeMismatch',
             ],
             'mustOmitReturnType' => [
                 '<?php
@@ -661,7 +661,7 @@ class MethodSignatureTest extends TestCase
                     }
 
                     (new B)->foo(new stdClass);',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
             'interfaceHasFewerConstructorArgs' => [
                 '<?php

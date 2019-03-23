@@ -107,7 +107,7 @@ class ValueTest extends TestCase
                     while (rand(0, 1)) {
                         if ($i === $j) {}
                         $i++;
-                    }'
+                    }',
             ],
             'checkStringKeyValue' => [
                 '<?php
@@ -209,7 +209,7 @@ class ValueTest extends TestCase
                 '<?php
                     $i = 0;
                     if (rand(0, 1)) $i++;
-                    if ($i === 1) {}'
+                    if ($i === 1) {}',
             ],
             'incrementInClosureAndCheck' => [
                 '<?php
@@ -243,7 +243,7 @@ class ValueTest extends TestCase
 
                     if ($s === "a" || $s === "b") {
                         if ($s === "a") {}
-                    }'
+                    }',
             ],
             'moreValueReconciliation' => [
                 '<?php
@@ -292,7 +292,7 @@ class ValueTest extends TestCase
             'falsyReconciliation' => [
                 '<?php
                     $s = rand(0, 1) ? 200 : null;
-                    if (!$s) {}'
+                    if (!$s) {}',
             ],
             'redefinedIntInIfAndPossibleComparison' => [
                 '<?php
@@ -381,7 +381,7 @@ class ValueTest extends TestCase
                     $i = rand(0, 2);
                     if (isset($f[$i]) && !is_string($f[$i])) {
                         takesInt($f[$i]);
-                    }'
+                    }',
             ],
             'removeLiteralIntForNotIsInt' => [
                 '<?php
@@ -393,7 +393,7 @@ class ValueTest extends TestCase
                     $i = rand(0, 2);
                     if (isset($f[$i]) && !is_int($f[$i])) {
                         takesString($f[$i]);
-                    }'
+                    }',
             ],
             'removeLiteralFloatForNotIsFloat' => [
                 '<?php
@@ -405,7 +405,7 @@ class ValueTest extends TestCase
                     $i = rand(0, 2);
                     if (isset($f[$i]) && !is_float($f[$i])) {
                         takesString($f[$i]);
-                    }'
+                    }',
             ],
             'coerceFromMixed' => [
                 '<?php
@@ -455,7 +455,7 @@ class ValueTest extends TestCase
 
                             if (isset($map[$this->s])) {}
                         }
-                    }'
+                    }',
             ],
             'noRedundantConditionWithMixed' => [
                 '<?php
@@ -477,7 +477,7 @@ class ValueTest extends TestCase
                     '$a===' => 'sql-select-string(select * from foo)',
                     '$b===' => 'string(select * from)',
                     '$c===' => 'sql-select-string(select * from foo where i = :i)',
-                ]
+                ],
             ],
             'numericToStringComparison' => [
                 '<?php
@@ -501,7 +501,7 @@ class ValueTest extends TestCase
                         $c = $b;
                     }
 
-                    if ($c === $b) {}'
+                    if ($c === $b) {}',
             ],
             'don’tChangeType' => [
                 '<?php
@@ -531,7 +531,7 @@ class ValueTest extends TestCase
                         if (!is_string($x)) {
                             chr($x);
                         }
-                    }'
+                    }',
             ],
             'convertNullArrayKeyToEmptyString' => [
                 '<?php

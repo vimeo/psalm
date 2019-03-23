@@ -159,7 +159,6 @@ class PsalmPluginTest extends TestCase
         $this->assertRegExp('/Usage:$\s+' . preg_quote($command, '/') . '\b/m', $output);
     }
 
-
     /**
      * @return void
      * @test
@@ -186,7 +185,7 @@ class PsalmPluginTest extends TestCase
 
         $this->assertContains('ERROR', $output);
         $this->assertContains('Unknown plugin', $output);
-        $this->assertNotEquals(0, $enable_command->getStatusCode());
+        $this->assertNotSame(0, $enable_command->getStatusCode());
     }
 
     /**
@@ -199,6 +198,7 @@ class PsalmPluginTest extends TestCase
             function (array $_args, ObjectProphecy $plugin_list): string {
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(true);
+
                 return 'Vendor\Package\PluginClass';
             }
         );
@@ -208,7 +208,7 @@ class PsalmPluginTest extends TestCase
 
         $output = $enable_command->getDisplay();
         $this->assertContains('Plugin already enabled', $output);
-        $this->assertNotEquals(0, $enable_command->getStatusCode());
+        $this->assertNotSame(0, $enable_command->getStatusCode());
     }
 
     /**
@@ -224,6 +224,7 @@ class PsalmPluginTest extends TestCase
                 $plugin_list->isEnabled($plugin_class)->willReturn(false);
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->enable($plugin_class)->shouldBeCalled();
+
                 return $plugin_class;
             }
         );
@@ -233,9 +234,8 @@ class PsalmPluginTest extends TestCase
 
         $output = $enable_command->getDisplay();
         $this->assertContains('Plugin enabled', $output);
-        $this->assertEquals(0, $enable_command->getStatusCode());
+        $this->assertSame(0, $enable_command->getStatusCode());
     }
-
 
     /**
      * @return void
@@ -254,7 +254,6 @@ class PsalmPluginTest extends TestCase
      */
     public function disableComplainsWhenPassedUnresolvablePlugin()
     {
-
         $this->plugin_list->resolvePluginClass(Argument::any())->willThrow(new \InvalidArgumentException);
 
         $disable_command = new CommandTester($this->app->find('disable'));
@@ -264,7 +263,7 @@ class PsalmPluginTest extends TestCase
 
         $this->assertContains('ERROR', $output);
         $this->assertContains('Unknown plugin', $output);
-        $this->assertNotEquals(0, $disable_command->getStatusCode());
+        $this->assertNotSame(0, $disable_command->getStatusCode());
     }
 
     /**
@@ -277,6 +276,7 @@ class PsalmPluginTest extends TestCase
             function (array $_args, ObjectProphecy $plugin_list): string {
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->isEnabled('Vendor\Package\PluginClass')->willReturn(false);
+
                 return 'Vendor\Package\PluginClass';
             }
         );
@@ -286,7 +286,7 @@ class PsalmPluginTest extends TestCase
 
         $output = $disable_command->getDisplay();
         $this->assertContains('Plugin already disabled', $output);
-        $this->assertNotEquals(0, $disable_command->getStatusCode());
+        $this->assertNotSame(0, $disable_command->getStatusCode());
     }
 
     /**
@@ -302,6 +302,7 @@ class PsalmPluginTest extends TestCase
                 $plugin_list->isEnabled($plugin_class)->willReturn(true);
                 /** @psalm-suppress TooManyArguments */
                 $plugin_list->disable($plugin_class)->shouldBeCalled();
+
                 return $plugin_class;
             }
         );
@@ -311,16 +312,16 @@ class PsalmPluginTest extends TestCase
 
         $output = $disable_command->getDisplay();
         $this->assertContains('Plugin disabled', $output);
-        $this->assertEquals(0, $disable_command->getStatusCode());
+        $this->assertSame(0, $disable_command->getStatusCode());
     }
 
     /** @return string[][] */
     public function commands(): array
     {
         return [
-            ['show',],
-            ['enable',],
-            ['disable',],
+            ['show'],
+            ['enable'],
+            ['disable'],
         ];
     }
 }

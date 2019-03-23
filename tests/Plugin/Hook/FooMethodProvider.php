@@ -1,18 +1,15 @@
 <?php
-
 namespace Psalm\Test\Plugin\Hook;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
+use Psalm\Plugin\Hook\MethodExistenceProviderInterface;
+use Psalm\Plugin\Hook\MethodParamsProviderInterface;
+use Psalm\Plugin\Hook\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\Hook\MethodVisibilityProviderInterface;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\{
-    MethodExistenceProviderInterface,
-    MethodVisibilityProviderInterface,
-    MethodParamsProviderInterface,
-    MethodReturnTypeProviderInterface
-};
+use Psalm\Type;
 
 class FooMethodProvider implements
     MethodExistenceProviderInterface,
@@ -55,6 +52,7 @@ class FooMethodProvider implements
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getMethodParams(
@@ -70,6 +68,7 @@ class FooMethodProvider implements
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?Type\Union
      */
     public static function getMethodReturnType(

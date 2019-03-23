@@ -75,7 +75,7 @@ class TemplateTest extends TestCase
                     'MixedReturnStatement',
                     'LessSpecificReturnStatement',
                     'DocblockTypeContradiction',
-                    'TypeCoercion'
+                    'TypeCoercion',
                 ],
             ],
             'classTemplateSelfs' => [
@@ -531,7 +531,7 @@ class TemplateTest extends TestCase
                     $c = new ArrayCollection([ new Item ]);
                     takesCollectionOfItems($c);
                     takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));
-                    takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));'
+                    takesCollectionOfItems($c->map(function(Item $i): Item { return $i;}));',
             ],
             'replaceChildTypeWithGenerator' => [
                 '<?php
@@ -613,7 +613,7 @@ class TemplateTest extends TestCase
                     }
 
                     class A {}
-                    class B {}'
+                    class B {}',
             ],
             'collectionOfClosure' => [
                 '<?php
@@ -731,7 +731,7 @@ class TemplateTest extends TestCase
                     /** @var ICollection<string, int> */
                     $c = new Collection(["a" => 1]);
 
-                    foreach ($c as $k => $v) { atan($v); strlen($k); }'
+                    foreach ($c as $k => $v) { atan($v); strlen($k); }',
             ],
             'templatedInterfaceGetIteratorIteration' => [
                 '<?php
@@ -761,7 +761,7 @@ class TemplateTest extends TestCase
                     /** @var ICollection<string, int> */
                     $c = new Collection(["a" => 1]);
 
-                    foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }'
+                    foreach ($c->getIterator() as $k => $v) { atan($v); strlen($k); }',
             ],
             'implictIteratorTemplating' => [
                 '<?php
@@ -783,7 +783,7 @@ class TemplateTest extends TestCase
                         }
                     }
 
-                    takesIteratorOfInts(new SomeIterator());'
+                    takesIteratorOfInts(new SomeIterator());',
             ],
             'allowTemplatedIntersectionToExtend' => [
                 '<?php
@@ -818,7 +818,7 @@ class TemplateTest extends TestCase
                         {
                             return $this->bar;
                         }
-                    }'
+                    }',
             ],
             'restrictTemplateInputWithTClassGoodInput' => [
                 '<?php
@@ -1013,7 +1013,7 @@ class TemplateTest extends TestCase
 
                     class A {}
 
-                    bar(foo(A::class));'
+                    bar(foo(A::class));',
             ],
             'callStaticMethodOnTemplatedClassName' => [
                 '<?php
@@ -1282,7 +1282,7 @@ class TemplateTest extends TestCase
                     $b = $a->getValue();',
                 [
                     '$a' => 'KeyValueContainer<string, int>',
-                    '$b' => 'mixed'
+                    '$b' => 'mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -1344,7 +1344,7 @@ class TemplateTest extends TestCase
                     $b = $a->getValue();',
                 [
                     '$a' => 'KeyValueContainer<string, int>',
-                    '$b' => 'mixed'
+                    '$b' => 'mixed',
                 ],
                 'error_levels' => ['MixedAssignment'],
             ],
@@ -1383,7 +1383,7 @@ class TemplateTest extends TestCase
                 [
                     '$au' => 'AppUser',
                     '$id' => 'array-key',
-                ]
+                ],
             ],
 
             'callableReturnsItself' => [
@@ -1404,7 +1404,7 @@ class TemplateTest extends TestCase
                      */
                     function takesReturnTCallable(callable $s) {}
 
-                    takesReturnTCallable($a);'
+                    takesReturnTCallable($a);',
             ],
             'nonBindingParamReturn' => [
                 '<?php
@@ -1420,7 +1420,7 @@ class TemplateTest extends TestCase
                             return 5;
                         },
                         "hello"
-                    );'
+                    );',
             ],
             'templatedInterfaceMethodInheritReturnType' => [
                 '<?php
@@ -1436,7 +1436,7 @@ class TemplateTest extends TestCase
                     $i = (new SomeIterator())->getIterator();',
                 [
                     '$i' => 'Traversable<mixed, mixed>',
-                ]
+                ],
             ],
             'upcastArrayToIterable' => [
                 '<?php
@@ -1452,7 +1452,7 @@ class TemplateTest extends TestCase
                     $one = first([1,2,3]);',
                 [
                     '$one' => 'int',
-                ]
+                ],
             ],
             'templateObjectLikeValues' => [
                 '<?php
@@ -1474,7 +1474,7 @@ class TemplateTest extends TestCase
                 [
                     '$partA' => 'Collection<int, string>',
                     '$partB' => 'Collection<int, string>',
-                ]
+                ],
             ],
             'understandTemplatedCalculationInOtherFunction' => [
                 '<?php
@@ -1508,7 +1508,7 @@ class TemplateTest extends TestCase
                     $a = $templated_list->bottom();',
                 [
                     '$a' => 'string',
-                ]
+                ],
             ],
             'objectReturn' => [
                 '<?php
@@ -1585,7 +1585,7 @@ class TemplateTest extends TestCase
                      * @template T as I1&I2
                      * @param T $a
                      */
-                    function templatedBar(I1 $a) : void {}'
+                    function templatedBar(I1 $a) : void {}',
             ],
             'templateIntersectionRight' => [
                 '<?php
@@ -1624,7 +1624,7 @@ class TemplateTest extends TestCase
                     );',
                 [
                     '$arr' => 'array<int, string>',
-                ]
+                ],
             ],
             'templatedClassStringParam' => [
                 '<?php
@@ -1661,7 +1661,7 @@ class TemplateTest extends TestCase
                     function bat(string $c_class) : void {
                         $c = E::get($c_class);
                         $c->foo();
-                    }'
+                    }',
             ],
             'templatedClassStringParamMoreSpecific' => [
                 '<?php
@@ -1695,7 +1695,7 @@ class TemplateTest extends TestCase
                         $d = E::get($d_class);
                         $d->foo();
                         $d->faa();
-                    }'
+                    }',
             ],
             'templateOfWithSpace' => [
                 '<?php
@@ -1709,7 +1709,7 @@ class TemplateTest extends TestCase
                     /**
                      * @param Foo<array<int, DateTime>> $a
                      */
-                    function bar(Foo $a) : void {}'
+                    function bar(Foo $a) : void {}',
             ],
             'templateDefaultSimpleString' => [
                 '<?php
@@ -1810,7 +1810,7 @@ class TemplateTest extends TestCase
                         public function __construct(I $foo) {
                             $this->bar = $foo->get();
                         }
-                    }'
+                    }',
             ],
             'allowUnionTypeParam' => [
                 '<?php
@@ -1827,7 +1827,7 @@ class TemplateTest extends TestCase
                          */
                         function($x): void {},
                         [strpos("str", "str")]
-                    );'
+                    );',
             ],
             'reflectionClass' => [
                 '<?php
@@ -1861,7 +1861,7 @@ class TemplateTest extends TestCase
                      */
                     function getTypeOf(string $className) {
                         return new CustomReflectionClass($className);
-                    }'
+                    }',
             ],
             'ignoreTooManyArrayArgs' => [
                 '<?php
@@ -1873,7 +1873,7 @@ class TemplateTest extends TestCase
                      * @var array<int, int, int>
                      */
                     $b = [1, 2, 3];
-                    takesArray($b);'
+                    takesArray($b);',
             ],
             'ignoreTooManyGenericObjectArgs' => [
                 '<?php
@@ -1898,7 +1898,7 @@ class TemplateTest extends TestCase
                      * @var C<int, int>
                      */
                     $c = new C(5);
-                    takesC($c);'
+                    takesC($c);',
             ],
             'classTemplateUnionType' => [
                 '<?php

@@ -327,7 +327,7 @@ class IssetTest extends TestCase
 
                             return false;
                         }
-                    }'
+                    }',
             ],
             'noRedundantConditionAfterIsset' => [
                 '<?php
@@ -365,7 +365,7 @@ class IssetTest extends TestCase
                         } else {
                             $arr["c"] = "foo";
                         }
-                    }'
+                    }',
             ],
             'issetVarInLoopBeforeAssignment' => [
                 '<?php
@@ -401,7 +401,7 @@ class IssetTest extends TestCase
 
                     if (!isset($array[sameString("key3")]) || !isset($array[sameString("key4")])) {
                         throw new \InvalidArgumentException();
-                    }'
+                    }',
             ],
             'notIssetOneOrOther' => [
                 '<?php
@@ -458,7 +458,7 @@ class IssetTest extends TestCase
                         }
 
                         return [];
-                    }'
+                    }',
             ],
             'assertMoreComplicatedArrayAfterIssetStringOffset' => [
                 '<?php
@@ -513,7 +513,7 @@ class IssetTest extends TestCase
             ],
             'sessionNullCoalesce' => [
                 '<?php
-                    $a = $_SESSION ?? [];'
+                    $a = $_SESSION ?? [];',
             ],
         ];
     }

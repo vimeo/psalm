@@ -48,7 +48,7 @@ class PluginListTest extends TestCase
 
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
 
-        $this->assertEquals([
+        $this->assertSame([
             'a\b\c' => null,
             'c\d\e' => null,
         ], $plugin_list->getEnabled());
@@ -73,7 +73,7 @@ class PluginListTest extends TestCase
 
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
 
-        $this->assertEquals([
+        $this->assertSame([
             'c\d\e' => 'another-vendor/another-package',
         ], $plugin_list->getAvailable());
     }
@@ -96,7 +96,7 @@ class PluginListTest extends TestCase
 
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
 
-        $this->assertEquals([
+        $this->assertSame([
             'a\b\c' => 'vendor/package',
         ], $plugin_list->getEnabled());
     }
@@ -108,7 +108,7 @@ class PluginListTest extends TestCase
     public function canFindPluginClassByClassName()
     {
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
-        $this->assertEquals('a\b\c', $plugin_list->resolvePluginClass('a\b\c'));
+        $this->assertSame('a\b\c', $plugin_list->resolvePluginClass('a\b\c'));
     }
 
     /**
@@ -123,7 +123,7 @@ class PluginListTest extends TestCase
         ]);
 
         $plugin_list = new PluginList($this->config_file->reveal(), $this->composer_lock->reveal());
-        $this->assertEquals('a\b\c', $plugin_list->resolvePluginClass('vendor/package'));
+        $this->assertSame('a\b\c', $plugin_list->resolvePluginClass('vendor/package'));
     }
 
     /**

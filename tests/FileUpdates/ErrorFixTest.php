@@ -4,8 +4,8 @@ namespace Psalm\Tests\FileUpdates;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\TestConfig;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
 class ErrorFixTest extends \Psalm\Tests\TestCase
 {
@@ -204,7 +204,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                 'error_counts' => [2, 1, 0],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'traitMethodRename' => [
                 'start_files' => [

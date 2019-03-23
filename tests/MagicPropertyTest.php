@@ -367,7 +367,7 @@ class MagicPropertyTest extends TestCase
                         {
                             $this->service->getById(123);
                         }
-                    }'
+                    }',
             ],
             'magicInterfacePropertyRead' => [
                 '<?php

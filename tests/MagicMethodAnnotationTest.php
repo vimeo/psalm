@@ -46,6 +46,7 @@ class MagicMethodAnnotationTest extends TestCase
     /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage UndefinedMethod
+     *
      * @return void
      */
     public function testAnnotationWithoutCallConfig()
@@ -335,7 +336,7 @@ class MagicMethodAnnotationTest extends TestCase
                 [
                     '$a' => 'C',
                     '$b' => 'C',
-                ]
+                ],
             ],
             'allowMagicMethodStatic' => [
                 '<?php
@@ -351,7 +352,7 @@ class MagicMethodAnnotationTest extends TestCase
                 [
                     '$c' => 'C',
                     '$d' => 'D',
-                ]
+                ],
             ],
             'validSimplePsalmAnnotations' => [
                 '<?php

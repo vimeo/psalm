@@ -94,6 +94,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
 
     /**
      * @param array<string, array<string, int>> $correct_methods
+     *
      * @return void
      */
     public function setAnalyzedMethodCache(array $correct_methods)
@@ -114,6 +115,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      *    string,
      *    array{0: array<int, array{0: int, 1: string}>, 1: array<int, array{0: int, 1: string}>}
      * > $file_maps
+     *
      * @return void
      */
     public function setFileMapCache(array $file_maps)

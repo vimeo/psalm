@@ -1,17 +1,14 @@
 <?php
-
 namespace Psalm\Test\Plugin\Hook;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
+use Psalm\Plugin\Hook\PropertyExistenceProviderInterface;
+use Psalm\Plugin\Hook\PropertyTypeProviderInterface;
+use Psalm\Plugin\Hook\PropertyVisibilityProviderInterface;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\{
-    PropertyExistenceProviderInterface,
-    PropertyVisibilityProviderInterface,
-    PropertyTypeProviderInterface
-};
+use Psalm\Type;
 
 class FooPropertyProvider implements
     PropertyExistenceProviderInterface,
@@ -56,6 +53,7 @@ class FooPropertyProvider implements
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?Type\Union
      */
     public static function getPropertyType(

@@ -1043,7 +1043,7 @@ class ArrayAssignmentTest extends TestCase
                     $out["attr"] = (array) ($out["attr"] ?? []);
                     $out["attr"]["bar"] = 1;',
                 'assertions' => [
-                    '$out[\'attr\'][\'bar\']' => 'int'
+                    '$out[\'attr\'][\'bar\']' => 'int',
                 ],
             ],
             'arrayAssignmentOnMixedArray' => [
@@ -1238,7 +1238,7 @@ class ArrayAssignmentTest extends TestCase
                     $key = [1,2,3];
                     $storage = new \SplObjectStorage();
                     $storage[$key] = "test";',
-                'error_message' => 'InvalidArgument'
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

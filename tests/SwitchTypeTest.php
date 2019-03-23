@@ -395,7 +395,7 @@ class SwitchTypeTest extends TestCase
                             case "b":
                                 break;
                         }
-                    }'
+                    }',
             ],
             'preventBadClausesFromBleeding' => [
                 '<?php
@@ -749,7 +749,7 @@ class SwitchTypeTest extends TestCase
 
                         if ($a) {}
                     }',
-                'error_message' => 'PossiblyUndefinedVariable'
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
             'getClassExteriorArgStringType' => [
                 '<?php

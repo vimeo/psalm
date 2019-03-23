@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 
 class FileReferenceTest extends TestCase
@@ -117,7 +117,7 @@ class FileReferenceTest extends TestCase
 
                     new A();',
                 'A',
-                ['4:25:A']
+                ['4:25:A'],
             ],
             'getMethodLocation' => [
                 '<?php
@@ -183,7 +183,7 @@ class FileReferenceTest extends TestCase
                     ],
                     'foo\c::foo' => [
                         'foo\b::bar' => true,
-                    ]
+                    ],
                 ],
             ],
             'interpolateClassCalls' => [

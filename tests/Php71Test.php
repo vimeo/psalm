@@ -242,7 +242,7 @@ class Php71Test extends TestCase
                      */
                     function create_resource($op) {
                         return $op();
-                    }'
+                    }',
             ],
         ];
     }
@@ -314,7 +314,7 @@ class Php71Test extends TestCase
                 'error_message' => 'ReservedWord',
                 [],
                 false,
-                '7.0'
+                '7.0',
             ],
             'objectDoesntWorkIn71' => [
                 '<?php
@@ -324,7 +324,7 @@ class Php71Test extends TestCase
                 'error_message' => 'ReservedWord',
                 [],
                 false,
-                '7.0'
+                '7.0',
             ],
         ];
     }

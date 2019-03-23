@@ -297,7 +297,7 @@ class FunctionCallTest extends TestCase
                         if (!count($a)) {}
                     }',
                 'assertions' => [],
-                'error_levels' => ['MixedAssignment', 'MixedArgument']
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
             ],
             'objectLikeArrayAssignmentInConditional' => [
                 '<?php
@@ -819,7 +819,7 @@ class FunctionCallTest extends TestCase
 
                     ["a", "b"]();
                     "A::b"();
-                    "c"();'
+                    "c"();',
             ],
             'arrayMapParamDefault' => [
                 '<?php
@@ -842,7 +842,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     function hasZeroByteOffset(string $s) : bool {
                         return strpos($s, 0) !== false;
-                    }'
+                    }',
             ],
             'functionCallInGlobalScope' => [
                 '<?php
@@ -891,7 +891,7 @@ class FunctionCallTest extends TestCase
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 '<?php
-                    if (class_exists(Foo::class)) {}'
+                    if (class_exists(Foo::class)) {}',
             ],
             'allowConstructorAfterClassExists' => [
                 '<?php
@@ -1328,13 +1328,13 @@ class FunctionCallTest extends TestCase
                     function matchesTypes($maybe) : void {
                         $t = gettype($maybe);
                         if ($t === "object") {}
-                    }'
+                    }',
             ],
             'functionResolutionInNamespace' => [
                 '<?php
                     namespace Foo;
                     function sort(int $_) : void {}
-                    sort(5);'
+                    sort(5);',
             ],
             'rangeWithIntStep' => [
                 '<?php
@@ -1446,7 +1446,7 @@ class FunctionCallTest extends TestCase
                     '$h' => 'resource',
                 ],
                 [],
-                '7.1'
+                '7.1',
             ],
             'hashInit71' => [
                 '<?php
@@ -1455,7 +1455,7 @@ class FunctionCallTest extends TestCase
                     '$h' => 'resource',
                 ],
                 [],
-                '7.1'
+                '7.1',
             ],
             'hashInit72' => [
                 '<?php
@@ -1464,7 +1464,7 @@ class FunctionCallTest extends TestCase
                     '$h' => 'HashContext',
                 ],
                 [],
-                '7.2'
+                '7.2',
             ],
             'hashInit73' => [
                 '<?php
@@ -1473,7 +1473,7 @@ class FunctionCallTest extends TestCase
                     '$h' => 'HashContext',
                 ],
                 [],
-                '7.3'
+                '7.3',
             ],
             'nullableByRef' => [
                 '<?php
@@ -1481,7 +1481,7 @@ class FunctionCallTest extends TestCase
 
                     function bar() : void {
                         foo($bar);
-                    }'
+                    }',
             ],
             'getClassNewInstance' => [
                 '<?php
@@ -1493,7 +1493,7 @@ class FunctionCallTest extends TestCase
                         public $arr = [];
                     }
 
-                    (new Props)->arr[] = get_class(new C);'
+                    (new Props)->arr[] = get_class(new C);',
             ],
             'getClassVariable' => [
                 '<?php
@@ -1506,7 +1506,7 @@ class FunctionCallTest extends TestCase
                         public $arr = [];
                     }
 
-                    (new Props)->arr[] = get_class($c_instance);'
+                    (new Props)->arr[] = get_class($c_instance);',
             ],
             'getClassAnonymousNewInstance' => [
                 '<?php
@@ -1517,7 +1517,7 @@ class FunctionCallTest extends TestCase
                         public $arr = [];
                     }
 
-                    (new Props)->arr[] = get_class(new class implements I{});'
+                    (new Props)->arr[] = get_class(new class implements I{});',
             ],
             'getClassAnonymousVariable' => [
                 '<?php
@@ -1529,7 +1529,7 @@ class FunctionCallTest extends TestCase
                         public $arr = [];
                     }
 
-                    (new Props)->arr[] = get_class($anon_instance);'
+                    (new Props)->arr[] = get_class($anon_instance);',
             ],
             'arrayReversePreserveNonEmptiness' => [
                 '<?php
@@ -2057,7 +2057,7 @@ class FunctionCallTest extends TestCase
                     $a = rand(0, 1) ? null : 5;
                     /** @psalm-suppress MixedArgument */
                     foo((int) $a);',
-                'InvalidPassByReference'
+                'InvalidPassByReference',
             ],
         ];
     }

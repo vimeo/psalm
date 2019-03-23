@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 
 class ConfigTest extends TestCase
@@ -180,8 +180,8 @@ class ConfigTest extends TestCase
         $no_symlinking_error = 'symlink(): Cannot create symlink, error code(1314)';
         $last_error = error_get_last();
         $check_symlink_error =
-            ! is_array($last_error) ||
-            ! isset($last_error['message']) ||
+            !is_array($last_error) ||
+            !isset($last_error['message']) ||
             $no_symlinking_error !== $last_error['message'];
 
         @symlink(__DIR__ . '/symlinktest/a', __DIR__ . '/symlinktest/ignored/b');
@@ -840,6 +840,7 @@ class ConfigTest extends TestCase
     /**
      * @expectedException  \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ForbiddenCode
+     *
      * @return void
      */
     public function testForbiddenEchoFunctionViaFunctions()
@@ -870,6 +871,7 @@ class ConfigTest extends TestCase
     /**
      * @expectedException  \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ForbiddenEcho
+     *
      * @return void
      */
     public function testForbiddenEchoFunctionViaFlag()
@@ -921,6 +923,7 @@ class ConfigTest extends TestCase
     /**
      * @expectedException  \Psalm\Exception\CodeException
      * @expectedExceptionMessage  ForbiddenCode
+     *
      * @return  void
      */
     public function testForbiddenVarExportFunction()
@@ -952,6 +955,7 @@ class ConfigTest extends TestCase
     /**
      * @expectedException  \Psalm\Exception\CodeException
      * @expectedExceptionMessage  InvalidCatch
+     *
      * @return void
      */
     public function testValidThrowInvalidCatch()
@@ -1003,6 +1007,7 @@ class ConfigTest extends TestCase
     /**
      * @expectedException  \Psalm\Exception\CodeException
      * @expectedExceptionMessage  InvalidThrow
+     *
      * @return void
      */
     public function testInvalidThrowValidCatch()

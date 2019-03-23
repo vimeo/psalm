@@ -1,5 +1,6 @@
 <?php
-
 namespace Foo;
 
-function barBar(string $a) : string {}
+function barBar(string $a) : string
+{
+}

@@ -151,7 +151,7 @@ class ArrayAccessTest extends TestCase
                     $e = $doc->getElementsByTagName("node")[0];',
                 [
                     '$e' => 'null|DOMElement',
-                ]
+                ],
             ],
             'getOnArrayAcccess' => [
                 '<?php
@@ -216,7 +216,7 @@ class ArrayAccessTest extends TestCase
                           $cellOptions[0] = "b";
                         }
                       }
-                    }'
+                    }',
             ],
             'arrayAccessPropertyAssertion' => [
                 '<?php
@@ -258,7 +258,7 @@ class ArrayAccessTest extends TestCase
                         }
 
                         if (isset($settings["c"])) {}
-                    }'
+                    }',
             ],
             'arrayKeyChecks' => [
                 '<?php
@@ -307,7 +307,7 @@ class ArrayAccessTest extends TestCase
                         if ($i === "hel") {}
                     }',
             ],
-            'allowMixedTypeCoercionArrayKeyAccess' =>  [
+            'allowMixedTypeCoercionArrayKeyAccess' => [
                 '<?php
                     /**
                      * @param array<array-key, int> $i
@@ -321,7 +321,7 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedTypeCoercion'],
             ],
-            'allowNegativeStringOffset' =>  [
+            'allowNegativeStringOffset' => [
                 '<?php
                     $a = "hello";
                     echo $a[-5];
@@ -351,7 +351,7 @@ class ArrayAccessTest extends TestCase
 
                     echo $params["b"]["c"];',
                 [],
-                ['MixedArrayAccess', 'MixedArgument']
+                ['MixedArrayAccess', 'MixedArgument'],
             ],
         ];
     }
@@ -565,7 +565,7 @@ class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'forbidNegativeStringOffsetOutOfRange' =>  [
+            'forbidNegativeStringOffsetOutOfRange' => [
                 '<?php
                     $a = "hello";
                     echo $a[-6];',

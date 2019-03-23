@@ -488,7 +488,7 @@ class RedundantConditionTest extends TestCase
                         $b = $a && rand(0, 1);
                     }',
                 [],
-                'error_levels' => ['MissingParamType']
+                'error_levels' => ['MissingParamType'],
             ],
             'noRedundantConditionAfterAssertingValue' => [
                 '<?php
@@ -531,7 +531,7 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
                 [],
-                ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset']
+                ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset'],
             ],
             'emptyKnowingArrayType' => [
                 '<?php
@@ -853,7 +853,7 @@ class RedundantConditionTest extends TestCase
                         $b = $a && rand(0, 1);
                     }',
                 'error_message' => 'RedundantCondition',
-                'error_levels' => ['MissingParamType']
+                'error_levels' => ['MissingParamType'],
             ],
             'negatedInstanceof' => [
                 '<?php

@@ -286,7 +286,7 @@ class ClassStringTest extends TestCase
 
                     class B {
                         use T;
-                    }'
+                    }',
             ],
             'refineStringToClassString' => [
                 '<?php
@@ -450,7 +450,7 @@ class ClassStringTest extends TestCase
                     function foo($className) : void {
                         $className::one();
                         $className::two();
-                    }'
+                    }',
             ],
             'implicitIntersectionClassString' => [
                 '<?php
@@ -472,7 +472,7 @@ class ClassStringTest extends TestCase
                             $className::one();
                             $className::two();
                         }
-                    }'
+                    }',
             ],
             'instanceofClassString' => [
                 '<?php
@@ -483,7 +483,7 @@ class ClassStringTest extends TestCase
                         } else {
                             return null;
                         }
-                    }'
+                    }',
             ],
             'returnTemplatedClassString' => [
                 '<?php
@@ -540,7 +540,7 @@ class ClassStringTest extends TestCase
                      */
                     function foo(array $literal_classes, array $generic_classes) {
                         return array_merge($literal_classes, $generic_classes);
-                    }'
+                    }',
             ],
             'mergeGenericClassStringsWithLiteral' => [
                 '<?php
@@ -555,7 +555,7 @@ class ClassStringTest extends TestCase
                      */
                     function bar(array $literal_classes, array $generic_classes) {
                         return array_merge($generic_classes, $literal_classes);
-                    }'
+                    }',
             ],
         ];
     }

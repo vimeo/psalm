@@ -57,7 +57,7 @@ class ErrorBaselineTest extends TestCase
             ],
         ];
 
-        $this->assertEquals(
+        $this->assertSame(
             $expectedParsedBaseline,
             ErrorBaseline::read($this->fileProvider->reveal(), $baselineFilePath)
         );
@@ -114,7 +114,7 @@ class ErrorBaselineTest extends TestCase
 
         $totalIssues = ErrorBaseline::countTotalIssues($existingIssues);
 
-        $this->assertEquals($totalIssues, 5);
+        $this->assertSame($totalIssues, 5);
     }
 
     /**
@@ -200,23 +200,23 @@ class ErrorBaselineTest extends TestCase
 
         $file1 = $files[0];
         $file2 = $files[1];
-        $this->assertEquals('sample/sample-file.php', $file1->getAttribute('src'));
-        $this->assertEquals('sample/sample-file2.php', $file2->getAttribute('src'));
+        $this->assertSame('sample/sample-file.php', $file1->getAttribute('src'));
+        $this->assertSame('sample/sample-file2.php', $file2->getAttribute('src'));
 
         /** @var \DOMElement[] $file1Issues */
         $file1Issues = $file1->childNodes;
         /** @var \DOMElement[] $file2Issues */
         $file2Issues = $file2->childNodes;
 
-        $this->assertEquals('MixedAssignment', $file1Issues[0]->tagName);
-        $this->assertEquals(3, $file1Issues[0]->getAttribute('occurrences'));
-        $this->assertEquals('MixedOperand', $file1Issues[1]->tagName);
-        $this->assertEquals(1, $file1Issues[1]->getAttribute('occurrences'));
+        $this->assertSame('MixedAssignment', $file1Issues[0]->tagName);
+        $this->assertSame('3', $file1Issues[0]->getAttribute('occurrences'));
+        $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
+        $this->assertSame('1', $file1Issues[1]->getAttribute('occurrences'));
 
-        $this->assertEquals('MixedAssignment', $file2Issues[0]->tagName);
-        $this->assertEquals(2, $file2Issues[0]->getAttribute('occurrences'));
-        $this->assertEquals('TypeCoercion', $file2Issues[1]->tagName);
-        $this->assertEquals(1, $file2Issues[1]->getAttribute('occurrences'));
+        $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
+        $this->assertSame('2', $file2Issues[0]->getAttribute('occurrences'));
+        $this->assertSame('TypeCoercion', $file2Issues[1]->tagName);
+        $this->assertSame('1', $file2Issues[1]->getAttribute('occurrences'));
     }
 
     /**
@@ -287,7 +287,7 @@ class ErrorBaselineTest extends TestCase
             $newIssues
         );
 
-        $this->assertEquals([
+        $this->assertSame([
             'sample/sample-file.php' => [
                 'MixedAssignment' => ['o' => 2, 's' => ['bar']],
                 'MixedOperand' => ['o' => 1, 's' => []],

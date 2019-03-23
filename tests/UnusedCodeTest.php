@@ -1,9 +1,9 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Tests\Internal\Provider;
 
 class UnusedCodeTest extends TestCase
@@ -277,7 +277,7 @@ class UnusedCodeTest extends TestCase
                     function takesA(A $a) : void {
                         $a->foo();
                     }
-                    takesA(new B);'
+                    takesA(new B);',
             ],
             'usedMethodInTryCatch' => [
                 '<?php

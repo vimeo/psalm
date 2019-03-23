@@ -317,7 +317,7 @@ class ClassTest extends TestCase
                     }',
                 'assertions' => [],
                 'error_levels' => [
-                    'UndefinedClass'
+                    'UndefinedClass',
                 ],
             ],
             'noCrashWhenIgnoringUndefinedParam' => [

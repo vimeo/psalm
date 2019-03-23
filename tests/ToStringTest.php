@@ -177,7 +177,7 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'ImplicitToStringCast',
                 [],
-                true
+                true,
             ],
             'resourceCannotBeCoercedToString' => [
                 '<?php

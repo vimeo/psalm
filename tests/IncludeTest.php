@@ -368,7 +368,7 @@ class IncludeTest extends TestCase
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
-                ]
+                ],
             ],
             'returnNamespacedFunctionCallType' => [
                 'files' => [
@@ -414,7 +414,7 @@ class IncludeTest extends TestCase
                         foo();
                         array_filter([1, 2, 3, 4], "bar");',
                     getcwd() . DIRECTORY_SEPARATOR . 'file3.php' => '<?php
-                        function bar(int $i) : bool { return (bool) rand(0, 1); }'
+                        function bar(int $i) : bool { return (bool) rand(0, 1); }',
                 ],
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
@@ -674,7 +674,7 @@ class IncludeTest extends TestCase
                 'files_to_check' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
-                'error_message' => 'UndefinedVariable'
+                'error_message' => 'UndefinedVariable',
             ],
             'invalidTraitFunctionReturnInUncheckedFile' => [
                 'files' => [

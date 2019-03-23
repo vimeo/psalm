@@ -2,9 +2,9 @@
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider;
 use RuntimeException;
 
@@ -106,6 +106,7 @@ class TestCase extends BaseTestCase
 
     /**
      * @param  bool $withDataSet
+     *
      * @return string
      */
     protected function getTestName($withDataSet = true)
@@ -115,6 +116,7 @@ class TestCase extends BaseTestCase
         if (null === $name) {
             throw new RuntimeException('anonymous test - shouldn\'t happen');
         }
+
         return $name;
     }
 }

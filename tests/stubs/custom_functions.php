@@ -1,8 +1,12 @@
 <?php
 
-function barBar(string $a) : string {}
+function barBar(string $a) : string
+{
+}
 
 /**
  * @param string ...$bar
  */
-function variadic() {}
+function variadic()
+{
+}

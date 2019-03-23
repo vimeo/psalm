@@ -1,18 +1,14 @@
 <?php
-
 namespace Psalm\Test\Plugin\Hook;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\Type;
+use Psalm\Plugin\Hook\FunctionExistenceProviderInterface;
+use Psalm\Plugin\Hook\FunctionParamsProviderInterface;
+use Psalm\Plugin\Hook\FunctionReturnTypeProviderInterface;
 use Psalm\StatementsSource;
-use Psalm\Plugin\Hook\{
-    FunctionExistenceProviderInterface,
-    FunctionVisibilityProviderInterface,
-    FunctionParamsProviderInterface,
-    FunctionReturnTypeProviderInterface
-};
+use Psalm\Type;
 
 class MagicFunctionProvider implements
     FunctionExistenceProviderInterface,
@@ -40,6 +36,7 @@ class MagicFunctionProvider implements
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?array<int, \Psalm\Storage\FunctionLikeParameter>
      */
     public static function getFunctionParams(
@@ -54,6 +51,7 @@ class MagicFunctionProvider implements
 
     /**
      * @param  array<PhpParser\Node\Arg>    $call_args
+     *
      * @return ?Type\Union
      */
     public static function getFunctionReturnType(

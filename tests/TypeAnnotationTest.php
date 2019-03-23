@@ -37,7 +37,7 @@ class TypeAnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'typeAliasBeforeFunction' => [
                 '<?php
@@ -64,7 +64,7 @@ class TypeAnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'typeAliasInSeparateBlockBeforeFunction' => [
                 '<?php
@@ -92,7 +92,7 @@ class TypeAnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'almostFreeStandingTypeAlias' => [
                 '<?php
@@ -121,7 +121,7 @@ class TypeAnnotationTest extends TestCase
                     /** @param CoolType $a **/
                     function bar ($a) : void { }
 
-                    bar(foo());'
+                    bar(foo());',
             ],
             'typeAliasUsedTwice' => [
                 '<?php

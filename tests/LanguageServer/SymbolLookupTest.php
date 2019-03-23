@@ -2,16 +2,15 @@
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Context;
-use Psalm\Tests\TestConfig;
-use Psalm\Tests\Internal\Provider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
 class SymbolLookupTest extends \Psalm\Tests\TestCase
 {
-
     /**
      * @return void
      */
@@ -116,13 +115,11 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->analyzeFile('somefile.php', new Context());
 
-
         $method_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::foo()');
 
         $this->assertNotNull($method_symbol_location);
         $this->assertSame(10, $method_symbol_location->getLineNumber());
         $this->assertSame(21, $method_symbol_location->getColumn());
-
 
         $property_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::$a');
 
@@ -130,13 +127,11 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
         $this->assertSame(6, $property_symbol_location->getLineNumber());
         $this->assertSame(31, $property_symbol_location->getColumn());
 
-
         $constant_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::BANANA');
 
         $this->assertNotNull($constant_symbol_location);
         $this->assertSame(8, $constant_symbol_location->getLineNumber());
         $this->assertSame(27, $constant_symbol_location->getColumn());
-
 
         $function_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\bar()');
 

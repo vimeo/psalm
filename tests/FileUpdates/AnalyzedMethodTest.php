@@ -4,8 +4,8 @@ namespace Psalm\Tests\FileUpdates;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\TestConfig;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
 class AnalyzedMethodTest extends \Psalm\Tests\TestCase
 {
@@ -180,7 +180,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
-                        'foo\a::barbar' => 1
+                        'foo\a::barbar' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
@@ -189,7 +189,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'invalidateAfterPropertyChange' => [
                 'start_files' => [
@@ -244,7 +244,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
-                ]
+                ],
             ],
             'invalidateAfterStaticPropertyChange' => [
                 'start_files' => [
@@ -299,7 +299,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
-                ]
+                ],
             ],
             'invalidateAfterStaticFlipPropertyChange' => [
                 'start_files' => [
@@ -354,7 +354,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
-                ]
+                ],
             ],
             'invalidateAfterConstantChange' => [
                 'start_files' => [
@@ -407,7 +407,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [
                         'foo\b::bar' => 1,
                     ],
-                ]
+                ],
             ],
             'dontInvalidateTraitMethods' => [
                 'start_files' => [
@@ -496,7 +496,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 [
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'invalidateTraitMethodsWhenTraitRemoved' => [
                 'start_files' => [
@@ -572,7 +572,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         'foo\a::barbar&foo\t::barbar' => 1, // this doesn't exist, so we don't care
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
-                ]
+                ],
             ],
             'invalidateTraitMethodsWhenTraitReplaced' => [
                 'start_files' => [
@@ -650,7 +650,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
-                ]
+                ],
             ],
             'invalidateTraitMethodsWhenMethodChanged' => [
                 'start_files' => [
@@ -737,7 +737,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         'foo\a::bat&foo\t::bat' => 1,
                     ],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
-                ]
+                ],
             ],
             'invalidateTraitMethodsWhenMethodSuperimposed' => [
                 'start_files' => [
@@ -803,7 +803,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
                     getcwd() . DIRECTORY_SEPARATOR . 'B.php' => [],
-                ]
+                ],
             ],
             'dontInvalidateConstructor' => [
                 'start_files' => [
@@ -862,7 +862,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                         'foo\a::setfoo' => 1,
                         'foo\a::reallysetfoo' => 1,
                     ],
-                ]
+                ],
             ],
             'invalidateConstructorWhenDependentMethodChanges' => [
                 'start_files' => [
@@ -918,7 +918,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::setfoo' => 1,
                     ],
-                ]
+                ],
             ],
             'invalidateConstructorWhenDependentTraitMethodChanges' => [
                 'start_files' => [
@@ -975,7 +975,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 ],
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [],
-                ]
+                ],
             ],
             'rescanPropertyAssertingMethod' => [
                 'start_files' => [
@@ -1022,7 +1022,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     'PropertyNotSetInConstructor' => \Psalm\Config::REPORT_INFO,
                     'DocblockTypeContradiction' => \Psalm\Config::REPORT_INFO,
                     'RedundantConditionGivenDocblockType' => \Psalm\Config::REPORT_INFO,
-                ]
+                ],
             ],
             'noChangeAfterSyntaxError' => [
                 'start_files' => [
@@ -1064,7 +1064,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                     ],
-                ]
+                ],
             ],
             'nothingBeforeSyntaxError' => [
                 'start_files' => [
@@ -1107,7 +1107,7 @@ class AnalyzedMethodTest extends \Psalm\Tests\TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 1,
                     ],
-                ]
+                ],
             ],
         ];
     }

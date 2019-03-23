@@ -1,23 +1,28 @@
 <?php
-
 namespace ClassAliasStubTest;
 
-class A {
+class A
+{
     /**
      * @var string
      */
-    public $foo = "hello";
+    public $foo = 'hello';
 
-    public function bar(string $s) : string {
-        return $s . " I’m here";
+    public function bar(string $s) : string
+    {
+        return $s . ' I’m here';
     }
 
-    public static function bat() : void {}
+    public static function bat() : void
+    {
+    }
 }
 
-interface I {}
+interface I
+{
+}
 
-class_alias("ClassAliasStubTest\\A", "ClassAliasStubTest\\B");
+class_alias('ClassAliasStubTest\\A', 'ClassAliasStubTest\\B');
 class_alias(A::class, C::class);
 
 $arr = [

@@ -4,8 +4,8 @@ namespace Psalm\Tests\FileUpdates;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\TestConfig;
 use Psalm\Tests\Internal\Provider;
+use Psalm\Tests\TestConfig;
 
 class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 {
@@ -183,7 +183,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'invalidateAfterConstantChange' => [
                 'file_stages' => [
@@ -220,7 +220,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'invalidateAfterSkippedAnalysis' => [
                 'file_stages' => [
@@ -305,7 +305,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'NullableReturnStatement'
+                'error_message' => 'NullableReturnStatement',
             ],
             'invalidateMissingConstructorAfterPropertyChange' => [
                 'file_stages' => [
@@ -328,7 +328,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'MissingConstructor'
+                'error_message' => 'MissingConstructor',
             ],
             'invalidateEmptyConstructorAfterPropertyChange' => [
                 'file_stages' => [
@@ -355,7 +355,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'invalidateEmptyTraitConstructorAfterPropertyChange' => [
                 'file_stages' => [
@@ -394,7 +394,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'invalidateEmptyTraitConstructorAfterTraitPropertyChange' => [
                 'file_stages' => [
@@ -436,7 +436,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'invalidateSetInPrivateMethodConstructorCheck' => [
                 'file_stages' => [
@@ -474,7 +474,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'invalidateMissingConstructorAfterParentPropertyChange' => [
                 'file_stages' => [
@@ -505,7 +505,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             class B extends A {}',
                     ],
                 ],
-                'error_message' => 'MissingConstructor'
+                'error_message' => 'MissingConstructor',
             ],
             'invalidateNotSetInConstructorAfterParentPropertyChange' => [
                 'file_stages' => [
@@ -544,7 +544,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'PropertyNotSetInConstructor'
+                'error_message' => 'PropertyNotSetInConstructor',
             ],
             'duplicateClass' => [
                 'file_stages' => [
@@ -562,7 +562,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             class A {}',
                     ],
                 ],
-                'error_message' => 'DuplicateClass'
+                'error_message' => 'DuplicateClass',
             ],
             'duplicateMethod' => [
                 'file_stages' => [
@@ -584,7 +584,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_message' => 'DuplicateMethod'
+                'error_message' => 'DuplicateMethod',
             ],
         ];
     }

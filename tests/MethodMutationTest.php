@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 
 class MethodMutationTest extends TestCase
 {

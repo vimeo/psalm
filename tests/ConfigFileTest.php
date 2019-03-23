@@ -1,8 +1,8 @@
 <?php
 namespace Psalm\Tests;
 
-use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Config;
+use Psalm\Internal\PluginManager\ConfigFile;
 
 /** @group PluginManager */
 class ConfigFileTest extends TestCase
@@ -202,17 +202,17 @@ class ConfigFileTest extends TestCase
     }
 
     /**
-    * @param string $expected_template
-    * @param string $contents
-    *
-    * @return bool
-    */
+     * @param string $expected_template
+     * @param string $contents
+     *
+     * @return bool
+     */
     protected static function compareContentWithTemplateAndTrailingLineEnding($expected_template, $contents)
     {
         $passed = false;
 
         foreach ([PHP_EOL, "\n", "\r", "\r\n"] as $eol) {
-            if (! $passed && $contents === ($expected_template . $eol)) {
+            if (!$passed && $contents === ($expected_template . $eol)) {
                 $passed = true;
             }
         }

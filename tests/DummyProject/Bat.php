@@ -1,5 +1,4 @@
 <?php
-
 namespace Vimeo\Test\DummyProject;
 
 class Bat
