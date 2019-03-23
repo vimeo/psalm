@@ -34,6 +34,7 @@ class FileReferenceCacheProvider
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
     const ISSUES_CACHE_NAME = 'issues';
     const FILE_MAPS_CACHE_NAME = 'file_maps';
+    const TYPE_COVERAGE_CACHE_NAME = 'type_coverage';
     const CONFIG_HASH_CACHE_NAME = 'config';
 
     /**
@@ -263,6 +264,45 @@ class FileReferenceCacheProvider
             file_put_contents(
                 $file_maps_cache_location,
                 serialize($file_maps)
+            );
+        }
+    }
+
+    /**
+     * @return array<string, array{int, int}>|false
+     */
+    public function getTypeCoverage()
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
+
+        if ($cache_directory
+            && file_exists($type_coverage_cache_location)
+            && !$this->config_changed
+        ) {
+            /** @var array<string, array{int, int}> */
+            $type_coverage_cache = unserialize(file_get_contents($type_coverage_cache_location));
+            return $type_coverage_cache;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, array{int, int}> $mixed_counts
+     * @return void
+     */
+    public function setTypeCoverage(array $mixed_counts)
+    {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory) {
+            $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
+
+            file_put_contents(
+                $type_coverage_cache_location,
+                serialize($mixed_counts)
             );
         }
     }

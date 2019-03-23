@@ -133,7 +133,15 @@ class PropertyAssignmentAnalyzer
             }
 
             if ($lhs_type->hasMixed()) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                    && (!(($parent_source = $statements_analyzer->getSource())
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                ) {
+                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                }
 
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
@@ -148,7 +156,15 @@ class PropertyAssignmentAnalyzer
                 return null;
             }
 
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+            if (!$context->collect_initializations
+                && !$context->collect_mutations
+                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                && (!(($parent_source = $statements_analyzer->getSource())
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+            ) {
+                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+            }
 
             if ($lhs_type->isNull()) {
                 if (IssueBuffer::accepts(

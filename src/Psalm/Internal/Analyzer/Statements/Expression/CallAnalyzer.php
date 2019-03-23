@@ -1193,7 +1193,15 @@ class CallAnalyzer
 
         if (!isset($arg->value->inferredType)) {
             if ($function_param && !$function_param->by_ref) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                    && (!(($parent_source = $statements_analyzer->getSource())
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                ) {
+                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                }
 
                 $param_type = $function_param->type;
 
@@ -1486,7 +1494,15 @@ class CallAnalyzer
                 }
 
                 if ($arg_type->hasMixed()) {
-                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                    if (!$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                        && (!(($parent_source = $statements_analyzer->getSource())
+                                instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                            || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                    ) {
+                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                    }
 
                     if (IssueBuffer::accepts(
                         new MixedArgument(
@@ -2079,7 +2095,16 @@ class CallAnalyzer
         }
 
         if ($input_type->hasMixed()) {
-            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+            if (!$context->collect_initializations
+                && !$context->collect_mutations
+                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                && (!(($parent_source = $statements_analyzer->getSource())
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+            ) {
+                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+            }
+
             if (IssueBuffer::accepts(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier . ' cannot be mixed, expecting ' .
@@ -2108,7 +2133,15 @@ class CallAnalyzer
             return null;
         }
 
-        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+            && (!(($parent_source = $statements_analyzer->getSource())
+                    instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+        ) {
+            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+        }
 
         $param_type = TypeAnalyzer::simplifyUnionType(
             $codebase,

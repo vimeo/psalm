@@ -937,8 +937,16 @@ class BinaryOpAnalyzer
             || $left_type_part instanceof TTemplateParam
             || $right_type_part instanceof TTemplateParam
         ) {
-            if ($statements_source && $codebase) {
-                $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
+            if ($statements_source && $codebase && $context) {
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                    && $statements_source->getFilePath() === $statements_source->getRootFilePath()
+                    && (!(($source = $statements_source->getSource())
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                        || !$source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                ) {
+                    $codebase->analyzer->incrementMixedCount($statements_source->getFilePath());
+                }
             }
 
             if ($left_type_part instanceof TMixed || $left_type_part instanceof TTemplateParam) {
@@ -987,8 +995,16 @@ class BinaryOpAnalyzer
             return $result_type;
         }
 
-        if ($statements_source && $codebase) {
-            $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
+        if ($statements_source && $codebase && $context) {
+            if (!$context->collect_initializations
+                && !$context->collect_mutations
+                && $statements_source->getFilePath() === $statements_source->getRootFilePath()
+                && (!(($parent_source = $statements_source->getSource())
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+            ) {
+                $codebase->analyzer->incrementNonMixedCount($statements_source->getFilePath());
+            }
         }
 
         if ($left_type_part instanceof TArray
@@ -1273,7 +1289,15 @@ class BinaryOpAnalyzer
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
-                $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                if (!$context->collect_initializations
+                    && !$context->collect_mutations
+                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                    && (!(($parent_source = $statements_analyzer->getSource())
+                            instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                        || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+                ) {
+                    $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                }
 
                 if ($left_type->hasMixed()) {
                     if (IssueBuffer::accepts(
@@ -1300,7 +1324,15 @@ class BinaryOpAnalyzer
                 return;
             }
 
-            $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+            if (!$context->collect_initializations
+                && !$context->collect_mutations
+                && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                && (!(($parent_source = $statements_analyzer->getSource())
+                        instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer)
+                    || !$parent_source->getSource() instanceof \Psalm\Internal\Analyzer\TraitAnalyzer)
+            ) {
+                $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+            }
 
             if ($left_type->isNull()) {
                 if (IssueBuffer::accepts(

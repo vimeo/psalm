@@ -155,7 +155,13 @@ class ReturnAnalyzer
                             }
                         }
 
-                        $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                        if (!$context->collect_initializations
+                            && !$context->collect_mutations
+                            && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                            && !($source->getSource() instanceof TraitAnalyzer)
+                        ) {
+                            $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
+                        }
 
                         if (IssueBuffer::accepts(
                             new MixedReturnStatement(
@@ -170,7 +176,13 @@ class ReturnAnalyzer
                         return null;
                     }
 
-                    $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+                    if (!$context->collect_initializations
+                        && !$context->collect_mutations
+                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                        && !($source->getSource() instanceof TraitAnalyzer)
+                    ) {
+                        $codebase->analyzer->incrementNonMixedCount($statements_analyzer->getFilePath());
+                    }
 
                     if ($local_return_type->isVoid()) {
                         if (IssueBuffer::accepts(

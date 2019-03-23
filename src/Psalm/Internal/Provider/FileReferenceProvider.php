@@ -89,6 +89,11 @@ class FileReferenceProvider
     private static $file_maps = [];
 
     /**
+     * @var array<string, array{int, int}>
+     */
+    private static $mixed_counts = [];
+
+    /**
      * @var ?FileReferenceCacheProvider
      */
     public $cache;
@@ -297,6 +302,14 @@ class FileReferenceProvider
 
             self::$issues = $issues;
 
+            $mixed_counts = $this->cache->getTypeCoverage();
+
+            if ($mixed_counts === false) {
+                return false;
+            }
+
+            self::$mixed_counts = $mixed_counts;
+
             self::$file_maps = $this->cache->getFileMapCache() ?: [];
 
             return true;
@@ -338,6 +351,7 @@ class FileReferenceProvider
             $this->cache->setCachedMethodReferences(self::$class_method_references);
             $this->cache->setCachedIssues(self::$issues);
             $this->cache->setFileMapCache(self::$file_maps);
+            $this->cache->setTypeCoverage(self::$mixed_counts);
             $this->cache->setAnalyzedMethodCache(self::$analyzed_methods);
         }
     }
@@ -445,6 +459,23 @@ class FileReferenceProvider
     public function setFileMaps(array $file_maps)
     {
         self::$file_maps = $file_maps;
+    }
+
+    /**
+     * @return array<string, array{int, int}>
+     */
+    public function getTypeCoverage()
+    {
+        return self::$mixed_counts;
+    }
+
+    /**
+     * @param array<string, array{int, int}> $mixed_counts
+     * @return  void
+     */
+    public function setTypeCoverage(array $mixed_counts)
+    {
+        self::$mixed_counts = array_merge(self::$mixed_counts, $mixed_counts);
     }
 
     /**

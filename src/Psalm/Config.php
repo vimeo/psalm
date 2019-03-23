@@ -1178,7 +1178,9 @@ class Config
      */
     public function reportTypeStatsForFile($file_path)
     {
-        return $this->project_files && $this->project_files->reportTypeStats($file_path);
+        return $this->project_files
+            && $this->project_files->allows($file_path)
+            && $this->project_files->reportTypeStats($file_path);
     }
 
     /**

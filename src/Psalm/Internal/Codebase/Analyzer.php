@@ -292,6 +292,7 @@ class Analyzer
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
+        $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
         $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->diff_methods) {
@@ -332,6 +333,7 @@ class Analyzer
         $diff_map = $statements_provider->getDiffMap();
 
         $all_referencing_methods = $codebase->file_reference_provider->getMethodsReferencing();
+        $this->mixed_counts = $codebase->file_reference_provider->getTypeCoverage();
 
         $classlikes = $codebase->classlikes;
 
@@ -414,6 +416,7 @@ class Analyzer
         foreach ($this->files_to_analyze as $file_path) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
             $codebase->file_reference_provider->clearExistingFileMapsForFile($file_path);
+            $this->setMixedCountsForFile($file_path, [0, 0]);
         }
     }
 
@@ -599,7 +602,13 @@ class Analyzer
      */
     public function getMixedCounts()
     {
-        return $this->mixed_counts;
+        $all_deep_scanned_files = [];
+
+        foreach ($this->files_to_analyze as $file_path => $_) {
+            $all_deep_scanned_files[$file_path] = true;
+        }
+
+        return array_intersect_key($this->mixed_counts, $all_deep_scanned_files);
     }
 
     /**
@@ -636,13 +645,34 @@ class Analyzer
     }
 
     /**
-     * @return string
+     * @return array{int, int}
      */
-    public function getTypeInferenceSummary()
+    public function getTotalTypeCoverage(\Psalm\Codebase $codebase)
     {
         $mixed_count = 0;
         $nonmixed_count = 0;
 
+        foreach ($codebase->file_reference_provider->getTypeCoverage() as $file_path => $counts) {
+            if (!$this->config->reportTypeStatsForFile($file_path)) {
+                continue;
+            }
+
+            list($path_mixed_count, $path_nonmixed_count) = $counts;
+
+            if (isset($this->mixed_counts[$file_path])) {
+                $mixed_count += $path_mixed_count;
+                $nonmixed_count += $path_nonmixed_count;
+            }
+        }
+
+        return [$mixed_count, $nonmixed_count];
+    }
+
+    /**
+     * @return string
+     */
+    public function getTypeInferenceSummary(\Psalm\Codebase $codebase)
+    {
         $all_deep_scanned_files = [];
 
         foreach ($this->files_to_analyze as $file_path => $_) {
@@ -653,17 +683,7 @@ class Analyzer
             }
         }
 
-        foreach ($all_deep_scanned_files as $file_path => $_) {
-            if (!$this->config->reportTypeStatsForFile($file_path)) {
-                continue;
-            }
-
-            if (isset($this->mixed_counts[$file_path])) {
-                list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
-                $mixed_count += $path_mixed_count;
-                $nonmixed_count += $path_nonmixed_count;
-            }
-        }
+        list($mixed_count, $nonmixed_count) = $this->getTotalTypeCoverage($codebase);
 
         $total = $mixed_count + $nonmixed_count;
 
@@ -674,12 +694,13 @@ class Analyzer
         }
 
         if (!$total) {
-            return 'Psalm was unable to infer types in any of '
-                . $total_files . ' file' . ($total_files > 1 ? 's' : '');
+            return 'Psalm was unable to infer types in the codebase';
         }
 
-        return 'Psalm was able to infer types for ' . number_format(100 * $nonmixed_count / $total, 3) . '%'
-            . ' of analyzed code (' . $total_files . ' file' . ($total_files > 1 ? 's' : '') . ')';
+        $percentage = $nonmixed_count === $total ? '100' : number_format(100 * $nonmixed_count / $total, 4);
+
+        return 'Psalm was able to infer types for ' . $percentage . '%'
+            . ' of the codebase';
     }
 
     /**
