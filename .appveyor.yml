@@ -1,0 +1,69 @@
+build: false
+platform:
+  - x64
+
+clone_folder: c:\projects\php-project-workspace
+
+## Set up environment variables
+init:
+  - SET PATH=C:\Program Files\OpenSSL;c:\tools\php;%PATH%
+  - SET COMPOSER_NO_INTERACTION=1
+  - SET PHP=1 # This var is connected to PHP install cache
+  - SET ANSICON=121x90 (121x90)
+
+environment:
+  matrix:
+    - php_ver_target: 7.0
+      DEPS: 'low'
+    - php_ver_target: 7.0
+      DEPS: 'high'
+    - php_ver_target: 7.1
+      DEPS: 'low'
+    - php_ver_target: 7.1
+      DEPS: 'high'
+    - php_ver_target: 7.2
+      DEPS: 'low'
+    - php_ver_target: 7.2
+      DEPS: 'high'
+    - php_ver_target: 7.3
+      DEPS: 'low'
+    - php_ver_target: 7.3
+      DEPS: 'high'
+
+cache:
+  - '%LOCALAPPDATA%\Composer\files -> composer.lock'
+  - composer.phar
+  # Cache chocolatey packages
+  - C:\ProgramData\chocolatey\bin -> .appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> .appveyor.yml
+  # Cache php install
+  - c:\tools\php -> .appveyor.yml
+
+## Install PHP and composer, and run the appropriate composer command
+install:
+    - IF EXIST c:\tools\php (SET PHP=0) # Checks for the PHP install being cached
+    - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version ((choco search php --exact --all-versions -r | select-string -pattern $env:php_ver_target | sort { [version]($_ -split '\|' | select -last 1) } -Descending | Select-Object -first 1) -replace '[php|]','')
+    - cd c:\tools\php
+    - IF %PHP%==1 copy php.ini-production php.ini /Y
+    - IF %PHP%==1 echo date.timezone="UTC" >> php.ini
+    - IF %PHP%==1 echo extension_dir=ext >> php.ini
+    - IF %PHP%==1 echo extension=php_openssl.dll >> php.ini
+    - IF %PHP%==1 echo extension=php_mbstring.dll >> php.ini
+    - IF %PHP%==1 echo extension=php_fileinfo.dll >> php.ini
+    - IF %PHP%==1 echo zend.assertions=1 >> php.ini
+    - IF %PHP%==1 echo assert.exception=On >> php.ini
+    - IF %PHP%==1 echo error_reporting=E_ALL >> php.ini
+    - IF %PHP%==1 echo @php %%~dp0composer.phar %%* > composer.bat
+    - appveyor-retry appveyor DownloadFile https://getcomposer.org/composer.phar
+    - cd c:\projects\php-project-workspace
+    - php -r "phpinfo(INFO_GENERAL);"
+    - if NOT DEFINED APPVEYOR_REPO_TAG_NAME (set COMPOSER_ROOT_VERSION=dev-master)
+    - if %DEPS%==low appveyor-retry composer update --no-interaction --no-suggest --prefer-source --no-progress --profile --prefer-lowest --prefer-stable
+    - if %DEPS%==high appveyor-retry composer update --no-interaction --no-suggest --prefer-source --no-progress --profile
+    - composer show
+
+## Run the actual test
+test_script:
+    - cd c:\projects\php-project-workspace
+    - vendor/bin/phpunit
+    - php ./psalm --shepherd
