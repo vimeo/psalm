@@ -352,6 +352,9 @@ class Config
     /** @var string|null */
     public $error_baseline = null;
 
+    /** @var string */
+    public $spirit_host = 'spirit.psalm.dev';
+
     /**
      * @var array<string, string>
      */
