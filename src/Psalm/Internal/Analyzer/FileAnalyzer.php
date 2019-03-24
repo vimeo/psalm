@@ -3,9 +3,11 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Type;
@@ -143,6 +145,7 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
 
         $this->context->is_global = true;
         $this->context->defineGlobals();
+        $this->context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
 
         try {
             $stmts = $codebase->getStatementsForFile($this->file_path);
@@ -174,6 +177,21 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
         if (!$preserve_analyzers) {
             $this->class_analyzers_to_analyze = [];
             $this->interface_analyzers_to_analyze = [];
+        }
+
+        if ($codebase->config->check_for_throws_in_global_scope) {
+            $uncaught_throws = $statements_analyzer->getUncaughtThrows($this->context);
+            foreach ($uncaught_throws as $possibly_thrown_exception => $codelocation) {
+                if (IssueBuffer::accepts(
+                    new UncaughtThrowInGlobalScope(
+                        $possibly_thrown_exception . ' is thrown but not caught in global scope',
+                        $codelocation
+                    ),
+                    $this->getSuppressedIssues()
+                )) {
+                    // fall through
+                }
+            }
         }
     }
 

@@ -1594,4 +1594,46 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     {
         $this->byref_uses = $byref_uses;
     }
+
+    /**
+     * @return array<string, CodeLocation>
+     */
+    public function getUncaughtThrows(Context $context)
+    {
+        $uncaught_throws = [];
+
+        if ($context->collect_exceptions) {
+            if ($context->possibly_thrown_exceptions) {
+                $ignored_exceptions = array_change_key_case(
+                    $this->codebase->config->ignored_exceptions
+                );
+                $ignored_exceptions_and_descendants = array_change_key_case(
+                    $this->codebase->config->ignored_exceptions_and_descendants
+                );
+
+                foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocation) {
+                    if (isset($ignored_exceptions[strtolower($possibly_thrown_exception)])) {
+                        continue;
+                    }
+
+                    $is_expected = false;
+
+                    foreach ($ignored_exceptions_and_descendants as $expected_exception => $_) {
+                        if ($expected_exception === $possibly_thrown_exception
+                            || $this->codebase->classExtends($possibly_thrown_exception, $expected_exception)
+                        ) {
+                            $is_expected = true;
+                            break;
+                        }
+                    }
+
+                    if (!$is_expected) {
+                        $uncaught_throws[$possibly_thrown_exception] = $codelocation;
+                    }
+                }
+            }
+        }
+
+        return $uncaught_throws;
+    }
 }

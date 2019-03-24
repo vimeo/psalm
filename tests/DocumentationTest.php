@@ -155,6 +155,9 @@ class DocumentationTest extends TestCase
                 case 'MissingThrowsDocblock':
                     continue 2;
 
+                case 'UncaughtThrowInGlobalScope':
+                    continue 2;
+
                 case 'InvalidStringClass':
                     continue 2;
 

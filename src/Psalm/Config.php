@@ -220,6 +220,11 @@ class Config
     /**
      * @var bool
      */
+    public $check_for_throws_in_global_scope = false;
+
+    /**
+     * @var bool
+     */
     public $ignore_internal_falsable_issues = true;
 
     /**
@@ -633,6 +638,11 @@ class Config
         if (isset($config_xml['checkForThrowsDocblock'])) {
             $attribute_text = (string) $config_xml['checkForThrowsDocblock'];
             $config->check_for_throws_docblock = $attribute_text === 'true' || $attribute_text === '1';
+        }
+
+        if (isset($config_xml['checkForThrowsInGlobalScope'])) {
+            $attribute_text = (string) $config_xml['checkForThrowsInGlobalScope'];
+            $config->check_for_throws_in_global_scope = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml['forbidEcho'])) {

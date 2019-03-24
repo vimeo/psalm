@@ -831,63 +831,33 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
-        if ($context->collect_exceptions) {
-            if ($context->possibly_thrown_exceptions) {
-                $ignored_exceptions = array_change_key_case(
-                    $codebase->config->ignored_exceptions
-                );
-                $ignored_exceptions_and_descendants = array_change_key_case(
-                    $codebase->config->ignored_exceptions_and_descendants
-                );
+        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $_) {
+            $is_expected = false;
 
-                $undocumented_throws = [];
-
-                foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $_) {
-                    $is_expected = false;
-
-                    foreach ($storage->throws as $expected_exception => $_) {
-                        if ($expected_exception === $possibly_thrown_exception
-                            || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
-                        ) {
-                            $is_expected = true;
-                            break;
-                        }
-                    }
-
-                    foreach ($ignored_exceptions_and_descendants as $expected_exception => $_) {
-                        if ($expected_exception === $possibly_thrown_exception
-                            || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
-                        ) {
-                            $is_expected = true;
-                            break;
-                        }
-                    }
-
-                    if (!$is_expected) {
-                        $undocumented_throws[$possibly_thrown_exception] = true;
-                    }
+            foreach ($storage->throws as $expected_exception => $_) {
+                if ($expected_exception === $possibly_thrown_exception
+                    || $codebase->classExtends($possibly_thrown_exception, $expected_exception)
+                ) {
+                    $is_expected = true;
+                    break;
                 }
+            }
 
-                foreach ($undocumented_throws as $possibly_thrown_exception => $_) {
-                    if (isset($ignored_exceptions[strtolower($possibly_thrown_exception)])) {
-                        continue;
-                    }
-
-                    if (IssueBuffer::accepts(
-                        new MissingThrowsDocblock(
-                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                                . ' or add a @throws annotation',
-                            new CodeLocation(
-                                $this,
-                                $this->function,
-                                null,
-                                true
-                            )
-                        ),
-                        $this->getSuppressedIssues()
-                    )) {
-                        // fall through
-                    }
+            if (!$is_expected) {
+                if (IssueBuffer::accepts(
+                    new MissingThrowsDocblock(
+                        $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                            . ' or add a @throws annotation',
+                        new CodeLocation(
+                            $this,
+                            $this->function,
+                            null,
+                            true
+                        )
+                    ),
+                    $this->getSuppressedIssues()
+                )) {
+                    // fall through
                 }
             }
         }
