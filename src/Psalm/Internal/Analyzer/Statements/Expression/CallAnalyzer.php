@@ -275,7 +275,10 @@ class CallAnalyzer
             $method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
 
             if ($context->collect_exceptions) {
-                $context->possibly_thrown_exceptions += $method_storage->throws;
+                $context->possibly_thrown_exceptions += array_fill_keys(
+                    array_keys($method_storage->throws),
+                    $code_location
+                );
             }
         }
 

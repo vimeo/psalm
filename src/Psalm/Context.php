@@ -213,7 +213,7 @@ class Context
     /**
      * A list of classes or interfaces that may have been thrown
      *
-     * @var array<string, bool>
+     * @var array<string, CodeLocation>
      */
     public $possibly_thrown_exceptions = [];
 

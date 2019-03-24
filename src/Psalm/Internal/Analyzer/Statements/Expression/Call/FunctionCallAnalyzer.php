@@ -391,7 +391,10 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                         }
 
                         if ($function_storage && $context->collect_exceptions) {
-                            $context->possibly_thrown_exceptions += $function_storage->throws;
+                            $context->possibly_thrown_exceptions += array_fill_keys(
+                                array_keys($function_storage->throws),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            );
                         }
 
                         try {
