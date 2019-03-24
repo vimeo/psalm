@@ -831,7 +831,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
-        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $_) {
+        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocation) {
             $is_expected = false;
 
             foreach ($storage->throws as $expected_exception => $_) {
@@ -848,12 +848,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     new MissingThrowsDocblock(
                         $possibly_thrown_exception . ' is thrown but not caught - please either catch'
                             . ' or add a @throws annotation',
-                        new CodeLocation(
-                            $this,
-                            $this->function,
-                            null,
-                            true
-                        )
+                        $codelocation
                     ),
                     $this->getSuppressedIssues()
                 )) {
