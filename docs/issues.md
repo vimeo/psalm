@@ -1957,6 +1957,20 @@ $a = "hello";
 if ($a === 5) {}
 ```
 
+### UncaughtThrowInGlobalScope
+
+Emitted when a possible exception isn't caught in global scope
+
+```php
+/**
+ * @throws \Exception
+ */
+function foo() : int {
+    return random_int(0, 1);
+}
+foo();
+```
+
 ### UndefinedClass
 
 Emitted when referencing a class that doesn’t exist

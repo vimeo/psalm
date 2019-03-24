@@ -149,6 +149,14 @@ Occasionally a param default will not match up with the docblock type. By defaul
 ```
 When `true`, Psalm will check that the developer has supplied `@throws` docblocks for every exception thrown in a given function or method. Defaults to `false`.
 
+#### checkForThrowsInGlobalScope
+```xml
+<psalm
+  checkForThrowsDocblock="[bool]"
+>
+```
+When `true`, Psalm will check that the developer has caught every exception in global scope. Defaults to `false`.
+
 #### ignoreInternalFunctionFalseReturn
 
 ```xml
