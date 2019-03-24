@@ -52,9 +52,10 @@ class ThrowAnalyzer
                         return false;
                     }
                 } elseif ($context->collect_exceptions) {
+                    $codelocation = new CodeLocation($file_analyzer, $stmt);
                     foreach ($throw_type->getTypes() as $throw_atomic_type) {
                         if ($throw_atomic_type instanceof TNamedObject) {
-                            $context->possibly_thrown_exceptions[$throw_atomic_type->value] = true;
+                            $context->possibly_thrown_exceptions[$throw_atomic_type->value] = $codelocation;
                         }
                     }
                 }
