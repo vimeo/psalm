@@ -533,10 +533,10 @@ class Algebra
 
         $impossibilities = [];
 
-        foreach ($clause->possibilities as $var_id => $possiblity) {
+        foreach ($clause->possibilities as $var_id => $possibility) {
             $impossibility = [];
 
-            foreach ($possiblity as $type) {
+            foreach ($possibility as $type) {
                 if (($type[0] !== '=' && $type[0] !== '~'
                         && (!isset($type[1]) || ($type[1] !== '=' && $type[1] !== '~')))
                     || strpos($type, '(')

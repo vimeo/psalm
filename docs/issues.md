@@ -278,7 +278,7 @@ class B extends A {
 
 ### ImplicitToStringCast
 
-Emitted when implictly converting an object with a `__toString` method to a string
+Emitted when implicitly converting an object with a `__toString` method to a string
 
 ```php
 class A {

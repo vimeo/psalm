@@ -3,7 +3,7 @@
 namespace Psalm\Internal\ExecutionEnvironment;
 
 /**
- * Environment variables collector for CI envrionment.
+ * Environment variables collector for CI environment.
  *
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  */
