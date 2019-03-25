@@ -136,7 +136,7 @@ class PropertyFetchAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new UninitializedProperty(
-                            'Cannot use unitialized property ' . $var_id,
+                            'Cannot use uninitialized property ' . $var_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                             $var_id
                         ),

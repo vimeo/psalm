@@ -25,7 +25,7 @@ interface EmitterInterface
     /**
      * Emits an event.
      *
-     * This method will return true if 0 or more listeners were succesfully
+     * This method will return true if 0 or more listeners were successfully
      * handled. false is returned if one of the events broke the event chain.
      *
      * If the continueCallBack is specified, this callback will be called every

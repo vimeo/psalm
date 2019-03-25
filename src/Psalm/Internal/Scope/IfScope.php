@@ -67,7 +67,7 @@ class IfScope
 
     /**
      * These are the set of clauses that could be applied after the `if`
-     * statement, if the `if` statement contains branches with leaving statments,
+     * statement, if the `if` statement contains branches with leaving statements,
      * and the else leaves too
      *
      * @var array<int, Clause>

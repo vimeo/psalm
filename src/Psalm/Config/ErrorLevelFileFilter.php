@@ -28,7 +28,7 @@ class ErrorLevelFileFilter extends FileFilter
             $filter->error_level = (string) $e['type'];
 
             if (!in_array($filter->error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
-                throw new \Psalm\Exception\ConfigException('Unexepected error level ' . $filter->error_level);
+                throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $filter->error_level);
             }
         } else {
             throw new \Psalm\Exception\ConfigException('<type> element expects a level');

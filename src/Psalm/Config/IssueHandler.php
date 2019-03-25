@@ -29,7 +29,7 @@ class IssueHandler
             $handler->error_level = (string) $e['errorLevel'];
 
             if (!in_array($handler->error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
-                throw new \Psalm\Exception\ConfigException('Unexepected error level ' . $handler->error_level);
+                throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $handler->error_level);
             }
         }
 
@@ -49,7 +49,7 @@ class IssueHandler
     public function setErrorLevel($error_level)
     {
         if (!in_array($error_level, \Psalm\Config::$ERROR_LEVELS, true)) {
-            throw new \Psalm\Exception\ConfigException('Unexepected error level ' . $error_level);
+            throw new \Psalm\Exception\ConfigException('Unexpected error level ' . $error_level);
         }
 
         $this->error_level = $error_level;
