@@ -857,6 +857,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 && $guide_param->type
                 && !$guide_param->type->hasMixed()
                 && !$guide_param->type->from_docblock
+                && ($cased_guide_method_id !== 'SoapClient::__soapCall' || $implemeneter_param_type)
                 && (
                     !$implemeneter_param_type
                     || (
@@ -872,7 +873,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new MethodSignatureMismatch(
                         'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implementer_method_storage->params[$i]->type . '\', expecting \'' .
+                            $implemeneter_param_type . '\', expecting \'' .
                             $guide_param->type . '\' as defined by ' .
                             $cased_guide_method_id,
                         $implementer_method_storage->params[$i]->location

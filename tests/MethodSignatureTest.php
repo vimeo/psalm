@@ -41,6 +41,32 @@ class MethodSignatureTest extends TestCase
                     ) {
                         return $_GET["foo"];
                     }
+                }
+
+                class B extends SoapClient
+                {
+                    public function __soapCall(
+                        $function_name,
+                        $arguments,
+                        $options = [],
+                        $input_headers = [],
+                        &$output_headers = []
+                    ) {
+                        return $_GET["foo"];
+                    }
+                }
+
+                class C extends SoapClient
+                {
+                    public function __soapCall(
+                        string $function_name,
+                        $arguments,
+                        $options = [],
+                        $input_headers = [],
+                        &$output_headers = []
+                    ) {
+                        return $_GET["foo"];
+                    }
                 }'
         );
 
