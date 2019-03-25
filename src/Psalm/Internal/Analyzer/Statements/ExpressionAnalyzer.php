@@ -255,7 +255,7 @@ class ExpressionAnalyzer
                 $fake_right_expr = new PhpParser\Node\Scalar\LNumber(1, $stmt->getAttributes());
                 $fake_right_expr->inferredType = Type::getInt();
 
-                BinaryOpAnalyzer::analyzeNonDivArithmenticOp(
+                BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
                     $stmt->var,
                     $fake_right_expr,

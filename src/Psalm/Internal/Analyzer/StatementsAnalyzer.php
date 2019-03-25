@@ -1003,7 +1003,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul ||
                 $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
-                BinaryOpAnalyzer::analyzeNonDivArithmenticOp(
+                BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
                     $file_source instanceof StatementsSource ? $file_source : null,
                     $stmt->left,
                     $stmt->right,
