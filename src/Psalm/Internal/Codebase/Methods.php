@@ -245,17 +245,9 @@ class Methods
         if ($declaring_method_id = $this->getDeclaringMethodId($method_id)) {
             $storage = $this->getStorage($declaring_method_id);
 
-            $non_null_param_types = array_filter(
-                $storage->params,
-                /** @return bool */
-                function (FunctionLikeParameter $p) {
-                    return $p->type !== null && $p->has_docblock_type;
-                }
-            );
-
             $params = $storage->params;
 
-            if ($non_null_param_types) {
+            if ($storage->has_docblock_param_types) {
                 return $params;
             }
 
@@ -273,49 +265,40 @@ class Methods
                 return $params;
             }
 
-            foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
-                $overridden_storage = $this->getStorage($overridden_method_id);
+            if (!isset($class_storage->documenting_method_ids[$appearing_method_name])) {
+                return $params;
+            }
 
-                list($overriding_fq_class_name) = explode('::', $overridden_method_id);
+            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+            $overridden_storage = $this->getStorage($overridden_method_id);
 
-                $non_null_param_types = array_filter(
-                    $overridden_storage->params,
-                    /** @return bool */
-                    function (FunctionLikeParameter $p) {
-                        return $p->type !== null && $p->has_docblock_type;
-                    }
-                );
+            list($overriding_fq_class_name) = explode('::', $overridden_method_id);
 
-                if ($non_null_param_types) {
-                    foreach ($params as $i => $param) {
-                        if (isset($overridden_storage->params[$i]->type)
-                            && $overridden_storage->params[$i]->has_docblock_type
-                            && $overridden_storage->params[$i]->name === $param->name
-                        ) {
-                            $params[$i] = clone $param;
-                            /** @var Type\Union $params[$i]->type */
-                            $params[$i]->type = clone $overridden_storage->params[$i]->type;
+            foreach ($params as $i => $param) {
+                if (isset($overridden_storage->params[$i]->type)
+                    && $overridden_storage->params[$i]->has_docblock_type
+                    && $overridden_storage->params[$i]->name === $param->name
+                ) {
+                    $params[$i] = clone $param;
+                    /** @var Type\Union $params[$i]->type */
+                    $params[$i]->type = clone $overridden_storage->params[$i]->type;
 
-                            if ($source) {
-                                $params[$i]->type = self::localizeParamType(
-                                    $source->getCodebase(),
-                                    $params[$i]->type,
-                                    $appearing_fq_class_name,
-                                    $overriding_fq_class_name
-                                );
-                            }
-
-                            if ($params[$i]->signature_type
-                                && $params[$i]->signature_type->isNullable()
-                            ) {
-                                $params[$i]->type->addType(new Type\Atomic\TNull);
-                            }
-
-                            $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
-                        }
+                    if ($source) {
+                        $params[$i]->type = self::localizeParamType(
+                            $source->getCodebase(),
+                            $params[$i]->type,
+                            $appearing_fq_class_name,
+                            $overriding_fq_class_name
+                        );
                     }
 
-                    break;
+                    if ($params[$i]->signature_type
+                        && $params[$i]->signature_type->isNullable()
+                    ) {
+                        $params[$i]->type->addType(new Type\Atomic\TNull);
+                    }
+
+                    $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
                 }
             }
 

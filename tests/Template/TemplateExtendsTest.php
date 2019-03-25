@@ -1657,6 +1657,27 @@ class TemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'templateNotExtendedButSignatureInherited' => [
+                '<?php
+                    class Base {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        function example($x) {
+                            return $x;
+                        }
+                    }
+
+                    class Child extends Base {
+                        function example($x) {
+                            return $x;
+                        }
+                    }
+
+                    ord((new Child())->example("str"));'
+            ],
         ];
     }
 
@@ -2383,6 +2404,41 @@ class TemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnType',
+            ],
+            'implementsChildClassWithNonExtendedTemplate' => [
+                '<?php
+                    /**
+                     * @template T
+                     */
+                    class Base {
+                        /** @var T */
+                        private $t;
+
+                        /** @param T $t */
+                        public function __construct($t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @param T $x
+                         * @return T
+                         */
+                        function example($x) {
+                            return $x;
+                        }
+                    }
+
+                    class Child extends Base {
+                        function example($x) {
+                            return $x;
+                        }
+                    }
+
+                    /** @param Child $c */
+                    function bar(Child $c) : void {
+                        ord($c->example("boris"));
+                    }',
+                'error_message' => 'MixedArgument - src/somefile.php:31:29 - Argument 1 of ord cannot be mixed, expecting string'
             ],
         ];
     }

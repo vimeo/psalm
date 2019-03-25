@@ -54,4 +54,9 @@ class MethodStorage extends FunctionLikeStorage
      * @var string
      */
     public $defining_fqcln;
+
+    /**
+     * @var bool
+     */
+    public $has_docblock_param_types = false;
 }

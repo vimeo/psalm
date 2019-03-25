@@ -272,6 +272,53 @@ class Populator
             }
         }
 
+        foreach ($storage->methods as $method_name => $method_storage) {
+            if (isset($storage->overridden_method_ids[$method_name])) {
+                foreach ($storage->overridden_method_ids[$method_name] as $declaring_method_id) {
+                    list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
+                    $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
+
+                    $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
+
+                    if ($declaring_method_storage->has_docblock_param_types
+                        && !$method_storage->has_docblock_param_types
+                        && !isset($storage->documenting_method_ids[$method_name])
+                    ) {
+                        $storage->documenting_method_ids[$method_name] = $declaring_method_id;
+                    }
+
+                    // tell the declaring class it's overridden downstream
+                    $declaring_method_storage->overridden_downstream = true;
+                    $declaring_method_storage->overridden_somewhere = true;
+
+                    if (!$method_storage->throws
+                        && $method_storage->inheritdoc
+                        && $declaring_method_storage->throws
+                    ) {
+                        $method_storage->throws = $declaring_method_storage->throws;
+                    }
+
+                    if (count($storage->overridden_method_ids[$method_name]) === 1
+                        && $method_storage->signature_return_type
+                        && !$method_storage->signature_return_type->isVoid()
+                        && $method_storage->return_type === $method_storage->signature_return_type
+                    ) {
+                        if (isset($declaring_class_storage->methods[$method_name])) {
+                            $declaring_method_storage = $declaring_class_storage->methods[$method_name];
+
+                            if ($declaring_method_storage->return_type
+                                && $declaring_method_storage->signature_return_type
+                                && $declaring_method_storage->return_type
+                                    !== $declaring_method_storage->signature_return_type
+                            ) {
+                                $method_storage->return_type = $declaring_method_storage->return_type;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if ($this->debug_output) {
             echo 'Have populated ' . $storage->name . "\n";
         }
@@ -979,46 +1026,6 @@ class Populator
 
                 $storage->declaring_method_ids[$aliased_method_name] = $declaring_method_id;
                 $storage->inheritable_method_ids[$aliased_method_name] = $declaring_method_id;
-            }
-        }
-
-        foreach ($storage->methods as $method_name => $method_storage) {
-            if (isset($storage->overridden_method_ids[$method_name])) {
-                foreach ($storage->overridden_method_ids[$method_name] as $declaring_method_id) {
-                    list($declaring_class, $declaring_method_name) = explode('::', $declaring_method_id);
-                    $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
-
-                    $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
-
-                    // tell the declaring class it's overridden downstream
-                    $declaring_method_storage->overridden_downstream = true;
-                    $declaring_method_storage->overridden_somewhere = true;
-
-                    if (!$method_storage->throws
-                        && $method_storage->inheritdoc
-                        && $declaring_method_storage->throws
-                    ) {
-                        $method_storage->throws = $declaring_method_storage->throws;
-                    }
-
-                    if (count($storage->overridden_method_ids[$method_name]) === 1
-                        && $method_storage->signature_return_type
-                        && !$method_storage->signature_return_type->isVoid()
-                        && $method_storage->return_type === $method_storage->signature_return_type
-                    ) {
-                        if (isset($declaring_class_storage->methods[$method_name])) {
-                            $declaring_method_storage = $declaring_class_storage->methods[$method_name];
-
-                            if ($declaring_method_storage->return_type
-                                && $declaring_method_storage->signature_return_type
-                                && $declaring_method_storage->return_type
-                                    !== $declaring_method_storage->signature_return_type
-                            ) {
-                                $method_storage->return_type = $declaring_method_storage->return_type;
-                            }
-                        }
-                    }
-                }
             }
         }
     }

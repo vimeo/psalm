@@ -274,6 +274,19 @@ class CallAnalyzer
 
             $method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
 
+            if ($declaring_class_storage->user_defined
+                && !$method_storage->has_docblock_param_types
+                && isset($declaring_class_storage->documenting_method_ids[$method_name])
+            ) {
+                $documenting_method_id = $declaring_class_storage->documenting_method_ids[$method_name];
+
+                $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
+
+                if ($documenting_method_storage->template_types) {
+                    $method_storage = $documenting_method_storage;
+                }
+            }
+
             if ($context->collect_exceptions) {
                 $context->possibly_thrown_exceptions += array_fill_keys(
                     array_keys($method_storage->throws),

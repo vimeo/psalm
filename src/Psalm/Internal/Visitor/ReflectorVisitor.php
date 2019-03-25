@@ -2019,6 +2019,17 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             );
         }
 
+        if ($storage instanceof MethodStorage) {
+            $storage->has_docblock_param_types = (bool) array_filter(
+                $storage->params,
+                /** @return bool */
+                function (FunctionLikeParameter $p) {
+                    return $p->type !== null && $p->has_docblock_type;
+                }
+            );
+        }
+
+
         foreach ($docblock_info->params_out as $docblock_param_out) {
             $param_name = substr($docblock_param_out['name'], 1);
 
