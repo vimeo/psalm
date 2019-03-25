@@ -167,7 +167,8 @@ class BuildInfoCollector
                 $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[1];
             }
 
-            $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH'] ?? null;
+            $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH']
+                ?? $this->env['APPVEYOR_REPO_BRANCH'];
         }
 
         return $this;
