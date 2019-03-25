@@ -89,6 +89,11 @@ class NamespaceAnalyzer extends SourceAnalyzer implements StatementsSource
             $context->defineGlobals();
             $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
             $statements_analyzer->analyze($leftover_stmts, $context);
+
+            $file_context = $this->source->context;
+            if ($file_context) {
+                $file_context->possibly_thrown_exceptions += $context->possibly_thrown_exceptions;
+            }
         }
     }
 
