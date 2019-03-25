@@ -1,5 +1,8 @@
 <?php
 
+const ROOT_CONST_CONSTANT = 5;
+define('ROOT_DEFINE_CONSTANT', 10);
+
 class SystemClass
 {
     const HELLO = 'hello';

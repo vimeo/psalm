@@ -1386,7 +1386,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             return $file_storage_provider->get($constant_file_path)->constants[$fq_const_name];
         }
 
-        return ConstFetchAnalyzer::getGlobalConstType($codebase, $fq_const_name, $const_name);
+        return ConstFetchAnalyzer::getGlobalConstType($codebase, $fq_const_name, $const_name)
+            ?? ConstFetchAnalyzer::getGlobalConstType($codebase, $const_name, $const_name);
     }
 
     /**
