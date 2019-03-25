@@ -87,12 +87,12 @@ jobs:
         - bin/build-phar.sh
         - |
           if [[ "$TRAVIS_PULL_REQUEST" = 'false' ]]; then git clone https://${GITHUB_TOKEN}@github.com/psalm/phar.git > /dev/null 2>&1 && \
-          cp build/psalm.phar shim/psalm.phar && \
-          cd shim && \
+          cp build/psalm.phar phar/psalm.phar && \
+          cd phar && \
           git config user.email "travis@travis-ci.org" && \
           git config user.name "Travis CI" && \
           git add psalm.phar && \
-          git commit -m "Updated Psalm shim to commit ${TRAVIS_COMMIT}" && \
+          git commit -m "Updated Psalm phar to commit ${TRAVIS_COMMIT}" && \
           git push --quiet origin master; fi
       before_deploy:
         - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
