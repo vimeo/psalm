@@ -82,18 +82,18 @@ jobs:
       # always build phar, but only deploy on tag builds
     - stage: Phar build
       php: 7.1
-      env: DEPS="low"
+      env: DEPS="high"
       script:
+        - bin/build-phar.sh
         - |
-          bin/build-phar.sh && \
-          git clone https://${GITHUB_TOKEN}@github.com/psalm/shim.git > /dev/null 2>&1 && \
+          if [[ "$TRAVIS_PULL_REQUEST" = 'false' ]]; then git clone https://${GITHUB_TOKEN}@github.com/psalm/phar.git > /dev/null 2>&1 && \
           cp build/psalm.phar shim/psalm.phar && \
           cd shim && \
           git config user.email "travis@travis-ci.org" && \
           git config user.name "Travis CI" && \
           git add psalm.phar && \
           git commit -m "Updated Psalm shim to commit ${TRAVIS_COMMIT}" && \
-          git push --quiet origin master
+          git push --quiet origin master; fi
       before_deploy:
         - echo $GPG_ENCRYPTION | gpg --passphrase-fd 0 keys.asc.gpg
         - gpg --batch --yes --import keys.asc
