@@ -6211,7 +6211,7 @@ return [
 'ldap_exop' => ['mixed', 'link'=>'resource', 'reqoid'=>'string', 'reqdata='=>'string', 'servercontrols='=>'array', 'retdata='=>'string', 'retoid='=>'string'],
 'ldap_exop_passwd' => ['mixed', 'link'=>'resource', 'user='=>'string', 'oldpw='=>'string', 'newpw='=>'string', 'serverctrls='=>'array'],
 'ldap_exop_refresh' => ['int', 'link'=>'resource', 'dn'=>'string', 'ttl'=>'int'],
-'ldap_exop_whoami' => ['string', 'link'=>'resource'],
+'ldap_exop_whoami' => ['string|false', 'link'=>'resource'],
 'ldap_explode_dn' => ['array|false', 'dn'=>'string', 'with_attrib'=>'int'],
 'ldap_first_attribute' => ['string', 'link_identifier'=>'resource', 'result_entry_identifier'=>'resource'],
 'ldap_first_entry' => ['resource|false', 'link_identifier'=>'resource', 'result_identifier'=>'resource'],
