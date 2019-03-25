@@ -852,26 +852,30 @@ class Populator
             $iterator_name = null;
             $generic_params = null;
 
-            foreach ($atomic_types as $type) {
-                if ($type instanceof Type\Atomic\TIterable
-                    || ($type instanceof Type\Atomic\TNamedObject
-                        && (!$type->from_docblock || $is_property)
-                        && (
-                            strtolower($type->value) === 'traversable'
-                            || $this->classlikes->interfaceExtends(
-                                $type->value,
-                                'Traversable'
-                            )
-                            || $this->classlikes->classImplements(
-                                $type->value,
-                                'Traversable'
-                            )
-                        ))
-                ) {
-                    $iterator_name = $type->value;
-                } elseif ($type instanceof Type\Atomic\TArray) {
-                    $generic_params = $type->type_params;
+            try {
+                foreach ($atomic_types as $type) {
+                    if ($type instanceof Type\Atomic\TIterable
+                        || ($type instanceof Type\Atomic\TNamedObject
+                            && (!$type->from_docblock || $is_property)
+                            && (
+                                strtolower($type->value) === 'traversable'
+                                || $this->classlikes->interfaceExtends(
+                                    $type->value,
+                                    'Traversable'
+                                )
+                                || $this->classlikes->classImplements(
+                                    $type->value,
+                                    'Traversable'
+                                )
+                            ))
+                    ) {
+                        $iterator_name = $type->value;
+                    } elseif ($type instanceof Type\Atomic\TArray) {
+                        $generic_params = $type->type_params;
+                    }
                 }
+            } catch (\InvalidArgumentException $e) {
+                // ignore class-not-found issues
             }
 
             if ($iterator_name && $generic_params) {
