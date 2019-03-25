@@ -60,8 +60,7 @@ class BuildInfoCollector
     protected function fillTravisCi() : self
     {
         if (isset($this->env['TRAVIS']) && $this->env['TRAVIS'] && isset($this->env['TRAVIS_JOB_ID'])) {
-            $this->env['CI_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
-
+            $this->readEnv['CI_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
             $this->env['CI_NAME'] = 'travis-ci';
 
             // backup
@@ -69,6 +68,25 @@ class BuildInfoCollector
             $this->readEnv['TRAVIS_JOB_ID'] = $this->env['TRAVIS_JOB_ID'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
             $this->readEnv['TRAVIS_TAG'] = $this->env['TRAVIS_TAG'];
+
+            $repo_slug = (string) $this->env['TRAVIS_REPO_SLUG'];
+
+            if ($repo_slug) {
+                $slug_parts = explode('/', $repo_slug);
+                $this->readEnv['CI_REPO_OWNER'] = $slug_parts[0];
+                $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
+            }
+
+            $pr_slug = (string) $this->env['TRAVIS_PULL_REQUEST_SLUG'] ?? '';
+
+            if ($pr_slug) {
+                $slug_parts = explode('/', $pr_slug);
+
+                $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[0];
+                $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[1];
+            }
+
+            $this->readEnv['CI_PR_NUMBER'] = $this->env['TRAVIS_PULL_REQUEST'];
         }
 
         return $this;
@@ -91,6 +109,14 @@ class BuildInfoCollector
             $this->readEnv['CIRCLECI'] = $this->env['CIRCLECI'];
             $this->readEnv['CIRCLE_BUILD_NUM'] = $this->env['CIRCLE_BUILD_NUM'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
+
+            $this->readEnv['CI_PR_REPO_OWNER'] = $this->env['CIRCLE_PR_USERNAME'] ?? null;
+            $this->readEnv['CI_PR_REPO_NAME'] = $this->env['CIRCLE_PR_REPONAME'] ?? null;
+
+            $this->readEnv['CI_REPO_OWNER'] = $this->env['CIRCLE_PROJECT_USERNAME'] ?? null;
+            $this->readEnv['CI_REPO_NAME'] = $this->env['CIRCLE_PROJECT_REPONAME'] ?? null;
+
+            $this->readEnv['CI_PR_NUMBER'] = $this->env['CIRCLE_PR_NUMBER'] ?? null;
         }
 
         return $this;
@@ -106,10 +132,10 @@ class BuildInfoCollector
     protected function fillAppVeyor() : self
     {
         if (isset($this->env['APPVEYOR']) && $this->env['APPVEYOR'] && isset($this->env['APPVEYOR_BUILD_NUMBER'])) {
-            $this->env['CI_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
-            $this->env['CI_JOB_ID'] = $this->env['APPVEYOR_JOB_NUMBER'];
-            $this->env['CI_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
-            $this->env['CI_PULL_REQUEST'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'];
+            $this->readEnv['CI_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
+            $this->readEnv['CI_JOB_ID'] = $this->env['APPVEYOR_JOB_NUMBER'];
+            $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
+            $this->readEnv['CI_PR_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'];
             $this->env['CI_NAME'] = 'AppVeyor';
 
             // backup
@@ -119,6 +145,24 @@ class BuildInfoCollector
             $this->readEnv['APPVEYOR_REPO_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
             $this->readEnv['APPVEYOR_PULL_REQUEST_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
+
+            $repo_slug = (string) $this->env['APPVEYOR_REPO_NAME'] ?? '';
+
+            if ($repo_slug) {
+                $slug_parts = explode('/', $repo_slug);
+
+                $this->readEnv['CI_REPO_OWNER'] = $slug_parts[0];
+                $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
+            }
+
+            $pr_slug = (string) $this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME'] ?? '';
+
+            if ($pr_slug) {
+                $slug_parts = explode('/', $pr_slug);
+
+                $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[0];
+                $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[1];
+            }
         }
 
         return $this;
@@ -134,8 +178,8 @@ class BuildInfoCollector
     protected function fillJenkins() : self
     {
         if (isset($this->env['JENKINS_URL']) && isset($this->env['BUILD_NUMBER'])) {
-            $this->env['CI_BUILD_NUMBER'] = $this->env['BUILD_NUMBER'];
-            $this->env['CI_BUILD_URL'] = $this->env['JENKINS_URL'];
+            $this->readEnv['CI_BUILD_NUMBER'] = $this->env['BUILD_NUMBER'];
+            $this->readEnv['CI_BUILD_URL'] = $this->env['JENKINS_URL'];
             $this->env['CI_NAME'] = 'jenkins';
 
             // backup
