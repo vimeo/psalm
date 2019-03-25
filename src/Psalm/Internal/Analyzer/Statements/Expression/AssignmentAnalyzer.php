@@ -675,7 +675,7 @@ class AssignmentAnalyzer
             || $stmt instanceof PhpParser\Node\Expr\AssignOp\Mul
             || $stmt instanceof PhpParser\Node\Expr\AssignOp\Pow
         ) {
-            BinaryOpAnalyzer::analyzeNonDivArithmenticOp(
+            BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
                 $statements_analyzer,
                 $stmt->var,
                 $stmt->expr,
@@ -728,7 +728,7 @@ class AssignmentAnalyzer
                 || $stmt instanceof PhpParser\Node\Expr\AssignOp\ShiftRight
             )
         ) {
-            BinaryOpAnalyzer::analyzeNonDivArithmenticOp(
+            BinaryOpAnalyzer::analyzeNonDivArithmeticOp(
                 $statements_analyzer,
                 $stmt->var,
                 $stmt->expr,

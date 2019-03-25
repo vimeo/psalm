@@ -519,7 +519,7 @@ class BinaryOpAnalyzer
                     )
                 )
             ) {
-                self::analyzeNonDivArithmenticOp(
+                self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
                     $stmt->left,
                     $stmt->right,
@@ -576,7 +576,7 @@ class BinaryOpAnalyzer
                     }
                 }
 
-                self::analyzeNonDivArithmenticOp(
+                self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
                     $stmt->left,
                     $stmt->right,
@@ -605,7 +605,7 @@ class BinaryOpAnalyzer
                     $stmt->inferredType = $result_type;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-                self::analyzeNonDivArithmenticOp(
+                self::analyzeNonDivArithmeticOp(
                     $statements_analyzer,
                     $stmt->left,
                     $stmt->right,
@@ -648,7 +648,7 @@ class BinaryOpAnalyzer
      *
      * @return void
      */
-    public static function analyzeNonDivArithmenticOp(
+    public static function analyzeNonDivArithmeticOp(
         $statements_source,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
