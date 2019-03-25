@@ -87,6 +87,7 @@ class BuildInfoCollector
             }
 
             $this->readEnv['CI_PR_NUMBER'] = $this->env['TRAVIS_PULL_REQUEST'];
+            $this->readEnv['CI_BRANCH'] = $this->env['TRAVIS_BRANCH'];
         }
 
         return $this;
@@ -117,6 +118,8 @@ class BuildInfoCollector
             $this->readEnv['CI_REPO_NAME'] = $this->env['CIRCLE_PROJECT_REPONAME'] ?? null;
 
             $this->readEnv['CI_PR_NUMBER'] = $this->env['CIRCLE_PR_NUMBER'] ?? null;
+
+            $this->readEnv['CI_BRANCH'] = $this->env['CIRCLE_BRANCH'] ?? null;
         }
 
         return $this;
@@ -163,6 +166,8 @@ class BuildInfoCollector
                 $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[0];
                 $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[1];
             }
+
+            $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH'] ?? null;
         }
 
         return $this;
