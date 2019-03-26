@@ -102,18 +102,9 @@ return [
 
             return $contents;
         },
-        function ($filePath, $prefix, $contents) {
-            $ret = str_replace(
-                $prefix . '\Psalm\Plugin\\',
-                'Psalm\Plugin\\',
-                $contents
-            );
-            return $ret;
-        },
     ],
     'whitelist' => [
         \Composer\Autoload\ClassLoader::class,
-        'Psalm\Plugin\*',
     ],
     'files-whitelist' => [
         'src/Psalm/Internal/PropertyMap.php',

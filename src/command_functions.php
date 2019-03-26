@@ -15,7 +15,18 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 
     $psalm_dir = dirname(__DIR__);
 
-    if (realpath($psalm_dir) !== realpath($current_dir)) {
+    /** @psalm-suppress UndefinedConstant */
+    $in_phar = \Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
+
+    if ($in_phar) {
+        require_once(__DIR__ . '/../vendor/autoload.php');
+
+        // hack required for JsonMapper
+        require_once __DIR__ . '/../vendor/netresearch/jsonmapper/src/JsonMapper.php';
+        require_once __DIR__ . '/../vendor/netresearch/jsonmapper/src/JsonMapper/Exception.php';
+    }
+
+    if (\realpath($psalm_dir) !== \realpath($current_dir) && !$in_phar) {
         $autoload_roots[] = $psalm_dir;
     }
 
