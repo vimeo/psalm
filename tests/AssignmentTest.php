@@ -45,6 +45,12 @@ class AssignmentTest extends TestCase
                         echo $x;
                     }',
             ],
+            'ifAssignment' => [
+                '<?php
+                    if ($foo = rand(0, 1)) {
+                        echo $foo;
+                    }',
+            ],
         ];
     }
 

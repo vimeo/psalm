@@ -180,8 +180,6 @@ class AssertionFinder
             if ($count_equality_position) {
                 if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
                     $counted_expr = $conditional->left;
-                } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                    $counted_expr = $conditional->right;
                 } else {
                     throw new \UnexpectedValueException('$count_equality_position value');
                 }
@@ -238,9 +236,7 @@ class AssertionFinder
             $typed_value_position = self::hasTypedValueComparison($conditional);
 
             if ($count_equality_position) {
-                if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                    $count_expr = $conditional->left;
-                } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
+                if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
                     $count_expr = $conditional->right;
                 } else {
                     throw new \UnexpectedValueException('$count_equality_position value');
@@ -306,23 +302,6 @@ class AssertionFinder
 
             if ($var_name) {
                 $if_types[$var_name] = [['empty']];
-            } else {
-                // look for any variables we *can* use for an isset assertion
-                $array_root = $conditional->expr;
-
-                while ($array_root instanceof PhpParser\Node\Expr\ArrayDimFetch && !$var_name) {
-                    $array_root = $array_root->var;
-
-                    $var_name = ExpressionAnalyzer::getArrayVarId(
-                        $array_root,
-                        $this_class_name,
-                        $source
-                    );
-                }
-
-                if ($var_name) {
-                    $if_types[$var_name] = [['=empty']];
-                }
             }
 
             $conditional->assertions = $if_types;
@@ -718,7 +697,7 @@ class AssertionFinder
                         }
                     } else {
                         if (IssueBuffer::accepts(
-                            new TypeDoesNotContainNull(
+                            new TypeDoesNotContainType(
                                 $var_type . ' does not contain empty array',
                                 new CodeLocation($source, $conditional)
                             ),

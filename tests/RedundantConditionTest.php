@@ -560,6 +560,18 @@ class RedundantConditionTest extends TestCase
                         assert(is_int($a[0]));
                     }',
             ],
+            'allowChecksOnFalsyIf' => [
+                '<?php
+                    function foo(?string $s) : string {
+                        if ($s == null) {
+                            if ($s === null) {}
+
+                            return "hello";
+                        } else {
+                            return $s;
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -864,6 +876,95 @@ class RedundantConditionTest extends TestCase
                         if (!$a instanceof B) {}
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'redundantInstanceof' => [
+                '<?php
+                    /** @param Exception $a */
+                    function foo($a) : void {
+                        if ($a instanceof \Exception) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'preventDocblockTypesBeingIdenticalToTrue' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param  A $a
+                     */
+                    function foo($a, $b) : void {
+                        if ($a === true) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventDocblockTypesBeingIdenticalToTrueReversed' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param  A $a
+                     */
+                    function foo($a, $b) : void {
+                        if (true === $a) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventDocblockTypesBeingIdenticalToFalse' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param  A $a
+                     */
+                    function foo($a, $b) : void {
+                        if ($a === false) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventDocblockTypesBeingIdenticalToFalseReversed' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param  A $a
+                     */
+                    function foo($a, $b) : void {
+                        if (false === $a) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventDocblockTypesBeingSameAsEmptyArrayReversed' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param  A $a
+                     */
+                    function foo($a, $b) : void {
+                        if ([] == $a) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventDocblockTypesBeingIdenticalToEmptyArrayReversed' => [
+                '<?php
+                    class A {}
+
+                    /**
+                     * @param  A $a
+                     */
+                    function foo($a, $b) : void {
+                        if ([] === $a) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventTypesBeingIdenticalToEmptyArrayReversed' => [
+                '<?php
+                    class A {}
+
+                    function foo(A $a, $b) : void {
+                        if ([] === $a) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
