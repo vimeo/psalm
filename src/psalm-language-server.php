@@ -30,6 +30,10 @@ $valid_long_options = [
 ];
 
 $args = array_slice($argv, 1);
+$lspOptPos = array_search('--language-server', $args);
+if ($lspOptPos !== false) {
+    unset($args[$lspOptPos]);
+}
 
 array_map(
     /**

@@ -3,6 +3,7 @@
     "files": [
         "src/command_functions.php",
         "src/psalm.php",
+        "src/psalm-language-server.php",
         "src/psalter.php"
     ],
     "files-bin": ["config.xsd"],
