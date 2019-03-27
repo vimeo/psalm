@@ -36,13 +36,18 @@ class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 
             $payload = json_encode($data);
 
+            $base_address = $codebase->config->spirit_host;
+
+            if (parse_url($base_address, PHP_URL_SCHEME) === null) {
+                $base_address = 'https://' . $base_address;
+            }
+
             // Prepare new cURL resource
-            $ch = curl_init('https://' . $codebase->config->spirit_host . '/telemetry');
+            $ch = curl_init($base_address . '/telemetry');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 
             // Set HTTP Header for POST request
             curl_setopt(
