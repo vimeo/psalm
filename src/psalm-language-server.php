@@ -31,6 +31,12 @@ $valid_long_options = [
 
 $args = array_slice($argv, 1);
 
+$psalm_proxy = array_search('--language-server', $args);
+
+if ($psalm_proxy !== false) {
+    unset($args[$psalm_proxy]);
+}
+
 array_map(
     /**
      * @param string $arg

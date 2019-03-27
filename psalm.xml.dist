@@ -23,6 +23,7 @@
             <directory name="tests/DummyProject"/>
             <file name="vendor/phpunit/phpunit/src/Framework/TestCase.php"/>
             <file name="vendor/symfony/console/Command/Command.php"/>
+            <directory name="vendor/netresearch/jsonmapper" />
             <file name="src/Psalm/Internal/Traverser/CustomTraverser.php"/>
             <file name="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php" />
             <file name="tests/performance/a.test"/>

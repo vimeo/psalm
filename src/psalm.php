@@ -52,6 +52,7 @@ $valid_long_options = [
     'php-version:',
     'generate-json-map:',
     'alter',
+    'language-server',
     'with-spirit::',
 ];
 
@@ -65,6 +66,11 @@ $options = getopt(implode('', $valid_short_options), $valid_long_options);
 
 if (isset($options['alter'])) {
     include 'psalter.php';
+    exit;
+}
+
+if (isset($options['language-server'])) {
+    include 'psalm-language-server.php';
     exit;
 }
 
@@ -229,6 +235,9 @@ Options:
 
     --alter
         Run Psalter
+
+    --language-server
+        Run Psalm Language Server
 
 HELP;
 
