@@ -138,6 +138,8 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
                         $statements_analyzer->getSuppressedIssues(),
+                        false,
+                        false,
                         false
                     );
                 }

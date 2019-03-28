@@ -537,6 +537,16 @@ class InterfaceTest extends TestCase
                         }
                     }',
             ],
+            'allowStaticCallOnInterfaceMethod' => [
+                '<?php
+                    interface IFoo {
+                        public static function doFoo();
+                    }
+
+                    function bar(IFoo $i) : void {
+                        $i::doFoo();
+                    }'
+            ],
         ];
     }
 
@@ -753,6 +763,15 @@ class InterfaceTest extends TestCase
                         public function m(): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'staticInterfaceCall' => [
+                '<?php
+                    interface Foo {
+                        public static function doFoo();
+                    }
+
+                    Foo::doFoo();',
+                'error_message' => 'UndefinedClass',
             ],
         ];
     }
