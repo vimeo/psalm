@@ -47,7 +47,7 @@ class TryAnalyzer
         $existing_thrown_exceptions = $context->possibly_thrown_exceptions;
 
         /**
-         * @var array<string, CodeLocation>
+         * @var array<string, array<int, CodeLocation>>
          */
         $context->possibly_thrown_exceptions = [];
 
@@ -399,7 +399,10 @@ class TryAnalyzer
             }
         }
 
-        $context->possibly_thrown_exceptions += $existing_thrown_exceptions;
+        $context->possibly_thrown_exceptions = array_merge_recursive(
+            $context->possibly_thrown_exceptions,
+            $existing_thrown_exceptions
+        );
 
         return null;
     }

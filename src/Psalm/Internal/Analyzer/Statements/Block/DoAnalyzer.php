@@ -215,7 +215,7 @@ class DoAnalyzer
         }
 
         if ($context->collect_exceptions) {
-            $context->possibly_thrown_exceptions += $inner_loop_context->possibly_thrown_exceptions;
+            $context->mergeExceptions($inner_loop_context);
         }
     }
 }

@@ -273,7 +273,7 @@ class ForeachAnalyzer
         );
 
         if ($context->collect_exceptions) {
-            $context->possibly_thrown_exceptions += $foreach_context->possibly_thrown_exceptions;
+            $context->mergeExceptions($foreach_context);
         }
 
         if ($context->collect_references) {

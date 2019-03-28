@@ -827,7 +827,7 @@ class IfAnalyzer
         }
 
         if ($outer_context->collect_exceptions) {
-            $outer_context->possibly_thrown_exceptions += $if_context->possibly_thrown_exceptions;
+            $outer_context->mergeExceptions($if_context);
         }
     }
 
@@ -1329,7 +1329,7 @@ class IfAnalyzer
         }
 
         if ($outer_context->collect_exceptions) {
-            $outer_context->possibly_thrown_exceptions += $elseif_context->possibly_thrown_exceptions;
+            $outer_context->mergeExceptions($elseif_context);
         }
 
         $if_scope->negated_clauses = array_merge(
@@ -1618,7 +1618,7 @@ class IfAnalyzer
         }
 
         if ($outer_context->collect_exceptions) {
-            $outer_context->possibly_thrown_exceptions += $else_context->possibly_thrown_exceptions;
+            $outer_context->mergeExceptions($else_context);
         }
 
         if ($else_context->infer_types) {

@@ -831,7 +831,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
         }
 
-        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocation) {
+        foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 
             foreach ($storage->throws as $expected_exception => $_) {
@@ -844,15 +844,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             }
 
             if (!$is_expected) {
-                if (IssueBuffer::accepts(
-                    new MissingThrowsDocblock(
-                        $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                            . ' or add a @throws annotation',
-                        $codelocation
-                    ),
-                    $this->getSuppressedIssues()
-                )) {
-                    // fall through
+                foreach ($codelocations as $codelocation) {
+                    if (IssueBuffer::accepts(
+                        new MissingThrowsDocblock(
+                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                                . ' or add a @throws annotation',
+                            $codelocation
+                        ),
+                        $this->getSuppressedIssues()
+                    )) {
+                        // fall through
+                    }
                 }
             }
         }
