@@ -193,7 +193,7 @@ Options:
         If greater than one, Psalm will run analysis on multiple threads, speeding things up.
 
     --report=PATH
-        The path where to output report file. The output format is base on the file extension.
+        The path where to output report file. The output format is based on the file extension.
         (Currently supported format: ".json", ".xml", ".txt", ".emacs")
 
     --clear-cache
