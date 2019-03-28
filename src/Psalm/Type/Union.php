@@ -670,6 +670,19 @@ class Union
     /**
      * @return bool
      */
+    public function hasTemplate()
+    {
+        return (bool) array_filter(
+            $this->types,
+            function (Atomic $type) : bool {
+                return $type instanceof Type\Atomic\TTemplateParam;
+            }
+        );
+    }
+
+    /**
+     * @return bool
+     */
     public function hasMixed()
     {
         return isset($this->types['mixed']);

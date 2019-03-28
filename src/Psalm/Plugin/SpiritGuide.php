@@ -20,7 +20,7 @@ class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         array $build_info,
         SourceControlInfo $source_control_info = null
     ) {
-        if ($source_control_info instanceof \Psalm\SourceControl\Git\GitInfo && $build_info) {
+        if ($source_control_info instanceof \Psalm\SourceControl\Git\GitInfo) {
             $data = [
                 'build' => $build_info,
                 'git' => $source_control_info->toArray(),

@@ -246,6 +246,7 @@ class Reconciler
                 && !$has_equality
                 && !$has_count_check
                 && !$result_type->hasMixed()
+                && !$result_type->hasTemplate()
                 && !$result_type->hasType('iterable')
                 && (!$has_isset || substr($key, -1, 1) !== ']')
             ) {
@@ -583,6 +584,10 @@ class Reconciler
                     $did_remove_type = true;
 
                     $existing_var_type->removeType($type_key);
+                }
+
+                if ($type instanceof TTemplateParam) {
+                    $did_remove_type = true;
                 }
             }
 
@@ -1719,7 +1724,7 @@ class Reconciler
             $existing_var_type->possibly_undefined = false;
             $existing_var_type->possibly_undefined_from_try = false;
 
-            if (!$did_remove_type || empty($existing_var_type->getTypes())) {
+            if ((!$did_remove_type || empty($existing_var_type->getTypes())) && !$existing_var_type->hasTemplate()) {
                 if ($key && $code_location && !$is_equality) {
                     self::triggerIssueForImpossible(
                         $existing_var_type,
