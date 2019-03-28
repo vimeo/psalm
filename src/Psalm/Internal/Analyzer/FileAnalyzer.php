@@ -183,12 +183,12 @@ class FileAnalyzer extends SourceAnalyzer implements StatementsSource
             $uncaught_throws = $statements_analyzer->getUncaughtThrows($this->context);
             foreach ($uncaught_throws as $possibly_thrown_exception => $codelocations) {
                 foreach ($codelocations as $codelocation) {
+                    // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
                     if (IssueBuffer::accepts(
                         new UncaughtThrowInGlobalScope(
                             $possibly_thrown_exception . ' is thrown but not caught in global scope',
                             $codelocation
-                        ),
-                        $this->getSuppressedIssues()
+                        )
                     )) {
                         // fall through
                     }

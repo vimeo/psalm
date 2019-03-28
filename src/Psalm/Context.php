@@ -781,6 +781,24 @@ class Context
     }
 
     /**
+     * @return bool
+     */
+    public function isSuppressingExceptions(StatementsAnalyzer $statements_analyzer)
+    {
+        if (!$this->collect_exceptions) {
+            return true;
+        }
+
+        $issue_type = $this->is_global ? 'UncaughtThrowInGlobalScope' : 'MissingThrowsDocblock';
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+        if (in_array($issue_type, $suppressed_issues, true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @return void
      */
     public function mergeFunctionExceptions(

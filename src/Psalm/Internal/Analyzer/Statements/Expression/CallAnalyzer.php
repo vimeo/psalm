@@ -287,7 +287,7 @@ class CallAnalyzer
                 }
             }
 
-            if ($context->collect_exceptions) {
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
                 $context->mergeFunctionExceptions($method_storage, $code_location);
             }
         }
