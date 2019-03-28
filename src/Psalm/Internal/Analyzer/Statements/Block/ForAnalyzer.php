@@ -148,7 +148,7 @@ class ForAnalyzer
         }
 
         if ($context->collect_exceptions) {
-            $context->possibly_thrown_exceptions += $for_context->possibly_thrown_exceptions;
+            $context->mergeExceptions($for_context);
         }
 
         return null;

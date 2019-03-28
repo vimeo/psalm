@@ -213,7 +213,7 @@ class Context
     /**
      * A list of classes or interfaces that may have been thrown
      *
-     * @var array<string, CodeLocation>
+     * @var array<string, array<int, CodeLocation>>
      */
     public $possibly_thrown_exceptions = [];
 
@@ -766,6 +766,29 @@ class Context
         foreach ($globals as $global_id => $type) {
             $this->vars_in_scope[$global_id] = $type;
             $this->vars_possibly_in_scope[$global_id] = true;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function mergeExceptions(Context $other_context)
+    {
+        $this->possibly_thrown_exceptions = array_merge_recursive(
+            $this->possibly_thrown_exceptions,
+            $other_context->possibly_thrown_exceptions
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function mergeFunctionExceptions(
+        FunctionLikeStorage $function_storage,
+        CodeLocation $codelocation
+    ) {
+        foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
+            $this->possibly_thrown_exceptions[$possibly_thrown_exception][] = $codelocation;
         }
     }
 }

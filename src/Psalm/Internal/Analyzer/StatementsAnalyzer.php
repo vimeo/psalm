@@ -1692,7 +1692,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return array<string, CodeLocation>
+     * @return array<string, array<int, CodeLocation>>
      */
     public function getUncaughtThrows(Context $context)
     {
@@ -1707,7 +1707,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     $this->codebase->config->ignored_exceptions_and_descendants
                 );
 
-                foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocation) {
+                foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {
                     if (isset($ignored_exceptions[strtolower($possibly_thrown_exception)])) {
                         continue;
                     }
@@ -1724,7 +1724,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
                     }
 
                     if (!$is_expected) {
-                        $uncaught_throws[$possibly_thrown_exception] = $codelocation;
+                        $uncaught_throws[$possibly_thrown_exception] = $codelocations;
                     }
                 }
             }

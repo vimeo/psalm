@@ -153,3 +153,13 @@ function array_chunk(array $arr, int $size, bool $preserve_keys = false) {}
  * @return bool
  */
 function array_key_exists($key, array $search) : bool { }
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ *
+ * @param array<TKey, TValue> $arr1
+ * @param array<TKey, TValue> ...$arr2
+ * @return array<TKey, TValue>
+ */
+function array_merge_recursive(array $arr, array ...$arr2) {}

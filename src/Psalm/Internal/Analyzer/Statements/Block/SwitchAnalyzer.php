@@ -691,7 +691,7 @@ class SwitchAnalyzer
         }
 
         if ($context->collect_exceptions) {
-            $context->possibly_thrown_exceptions += $case_context->possibly_thrown_exceptions;
+            $context->mergeExceptions($case_context);
         }
 
         if ($context->collect_references) {
