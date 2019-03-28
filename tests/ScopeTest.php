@@ -235,6 +235,21 @@ class ScopeTest extends TestCase
                 'assertions' => [],
                 'error_levels' => ['MixedPropertyAssignment', 'MixedArgument'],
             ],
+            'typedStatic' => [
+                '<?php
+                    function a(): ?int {
+                        /** @var ?int */
+                        static $foo = 5;
+
+                        if (rand(0, 1)) {
+                            return $foo;
+                        }
+
+                        $foo = null;
+
+                        return $foo;
+                    }',
+            ],
         ];
     }
 
@@ -288,6 +303,49 @@ class ScopeTest extends TestCase
                         return $foo;
                     }',
                 'error_message' => 'MixedReturnStatement',
+            ],
+            'staticNullRef' => [
+                '<?php
+                    /** @return void */
+                    function foo() {
+                        /** @var int */
+                        static $bar = 5;
+
+                        if ($bar === null) {
+                            // do something
+                        }
+
+                        $bar = 4;
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'typedStaticCannotHaveNullDefault' => [
+                '<?php
+                    function a(): void {
+                        /** @var string */
+                        static $foo = null;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'typedStaticCannotBeAssignedInt' => [
+                '<?php
+                    function a(): void {
+                        /** @var string */
+                        static $foo = "foo";
+
+                        $foo = 5;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'typedStaticCannotBeAssignedNull' => [
+                '<?php
+                    function a(): void {
+                        /** @var string */
+                        static $foo = "foo";
+
+                        $foo = null;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
             ],
         ];
     }

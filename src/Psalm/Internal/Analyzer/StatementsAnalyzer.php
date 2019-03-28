@@ -867,26 +867,119 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
      */
     private function analyzeStatic(PhpParser\Node\Stmt\Static_ $stmt, Context $context)
     {
+        $codebase = $this->getCodebase();
+
         foreach ($stmt->vars as $var) {
+            if (!is_string($var->var->name)) {
+                continue;
+            }
+
+            $var_id = '$' . $var->var->name;
+
+            $doc_comment = $stmt->getDocComment();
+
+            $comment_type = null;
+
+            if ($doc_comment) {
+                try {
+                    $var_comments = CommentAnalyzer::getTypeFromComment(
+                        (string) $doc_comment,
+                        $this->getSource(),
+                        $this->getAliases(),
+                        $this->getTemplateTypeMap()
+                    );
+                } catch (\Psalm\Exception\IncorrectDocblockException $e) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\MissingDocblockType(
+                            (string)$e->getMessage(),
+                            new CodeLocation($this, $var)
+                        )
+                    )) {
+                        // fall through
+                    }
+                } catch (DocblockParseException $e) {
+                    if (IssueBuffer::accepts(
+                        new InvalidDocblock(
+                            (string)$e->getMessage(),
+                            new CodeLocation($this->getSource(), $var)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
+
+                foreach ($var_comments as $var_comment) {
+                    try {
+                        $var_comment_type = ExpressionAnalyzer::fleshOutType(
+                            $codebase,
+                            $var_comment->type,
+                            $context->self,
+                            $context->self
+                        );
+
+                        $var_comment_type->setFromDocblock();
+
+                        $var_comment_type->check(
+                            $this,
+                            new CodeLocation($this->getSource(), $var),
+                            $this->getSuppressedIssues()
+                        );
+
+                        if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
+                            $comment_type = $var_comment_type;
+                            continue;
+                        }
+
+                        $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
+                    } catch (\UnexpectedValueException $e) {
+                        if (IssueBuffer::accepts(
+                            new InvalidDocblock(
+                                (string)$e->getMessage(),
+                                new CodeLocation($this, $var)
+                            )
+                        )) {
+                            // fall through
+                        }
+                    }
+                }
+
+                if ($comment_type) {
+                    $context->byref_constraints[$var_id] = new \Psalm\Internal\ReferenceConstraint($comment_type);
+                }
+            }
+
             if ($var->default) {
                 if (ExpressionAnalyzer::analyze($this, $var->default, $context) === false) {
                     return false;
                 }
+
+                if ($comment_type
+                    && isset($var->default->inferredType)
+                    && !TypeAnalyzer::isContainedBy(
+                        $codebase,
+                        $var->default->inferredType,
+                        $comment_type
+                    )
+                ) {
+                    if (IssueBuffer::accepts(
+                        new \Psalm\Issue\ReferenceConstraintViolation(
+                            $var_id . ' of type ' . $comment_type->getId() . ' cannot be assigned type '
+                                . $var->default->inferredType->getId(),
+                            new CodeLocation($this, $var)
+                        )
+                    )) {
+                        // fall through
+                    }
+                }
             }
 
             if ($context->check_variables) {
-                if (!is_string($var->var->name)) {
-                    continue;
-                }
-
-                $var_id = '$' . $var->var->name;
-
-                $context->vars_in_scope[$var_id] = Type::getMixed();
+                $context->vars_in_scope[$var_id] = $comment_type ? clone $comment_type : Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = true;
                 $this->byref_uses[$var_id] = true;
 
-                $location = new CodeLocation($this, $stmt);
+                $location = new CodeLocation($this, $var);
 
                 if ($context->collect_references) {
                     $context->unreferenced_vars[$var_id] = [$location->getHash() => $location];
