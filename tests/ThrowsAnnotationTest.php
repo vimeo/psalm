@@ -167,7 +167,7 @@ class ThrowsAnnotationTest extends TestCase
     /**
      * @return                   void
      */
-    public function testDocumentedThrowInFunctionCall()
+    public function testDocumentedThrowInFunctionCallWithThrow()
     {
         Config::getInstance()->check_for_throws_docblock = true;
 
