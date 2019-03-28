@@ -881,6 +881,8 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
             $comment_type = null;
 
             if ($doc_comment) {
+                $var_comments = [];
+
                 try {
                     $var_comments = CommentAnalyzer::getTypeFromComment(
                         (string) $doc_comment,
