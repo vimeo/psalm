@@ -20,7 +20,7 @@ class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         array $build_info,
         SourceControlInfo $source_control_info = null
     ) {
-        if ($source_control_info instanceof \Psalm\SourceControl\Git\GitInfo) {
+        if ($source_control_info instanceof \Psalm\SourceControl\Git\GitInfo && $build_info) {
             $data = [
                 'build' => $build_info,
                 'git' => $source_control_info->toArray(),
@@ -60,7 +60,12 @@ class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             );
 
             // Submit the POST request
-            curl_exec($ch);
+            $return = curl_exec($ch);
+
+            if ($return !== '') {
+                echo 'Error with Psalm Spirit:' . PHP_EOL;
+                echo $return . PHP_EOL;
+            }
 
             // Close cURL session handle
             curl_close($ch);
