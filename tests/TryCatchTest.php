@@ -277,45 +277,4 @@ class TryCatchTest extends TestCase
             ],
         ];
     }
-
-    /**
-     * @expectedException        \Psalm\Exception\CodeException
-     * @expectedExceptionMessage UncaughtThrowInGlobalScope
-     *
-     * @return                   void
-     */
-    public function testUncaughtThrowInGlobalScope()
-    {
-        Config::getInstance()->check_for_throws_in_global_scope = true;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                throw new \Exception();'
-        );
-
-        $context = new Context();
-
-        $this->analyzeFile('somefile.php', $context);
-    }
-
-    /**
-     * @return                   void
-     */
-    public function testCaughtThrowInGlobalScope()
-    {
-        Config::getInstance()->check_for_throws_in_global_scope = true;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                try {
-                    throw new \Exception();
-                } catch (\Exception $e) {}'
-        );
-
-        $context = new Context();
-
-        $this->analyzeFile('somefile.php', $context);
-    }
 }
