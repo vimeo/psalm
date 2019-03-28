@@ -383,6 +383,7 @@ class CallAnalyzer
                         || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                         || $arg->value instanceof PhpParser\Node\Expr\MethodCall
                         || $arg->value instanceof PhpParser\Node\Expr\Assign
+                        || $arg->value instanceof PhpParser\Node\Expr\Array_
                     )
                 ) {
                     if (self::handleByRefFunctionArg(
@@ -461,6 +462,7 @@ class CallAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\MethodCall
             || $arg->value instanceof PhpParser\Node\Expr\Assign
             || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $arg->value instanceof PhpParser\Node\Expr\Array_
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
                 return false;
