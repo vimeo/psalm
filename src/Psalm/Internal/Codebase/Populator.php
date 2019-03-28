@@ -78,10 +78,6 @@ class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
-            if (!$class_storage->user_defined && !$class_storage->stubbed) {
-                continue;
-            }
-
             $this->populateClassLikeStorage($class_storage);
         }
 

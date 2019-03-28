@@ -547,6 +547,14 @@ class InterfaceTest extends TestCase
                         $i::doFoo();
                     }'
             ],
+            'inheritSystemInterface' => [
+                '<?php
+                    interface I extends \RecursiveIterator {}
+
+                    function f(I $c): void {
+                        $c->current();
+                    }'
+            ],
         ];
     }
 
