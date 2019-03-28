@@ -272,6 +272,19 @@ class Populator
             }
         }
 
+        $this->populateOverriddenMethods($storage);
+
+        if ($this->debug_output) {
+            echo 'Have populated ' . $storage->name . "\n";
+        }
+
+        $storage->populated = true;
+    }
+
+    /** @return void */
+    private function populateOverriddenMethods(
+        ClassLikeStorage $storage
+    ) {
         foreach ($storage->methods as $method_name => $method_storage) {
             if (isset($storage->overridden_method_ids[$method_name])) {
                 foreach ($storage->overridden_method_ids[$method_name] as $declaring_method_id) {
@@ -318,12 +331,6 @@ class Populator
                 }
             }
         }
-
-        if ($this->debug_output) {
-            echo 'Have populated ' . $storage->name . "\n";
-        }
-
-        $storage->populated = true;
     }
 
     /**
