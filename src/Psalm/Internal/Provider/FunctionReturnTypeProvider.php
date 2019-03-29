@@ -45,6 +45,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ReturnTypeProvider\RangeReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\StrReplaceReturnTypeProvider::class);
         $this->registerClass(ReturnTypeProvider\VersionCompareReturnTypeProvider::class);
+        $this->registerClass(ReturnTypeProvider\MktimeReturnTypeProvider::class);
     }
 
     /**

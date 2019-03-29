@@ -1546,6 +1546,19 @@ class FunctionCallTest extends TestCase
                         return 2;
                     }',
             ],
+            'mktime' => [
+                '<?php
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $a = mktime("foo");
+                    /** @psalm-suppress MixedArgument */
+                    $b = mktime($_GET["foo"]);
+                    $c = mktime(1, 2, 3);',
+                'assertions' => [
+                    '$a' => 'int|false',
+                    '$b' => 'int|false',
+                    '$c' => 'int',
+                ]
+            ],
         ];
     }
 
