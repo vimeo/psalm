@@ -198,7 +198,7 @@ echo $a;';
                     }',
                 'message' => "The type 'int' does not match the declared return type 'string' for fooFoo",
                 'line' => 3,
-                'error' => 'return $a + 1;',
+                'error' => '$a + 1',
             ],
             'undefinedVar' => [
                 '<?php
@@ -237,7 +237,7 @@ echo $a;';
                     }',
                 'message' => "The type 'string(hello)' does not match the declared return type 'int' for fooFoo",
                 'line' => 6,
-                'error' => 'return "hello";',
+                'error' => '"hello"',
             ],
         ];
     }
