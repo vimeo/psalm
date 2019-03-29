@@ -17,6 +17,7 @@ use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\OverriddenMethodAccess;
+use Psalm\Issue\TraitMethodSignatureMismatch;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
@@ -555,7 +556,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 ) : null;
 
             if (!TypeAnalyzer::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type)) {
-                if ($guide_classlike_storage !== $implementer_classlike_storage) {
+                if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait) {
                     if (IssueBuffer::accepts(
                         new MethodSignatureMismatch(
                             'Method ' . $cased_implementer_method_id . ' with return type \''
@@ -569,7 +570,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     }
                 } else {
                     if (IssueBuffer::accepts(
-                        new ImplementedReturnTypeMismatch(
+                        new TraitMethodSignatureMismatch(
                             'Method ' . $cased_implementer_method_id . ' with return type \''
                                 . $implementer_signature_return_type . '\' is different to return type \''
                                 . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
@@ -749,17 +750,33 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                     $guide_param_signature_type,
                     $implementer_param_signature_type
                 )) {
-                    if (IssueBuffer::accepts(
-                        new MethodSignatureMismatch(
-                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                                $implementer_param_signature_type . '\', expecting \'' .
-                                $guide_param_signature_type . '\' as defined by ' .
-                                $cased_guide_method_id,
-                            $implementer_method_storage->params[$i]->location
-                                ?: $code_location
-                        )
-                    )) {
-                        return false;
+                    if ($guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait) {
+                        if (IssueBuffer::accepts(
+                            new MethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_signature_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    ?: $code_location
+                            )
+                        )) {
+                            return false;
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new TraitMethodSignatureMismatch(
+                                'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
+                                    $implementer_param_signature_type . '\', expecting \'' .
+                                    $guide_param_signature_type . '\' as defined by ' .
+                                    $cased_guide_method_id,
+                                $implementer_method_storage->params[$i]->location
+                                    ?: $code_location
+                            ),
+                            $suppressed_issues
+                        )) {
+                            return false;
+                        }
                     }
 
                     return null;

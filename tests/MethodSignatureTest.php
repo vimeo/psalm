@@ -627,7 +627,7 @@ class MethodSignatureTest extends TestCase
                     class B extends A {
                         use T;
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'TraitMethodSignatureMismatch',
             ],
             'abstractTraitMethodWithDifferentReturnType' => [
                 '<?php
@@ -645,7 +645,38 @@ class MethodSignatureTest extends TestCase
                             return new B();
                         }
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => 'TraitMethodSignatureMismatch',
+            ],
+            'traitMoreParams' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    trait T {
+                        abstract public function foo(string $s) : string;
+                    }
+
+                    class B extends A {
+                        use T;
+                    }',
+                'error_message' => 'TraitMethodSignatureMismatch',
+            ],
+            'abstractTraitMethodWithDifferentParamType' => [
+                '<?php
+                    class A {}
+                    class B {}
+
+                    trait T {
+                        abstract public function foo(A $a) : void;
+                    }
+
+                    class C {
+                        use T;
+
+                        public function foo(B $b) : void {}
+                    }',
+                'error_message' => 'TraitMethodSignatureMismatch',
             ],
             'mustOmitReturnType' => [
                 '<?php

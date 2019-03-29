@@ -144,6 +144,10 @@ class IssueBuffer
             return 'UnusedParam';
         }
 
+        if ($issue_type === 'TraitMethodSignatureMismatch') {
+            return 'MethodSignatureMismatch';
+        }
+
         return null;
     }
 
