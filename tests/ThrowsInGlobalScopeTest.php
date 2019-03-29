@@ -188,4 +188,115 @@ class ThrowsInGlobalScopeTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    /**
+     * @return                   void
+     */
+    public function testUncaughtThrowWhenSuppressing()
+    {
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                throw new \Exception();'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return                   void
+     */
+    public function testUncaughtThrowInNamespaceWhenSuppressing()
+    {
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace ns;
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                throw new \Exception();'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return                   void
+     */
+    public function testUncaughtDocumentedThrowCallWhenSuppressing()
+    {
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace ns;
+                /**
+                 * @throws RangeException
+                 * @throws InvalidArgumentException
+                 */
+                function foo(int $x, int $y) : int {
+                    if ($y === 0) {
+                        throw new \RangeException("Cannot divide by zero");
+                    }
+
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }
+
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                foo(0, 0);'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @return                   void
+     */
+    public function testUncaughtDocumentedThrowCallInNamespaceWhenSuppressing()
+    {
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace ns;
+                /**
+                 * @throws RangeException
+                 * @throws InvalidArgumentException
+                 */
+                function foo(int $x, int $y) : int {
+                    if ($y === 0) {
+                        throw new \RangeException("Cannot divide by zero");
+                    }
+
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }
+
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                foo(0, 0);'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
 }
