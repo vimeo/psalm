@@ -1,4 +1,4 @@
-# Using Psalter
+# Fixing Code
 
 Psalm is good at finding potential issues in large codebases, but once found, it can be something of a gargantuan task to fix all the issues.
 
