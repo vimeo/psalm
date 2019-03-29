@@ -28,6 +28,8 @@ class MethodParamsProvider
     public function __construct()
     {
         self::$handlers = [];
+
+        $this->registerClass(ReturnTypeProvider\PdoStatementSetFetchMode::class);
     }
 
     /**

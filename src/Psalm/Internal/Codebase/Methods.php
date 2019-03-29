@@ -4,6 +4,8 @@ namespace Psalm\Internal\Codebase;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\CodeLocation;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Provider\{
     ClassLikeStorageProvider,
     FileReferenceProvider,
@@ -221,12 +223,16 @@ class Methods
 
     /**
      * @param  string $method_id
-     * @param  array<PhpParser\Node\Arg> $args
+     * @param  array<int, PhpParser\Node\Arg> $args
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public function getMethodParams($method_id, StatementsSource $source = null, array $args = null)
-    {
+    public function getMethodParams(
+        $method_id,
+        StatementsSource $source = null,
+        array $args = null,
+        Context $context = null
+    ) : array {
         list($fq_class_name, $method_name) = explode('::', $method_id);
 
         if ($this->params_provider->has($fq_class_name)) {
@@ -234,7 +240,8 @@ class Methods
                 $fq_class_name,
                 $method_name,
                 $args,
-                $source
+                $source,
+                $context
             );
 
             if ($method_params !== null) {
@@ -242,7 +249,46 @@ class Methods
             }
         }
 
-        if ($declaring_method_id = $this->getDeclaringMethodId($method_id)) {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        // functions
+        if (CallMap::inCallMap($declaring_method_id ?: $method_id)) {
+            $declaring_fq_class_name = explode('::', $declaring_method_id ?: $method_id)[0];
+
+            $class_storage = $this->classlike_storage_provider->get($declaring_fq_class_name);
+
+            if (!$class_storage->stubbed) {
+                $function_param_options = CallMap::getParamsFromCallMap($declaring_method_id ?: $method_id);
+
+                if ($function_param_options === null) {
+                    throw new \UnexpectedValueException(
+                        'Not expecting $function_param_options to be null for ' . $declaring_method_id
+                    );
+                }
+
+                if (!$source || $args === null || count($function_param_options) === 1) {
+                    return $function_param_options[0];
+                }
+
+                if ($context && $source instanceof \Psalm\Internal\Analyzer\StatementsAnalyzer) {
+                    foreach ($args as $arg) {
+                        \Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer::analyze(
+                            $source,
+                            $arg->value,
+                            $context
+                        );
+                    }
+                }
+
+                return FunctionLikeAnalyzer::getMatchingParamsFromCallMapOptions(
+                    $source->getCodebase(),
+                    $function_param_options,
+                    $args
+                );
+            }
+        }
+
+        if ($declaring_method_id) {
             $storage = $this->getStorage($declaring_method_id);
 
             $params = $storage->params;

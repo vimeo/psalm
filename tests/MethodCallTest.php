@@ -291,6 +291,31 @@ class MethodCallTest extends TestCase
 
                     Foo::$current->bar();',
             ],
+            'pdoStatementSetFetchMode' => [
+                '<?php
+                    class A {
+                        /** @var ?string */
+                        public $a;
+                    }
+
+                    $db = new PDO("sqlite::memory:");
+                    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                    $stmt = $db->prepare("select \"a\" as a");
+                    $stmt->setFetchMode(PDO::FETCH_CLASS, A::class);
+                    $stmt->execute();
+                    /** @psalm-suppress MixedAssignment */
+                    $a = $stmt->fetch();'
+            ],
+            'datePeriodConstructor' => [
+                '<?php
+                    function foo(DateTime $d1, DateTime $d2) : void {
+                        new DatePeriod(
+                            $d1,
+                            DateInterval::createFromDateString("1 month"),
+                            $d2
+                        );
+                    }'
+            ],
         ];
     }
 

@@ -1220,50 +1220,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    public static function getMethodParamsById(
-        StatementsAnalyzer $statements_analyzer,
-        $method_id,
-        array $args
-    ) {
-        $fq_class_name = strpos($method_id, '::') !== false ? explode('::', $method_id)[0] : null;
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($fq_class_name) {
-            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-
-            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-            if ($class_storage->user_defined || $class_storage->stubbed) {
-                $method_params = $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args);
-
-                return $method_params;
-            }
-        }
-
-        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
-
-        if (CallMap::inCallMap($declaring_method_id ?: $method_id)) {
-            $function_param_options = CallMap::getParamsFromCallMap($declaring_method_id ?: $method_id);
-
-            if ($function_param_options === null) {
-                throw new \UnexpectedValueException(
-                    'Not expecting $function_param_options to be null for ' . $method_id
-                );
-            }
-
-            return self::getMatchingParamsFromCallMapOptions($codebase, $function_param_options, $args);
-        }
-
-        return $codebase->methods->getMethodParams($method_id);
-    }
-
-    /**
-     * @param  string                           $method_id
-     * @param  array<int, PhpParser\Node\Arg>   $args
-     *
-     * @return array<int, FunctionLikeParameter>
-     */
     public static function getFunctionParamsFromCallMapById(Codebase $codebase, $method_id, array $args)
     {
         $function_param_options = CallMap::getParamsFromCallMap($method_id);
@@ -1283,7 +1239,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
      *
      * @return array<int, FunctionLikeParameter>
      */
-    protected static function getMatchingParamsFromCallMapOptions(
+    public static function getMatchingParamsFromCallMapOptions(
         Codebase $codebase,
         array $function_param_options,
         array $args
