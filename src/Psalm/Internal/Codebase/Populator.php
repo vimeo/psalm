@@ -998,8 +998,19 @@ class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_method_ids as $method_name => $declaring_method_id) {
-            if (!$parent_storage->is_trait && $method_name !== '__construct') {
-                $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+            if ($method_name !== '__construct') {
+                if ($parent_storage->is_trait) {
+                    $declaring_class = explode('::', $declaring_method_id)[0];
+                    $declaring_class_storage = $this->classlike_storage_provider->get($declaring_class);
+
+                    if (isset($declaring_class_storage->methods[$method_name])
+                        && $declaring_class_storage->methods[$method_name]->abstract
+                    ) {
+                        $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+                    }
+                } else {
+                    $storage->overridden_method_ids[$method_name][] = $declaring_method_id;
+                }
             }
 
             $aliased_method_names = [$method_name];

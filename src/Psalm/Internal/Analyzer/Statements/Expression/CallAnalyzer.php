@@ -1441,6 +1441,13 @@ class CallAnalyzer
                     $codebase,
                     $arg->value->inferredType
                 );
+
+                $arg_type->replaceTemplateTypesWithStandins(
+                    $existing_generic_params,
+                    $empty_generic_params,
+                    $codebase,
+                    $arg->value->inferredType
+                );
             }
 
             if ($template_types) {

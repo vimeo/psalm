@@ -627,7 +627,7 @@ class MethodSignatureTest extends TestCase
                     class B extends A {
                         use T;
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'abstractTraitMethodWithDifferentReturnType' => [
                 '<?php
@@ -645,7 +645,7 @@ class MethodSignatureTest extends TestCase
                             return new B();
                         }
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_message' => 'MethodSignatureMismatch',
             ],
             'mustOmitReturnType' => [
                 '<?php

@@ -866,16 +866,39 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
-        $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
+        $parent_source = $statements_analyzer->getSource();
 
         $class_template_params = self::getClassTemplateParams(
             $codebase,
-            $class_storage,
+            $codebase->methods->getClassLikeStorageForMethod($method_id),
             $fq_class_name,
             $method_name_lc,
             $lhs_type_part,
             $lhs_var_id
         );
+
+        if ($lhs_var_id === '$this' && $parent_source instanceof \Psalm\Internal\Analyzer\FunctionLikeAnalyzer) {
+            $grandparent_source = $parent_source->getSource();
+
+            if ($grandparent_source instanceof \Psalm\Internal\Analyzer\TraitAnalyzer) {
+                $fq_trait_name = $grandparent_source->getFQCLN();
+
+                $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
+
+                if (isset($trait_storage->methods[$method_name_lc])) {
+                    $trait_method_id = $fq_trait_name . '::' . $method_name_lc;
+
+                    $class_template_params = self::getClassTemplateParams(
+                        $codebase,
+                        $codebase->methods->getClassLikeStorageForMethod($trait_method_id),
+                        $fq_class_name,
+                        $method_name_lc,
+                        $lhs_type_part,
+                        $lhs_var_id
+                    );
+                }
+            }
+        }
 
         if (self::checkMethodArgs(
             $method_id,
@@ -934,6 +957,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     );
                 }
             }
+
+            $class_storage = $codebase->methods->getClassLikeStorageForMethod($method_id);
 
             if (!$return_type_candidate) {
                 if ($call_map_id && CallMap::inCallMap($call_map_id)) {

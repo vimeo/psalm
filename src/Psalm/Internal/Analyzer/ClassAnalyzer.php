@@ -1265,8 +1265,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
         $analyzed_method_id = $actual_method_id;
 
-        $classlike_storage_provider = $codebase->classlike_storage_provider;
-
         $included_file_path = $source->getFilePath();
 
         if ($class_context->include_location) {
@@ -1288,13 +1286,15 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if ($declaring_method_id && $declaring_method_storage->abstract) {
-                    $appearing_storage = $classlike_storage_provider->get($class_context->self);
                     $implementer_method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    $declaring_storage = $codebase->classlike_storage_provider->get(
+                        explode('::', $actual_method_id)[0]
+                    );
 
                     MethodAnalyzer::compareMethods(
                         $codebase,
                         $class_storage,
-                        $appearing_storage,
+                        $declaring_storage,
                         $implementer_method_storage,
                         $declaring_method_storage,
                         $this->fq_class_name,
