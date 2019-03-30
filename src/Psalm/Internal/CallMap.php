@@ -2440,7 +2440,7 @@ return [
 'Error::getTrace' => ['array'],
 'Error::getTraceAsString' => ['string'],
 'error_clear_last' => ['void'],
-'error_get_last' => ['?array'],
+'error_get_last' => ['?array{message:string, type?:int, file?:string, line?:int}'],
 'error_log' => ['bool', 'message'=>'string', 'message_type='=>'int', 'destination='=>'string', 'extra_headers='=>'string'],
 'error_reporting' => ['int', 'new_error_level='=>'int'],
 'ErrorException::__clone' => ['void'],
