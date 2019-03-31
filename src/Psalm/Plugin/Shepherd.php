@@ -20,6 +20,11 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
         array $build_info,
         SourceControlInfo $source_control_info = null
     ) {
+        if (!function_exists('curl_init')) {
+            echo 'No curl found, cannot send data to ' . $codebase->config->shepherd_host;
+            return;
+        }
+
         if ($source_control_info instanceof \Psalm\SourceControl\Git\GitInfo && $build_info) {
             $data = [
                 'build' => $build_info,
