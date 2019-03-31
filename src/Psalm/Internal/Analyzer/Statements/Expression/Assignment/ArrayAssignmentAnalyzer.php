@@ -96,6 +96,25 @@ class ArrayAssignmentAnalyzer
         $root_type = isset($root_array_expr->inferredType) ? $root_array_expr->inferredType : Type::getMixed();
 
         if ($root_type->hasMixed()) {
+            if (ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                $context,
+                true
+            ) === false) {
+                // fall through
+            }
+
+            if ($stmt->dim) {
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt->dim,
+                    $context
+                ) === false) {
+                    // fall through
+                }
+            }
+
             return null;
         }
 

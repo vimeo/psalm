@@ -577,6 +577,14 @@ class ArrayAccessTest extends TestCase
                     echo $a[0];',
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'recogniseBadVar' => [
+                '<?php
+                    /** @psalm-suppress MixedAssignment */
+                    $array = $_GET["foo"] ?? [];
+
+                    $array[$a] = "b";',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
         ];
     }
 }
