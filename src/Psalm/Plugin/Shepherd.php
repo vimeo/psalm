@@ -69,7 +69,12 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 
             if ($return !== '') {
                 echo 'Error with Psalm Shepherd:' . PHP_EOL;
-                echo $return . PHP_EOL;
+
+                if ($return === false) {
+                    echo var_export(curl_getinfo($ch), true) . PHP_EOL;
+                } else {
+                    echo $return . PHP_EOL;
+                }
             }
 
             // Close cURL session handle
