@@ -358,7 +358,7 @@ class Config
     public $error_baseline = null;
 
     /** @var string */
-    public $spirit_host = 'spirit.psalm.dev';
+    public $shepherd_host = 'shepherd.dev';
 
     /**
      * @var array<string, string>

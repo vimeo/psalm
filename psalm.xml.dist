@@ -78,7 +78,7 @@
         <UnusedClass>
             <errorLevel type="suppress">
                 <directory name="examples"/>
-                <file name="src/Psalm/Plugin/SpiritGuide.php" />
+                <file name="src/Psalm/Plugin/Shepherd.php" />
                 <file name="src/Psalm/Plugin/Hook/MethodReturnTypeProviderInterface.php"/>
             </errorLevel>
         </UnusedClass>

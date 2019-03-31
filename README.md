@@ -4,7 +4,7 @@
 [![Packagist](https://img.shields.io/packagist/dt/vimeo/psalm.svg)](https://packagist.org/packages/vimeo/psalm)
 [![Travis CI](https://img.shields.io/travis/vimeo/psalm/master.svg)](https://travis-ci.org/vimeo/psalm/branches)
 [![Coverage Status](https://coveralls.io/repos/github/vimeo/psalm/badge.svg)](https://coveralls.io/github/vimeo/psalm)
-![Psalm coverage](https://spirit.psalm.dev/github/vimeo/psalm/coverage.svg?)
+![Psalm coverage](https://shepherd.dev/github/vimeo/psalm/coverage.svg?)
 
 
 Psalm is a static analysis tool for finding errors in PHP applications, built on top of [PHP Parser](https://github.com/nikic/php-parser).

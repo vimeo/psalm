@@ -69,7 +69,7 @@ jobs:
         - vendor/bin/phpunit --dump-xdebug-filter build/xdebug-filter.php
       script:
         - vendor/bin/phpunit --prepend build/xdebug-filter.php
-        - ./psalm --with-spirit
+        - ./psalm --with-shepherd
       after_success:
         - travis_retry php vendor/bin/php-coveralls -v
 

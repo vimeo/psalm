@@ -4,7 +4,7 @@ namespace Psalm\Plugin;
 use Psalm\Codebase;
 use Psalm\SourceControl\SourceControlInfo;
 
-class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
+class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 {
     /**
      * Called after analysis is complete
@@ -36,7 +36,7 @@ class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
 
             $payload = json_encode($data);
 
-            $base_address = $codebase->config->spirit_host;
+            $base_address = $codebase->config->shepherd_host;
 
             if (parse_url($base_address, PHP_URL_SCHEME) === null) {
                 $base_address = 'https://' . $base_address;
@@ -63,7 +63,7 @@ class SpiritGuide implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             $return = curl_exec($ch);
 
             if ($return !== '') {
-                echo 'Error with Psalm Spirit:' . PHP_EOL;
+                echo 'Error with Psalm Shepherd:' . PHP_EOL;
                 echo $return . PHP_EOL;
             }
 
