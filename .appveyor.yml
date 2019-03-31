@@ -47,6 +47,7 @@ install:
     - IF %PHP%==1 copy php.ini-production php.ini /Y
     - IF %PHP%==1 echo date.timezone="UTC" >> php.ini
     - IF %PHP%==1 echo extension_dir=ext >> php.ini
+    - IF %PHP%==1 echo extension=php_curl.dll >> php.ini
     - IF %PHP%==1 echo extension=php_openssl.dll >> php.ini
     - IF %PHP%==1 echo extension=php_mbstring.dll >> php.ini
     - IF %PHP%==1 echo extension=php_fileinfo.dll >> php.ini
