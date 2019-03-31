@@ -71,7 +71,113 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                 echo 'Error with Psalm Shepherd:' . PHP_EOL;
 
                 if ($return === false) {
-                    echo var_export(curl_getinfo($ch), true) . PHP_EOL;
+                    /** @var array */
+                    $curl_info = curl_getinfo($ch);
+
+                    if (($curl_info['ssl_verify_result'] ?? 0) !== 0) {
+                        echo 'Curl SSL error: ';
+
+                        switch ($curl_info['ssl_verify_result']) {
+                            case 2:
+                                echo 'unable to get issuer certificate';
+                                break;
+                            case 3:
+                                echo 'unable to get certificate CRL';
+                                break;
+                            case 4:
+                                echo 'unable to decrypt certificate’s signature';
+                                break;
+                            case 5:
+                                echo 'unable to decrypt CRL’s signature';
+                                break;
+                            case 6:
+                                echo 'unable to decode issuer public key';
+                                break;
+                            case 7:
+                                echo 'certificate signature failure';
+                                break;
+                            case 8:
+                                echo 'CRL signature failure';
+                                break;
+                            case 9:
+                                echo 'certificate is not yet valid';
+                                break;
+                            case 10:
+                                echo 'certificate has expired';
+                                break;
+                            case 11:
+                                echo 'CRL is not yet valid';
+                                break;
+                            case 12:
+                                echo 'CRL has expired';
+                                break;
+                            case 13:
+                                echo 'format error in certificate’s notBefore field';
+                                break;
+                            case 14:
+                                echo 'format error in certificate’s notAfter field';
+                                break;
+                            case 15:
+                                echo 'format error in CRL’s lastUpdate field';
+                                break;
+                            case 16:
+                                echo 'format error in CRL’s nextUpdate field';
+                                break;
+                            case 17:
+                                echo 'out of memory';
+                                break;
+                            case 18:
+                                echo 'self signed certificate';
+                                break;
+                            case 19:
+                                echo 'self signed certificate in certificate chain';
+                                break;
+                            case 20:
+                                echo 'unable to get local issuer certificate';
+                                break;
+                            case 21:
+                                echo 'unable to verify the first certificate';
+                                break;
+                            case 22:
+                                echo 'certificate chain too long';
+                                break;
+                            case 23:
+                                echo 'certificate revoked';
+                                break;
+                            case 24:
+                                echo 'invalid CA certificate';
+                                break;
+                            case 25:
+                                echo 'path length constraint exceeded';
+                                break;
+                            case 26:
+                                echo 'unsupported certificate purpose';
+                                break;
+                            case 27:
+                                echo 'certificate not trusted';
+                                break;
+                            case 28:
+                                echo 'certificate rejected';
+                                break;
+                            case 29:
+                                echo 'subject issuer mismatch';
+                                break;
+                            case 30:
+                                echo 'authority and subject key identifier mismatch';
+                                break;
+                            case 31:
+                                echo 'authority and issuer serial number mismatch';
+                                break;
+                            case 32:
+                                echo 'key usage does not include certificate signing';
+                                break;
+                            case 50:
+                                echo 'application verification failure';
+                                break;
+                        }
+                    } else {
+                        echo var_export(curl_getinfo($ch), true) . PHP_EOL;
+                    }
                 } else {
                     echo $return . PHP_EOL;
                 }

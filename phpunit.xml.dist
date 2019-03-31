@@ -26,6 +26,7 @@
                 <file>src/psalm-language-server.php</file>
                 <file>src/psalter.php</file>
                 <file>src/psalm_plugin.php</file>
+                <file>src/Psalm/Plugin/Shepherd.php</file>
                 <file>src/Psalm/Internal/CallMap.php</file>
                 <file>src/Psalm/Internal/Fork/Pool.php</file>
                 <file>src/Psalm/Internal/Fork/Restarter.php</file>
