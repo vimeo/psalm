@@ -189,7 +189,7 @@ class ConfigTest extends TestCase
         if ($check_symlink_error) {
             $last_error = error_get_last();
 
-            if (is_array($last_error) && isset($last_error['message']) && $no_symlinking_error === $last_error['message']) {
+            if (is_array($last_error) && $no_symlinking_error === $last_error['message']) {
                 $this->markTestSkipped($no_symlinking_error);
 
                 return;
@@ -217,7 +217,28 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('tests/symlinktest/a/ignoreme.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/StringAnalyzer.php')));
 
-        unlink(__DIR__ . '/symlinktest/ignored/b');
+        $regex = '/^unlink\([^\)]+\): (?:Permission denied|No such file or directory)$/';
+        $last_error = error_get_last();
+
+        $check_unlink_error =
+            !is_array($last_error) ||
+            !preg_match($regex, $last_error['message']);
+
+        @unlink(__DIR__ . '/symlinktest/ignored/b');
+
+        if ($check_unlink_error) {
+            $last_error = error_get_last();
+
+            if (is_array($last_error) && !preg_match($regex, $last_error['message'])) {
+                throw new \ErrorException(
+                    $last_error['message'],
+                    0,
+                    $last_error['type'],
+                    $last_error['file'],
+                    $last_error['line']
+                );
+            }
+        }
     }
 
     /**

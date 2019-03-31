@@ -884,6 +884,8 @@ class Config
             throw new \InvalidArgumentException('Cannot find plugin file ' . $path);
         }
 
+        $path = realpath($path);
+
         $this->plugin_paths[] = $path;
     }
 

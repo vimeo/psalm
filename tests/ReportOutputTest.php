@@ -241,8 +241,8 @@ ERROR: PossiblyUndefinedGlobalVariable - somefile.php:15:6 - Possibly undefined 
         );
 
         $this->assertSame(
-            'FILE: somefile.php' . "\n" .
-            "\n" .
+            'FILE: somefile.php' . PHP_EOL .
+            PHP_EOL .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL .
             '| SEVERITY | LINE | ISSUE                           | DESCRIPTION                                                   |' . PHP_EOL .
             '+----------+------+---------------------------------+---------------------------------------------------------------+' . PHP_EOL .

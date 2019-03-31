@@ -34,7 +34,7 @@ class Compact extends Output
                     $output[] = $buffer->fetch();
                 }
 
-                $output[] = 'FILE: ' . $issue_data['file_name'] . "\n";
+                $output[] = 'FILE: ' . $issue_data['file_name'] . PHP_EOL;
 
                 $buffer = new BufferedOutput();
                 $table = new Table($buffer);
@@ -52,7 +52,7 @@ class Compact extends Output
             // so we have clean tables.
             $message = $issue_data['message'];
             if (strlen($message) > 70) {
-                $message = implode("\n", str_split($message, 70));
+                $message = implode(PHP_EOL, str_split($message, 70));
             }
 
             $table->addRow([
@@ -71,6 +71,6 @@ class Compact extends Output
             }
         }
 
-        return implode("\n", $output);
+        return implode(PHP_EOL, $output);
     }
 }

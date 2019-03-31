@@ -138,7 +138,7 @@ class BuildInfoCollector
             $this->readEnv['CI_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
             $this->readEnv['CI_JOB_ID'] = $this->env['APPVEYOR_JOB_NUMBER'];
             $this->readEnv['CI_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
-            $this->readEnv['CI_PR_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'];
+            $this->readEnv['CI_PR_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'] ?? '';
             $this->env['CI_NAME'] = 'AppVeyor';
 
             // backup
@@ -146,7 +146,6 @@ class BuildInfoCollector
             $this->readEnv['APPVEYOR_BUILD_NUMBER'] = $this->env['APPVEYOR_BUILD_NUMBER'];
             $this->readEnv['APPVEYOR_JOB_NUMBER'] = $this->env['APPVEYOR_JOB_NUMBER'];
             $this->readEnv['APPVEYOR_REPO_BRANCH'] = $this->env['APPVEYOR_REPO_BRANCH'];
-            $this->readEnv['APPVEYOR_PULL_REQUEST_NUMBER'] = $this->env['APPVEYOR_PULL_REQUEST_NUMBER'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
 
             $repo_slug = (string) $this->env['APPVEYOR_REPO_NAME'] ?? '';
@@ -158,7 +157,7 @@ class BuildInfoCollector
                 $this->readEnv['CI_REPO_NAME'] = $slug_parts[1];
             }
 
-            $pr_slug = (string) $this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME'] ?? '';
+            $pr_slug = (string) ($this->env['APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME'] ?? '');
 
             if ($pr_slug) {
                 $slug_parts = explode('/', $pr_slug);
