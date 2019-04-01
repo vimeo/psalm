@@ -175,11 +175,14 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                                 echo 'application verification failure';
                                 break;
                         }
+
+                        echo PHP_EOL;
                     } else {
                         echo var_export(curl_getinfo($ch), true) . PHP_EOL;
                     }
                 } else {
                     echo $return . PHP_EOL;
+                    echo 'Called with environment variables:' . implode(', ', array_keys($_SERVER)) . PHP_EOL;
                 }
             }
 
