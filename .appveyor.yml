@@ -12,6 +12,7 @@ init:
   - SET ANSICON=121x90 (121x90)
 
 environment:
+  SSL_CERT_FILE: "C:\\tools\\php\\cacert.pem"
   matrix:
     - php_ver_target: 7.0
       DEPS: 'low'
@@ -43,11 +44,14 @@ cache:
 install:
     - IF EXIST c:\tools\php (SET PHP=0) # Checks for the PHP install being cached
     - ps: appveyor-retry cinst --params '""/InstallDir:C:\tools\php""' --ignore-checksums -y php --version ((choco search php --exact --all-versions -r | select-string -pattern $env:php_ver_target | sort { [version]($_ -split '\|' | select -last 1) } -Descending | Select-Object -first 1) -replace '[php|]','')
+    - appveyor DownloadFile https://curl.haxx.se/ca/cacert.pem -FileName C:\tools\php\cacert.pem
     - cd c:\tools\php
     - IF %PHP%==1 copy php.ini-production php.ini /Y
     - IF %PHP%==1 echo date.timezone="UTC" >> php.ini
     - IF %PHP%==1 echo extension_dir=ext >> php.ini
     - IF %PHP%==1 echo extension=php_curl.dll >> php.ini
+    - IF NOT EXIST php-installed.txt echo curl.cainfo="C:/tools/php/cacert.pem" >> php.ini
+    - IF NOT EXIST php-installed.txt echo openssl.cafile="C:/tools/php/cacert.pem" >> php.ini
     - IF %PHP%==1 echo extension=php_openssl.dll >> php.ini
     - IF %PHP%==1 echo extension=php_mbstring.dll >> php.ini
     - IF %PHP%==1 echo extension=php_fileinfo.dll >> php.ini
