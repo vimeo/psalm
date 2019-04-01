@@ -77,6 +77,11 @@ class GitInfoCollector
             throw new \RuntimeException();
         }
 
+        if ($commitResult[0] === '\'') {
+            $commitResult[0] = substr($commitResult[0], 1);
+            $commitResult[5] = substr($commitResult[5], 0, -1);
+        }
+
         $commit = new CommitInfo();
 
         return $commit
