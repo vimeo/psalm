@@ -71,15 +71,10 @@ class GitInfoCollector
      */
     protected function collectCommit() : CommitInfo
     {
-        $commitResult = $this->executor->execute("git log -1 --pretty=format:'%H%n%aN%n%ae%n%cN%n%ce%n%s'");
+        $commitResult = $this->executor->execute("git log -1 --pretty=format:%H%n%aN%n%ae%n%cN%n%ce%n%s");
 
         if (count($commitResult) !== 6 || array_keys($commitResult) !== range(0, 5)) {
             throw new \RuntimeException();
-        }
-
-        if ($commitResult[0] === '\'') {
-            $commitResult[0] = substr($commitResult[0], 1);
-            $commitResult[5] = substr($commitResult[5], 0, -1);
         }
 
         $commit = new CommitInfo();
