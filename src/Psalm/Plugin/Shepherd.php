@@ -182,7 +182,8 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                     }
                 } else {
                     echo $return . PHP_EOL;
-                    echo 'Called with environment variables: ' . implode(', ', array_keys($_SERVER)) . PHP_EOL;
+                    echo 'Git args: ' . var_export($source_control_info->toArray(), true) . PHP_EOL;
+                    echo 'CI args: ' . var_export($build_info, true) . PHP_EOL;
                 }
             }
 
