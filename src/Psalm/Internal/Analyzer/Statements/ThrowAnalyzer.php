@@ -53,9 +53,10 @@ class ThrowAnalyzer
                     }
                 } elseif (!$context->isSuppressingExceptions($statements_analyzer)) {
                     $codelocation = new CodeLocation($file_analyzer, $stmt);
+                    $hash = $codelocation->getHash();
                     foreach ($throw_type->getTypes() as $throw_atomic_type) {
                         if ($throw_atomic_type instanceof TNamedObject) {
-                            $context->possibly_thrown_exceptions[$throw_atomic_type->value][] = $codelocation;
+                            $context->possibly_thrown_exceptions[$throw_atomic_type->value][$hash] = $codelocation;
                         }
                     }
                 }
