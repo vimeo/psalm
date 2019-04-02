@@ -48,7 +48,7 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
             }
 
             // Prepare new cURL resource
-            $ch = curl_init($base_address . '/telemetry');
+            $ch = curl_init($base_address . '/hooks/psalm');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLINFO_HEADER_OUT, true);
             curl_setopt($ch, CURLOPT_POST, true);
