@@ -1692,7 +1692,7 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
     }
 
     /**
-     * @return array<string, array<int, CodeLocation>>
+     * @return array<string, array<array-key, CodeLocation>>
      */
     public function getUncaughtThrows(Context $context)
     {

@@ -238,7 +238,6 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                namespace ns;
                 /**
                  * @throws RangeException
                  * @throws InvalidArgumentException
@@ -292,6 +291,46 @@ class ThrowsInGlobalScopeTest extends TestCase
                 }
 
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
+                foo(0, 0);'
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage UncaughtThrowInGlobalScope
+     *
+     * @return                   void
+     */
+    public function testUncaughtDocumentedThrowCallWhenSuppressingFirst()
+    {
+        Config::getInstance()->check_for_throws_in_global_scope = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @throws RangeException
+                 * @throws InvalidArgumentException
+                 */
+                function foo(int $x, int $y) : int {
+                    if ($y === 0) {
+                        throw new \RangeException("Cannot divide by zero");
+                    }
+
+                    if ($y < 0) {
+                        throw new \InvalidArgumentException("This is also bad");
+                    }
+
+                    return intdiv($x, $y);
+                }
+
+                /** @psalm-suppress UncaughtThrowInGlobalScope */
+                foo(0, 0);
+
                 foo(0, 0);'
         );
 
