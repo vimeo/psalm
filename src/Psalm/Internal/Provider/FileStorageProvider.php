@@ -74,20 +74,22 @@ class FileStorageProvider
             return true;
         }
 
+        if ($file_contents === null) {
+            return false;
+        }
+
         if (!$this->cache) {
             return false;
         }
 
-        if ($file_contents !== null) {
-            $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
+        $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
 
-            if (!$cached_value) {
-                return false;
-            }
-
-            self::$storage[$file_path] = $cached_value;
-            self::$new_storage[$file_path] = $cached_value;
+        if (!$cached_value) {
+            return false;
         }
+
+        self::$storage[$file_path] = $cached_value;
+        self::$new_storage[$file_path] = $cached_value;
 
         return true;
     }
