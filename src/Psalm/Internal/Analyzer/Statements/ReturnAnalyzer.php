@@ -310,6 +310,7 @@ class ReturnAnalyzer
                         && $inferred_type->isFalsable()
                         && !$local_return_type->isFalsable()
                         && !$local_return_type->hasBool()
+                        && !$local_return_type->hasScalar()
                     ) {
                         if (IssueBuffer::accepts(
                             new FalsableReturnStatement(
