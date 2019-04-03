@@ -731,6 +731,7 @@ class PropertyAssignmentAnalyzer
                 if (!$assignment_value_type->ignore_falsable_issues
                     && $assignment_value_type->isFalsable()
                     && !$class_property_type->hasBool()
+                    && !$class_property_type->hasScalar()
                 ) {
                     if (IssueBuffer::accepts(
                         new PossiblyFalsePropertyAssignmentValue(
