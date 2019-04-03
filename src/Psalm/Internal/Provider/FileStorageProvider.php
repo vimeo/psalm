@@ -66,7 +66,7 @@ class FileStorageProvider
      *
      * @return bool
      */
-    public function has($file_path, $file_contents)
+    public function has($file_path, string $file_contents = null)
     {
         $file_path = strtolower($file_path);
 
@@ -78,14 +78,16 @@ class FileStorageProvider
             return false;
         }
 
-        $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
+        if ($file_contents !== null) {
+            $cached_value = $this->cache->getLatestFromCache($file_path, $file_contents);
 
-        if (!$cached_value) {
-            return false;
+            if (!$cached_value) {
+                return false;
+            }
+
+            self::$storage[$file_path] = $cached_value;
+            self::$new_storage[$file_path] = $cached_value;
         }
-
-        self::$storage[$file_path] = $cached_value;
-        self::$new_storage[$file_path] = $cached_value;
 
         return true;
     }

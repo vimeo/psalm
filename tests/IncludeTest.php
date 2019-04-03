@@ -539,6 +539,21 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'index.php',
                 ],
             ],
+            'suppressMissingFile' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        function getEndpoints() : void {
+                            $listFile = "tests/stubs/custom_functions.php";
+                            if (!file_exists($listFile)) {
+                                throw new RuntimeException("Endpoint list not found");
+                            }
+                            include $listFile;
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
         ];
     }
 
