@@ -70,6 +70,14 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                 case 'microtime':
                     return Type::getString();
 
+                case 'hrtime':
+                    return new Type\Union([
+                        new Type\Atomic\ObjectLike([
+                            Type::getInt(),
+                            Type::getInt()
+                        ])
+                    ]);
+
                 case 'get_called_class':
                     return new Type\Union([new Type\Atomic\TClassString($context->self ?: 'object')]);
 
@@ -169,6 +177,38 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
                         new Type\Atomic\TFloat,
                         new Type\Atomic\TString
                     ]);
+
+                case 'hrtime':
+                    if (isset($call_args[0]->value->inferredType)) {
+                        $subject_type = $call_args[0]->value->inferredType;
+
+                        if ((string) $subject_type === 'true') {
+                            $int = Type::getInt();
+                            $int->from_calculation = true;
+                            return $int;
+                        }
+
+                        if ((string) $subject_type === 'false') {
+                            return new Type\Union([
+                                new Type\Atomic\ObjectLike([
+                                    Type::getInt(),
+                                    Type::getInt()
+                                ])
+                            ]);
+                        }
+
+                        return new Type\Union([
+                            new Type\Atomic\ObjectLike([
+                                Type::getInt(),
+                                Type::getInt()
+                            ]),
+                            new Type\Atomic\TInt()
+                        ]);
+                    }
+
+                    $int = Type::getInt();
+                    $int->from_calculation = true;
+                    return $int;
 
                 case 'getenv':
                     return new Type\Union([new Type\Atomic\TString, new Type\Atomic\TFalse]);

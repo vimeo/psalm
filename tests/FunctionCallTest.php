@@ -1559,6 +1559,27 @@ class FunctionCallTest extends TestCase
                     '$c' => 'int',
                 ]
             ],
+            'PHP73-hrtime' => [
+                '<?php
+                    $a = hrtime(true);
+                    $b = hrtime();
+                    /** @psalm-suppress InvalidScalarArgument */
+                    $c = hrtime(1);
+                    $d = hrtime(false);',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'array{0:int, 1:int}',
+                    '$c' => 'array{0:int, 1:int}|int',
+                    '$d' => 'array{0:int, 1:int}',
+                ],
+            ],
+            'PHP73-hrtimeCanBeFloat' => [
+                '<?php
+                    $a = hrtime(true);
+
+                    if (is_int($a)) {}
+                    if (is_float($a)) {}',
+            ],
         ];
     }
 
