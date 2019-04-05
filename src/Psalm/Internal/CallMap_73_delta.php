@@ -37,7 +37,7 @@ return [
     'JsonException::getTrace' => [''],
     'JsonException::getTraceAsString' => [''],
     'net_get_interfaces' => ['array<string,array<string,mixed>>|false'],
-    'openssl_pkey_derive' => ['string', 'peer_pub_key'=>'mixed', 'priv_key'=>'mixed', 'keylen='=>'?int'],
+    'openssl_pkey_derive' => ['string|false', 'peer_pub_key'=>'mixed', 'priv_key'=>'mixed', 'keylen='=>'?int'],
     'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int}'],
     'hrtime' => ['array{0:int,1:int}|int|false', 'get_as_num='=>'bool'],
     'is_countable' => ['bool', 'var'=>'mixed'],
