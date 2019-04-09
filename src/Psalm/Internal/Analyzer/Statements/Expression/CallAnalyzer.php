@@ -930,8 +930,8 @@ class CallAnalyzer
             }
         }
 
-        if ($method_id && strpos($method_id, '::') && !$in_call_map) {
-            $cased_method_id = $codebase->methods->getCasedMethodId($method_id);
+        if ($method_id && strpos($method_id, '::')) {
+            $codebase->methods->getCasedMethodId($method_id);
         } elseif ($function_storage) {
             $cased_method_id = $function_storage->cased_name;
         }
