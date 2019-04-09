@@ -609,8 +609,8 @@ class AnnotationTest extends TestCase
                     $b = "goodbye";
                     $c = "hello again";
                     foo($a);
-                    foo($b);
-                    foo($c);',
+                    bar($b);
+                    bat($c);',
                 'assertions' => [
                     '$a' => 'string',
                     '$b' => 'string',
@@ -1380,6 +1380,33 @@ class AnnotationTest extends TestCase
                     /** @param string[] $s */
                     function foo(string ...$s) : void {}
                     foo(...[5]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorByRefAnnotationBadCall1' => [
+                '<?php
+                    /** @param string &...$s */
+                    function foo(&...$s) : void {}
+
+                    $a = 1;
+                    foo($a);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorByRefAnnotationBadCall2' => [
+                '<?php
+                    /** @param string ...&$s */
+                    function foo(&...$s) : void {}
+
+                    $b = 2;
+                    foo($b);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorByRefAnnotationBadCall3' => [
+                '<?php
+                    /** @param string[] &$s */
+                    function foo(&...$s) : void {}
+
+                    $c = 3;
+                    foo($c);',
                 'error_message' => 'InvalidScalarArgument',
             ],
         ];
