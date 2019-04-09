@@ -585,10 +585,16 @@ class AnnotationTest extends TestCase
                     $f = foo();
                     if ($f) {}',
             ],
-            'spreadOperatorArrayAnnotation' => [
+            'spreadOperatorAnnotation' => [
                 '<?php
                     /** @param string[] $s */
-                    function foo(string ...$s) : void {}',
+                    function foo(string ...$s) : void {}
+                    /** @param string ...$s */
+                    function bar(string ...$s) : void {}
+                    foo("hello", "goodbye");
+                    bar("hello", "goodbye");
+                    foo(...["hello", "goodbye"]);
+                    bar(...["hello", "goodbye"]);',
             ],
             'valueReturnType' => [
                 '<?php
@@ -1339,6 +1345,20 @@ class AnnotationTest extends TestCase
                     }
 
                     (new X())->boo([1, 2]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorArrayAnnotationBadArg' => [
+                '<?php
+                    /** @param string[] $s */
+                    function foo(string ...$s) : void {}
+                    foo(5);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorArrayAnnotationBadSpreadArg' => [
+                '<?php
+                    /** @param string[] $s */
+                    function foo(string ...$s) : void {}
+                    foo(...[5]);',
                 'error_message' => 'InvalidScalarArgument',
             ],
         ];

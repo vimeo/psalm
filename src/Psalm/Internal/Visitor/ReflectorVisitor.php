@@ -2163,23 +2163,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 if ($is_nullable) {
                     $param_type->addType(new Type\Atomic\TNull);
                 }
-
-                if ($param->variadic) {
-                    $param_type = new Type\Union([
-                        new Type\Atomic\TArray([
-                            Type::getInt(),
-                            $param_type,
-                        ]),
-                    ]);
-                }
             }
-        } elseif ($param->variadic) {
-            $param_type = new Type\Union([
-                new Type\Atomic\TArray([
-                    Type::getInt(),
-                    Type::getMixed(),
-                ]),
-            ]);
         }
 
         $is_optional = $param->default !== null;
@@ -2338,13 +2322,15 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 $storage->template_types ?: []
             );
 
-            if ($docblock_param_variadic) {
-                $new_param_type = new Type\Union([
-                    new Type\Atomic\TArray([
-                        Type::getInt(),
-                        $new_param_type,
-                    ]),
-                ]);
+            if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
+                /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                $array_type = $new_param_type->getTypes()['array'];
+
+                if ($array_type instanceof Type\Atomic\ObjectLike) {
+                    $new_param_type = $array_type->getGenericValueType();
+                } else {
+                    $new_param_type = $array_type->type_params[1];
+                }
             }
 
             $existing_param_type_nullable = $storage_param->is_nullable;

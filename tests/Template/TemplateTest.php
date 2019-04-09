@@ -665,7 +665,7 @@ class TemplateTest extends TestCase
                         [1, 2],
                     ];
 
-                    $a = splat_proof(... $foo);',
+                    $a = splat_proof(...$foo);',
                 'assertions' => [
                     '$a' => 'array<int, int>',
                 ],

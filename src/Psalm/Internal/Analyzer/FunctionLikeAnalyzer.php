@@ -435,7 +435,18 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
             }
 
-            $context->vars_in_scope['$' . $function_param->name] = $param_type;
+            $var_type = $param_type;
+
+            if ($function_param->is_variadic) {
+                $var_type = new Type\Union([
+                    new Type\Atomic\TArray([
+                        Type::getInt(),
+                        $param_type,
+                    ]),
+                ]);
+            }
+
+            $context->vars_in_scope['$' . $function_param->name] = $var_type;
             $context->vars_possibly_in_scope['$' . $function_param->name] = true;
 
             if ($context->collect_references && $function_param->location) {
@@ -1019,7 +1030,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
             $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
             foreach ($storage->params as $i => $param) {
-                if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name])) {
+                if ($param->by_ref && isset($context->vars_in_scope['$' . $param->name]) && !$param->is_variadic) {
                     $actual_type = $context->vars_in_scope['$' . $param->name];
                     $param_out_type = $param->type;
 
