@@ -1580,6 +1580,39 @@ class FunctionCallTest extends TestCase
                     if (is_int($a)) {}
                     if (is_float($a)) {}',
             ],
+            'min' => [
+                '<?php
+                    $a = min(0, 1);
+                    $b = min([0, 1]);
+                    $c = min("a", "b");
+                    $d = min(1, 2, 3, 4);
+                    $e = min(1, 2, 3, 4, 5);
+                    $f = min(...[1, 2, 3]);',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'string',
+                    '$d' => 'int',
+                    '$e' => 'int',
+                    '$f' => 'int',
+                ],
+            ],
+            'minUnpackedArg' => [
+                '<?php
+                    $f = min(...[1, 2, 3]);',
+                'assertions' => [
+                    '$f' => 'int',
+                ],
+            ],
+            'sscanf' => [
+                '<?php
+                    sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
+                'assertions' => [
+                    '$hours' => 'string|int|float|null',
+                    '$minutes' => 'string|int|float|null',
+                    '$seconds' => 'string|int|float|null',
+                ],
+            ],
         ];
     }
 

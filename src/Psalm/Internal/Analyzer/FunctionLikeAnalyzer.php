@@ -1277,7 +1277,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 }
             }
 
-            if ($mandatory_param_count > count($args)) {
+            if ($mandatory_param_count > count($args) && !($last_param && $last_param->is_variadic)) {
                 continue;
             }
 
@@ -1285,12 +1285,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                 if ($argument_offset >= count($possible_function_params)) {
                     if (!$last_param || !$last_param->is_variadic) {
                         $all_args_match = false;
+                        break;
                     }
 
-                    break;
+                    $function_param = $last_param;
+                } else {
+                    $function_param = $possible_function_params[$argument_offset];
                 }
 
-                $param_type = $possible_function_params[$argument_offset]->type;
+                $param_type = $function_param->type;
 
                 if (!$param_type) {
                     continue;
@@ -1300,13 +1303,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer implements Statements
                     continue;
                 }
 
-                if ($arg->value->inferredType->hasMixed()) {
+                $arg_type = $arg->value->inferredType;
+
+                if ($arg_type->hasMixed()) {
                     continue;
+                }
+
+                if ($arg->unpack && !$function_param->is_variadic) {
+                    if ($arg_type->hasArray()) {
+                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                        $array_atomic_type = $arg_type->getTypes()['array'];
+
+                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                        }
+
+                        $arg_type = $array_atomic_type->type_params[1];
+                    }
                 }
 
                 if (TypeAnalyzer::isContainedBy(
                     $codebase,
-                    $arg->value->inferredType,
+                    $arg_type,
                     $param_type,
                     true,
                     true
