@@ -935,7 +935,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 'comments' => [new PhpParser\Comment\Doc(
                                     '/** @psalm-suppress InaccessibleMethod */',
                                     $class->extends->getLine(),
-                                    $class->extends->getAttribute('startFilePos')
+                                    (int) $class->extends->getAttribute('startFilePos')
                                 )],
                             ]
                         ),
@@ -946,7 +946,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             'comments' => [new PhpParser\Comment\Doc(
                                 '/** @psalm-suppress InaccessibleMethod */',
                                 $class->extends->getLine(),
-                                $class->extends->getAttribute('startFilePos')
+                                (int) $class->extends->getAttribute('startFilePos')
                             )],
                         ]
                     ),
