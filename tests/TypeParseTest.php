@@ -883,7 +883,7 @@ class TypeParseTest extends TestCase
 
             if ($return_type && $return_type !== 'void') {
                 if (stripos($return_type, 'oci-') !== false) {
-                    return;
+                    continue;
                 }
 
                 \Psalm\Type::parseString($return_type);
@@ -891,7 +891,7 @@ class TypeParseTest extends TestCase
 
             if ($param_type_1 && $param_type_1 !== 'mixed') {
                 if (stripos($param_type_1, 'oci-') !== false) {
-                    return;
+                    continue;
                 }
 
                 \Psalm\Type::parseString($param_type_1);

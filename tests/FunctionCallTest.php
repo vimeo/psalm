@@ -1608,9 +1608,9 @@ class FunctionCallTest extends TestCase
                 '<?php
                     sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
                 'assertions' => [
-                    '$hours' => 'string|int|float|null',
-                    '$minutes' => 'string|int|float|null',
-                    '$seconds' => 'string|int|float|null',
+                    '$hours' => 'string|int|float',
+                    '$minutes' => 'string|int|float',
+                    '$seconds' => 'string|int|float',
                 ],
             ],
         ];
