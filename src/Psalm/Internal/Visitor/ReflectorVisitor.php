@@ -1316,6 +1316,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
 
                     return $this->file_storage->functions[$function_id];
                 } elseif (isset($this->config->getPredefinedFunctions()[$function_id])) {
+                    /** @psalm-suppress TypeCoercion */
                     $reflection_function = new \ReflectionFunction($function_id);
 
                     if ($reflection_function->getFileName() !== $this->file_path) {

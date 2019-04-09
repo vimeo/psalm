@@ -3529,7 +3529,7 @@ return [
 'get_declared_interfaces' => ['array<int,class-string>'],
 'get_declared_traits' => ['array<int,class-string>'],
 'get_defined_constants' => ['array<string,int|string|float|bool|null|array|resource>', 'categorize='=>'bool'],
-'get_defined_functions' => ['array<string,array<string,string>>', 'exclude_disabled='=>'bool'],
+'get_defined_functions' => ['array<string,array<string,callable-string>>', 'exclude_disabled='=>'bool'],
 'get_defined_vars' => ['array'],
 'get_extension_funcs' => ['array<int,callable-string>', 'extension_name'=>'string'],
 'get_headers' => ['array|false', 'url'=>'string', 'format='=>'int', 'context='=>'resource'],

@@ -319,7 +319,7 @@ class Reflection
     }
 
     /**
-     * @param  string $function_id
+     * @param  callable-string $function_id
      *
      * @return false|null
      */

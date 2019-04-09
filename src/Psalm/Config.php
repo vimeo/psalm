@@ -336,7 +336,7 @@ class Config
     /** @var array<string, mixed> */
     private $predefined_constants;
 
-    /** @var array<string, bool> */
+    /** @var array<callable-string, bool> */
     private $predefined_functions = [];
 
     /** @var ClassLoader|null */
@@ -1328,7 +1328,7 @@ class Config
     }
 
     /**
-     * @return array<string, bool>
+     * @return array<callable-string, bool>
      */
     public function getPredefinedFunctions()
     {
