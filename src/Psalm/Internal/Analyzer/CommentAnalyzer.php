@@ -269,12 +269,10 @@ class CommentAnalyzer
 
                 if (count($line_parts) > 1) {
                     if (!preg_match('/\[[^\]]+\]/', $line_parts[0])
-                        && preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                        && preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
                         && $line_parts[0][0] !== '{'
                     ) {
-                        if ($line_parts[1][0] === '&') {
-                            $line_parts[1] = substr($line_parts[1], 1);
-                        }
+                        $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
                         if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
                             throw new IncorrectDocblockException('Misplaced variable');

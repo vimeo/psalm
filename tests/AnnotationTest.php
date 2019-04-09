@@ -596,6 +596,27 @@ class AnnotationTest extends TestCase
                     foo(...["hello", "goodbye"]);
                     bar(...["hello", "goodbye"]);',
             ],
+            'spreadOperatorByRefAnnotation' => [
+                '<?php
+                    /** @param string &...$s */
+                    function foo(&...$s) : void {}
+                    /** @param string ...&$s */
+                    function bar(&...$s) : void {}
+                    /** @param string[] &$s */
+                    function bat(&...$s) : void {}
+
+                    $a = "hello";
+                    $b = "goodbye";
+                    $c = "hello again";
+                    foo($a);
+                    foo($b);
+                    foo($c);',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'string',
+                    '$c' => 'string',
+                ],
+            ],
             'valueReturnType' => [
                 '<?php
                     /**
