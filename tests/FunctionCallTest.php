@@ -81,6 +81,20 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $foo = array_filter(["hello ", " "], "trim");',
             ],
+            'arrayFilterAllowNull' => [
+                '<?php
+                    function foo() : array {
+                        return array_filter(
+                            array_map(
+                                /** @return null */
+                                function (int $arg) {
+                                    return null;
+                                },
+                                [1, 2, 3]
+                            )
+                        );
+                    }',
+            ],
             'typedArrayWithDefault' => [
                 '<?php
                     class A {}
