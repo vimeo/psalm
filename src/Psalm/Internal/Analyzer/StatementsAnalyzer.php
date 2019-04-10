@@ -1700,11 +1700,16 @@ class StatementsAnalyzer extends SourceAnalyzer implements StatementsSource
 
         if ($context->collect_exceptions) {
             if ($context->possibly_thrown_exceptions) {
+                $config = $this->codebase->config;
                 $ignored_exceptions = array_change_key_case(
-                    $this->codebase->config->ignored_exceptions
+                    $context->is_global ?
+                        $config->ignored_exceptions_in_global_scope :
+                        $config->ignored_exceptions
                 );
                 $ignored_exceptions_and_descendants = array_change_key_case(
-                    $this->codebase->config->ignored_exceptions_and_descendants
+                    $context->is_global ?
+                        $config->ignored_exceptions_and_descendants_in_global_scope :
+                        $config->ignored_exceptions_and_descendants
                 );
 
                 foreach ($context->possibly_thrown_exceptions as $possibly_thrown_exception => $codelocations) {

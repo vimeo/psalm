@@ -240,7 +240,17 @@ class Config
     /**
      * @var array<string, bool>
      */
+    public $ignored_exceptions_in_global_scope = [];
+
+    /**
+     * @var array<string, bool>
+     */
     public $ignored_exceptions_and_descendants = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    public $ignored_exceptions_and_descendants_in_global_scope = [];
 
     /**
      * @var array<string, bool>
@@ -697,13 +707,23 @@ class Config
             if (isset($config_xml->ignoreExceptions->class)) {
                 /** @var \SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->class as $exception_class) {
-                    $config->ignored_exceptions[(string) $exception_class['name']] = true;
+                    $exception_name = (string) $exception_class['name'];
+                    $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
+                    if ($global_attribute_text !== 'true' && $global_attribute_text !== '1') {
+                        $config->ignored_exceptions[$exception_name] = true;
+                    }
+                    $config->ignored_exceptions_in_global_scope[$exception_name] = true;
                 }
             }
             if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
                 /** @var \SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
-                    $config->ignored_exceptions_and_descendants[(string) $exception_class['name']] = true;
+                    $exception_name = (string) $exception_class['name'];
+                    $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
+                    if ($global_attribute_text !== 'true' && $global_attribute_text !== '1') {
+                        $config->ignored_exceptions_and_descendants[$exception_name] = true;
+                    }
+                    $config->ignored_exceptions_and_descendants_in_global_scope[$exception_name] = true;
                 }
             }
         }

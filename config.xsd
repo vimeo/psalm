@@ -99,8 +99,8 @@
 
     <xs:complexType name="ExceptionsType">
         <xs:sequence>
-            <xs:element name="class" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
-            <xs:element name="classAndDescendants" minOccurs="0" maxOccurs="unbounded" type="NameAttributeType" />
+            <xs:element name="class" minOccurs="0" maxOccurs="unbounded" type="ExceptionType" />
+            <xs:element name="classAndDescendants" minOccurs="0" maxOccurs="unbounded" type="ExceptionType" />
         </xs:sequence>
     </xs:complexType>
 
@@ -447,5 +447,10 @@
     <xs:complexType name="IdentifierType">
         <xs:attribute name="name" type="xs:string" use="required" />
         <xs:attribute name="type" type="xs:string" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="ExceptionType">
+        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="onlyGlobalScope" type="xs:string" />
     </xs:complexType>
 </xs:schema>
