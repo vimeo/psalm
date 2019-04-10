@@ -585,10 +585,37 @@ class AnnotationTest extends TestCase
                     $f = foo();
                     if ($f) {}',
             ],
-            'spreadOperatorArrayAnnotation' => [
+            'spreadOperatorAnnotation' => [
                 '<?php
                     /** @param string[] $s */
-                    function foo(string ...$s) : void {}',
+                    function foo(string ...$s) : void {}
+                    /** @param string ...$s */
+                    function bar(string ...$s) : void {}
+                    foo("hello", "goodbye");
+                    bar("hello", "goodbye");
+                    foo(...["hello", "goodbye"]);
+                    bar(...["hello", "goodbye"]);',
+            ],
+            'spreadOperatorByRefAnnotation' => [
+                '<?php
+                    /** @param string &...$s */
+                    function foo(&...$s) : void {}
+                    /** @param string ...&$s */
+                    function bar(&...$s) : void {}
+                    /** @param string[] &$s */
+                    function bat(&...$s) : void {}
+
+                    $a = "hello";
+                    $b = "goodbye";
+                    $c = "hello again";
+                    foo($a);
+                    bar($b);
+                    bat($c);',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'string',
+                    '$c' => 'string',
+                ],
             ],
             'valueReturnType' => [
                 '<?php
@@ -1339,6 +1366,47 @@ class AnnotationTest extends TestCase
                     }
 
                     (new X())->boo([1, 2]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorArrayAnnotationBadArg' => [
+                '<?php
+                    /** @param string[] $s */
+                    function foo(string ...$s) : void {}
+                    foo(5);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorArrayAnnotationBadSpreadArg' => [
+                '<?php
+                    /** @param string[] $s */
+                    function foo(string ...$s) : void {}
+                    foo(...[5]);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorByRefAnnotationBadCall1' => [
+                '<?php
+                    /** @param string &...$s */
+                    function foo(&...$s) : void {}
+
+                    $a = 1;
+                    foo($a);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorByRefAnnotationBadCall2' => [
+                '<?php
+                    /** @param string ...&$s */
+                    function foo(&...$s) : void {}
+
+                    $b = 2;
+                    foo($b);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'spreadOperatorByRefAnnotationBadCall3' => [
+                '<?php
+                    /** @param string[] &$s */
+                    function foo(&...$s) : void {}
+
+                    $c = 3;
+                    foo($c);',
                 'error_message' => 'InvalidScalarArgument',
             ],
         ];

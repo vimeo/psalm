@@ -130,6 +130,10 @@ class ArrayFilterReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
             ]);
         }
 
+        if (!$inner_type->getTypes()) {
+            return Type::getEmptyArray();
+        }
+
         return new Type\Union([
             new Type\Atomic\TArray([
                 $key_type,

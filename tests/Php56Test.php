@@ -85,21 +85,17 @@ class Php56Test extends TestCase
                     $operators = [2, 3];
                     echo add(1, ...$operators);',
             ],
-            'arrayPushArgumentUnpacking' => [
+            'arrayPushArgumentUnpackingWithGoodArg' => [
                 '<?php
-                    /**
-                     * @return string[]
-                     */
-                    function a(): array {
-                      $a = [];
-                      $b = ["foo", "bar"];
+                    $a = [];
+                    $b = ["foo", "bar"];
 
-                      $a[] = "foo";
+                    $a[] = "foo";
 
-                      array_push($a, ...$b);
-
-                      return $a;
-                    }',
+                    array_push($a, ...$b);',
+                'assertions' => [
+                    '$a' => 'non-empty-array<int, string>',
+                ],
             ],
             'arrayMergeArgumentUnpacking' => [
                 '<?php
@@ -154,10 +150,22 @@ class Php56Test extends TestCase
                     function Foo(string $a, string ...$b) : void {}
 
                     /** @return array<int, string> */
-                    function Baz(string ...$b) {
-                        Foo(...$b);
-                        return $b;
+                    function Baz(string ...$c) {
+                        Foo(...$c);
+                        return $c;
                     }',
+            ],
+            'unpackByRefArg' => [
+                '<?php
+                    function example (int &...$x): void {}
+                    $y = 0;
+                    example($y);
+                    $z = [0];
+                    example(...$z);',
+                'assertions' => [
+                    '$y' => 'int',
+                    '$z' => 'array<int, int>',
+                ],
             ],
             'exponentiation' => [
                 '<?php
@@ -237,8 +245,10 @@ class Php56Test extends TestCase
                     function foo(int ...$is) : void {}
 
                     $arr = [1, 2, 3, 4];
-                    foo(...$arr);
                     foo(...$arr);',
+                'assertions' => [
+                    '$arr' => 'array<int, int>'
+                ],
             ],
             'iterableSplat' => [
                 '<?php

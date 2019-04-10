@@ -175,6 +175,7 @@ class Functions
         $predefined_functions = $statements_analyzer->getCodebase()->config->getPredefinedFunctions();
 
         if (isset($predefined_functions[$function_id])) {
+            /** @psalm-suppress TypeCoercion */
             if ($this->reflection->registerFunction($function_id) === false) {
                 return false;
             }

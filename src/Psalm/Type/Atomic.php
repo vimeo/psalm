@@ -165,6 +165,9 @@ abstract class Atomic
             case 'class-string':
                 return new TClassString();
 
+            case 'callable-string':
+                return new TCallableString();
+
             case 'numeric-string':
                 return new TNumericString();
 

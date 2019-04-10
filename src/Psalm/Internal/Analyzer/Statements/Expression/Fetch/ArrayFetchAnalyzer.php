@@ -792,8 +792,14 @@ class ArrayFetchAnalyzer
                     $iterator_class_type = $fake_method_call->inferredType ?? null;
                     $array_access_type = $iterator_class_type ?: Type::getMixed();
                 } else {
+                    $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+
+                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
+                        $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
+                    }
+
                     if ($in_assignment) {
-                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+                        $fake_set_method_call = new PhpParser\Node\Expr\MethodCall(
                             $stmt->var,
                             new PhpParser\Node\Identifier('offsetSet', $stmt->var->getAttributes()),
                             [
@@ -814,41 +820,43 @@ class ArrayFetchAnalyzer
                                 ),
                             ]
                         );
-                    } else {
-                        $fake_method_call = new PhpParser\Node\Expr\MethodCall(
+
+                        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                            $statements_analyzer,
+                            $fake_set_method_call,
+                            $context
+                        );
+                    }
+
+                    if ($stmt->dim) {
+                        $fake_get_method_call = new PhpParser\Node\Expr\MethodCall(
                             $stmt->var,
                             new PhpParser\Node\Identifier('offsetGet', $stmt->var->getAttributes()),
                             [
                                 new PhpParser\Node\Arg(
                                     $stmt->dim
-                                        ? $stmt->dim
-                                        : new PhpParser\Node\Expr\ConstFetch(
-                                            new PhpParser\Node\Name('null'),
-                                            $stmt->var->getAttributes()
-                                        )
                                 )
                             ]
                         );
+
+                        \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
+                            $statements_analyzer,
+                            $fake_get_method_call,
+                            $context
+                        );
+
+                        $iterator_class_type = $fake_get_method_call->inferredType ?? null;
+                    } else {
+                        $iterator_class_type = Type::getVoid();
                     }
 
-                    $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+                    $has_array_access = true;
 
-                    if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
-                        $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
-                    }
-
-                    \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::analyze(
-                        $statements_analyzer,
-                        $fake_method_call,
-                        $context
-                    );
+                    $array_access_type = $iterator_class_type ?: Type::getMixed();
 
                     if (!in_array('PossiblyInvalidMethodCall', $suppressed_issues, true)) {
                         $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
                     }
-
-                    $iterator_class_type = $fake_method_call->inferredType ?? null;
-                    $array_access_type = $iterator_class_type ?: Type::getMixed();
                 }
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;

@@ -1072,7 +1072,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                     ],
                     [
                         getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
-                            function variadic_arguments(string $_foo, ...$bars ) : void {}
+                            function variadic_arguments(string $_foo, string ...$bars ) : void {}
 
                             function foo(string $baz, string $qux) : void {
                                 variadic_arguments(
@@ -1082,7 +1082,7 @@ class TemporaryUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                 ],
-                'error_positions' => [[238, 238], []],
+                'error_positions' => [[79, 238, 238], []],
             ],
             'fixClassRef' => [
                 [

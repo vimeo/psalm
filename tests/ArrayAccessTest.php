@@ -353,6 +353,90 @@ class ArrayAccessTest extends TestCase
                 [],
                 ['MixedArrayAccess', 'MixedArgument'],
             ],
+            'arrayAccessOnObjectWithNullGet' => [
+                '<?php
+                    class C implements ArrayAccess
+                    {
+                        /**
+                         * @var array<C|scalar>
+                         */
+                        protected $data = [];
+
+                        /**
+                         * @param array<scalar|array> $array
+                         * @psalm-suppress MixedAssignment
+                         * @psalm-suppress MixedTypeCoercion
+                         */
+                        public function __construct(array $array)
+                        {
+                            foreach ($array as $key => $value) {
+                                if (is_array($value)) {
+                                    $this->data[$key] = new static($value);
+                                } else {
+                                    $this->data[$key] = $value;
+                                }
+                            }
+                        }
+
+                        /**
+                         * @param string $name
+                         * @return C|scalar
+                         */
+                        public function offsetGet($name)
+                        {
+                            return $this->data[$name];
+                        }
+
+                        /**
+                         * @param ?string $name
+                         * @param scalar|array $value
+                         * @psalm-suppress MixedTypeCoercion
+                         */
+                        public function offsetSet($name, $value) : void
+                        {
+                            if (is_array($value)) {
+                                $value = new static($value);
+                            }
+
+                            if (null === $name) {
+                                $this->data[] = $value;
+                            } else {
+                                $this->data[$name] = $value;
+                            }
+                        }
+
+                        public function __isset(string $name) : bool
+                        {
+                            return isset($this->data[$name]);
+                        }
+
+                        public function __unset(string $name) : void
+                        {
+                            unset($this->data[$name]);
+                        }
+
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        public function offsetExists($offset) : bool
+                        {
+                            return $this->__isset($offset);
+                        }
+
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        public function offsetUnset($offset) : void
+                        {
+                            $this->__unset($offset);
+                        }
+                    }
+
+                    $array = new C([]);
+                    $array["key"] = [];
+                    /** @psalm-suppress PossiblyInvalidArrayAssignment */
+                    $array["key"][] = "testing";'
+            ],
         ];
     }
 

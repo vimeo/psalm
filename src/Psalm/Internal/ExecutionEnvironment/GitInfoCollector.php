@@ -71,9 +71,9 @@ class GitInfoCollector
      */
     protected function collectCommit() : CommitInfo
     {
-        $commitResult = $this->executor->execute("git log -1 --pretty=format:%H%n%aN%n%ae%n%cN%n%ce%n%s");
+        $commitResult = $this->executor->execute("git log -1 --pretty=format:%H%n%aN%n%ae%n%cN%n%ce%n%s%n%at");
 
-        if (count($commitResult) !== 6 || array_keys($commitResult) !== range(0, 5)) {
+        if (count($commitResult) !== 7 || array_keys($commitResult) !== range(0, 6)) {
             throw new \RuntimeException();
         }
 
@@ -85,7 +85,8 @@ class GitInfoCollector
             ->setAuthorEmail(trim($commitResult[2]))
             ->setCommitterName(trim($commitResult[3]))
             ->setCommitterEmail(trim($commitResult[4]))
-            ->setMessage($commitResult[5]);
+            ->setMessage($commitResult[5])
+            ->setDate((int) $commitResult[6]);
     }
 
     /**

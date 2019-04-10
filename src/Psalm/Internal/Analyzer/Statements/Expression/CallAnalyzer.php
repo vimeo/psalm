@@ -665,28 +665,10 @@ class CallAnalyzer
                         new Type\Union([new TArray([Type::getInt(), Type::getMixed()])])
                     );
                 } elseif ($arg->unpack) {
-                    if ($arg->value->inferredType->hasArray()) {
-                        /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
-                        $array_atomic_type = $arg->value->inferredType->getTypes()['array'];
-
-                        if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                            $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                        }
-
-                        $by_ref_type = Type::combineUnionTypes(
-                            $by_ref_type,
-                            new Type\Union(
-                                [
-                                    new TArray(
-                                        [
-                                            Type::getInt(),
-                                            clone $array_atomic_type->type_params[1]
-                                        ]
-                                    ),
-                                ]
-                            )
-                        );
-                    }
+                    $by_ref_type = Type::combineUnionTypes(
+                        $by_ref_type,
+                        clone $arg->value->inferredType
+                    );
                 } else {
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
@@ -948,8 +930,8 @@ class CallAnalyzer
             }
         }
 
-        if ($method_id && strpos($method_id, '::') && !$in_call_map) {
-            $cased_method_id = $codebase->methods->getCasedMethodId($method_id);
+        if ($method_id && strpos($method_id, '::')) {
+            $codebase->methods->getCasedMethodId($method_id);
         } elseif ($function_storage) {
             $cased_method_id = $function_storage->cased_name;
         }
@@ -1325,17 +1307,19 @@ class CallAnalyzer
 
             if ($last_param) {
                 if ($argument_offset < count($function_params)) {
-                    $by_ref_type = $function_params[$argument_offset]->type;
-
-                    if ($by_ref_type && $by_ref_type->isNullable()) {
-                        $check_null_ref = false;
-                    }
-
-                    if (isset($function_storage->param_out_types[$argument_offset])) {
-                        $by_ref_out_type = $function_storage->param_out_types[$argument_offset];
-                    }
+                    $function_param = $function_params[$argument_offset];
                 } else {
-                    $by_ref_type = $last_param->type;
+                    $function_param = $last_param;
+                }
+
+                $by_ref_type = $function_param->type;
+
+                if (isset($function_storage->param_out_types[$argument_offset])) {
+                    $by_ref_out_type = $function_storage->param_out_types[$argument_offset];
+                }
+
+                if ($by_ref_type && $by_ref_type->isNullable()) {
+                    $check_null_ref = false;
                 }
 
                 if ($template_types && $by_ref_type) {
@@ -1363,6 +1347,15 @@ class CallAnalyzer
 
                         $by_ref_type = $original_by_ref_type;
                     }
+                }
+
+                if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
+                    $by_ref_type = new Type\Union([
+                        new Type\Atomic\TArray([
+                            Type::getInt(),
+                            $by_ref_type,
+                        ]),
+                    ]);
                 }
             }
 
@@ -1406,20 +1399,6 @@ class CallAnalyzer
         if ($function_param && $function_param->type) {
             $param_type = clone $function_param->type;
 
-            if ($function_param->is_variadic) {
-                if (!$param_type->hasArray()) {
-                    return;
-                }
-
-                $array_atomic_type = $param_type->getTypes()['array'];
-
-                if (!$array_atomic_type instanceof TArray) {
-                    return;
-                }
-
-                $param_type = clone $array_atomic_type->type_params[1];
-            }
-
             if ($existing_generic_params) {
                 $empty_generic_params = [];
 
@@ -1449,11 +1428,9 @@ class CallAnalyzer
                     if ($arg_type->hasArray()) {
                         /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
                         $array_atomic_type = $arg_type->getTypes()['array'];
-
                         if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
                             $array_atomic_type = $array_atomic_type->getGenericArrayType();
                         }
-
                         $arg_type_param = $array_atomic_type->type_params[1];
                     } else {
                         $arg_type_param = Type::getMixed();
@@ -1480,32 +1457,6 @@ class CallAnalyzer
             );
 
             if ($arg->unpack) {
-                if ($arg_type->hasArray()) {
-                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
-                    $array_atomic_type = $arg_type->getTypes()['array'];
-
-                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
-                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
-                    }
-
-                    if (self::checkFunctionArgumentType(
-                        $statements_analyzer,
-                        $array_atomic_type->type_params[1],
-                        $fleshed_out_type,
-                        $cased_method_id,
-                        $argument_offset,
-                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $arg->value,
-                        $context,
-                        $function_param->by_ref,
-                        true
-                    ) === false) {
-                        return false;
-                    }
-
-                    return;
-                }
-
                 if ($arg_type->hasMixed()) {
                     if (!$context->collect_initializations
                         && !$context->collect_mutations
@@ -1531,22 +1482,33 @@ class CallAnalyzer
                     return;
                 }
 
-                foreach ($arg_type->getTypes() as $atomic_type) {
-                    if (!$atomic_type->isIterable($codebase)) {
-                        if (IssueBuffer::accepts(
-                            new InvalidArgument(
-                                'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                    . ' expects array, ' . $atomic_type->getId() . ' provided',
-                                new CodeLocation($statements_analyzer->getSource(), $arg->value)
-                            ),
-                            $statements_analyzer->getSuppressedIssues()
-                        )) {
-                            return false;
+                if ($arg_type->hasArray()) {
+                    /** @var Type\Atomic\TArray|Type\Atomic\ObjectLike */
+                    $array_atomic_type = $arg_type->getTypes()['array'];
+
+                    if ($array_atomic_type instanceof Type\Atomic\ObjectLike) {
+                        $array_atomic_type = $array_atomic_type->getGenericArrayType();
+                    }
+
+                    $arg_type = $array_atomic_type->type_params[1];
+                } else {
+                    foreach ($arg_type->getTypes() as $atomic_type) {
+                        if (!$atomic_type->isIterable($codebase)) {
+                            if (IssueBuffer::accepts(
+                                new InvalidArgument(
+                                    'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                        . ' expects array, ' . $atomic_type->getId() . ' provided',
+                                    new CodeLocation($statements_analyzer->getSource(), $arg->value)
+                                ),
+                                $statements_analyzer->getSuppressedIssues()
+                            )) {
+                                return false;
+                            }
                         }
                     }
-                }
 
-                return;
+                    return;
+                }
             }
 
             if (self::checkFunctionArgumentType(
@@ -1559,7 +1521,8 @@ class CallAnalyzer
                 $arg->value,
                 $context,
                 $function_param->by_ref,
-                $function_param->is_variadic
+                $function_param->is_variadic,
+                $arg->unpack
             ) === false) {
                 return false;
             }
@@ -2078,8 +2041,9 @@ class CallAnalyzer
         CodeLocation $code_location,
         PhpParser\Node\Expr $input_expr,
         Context $context,
-        $by_ref = false,
-        $variadic = false
+        bool $by_ref = false,
+        bool $variadic = false,
+        bool $unpack = false
     ) {
         if ($param_type->hasMixed()) {
             return null;
@@ -2446,7 +2410,7 @@ class CallAnalyzer
         if ($type_match_found
             && !$param_type->hasMixed()
             && !$param_type->from_docblock
-            && !$variadic
+            && !($variadic xor $unpack)
             && !$by_ref
             && $cased_method_id !== 'echo'
         ) {
@@ -2470,6 +2434,15 @@ class CallAnalyzer
                 }
 
                 $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
+
+                if ($unpack) {
+                    $input_type = new Type\Union([
+                        new TArray([
+                            Type::getInt(),
+                            $input_type
+                        ]),
+                    ]);
+                }
 
                 $context->vars_in_scope[$var_id] = $input_type;
             }

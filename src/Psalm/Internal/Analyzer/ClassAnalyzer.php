@@ -932,8 +932,23 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                                 'startLine' => $class->extends->getLine(),
                                 'startFilePos' => $class->extends->getAttribute('startFilePos'),
                                 'endFilePos' => $class->extends->getAttribute('endFilePos'),
+                                'comments' => [new PhpParser\Comment\Doc(
+                                    '/** @psalm-suppress InaccessibleMethod */',
+                                    $class->extends->getLine(),
+                                    (int) $class->extends->getAttribute('startFilePos')
+                                )],
                             ]
-                        )
+                        ),
+                        [
+                            'startLine' => $class->extends->getLine(),
+                            'startFilePos' => $class->extends->getAttribute('startFilePos'),
+                            'endFilePos' => $class->extends->getAttribute('endFilePos'),
+                            'comments' => [new PhpParser\Comment\Doc(
+                                '/** @psalm-suppress InaccessibleMethod */',
+                                $class->extends->getLine(),
+                                (int) $class->extends->getAttribute('startFilePos')
+                            )],
+                        ]
                     ),
                 ];
 

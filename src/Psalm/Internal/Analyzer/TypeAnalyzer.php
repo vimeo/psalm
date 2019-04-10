@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -1009,6 +1010,13 @@ class TypeAnalyzer
             return true;
         }
 
+        if ($input_type_part instanceof TCallableString
+            && (get_class($container_type_part) === TString::class
+                || get_class($container_type_part) === TSingleLetter::class)
+        ) {
+            return true;
+        }
+
         if ($container_type_part instanceof TString
             && ($input_type_part instanceof TNumericString
                 || $input_type_part instanceof THtmlEscapedString)
@@ -1025,7 +1033,39 @@ class TypeAnalyzer
             return false;
         }
 
-        if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
+        if ($container_type_part instanceof TCallableString
+            && $input_type_part instanceof TLiteralString
+        ) {
+            $input_callable = self::getCallableFromAtomic($codebase, $input_type_part);
+            $container_callable = self::getCallableFromAtomic($codebase, $container_type_part);
+
+            if ($input_callable && $container_callable) {
+                $all_types_contain = true;
+
+                if (self::compareCallable(
+                    $codebase,
+                    $input_callable,
+                    $container_callable,
+                    $type_coerced,
+                    $type_coerced_from_mixed,
+                    $has_scalar_match,
+                    $all_types_contain
+                ) === false
+                ) {
+                    return false;
+                }
+
+                if (!$all_types_contain) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if (($container_type_part instanceof TClassString
+                || $container_type_part instanceof TLiteralClassString
+                || $container_type_part instanceof TCallableString)
             && $input_type_part instanceof TString
         ) {
             $type_coerced = true;

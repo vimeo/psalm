@@ -19,13 +19,12 @@ class VariadicTest extends TestCase
             'somefile.php',
             '<?php
                 /**
-                 * @param array<int, int> $a_list
+                 * @param int ...$a_list
                  * @return void
                  */
                 function f(int ...$a_list) {
                 }
-                f(1, 2, "3");
-                '
+                f(1, 2, "3");'
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -42,7 +41,7 @@ class VariadicTest extends TestCase
                 /**
                  * @param mixed $req
                  * @param mixed $opt
-                 * @param array<int, mixed> $params
+                 * @param mixed ...$params
                  * @return array<mixed>
                  */
                 function f($req, $opt = null, ...$params) {
@@ -65,7 +64,7 @@ class VariadicTest extends TestCase
             'variadicArray' => [
                 '<?php
                     /**
-                     * @param array<int, int> $a_list
+                     * @param int ...$a_list
                      * @return array<int, int>
                      */
                     function f(int ...$a_list) {

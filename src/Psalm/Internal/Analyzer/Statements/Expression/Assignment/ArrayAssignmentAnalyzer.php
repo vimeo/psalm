@@ -225,7 +225,7 @@ class ArrayAssignmentAnalyzer
                 true,
                 $array_var_id,
                 $context,
-                $child_stmts ? null : $assign_value,
+                $assign_value,
                 $child_stmts ? null : $assignment_type
             );
 

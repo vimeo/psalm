@@ -392,23 +392,6 @@ class TypeReconciliationTest extends TestCase
                 ],
                 'error_levels' => [],
             ],
-            'typeArguments' => [
-                '<?php
-                    $a = min(0, 1);
-                    $b = min([0, 1]);
-                    $c = min("a", "b");
-                    $d = min(1, 2, 3, 4);
-                    $e = min(1, 2, 3, 4, 5);
-                    sscanf("10:05:03", "%d:%d:%d", $hours, $minutes, $seconds);',
-                'assertions' => [
-                    '$a' => 'int',
-                    '$b' => 'int',
-                    '$c' => 'string',
-                    '$hours' => 'string|int|float|null',
-                    '$minutes' => 'string|int|float|null',
-                    '$seconds' => 'string|int|float|null',
-                ],
-            ],
             'typeRefinementWithIsNumericOnIntOrFalse' => [
                 '<?php
                     /** @return void */

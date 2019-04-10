@@ -1522,6 +1522,31 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'setPropertyInParentWithPrivateConstructor' => [
+                '<?php
+                    namespace NS;
+
+                    class Base
+                    {
+                        /**
+                         * @var int
+                         */
+                        protected $a;
+
+                        private function __construct()
+                        {
+                            $this->setA();
+                        }
+
+                        private function setA() : void {
+                            $this->a = 5;
+                        }
+
+                        public static function getInstance(): self { return new static; }
+                    }
+
+                    class Concrete extends Base {}'
+            ],
         ];
     }
 
@@ -1898,8 +1923,10 @@ class PropertyTypeTest extends TestCase
                         }
                     }
 
-                    class B extends A {}',
-                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+                    class B extends A {}
+
+                    $b = new B();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13',
             ],
             'classInheritsPrivateConstructorWithImplementedConstructor' => [
                 '<?php

@@ -848,6 +848,7 @@ class MethodSignatureTest extends TestCase
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
+                ['MoreSpecificImplementedParamType']
             ],
         ];
     }

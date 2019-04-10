@@ -316,6 +316,10 @@ class MethodCallTest extends TestCase
                         );
                     }'
             ],
+            'soapFaultConstruct' => [
+                '<?php
+                    new SoapFault("1", "faultstring", "faultactor");'
+            ],
         ];
     }
 

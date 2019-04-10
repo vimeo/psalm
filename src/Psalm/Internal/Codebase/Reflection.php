@@ -190,7 +190,9 @@ class Reflection
 
             $this->extractReflectionMethodInfo($reflection_method);
 
-            if ($reflection_method->class !== $class_name) {
+            if ($reflection_method->class !== $class_name
+                && ($class_name !== 'SoapFault' || $reflection_method->name !== '__construct')
+            ) {
                 $this->codebase->methods->setDeclaringMethodId(
                     $class_name . '::' . strtolower($reflection_method->name),
                     $reflection_method->class . '::' . strtolower($reflection_method->name)
@@ -200,8 +202,6 @@ class Reflection
                     $class_name . '::' . strtolower($reflection_method->name),
                     $reflection_method->class . '::' . strtolower($reflection_method->name)
                 );
-
-                continue;
             }
         }
     }
@@ -319,7 +319,7 @@ class Reflection
     }
 
     /**
-     * @param  string $function_id
+     * @param  callable-string $function_id
      *
      * @return false|null
      */
