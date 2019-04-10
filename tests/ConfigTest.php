@@ -1241,4 +1241,86 @@ class ConfigTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * @return void
+     */
+    public function testIgnoreExceptions()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm checkForThrowsDocblock="true" checkForThrowsInGlobalScope="true">
+                    <ignoreExceptions>
+                        <class name="Exc1" />
+                        <class name="Exc2" onlyGlobalScope="true" />
+                        <classAndDescendants name="Exc3" />
+                        <classAndDescendants name="Exc4" onlyGlobalScope="true" />
+                    </ignoreExceptions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Exc1 extends Exception {}
+                class Exc2 extends Exception {}
+                class Exc3 extends Exception {}
+                class Exc4 extends Exception {}
+
+                throw new Exc1();
+                throw new Exc2();
+                throw new Exc3();
+                throw new Exc4();
+
+                function example() : void {
+                    throw new Exc1();
+                    throw new Exc3();
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @expectedException        \Psalm\Exception\CodeException
+     * @expectedExceptionMessage MissingThrowsDocblock
+     *
+     * @return void
+     */
+    public function testNotIgnoredException()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm checkForThrowsDocblock="true" checkForThrowsInGlobalScope="true">
+                    <ignoreExceptions>
+                        <class name="Exc1" />
+                        <class name="Exc2" onlyGlobalScope="true" />
+                        <classAndDescendants name="Exc3" />
+                        <classAndDescendants name="Exc4" onlyGlobalScope="true" />
+                    </ignoreExceptions>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Exc2 extends Exception {}
+
+                function example() : void {
+                    throw new Exc2();
+                }'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }
