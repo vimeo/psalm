@@ -133,6 +133,15 @@ class TypeAnalyzer
                     $type_coerced_from_scalar
                 );
 
+                if ($input_type_part instanceof TNumeric
+                    && $container_type->hasString()
+                    && $container_type->hasInt()
+                    && $container_type->hasFloat()
+                ) {
+                    $scalar_type_match_found = false;
+                    $is_atomic_contained_by = true;
+                }
+
                 if ($is_atomic_contained_by) {
                     $type_match_found = true;
                 }
