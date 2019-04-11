@@ -67,6 +67,7 @@ class CommitInfo
             'committer_name' => $this->committer_name,
             'committer_email' => $this->committer_email,
             'message' => $this->message,
+            'date' => $this->date,
         ];
     }
 
