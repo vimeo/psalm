@@ -82,16 +82,22 @@ class ConfigFile
         $plugins_elements = $psalm_root->getElementsByTagName('plugins');
         if (!$plugins_elements->length) {
             $plugins_element = $config_xml->createElement('plugins');
-            $psalm_root->appendChild($plugins_element);
+            if ($plugins_element) {
+                $psalm_root->appendChild($plugins_element);
+            }
         } else {
             /** @var \DomElement */
             $plugins_element = $plugins_elements->item(0);
         }
 
         $plugin_class_element = $config_xml->createElement('pluginClass');
-        $plugin_class_element->setAttribute('xmlns', self::NS);
-        $plugin_class_element->setAttribute('class', $plugin_class);
-        $plugins_element->appendChild($plugin_class_element);
+        if ($plugin_class_element) {
+            $plugin_class_element->setAttribute('xmlns', self::NS);
+            $plugin_class_element->setAttribute('class', $plugin_class);
+            if ($plugins_element) {
+                $plugins_element->appendChild($plugin_class_element);
+            }
+        }
 
         $this->saveXml($config_xml);
     }
