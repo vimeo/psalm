@@ -1577,7 +1577,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = hrtime(true);
                     $b = hrtime();
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     $c = hrtime(1);
                     $d = hrtime(false);',
                 'assertions' => [

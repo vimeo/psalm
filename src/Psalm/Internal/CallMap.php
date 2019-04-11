@@ -4276,7 +4276,7 @@ return [
 'hexdec' => ['int|float', 'hexadecimal_number'=>'string'],
 'highlight_file' => ['string|bool', 'file_name'=>'string', 'return='=>'bool'],
 'highlight_string' => ['string|bool', 'string'=>'string', 'return='=>'bool'],
-'hrtime' => ['array{0:int,1:int}|false'],
+'hrtime' => ['array{0:int,1:int}|false', 'get_as_number='=>'false'],
 'hrtime\'1' => ['int|float|false', 'get_as_number='=>'true'],
 'HRTime\PerformanceCounter::getElapsedTicks' => ['int'],
 'HRTime\PerformanceCounter::getFrequency' => ['int'],
