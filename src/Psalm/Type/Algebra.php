@@ -127,6 +127,20 @@ class Algebra
             return self::combineOredClauses($left_clauses, $right_clauses);
         }
 
+        if ($conditional instanceof PhpParser\Node\Expr\BooleanNot
+            && $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp
+        ) {
+            $negated_clauses = self::getFormula(
+                $conditional->expr,
+                $this_class_name,
+                $source,
+                $codebase,
+                !$inside_negation
+            );
+
+            return self::negateFormula($negated_clauses);
+        }
+
         AssertionFinder::scrapeAssertions(
             $conditional,
             $this_class_name,
