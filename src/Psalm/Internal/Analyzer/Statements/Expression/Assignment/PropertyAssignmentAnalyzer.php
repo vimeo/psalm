@@ -203,6 +203,13 @@ class PropertyAssignmentAnalyzer
                     continue;
                 }
 
+                if ($lhs_type_part instanceof Type\Atomic\TFalse
+                    && $lhs_type->ignore_falsable_issues
+                    && count($lhs_type->getTypes()) > 1
+                ) {
+                    continue;
+                }
+
                 if (!$lhs_type_part instanceof TObject && !$lhs_type_part instanceof TNamedObject) {
                     $invalid_assignment_types[] = (string)$lhs_type_part;
 

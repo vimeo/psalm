@@ -977,9 +977,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                         }
                     } else {
                         $return_type_candidate = CallMap::getReturnTypeFromCallMap($call_map_id);
-                        if ($return_type_candidate->isFalsable()) {
-                            $return_type_candidate->ignore_falsable_issues = true;
-                        }
+                    }
+
+                    if ($return_type_candidate->isFalsable()) {
+                        $return_type_candidate->ignore_falsable_issues = true;
                     }
 
                     $return_type_candidate = ExpressionAnalyzer::fleshOutType(

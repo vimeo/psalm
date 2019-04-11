@@ -1593,12 +1593,26 @@ class ExpressionAnalyzer
         }
 
         if (isset($stmt->expr->inferredType)) {
-            foreach ($stmt->expr->inferredType->getTypes() as $clone_type_part) {
+            $clone_type = $stmt->expr->inferredType;
+
+            foreach ($clone_type->getTypes() as $clone_type_part) {
                 if (!$clone_type_part instanceof TNamedObject
                     && !$clone_type_part instanceof TObject
                     && !$clone_type_part instanceof TMixed
                     && !$clone_type_part instanceof TTemplateParam
                 ) {
+                    if ($clone_type_part instanceof Type\Atomic\TFalse
+                        && $clone_type->ignore_falsable_issues
+                    ) {
+                        continue;
+                    }
+
+                    if ($clone_type_part instanceof Type\Atomic\TNull
+                        && $clone_type->ignore_nullable_issues
+                    ) {
+                        continue;
+                    }
+
                     if (IssueBuffer::accepts(
                         new InvalidClone(
                             'Cannot clone ' . $clone_type_part,

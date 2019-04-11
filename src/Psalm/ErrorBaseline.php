@@ -204,30 +204,18 @@ class ErrorBaseline
     ) {
         $baselineDoc = new \DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');
-        if (!$filesNode) {
-            return;
-        }
 
         foreach ($groupedIssues as $file => $issueTypes) {
             $fileNode = $baselineDoc->createElement('file');
-            if (!$fileNode) {
-                continue;
-            }
 
             $fileNode->setAttribute('src', $file);
 
             foreach ($issueTypes as $issueType => $existingIssueType) {
                 $issueNode = $baselineDoc->createElement($issueType);
-                if (!$issueNode) {
-                    continue;
-                }
 
                 $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
-                    if (!$codeNode) {
-                        continue;
-                    }
 
                     $codeNode->textContent = $selection;
                     $issueNode->appendChild($codeNode);

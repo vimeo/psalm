@@ -533,6 +533,20 @@ class Union
     /**
      * @return bool
      */
+    public function isObjectType()
+    {
+        foreach ($this->types as $type) {
+            if (!$type->isObjectType()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return bool
+     */
     public function hasNamedObject()
     {
         foreach ($this->types as $type) {
