@@ -1263,7 +1263,7 @@ class FunctionCallTest extends TestCase
                 '<?php
                     $a = microtime(true);
                     $b = microtime();
-                    /** @psalm-suppress InvalidScalarArgument */
+                    /** @psalm-suppress InvalidArgument */
                     $c = microtime(1);
                     $d = microtime(false);',
                 'assertions' => [

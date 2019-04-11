@@ -78,7 +78,7 @@ class MethodCallTest extends TestCase
 
                     $b = (new DateTimeImmutable())->modify("+3 hours");',
                 'assertions' => [
-                    '$yesterday' => 'MyDate',
+                    '$yesterday' => 'false|MyDate',
                     '$b' => 'DateTimeImmutable',
                 ],
             ],
@@ -133,8 +133,10 @@ class MethodCallTest extends TestCase
                 '<?php
                     $doc = new DOMDocument("1.0");
                     $node = $doc->createElement("foo");
-                    $newnode = $doc->appendChild($node);
-                    $newnode->setAttribute("bar", "baz");',
+                    if ($node instanceof DOMElement) {
+                        $newnode = $doc->appendChild($node);
+                        $newnode->setAttribute("bar", "baz");
+                    }',
             ],
             'nonStaticSelfCall' => [
                 '<?php
@@ -158,7 +160,7 @@ class MethodCallTest extends TestCase
                     $b = $xml->asXML("foo.xml");',
                 'assertions' => [
                     '$a' => 'string|false',
-                    '$b' => 'string|bool',
+                    '$b' => 'bool',
                 ],
             ],
             'datetimeformatNotFalse' => [
