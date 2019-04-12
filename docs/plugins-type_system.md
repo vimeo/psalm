@@ -1,4 +1,4 @@
-#Plugins: type system internals
+# Plugins: type system internals
 
 Psalm's type system represents the types of variables within a program using different classes. Primitive types like floats, integers and strings, plus arrays, and classes. You can find all of these in 'src/Psalm/Types/Atomic'. Plugins both receive, and can update this type information.
 
