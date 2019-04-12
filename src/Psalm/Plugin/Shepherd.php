@@ -35,7 +35,6 @@ class Shepherd implements \Psalm\Plugin\Hook\AfterAnalysisInterface
                         return $i['severity'] === 'error';
                     }
                 ),
-                'coverage_map' => $codebase->analyzer->getTypeCoverageMap($codebase),
                 'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase)
             ];
 
