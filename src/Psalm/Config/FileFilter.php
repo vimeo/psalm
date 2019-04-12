@@ -273,7 +273,7 @@ class FileFilter
             foreach ($e->referencedMethod as $referenced_method) {
                 $method_id = (string)$referenced_method['name'];
 
-                if (!preg_match('/^[^:]+::[^:]+$/', $method_id)) {
+                if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
                     echo 'Invalid referencedMethod ' . $method_id . PHP_EOL;
                     exit(1);
                 }
@@ -297,6 +297,19 @@ class FileFilter
         }
 
         return $filter;
+    }
+
+    private static function isRegularExpression(string $string) : bool
+    {
+        set_error_handler(
+            function () : bool {
+                return false;
+            },
+            E_WARNING
+        );
+        $is_regexp = preg_match($string, "") !== FALSE;
+        restore_error_handler();
+        return $is_regexp;
     }
 
     /**
@@ -394,13 +407,30 @@ class FileFilter
      */
     public function allowsMethod($method_id)
     {
+        if (!$this->method_ids) {
+            return false;
+        }
+
         if (preg_match('/^[^:]+::[^:]+$/', $method_id)) {
             $method_stub = '*::' . explode('::', $method_id)[1];
 
-            if (in_array($method_stub, $this->method_ids)) {
-                return true;
+            foreach ($this->method_ids as $config_method_id) {
+                if ($config_method_id === $method_id) {
+                    return true;
+                }
+
+                if ($config_method_id === $method_stub) {
+                    return true;
+                }
+
+                if ($config_method_id[0] === '/' && preg_match($config_method_id, $method_id)) {
+                    return true;
+                }
             }
+
+            return false;
         }
+
         return in_array($method_id, $this->method_ids);
     }
 
