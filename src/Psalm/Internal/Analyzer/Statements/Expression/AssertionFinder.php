@@ -567,41 +567,40 @@ class AssertionFinder
                 throw new \UnexpectedValueException('$false_position value');
             }
 
+            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
-                $conditional->assertions = self::processFunctionCall(
+                $if_types = self::processFunctionCall(
                     $base_conditional,
                     $this_class_name,
                     $source,
                     true
                 );
-                return;
-            }
+            } else {
+                $var_name = ExpressionAnalyzer::getArrayVarId(
+                    $base_conditional,
+                    $this_class_name,
+                    $source
+                );
 
-            $var_name = ExpressionAnalyzer::getArrayVarId(
-                $base_conditional,
-                $this_class_name,
-                $source
-            );
+                if ($var_name) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        $if_types[$var_name] = [['false']];
+                    } else {
+                        $if_types[$var_name] = [['falsy']];
+                    }
+                } elseif ($var_type) {
+                    self::scrapeAssertions($base_conditional, $this_class_name, $source, $codebase, $inside_negation);
 
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+                    if (!isset($base_conditional->assertions)) {
+                        throw new \UnexpectedValueException('Assertions should be set');
+                    }
 
-            if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                    $if_types[$var_name] = [['false']];
-                } else {
-                    $if_types[$var_name] = [['falsy']];
-                }
-            } elseif ($var_type) {
-                self::scrapeAssertions($base_conditional, $this_class_name, $source, $codebase, $inside_negation);
+                    $notif_types = $base_conditional->assertions;
 
-                if (!isset($base_conditional->assertions)) {
-                    throw new \UnexpectedValueException('Assertions should be set');
-                }
-
-                $notif_types = $base_conditional->assertions;
-
-                if (count($notif_types) === 1) {
-                    $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    if (count($notif_types) === 1) {
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    }
                 }
             }
 
