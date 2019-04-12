@@ -307,7 +307,7 @@ class FileFilter
             },
             E_WARNING
         );
-        $is_regexp = preg_match($string, "") !== FALSE;
+        $is_regexp = preg_match($string, "") !== false;
         restore_error_handler();
         return $is_regexp;
     }
