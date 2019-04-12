@@ -904,19 +904,32 @@ class TypeAlgebraTest extends TestCase
             ],
             'invertEquation' => [
                 '<?php
-                /**
-                 * @param mixed $width
-                 * @param mixed $height
-                 *
-                 * @throws RuntimeException
-                 */
-                function Foo($width, $height) : void {
-                    if (!(is_int($width) || is_float($width)) || !(is_int($height) || is_float($height))) {
-                        throw new RuntimeException("bad");
-                    }
+                    /**
+                     * @param mixed $width
+                     * @param mixed $height
+                     *
+                     * @throws RuntimeException
+                     */
+                    function Foo($width, $height) : void {
+                        if (!(is_int($width) || is_float($width)) || !(is_int($height) || is_float($height))) {
+                            throw new RuntimeException("bad");
+                        }
 
-                    echo sprintf("padding-top:%s%%;", 100 * ($height/$width));
-                }'
+                        echo sprintf("padding-top:%s%%;", 100 * ($height/$width));
+                    }'
+            ],
+            'invertLogic' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+
+                    function foo(?A $a) : A {
+                        if (!$a || !($a instanceof B && rand(0, 1))) {
+                            throw new Exception();
+                        }
+
+                        return $a;
+                    }'
             ],
         ];
     }

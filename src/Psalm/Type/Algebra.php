@@ -127,18 +127,50 @@ class Algebra
             return self::combineOredClauses($left_clauses, $right_clauses);
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\BooleanNot
-            && $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp
-        ) {
-            $negated_clauses = self::getFormula(
-                $conditional->expr,
-                $this_class_name,
-                $source,
-                $codebase,
-                !$inside_negation
-            );
+        if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+                $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanAnd(
+                    new PhpParser\Node\Expr\BooleanNot(
+                        $conditional->expr->left,
+                        $conditional->getAttributes()
+                    ),
+                    new PhpParser\Node\Expr\BooleanNot(
+                        $conditional->expr->right,
+                        $conditional->getAttributes()
+                    ),
+                    $conditional->expr->getAttributes()
+                );
 
-            return self::negateFormula($negated_clauses);
+                return self::getFormula(
+                    $and_expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
+            }
+
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+                $and_expr = new PhpParser\Node\Expr\BinaryOp\BooleanOr(
+                    new PhpParser\Node\Expr\BooleanNot(
+                        $conditional->expr->left,
+                        $conditional->getAttributes()
+                    ),
+                    new PhpParser\Node\Expr\BooleanNot(
+                        $conditional->expr->right,
+                        $conditional->getAttributes()
+                    ),
+                    $conditional->expr->getAttributes()
+                );
+
+                return self::getFormula(
+                    $and_expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation
+                );
+            }
         }
 
         AssertionFinder::scrapeAssertions(
