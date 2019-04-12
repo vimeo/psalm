@@ -106,7 +106,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
-                    $codebase->file_reference_provider->addReferenceToClassMethod(
+                    $codebase->file_reference_provider->addCallingMethodReferenceToClassMember(
                         $context->calling_method_id,
                         'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
@@ -345,7 +345,7 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     }
                 }
 
-                if (!$codebase->methods->methodExists($method_id)
+                if (!$codebase->methods->methodExists($method_id, $context->calling_method_id)
                     || !MethodAnalyzer::isMethodVisible(
                         $method_id,
                         $context,

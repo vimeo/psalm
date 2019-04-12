@@ -40,6 +40,11 @@ class Methods
     /**
      * @var bool
      */
+    public $collect_locations = false;
+
+    /**
+     * @var bool
+     */
     public $collect_references = false;
 
     /**
@@ -140,52 +145,70 @@ class Methods
                     && isset($class_storage->potential_declaring_method_ids[$method_name])
                 ) {
                     foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
-                        $this->file_reference_provider->addReferenceToClassMethod(
+                        $this->file_reference_provider->addCallingMethodReferenceToClassMember(
                             $calling_method_id,
                             $potential_id
                         );
                     }
                 } else {
-                    $this->file_reference_provider->addReferenceToClassMethod(
+                    $this->file_reference_provider->addCallingMethodReferenceToClassMember(
                         $calling_method_id,
                         $declaring_method_id_lc
                     );
                 }
             }
 
-            if ($this->collect_references && $code_location) {
+            if ($this->collect_references) {
+                $this->file_reference_provider->addReferenceToClassMethod(
+                    $declaring_method_id_lc
+                );
+            }
+
+            if ($this->collect_references || ($this->collect_locations && $code_location)) {
+                if ($this->collect_locations && $code_location) {
+                    $this->file_reference_provider->addCallingLocationForClassMethod(
+                        $code_location,
+                        $declaring_method_id_lc
+                    );
+                }
+
+                foreach ($class_storage->class_implements as $fq_interface_name) {
+                    $interface_method_id_lc = strtolower($fq_interface_name . '::' . $method_name);
+
+                    if ($this->collect_locations && $code_location) {
+                        $this->file_reference_provider->addCallingLocationForClassMethod(
+                            $code_location,
+                            $interface_method_id_lc
+                        );
+                    }
+
+                    if ($this->collect_references) {
+                        $this->file_reference_provider->addReferenceToClassMethod(
+                            $interface_method_id_lc
+                        );
+                    }
+                }
+
                 list($declaring_method_class, $declaring_method_name) = explode('::', $declaring_method_id);
 
                 $declaring_class_storage = $this->classlike_storage_provider->get($declaring_method_class);
-                $declaring_method_storage = $declaring_class_storage->methods[strtolower($declaring_method_name)];
-                if ($declaring_method_storage->referencing_locations === null) {
-                    $declaring_method_storage->referencing_locations = [];
-                }
-                $declaring_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
-
-                foreach ($class_storage->class_implements as $fq_interface_name) {
-                    $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
-                    if (isset($interface_storage->methods[$method_name])) {
-                        $interface_method_storage = $interface_storage->methods[$method_name];
-                        if (!isset($interface_method_storage->referencing_locations)) {
-                            $interface_method_storage->referencing_locations = [];
-                        }
-                        $interface_method_storage->referencing_locations[$code_location->file_path][] = $code_location;
-                    }
-                }
 
                 if (isset($declaring_class_storage->overridden_method_ids[$declaring_method_name])) {
                     $overridden_method_ids = $declaring_class_storage->overridden_method_ids[$declaring_method_name];
 
                     foreach ($overridden_method_ids as $overridden_method_id) {
-                        list($overridden_method_class, $overridden_method_name) = explode('::', $overridden_method_id);
-
-                        $class_storage = $this->classlike_storage_provider->get($overridden_method_class);
-                        $method_storage = $class_storage->methods[strtolower($overridden_method_name)];
-                        if ($method_storage->referencing_locations === null) {
-                            $method_storage->referencing_locations = [];
+                        if ($this->collect_locations && $code_location) {
+                            $this->file_reference_provider->addCallingLocationForClassMethod(
+                                $code_location,
+                                strtolower($overridden_method_id)
+                            );
                         }
-                        $method_storage->referencing_locations[$code_location->file_path][] = $code_location;
+
+                        if ($this->collect_references) {
+                            $this->file_reference_provider->addReferenceToClassMethod(
+                                strtolower($overridden_method_id)
+                            );
+                        }
                     }
                 }
             }
@@ -212,7 +235,7 @@ class Methods
 
         if ($calling_method_id) {
             // also store failures in case the method is added later
-            $this->file_reference_provider->addReferenceToClassMethod(
+            $this->file_reference_provider->addCallingMethodReferenceToClassMember(
                 $calling_method_id,
                 strtolower($method_id)
             );

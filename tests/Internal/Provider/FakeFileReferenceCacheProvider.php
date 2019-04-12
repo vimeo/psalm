@@ -44,7 +44,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
      */
-    public function getCachedMethodReferences()
+    public function getCachedMemberReferences()
     {
         return $this->cached_method_references;
     }
@@ -71,7 +71,7 @@ class FakeFileReferenceCacheProvider extends \Psalm\Internal\Provider\FileRefere
     /**
      * @return void
      */
-    public function setCachedMethodReferences(array $method_references)
+    public function setCachedMemberReferences(array $method_references)
     {
         $this->cached_method_references = $method_references;
     }

@@ -64,11 +64,6 @@ class PropertyStorage
      */
     public $internal = false;
 
-    /**
-     * @var array<string, array<int, CodeLocation>>|null
-     */
-    public $referencing_locations;
-
     public function getInfo() : string
     {
         switch ($this->visibility) {

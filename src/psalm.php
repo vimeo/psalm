@@ -422,13 +422,13 @@ $show_info = isset($options['show-info'])
 
 $is_diff = isset($options['diff']);
 
-/** @var false|'always'|'auto' $find_dead_code */
-$find_dead_code = false;
+/** @var false|'always'|'auto' $find_unused_code */
+$find_unused_code = false;
 if (isset($options['find-dead-code'])) {
     if ($options['find-dead-code'] === 'always') {
-        $find_dead_code = 'always';
+        $find_unused_code = 'always';
     } else {
-        $find_dead_code = 'auto';
+        $find_unused_code = 'auto';
     }
 }
 
@@ -547,18 +547,16 @@ if (array_key_exists('debug-by-line', $options)) {
 }
 
 if ($config->find_unused_code) {
-    $find_dead_code = 'auto';
+    $find_unused_code = 'auto';
 }
 
-if ($find_dead_code || $find_references_to !== null) {
+if ($find_references_to !== null) {
+    $project_analyzer->getCodebase()->collectLocations();
+    $project_analyzer->show_issues = false;
+}
+
+if ($find_unused_code) {
     $project_analyzer->getCodebase()->collectReferences();
-
-    if ($find_references_to) {
-        $project_analyzer->show_issues = false;
-    }
-}
-
-if ($find_dead_code) {
     $project_analyzer->getCodebase()->reportUnusedCode();
 }
 
@@ -579,7 +577,7 @@ if ($paths_to_check === null) {
 
 if ($find_references_to) {
     $project_analyzer->findReferencesTo($find_references_to);
-} elseif (($find_dead_code === 'always') || ($find_dead_code === 'auto' && !$paths_to_check && !$is_diff)) {
+} elseif (($find_unused_code === 'always') || ($find_unused_code === 'auto' && !$paths_to_check && !$is_diff)) {
     if ($threads > 1) {
         if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
             echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;

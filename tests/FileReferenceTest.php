@@ -28,7 +28,7 @@ class FileReferenceTest extends TestCase
             )
         );
 
-        $this->project_analyzer->getCodebase()->collectReferences();
+        $this->project_analyzer->getCodebase()->collectLocations();
         $this->project_analyzer->setPhpVersion('7.3');
     }
 
@@ -58,16 +58,14 @@ class FileReferenceTest extends TestCase
 
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
 
-        if (!isset($found_references[$file_path])) {
+        if (!$found_references) {
             throw new \UnexpectedValueException('No file references found in this file');
         }
 
-        $file_references = $found_references[$file_path];
-
-        $this->assertSame(count($file_references), count($expected_locations));
+        $this->assertSame(count($found_references), count($expected_locations));
 
         foreach ($expected_locations as $i => $expected_location) {
-            $actual_location = $file_references[$i];
+            $actual_location = $found_references[$i];
 
             $this->assertSame(
                 $expected_location,
@@ -81,11 +79,11 @@ class FileReferenceTest extends TestCase
      * @dataProvider providerReferencedMethods
      *
      * @param string $input_code
-     * @param array<string,array<string,bool>> $expected_referenced_methods
+     * @param array<string,array<string,bool>> $expected_referenced_members
      *
      * @return void
      */
-    public function testReferencedMethods($input_code, array $expected_referenced_methods)
+    public function testReferencedMethods($input_code, array $expected_referenced_members)
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -100,9 +98,9 @@ class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $referenced_methods = $this->project_analyzer->getCodebase()->file_reference_provider->getClassMethodReferences();
+        $referenced_members = $this->project_analyzer->getCodebase()->file_reference_provider->getClassMemberReferences();
 
-        $this->assertSame($expected_referenced_methods, $referenced_methods);
+        $this->assertSame($expected_referenced_members, $referenced_members);
     }
 
     /**

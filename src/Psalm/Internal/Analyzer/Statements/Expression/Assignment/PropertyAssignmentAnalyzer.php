@@ -77,10 +77,6 @@ class PropertyAssignmentAnalyzer
             $property_id = $context->self . '::$' . $prop_name;
             $property_ids[] = $property_id;
 
-            if (!$codebase->properties->propertyExists($property_id, false, $statements_analyzer, $context)) {
-                return null;
-            }
-
             $property_exists = true;
 
             $class_property_type = $codebase->properties->getPropertyType(

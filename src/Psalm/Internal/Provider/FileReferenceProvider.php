@@ -3,6 +3,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Codebase;
+use Psalm\CodeLocation;
 
 /**
  * @psalm-type  IssueData = array{
@@ -71,7 +72,32 @@ class FileReferenceProvider
     /**
      * @var array<string, array<string, bool>>
      */
+    private static $class_member_references = [];
+
+    /**
+     * @var array<string, true>
+     */
     private static $class_method_references = [];
+
+    /**
+     * @var array<string, array<int, CodeLocation>>
+     */
+    private static $class_method_locations = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private static $class_property_references = [];
+
+    /**
+     * @var array<string, array<int, CodeLocation>>
+     */
+    private static $class_property_locations = [];
+
+    /**
+     * @var array<string, array<int, CodeLocation>>
+     */
+    private static $class_locations = [];
 
     /**
      * @var array<string, array<string, int>>
@@ -126,12 +152,9 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $source_file
-     * @param string $fq_class_name_lc
-     *
      * @return void
      */
-    public function addFileReferenceToClass($source_file, $fq_class_name_lc)
+    public function addFileReferenceToClass(string $source_file, string $fq_class_name_lc)
     {
         self::$referencing_files[$source_file] = true;
         self::$file_references_to_class[$fq_class_name_lc][$source_file] = true;
@@ -151,7 +174,7 @@ class FileReferenceProvider
      *
      * @return void
      */
-    public function addFileReferences(array $references)
+    public function addFileReferencesToClass(array $references)
     {
         self::$file_references_to_class = array_merge_recursive($references, self::$file_references_to_class);
     }
@@ -254,9 +277,9 @@ class FileReferenceProvider
     /**
      * @return array<string, array<string, bool>>
      */
-    public function getMethodsReferencing()
+    public function getClassMemberReferences()
     {
-        return self::$class_method_references;
+        return self::$class_member_references;
     }
 
     /**
@@ -278,13 +301,13 @@ class FileReferenceProvider
 
             self::$file_references = $file_references;
 
-            $class_method_references = $this->cache->getCachedMethodReferences();
+            $class_member_references = $this->cache->getCachedMemberReferences();
 
-            if ($class_method_references === null) {
+            if ($class_member_references === null) {
                 return false;
             }
 
-            self::$class_method_references = $class_method_references;
+            self::$class_member_references = $class_member_references;
 
             $analyzed_methods = $this->cache->getAnalyzedMethodCache();
 
@@ -348,7 +371,7 @@ class FileReferenceProvider
 
         if ($this->cache) {
             $this->cache->setCachedFileReferences(self::$file_references);
-            $this->cache->setCachedMethodReferences(self::$class_method_references);
+            $this->cache->setCachedMemberReferences(self::$class_member_references);
             $this->cache->setCachedIssues(self::$issues);
             $this->cache->setFileMapCache(self::$file_maps);
             $this->cache->setTypeCoverage(self::$mixed_counts);
@@ -357,25 +380,141 @@ class FileReferenceProvider
     }
 
     /**
-     * @param string $calling_method_id
-     * @param string $referenced_member_id
      * @return void
      */
-    public function addReferenceToClassMethod($calling_method_id, $referenced_member_id)
+    public function addCallingMethodReferenceToClassMember(string $calling_method_id, string $referenced_member_id)
     {
-        if (!isset(self::$class_method_references[$referenced_member_id])) {
-            self::$class_method_references[$referenced_member_id] = [$calling_method_id => true];
+        if (!isset(self::$class_member_references[$referenced_member_id])) {
+            self::$class_member_references[$referenced_member_id] = [$calling_method_id => true];
         } else {
-            self::$class_method_references[$referenced_member_id][$calling_method_id] = true;
+            self::$class_member_references[$referenced_member_id][$calling_method_id] = true;
         }
     }
 
     /**
-     * @return array<string, array<string,bool>>
+     * @return void
      */
-    public function getClassMethodReferences() : array
+    public function addReferenceToClassMethod(string $referenced_method_id)
+    {
+        self::$class_method_references[$referenced_method_id] = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function addReferenceToClassProperty(string $referenced_property_id)
+    {
+        self::$class_property_references[$referenced_property_id] = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function addCallingLocationForClassMethod(CodeLocation $code_location, string $referenced_member_id)
+    {
+        if (!isset(self::$class_method_locations[$referenced_member_id])) {
+            self::$class_method_locations[$referenced_member_id] = [$code_location];
+        } else {
+            self::$class_method_locations[$referenced_member_id][] = $code_location;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function addCallingLocationForClassProperty(CodeLocation $code_location, string $referenced_property_id)
+    {
+        if (!isset(self::$class_property_locations[$referenced_property_id])) {
+            self::$class_property_locations[$referenced_property_id] = [$code_location];
+        } else {
+            self::$class_property_locations[$referenced_property_id][] = $code_location;
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function addCallingLocationForClass(CodeLocation $code_location, string $referenced_class)
+    {
+        if (!isset(self::$class_locations[$referenced_class])) {
+            self::$class_locations[$referenced_class] = [$code_location];
+        } else {
+            self::$class_locations[$referenced_class][] = $code_location;
+        }
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getAllClassMethodReferences() : array
     {
         return self::$class_method_references;
+    }
+
+    public function isClassMethodReferenced(string $method_id) : bool
+    {
+        return isset(self::$class_method_references[$method_id]);
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getAllClassPropertyReferences() : array
+    {
+        return self::$class_property_references;
+    }
+
+    public function isClassPropertyReferenced(string $property_id) : bool
+    {
+        return isset(self::$class_property_references[$property_id]);
+    }
+
+    /**
+     * @return array<string, array<int, CodeLocation>>
+     */
+    public function getAllClassMethodLocations() : array
+    {
+        return self::$class_method_locations;
+    }
+
+    /**
+     * @return array<string, array<int, CodeLocation>>
+     */
+    public function getAllClassPropertyLocations() : array
+    {
+        return self::$class_property_locations;
+    }
+
+    /**
+     * @return array<string, array<int, CodeLocation>>
+     */
+    public function getAllClassLocations() : array
+    {
+        return self::$class_locations;
+    }
+
+    /**
+     * @return array<int, CodeLocation>
+     */
+    public function getClassMethodLocations(string $method_id) : array
+    {
+        return self::$class_method_locations[$method_id] ?? [];
+    }
+
+    /**
+     * @return array<int, CodeLocation>
+     */
+    public function getClassPropertyLocations(string $property_id) : array
+    {
+        return self::$class_property_locations[$property_id] ?? [];
+    }
+
+    /**
+     * @return array<int, CodeLocation>
+     */
+    public function getClassLocations(string $fq_class_name_lc) : array
+    {
+        return self::$class_locations[$fq_class_name_lc] ?? [];
     }
 
     /**
@@ -384,16 +523,98 @@ class FileReferenceProvider
      *
      * @return void
      */
-    public function addClassMethodReferences(array $references)
+    public function addCallingMethodReferencesToClassMember(array $references)
     {
         foreach ($references as $referenced_member_id => $calling_method_ids) {
-            if (isset(self::$class_method_references[$referenced_member_id])) {
-                self::$class_method_references[$referenced_member_id] = array_merge(
-                    self::$class_method_references[$referenced_member_id],
+            if (isset(self::$class_member_references[$referenced_member_id])) {
+                self::$class_member_references[$referenced_member_id] = array_merge(
+                    self::$class_member_references[$referenced_member_id],
                     $calling_method_ids
                 );
             } else {
-                self::$class_method_references[$referenced_member_id] = $calling_method_ids;
+                self::$class_member_references[$referenced_member_id] = $calling_method_ids;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, bool> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function addClassMethodReferences(array $references)
+    {
+        self::$class_method_references += $references;
+    }
+
+    /**
+     * @param array<string, bool> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function addClassPropertyReferences(array $references)
+    {
+        self::$class_property_references += $references;
+    }
+
+    /**
+     * @param array<string, array<int, CodeLocation>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function addClassMethodLocations(array $references)
+    {
+        foreach ($references as $referenced_member_id => $locations) {
+            if (isset(self::$class_method_locations[$referenced_member_id])) {
+                self::$class_method_locations[$referenced_member_id] = array_merge(
+                    self::$class_method_locations[$referenced_member_id],
+                    $locations
+                );
+            } else {
+                self::$class_method_locations[$referenced_member_id] = $locations;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, array<int, CodeLocation>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function addClassPropertyLocations(array $references)
+    {
+        foreach ($references as $referenced_member_id => $locations) {
+            if (isset(self::$class_property_locations[$referenced_member_id])) {
+                self::$class_property_locations[$referenced_member_id] = array_merge(
+                    self::$class_property_locations[$referenced_member_id],
+                    $locations
+                );
+            } else {
+                self::$class_property_locations[$referenced_member_id] = $locations;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, array<int, CodeLocation>> $references
+     * @psalm-suppress MixedTypeCoercion
+     *
+     * @return void
+     */
+    public function addClassLocations(array $references)
+    {
+        foreach ($references as $referenced_member_id => $locations) {
+            if (isset(self::$class_locations[$referenced_member_id])) {
+                self::$class_locations[$referenced_member_id] = array_merge(
+                    self::$class_locations[$referenced_member_id],
+                    $locations
+                );
+            } else {
+                self::$class_locations[$referenced_member_id] = $locations;
             }
         }
     }
@@ -504,7 +725,11 @@ class FileReferenceProvider
         self::$files_inheriting_classes = [];
         self::$deleted_files = null;
         self::$file_references = [];
+        self::$class_member_references = [];
         self::$class_method_references = [];
+        self::$class_method_locations = [];
+        self::$class_property_references = [];
+        self::$class_property_locations = [];
         self::$analyzed_methods = [];
         self::$issues = [];
         self::$file_maps = [];

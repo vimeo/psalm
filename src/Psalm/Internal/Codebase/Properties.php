@@ -31,6 +31,11 @@ class Properties
     public $collect_references = false;
 
     /**
+     * @var bool
+     */
+    public $collect_locations = false;
+
+    /**
      * @var FileReferenceProvider
      */
     public $file_reference_provider;
@@ -99,28 +104,34 @@ class Properties
             $declaring_property_class = $class_storage->declaring_property_ids[$property_name];
 
             if ($context && $context->calling_method_id) {
-                $this->file_reference_provider->addReferenceToClassMethod(
+                $this->file_reference_provider->addCallingMethodReferenceToClassMember(
                     $context->calling_method_id,
                     strtolower($declaring_property_class) . '::$' . $property_name
                 );
             }
 
-            if ($this->collect_references && $code_location) {
-                $declaring_class_storage = $this->classlike_storage_provider->get($declaring_property_class);
-                $declaring_property_storage = $declaring_class_storage->properties[$property_name];
+            if ($this->collect_references) {
+                $this->file_reference_provider->addReferenceToClassProperty(
+                    strtolower($declaring_property_class) . '::$' . $property_name
+                );
+            }
 
-                if ($declaring_property_storage->referencing_locations === null) {
-                    $declaring_property_storage->referencing_locations = [];
-                }
-
-                $declaring_property_storage->referencing_locations[$code_location->file_path][] = $code_location;
+            if ($this->collect_locations && $code_location) {
+                $this->file_reference_provider->addCallingLocationForClassProperty(
+                    $code_location,
+                    strtolower($declaring_property_class) . '::$' . $property_name
+                );
             }
 
             return true;
         }
 
+        $this->file_reference_provider->addReferenceToClassProperty(
+            strtolower($fq_class_name) . '::$' . $property_name
+        );
+
         if ($context && $context->calling_method_id) {
-            $this->file_reference_provider->addReferenceToClassMethod(
+            $this->file_reference_provider->addCallingMethodReferenceToClassMember(
                 $context->calling_method_id,
                 strtolower($fq_class_name) . '::$' . $property_name
             );

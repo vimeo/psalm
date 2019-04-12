@@ -36,7 +36,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
  *     issues: array<int, IssueData>,
  *     file_references: array<string, array<string,bool>>,
  *     mixed_counts: array<string, array{0: int, 1: int}>,
- *     method_references: array<string, array<string,bool>>,
+ *     member_references: array<string, array<string,bool>>,
  *     analyzed_methods: array<string, array<string, int>>,
  *     file_maps: array<
  *         string,
@@ -232,7 +232,7 @@ class Analyzer
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
                         'file_references' => $file_reference_provider->getAllFileReferences(),
-                        'method_references' => $file_reference_provider->getClassMethodReferences(),
+                        'member_references' => $file_reference_provider->getClassMemberReferences(),
                         'mixed_counts' => $analyzer->getMixedCounts(),
                         'analyzed_methods' => $analyzer->getAnalyzedMethods(),
                         'file_maps' => $analyzer->getFileMaps(),
@@ -253,8 +253,12 @@ class Analyzer
                     $codebase->file_reference_provider->addIssue($issue_data['file_path'], $issue_data);
                 }
 
-                $codebase->file_reference_provider->addFileReferences($pool_data['file_references']);
-                $codebase->file_reference_provider->addClassMethodReferences($pool_data['method_references']);
+                $codebase->file_reference_provider->addFileReferencesToClass(
+                    $pool_data['file_references']
+                );
+                $codebase->file_reference_provider->addCallingMethodReferencesToClassMember(
+                    $pool_data['member_references']
+                );
                 $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
 
                 foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
@@ -332,7 +336,7 @@ class Analyzer
 
         $diff_map = $statements_provider->getDiffMap();
 
-        $all_referencing_methods = $codebase->file_reference_provider->getMethodsReferencing();
+        $all_referencing_methods = $codebase->file_reference_provider->getClassMemberReferences();
         $this->mixed_counts = $codebase->file_reference_provider->getTypeCoverage();
 
         $classlikes = $codebase->classlikes;

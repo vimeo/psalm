@@ -89,7 +89,7 @@ class FileReferenceCacheProvider
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
      */
-    public function getCachedMethodReferences()
+    public function getCachedMemberReferences()
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -97,19 +97,19 @@ class FileReferenceCacheProvider
             return null;
         }
 
-        $class_method_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
 
-        if (!is_readable($class_method_cache_location)) {
+        if (!is_readable($class_member_cache_location)) {
             return null;
         }
 
-        $class_method_reference_cache = unserialize((string) file_get_contents($class_method_cache_location));
+        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
 
-        if (!is_array($class_method_reference_cache)) {
+        if (!is_array($class_member_reference_cache)) {
             throw new \UnexpectedValueException('The reference cache must be an array');
         }
 
-        return $class_method_reference_cache;
+        return $class_member_reference_cache;
     }
 
     /**
@@ -160,7 +160,7 @@ class FileReferenceCacheProvider
     /**
      * @return void
      */
-    public function setCachedMethodReferences(array $method_references)
+    public function setCachedMemberReferences(array $member_references)
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -168,9 +168,9 @@ class FileReferenceCacheProvider
             return;
         }
 
-        $method_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
 
-        file_put_contents($method_cache_location, serialize($method_references));
+        file_put_contents($member_cache_location, serialize($member_references));
     }
 
     /**

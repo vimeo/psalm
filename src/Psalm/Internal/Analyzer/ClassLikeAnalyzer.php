@@ -290,11 +290,11 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
             }
         }
 
-        if ($codebase->collect_references && !$inferred) {
-            if ($class_storage->referencing_locations === null) {
-                $class_storage->referencing_locations = [];
-            }
-            $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
+        if ($codebase->collect_locations && !$inferred) {
+            $codebase->file_reference_provider->addCallingLocationForClass(
+                $code_location,
+                $aliased_name_lc
+            );
         }
 
         if (($class_exists && !$codebase->classHasCorrectCasing($fq_class_name)) ||

@@ -15,6 +15,7 @@ use Psalm\Issue\UnusedMethod;
 use Psalm\Issue\UnusedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use ReflectionProperty;
@@ -30,6 +31,11 @@ class ClassLikes
      * @var ClassLikeStorageProvider
      */
     private $classlike_storage_provider;
+
+    /**
+     * @var FileReferenceProvider
+     */
+    public $file_reference_provider;
 
     /**
      * @var array<string, bool>
@@ -92,6 +98,11 @@ class ClassLikes
     public $collect_references = false;
 
     /**
+     * @var bool
+     */
+    public $collect_locations = false;
+
+    /**
      * @var Config
      */
     private $config;
@@ -104,10 +115,12 @@ class ClassLikes
     public function __construct(
         Config $config,
         ClassLikeStorageProvider $storage_provider,
+        FileReferenceProvider $file_reference_provider,
         Scanner $scanner
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
+        $this->file_reference_provider = $file_reference_provider;
         $this->scanner = $scanner;
 
         $this->collectPredefinedClassLikes();
@@ -372,12 +385,11 @@ class ClassLikes
             return false;
         }
 
-        if ($this->collect_references && $code_location) {
-            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-            if ($class_storage->referencing_locations === null) {
-                $class_storage->referencing_locations = [];
-            }
-            $class_storage->referencing_locations[$code_location->file_path][] = $code_location;
+        if ($this->collect_locations && $code_location) {
+            $this->file_reference_provider->addCallingLocationForClass(
+                $code_location,
+                strtolower($fq_class_name)
+            );
         }
 
         return true;
@@ -753,6 +765,8 @@ class ClassLikes
                 continue;
             }
 
+            $method_id = $appearing_method_id;
+
             if (isset($classlike_storage->methods[$method_name])) {
                 $method_storage = $classlike_storage->methods[$method_name];
             } else {
@@ -767,10 +781,12 @@ class ClassLikes
                 }
 
                 $method_storage = $declaring_classlike_storage->methods[$declaring_method_name];
+                $method_id = $declaring_method_id;
             }
 
-            if (($method_storage->referencing_locations === null
-                    || count($method_storage->referencing_locations) === 0)
+            $method_referenced = $this->file_reference_provider->isClassMethodReferenced(strtolower($method_id));
+
+            if (!$method_referenced
                 && (substr($method_name, 0, 2) !== '__' || $method_name === '__construct')
                 && $method_storage->location
             ) {
@@ -787,7 +803,11 @@ class ClassLikes
                         foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
                             $parent_method_storage = $methods->getStorage($parent_method_id);
 
-                            if (!$parent_method_storage->abstract || $parent_method_storage->referencing_locations) {
+                            $parent_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
+                                strtolower($parent_method_id)
+                            );
+
+                            if (!$parent_method_storage->abstract || $parent_method_referenced) {
                                 $has_parent_references = true;
                                 break;
                             }
@@ -797,9 +817,11 @@ class ClassLikes
                     foreach ($classlike_storage->class_implements as $fq_interface_name) {
                         $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
                         if (isset($interface_storage->methods[$method_name])) {
-                            $interface_method_storage = $interface_storage->methods[$method_name];
+                            $interface_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
+                                strtolower($fq_interface_name . '::' . $method_name)
+                            );
 
-                            if ($interface_method_storage->referencing_locations) {
+                            if ($interface_method_referenced) {
                                 $has_parent_references = true;
                                 break;
                             }
@@ -865,8 +887,10 @@ class ClassLikes
         }
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
-            if (($property_storage->referencing_locations === null
-                    || count($property_storage->referencing_locations) === 0)
+            $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
+                strtolower($classlike_storage->name) . '::$' . $property_name
+            );
+            if (!$property_referenced
                 && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
                 && $property_storage->location
             ) {

@@ -53,11 +53,11 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    if ($this->getCodebase()->collect_references) {
+                    if ($this->getCodebase()->collect_locations) {
                         // register the path
                         $codebase = $this->getCodebase();
 
-                        $codebase->use_referencing_locations[strtolower($use_path)][$this->getFilePath()][] =
+                        $codebase->use_referencing_locations[strtolower($use_path)][] =
                             new \Psalm\CodeLocation($this, $use);
 
                         $codebase->use_referencing_files[$this->getFilePath()][strtolower($use_path)] = true;
@@ -94,11 +94,11 @@ trait CanAlias
                     break;
 
                 case PhpParser\Node\Stmt\Use_::TYPE_NORMAL:
-                    if ($this->getCodebase()->collect_references) {
+                    if ($this->getCodebase()->collect_locations) {
                         // register the path
                         $codebase = $this->getCodebase();
 
-                        $codebase->use_referencing_locations[$use_path][$this->getFilePath()][] =
+                        $codebase->use_referencing_locations[strtolower($use_path)][] =
                             new \Psalm\CodeLocation($this, $use);
                     }
 

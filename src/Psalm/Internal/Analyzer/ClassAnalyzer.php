@@ -862,7 +862,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            $codebase->file_reference_provider->addReferenceToClassMethod(
+            $codebase->file_reference_provider->addCallingMethodReferenceToClassMember(
                 strtolower($fq_class_name) . '::__construct',
                 strtolower($property_class_name) . '::$' . $property_name
             );

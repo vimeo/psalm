@@ -436,35 +436,25 @@ class ProjectAnalyzer
      */
     public function findReferencesTo($symbol)
     {
-        $locations_by_files = $this->codebase->findReferencesToSymbol($symbol);
+        $locations = $this->codebase->findReferencesToSymbol($symbol);
 
-        foreach ($locations_by_files as $locations) {
-            $bounds_starts = [];
+        foreach ($locations as $location) {
+            $snippet = $location->getSnippet();
 
-            foreach ($locations as $location) {
-                $snippet = $location->getSnippet();
+            $snippet_bounds = $location->getSnippetBounds();
+            $selection_bounds = $location->getSelectionBounds();
 
-                $snippet_bounds = $location->getSnippetBounds();
-                $selection_bounds = $location->getSelectionBounds();
+            $selection_start = $selection_bounds[0] - $snippet_bounds[0];
+            $selection_length = $selection_bounds[1] - $selection_bounds[0];
 
-                if (isset($bounds_starts[$selection_bounds[0]])) {
-                    continue;
-                }
-
-                $bounds_starts[$selection_bounds[0]] = true;
-
-                $selection_start = $selection_bounds[0] - $snippet_bounds[0];
-                $selection_length = $selection_bounds[1] - $selection_bounds[0];
-
-                echo $location->file_name . ':' . $location->getLineNumber() . "\n" .
-                    (
-                        $this->use_color
-                        ? substr($snippet, 0, $selection_start) .
-                        "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
-                        "\e[0m" . substr($snippet, $selection_length + $selection_start)
-                        : $snippet
-                    ) . "\n" . "\n";
-            }
+            echo $location->file_name . ':' . $location->getLineNumber() . "\n" .
+                (
+                    $this->use_color
+                    ? substr($snippet, 0, $selection_start) .
+                    "\e[97;42m" . substr($snippet, $selection_start, $selection_length) .
+                    "\e[0m" . substr($snippet, $selection_length + $selection_start)
+                    : $snippet
+                ) . "\n" . "\n";
         }
     }
 

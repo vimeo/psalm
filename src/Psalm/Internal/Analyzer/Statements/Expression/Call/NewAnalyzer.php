@@ -52,7 +52,7 @@ class NewAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\CallAna
                 if ($context->calling_method_id
                     && !$stmt->class instanceof PhpParser\Node\Name\FullyQualified
                 ) {
-                    $codebase->file_reference_provider->addReferenceToClassMethod(
+                    $codebase->file_reference_provider->addCallingMethodReferenceToClassMember(
                         $context->calling_method_id,
                         'use:' . $stmt->class->parts[0] . ':' . \md5($statements_analyzer->getFilePath())
                     );
