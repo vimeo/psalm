@@ -1559,6 +1559,26 @@ class TypeReconciliationTest extends TestCase
                     if ($a instanceof A) {}',
                 'error_message' => 'RedundantCondition',
             ],
+            'preventImpossibleComparisonToTrue' => [
+                '<?php
+                    /** @return false|string */
+                    function firstChar(string $s) {
+                      return empty($s) ? false : $s[0];
+                    }
+
+                    if (true === firstChar("sdf")) {}',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'preventAlwaysPossibleComparisonToTrue' => [
+                '<?php
+                    /** @return false|string */
+                    function firstChar(string $s) {
+                      return empty($s) ? false : $s[0];
+                    }
+
+                    if (true !== firstChar("sdf")) {}',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
         ];
     }
 }

@@ -480,33 +480,38 @@ class AssertionFinder
                 throw new \UnexpectedValueException('Unrecognised position');
             }
 
+            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
+
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
-                $conditional->assertions = self::processFunctionCall(
+                $if_types = self::processFunctionCall(
                     $base_conditional,
                     $this_class_name,
                     $source,
                     false
                 );
-                return;
-            }
-
-            $var_name = ExpressionAnalyzer::getArrayVarId(
-                $base_conditional,
-                $this_class_name,
-                $source
-            );
-
-            $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
-
-            if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
-                    $if_types[$var_name] = [['true']];
-                } else {
-                    $if_types[$var_name] = [['!falsy']];
-                }
             } else {
-                self::scrapeAssertions($base_conditional, $this_class_name, $source, $codebase, $inside_negation);
-                $if_types = $base_conditional->assertions;
+                $var_name = ExpressionAnalyzer::getArrayVarId(
+                    $base_conditional,
+                    $this_class_name,
+                    $source
+                );
+
+                if ($var_name) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                        $if_types[$var_name] = [['true']];
+                    } else {
+                        $if_types[$var_name] = [['!falsy']];
+                    }
+                } else {
+                    self::scrapeAssertions(
+                        $base_conditional,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        $inside_negation
+                    );
+                    $if_types = $base_conditional->assertions;
+                }
             }
 
             if ($codebase && $var_type) {
@@ -1133,58 +1138,53 @@ class AssertionFinder
 
         if ($true_position) {
             if ($true_position === self::ASSIGNMENT_TO_RIGHT) {
-                if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall) {
-                    $conditional->assertions = self::processFunctionCall(
-                        $conditional->left,
-                        $this_class_name,
-                        $source,
-                        true
-                    );
-                    return;
-                }
-
                 $base_conditional = $conditional->left;
             } elseif ($true_position === self::ASSIGNMENT_TO_LEFT) {
-                if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall) {
-                    $conditional->assertions = self::processFunctionCall(
-                        $conditional->right,
-                        $this_class_name,
-                        $source,
-                        true
-                    );
-                    return;
-                }
-
                 $base_conditional = $conditional->right;
             } else {
                 throw new \UnexpectedValueException('Bad null variable position');
             }
 
-            $var_name = ExpressionAnalyzer::getArrayVarId(
-                $base_conditional,
-                $this_class_name,
-                $source
-            );
-
             $var_type = isset($base_conditional->inferredType) ? $base_conditional->inferredType : null;
 
-            if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-                    $if_types[$var_name] = [['!true']];
-                } else {
-                    $if_types[$var_name] = [['falsy']];
-                }
-            } elseif ($var_type) {
-                self::scrapeAssertions($base_conditional, $this_class_name, $source, $codebase, $inside_negation);
+            if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
+                $if_types = self::processFunctionCall(
+                    $base_conditional,
+                    $this_class_name,
+                    $source,
+                    true
+                );
+            } else {
+                $var_name = ExpressionAnalyzer::getArrayVarId(
+                    $base_conditional,
+                    $this_class_name,
+                    $source
+                );
 
-                if (!isset($base_conditional->assertions)) {
-                    throw new \UnexpectedValueException('Assertions should be set');
-                }
+                if ($var_name) {
+                    if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                        $if_types[$var_name] = [['!true']];
+                    } else {
+                        $if_types[$var_name] = [['falsy']];
+                    }
+                } elseif ($var_type) {
+                    self::scrapeAssertions(
+                        $base_conditional,
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        $inside_negation
+                    );
 
-                $notif_types = $base_conditional->assertions;
+                    if (!isset($base_conditional->assertions)) {
+                        throw new \UnexpectedValueException('Assertions should be set');
+                    }
 
-                if (count($notif_types) === 1) {
-                    $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    $notif_types = $base_conditional->assertions;
+
+                    if (count($notif_types) === 1) {
+                        $if_types = \Psalm\Type\Algebra::negateTypes($notif_types);
+                    }
                 }
             }
 
