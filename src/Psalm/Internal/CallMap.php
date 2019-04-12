@@ -11303,7 +11303,7 @@ return [
 'RegexIterator::setPregFlags' => ['void', 'new_flags'=>'int'],
 'RegexIterator::valid' => ['bool'],
 'register_event_handler' => ['bool', 'event_handler_func'=>'string', 'handler_register_name'=>'string', 'event_type_mask'=>'int'],
-'register_shutdown_function' => ['void', 'function'=>'callable():void', '...parameter='=>'mixed'],
+'register_shutdown_function' => ['void', 'function'=>'callable(mixed...):void', '...parameter='=>'mixed'],
 'register_tick_function' => ['bool', 'function'=>'callable():void', '...args='=>'mixed'],
 'rename' => ['bool', 'old_name'=>'string', 'new_name'=>'string', 'context='=>'resource'],
 'rename_function' => ['bool', 'original_name'=>'string', 'new_name'=>'string'],

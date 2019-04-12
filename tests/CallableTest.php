@@ -364,10 +364,10 @@ class CallableTest extends TestCase
                      * @param Closure(B):A $f
                      * @param Closure(C):B $g
                      *
-                     * @return Closure(C):A
+                     * @return Closure(C2):A
                      */
                     function foo(Closure $f, Closure $g) : Closure {
-                        return function (C2 $x) use ($f, $g) : A {
+                        return function (C $x) use ($f, $g) : A {
                             return $f($g($x));
                         };
                     }
@@ -693,6 +693,56 @@ class CallableTest extends TestCase
             ],
             'callableSelfArg' => [
                 '<?php
+                    class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $b->func2(function(B $x): void {});
+                    $c->func2(function(B $x): void {});
+
+                    class A {}
+
+                    class B extends A {
+                        /**
+                         * @param callable(self) $f
+                         */
+                        function func2(callable $f): void {
+                            $f($this);
+                        }
+                    }',
+            ],
+            'callableParentArg' => [
+                '<?php
+                    class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $b->func3(function(A $x): void {});
+                    $c->func3(function(A $x): void {});
+
+                    class A {}
+
+                    class B extends A {
+                        /**
+                         * @param callable(parent) $f
+                         */
+                        function func3(callable $f): void {
+                            $f($this);
+                        }
+                    }',
+            ],
+            'callableStaticArg' => [
+                '<?php
+                    class C extends B {}
+
+                    $b = new B();
+                    $c = new C();
+
+                    $b->func1(function(B $x): void {});
+                    $c->func1(function(C $x): void {});
+
                     class A {}
 
                     class B extends A {
@@ -702,31 +752,7 @@ class CallableTest extends TestCase
                         function func1(callable $f): void {
                             $f($this);
                         }
-
-                        /**
-                         * @param callable(self) $f
-                         */
-                        function func2(callable $f): void {
-                            $f($this);
-                        }
-
-                        /**
-                         * @param callable(parent) $f
-                         */
-                        function func3(callable $f): void {
-                            $f($this);
-                        }
-                    }
-
-                    class C extends B {}
-
-                    $b = new B();
-                    $c = new C();
-
-                    $b->func1(function(B $x): void {});
-                    $c->func1(function(C $x): void {});
-                    $b->func2(function(B $x): void {});
-                    $c->func2(function(B $x): void {});',
+                    }',
             ],
             'callableSelfReturn' => [
                 '<?php
@@ -843,6 +869,54 @@ class CallableTest extends TestCase
                             echo $c[2];
                         }
                     }',
+            ],
+            'allowCallableWithNarrowerReturn' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+
+                    /**
+                     * @param Closure():A $x
+                     */
+                    function accept_closure($x) : void {
+                        $x();
+                    }
+                    accept_closure(
+                        function () : B {
+                            return new B();
+                        }
+                    );'
+            ],
+            'allowCallableWithWiderParam' => [
+                '<?php
+                    class A {}
+                    class B extends A {}
+
+                    /**
+                     * @param Closure(B $a):A $x
+                     */
+                    function accept_closure($x) : void {
+                        $x(new B());
+                    }
+                    accept_closure(
+                        function (A $a) : A {
+                            return $a;
+                        }
+                    );'
+            ],
+            'allowCallableWithOptionalArg' => [
+                '<?php
+                    /**
+                     * @param Closure():int $x
+                     */
+                    function accept_closure($x) : void {
+                        $x();
+                    }
+                    accept_closure(
+                        function (int $x = 5) : int {
+                            return $x;
+                        }
+                    );'
             ],
         ];
     }
@@ -1118,10 +1192,10 @@ class CallableTest extends TestCase
                      * @param Closure(B):A $f
                      * @param Closure(C):B $g
                      *
-                     * @return Closure(C2):A
+                     * @return Closure(C):A
                      */
                     function foo(Closure $f, Closure $g) : Closure {
-                        return function (C $x) use ($f, $g) : A {
+                        return function (C2 $x) use ($f, $g) : A {
                             return $f($g($x));
                         };
                     }',
@@ -1333,6 +1407,21 @@ class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'prohibitCallableWithRequiredArg' => [
+                '<?php
+                    /**
+                     * @param Closure():int $x
+                     */
+                    function accept_closure($x) : void {
+                        $x();
+                    }
+                    accept_closure(
+                      function (int $x) : int {
+                        return $x;
+                      }
+                    );',
+                'error_message' => 'InvalidArgument'
             ],
         ];
     }

@@ -938,18 +938,21 @@ class CallAnalyzer
 
         $calling_class_storage = $class_storage;
 
+        $static_fq_class_name = $fq_class_name;
+        $self_fq_class_name = $fq_class_name;
+
         if ($method_id && strpos($method_id, '::')) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
             if ($declaring_method_id && $declaring_method_id !== $method_id) {
-                list($fq_class_name) = explode('::', $declaring_method_id);
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                list($self_fq_class_name) = explode('::', $declaring_method_id);
+                $class_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
             }
 
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             if ($appearing_method_id && $declaring_method_id !== $appearing_method_id) {
-                list($fq_class_name) = explode('::', $appearing_method_id);
+                list($self_fq_class_name) = explode('::', $appearing_method_id);
             }
         }
 
@@ -1044,7 +1047,8 @@ class CallAnalyzer
             if (self::checkFunctionLikeArgumentMatches(
                 $statements_analyzer,
                 $cased_method_id,
-                $fq_class_name,
+                $self_fq_class_name,
+                $static_fq_class_name,
                 $function_param,
                 $argument_offset,
                 $arg,
@@ -1158,7 +1162,8 @@ class CallAnalyzer
 
     /**
      * @param  string|null $cased_method_id
-     * @param  string|null $fq_class_name
+     * @param  string|null $self_fq_class_name
+     * @param  string|null $static_fq_class_name
      * @param  FunctionLikeParameter|null $function_param
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
@@ -1168,7 +1173,8 @@ class CallAnalyzer
     private static function checkFunctionLikeArgumentMatches(
         StatementsAnalyzer $statements_analyzer,
         $cased_method_id,
-        $fq_class_name,
+        $self_fq_class_name,
+        $static_fq_class_name,
         $function_param,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
@@ -1224,7 +1230,8 @@ class CallAnalyzer
             $statements_analyzer,
             $codebase,
             $cased_method_id,
-            $fq_class_name,
+            $self_fq_class_name,
+            $static_fq_class_name,
             $function_param,
             $arg->value->inferredType,
             $argument_offset,
@@ -1375,7 +1382,8 @@ class CallAnalyzer
 
     /**
      * @param  string|null $cased_method_id
-     * @param  string|null $fq_class_name
+     * @param  string|null $self_fq_class_name
+     * @param  string|null $static_fq_class_name
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $existing_generic_params
      * @param  array<string, array<string, array{Type\Union, 1?:int}>> $generic_params
      * @param  array<string, array<string, array{Type\Union}>> $template_types
@@ -1386,7 +1394,8 @@ class CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         $cased_method_id,
-        $fq_class_name,
+        $self_fq_class_name,
+        $static_fq_class_name,
         $function_param,
         Type\Union $arg_type,
         int $argument_offset,
@@ -1452,8 +1461,8 @@ class CallAnalyzer
             $fleshed_out_type = ExpressionAnalyzer::fleshOutType(
                 $codebase,
                 $param_type,
-                $fq_class_name ?: $context->self,
-                $fq_class_name ?: $context->self
+                $self_fq_class_name,
+                $static_fq_class_name
             );
 
             if ($arg->unpack) {

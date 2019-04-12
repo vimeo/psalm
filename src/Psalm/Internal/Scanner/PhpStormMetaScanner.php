@@ -90,7 +90,7 @@ class PhpStormMetaScanner
                      * @return ?Type\Union
                      */
                     function (
-                        StatementsAnalyzer $_statements_analyzer,
+                        \Psalm\StatementsSource $_statements_analyzer,
                         string $fq_classlike_name,
                         string $method_name,
                         array $call_args,
@@ -143,7 +143,7 @@ class PhpStormMetaScanner
                      * @return ?Type\Union
                      */
                     function (
-                        StatementsAnalyzer $_statements_analyzer,
+                        \Psalm\StatementsSource $_statements_analyzer,
                         string $fq_classlike_name,
                         string $method_name,
                         array $call_args,
@@ -176,7 +176,7 @@ class PhpStormMetaScanner
                      * @return ?Type\Union
                      */
                     function (
-                        StatementsAnalyzer $_statements_analyzer,
+                        \Psalm\StatementsSource $_statements_analyzer,
                         string $fq_classlike_name,
                         string $method_name,
                         array $call_args,
@@ -229,7 +229,7 @@ class PhpStormMetaScanner
                      * @param array<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        StatementsAnalyzer $statements_analyzer,
+                        \Psalm\StatementsSource $statements_analyzer,
                         string $function_id,
                         array $call_args,
                         Context $_context,
@@ -262,6 +262,10 @@ class PhpStormMetaScanner
                             }
                         }
 
+                        if (!$statements_analyzer instanceof StatementsAnalyzer) {
+                            throw new \UnexpectedValueException('This is bad');
+                        }
+
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
                             $statements_analyzer,
                             $function_id
@@ -277,7 +281,7 @@ class PhpStormMetaScanner
                      * @param array<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        StatementsAnalyzer $statements_analyzer,
+                        \Psalm\StatementsSource $statements_analyzer,
                         string $function_id,
                         array $call_args,
                         Context $_context,
@@ -288,6 +292,10 @@ class PhpStormMetaScanner
                     ) : Type\Union {
                         if (($call_arg_type = $call_args[$type_offset]->value->inferredType ?? null)) {
                             return clone $call_arg_type;
+                        }
+
+                        if (!$statements_analyzer instanceof StatementsAnalyzer) {
+                            throw new \UnexpectedValueException('This is bad');
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
@@ -305,7 +313,7 @@ class PhpStormMetaScanner
                      * @param array<PhpParser\Node\Arg> $call_args
                      */
                     function (
-                        StatementsAnalyzer $statements_analyzer,
+                        \Psalm\StatementsSource $statements_analyzer,
                         string $function_id,
                         array $call_args,
                         Context $_context,
@@ -325,6 +333,10 @@ class PhpStormMetaScanner
 
                                 return clone $array_atomic_type->type_params[1];
                             }
+                        }
+
+                        if (!$statements_analyzer instanceof StatementsAnalyzer) {
+                            throw new \UnexpectedValueException('This is bad');
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(
