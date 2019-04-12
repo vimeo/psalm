@@ -4,8 +4,9 @@ Psalm's type system represents the types of variables within a program using dif
 
 Note that all classes, but not traits in this directory are valid types. Most, but not all, are prefixed 'T'. This will be changing in version 4, all of them will be prefixed, and a few names will be changed for clarity.
 
+The classes are as follows:
 
-# Union
+### Union
 
 Class Union specifies a set of types, and can represent any one of these types at a time. They correspond to a vertical bar in a doc comment.
 
