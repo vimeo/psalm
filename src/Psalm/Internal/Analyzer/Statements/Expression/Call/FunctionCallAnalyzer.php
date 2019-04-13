@@ -634,7 +634,7 @@ class FunctionCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expressio
                 $context->check_consts = false;
             } elseif ($function->parts === ['extract']) {
                 $context->check_variables = false;
-            } elseif ($function->parts === ['var_dump'] || $function->parts === ['shell_exec']) {
+            } elseif (strtolower($function->parts[0]) === 'var_dump' || strtolower($function->parts[0]) === 'shell_exec') {
                 if (IssueBuffer::accepts(
                     new ForbiddenCode(
                         'Unsafe ' . implode('', $function->parts),
