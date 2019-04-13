@@ -731,9 +731,12 @@ class Analyzer
         foreach ($all_deep_scanned_files as $file_path => $_) {
             if (isset($this->mixed_counts[$file_path])) {
                 list($path_mixed_count, $path_nonmixed_count) = $this->mixed_counts[$file_path];
-                $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 0)
-                    . '% ' . $this->config->shortenFileName($file_path)
-                    . ' (' . $path_mixed_count . ' mixed)' . "\n";
+
+                if ($path_mixed_count + $path_nonmixed_count) {
+                    $stats .= number_format(100 * $path_nonmixed_count / ($path_mixed_count + $path_nonmixed_count), 0)
+                        . '% ' . $this->config->shortenFileName($file_path)
+                        . ' (' . $path_mixed_count . ' mixed)' . "\n";
+                }
             }
         }
 
