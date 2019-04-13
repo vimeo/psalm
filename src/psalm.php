@@ -578,13 +578,7 @@ if ($paths_to_check === null) {
 if ($find_references_to) {
     $project_analyzer->findReferencesTo($find_references_to);
 } elseif (($find_unused_code === 'always') || ($find_unused_code === 'auto' && !$paths_to_check && !$is_diff)) {
-    if ($threads > 1) {
-        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
-            echo 'Unused classes and methods cannot currently be found in multithreaded mode' . PHP_EOL;
-        }
-    } else {
-        $project_analyzer->checkClassReferences();
-    }
+    $project_analyzer->checkClassReferences();
 }
 
 if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {

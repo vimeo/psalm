@@ -36,8 +36,7 @@ use Psalm\Internal\Scanner\FileScanner;
  *         5:array<string, bool>,
  *         6:array<string, bool>,
  *         7:array<string, \PhpParser\Node\Stmt\Trait_>,
- *         8:array<string, \Psalm\Aliases>,
- *         9:array<string, int>
+ *         8:array<string, \Psalm\Aliases>
  *     },
  *     scanner_data:array{
  *         0:array<string, string>,

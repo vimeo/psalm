@@ -469,6 +469,11 @@ class FileReferenceProvider
         return isset(self::$class_property_references[$property_id]);
     }
 
+    public function isClassReferenced(string $fq_class_name_lc) : bool
+    {
+        return isset(self::$file_references_to_class[$fq_class_name_lc]);
+    }
+
     /**
      * @return array<string, array<int, CodeLocation>>
      */

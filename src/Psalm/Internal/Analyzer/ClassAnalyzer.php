@@ -1079,6 +1079,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $previous_context_include_location = $class_context->include_location;
 
         foreach ($stmt->traits as $trait_name) {
+            $trait_location = new CodeLocation($this, $trait_name, null, true);
             $class_context->include_location = new CodeLocation($this, $trait_name, null, true);
 
             $fq_trait_name = self::getFQCLNFromNameObject(
@@ -1086,7 +1087,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $aliases
             );
 
-            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name)) {
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name, $trait_location)) {
                 if (IssueBuffer::accepts(
                     new UndefinedTrait(
                         'Trait ' . $fq_trait_name . ' does not exist',

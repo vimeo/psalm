@@ -83,11 +83,6 @@ class ClassLikes
     private $trait_aliases = [];
 
     /**
-     * @var array<string, int>
-     */
-    private $classlike_references = [];
-
-    /**
      * @var array<string, string>
      */
     private $classlike_aliases = [];
@@ -252,7 +247,7 @@ class ClassLikes
      *
      * @return bool
      */
-    public function hasFullyQualifiedClassName($fq_class_name)
+    public function hasFullyQualifiedClassName($fq_class_name, CodeLocation $code_location = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -282,12 +277,18 @@ class ClassLikes
             return false;
         }
 
-        if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_lc])) {
-                $this->classlike_references[$fq_class_name_lc] = 0;
-            }
+        if ($this->collect_references && $code_location) {
+            $this->file_reference_provider->addFileReferenceToClass(
+                $code_location->file_path,
+                $fq_class_name_lc
+            );
+        }
 
-            ++$this->classlike_references[$fq_class_name_lc];
+        if ($this->collect_locations && $code_location) {
+            $this->file_reference_provider->addCallingLocationForClass(
+                $code_location,
+                strtolower($fq_class_name)
+            );
         }
 
         return true;
@@ -298,7 +299,7 @@ class ClassLikes
      *
      * @return bool
      */
-    public function hasFullyQualifiedInterfaceName($fq_class_name)
+    public function hasFullyQualifiedInterfaceName($fq_class_name, CodeLocation $code_location = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -328,12 +329,18 @@ class ClassLikes
             return false;
         }
 
-        if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_lc])) {
-                $this->classlike_references[$fq_class_name_lc] = 0;
-            }
+        if ($this->collect_references && $code_location) {
+            $this->file_reference_provider->addFileReferenceToClass(
+                $code_location->file_path,
+                $fq_class_name_lc
+            );
+        }
 
-            ++$this->classlike_references[$fq_class_name_lc];
+        if ($this->collect_locations && $code_location) {
+            $this->file_reference_provider->addCallingLocationForClass(
+                $code_location,
+                strtolower($fq_class_name)
+            );
         }
 
         return true;
@@ -344,7 +351,7 @@ class ClassLikes
      *
      * @return bool
      */
-    public function hasFullyQualifiedTraitName($fq_class_name)
+    public function hasFullyQualifiedTraitName($fq_class_name, CodeLocation $code_location = null)
     {
         $fq_class_name_lc = strtolower($fq_class_name);
 
@@ -358,12 +365,11 @@ class ClassLikes
             return false;
         }
 
-        if ($this->collect_references) {
-            if (!isset($this->classlike_references[$fq_class_name_lc])) {
-                $this->classlike_references[$fq_class_name_lc] = 0;
-            }
-
-            ++$this->classlike_references[$fq_class_name_lc];
+        if ($this->collect_references && $code_location) {
+            $this->file_reference_provider->addFileReferenceToClass(
+                $code_location->file_path,
+                $fq_class_name_lc
+            );
         }
 
         return true;
@@ -381,15 +387,10 @@ class ClassLikes
         $fq_class_name,
         CodeLocation $code_location = null
     ) {
-        if (!$this->classExists($fq_class_name) && !$this->interfaceExists($fq_class_name)) {
+        if (!$this->classExists($fq_class_name, $code_location)
+            && !$this->interfaceExists($fq_class_name, $code_location)
+        ) {
             return false;
-        }
-
-        if ($this->collect_locations && $code_location) {
-            $this->file_reference_provider->addCallingLocationForClass(
-                $code_location,
-                strtolower($fq_class_name)
-            );
         }
 
         return true;
@@ -402,7 +403,7 @@ class ClassLikes
      *
      * @return bool
      */
-    public function classExists($fq_class_name)
+    public function classExists($fq_class_name, CodeLocation $code_location = null)
     {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -412,7 +413,7 @@ class ClassLikes
             return true;
         }
 
-        return $this->hasFullyQualifiedClassName($fq_class_name);
+        return $this->hasFullyQualifiedClassName($fq_class_name, $code_location);
     }
 
     /**
@@ -490,13 +491,13 @@ class ClassLikes
      *
      * @return bool
      */
-    public function interfaceExists($fq_interface_name)
+    public function interfaceExists($fq_interface_name, CodeLocation $code_location = null)
     {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
         }
 
-        return $this->hasFullyQualifiedInterfaceName($fq_interface_name);
+        return $this->hasFullyQualifiedInterfaceName($fq_interface_name, $code_location);
     }
 
     /**
@@ -529,9 +530,9 @@ class ClassLikes
      *
      * @return bool
      */
-    public function traitExists($fq_trait_name)
+    public function traitExists($fq_trait_name, CodeLocation $code_location = null)
     {
-        return $this->hasFullyQualifiedTraitName($fq_trait_name);
+        return $this->hasFullyQualifiedTraitName($fq_trait_name, $code_location);
     }
 
     /**
@@ -676,7 +677,7 @@ class ClassLikes
                 && $this->config->isInProjectDirs($classlike_storage->location->file_path)
                 && !$classlike_storage->is_trait
             ) {
-                if (!isset($this->classlike_references[$fq_class_name_lc])) {
+                if (!$this->file_reference_provider->isClassReferenced($fq_class_name_lc)) {
                     if (IssueBuffer::accepts(
                         new UnusedClass(
                             'Class ' . $classlike_storage->name . ' is never used',
@@ -969,8 +970,7 @@ class ClassLikes
             $this->existing_interfaces[$fq_class_name],
             $this->existing_classes[$fq_class_name],
             $this->trait_nodes[$fq_class_name_lc],
-            $this->trait_aliases[$fq_class_name_lc],
-            $this->classlike_references[$fq_class_name_lc]
+            $this->trait_aliases[$fq_class_name_lc]
         );
 
         $this->scanner->removeClassLike($fq_class_name_lc);
@@ -986,8 +986,7 @@ class ClassLikes
      *     5: array<string, bool>,
      *     6: array<string, bool>,
      *     7: array<string, \PhpParser\Node\Stmt\Trait_>,
-     *     8: array<string, \Psalm\Aliases>,
-     *     9: array<string, int>
+     *     8: array<string, \Psalm\Aliases>
      * }
      */
     public function getThreadData()
@@ -1002,7 +1001,6 @@ class ClassLikes
             $this->existing_classes,
             $this->trait_nodes,
             $this->trait_aliases,
-            $this->classlike_references
         ];
     }
 
@@ -1016,8 +1014,7 @@ class ClassLikes
      *     5: array<string, bool>,
      *     6: array<string, bool>,
      *     7: array<string, \PhpParser\Node\Stmt\Trait_>,
-     *     8: array<string, \Psalm\Aliases>,
-     *     9: array<string, int>
+     *     8: array<string, \Psalm\Aliases>
      * } $thread_data
      *
      * @return void
@@ -1034,7 +1031,6 @@ class ClassLikes
             $existing_classes,
             $trait_nodes,
             $trait_aliases,
-            $classlike_references
         ) = $thread_data;
 
         $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);
@@ -1046,6 +1042,5 @@ class ClassLikes
         $this->existing_classes = array_merge($existing_classes, $this->existing_classes);
         $this->trait_nodes = array_merge($trait_nodes, $this->trait_nodes);
         $this->trait_aliases = array_merge($trait_aliases, $this->trait_aliases);
-        $this->classlike_references = array_merge($classlike_references, $this->classlike_references);
     }
 }

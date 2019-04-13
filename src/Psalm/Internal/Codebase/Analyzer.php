@@ -41,7 +41,12 @@ use Psalm\Internal\Provider\FileStorageProvider;
  *     file_maps: array<
  *         string,
  *         array{0: TaggedCodeType, 1: TaggedCodeType}
- *     >
+ *     >,
+ *     class_locations: array<string, array<int, \Psalm\CodeLocation>>,
+ *     class_method_locations: array<string, array<int, \Psalm\CodeLocation>>,
+ *     class_property_locations: array<string, array<int, \Psalm\CodeLocation>>,
+ *     class_method_references: array<string, bool>,
+ *     class_property_references: array<string, bool>
  * }
  */
 
@@ -236,6 +241,11 @@ class Analyzer
                         'mixed_counts' => $analyzer->getMixedCounts(),
                         'analyzed_methods' => $analyzer->getAnalyzedMethods(),
                         'file_maps' => $analyzer->getFileMaps(),
+                        'class_locations' => $file_reference_provider->getAllClassLocations(),
+                        'class_method_locations' => $file_reference_provider->getAllClassMethodLocations(),
+                        'class_property_locations' => $file_reference_provider->getAllClassPropertyLocations(),
+                        'class_method_references' => $file_reference_provider->getAllClassMethodReferences(),
+                        'class_property_references' => $file_reference_provider->getAllClassPropertyReferences(),
                     ];
                 }
             );
@@ -259,6 +269,22 @@ class Analyzer
                 $codebase->file_reference_provider->addCallingMethodReferencesToClassMember(
                     $pool_data['member_references']
                 );
+                $codebase->file_reference_provider->addClassLocations(
+                    $pool_data['class_locations']
+                );
+                $codebase->file_reference_provider->addClassMethodLocations(
+                    $pool_data['class_method_locations']
+                );
+                $codebase->file_reference_provider->addClassPropertyLocations(
+                    $pool_data['class_property_locations']
+                );
+                $codebase->file_reference_provider->addClassMethodReferences(
+                    $pool_data['class_method_references']
+                );
+                $codebase->file_reference_provider->addClassPropertyReferences(
+                    $pool_data['class_property_references']
+                );
+
                 $this->analyzed_methods = array_merge($pool_data['analyzed_methods'], $this->analyzed_methods);
 
                 foreach ($pool_data['mixed_counts'] as $file_path => list($mixed_count, $nonmixed_count)) {
