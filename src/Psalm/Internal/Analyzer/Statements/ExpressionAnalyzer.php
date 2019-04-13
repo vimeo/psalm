@@ -35,7 +35,9 @@ use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\InvalidClone;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\PossiblyInvalidCast;
+use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\Issue\UndefinedVariable;
@@ -231,6 +233,70 @@ class ExpressionAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Expr\BitwiseNot) {
             if (self::analyze($statements_analyzer, $stmt->expr, $context) === false) {
                 return false;
+            }
+
+            if (!isset($stmt->expr->inferredType)) {
+                $stmt->inferredType = new Type\Union([new TInt(), new TString()]);
+            } elseif ($stmt->expr->inferredType->isMixed()) {
+                $stmt->inferredType = Type::getMixed();
+            } else {
+                $acceptable_types = [];
+                $unacceptable_type = null;
+                $has_valid_operand = false;
+
+                foreach ($stmt->expr->inferredType->getTypes() as $type_string => $type_part) {
+                    if ($type_part instanceof TInt || $type_part instanceof TString) {
+                        if ($type_part instanceof Type\Atomic\TLiteralInt) {
+                            $type_part->value = ~$type_part->value;
+                        } elseif ($type_part instanceof Type\Atomic\TLiteralString) {
+                            $type_part->value = ~$type_part->value;
+                        }
+
+                        $acceptable_types[] = $type_part;
+                        $has_valid_operand = true;
+                    } elseif ($type_part instanceof TFloat) {
+                        $type_part = ($type_part instanceof Type\Atomic\TLiteralFloat) ?
+                            new Type\Atomic\TLiteralInt(~$type_part->value) :
+                            new TInt;
+
+                        $stmt->expr->inferredType->removeType($type_string);
+                        $stmt->expr->inferredType->addType($type_part);
+
+                        $acceptable_types[] = $type_part;
+                        $has_valid_operand = true;
+                    } elseif (!$unacceptable_type) {
+                        $unacceptable_type = $type_part;
+                    }
+                }
+
+                if ($unacceptable_type) {
+                    $message = 'Cannot negate a non-numeric non-string type ' . $unacceptable_type;
+                    if ($has_valid_operand) {
+                        if (IssueBuffer::accepts(
+                            new PossiblyInvalidOperand(
+                                $message,
+                                new CodeLocation($statements_analyzer, $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    } else {
+                        if (IssueBuffer::accepts(
+                            new InvalidOperand(
+                                $message,
+                                new CodeLocation($statements_analyzer, $stmt)
+                            ),
+                            $statements_analyzer->getSuppressedIssues()
+                        )) {
+                            // fall through
+                        }
+                    }
+
+                    $stmt->inferredType = Type::getMixed();
+                } else {
+                    $stmt->inferredType = new Type\Union($acceptable_types);
+                }
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if (BinaryOpAnalyzer::analyze(

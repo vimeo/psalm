@@ -197,6 +197,19 @@ class BinaryOperationTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'bitwiseNot' => [
+                '<?php
+                    $a = ~4;
+                    $b = ~4.0;
+                    $c = ~4.4;
+                    $d = ~"a";',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'int',
+                    '$d' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -286,6 +299,21 @@ class BinaryOperationTest extends TestCase
             'invalidBitwiseOr' => [
                 '<?php
                     $a = "x" | new stdClass;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'invalidBitwiseNot' => [
+                '<?php
+                    $a = ~new stdClass;',
+                'error_message' => 'InvalidOperand',
+            ],
+            'possiblyInvalidBitwiseNot' => [
+                '<?php
+                    $a = ~(rand(0, 1) ? 2 : null);',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'invalidBooleanBitwiseNot' => [
+                '<?php
+                    $a = ~true;',
                 'error_message' => 'InvalidOperand',
             ],
         ];
