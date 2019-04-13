@@ -7,6 +7,26 @@ class MethodCallTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
+     * @return void
+     */
+    public function testExtendDocblockParamType()
+    {
+        if (class_exists('SoapClient') === false) {
+            $this->markTestSkipped('Cannot run test, base class "SoapClient" does not exist!');
+
+            return;
+        }
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                new SoapFault("1", "faultstring", "faultactor");'
+        );
+
+        $this->analyzeFile('somefile.php', new \Psalm\Context());
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()
@@ -317,10 +337,6 @@ class MethodCallTest extends TestCase
                             $d2
                         );
                     }'
-            ],
-            'soapFaultConstruct' => [
-                '<?php
-                    new SoapFault("1", "faultstring", "faultactor");'
             ],
         ];
     }
