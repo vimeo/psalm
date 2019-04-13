@@ -519,7 +519,7 @@ class Codebase
      */
     public function findReferencesToProperty(string $property_id)
     {
-        [$fq_class_name, $property_name] = explode('::', $property_id);
+        list($fq_class_name, $property_name) = explode('::', $property_id);
         return $this->file_reference_provider->getClassPropertyLocations(
             strtolower($fq_class_name) . '::' . $property_name
         );
