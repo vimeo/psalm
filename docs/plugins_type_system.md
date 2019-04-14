@@ -28,9 +28,14 @@ The classes are as follows:
 `TNull` - denotes the `null` type
 
 `TNever` - denotes the `no-return`/`never-return` type for functions that never return, either throwing an exception or terminating (like the builtin `exit()`).
+
 `TMixed` - denotes the `mixed` type, used when you don’t know the type of an expression.
 
-`TNonEmptyMixed `- as above, but not empty
+`TNonEmptyMixed `- as above, but not empty. Generated for `$x` inside the `if` statement `if ($x) {...}` when `$x` is `mixed` outside.
+
+`TEmptyMixed` - as above, but empty. Generated for `$x` inside the `if` statement `if (!$x) {...}` when `$x` is `mixed` outside.
+
+`TEmpty` - denotes the `empty` type, used to describe a type corresponding to no value whatsoever. Empty arrays `[]` have the type `array<empty, empty>`.
 
 `TIterable` - denotes the [`iterable` type](https://www.php.net/manual/en/language.types.iterable.php) (which can also result from an `is_iterable` check).
 
@@ -100,6 +105,8 @@ if (true === $first) {
 
 `TCallableString` - denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
 
+`THtmlEscapedString`, `TSqlSelectString` - these are special types, specifically for consumption by plugins.
+
 #### Scalar class constants
 
 `TScalarClassConstant` - denotes a class constant whose value might not yet be known.
@@ -138,51 +145,40 @@ foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,in
 
 `TCallable` and `Fn` can optionally be defined with parameters and return types, too
 
-### Empty
+### Object supertypes
 
-TEmpty, TEmptyMixed, 
+`TObject` - denotes the `object` type
 
+`TObjectWithProperties` - an object with specified member variables e.g. `object{foo:int, bar:string}`.
 
-### Class
+### Object types
 
-TClassString, TLiteralClassString, TScalarClassConstant
+`TNamedObject` - denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`
 
-TClassString represents valid (but not necessarily known) class name. TLiteralClassString is a known class name.
-
-### Object
-
-TObject, TGenericObject - Arbitrary objects.
-TNamedObject -  an instance of a specific object.
-TObjectWithProperties - an object with specified member variables. object{foo:int, bar:string}.
+`TGenericObject` - denotes an object type that has generic parameters e.g. `ArrayObject<string, Foo\Bar>`
 
 `TCallableObject` - denotes an object that is also `callable` (i.e. it has `__invoke` defined).
 
 ### Template
 
-TTemplateParam, TTemplateParamClass
+`TTemplateParam` - denotes a template parameter that has been previously specified in a `@template` tag.
 
-
-### Special
-
-THtmlEscapedString, TSqlSelectString
-
-These are special types, specifically for consumption by plugins.
-
+`TTemplateParamClass` - denotes a `class-string` corresponding to a template parameter previously specified in a `@template` tag.
 
 ## Creating type object instances
 
 There are two ways of creating the object instances which describe a given type. They can be created directly using new, or created declaratively from a doc string. Normally, you'd want to use the second option. Howeaver, understanding the structure of this data will help you understand types passed into a plugin.
-Note that these classes do sometimes change, so Type::parseString is always going to be the more robust option.
 
+Note that these classes do sometimes change, so `Type::parseString` is always going to be the more robust option.
 
 ### Creating type object instances directly
 
-The following example constructs a types representing a string, a floating point number, and a class called 'some\_class'.
+The following example constructs a types representing a string, a floating point number, and a class called 'Foo\Bar\SomeClass'.
 
 ``` php
 new TLiteralString('A text string')
 new TLiteralFloat(3.142)
-new TNamedObject('some_class')
+new TNamedObject('Foo\Bar\SomeClass')
 ```
 
 Types within Psalm are always wrapped in a union as a convenience feature. Almost anywhere you may expect a type, you can get a union as well (property types, return types, argument types, etc). So wrapping a single atomic type (like TInt) in a union container allows to uniformly handle that type elsewhere, without repetitive checks like this:
@@ -198,10 +194,9 @@ foreach ($types->getTypes() as $atomic)
    handleAtomic($atomic);
 ```
 
-Also, union trees are always shallow, because Psalm will flatten union of unions into a single-level union ((A|B)|(C|D) => A|B|C|D).
+Also, union trees are always shallow, because Psalm will flatten union of unions into a single-level union `((A|B)|(C|D) => A|B|C|D)`.
 
-
-More complex types can be constructed as follows. The following represents an assosiative array with 3 keys. Psalm calls these 'object-like arrays', and represents them with the 'ObjectLike' class. This name will be changed to TObjectLikeArray in Psalm 4 to improve clarity.
+More complex types can be constructed as follows. The following represents an assosiative array with 3 keys. Psalm calls these 'object-like arrays', and represents them with the 'ObjectLike' class.
 
 
 ``` php
@@ -221,17 +216,17 @@ new Union([
         'second' => Type::getString()])]);
 ```
 
-You can also use Type::getInt(5) to generate a union type corresponding to the literal int value 5.
+You can also use `Type::getInt(5)` to generate a union type corresponding to the literal int value 5.
 
 
 ### Creating type object instances from doc string types
 
-Another way of creating these instances is to use the class \Psalm\Type which includes a static method 'parseString'. You may pass any doc string type description to this, and it will return the corresponding object representation.
+Another way of creating these instances is to use the class `Psalm\Type` which includes a static method `parseString`. You may pass any doc string type description to this, and it will return the corresponding object representation.
 
 ``` php
 \Psalm\Type::parseString('int|null');
 ```
 
-You can find how psalm would represent a given type as objects, by specifying the type as an input to this function, and calling var\_dump on the result.
+You can find how psalm would represent a given type as objects, by specifying the type as an input to this function, and calling `var_dump` on the result.
 
 
