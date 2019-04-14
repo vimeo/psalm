@@ -2372,7 +2372,7 @@ class PropertyTypeTest extends TestCase
                             // nothing happens here
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:14'
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15'
             ],
         ];
     }
