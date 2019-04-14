@@ -51,6 +51,7 @@ There are two main inspirations for Psalm:
     - [Installation](installation.md)
     - [Configuration](configuration.md)
     - [Plugins](plugins.md)
+        - [How Psalm represents types](plugins_type_system.md)
     - [Command line usage](running_psalm.md)
     - [IDE support](language_server.md)
     - Handling errors:
