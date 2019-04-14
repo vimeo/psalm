@@ -87,7 +87,7 @@ class Config
     /**
      * The directory to store all Psalm project caches
      *
-     * @var string
+     * @var string|null
      */
     public $global_cache_directory;
 
@@ -1303,7 +1303,7 @@ class Config
     }
 
     /**
-     * @return string
+     * @return ?string
      */
     public function getGlobalCacheDirectory()
     {

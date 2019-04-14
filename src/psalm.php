@@ -474,8 +474,11 @@ if (isset($options['clear-cache'])) {
 if (isset($options['clear-global-cache'])) {
     $cache_directory = $config->getGlobalCacheDirectory();
 
-    Config::removeCacheDirectory($cache_directory);
-    echo 'Global cache directory deleted' . PHP_EOL;
+    if ($cache_directory) {
+        Config::removeCacheDirectory($cache_directory);
+        echo 'Global cache directory deleted' . PHP_EOL;
+    }
+
     exit;
 }
 
