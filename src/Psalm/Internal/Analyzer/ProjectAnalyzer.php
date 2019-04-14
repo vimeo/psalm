@@ -808,10 +808,6 @@ class ProjectAnalyzer
     ) {
         list($fq_class_name) = explode('::', $original_method_id);
 
-        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
-
-        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
-
         $appearing_method_id = $this->codebase->methods->getAppearingMethodId($original_method_id);
 
         if (!$appearing_method_id) {
@@ -826,6 +822,10 @@ class ProjectAnalyzer
         if (!$appearing_class_storage->user_defined) {
             return;
         }
+
+        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
+
+        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
 
         if (strtolower($appearing_fq_class_name) !== strtolower($fq_class_name)) {
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
