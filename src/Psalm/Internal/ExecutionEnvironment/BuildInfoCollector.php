@@ -43,7 +43,8 @@ class BuildInfoCollector
             ->fillTravisCi()
             ->fillCircleCi()
             ->fillAppVeyor()
-            ->fillJenkins();
+            ->fillJenkins()
+            ->fillScrutinizer();
 
         return $this->readEnv;
     }
@@ -191,6 +192,41 @@ class BuildInfoCollector
             $this->readEnv['BUILD_NUMBER'] = $this->env['BUILD_NUMBER'];
             $this->readEnv['JENKINS_URL'] = $this->env['JENKINS_URL'];
             $this->readEnv['CI_NAME'] = $this->env['CI_NAME'];
+        }
+
+        return $this;
+    }
+
+    /**
+     * Fill Scrutinizer environment variables.
+     *
+     * "JENKINS_URL", "BUILD_NUMBER" must be set.
+     *
+     * @return $this
+     */
+    protected function fillScrutinizer() : self
+    {
+        if (isset($this->env['SCRUTINIZER']) && $this->env['SCRUTINIZER']) {
+            $this->readEnv['CI_JOB_ID'] = $this->env['SCRUTINIZER_INSPECTION_UUID'];
+            $this->readEnv['CI_BRANCH'] = $this->env['SCRUTINIZER_BRANCH'];
+            $this->readEnv['CI_PR_NUMBER'] = $this->env['SCRUTINIZER_PR_NUMBER'] ?? '';
+
+            // backup
+            $this->readEnv['CI_NAME'] = 'Scrutinizer';
+
+            $repo_slug = (string) $this->env['SCRUTINIZER_PROJECT'] ?? '';
+
+            if ($repo_slug) {
+                $slug_parts = explode('/', $repo_slug);
+
+                if ($this->readEnv['CI_PR_NUMBER']) {
+                    $this->readEnv['CI_PR_REPO_OWNER'] = $slug_parts[1];
+                    $this->readEnv['CI_PR_REPO_NAME'] = $slug_parts[2];
+                } else {
+                    $this->readEnv['CI_REPO_OWNER'] = $slug_parts[1];
+                    $this->readEnv['CI_REPO_NAME'] = $slug_parts[2];
+                }
+            }
         }
 
         return $this;
