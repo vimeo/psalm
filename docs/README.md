@@ -50,7 +50,9 @@ There are two main inspirations for Psalm:
 - Running Psalm:
     - [Installation](installation.md)
     - [Configuration](configuration.md)
-    - [Plugins](plugins.md)
+    - Plugins
+        - [Using plugins](using_plugins.md)
+        - [Authoring plugins](authoring_plugins.md)
         - [How Psalm represents types](plugins_type_system.md)
     - [Command line usage](running_psalm.md)
     - [IDE support](language_server.md)

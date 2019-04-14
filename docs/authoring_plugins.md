@@ -1,6 +1,4 @@
-# Plugins
-
-Psalm can be extended through plugins to find domain-specific issues.
+# Authoring Plugins
 
 Plugins may implement one of (or more than one of) `Psalm\Plugin\Hook\*` interface(s).
 
@@ -32,6 +30,10 @@ To ensure your plugin runs when Psalm does, add it to your [config](configuratio
     </plugins>
 ```
 
+## Type system
+
+Understand how Psalm handles types by [reading this guide](plugins_type_system.md).
+
 ## Handling custom plugin issues
 
 Plugins may sometimes need to emit their own issues (i.e. not emit one of the [existing issues](issues.md)). If this is the case, they can emit an issue that extends `Psalm\Issue\PluginIssue`.
@@ -52,27 +54,9 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 </PluginIssue>
 ```
 
-## Composer-based plugins
+## Authoring composer-based plugins
 
-Composer-based plugins provide an easier way to manage and distribute your plugins.
-
-### Discovering plugins
-
-Plugins can be found on Packagist by `type=psalm-plugin` query: https://packagist.org/packages/list.json?type=psalm-plugin
-
-### Installing plugins
-
-`composer require --dev plugin-vendor/plugin-package`
-
-### Managing known plugins
-
-Once installed, you can use `psalm-plugin` tool to enable, disable and show available and enabled plugins.
-
-To enable the plugin, run `psalm-plugin enable plugin-vendor/plugin-package`. To disable it, run `psalm-plugin disable plugin-vendor/plugin-package`. `psalm-plugin show` (as well as bare `psalm-plugin`) will show you the list of enabled plugins, and the list of plugins known to `psalm-plugin` (installed into your `vendor` folder)
-
-### Authoring composer-based plugins
-
-#### Requirements
+### Requirements
 
 Composer-based plugin is a composer package which conforms to these requirements:
 
@@ -80,15 +64,15 @@ Composer-based plugin is a composer package which conforms to these requirements
 2. It has `extra.psalm.pluginClass` subkey in its `composer.json` that reference an entry-point class that will be invoked to register the plugin into Psalm runtime.
 3. Entry-point class implements `Psalm\Plugin\PluginEntryPointInterface`
 
-#### Using skeleton project
+### Using skeleton project
 
 Run `composer create-project weirdan/psalm-plugin-skeleton:dev-master your-plugin-name` to quickly bootstrap a new plugin project in `your-plugin-name` folder. Make sure you adjust namespaces in `composer.json`, `Plugin.php` and `tests` folder.
 
-#### Upgrading file-based plugin to composer-based version
+### Upgrading file-based plugin to composer-based version
 
 Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()` method of the `Psalm\Plugin\RegistrationInterface` instance that was passed into your plugin entry point's `__invoke()` method. See the [conversion example](https://github.com/vimeo/psalm/tree/master/examples/plugins/composer-based/echo-checker/).
 
-#### Registering stub files
+### Registering stub files
 
 Use `Psalm\Plugin\RegistrationInterface::addStubFile()`. See the [sample plugin] (https://github.com/weirdan/psalm-doctrine-collections/).
 
