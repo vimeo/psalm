@@ -1001,6 +1001,12 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $constructor_class_property_storage = $property_storage;
 
+                $error_location = $property_storage->location;
+
+                if ($storage->declaring_property_ids[$property_name] !== $fq_class_name) {
+                    $error_location = $storage->location;
+                }
+
                 if ($fq_class_name !== $constructor_appearing_fqcln
                     && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 ) {
@@ -1019,13 +1025,14 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if ($property_storage->location
+                    && $error_location
                     && (!$end_type->initialized || $property_storage !== $constructor_class_property_storage)
                 ) {
                     if (IssueBuffer::accepts(
                         new PropertyNotSetInConstructor(
                             'Property ' . $property_id . ' is not defined in constructor of ' .
                                 $this->fq_class_name . ' or in any methods called in the constructor',
-                            $property_storage->location,
+                            $error_location,
                             $property_id
                         ),
                         array_merge($this->source->getSuppressedIssues(), $storage->suppressed_issues)

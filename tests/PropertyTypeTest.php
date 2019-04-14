@@ -1906,7 +1906,7 @@ class PropertyTypeTest extends TestCase
 
                         public function __construct() { }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
             ],
             'noConstructor' => [
                 '<?php
@@ -1956,7 +1956,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {
                         public function __construct() {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11'
             ],
             'notSetInAllBranchesOfIf' => [
                 '<?php
@@ -1970,7 +1970,7 @@ class PropertyTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
             ],
             'propertySetInProtectedMethod' => [
                 '<?php
@@ -1990,7 +1990,7 @@ class PropertyTypeTest extends TestCase
                     class B extends A {
                         protected function foo() : void {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:15'
             ],
             'definedInTraitNotSetInEmptyConstructor' => [
                 '<?php
@@ -2004,7 +2004,7 @@ class PropertyTypeTest extends TestCase
                         public function __construct() {
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:6'
             ],
             'propertySetInPrivateMethodWithIf' => [
                 '<?php
@@ -2022,7 +2022,7 @@ class PropertyTypeTest extends TestCase
                             $this->a = 5;
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
             ],
             'privatePropertySameNameNotSetInConstructor' => [
                 '<?php
@@ -2039,7 +2039,7 @@ class PropertyTypeTest extends TestCase
                         /** @var string */
                         private $b;
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:13'
             ],
             'privateMethodCalledInParentConstructor' => [
                 '<?php
@@ -2064,7 +2064,7 @@ class PropertyTypeTest extends TestCase
 
                         private function privateMethod() : void {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:2'
             ],
             'privatePropertySetInParentConstructorReversedOrder' => [
                 '<?php
@@ -2111,15 +2111,14 @@ class PropertyTypeTest extends TestCase
             'abstractClassWithNoConstructorButChild' => [
                 '<?php
                     abstract class A {
-                      /** @var string */
-                      public $foo;
+                        /** @var string */
+                        public $foo;
                     }
 
                     class B extends A {
-                      public function __construct() {
-                      }
+                        public function __construct() {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7'
             ],
             'badAssignmentToUndefinedVars' => [
                 '<?php
@@ -2170,7 +2169,7 @@ class PropertyTypeTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
             ],
             'invalidPropertyDefault' => [
                 '<?php
@@ -2351,7 +2350,28 @@ class PropertyTypeTest extends TestCase
 
                         public function __call(string $var, array $args) {}
                     }',
-                'error_message' => 'PropertyNotSetInConstructor',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:4'
+            ],
+            'reportGoodLocationForPropertyError' => [
+                '<?php
+                    class C {
+                        public string $s;
+
+                        public function __construct() {
+                            $this->setS();
+                        }
+
+                        public function setS() : void {
+                            $this->s = "hello";
+                        }
+                    }
+
+                    class D extends C {
+                        public function setS() : void {
+                            // nothing happens here
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:14'
             ],
         ];
     }
