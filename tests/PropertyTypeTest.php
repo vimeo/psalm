@@ -2355,7 +2355,8 @@ class PropertyTypeTest extends TestCase
             'reportGoodLocationForPropertyError' => [
                 '<?php
                     class C {
-                        public string $s;
+                        /** @var string */
+                        public $s;
 
                         public function __construct() {
                             $this->setS();
