@@ -152,7 +152,7 @@ When `true`, Psalm will check that the developer has supplied `@throws` docblock
 #### checkForThrowsInGlobalScope
 ```xml
 <psalm
-  checkForThrowsDocblock="[bool]"
+  checkForThrowsInGlobalScope="[bool]"
 >
 ```
 When `true`, Psalm will check that the developer has caught every exception in global scope. Defaults to `false`.
@@ -253,3 +253,11 @@ Optional. Do you use mock classes in your tests? If you want Psalm to ignore the
 
 #### `<stubs>`
 Optional. If your codebase uses classes and functions that are not visible to Psalm via reflection (e.g. if there are internal packages that your codebase relies on that are not available on the machine running Psalm), you can use stub files. Used by PhpStorm (a popular IDE) and others, stubs provide a description of classes and functions without the implementations. You can find a list of stubs for common classes [here](https://github.com/JetBrains/phpstorm-stubs). List out each file with `<file name="path/to/file.php" />`.
+
+#### `<ignoreExceptions>`
+Optional.  A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
+```xml
+<projectFiles>
+  <class name="fully\qualified\path\Exc" onlyGlobalScope="true" />
+</projectFiles>
+```
