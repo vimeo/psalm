@@ -891,6 +891,7 @@ class ClassLikes
             $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
                 strtolower($classlike_storage->name) . '::$' . $property_name
             );
+
             if (!$property_referenced
                 && (substr($property_name, 0, 2) !== '__' || $property_name === '__construct')
                 && $property_storage->location

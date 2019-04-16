@@ -119,7 +119,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($method_symbol_location);
         $this->assertSame(10, $method_symbol_location->getLineNumber());
-        $this->assertSame(21, $method_symbol_location->getColumn());
+        $this->assertSame(37, $method_symbol_location->getColumn());
 
         $property_symbol_location = $codebase->getSymbolLocation('somefile.php', 'B\A::$a');
 
@@ -137,7 +137,7 @@ class SymbolLookupTest extends \Psalm\Tests\TestCase
 
         $this->assertNotNull($function_symbol_location);
         $this->assertSame(13, $function_symbol_location->getLineNumber());
-        $this->assertSame(17, $function_symbol_location->getColumn());
+        $this->assertSame(26, $function_symbol_location->getColumn());
     }
 
     /**

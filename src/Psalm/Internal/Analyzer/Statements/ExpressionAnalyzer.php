@@ -454,6 +454,8 @@ class ExpressionAnalyzer
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
             }
 
+            $use_context->calling_method_id = $context->calling_method_id;
+
             $closure_analyzer->analyze($use_context, $context, false, $byref_uses);
 
             if (!isset($stmt->inferredType)) {

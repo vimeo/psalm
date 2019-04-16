@@ -206,10 +206,13 @@ class ArrayReduceReturnTypeProvider implements \Psalm\Plugin\Hook\FunctionReturn
                             if (!$codebase->methods->methodExists(
                                 $mapping_function_id_part,
                                 $context->calling_method_id,
-                                new CodeLocation(
-                                    $statements_source,
-                                    $function_call_arg
-                                )
+                                $codebase->collect_references
+                                    ? new CodeLocation(
+                                        $statements_source,
+                                        $function_call_arg
+                                    ) : null,
+                                null,
+                                $statements_source->getFilePath()
                             )) {
                                 continue;
                             }

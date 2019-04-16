@@ -56,6 +56,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         array $error_levels = []
     ) {
         $this->project_analyzer->getCodebase()->diff_methods = true;
+        $this->project_analyzer->getCodebase()->collectReferences();
 
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -79,6 +80,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             $codebase->reloadFiles($this->project_analyzer, array_keys($files));
 
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+            $this->project_analyzer->checkClassReferences();
         }
 
         foreach ($end_files as $file_path => $contents) {
@@ -95,6 +98,8 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         }
 
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $this->project_analyzer->checkClassReferences();
     }
 
     /**
@@ -106,42 +111,46 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateParentCaller' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 public function foo() : void {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A { }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                             namespace Foo;
 
                             class C {
                                 public function bar() : void {
                                     (new B)->foo();
                                 }
-                            }',
+                            }
+
+                            (new C())->bar();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A { }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A { }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                             namespace Foo;
 
                             class C {
                                 public function bar() : void {
                                     (new B)->foo();
                                 }
-                            }',
+                            }
+
+                            (new C())->bar();',
                     ],
                 ],
                 'error_message' => 'UndefinedMethod',
@@ -149,38 +158,42 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateAfterPropertyTypeChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 /** @var string */
                                 public $foo = "bar";
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
                                 public function foo() : string {
                                     return (new A)->foo;
                                 }
-                            }',
+                            }
+
+                            (new B)->foo();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 /** @var int */
                                 public $foo = 5;
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
                                 public function foo() : string {
                                     return (new A)->foo;
                                 }
-                            }',
+                            }
+
+                            (new B)->foo();',
                     ],
                 ],
                 'error_message' => 'InvalidReturnStatement',
@@ -188,36 +201,40 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateAfterConstantChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 public const FOO = "bar";
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
                                 public function foo() : string {
                                     return A::FOO;
                                 }
-                            }',
+                            }
+
+                            (new B)->foo();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 public const FOO = 5;
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
                                 public function foo() : string {
                                     return A::FOO;
                                 }
-                            }',
+                            }
+
+                            (new B)->foo();',
                     ],
                 ],
                 'error_message' => 'InvalidReturnStatement',
@@ -225,7 +242,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateAfterSkippedAnalysis' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -233,7 +250,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                     return new B;
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
@@ -241,17 +258,19 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                     return "foo";
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                             namespace Foo;
 
                             class C {
                                 public function bar() : string {
                                     return (new A)->getB()->getString();
                                 }
-                            }',
+                            }
+
+                            (new C)->bar();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -259,7 +278,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                     return new B;
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
@@ -267,7 +286,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                     return "foo";
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                             namespace Foo;
 
                             class C {
@@ -276,10 +295,13 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 }
 
                                 public function bat() : void {}
-                            }',
+                            }
+
+                            (new C)->bar();
+                            (new C)->bat();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -287,7 +309,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                     return new B;
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
@@ -295,14 +317,16 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                     return "foo";
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                             namespace Foo;
 
                             class C {
                                 public function bar() : string {
                                     return (new A)->getB()->getString();
                                 }
-                            }',
+                            }
+
+                            (new C)->bar();',
                     ],
                 ],
                 'error_message' => 'NullableReturnStatement',
@@ -310,22 +334,26 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateMissingConstructorAfterPropertyChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 /** @var string */
                                 public $foo = "bar";
-                            }',
+                            }
+
+                            echo (new A)->foo;',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 /** @var string */
                                 public $foo;
-                            }',
+                            }
+
+                            echo (new A)->foo;',
                     ],
                 ],
                 'error_message' => 'MissingConstructor',
@@ -333,7 +361,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateEmptyConstructorAfterPropertyChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -341,10 +369,12 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public $foo = "bar";
 
                                 public function __construct() {}
-                            }',
+                            }
+
+                            echo (new A)->foo;',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -352,7 +382,9 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public $foo;
 
                                 public function __construct() {}
-                            }',
+                            }
+
+                            echo (new A)->foo;',
                     ],
                 ],
                 'error_message' => 'PropertyNotSetInConstructor',
@@ -360,7 +392,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateEmptyTraitConstructorAfterPropertyChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -368,8 +400,10 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                                 /** @var string */
                                 public $foo = "bar";
-                            }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            }
+
+                            echo (new A)->foo;',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -377,7 +411,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -385,8 +419,10 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                                 /** @var string */
                                 public $foo;
-                            }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            }
+
+                            echo (new A)->foo;',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -399,13 +435,15 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateEmptyTraitConstructorAfterTraitPropertyChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 use T;
-                            }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            }
+
+                            echo (new A)->foo;',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -416,7 +454,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -424,8 +462,10 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                                 /** @var string */
                                 public $foo;
-                            }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                            }
+
+                            echo (new A)->foo;',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -441,7 +481,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateSetInPrivateMethodConstructorCheck' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -455,10 +495,12 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 private function setFoo() : void {
                                     $this->foo = "bar";
                                 }
-                            }',
+                            }
+
+                            echo (new A)->foo;',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -471,7 +513,9 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                                 private function setFoo() : void {
                                 }
-                            }',
+                            }
+
+                            echo (new A)->foo;',
                     ],
                 ],
                 'error_message' => 'PropertyNotSetInConstructor',
@@ -479,30 +523,34 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateMissingConstructorAfterParentPropertyChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             abstract class A {
                                 /** @var string */
                                 public $foo = "bar";
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B extends A {}',
+                            class B extends A {}
+
+                            echo (new B)->foo;',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             abstract class A {
                                 /** @var string */
                                 public $foo;
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
-                            class B extends A {}',
+                            class B extends A {}
+
+                            echo (new B)->foo;',
                     ],
                 ],
                 'error_message' => 'MissingConstructor',
@@ -510,7 +558,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'invalidateNotSetInConstructorAfterParentPropertyChange' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             abstract class A {
@@ -518,16 +566,22 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                                 public $foo = "bar";
 
                                 public function __construct() {}
-                            }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            }
+
+                            class C extends A {}
+
+                            new C();',
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A {
                                 public function __construct() {}
-                            }',
+                            }
+
+                            echo (new B)->foo;',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             abstract class A {
@@ -536,12 +590,14 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
 
                                 public function __construct() {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B extends A {
                                 public function __construct() {}
-                            }',
+                            }
+
+                            echo (new B)->foo;',
                     ],
                 ],
                 'error_message' => 'PropertyNotSetInConstructor',
@@ -549,13 +605,15 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'duplicateClass' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            class A {}',
+                            class A {}
+
+                            new A();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {}
@@ -567,15 +625,17 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
             'duplicateMethod' => [
                 'file_stages' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
                                 public function foo() : void {}
-                            }',
+                            }
+
+                            (new A)->foo();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -585,6 +645,128 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
                     ],
                 ],
                 'error_message' => 'DuplicateMethod',
+            ],
+            'unusedMethodReferencedInFile' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {}
+                            }
+
+                            (new A)->foo();',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {}
+                            }',
+                    ],
+                ],
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedMethodReferencedInMethod' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {}
+                            }
+
+                            class B {
+                                public function bar() : void {
+                                    (new A)->foo();
+                                }
+                            }
+
+                            (new B)->bar();',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                public function foo() : void {}
+                            }
+
+                            class B {
+                                public function bar() : void {
+                                }
+                            }
+
+                            (new B)->bar();',
+                    ],
+                ],
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedPropertyReferencedInFile' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo = "hello";
+                            }
+
+                            echo (new A)->foo;',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo = "hello";
+                            }',
+                    ],
+                ],
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'unusedPropertyReferencedInMethod' => [
+                'file_stages' => [
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo = "hello";
+                            }
+
+                            class B {
+                                public function bar() : void {
+                                    echo (new A)->foo;
+                                }
+                            }
+
+                            (new B)->bar();',
+                    ],
+                    [
+                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class A {
+                                /** @var string */
+                                public $foo = "hello";
+                            }
+
+                            class B {
+                                public function bar() : void {
+                                }
+                            }
+
+                            (new B)->bar();',
+                    ],
+                ],
+                'error_message' => 'PossiblyUnusedProperty',
             ],
         ];
     }

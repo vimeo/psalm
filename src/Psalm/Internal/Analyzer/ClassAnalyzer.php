@@ -862,11 +862,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            $codebase->file_reference_provider->addCallingMethodReferenceToClassMember(
-                strtolower($fq_class_name) . '::__construct',
-                strtolower($property_class_name) . '::$' . $property_name
-            );
-
             if ($property->has_default || !$property->type || $property_is_initialized) {
                 continue;
             }
@@ -874,6 +869,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             if ($property->type->isMixed() || $property->type->isNullable()) {
                 continue;
             }
+
+            $codebase->file_reference_provider->addMethodReferenceToMissingClassMember(
+                strtolower($fq_class_name) . '::__construct',
+                strtolower($property_class_name) . '::$' . $property_name
+            );
 
             $uninitialized_variables[] = '$this->' . $property_name;
             $uninitialized_properties[$property_class_name . '::$' . $property_name] = $property;

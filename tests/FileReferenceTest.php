@@ -79,12 +79,20 @@ class FileReferenceTest extends TestCase
      * @dataProvider providerReferencedMethods
      *
      * @param string $input_code
-     * @param array<string,array<string,bool>> $expected_referenced_members
+     * @param array<string,array<string,bool>> $expected_method_references_to_members
+     * @param array<string,array<string,bool>> $expected_file_references_to_members
+     * @param array<string,array<string,bool>> $expected_method_references_to_missing_members
+     * @param array<string,array<string,bool>> $expected_file_references_to_missing_members
      *
      * @return void
      */
-    public function testReferencedMethods($input_code, array $expected_referenced_members)
-    {
+    public function testReferencedMethods(
+        string $input_code,
+        array $expected_method_references_to_members,
+        array $expected_method_references_to_missing_members,
+        array $expected_file_references_to_members,
+        array $expected_file_references_to_missing_members
+    ) {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
@@ -98,9 +106,21 @@ class FileReferenceTest extends TestCase
 
         $this->analyzeFile($file_path, $context);
 
-        $referenced_members = $this->project_analyzer->getCodebase()->file_reference_provider->getClassMemberReferences();
+        $referenced_members = $this->project_analyzer->getCodebase()->file_reference_provider->getAllMethodReferencesToClassMembers();
 
-        $this->assertSame($expected_referenced_members, $referenced_members);
+        $this->assertSame($expected_method_references_to_members, $referenced_members);
+
+        $referenced_missing_members = $this->project_analyzer->getCodebase()->file_reference_provider->getAllMethodReferencesToMissingClassMembers();
+
+        $this->assertSame($expected_method_references_to_missing_members, $referenced_missing_members);
+
+        $referenced_files = $this->project_analyzer->getCodebase()->file_reference_provider->getAllFileReferencesToClassMembers();
+
+        $this->assertSame($expected_file_references_to_members, $referenced_files);
+
+        $referenced_missing_files = $this->project_analyzer->getCodebase()->file_reference_provider->getAllFileReferencesToMissingClassMembers();
+
+        $this->assertSame($expected_file_references_to_missing_members, $referenced_missing_files);
     }
 
     /**
@@ -131,12 +151,18 @@ class FileReferenceTest extends TestCase
     }
 
     /**
-     * @return array<string,array{string,array<string,array<string,bool>>}>
+     * @return array<string, array{
+     *              0: string,
+     *              1: array<string,array<string,bool>>,
+     *              2: array<string,array<string,bool>>,
+     *              3: array<string,array<string,bool>>,
+     *              4: array<string,array<string,bool>>
+     * }>
      */
     public function providerReferencedMethods()
     {
         return [
-            'getClassLocation' => [
+            'getClassReferences' => [
                 '<?php
                     namespace Foo;
 
@@ -160,13 +186,20 @@ class FileReferenceTest extends TestCase
                         public function foo() : void {
                             new A();
                         }
-                    }',
+                    }
+
+                    class D {
+                        /** @var ?string */
+                        public $foo;
+                        public function __construct() {}
+                    }
+
+                    $d = new D();
+                    $d->foo = "bar";
+
+                    $a = new A();',
                 [
                     'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
-                    ],
-                    'foo\a::__construct' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
@@ -176,11 +209,30 @@ class FileReferenceTest extends TestCase
                     'use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\b::bar' => true,
                     ],
+                    'foo\c::foo' => [
+                        'foo\b::bar' => true,
+                    ],
+                ],
+                [
+                    'foo\a::__construct' => [
+                        'foo\b::__construct' => true,
+                        'foo\c::foo' => true,
+                    ],
                     'foo\c::__construct' => [
                         'foo\b::bar' => true,
                     ],
-                    'foo\c::foo' => [
-                        'foo\b::bar' => true,
+                ],
+                [
+                    'foo\d::__construct' => [
+                        '/var/www/somefile.php' => true,
+                    ],
+                    'foo\d::$foo' => [
+                        '/var/www/somefile.php' => true,
+                    ],
+                ],
+                [
+                    'foo\a::__construct' => [
+                        '/var/www/somefile.php' => true,
                     ],
                 ],
             ],
@@ -226,6 +278,9 @@ class FileReferenceTest extends TestCase
                         'foo\d::bat' => true,
                     ],
                 ],
+                [],
+                [],
+                []
             ],
             'constantRefs' => [
                 '<?php
@@ -252,6 +307,11 @@ class FileReferenceTest extends TestCase
                         'foo\c::foo' => true,
                     ],
                 ],
+                [],
+                [],
+                [],
+                [],
+                []
             ],
             'staticPropertyRefs' => [
                 '<?php
@@ -283,6 +343,9 @@ class FileReferenceTest extends TestCase
                         'foo\c::foo' => true,
                     ],
                 ],
+                [],
+                [],
+                []
             ],
             'instancePropertyRefs' => [
                 '<?php
@@ -305,20 +368,24 @@ class FileReferenceTest extends TestCase
                         }
                     }',
                 [
-                    'foo\a::$fooBar' => [
-                        'foo\a::__construct' => true,
-                        'foo\b::__construct' => true,
-                        'foo\c::foo' => true,
-                    ],
                     'use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
+                    'foo\a::$fooBar' => [
+                        'foo\b::__construct' => true,
+                        'foo\c::foo' => true,
+                    ],
+
+                ],
+                [
                     'foo\a::__construct' => [
                         'foo\b::__construct' => true,
                         'foo\c::foo' => true,
                     ],
                 ],
+                [],
+                []
             ],
         ];
     }

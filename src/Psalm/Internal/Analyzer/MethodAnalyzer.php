@@ -156,7 +156,9 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         if ($codebase->methods->methodExists(
             $method_id,
             $calling_method_id,
-            $calling_method_id !== $method_id ? $code_location : null
+            $calling_method_id !== $method_id ? $code_location : null,
+            null,
+            $code_location->file_path
         )) {
             return true;
         }

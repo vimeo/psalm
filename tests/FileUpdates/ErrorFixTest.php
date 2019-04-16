@@ -206,7 +206,7 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                     'MissingReturnType' => \Psalm\Config::REPORT_INFO,
                 ],
             ],
-            'traitMethodRename' => [
+            'traitMethodRenameFirstCorrect' => [
                 'start_files' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                         namespace Foo;
@@ -265,6 +265,66 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                         }',
                 ],
                 'error_counts' => [0, 1, 0],
+            ],
+            'traitMethodRenameFirstError' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bat() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'middle_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bar() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        namespace Foo;
+
+                        class A {
+                            use T;
+                            public function foo() : void {
+                                echo $this->bar();
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        namespace Foo;
+
+                        trait T {
+                            public function bar() : string {
+                                return "hello";
+                            }
+                        }',
+                ],
+                'error_counts' => [1, 0, 0],
             ],
         ];
     }

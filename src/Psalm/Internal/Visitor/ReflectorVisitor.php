@@ -1445,7 +1445,11 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;
         }
 
-        $storage->location = new CodeLocation($this->file_scanner, $stmt, null, true);
+        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod || $stmt instanceof PhpParser\Node\Stmt\Function_) {
+            $storage->location = new CodeLocation($this->file_scanner, $stmt->name, null, true);
+        } else {
+            $storage->location = new CodeLocation($this->file_scanner, $stmt, null, true);
+        }
 
         $required_param_count = 0;
         $i = 0;

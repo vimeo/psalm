@@ -32,10 +32,13 @@ class FileReferenceCacheProvider
     const REFERENCE_CACHE_NAME = 'references';
     const ANALYZED_METHODS_CACHE_NAME = 'analyzed_methods';
     const CLASS_METHOD_CACHE_NAME = 'class_method_references';
+    const FILE_CLASS_MEMBER_CACHE_NAME = 'file_class_member_references';
     const ISSUES_CACHE_NAME = 'issues';
     const FILE_MAPS_CACHE_NAME = 'file_maps';
     const TYPE_COVERAGE_CACHE_NAME = 'type_coverage';
     const CONFIG_HASH_CACHE_NAME = 'config';
+    const METHOD_MISSING_MEMBER_CACHE_NAME = 'method_missing_member';
+    const FILE_MISSING_MEMBER_CACHE_NAME = 'file_missing_member';
 
     /**
      * @var Config
@@ -89,7 +92,7 @@ class FileReferenceCacheProvider
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedTypeCoercion
      */
-    public function getCachedMemberReferences()
+    public function getCachedMethodMemberReferences()
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -110,6 +113,94 @@ class FileReferenceCacheProvider
         }
 
         return $class_member_reference_cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
+    public function getCachedMethodMissingMemberReferences()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
+
+        if (!is_readable($class_member_cache_location)) {
+            return null;
+        }
+
+        $class_member_reference_cache = unserialize((string) file_get_contents($class_member_cache_location));
+
+        if (!is_array($class_member_reference_cache)) {
+            throw new \UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $class_member_reference_cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
+    public function getCachedFileMemberReferences()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $file_class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
+
+        if (!is_readable($file_class_member_cache_location)) {
+            return null;
+        }
+
+        $file_class_member_reference_cache = unserialize((string) file_get_contents($file_class_member_cache_location));
+
+        if (!is_array($file_class_member_reference_cache)) {
+            throw new \UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $file_class_member_reference_cache;
+    }
+
+    /**
+     * @return ?array
+     *
+     * @psalm-suppress MixedAssignment
+     * @psalm-suppress MixedTypeCoercion
+     */
+    public function getCachedFileMissingMemberReferences()
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $file_class_member_cache_location
+            = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
+
+        if (!is_readable($file_class_member_cache_location)) {
+            return null;
+        }
+
+        $file_class_member_reference_cache = unserialize((string) file_get_contents($file_class_member_cache_location));
+
+        if (!is_array($file_class_member_reference_cache)) {
+            throw new \UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $file_class_member_reference_cache;
     }
 
     /**
@@ -160,7 +251,7 @@ class FileReferenceCacheProvider
     /**
      * @return void
      */
-    public function setCachedMemberReferences(array $member_references)
+    public function setCachedMethodMemberReferences(array $member_references)
     {
         $cache_directory = $this->config->getCacheDirectory();
 
@@ -169,6 +260,54 @@ class FileReferenceCacheProvider
         }
 
         $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
+
+        file_put_contents($member_cache_location, serialize($member_references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedMethodMissingMemberReferences(array $member_references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
+
+        file_put_contents($member_cache_location, serialize($member_references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedFileMemberReferences(array $member_references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
+
+        file_put_contents($member_cache_location, serialize($member_references));
+    }
+
+    /**
+     * @return void
+     */
+    public function setCachedFileMissingMemberReferences(array $member_references)
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+
+        if (!$cache_directory) {
+            return;
+        }
+
+        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
 
         file_put_contents($member_cache_location, serialize($member_references));
     }

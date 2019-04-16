@@ -568,7 +568,13 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $args = $stmt->args;
 
-        if (!$codebase->methods->methodExists($method_id, $context->calling_method_id)
+        if (!$codebase->methods->methodExists(
+            $method_id,
+            $context->calling_method_id,
+            $codebase->collect_references ? new CodeLocation($source, $stmt->name) : null,
+            null,
+            $statements_analyzer->getFilePath()
+        )
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,
@@ -848,7 +854,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         if ($context->collect_initializations && $context->calling_method_id) {
             list($calling_method_class) = explode('::', $context->calling_method_id);
-            $codebase->file_reference_provider->addCallingMethodReferenceToClassMember(
+            $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $calling_method_class . '::__construct',
                 strtolower($method_id)
             );

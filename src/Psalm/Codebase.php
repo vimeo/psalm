@@ -338,8 +338,6 @@ class Codebase
     {
         $this->collect_references = true;
         $this->classlikes->collect_references = true;
-        $this->methods->collect_references = true;
-        $this->properties->collect_references = true;
     }
 
     /**
