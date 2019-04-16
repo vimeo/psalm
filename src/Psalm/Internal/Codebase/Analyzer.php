@@ -226,6 +226,15 @@ class Analyzer
                 $process_file_paths,
                 /** @return void */
                 function () {
+                    $project_analyzer = ProjectAnalyzer::getInstance();
+                    $codebase = $project_analyzer->getCodebase();
+
+                    $file_reference_provider = $codebase->file_reference_provider;
+
+                    $file_reference_provider->setCallingMethodReferencesToClassMembers([]);
+                    $file_reference_provider->setFileReferencesToClassMembers([]);
+                    $file_reference_provider->setCallingMethodReferencesToMissingClassMembers([]);
+                    $file_reference_provider->setFileReferencesToMissingClassMembers([]);
                 },
                 $analysis_worker,
                 /** @return WorkerData */
@@ -234,6 +243,10 @@ class Analyzer
                     $codebase = $project_analyzer->getCodebase();
                     $analyzer = $codebase->analyzer;
                     $file_reference_provider = $codebase->file_reference_provider;
+
+                    if ($this->debug_output) {
+                        echo 'Gathering data for forked process' . "\n";
+                    }
 
                     return [
                         'issues' => IssueBuffer::getIssuesData(),
@@ -257,11 +270,19 @@ class Analyzer
                 }
             );
 
+            if ($this->debug_output) {
+                echo 'Forking analysis' . "\n";
+            }
+
             // Wait for all tasks to complete and collect the results.
             /**
              * @var array<int, WorkerData>
              */
             $forked_pool_data = $pool->wait();
+
+            if ($this->debug_output) {
+                echo 'Collecting forked analysis results' . "\n";
+            }
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
