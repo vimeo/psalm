@@ -591,84 +591,96 @@ if ($find_references_to) {
 }
 
 if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
-    echo 'Writing error baseline to file...', PHP_EOL;
-
-    ErrorBaseline::create(
-        new \Psalm\Internal\Provider\FileProvider,
-        $options['set-baseline'],
-        IssueBuffer::getIssuesData()
-    );
-
-    echo "Baseline saved to {$options['set-baseline']}.";
-
-    /** @var string $configFile */
-    $configFile = Config::locateConfigFile($path_to_config ?? $current_dir);
-    $configFileContents = $amendedConfigFileContents = file_get_contents($configFile);
-
-    if ($config->error_baseline) {
-        $amendedConfigFileContents = preg_replace(
-            '/errorBaseline=".*?"/',
-            "errorBaseline=\"{$options['set-baseline']}\"",
-            $configFileContents
-        );
+    if ($is_diff) {
+        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+            echo 'Cannot set baseline in --diff mode' . PHP_EOL;
+        }
     } else {
-        $endPsalmOpenTag = strpos($configFileContents, '>', (int)strpos($configFileContents, '<psalm'));
+        echo 'Writing error baseline to file...', PHP_EOL;
 
-        if (!$endPsalmOpenTag) {
-            echo " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.";
-        } elseif ($configFileContents[$endPsalmOpenTag - 1] === "\n") {
-            $amendedConfigFileContents = substr_replace(
-                $configFileContents,
-                "    errorBaseline=\"{$options['set-baseline']}\"\n>",
-                $endPsalmOpenTag,
-                1
+        ErrorBaseline::create(
+            new \Psalm\Internal\Provider\FileProvider,
+            $options['set-baseline'],
+            IssueBuffer::getIssuesData()
+        );
+
+        echo "Baseline saved to {$options['set-baseline']}.";
+
+        /** @var string $configFile */
+        $configFile = Config::locateConfigFile($path_to_config ?? $current_dir);
+        $configFileContents = $amendedConfigFileContents = file_get_contents($configFile);
+
+        if ($config->error_baseline) {
+            $amendedConfigFileContents = preg_replace(
+                '/errorBaseline=".*?"/',
+                "errorBaseline=\"{$options['set-baseline']}\"",
+                $configFileContents
             );
         } else {
-            $amendedConfigFileContents = substr_replace(
-                $configFileContents,
-                " errorBaseline=\"{$options['set-baseline']}\">",
-                $endPsalmOpenTag,
-                1
-            );
+            $endPsalmOpenTag = strpos($configFileContents, '>', (int)strpos($configFileContents, '<psalm'));
+
+            if (!$endPsalmOpenTag) {
+                echo " Don't forget to set errorBaseline=\"{$options['set-baseline']}\" in your config.";
+            } elseif ($configFileContents[$endPsalmOpenTag - 1] === "\n") {
+                $amendedConfigFileContents = substr_replace(
+                    $configFileContents,
+                    "    errorBaseline=\"{$options['set-baseline']}\"\n>",
+                    $endPsalmOpenTag,
+                    1
+                );
+            } else {
+                $amendedConfigFileContents = substr_replace(
+                    $configFileContents,
+                    " errorBaseline=\"{$options['set-baseline']}\">",
+                    $endPsalmOpenTag,
+                    1
+                );
+            }
         }
+
+        file_put_contents($configFile, $amendedConfigFileContents);
+
+        echo PHP_EOL;
     }
-
-    file_put_contents($configFile, $amendedConfigFileContents);
-
-    echo PHP_EOL;
 }
 
 $issue_baseline = [];
 
 if (isset($options['update-baseline'])) {
-    $baselineFile = Config::getInstance()->error_baseline;
-
-    if (empty($baselineFile)) {
-        die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
-    }
-
-    try {
-        $issue_current_baseline = ErrorBaseline::read(
-            new \Psalm\Internal\Provider\FileProvider,
-            $baselineFile
-        );
-        $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
-
-        $issue_baseline = ErrorBaseline::update(
-            new \Psalm\Internal\Provider\FileProvider,
-            $baselineFile,
-            IssueBuffer::getIssuesData()
-        );
-        $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
-
-        $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
-
-        if ($total_fixed_issues > 0) {
-            echo str_repeat('-', 30) . "\n";
-            echo $total_fixed_issues . ' errors fixed' . "\n";
+    if ($is_diff) {
+        if ($output_format === ProjectAnalyzer::TYPE_CONSOLE) {
+            echo 'Cannot update baseline in --diff mode' . PHP_EOL;
         }
-    } catch (\Psalm\Exception\ConfigException $exception) {
-        die('Could not update baseline file: ' . $exception->getMessage());
+    } else {
+        $baselineFile = Config::getInstance()->error_baseline;
+
+        if (empty($baselineFile)) {
+            die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+        }
+
+        try {
+            $issue_current_baseline = ErrorBaseline::read(
+                new \Psalm\Internal\Provider\FileProvider,
+                $baselineFile
+            );
+            $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
+
+            $issue_baseline = ErrorBaseline::update(
+                new \Psalm\Internal\Provider\FileProvider,
+                $baselineFile,
+                IssueBuffer::getIssuesData()
+            );
+            $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
+
+            $total_fixed_issues = $total_issues_current_baseline - $total_issues_updated_baseline;
+
+            if ($total_fixed_issues > 0) {
+                echo str_repeat('-', 30) . "\n";
+                echo $total_fixed_issues . ' errors fixed' . "\n";
+            }
+        } catch (\Psalm\Exception\ConfigException $exception) {
+            die('Could not update baseline file: ' . $exception->getMessage());
+        }
     }
 }
 
