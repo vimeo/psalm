@@ -46,8 +46,8 @@ class FileManipulationBuffer
             $bounds[0]--;
         }
 
-        if ($file_contents[$bounds[1]] ?? null === PHP_EOL
-            && $file_contents[$bounds[1] + 1] ?? null === PHP_EOL
+        if ($file_contents[$bounds[1] + 1] ?? null === PHP_EOL
+            && $file_contents[$bounds[1] + 2] ?? null === PHP_EOL
         ) {
             $bounds[1]++;
         }
