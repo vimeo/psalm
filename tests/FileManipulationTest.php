@@ -1567,6 +1567,25 @@ class FileManipulationTest extends TestCase
                         public function foo() : void {}
 
                         public function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    (new A)->foo();',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
+            'removePossiblyUnusedMethodInMiddle' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        public function bar() : void {}
 
                         public function bat() : void {}
                     }
@@ -1645,6 +1664,25 @@ class FileManipulationTest extends TestCase
                     }
 
                     (new A)->foo();',
+                '7.1',
+                ['UnusedMethod'],
+                true,
+            ],
+            'removeUnusedMethodAtBeginning' => [
+                '<?php
+                    class A {
+                        private function foo() : void {}
+
+                        public function bar() : void {}
+                    }
+
+                    (new A)->bar();',
+                '<?php
+                    class A {
+                        public function bar() : void {}
+                    }
+
+                    (new A)->bar();',
                 '7.1',
                 ['UnusedMethod'],
                 true,
