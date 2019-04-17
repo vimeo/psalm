@@ -370,6 +370,23 @@ class UnusedCodeTest extends TestCase
 
                     foo(new B());',
             ],
+            'protectedPropertyOverriddenDownstream' => [
+                '<?php
+
+                class C {
+                    /** @var int */
+                    protected $foo = 1;
+                    public function bar() : int {
+                        return $this->foo;
+                    }
+                }
+
+                class D extends C {
+                    protected $foo = 2;
+                }
+
+                (new D)->bar();'
+            ],
         ];
     }
 

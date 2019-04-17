@@ -976,7 +976,10 @@ class ClassLikes
                             // fall through
                         }
                     }
-                } elseif (!isset($classlike_storage->declaring_method_ids['__get'])) {
+                } elseif (!isset($classlike_storage->declaring_method_ids['__get'])
+                    && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                        || !isset($classlike_storage->overridden_property_ids[$property_name])
+                ) {
                     $issue = new UnusedProperty(
                         'Property ' . $property_id . ' is never used',
                         $property_storage->location
