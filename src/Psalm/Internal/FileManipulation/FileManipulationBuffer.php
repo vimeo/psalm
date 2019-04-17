@@ -41,20 +41,10 @@ class FileManipulationBuffer
 
             $file_contents = $codebase->getFileContents($code_location->file_path);
 
-            $removed_lines = false;
-
             if (($file_contents[$bounds[0] - 1] ?? null) === PHP_EOL
                 && ($file_contents[$bounds[0] - 2] ?? null) === PHP_EOL
             ) {
-                $removed_lines = true;
                 $bounds[0] -= 2;
-            }
-
-            if (!$removed_lines
-                && ($file_contents[$bounds[1]] ?? null) === PHP_EOL
-                && ($file_contents[$bounds[1] + 1] ?? null) === PHP_EOL
-            ) {
-                $bounds[1] += 2;
             }
         }
 

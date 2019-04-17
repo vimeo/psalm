@@ -369,7 +369,7 @@ class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        if ($codebase->collect_references
+        if ($codebase->find_unused_code
             && ($project_analyzer->full_run || $codebase->find_unused_code === 'always')
         ) {
             $project_analyzer->checkClassReferences();
