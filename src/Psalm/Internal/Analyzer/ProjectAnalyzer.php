@@ -433,7 +433,10 @@ class ProjectAnalyzer
             throw new \UnexpectedValueException('Should not be checking references');
         }
 
-        $this->codebase->classlikes->checkClassReferences($this->codebase->methods, $this->debug_output);
+        $this->codebase->classlikes->checkClassReferences(
+            $this->codebase->methods,
+            $this->debug_output
+        );
     }
 
     /**

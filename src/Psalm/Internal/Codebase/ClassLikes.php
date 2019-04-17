@@ -695,6 +695,7 @@ class ClassLikes
                     }
                 } else {
                     $this->checkMethodReferences($classlike_storage, $methods);
+                    $this->checkPropertyReferences($classlike_storage);
                 }
             }
         }
@@ -926,6 +927,15 @@ class ClassLikes
                 }
             }
         }
+    }
+
+    /**
+     * @return void
+     */
+    private function checkPropertyReferences(ClassLikeStorage $classlike_storage)
+    {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
             $property_referenced = $this->file_reference_provider->isClassPropertyReferenced(
@@ -939,28 +949,32 @@ class ClassLikes
                 $property_id = $classlike_storage->name . '::$' . $property_name;
 
                 if ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-                    $issue = new PossiblyUnusedProperty(
-                        'Cannot find uses of public property ' . $property_id,
-                        $property_storage->location
-                    );
+                    $has_parent_references = isset($classlike_storage->overridden_property_ids[$property_name]);
 
-                    if ($codebase->alter_code) {
-                        if ($property_storage->stmt_location
-                            && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
-                            && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
-                            && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
-                        ) {
-                            FileManipulationBuffer::addForCodeLocation(
-                                $property_storage->stmt_location,
-                                '',
-                                true
-                            );
+                    if (!$has_parent_references) {
+                        $issue = new PossiblyUnusedProperty(
+                            'Cannot find uses of public property ' . $property_id,
+                            $property_storage->location
+                        );
+
+                        if ($codebase->alter_code) {
+                            if ($property_storage->stmt_location
+                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
+                                && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
+                                && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
+                            ) {
+                                FileManipulationBuffer::addForCodeLocation(
+                                    $property_storage->stmt_location,
+                                    '',
+                                    true
+                                );
+                            }
+                        } elseif (IssueBuffer::accepts(
+                            $issue,
+                            $classlike_storage->suppressed_issues
+                        )) {
+                            // fall through
                         }
-                    } elseif (IssueBuffer::accepts(
-                        $issue,
-                        $classlike_storage->suppressed_issues
-                    )) {
-                        // fall through
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__get'])) {
                     $issue = new UnusedProperty(
