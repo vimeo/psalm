@@ -1567,17 +1567,21 @@ class FileManipulationTest extends TestCase
                         public function foo() : void {}
 
                         public function bar() : void {}
+
+                        public function bat() : void {}
                     }
 
-                    (new A)->foo();',
+                    (new A)->foo();
+                    (new A)->bat();',
                 '<?php
                     class A {
                         public function foo() : void {}
 
-
+                        public function bat() : void {}
                     }
 
-                    (new A)->foo();',
+                    (new A)->foo();
+                    (new A)->bat();',
                 '7.1',
                 ['PossiblyUnusedMethod'],
                 true,
@@ -1638,8 +1642,6 @@ class FileManipulationTest extends TestCase
                 '<?php
                     class A {
                         public function foo() : void {}
-
-
                     }
 
                     (new A)->foo();',
@@ -1660,8 +1662,6 @@ class FileManipulationTest extends TestCase
                 '<?php
                     class A {
                         public function foo() : void {}
-
-
                     }
 
                     (new A)->foo();',
@@ -1682,8 +1682,6 @@ class FileManipulationTest extends TestCase
                 '<?php
                     class A {
                         public function foo() : void {}
-
-
                     }
 
                     (new A)->foo();',
@@ -1706,8 +1704,6 @@ class FileManipulationTest extends TestCase
                     class A {
                         /** @var string */
                         public $foo = "hello";
-
-
                     }
 
                     echo (new A)->foo;',
@@ -1751,8 +1747,6 @@ class FileManipulationTest extends TestCase
                     class A {
                         /** @var string */
                         public $foo = "hello";
-
-
                     }
 
                     echo (new A)->foo;',

@@ -846,13 +846,15 @@ class ClassLikes
 
                         if ($codebase->alter_code) {
                             if ($method_storage->stmt_location
+                                && !$classlike_storage->is_trait
                                 && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
                                 && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
                                 && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                             ) {
                                 FileManipulationBuffer::addForCodeLocation(
                                     $method_storage->stmt_location,
-                                    ''
+                                    '',
+                                    true
                                 );
                             }
                         } elseif (IssueBuffer::accepts(
@@ -871,13 +873,15 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($method_storage->stmt_location
+                            && !$classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
                             && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
                             && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
                                 $method_storage->stmt_location,
-                                ''
+                                '',
+                                true
                             );
                         }
                     } elseif (IssueBuffer::accepts(
@@ -940,13 +944,15 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($property_storage->stmt_location
+                            && !$classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
                             && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
                                 $property_storage->stmt_location,
-                                ''
+                                '',
+                                true
                             );
                         }
                     } elseif (IssueBuffer::accepts(
@@ -963,13 +969,15 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($property_storage->stmt_location
+                            && !$classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
                                 $property_storage->stmt_location,
-                                ''
+                                '',
+                                true
                             );
                         }
                     } elseif (IssueBuffer::accepts(
