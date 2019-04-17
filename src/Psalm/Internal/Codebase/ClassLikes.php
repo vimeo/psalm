@@ -776,6 +776,8 @@ class ClassLikes
 
             $method_id = $appearing_method_id;
 
+            $declaring_classlike_storage = $classlike_storage;
+
             if (isset($classlike_storage->methods[$method_name])) {
                 $method_storage = $classlike_storage->methods[$method_name];
             } else {
@@ -846,7 +848,7 @@ class ClassLikes
 
                         if ($codebase->alter_code) {
                             if ($method_storage->stmt_location
-                                && !$classlike_storage->is_trait
+                                && !$declaring_classlike_storage->is_trait
                                 && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
                                 && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
                                 && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
@@ -873,7 +875,7 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($method_storage->stmt_location
-                            && !$classlike_storage->is_trait
+                            && !$declaring_classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
                             && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
                             && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
@@ -944,7 +946,6 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($property_storage->stmt_location
-                            && !$classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
                             && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
@@ -969,7 +970,6 @@ class ClassLikes
 
                     if ($codebase->alter_code) {
                         if ($property_storage->stmt_location
-                            && !$classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
