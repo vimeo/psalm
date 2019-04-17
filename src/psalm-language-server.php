@@ -239,7 +239,6 @@ if (isset($options['disable-on-change'])) {
 $config->visitComposerAutoloadFiles($project_analyzer);
 
 if ($find_dead_code) {
-    $project_analyzer->getCodebase()->collectReferences();
     $project_analyzer->getCodebase()->reportUnusedCode();
 }
 

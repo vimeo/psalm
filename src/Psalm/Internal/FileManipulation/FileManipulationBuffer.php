@@ -58,6 +58,14 @@ class FileManipulationBuffer
     }
 
     /**
+     * @return array<string, FileManipulation[]>
+     */
+    public static function getAll()
+    {
+        return self::$file_manipulations;
+    }
+
+    /**
      * @return void
      */
     public static function clearCache()

@@ -56,7 +56,7 @@ class ErrorAfterUpdateTest extends \Psalm\Tests\TestCase
         array $error_levels = []
     ) {
         $this->project_analyzer->getCodebase()->diff_methods = true;
-        $this->project_analyzer->getCodebase()->collectReferences();
+        $this->project_analyzer->getCodebase()->reportUnusedCode();
 
         $codebase = $this->project_analyzer->getCodebase();
 

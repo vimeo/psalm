@@ -77,7 +77,6 @@ class FileManipulationTest extends TestCase
             $safe_types
         );
 
-        $this->project_analyzer->getCodebase()->collectReferences();
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 
         $this->analyzeFile($file_path, $context);

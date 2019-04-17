@@ -665,8 +665,12 @@ class ClassLikes
     /**
      * @return void
      */
-    public function checkClassReferences(Methods $methods)
+    public function checkClassReferences(Methods $methods, bool $debug_output = false)
     {
+        if ($debug_output) {
+            echo 'Checking class references' . PHP_EOL;
+        }
+
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);

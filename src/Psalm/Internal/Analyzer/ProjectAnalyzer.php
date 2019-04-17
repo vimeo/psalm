@@ -110,6 +110,11 @@ class ProjectAnalyzer
     /**
      * @var bool
      */
+    public $full_run = false;
+
+    /**
+     * @var bool
+     */
     public $only_replace_php_types_with_non_docblock_types = false;
 
     /**
@@ -335,6 +340,8 @@ class ProjectAnalyzer
         $diff_files = null;
         $deleted_files = null;
 
+        $this->full_run = !$is_diff;
+
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
         if ($is_diff
@@ -426,7 +433,7 @@ class ProjectAnalyzer
             throw new \UnexpectedValueException('Should not be checking references');
         }
 
-        $this->codebase->classlikes->checkClassReferences($this->codebase->methods);
+        $this->codebase->classlikes->checkClassReferences($this->codebase->methods, $this->debug_output);
     }
 
     /**

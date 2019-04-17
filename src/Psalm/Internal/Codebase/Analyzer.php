@@ -39,6 +39,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
  *     file_references_to_missing_class_members: array<string, array<string,bool>>,
  *     mixed_counts: array<string, array{0: int, 1: int}>,
  *     mixed_member_names: array<string, bool>,
+ *     file_manipulations: array<string, FileManipulation[]>,
  *     method_references_to_class_members: array<string, array<string,bool>>,
  *     method_references_to_missing_class_members: array<string, array<string,bool>>,
  *     analyzed_methods: array<string, array<string, int>>,
@@ -269,6 +270,7 @@ class Analyzer
                         'method_references_to_missing_class_members'
                             => $file_reference_provider->getAllMethodReferencesToMissingClassMembers(),
                         'mixed_member_names' => $analyzer->getMixedMemberNames(),
+                        'file_manipulations' => FileManipulationBuffer::getAll(),
                         'mixed_counts' => $analyzer->getMixedCounts(),
                         'analyzed_methods' => $analyzer->getAnalyzedMethods(),
                         'file_maps' => $analyzer->getFileMaps(),
@@ -339,6 +341,10 @@ class Analyzer
                     }
                 }
 
+                foreach ($pool_data['file_manipulations'] as $file_path => $manipulations) {
+                    FileManipulationBuffer::add($file_path, $manipulations);
+                }
+
                 foreach ($pool_data['file_maps'] as $file_path => list($reference_map, $type_map)) {
                     $this->reference_map[$file_path] = $reference_map;
                     $this->type_map[$file_path] = $type_map;
@@ -362,6 +368,13 @@ class Analyzer
         }
 
         $codebase = $project_analyzer->getCodebase();
+
+        if ($codebase->collect_references
+            && ($project_analyzer->full_run || $codebase->find_unused_code === 'always')
+        ) {
+            $project_analyzer->checkClassReferences();
+        }
+
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
         $codebase->file_reference_provider->setFileMaps($this->getFileMaps());

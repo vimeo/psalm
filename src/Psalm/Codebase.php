@@ -60,6 +60,11 @@ class Codebase
     public $collect_locations = false;
 
     /**
+     * @var null|'always'|'auto'
+     */
+    public $find_unused_code = null;
+
+    /**
      * @var FileProvider
      */
     public $file_provider;
@@ -97,11 +102,6 @@ class Codebase
      * @var bool
      */
     public $register_stub_files = false;
-
-    /**
-     * @var bool
-     */
-    public $find_unused_code = false;
 
     /**
      * @var bool
@@ -334,15 +334,6 @@ class Codebase
     /**
      * @return void
      */
-    public function collectReferences()
-    {
-        $this->collect_references = true;
-        $this->classlikes->collect_references = true;
-    }
-
-    /**
-     * @return void
-     */
     public function collectLocations()
     {
         $this->collect_locations = true;
@@ -352,12 +343,15 @@ class Codebase
     }
 
     /**
+     * @param 'always'|'auto' $find_unused_code
+     *
      * @return void
      */
-    public function reportUnusedCode()
+    public function reportUnusedCode(string $find_unused_code = 'auto')
     {
-        $this->collectReferences();
-        $this->find_unused_code = true;
+        $this->collect_references = true;
+        $this->classlikes->collect_references = true;
+        $this->find_unused_code = $find_unused_code;
         $this->find_unused_variables = true;
     }
 
