@@ -728,9 +728,19 @@ class Codebase
      *
      * @return bool
      */
-    public function methodExists($method_id, CodeLocation $code_location = null, $calling_method_id = null)
-    {
-        return $this->methods->methodExists($method_id, $calling_method_id, $code_location);
+    public function methodExists(
+        string $method_id,
+        CodeLocation $code_location = null,
+        $calling_method_id = null,
+        string $file_path = null
+    ) {
+        return $this->methods->methodExists(
+            $method_id,
+            $calling_method_id,
+            $code_location,
+            null,
+            $file_path
+        );
     }
 
     /**
