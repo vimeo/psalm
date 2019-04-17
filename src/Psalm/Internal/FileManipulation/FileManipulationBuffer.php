@@ -34,26 +34,28 @@ class FileManipulationBuffer
     ) {
         $bounds = $code_location->getSnippetBounds();
 
-        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        if ($swallow_newlines) {
+            $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
 
-        $codebase = $project_analyzer->getCodebase();
+            $codebase = $project_analyzer->getCodebase();
 
-        $file_contents = $codebase->getFileContents($code_location->file_path);
+            $file_contents = $codebase->getFileContents($code_location->file_path);
 
-        $removed_lines = false;
+            $removed_lines = false;
 
-        if (($file_contents[$bounds[0] - 1] ?? null) === PHP_EOL
-            && ($file_contents[$bounds[0] - 2] ?? null) === PHP_EOL
-        ) {
-            $removed_lines = true;
-            $bounds[0] -= 2;
-        }
+            if (($file_contents[$bounds[0] - 1] ?? null) === PHP_EOL
+                && ($file_contents[$bounds[0] - 2] ?? null) === PHP_EOL
+            ) {
+                $removed_lines = true;
+                $bounds[0] -= 2;
+            }
 
-        if (!$removed_lines
-            && ($file_contents[$bounds[1]] ?? null) === PHP_EOL
-            && ($file_contents[$bounds[1] + 1] ?? null) === PHP_EOL
-        ) {
-            $bounds[1] += 2;
+            if (!$removed_lines
+                && ($file_contents[$bounds[1]] ?? null) === PHP_EOL
+                && ($file_contents[$bounds[1] + 1] ?? null) === PHP_EOL
+            ) {
+                $bounds[1] += 2;
+            }
         }
 
         self::add(
