@@ -77,7 +77,12 @@ class FileManipulationTest extends TestCase
             $safe_types
         );
 
+        $this->project_analyzer->getCodebase()->collectReferences();
+        $this->project_analyzer->getCodebase()->reportUnusedCode();
+
         $this->analyzeFile($file_path, $context);
+
+        $this->project_analyzer->checkClassReferences();
 
         $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
         $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));
@@ -1555,6 +1560,205 @@ class FileManipulationTest extends TestCase
                     }',
                 '7.1',
                 ['MissingParamType'],
+                true,
+            ],
+            'removePossiblyUnusedMethod' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        public function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+
+                    }
+
+                    (new A)->foo();',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedMethodWithMixedUse' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo($a) {
+                        $a->foo();
+                    }',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo($a) {
+                        $a->foo();
+                    }',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedMethodWithSuppression' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        /** @psalm-suppress PossiblyUnusedMethod */
+                        public function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        /** @psalm-suppress PossiblyUnusedMethod */
+                        public function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
+            'removeUnusedMethod' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        private function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+
+                    }
+
+                    (new A)->foo();',
+                '7.1',
+                ['UnusedMethod'],
+                true,
+            ],
+            'removePossiblyUnusedMethodWithDocblock' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        /** @return void */
+                        public function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+
+                    }
+
+                    (new A)->foo();',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
+            'removeUnusedMethodWithDocblock' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+                        /** @return void */
+                        private function bar() : void {}
+                    }
+
+                    (new A)->foo();',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+
+
+                    }
+
+                    (new A)->foo();',
+                '7.1',
+                ['UnusedMethod'],
+                true,
+            ],
+            'removePossiblyUnusedPropertyWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+
+                        /** @var string */
+                        public $bar = "hello";
+                    }
+
+                    echo (new A)->foo;',
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+
+
+                    }
+
+                    echo (new A)->foo;',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'removePossiblyUnusedPropertyMixedUse' => [
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo($a) {
+                        echo $a->foo;
+                    }',
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo($a) {
+                        echo $a->foo;
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'removeUnusedPropertyWithDocblock' => [
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+
+                        /** @var string */
+                        private $bar = "hello";
+                    }
+
+                    echo (new A)->foo;',
+                '<?php
+                    class A {
+                        /** @var string */
+                        public $foo = "hello";
+
+
+                    }
+
+                    echo (new A)->foo;',
+                '7.1',
+                ['UnusedProperty'],
                 true,
             ],
         ];

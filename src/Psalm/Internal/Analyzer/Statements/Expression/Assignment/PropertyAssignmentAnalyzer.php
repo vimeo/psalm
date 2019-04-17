@@ -139,6 +139,10 @@ class PropertyAssignmentAnalyzer
                     $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
                 }
 
+                if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                    $codebase->analyzer->addMixedMemberName('$' . $stmt->name->name);
+                }
+
                 if (IssueBuffer::accepts(
                     new MixedPropertyAssignment(
                         $lhs_var_id . ' of type mixed cannot be assigned to',

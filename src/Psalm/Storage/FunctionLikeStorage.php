@@ -15,6 +15,11 @@ class FunctionLikeStorage
     public $location;
 
     /**
+     * @var CodeLocation|null
+     */
+    public $stmt_location;
+
+    /**
      * @var array<int, FunctionLikeParameter>
      */
     public $params = [];

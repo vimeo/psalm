@@ -27,6 +27,11 @@ class PropertyStorage
     /**
      * @var CodeLocation|null
      */
+    public $stmt_location;
+
+    /**
+     * @var CodeLocation|null
+     */
     public $type_location;
 
     /**

@@ -7,6 +7,7 @@ use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\CodeLocation;
 use Psalm\Config;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Issue\PossiblyUnusedMethod;
 use Psalm\Issue\PossiblyUnusedParam;
 use Psalm\Issue\PossiblyUnusedProperty;
@@ -759,6 +760,9 @@ class ClassLikes
      */
     private function checkMethodReferences(ClassLikeStorage $classlike_storage, Methods $methods)
     {
+        $project_analyzer = \Psalm\Internal\Analyzer\ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+
         foreach ($classlike_storage->appearing_method_ids as $method_name => $appearing_method_id) {
             list($appearing_fq_classlike_name) = explode('::', $appearing_method_id);
 
@@ -830,24 +834,50 @@ class ClassLikes
                     }
 
                     if (!$has_parent_references) {
-                        if (IssueBuffer::accepts(
-                            new PossiblyUnusedMethod(
-                                'Cannot find public calls to method ' . $method_id,
-                                $method_storage->location,
-                                $method_id
-                            ),
+                        $issue = new PossiblyUnusedMethod(
+                            'Cannot find public calls to method ' . $method_id,
+                            $method_storage->location,
+                            $method_id
+                        );
+
+                        if ($codebase->alter_code) {
+                            if ($method_storage->stmt_location
+                                && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
+                                && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
+                                && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
+                            ) {
+                                FileManipulationBuffer::addForCodeLocation(
+                                    $method_storage->stmt_location,
+                                    ''
+                                );
+                            }
+                        } elseif (IssueBuffer::accepts(
+                            $issue,
                             $method_storage->suppressed_issues
                         )) {
                             // fall through
                         }
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
-                    if (IssueBuffer::accepts(
-                        new UnusedMethod(
-                            'Method ' . $method_id . ' is never used',
-                            $method_location,
-                            $method_id
-                        ),
+                    $issue = new UnusedMethod(
+                        'Method ' . $method_id . ' is never used',
+                        $method_location,
+                        $method_id
+                    );
+
+                    if ($codebase->alter_code) {
+                        if ($method_storage->stmt_location
+                            && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
+                            && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
+                            && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
+                        ) {
+                            FileManipulationBuffer::addForCodeLocation(
+                                $method_storage->stmt_location,
+                                ''
+                            );
+                        }
+                    } elseif (IssueBuffer::accepts(
+                        $issue,
                         $method_storage->suppressed_issues
                     )) {
                         // fall through
@@ -899,21 +929,48 @@ class ClassLikes
                 $property_id = $classlike_storage->name . '::$' . $property_name;
 
                 if ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
-                    if (IssueBuffer::accepts(
-                        new PossiblyUnusedProperty(
-                            'Cannot find uses of public property ' . $property_id,
-                            $property_storage->location
-                        ),
+                    $issue = new PossiblyUnusedProperty(
+                        'Cannot find uses of public property ' . $property_id,
+                        $property_storage->location
+                    );
+
+                    if ($codebase->alter_code) {
+                        if ($property_storage->stmt_location
+                            && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
+                            && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
+                            && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
+                        ) {
+                            FileManipulationBuffer::addForCodeLocation(
+                                $property_storage->stmt_location,
+                                ''
+                            );
+                        }
+                    } elseif (IssueBuffer::accepts(
+                        $issue,
                         $classlike_storage->suppressed_issues
                     )) {
                         // fall through
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__get'])) {
-                    if (IssueBuffer::accepts(
-                        new UnusedProperty(
-                            'Property ' . $property_id . ' is never used',
-                            $property_storage->location
-                        )
+                    $issue = new UnusedProperty(
+                        'Property ' . $property_id . ' is never used',
+                        $property_storage->location
+                    );
+
+                    if ($codebase->alter_code) {
+                        if ($property_storage->stmt_location
+                            && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
+                            && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
+                            && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
+                        ) {
+                            FileManipulationBuffer::addForCodeLocation(
+                                $property_storage->stmt_location,
+                                ''
+                            );
+                        }
+                    } elseif (IssueBuffer::accepts(
+                        $issue,
+                        $classlike_storage->suppressed_issues
                     )) {
                         // fall through
                     }

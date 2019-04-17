@@ -235,6 +235,10 @@ class PropertyFetchAnalyzer
                 $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
             }
 
+            if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                $codebase->analyzer->addMixedMemberName('$' . $stmt->name->name);
+            }
+
             if (IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on mixed var ' . $stmt_var_id,

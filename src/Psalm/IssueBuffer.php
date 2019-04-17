@@ -52,60 +52,75 @@ class IssueBuffer
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [])
     {
+        if (self::isSuppressed($e, $suppressed_issues)) {
+            return false;
+        }
+
+        return self::add($e);
+    }
+
+    /**
+     * @param   CodeIssue $e
+     * @param   array     $suppressed_issues
+     *
+     * @return  bool
+     */
+    public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []) : bool
+    {
         $config = Config::getInstance();
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
         if (in_array($issue_type, $suppressed_issues, true)) {
-            return false;
+            return true;
         }
 
         if (!$config->reportIssueInFile($issue_type, $e->getFilePath())) {
-            return false;
+            return true;
         }
 
         if ($e instanceof ClassIssue
             && $config->getReportingLevelForClass($issue_type, $e->fq_classlike_name) === Config::REPORT_SUPPRESS
         ) {
-            return false;
+            return true;
         }
 
         if ($e instanceof MethodIssue
             && $config->getReportingLevelForMethod($issue_type, $e->method_id) === Config::REPORT_SUPPRESS
         ) {
-            return false;
+            return true;
         }
 
         if ($e instanceof PropertyIssue
             && $config->getReportingLevelForProperty($issue_type, $e->property_id) === Config::REPORT_SUPPRESS
         ) {
-            return false;
+            return true;
         }
 
         $parent_issue_type = self::getParentIssueType($issue_type);
 
         if ($parent_issue_type) {
             if (in_array($parent_issue_type, $suppressed_issues, true)) {
-                return false;
+                return true;
             }
 
             if (!$config->reportIssueInFile($parent_issue_type, $e->getFilePath())) {
-                return false;
+                return true;
             }
         }
 
         if ($e->getLocation()->getLineNumber() === -1) {
-            return false;
+            return true;
         }
 
         if (self::$recording_level > 0) {
             self::$recorded_issues[self::$recording_level][] = $e;
 
-            return false;
+            return true;
         }
 
-        return self::add($e);
+        return false;
     }
 
     /**

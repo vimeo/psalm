@@ -9,7 +9,7 @@ use Psalm\IssueBuffer;
 error_reporting(-1);
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
-ini_set('memory_limit', '2048M');
+ini_set('memory_limit', '4096M');
 
 // get options from command line
 $options = getopt(
@@ -17,6 +17,7 @@ $options = getopt(
     [
         'help', 'debug', 'config:', 'file:', 'root:',
         'plugin:', 'issues:', 'php-version:', 'dry-run', 'safe-types',
+        'find-unused-code',
     ]
 );
 
@@ -72,6 +73,8 @@ Options:
     --issues=IssueType1,IssueType2
         If any issues can be fixed automatically, Psalm will update the codebase
 
+    --find-dead-code
+        Include unused code as a candidate for removal
 HELP;
 
     exit;
@@ -183,6 +186,11 @@ foreach ($plugins as $plugin_path) {
     Config::getInstance()->addPluginPath($current_dir . $plugin_path);
 }
 
+if (array_key_exists('find-unused-code', $options)) {
+    $project_analyzer->getCodebase()->collectReferences();
+    $project_analyzer->getCodebase()->reportUnusedCode();
+}
+
 $project_analyzer->alterCodeAfterCompletion(
     array_key_exists('dry-run', $options),
     array_key_exists('safe-types', $options)
@@ -201,6 +209,10 @@ if ($paths_to_check === null) {
             $project_analyzer->checkFile($path_to_check);
         }
     }
+}
+
+if (array_key_exists('find-unused-code', $options)) {
+    $project_analyzer->checkClassReferences();
 }
 
 IssueBuffer::finish($project_analyzer, false, $start_time);

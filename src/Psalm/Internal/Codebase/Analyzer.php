@@ -38,6 +38,7 @@ use Psalm\Internal\Provider\FileStorageProvider;
  *     file_references_to_class_members: array<string, array<string,bool>>,
  *     file_references_to_missing_class_members: array<string, array<string,bool>>,
  *     mixed_counts: array<string, array{0: int, 1: int}>,
+ *     mixed_member_names: array<string, bool>,
  *     method_references_to_class_members: array<string, array<string,bool>>,
  *     method_references_to_missing_class_members: array<string, array<string,bool>>,
  *     analyzed_methods: array<string, array<string, int>>,
@@ -84,6 +85,13 @@ class Analyzer
      * @var array<string, array{0: int, 1: int}
      */
     private $mixed_counts = [];
+
+    /**
+     * Used to store member names of mixed property/method access
+     *
+     * @var array<string, bool>
+     */
+    private $mixed_member_names = [];
 
     /**
      * @var bool
@@ -260,6 +268,7 @@ class Analyzer
                             => $file_reference_provider->getAllFileReferencesToMissingClassMembers(),
                         'method_references_to_missing_class_members'
                             => $file_reference_provider->getAllMethodReferencesToMissingClassMembers(),
+                        'mixed_member_names' => $analyzer->getMixedMemberNames(),
                         'mixed_counts' => $analyzer->getMixedCounts(),
                         'analyzed_methods' => $analyzer->getAnalyzedMethods(),
                         'file_maps' => $analyzer->getFileMaps(),
@@ -305,6 +314,9 @@ class Analyzer
                 );
                 $codebase->file_reference_provider->addMethodReferencesToMissingClassMembers(
                     $pool_data['method_references_to_missing_class_members']
+                );
+                $this->addMixedMemberNames(
+                    $pool_data['mixed_member_names']
                 );
                 $codebase->file_reference_provider->addClassLocations(
                     $pool_data['class_locations']
@@ -674,6 +686,36 @@ class Analyzer
                 }
             }
         }
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    public function getMixedMemberNames() : array
+    {
+        return $this->mixed_member_names;
+    }
+
+    /**
+     * @return void
+     */
+    public function addMixedMemberName(string $member_id)
+    {
+        $this->mixed_member_names[$member_id] = true;
+    }
+
+    public function hasMixedMemberName(string $member_id) : bool
+    {
+        return isset($this->mixed_member_names[$member_id]);
+    }
+
+    /**
+     * @var array<string, bool> $names
+     * @return void
+     */
+    public function addMixedMemberNames(array $names)
+    {
+        $this->mixed_member_names += $names;
     }
 
     /**

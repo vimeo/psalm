@@ -1451,6 +1451,8 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $storage->location = new CodeLocation($this->file_scanner, $stmt, null, true);
         }
 
+        $storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
+
         $required_param_count = 0;
         $i = 0;
         $has_optional_param = false;
@@ -2535,6 +2537,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
             $property_storage->signature_type_location = $signature_type_location;
             $property_storage->type_location = $signature_type_location;
             $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
+            $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = $property->default ? true : false;
             $property_storage->deprecated = $var_comment ? $var_comment->deprecated : false;
             $property_storage->internal = $var_comment ? $var_comment->internal : false;

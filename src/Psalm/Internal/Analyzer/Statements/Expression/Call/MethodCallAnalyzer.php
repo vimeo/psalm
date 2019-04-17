@@ -467,6 +467,10 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
                     $has_mixed_method_call = true;
 
+                    if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                        $codebase->analyzer->addMixedMemberName(strtolower($stmt->name->name));
+                    }
+
                     if ($context->check_methods) {
                         if (IssueBuffer::accepts(
                             new MixedMethodCall(

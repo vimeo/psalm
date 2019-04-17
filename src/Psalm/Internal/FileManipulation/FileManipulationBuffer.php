@@ -25,6 +25,25 @@ class FileManipulationBuffer
     }
 
     /**
+     * @return void
+     */
+    public static function addForCodeLocation(\Psalm\CodeLocation $code_location, string $replacement_text)
+    {
+        $bounds = $code_location->getSnippetBounds();
+
+        self::add(
+            $code_location->file_path,
+            [
+                new FileManipulation(
+                    $bounds[0],
+                    $bounds[1],
+                    $replacement_text
+                )
+            ]
+        );
+    }
+
+    /**
      * @param string $file_path
      *
      * @return FileManipulation[]

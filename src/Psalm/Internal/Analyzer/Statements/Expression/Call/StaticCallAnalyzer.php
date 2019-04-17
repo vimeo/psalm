@@ -260,6 +260,10 @@ class StaticCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     || $lhs_type_part instanceof Type\Atomic\TTemplateParam
                     || $lhs_type_part instanceof Type\Atomic\TClassString
                 ) {
+                    if ($stmt->name instanceof PhpParser\Node\Identifier) {
+                        $codebase->analyzer->addMixedMemberName(strtolower($stmt->name->name));
+                    }
+
                     if (IssueBuffer::accepts(
                         new MixedMethodCall(
                             'Cannot call method on an unknown class',
