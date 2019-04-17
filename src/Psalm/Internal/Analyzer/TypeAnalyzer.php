@@ -1361,7 +1361,7 @@ class TypeAnalyzer
     }
 
     /** @return ?string */
-    private static function getCallableMethodIdFromObjectLike(ObjectLike $input_type_part)
+    public static function getCallableMethodIdFromObjectLike(ObjectLike $input_type_part)
     {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])

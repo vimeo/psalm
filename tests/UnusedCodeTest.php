@@ -335,6 +335,18 @@ class UnusedCodeTest extends TestCase
                     $myFooBar = new MyFooBar();
                     $myFooBar->doIt();',
             ],
+            'methodUsedAsCallable' => [
+                '<?php
+                    class C {
+                        public static function foo() : void {}
+                    }
+
+                    function takesCallable(callable $c) : void {
+                        $c();
+                    }
+
+                    takesCallable([C::class, "foo"]);',
+            ],
         ];
     }
 

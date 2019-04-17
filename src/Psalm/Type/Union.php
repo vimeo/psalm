@@ -511,6 +511,14 @@ class Union
     /**
      * @return bool
      */
+    public function hasCallableType()
+    {
+        return isset($this->types['callable']) || isset($this->types['Closure']);
+    }
+
+    /**
+     * @return bool
+     */
     public function hasObject()
     {
         return isset($this->types['object']);

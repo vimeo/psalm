@@ -2146,6 +2146,38 @@ class CallAnalyzer
             $to_string_cast
         );
 
+        if ($type_match_found
+            && $param_type->hasCallableType()
+        ) {
+            $potential_method_ids = [];
+
+            foreach ($input_type->getTypes() as $input_type_part) {
+                if ($input_type_part instanceof Type\Atomic\ObjectLike) {
+                    $potential_method_id = TypeAnalyzer::getCallableMethodIdFromObjectLike(
+                        $input_type_part
+                    );
+
+                    if ($potential_method_id) {
+                        $potential_method_ids[] = $potential_method_id;
+                    }
+                } elseif ($input_type_part instanceof Type\Atomic\TLiteralString) {
+                    $potential_method_ids[] = $input_type_part->value;
+                }
+            }
+
+            foreach ($potential_method_ids as $potential_method_id) {
+                if (strpos($potential_method_id, '::')) {
+                    $codebase->methods->methodExists(
+                        $potential_method_id,
+                        $context->calling_method_id,
+                        null,
+                        $statements_analyzer,
+                        $statements_analyzer->getFilePath()
+                    );
+                }
+            }
+        }
+
         if ($context->strict_types
             && !$input_type->hasArray()
             && !$param_type->from_docblock

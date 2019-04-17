@@ -122,7 +122,11 @@ class Methods
 
         $fq_class_name = $this->classlikes->getUnAliasedName($fq_class_name);
 
-        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        try {
+            $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
 
         if (isset($class_storage->declaring_method_ids[$method_name])) {
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
