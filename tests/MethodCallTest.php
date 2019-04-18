@@ -577,6 +577,16 @@ class MethodCallTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass',
             ],
+            'checkMixedMethodCallStaticMethodCallArg' => [
+                '<?php
+                    class B {}
+                    /** @param mixed $a */
+                    function foo($a) : void {
+                        /** @psalm-suppress MixedMethodCall */
+                        $a->bar(B::bat());
+                    }',
+                'error_message' => 'UndefinedMethod',
+            ],
         ];
     }
 }
