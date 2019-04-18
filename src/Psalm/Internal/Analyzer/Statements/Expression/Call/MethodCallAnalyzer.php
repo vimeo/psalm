@@ -1027,6 +1027,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
                     if (!self::checkMagicGetterOrSetterProperty(
                         $statements_analyzer,
                         $stmt,
+                        $context,
                         $fq_class_name
                     )) {
                         return false;
@@ -1396,6 +1397,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
     private static function checkMagicGetterOrSetterProperty(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
         $fq_class_name
     ) {
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
@@ -1416,6 +1418,14 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         $property_id = $fq_class_name . '::$' . $prop_name;
         $codebase = $statements_analyzer->getCodebase();
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $codebase->properties->propertyExists(
+            $property_id,
+            $method_name === '__get',
+            $statements_analyzer,
+            $context,
+            new CodeLocation($statements_analyzer->getSource(), $stmt)
+        );
 
         switch ($method_name) {
             case '__set':
