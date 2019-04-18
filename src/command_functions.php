@@ -87,7 +87,14 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
     }
 
     if ($first_autoloader === null) {
-        echo 'Failed to find a valid Composer ClassLoader in ' . implode(', ', $autoload_files) . "\n";
+        if (!$autoload_files) {
+            echo 'Failed to find a valid Composer autoloader' . "\n";
+        } else {
+            echo 'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n";
+        }
+
+        echo 'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n";
+
         exit(1);
     }
 
