@@ -74,6 +74,6 @@ Create new plugin project using skeleton, then pass the class name of you file-b
 
 ### Registering stub files
 
-Use `Psalm\Plugin\RegistrationInterface::addStubFile()`. See the [sample plugin] (https://github.com/weirdan/psalm-doctrine-collections/).
+Use `Psalm\Plugin\RegistrationInterface::addStubFile()`. See the [sample plugin](https://github.com/weirdan/psalm-doctrine-collections/).
 
 Stub files provide a way to override third-party type information when you cannot add Psalm's extended docblocks to the upstream source files directly.
