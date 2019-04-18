@@ -830,6 +830,10 @@ class PropertyAssignmentAnalyzer
         $prop_name = $stmt->name;
 
         if (!$prop_name instanceof PhpParser\Node\Identifier) {
+            if ($fq_class_name) {
+                $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::$');
+            }
+
             return;
         }
 

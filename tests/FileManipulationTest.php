@@ -1772,7 +1772,7 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUnusedProperty'],
                 true,
             ],
-            'removePossiblyUnusedPropertyMixedUse' => [
+            'dontRemovePossiblyUnusedPropertyWithMixedUse' => [
                 '<?php
                     class A {
                         public $foo = "hello";
@@ -1788,6 +1788,90 @@ class FileManipulationTest extends TestCase
 
                     function foo($a) {
                         echo $a->foo;
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithVariableFetch' => [
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var;
+                    }',
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var;
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithStaticVariableFetch' => [
+                '<?php
+                    class A {
+                        public static $foo = "hello";
+                    }
+
+                    function foo(string $var) {
+                        echo A::$$var;
+                    }',
+                '<?php
+                    class A {
+                        public static $foo = "hello";
+                    }
+
+                    function foo(string $var) {
+                        echo A::$$var;
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithVariableAssignment' => [
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        $a->$var = "hello";
+                    }',
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        $a->$var = "hello";
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithStaticVariableAssignment' => [
+                '<?php
+                    class A {
+                        public static $foo = "hello";
+                    }
+
+                    function foo(string $var) {
+                        A::$$var = "hello";
+                    }',
+                '<?php
+                    class A {
+                        public static $foo = "hello";
+                    }
+
+                    function foo(string $var) {
+                        A::$$var = "hello";
                     }',
                 '7.1',
                 ['PossiblyUnusedProperty'],

@@ -565,6 +565,18 @@ class AssignmentAnalyzer
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var->var, $context) === false) {
                     return false;
                 }
+
+                if (isset($assign_var->var->inferredType)) {
+                    $stmt_var_type = $assign_var->var->inferredType;
+
+                    if ($stmt_var_type->hasObjectType()) {
+                        foreach ($stmt_var_type->getTypes() as $type) {
+                            if ($type instanceof Type\Atomic\TNamedObject) {
+                                $codebase->analyzer->addMixedMemberName(strtolower($type->value) . '::$');
+                            }
+                        }
+                    }
+                }
             }
 
             if ($var_id) {

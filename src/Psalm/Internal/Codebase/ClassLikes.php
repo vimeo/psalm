@@ -961,6 +961,9 @@ class ClassLikes
                             if ($property_storage->stmt_location
                                 && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
                                 && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
+                                && !$codebase->analyzer->hasMixedMemberName(
+                                    strtolower($classlike_storage->name) . '::$'
+                                )
                                 && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                             ) {
                                 FileManipulationBuffer::addForCodeLocation(
@@ -989,6 +992,9 @@ class ClassLikes
                         if ($property_storage->stmt_location
                             && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
                             && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
+                            && !$codebase->analyzer->hasMixedMemberName(
+                                strtolower($classlike_storage->name) . '::$'
+                            )
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
