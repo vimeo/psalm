@@ -1750,6 +1750,27 @@ class FileManipulationTest extends TestCase
                 ['UnusedMethod'],
                 true,
             ],
+            'dontRemovePossiblyUnusedMethodWithVariableCall' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var();
+                    }',
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var();
+                    }',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
             'removePossiblyUnusedPropertyWithDocblock' => [
                 '<?php
                     class A {
@@ -1793,6 +1814,21 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUnusedProperty'],
                 true,
             ],
+            'dontRemovePossiblyUnusedPropertyWithSuppression' => [
+                '<?php
+                    /** @psalm-suppress PossiblyUnusedProperty */
+                    class A {
+                        public $foo = "hello";
+                    }',
+                '<?php
+                    /** @psalm-suppress PossiblyUnusedProperty */
+                    class A {
+                        public $foo = "hello";
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
             'dontRemovePossiblyUnusedPropertyWithVariableFetch' => [
                 '<?php
                     class A {
@@ -1810,6 +1846,93 @@ class FileManipulationTest extends TestCase
                     function foo(A $a, string $var) {
                         echo $a->$var;
                     }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithVariableFetchInParent' => [
+                '<?php
+                    class A {
+                        public function __set(string $k, $v) {
+                            $this->$k = $v;
+                        }
+                    }
+
+                    class B extends A {
+                        public $foo = "hello";
+                    }
+
+                    (new B())->__set("foo", "bar");',
+                '<?php
+                    class A {
+                        public function __set(string $k, $v) {
+                            $this->$k = $v;
+                        }
+                    }
+
+                    class B extends A {
+                        public $foo = "hello";
+                    }
+
+                    (new B())->__set("foo", "bar");',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithVariableOnParent' => [
+                '<?php
+                    class A {}
+
+                    class B extends A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var;
+                    }
+
+                    foo(new A(), "foo");',
+                '<?php
+                    class A {}
+
+                    class B extends A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var;
+                    }
+
+                    foo(new A(), "foo");',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithVariableFetchImplementedInterface' => [
+                '<?php
+                    interface I {}
+
+                    class A implements I {
+                        public $foo = "hello";
+                    }
+
+                    function foo(I $i, string $var) {
+                        echo $a->$var;
+                    }
+
+                    foo(new A(), "foo");',
+                '<?php
+                    interface I {}
+
+                    class A implements I {
+                        public $foo = "hello";
+                    }
+
+                    function foo(I $i, string $var) {
+                        echo $a->$var;
+                    }
+
+                    foo(new A(), "foo");',
                 '7.1',
                 ['PossiblyUnusedProperty'],
                 true,

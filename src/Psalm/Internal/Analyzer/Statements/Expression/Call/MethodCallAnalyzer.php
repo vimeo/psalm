@@ -560,6 +560,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
+            $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::');
+
             $return_type = Type::getMixed();
             return true;
         }
@@ -1411,6 +1413,8 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
             return true;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
+
         $first_arg_value = $stmt->args[0]->value;
         if (!$first_arg_value instanceof PhpParser\Node\Scalar\String_) {
             return true;
@@ -1418,7 +1422,7 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
 
         $prop_name = $first_arg_value->value;
         $property_id = $fq_class_name . '::$' . $prop_name;
-        $codebase = $statements_analyzer->getCodebase();
+
         $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
         $codebase->properties->propertyExists(

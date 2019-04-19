@@ -826,8 +826,18 @@ class ClassLikes
                         }
                     }
 
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(strtolower($method_name))
+                        || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
+
                     foreach ($classlike_storage->class_implements as $fq_interface_name) {
                         $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
+
+                        if (!$codebase->analyzer->hasMixedMemberName(
+                            strtolower($fq_interface_name) . '::'
+                        )) {
+                            $has_variable_calls = true;
+                        }
+
                         if (isset($interface_storage->methods[$method_name])) {
                             $interface_method_referenced = $this->file_reference_provider->isClassMethodReferenced(
                                 strtolower($fq_interface_name . '::' . $method_name)
@@ -842,7 +852,9 @@ class ClassLikes
 
                     if (!$has_parent_references) {
                         $issue = new PossiblyUnusedMethod(
-                            'Cannot find public calls to method ' . $method_id,
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' calls to method ' . $method_id
+                                . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
                             $method_storage->location,
                             $method_id
                         );
@@ -851,7 +863,7 @@ class ClassLikes
                             if ($method_storage->stmt_location
                                 && !$declaring_classlike_storage->is_trait
                                 && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedMethod'])
-                                && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
+                                && !$has_variable_calls
                                 && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                             ) {
                                 FileManipulationBuffer::addForCodeLocation(
@@ -868,8 +880,12 @@ class ClassLikes
                         }
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
+
                     $issue = new UnusedMethod(
-                        'Method ' . $method_id . ' is never used',
+                        'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                            . ' calls to private method ' . $method_id
+                            . ($has_variable_calls ? ' (but did find some potential callers)' : ''),
                         $method_location,
                         $method_id
                     );
@@ -948,22 +964,38 @@ class ClassLikes
             ) {
                 $property_id = $classlike_storage->name . '::$' . $property_name;
 
-                if ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                if ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    || $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                ) {
                     $has_parent_references = isset($classlike_storage->overridden_property_ids[$property_name]);
 
-                    if (!$has_parent_references) {
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName('$' . $property_name)
+                        || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name) . '::$');
+
+                    foreach ($classlike_storage->class_implements as $fq_interface_name) {
+                        if (!$codebase->analyzer->hasMixedMemberName(
+                            strtolower($fq_interface_name) . '::$'
+                        )) {
+                            $has_variable_calls = true;
+                            break;
+                        }
+                    }
+
+                    if (!$has_parent_references
+                        && ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            || !isset($classlike_storage->declaring_method_ids['__get']))
+                    ) {
                         $issue = new PossiblyUnusedProperty(
-                            'Cannot find uses of public property ' . $property_id,
+                            'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                                . ' references to property ' . $property_id
+                                . ($has_variable_calls ? ' (but did find some potential references)' : ''),
                             $property_storage->location
                         );
 
                         if ($codebase->alter_code) {
                             if ($property_storage->stmt_location
                                 && isset($project_analyzer->getIssuesToFix()['PossiblyUnusedProperty'])
-                                && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
-                                && !$codebase->analyzer->hasMixedMemberName(
-                                    strtolower($classlike_storage->name) . '::$'
-                                )
+                                && !$has_variable_calls
                                 && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                             ) {
                                 FileManipulationBuffer::addForCodeLocation(
@@ -979,22 +1011,20 @@ class ClassLikes
                             // fall through
                         }
                     }
-                } elseif (!isset($classlike_storage->declaring_method_ids['__get'])
-                    && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                        || !isset($classlike_storage->overridden_property_ids[$property_name])
-                ) {
+                } elseif (!isset($classlike_storage->declaring_method_ids['__get'])) {
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName('$' . $property_name);
+
                     $issue = new UnusedProperty(
-                        'Property ' . $property_id . ' is never used',
+                        'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
+                            . ' references to private property ' . $property_id
+                            . ($has_variable_calls ? ' (but did find some potential references)' : ''),
                         $property_storage->location
                     );
 
                     if ($codebase->alter_code) {
                         if ($property_storage->stmt_location
                             && isset($project_analyzer->getIssuesToFix()['UnusedProperty'])
-                            && !$codebase->analyzer->hasMixedMemberName('$' . $property_name)
-                            && !$codebase->analyzer->hasMixedMemberName(
-                                strtolower($classlike_storage->name) . '::$'
-                            )
+                            && !$has_variable_calls
                             && !IssueBuffer::isSuppressed($issue, $classlike_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
