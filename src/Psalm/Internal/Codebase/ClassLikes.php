@@ -880,7 +880,9 @@ class ClassLikes
                         }
                     }
                 } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
-                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
+                        strtolower($classlike_storage->name . '::')
+                    );
 
                     $issue = new UnusedMethod(
                         'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
