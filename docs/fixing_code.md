@@ -268,3 +268,105 @@ if (rand(0, 1)) {
 }
 echo $a;
 ```
+
+### UnusedMethod
+
+This removes private unused methods.
+
+Running `vendor/bin/psalter --issues=UnusedMethod` on
+
+```php
+class A {
+    private function foo() : void {}
+}
+
+new A();
+```
+
+gives
+
+```php
+class A {
+    
+}
+
+new A();
+```
+
+### PossiblyUnusedMethod
+
+This removes protected/public unused methods.
+
+Running `vendor/bin/psalter --issues=PossiblyUnusedMethod` on
+
+```php
+class A {
+    protected function foo() : void {}
+    public function bar() : void {}
+}
+
+new A();
+```
+
+gives
+
+```php
+class A {
+    
+}
+
+new A();
+```
+
+### UnusedProperty
+
+This removes private unused properties.
+
+Running `vendor/bin/psalter --issues=UnusedProperty` on
+
+```php
+class A {
+    /** @var string */
+    private $foo;
+}
+
+new A();
+```
+
+gives
+
+```php
+class A {
+    
+}
+
+new A();
+```
+
+### PossiblyUnusedProperty
+
+This removes protected/public unused properties.
+
+Running `vendor/bin/psalter --issues=PossiblyUnusedProperty` on
+
+```php
+class A {
+    /** @var string */
+    public $foo;
+
+    /** @var string */
+    protected $bar;
+}
+
+new A();
+```
+
+gives
+
+```php
+class A {
+    
+}
+
+new A();
+```
