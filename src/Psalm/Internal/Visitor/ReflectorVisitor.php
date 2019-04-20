@@ -411,12 +411,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements PhpParse
                     ) {
                         $reflection_function = new \ReflectionFunction($node->cond->expr->args[0]->value->value);
 
-                        if ($reflection_function->getFileName() !== $this->file_path) {
+                        if ($reflection_function->isInternal()) {
                             return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
                         }
-                    }
-
-                    if ($node->cond->expr->name->parts === ['class_exists']
+                    } elseif ($node->cond->expr->name->parts === ['class_exists']
                         && isset($node->cond->expr->args[0])
                         && $node->cond->expr->args[0]->value instanceof PhpParser\Node\Scalar\String_
                         && class_exists($node->cond->expr->args[0]->value->value, false)
