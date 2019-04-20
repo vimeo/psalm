@@ -7,7 +7,7 @@
  *
  * @psalm-suppress MixedInferred
  *
- * @return \Composer\Autoload\ClassLoader
+ * @return ?\Composer\Autoload\ClassLoader
  */
 function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
 {
@@ -86,7 +86,7 @@ function requireAutoloaders($current_dir, $has_explicit_root, $vendor_dir)
         }
     }
 
-    if ($first_autoloader === null) {
+    if ($first_autoloader === null && !$in_phar) {
         if (!$autoload_files) {
             echo 'Failed to find a valid Composer autoloader' . "\n";
         } else {

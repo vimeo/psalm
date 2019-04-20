@@ -841,7 +841,7 @@ class Config
     /**
      * @return void
      */
-    public function setComposerClassLoader(ClassLoader $loader)
+    public function setComposerClassLoader(ClassLoader $loader = null)
     {
         $this->composer_class_loader = $loader;
     }
