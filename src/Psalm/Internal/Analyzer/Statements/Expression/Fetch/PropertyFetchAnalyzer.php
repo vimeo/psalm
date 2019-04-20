@@ -292,7 +292,7 @@ class PropertyFetchAnalyzer
         }
 
         if (!$prop_name) {
-            if ($stmt_var_type->hasObjectType()) {
+            if ($stmt_var_type->hasObjectType() && !$context->ignore_variable_property) {
                 foreach ($stmt_var_type->getTypes() as $type) {
                     if ($type instanceof Type\Atomic\TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(strtolower($type->value) . '::$');

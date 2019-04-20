@@ -1771,6 +1771,29 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUnusedMethod'],
                 true,
             ],
+            'removePossiblyUnusedMethodWithVariableCall' => [
+                '<?php
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        /** @psalm-ignore-variable-method */
+                        echo $a->$var();
+                    }',
+                '<?php
+                    class A {
+
+                    }
+
+                    function foo(A $a, string $var) {
+                        /** @psalm-ignore-variable-method */
+                        echo $a->$var();
+                    }',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
             'removePossiblyUnusedPropertyWithDocblock' => [
                 '<?php
                     class A {
@@ -1844,6 +1867,29 @@ class FileManipulationTest extends TestCase
                     }
 
                     function foo(A $a, string $var) {
+                        echo $a->$var;
+                    }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'removePossiblyUnusedPropertyWithVariableFetch' => [
+                '<?php
+                    class A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        /** @psalm-ignore-variable-property */
+                        echo $a->$var;
+                    }',
+                '<?php
+                    class A {
+
+                    }
+
+                    function foo(A $a, string $var) {
+                        /** @psalm-ignore-variable-property */
                         echo $a->$var;
                     }',
                 '7.1',

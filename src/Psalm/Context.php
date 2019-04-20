@@ -277,6 +277,16 @@ class Context
     public $inside_negation = false;
 
     /**
+     * @var bool
+     */
+    public $ignore_variable_property = false;
+
+    /**
+     * @var bool
+     */
+    public $ignore_variable_method = false;
+
+    /**
      * @param string|null $self
      */
     public function __construct($self = null)

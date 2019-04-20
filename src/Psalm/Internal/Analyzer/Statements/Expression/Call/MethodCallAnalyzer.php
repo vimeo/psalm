@@ -560,7 +560,9 @@ class MethodCallAnalyzer extends \Psalm\Internal\Analyzer\Statements\Expression\
         }
 
         if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-            $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::');
+            if (!$context->ignore_variable_method) {
+                $codebase->analyzer->addMixedMemberName(strtolower($fq_class_name) . '::');
+            }
 
             $return_type = Type::getMixed();
             return true;

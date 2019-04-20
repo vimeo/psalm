@@ -566,7 +566,7 @@ class AssignmentAnalyzer
                     return false;
                 }
 
-                if (isset($assign_var->var->inferredType)) {
+                if (isset($assign_var->var->inferredType) && !$context->ignore_variable_property) {
                     $stmt_var_type = $assign_var->var->inferredType;
 
                     if ($stmt_var_type->hasObjectType()) {
