@@ -609,7 +609,14 @@ class Methods
                     }
                 }
             }
-            return CallMap::getReturnTypeFromCallMap($appearing_method_id);
+
+            $return_type_candidate = CallMap::getReturnTypeFromCallMap($appearing_method_id);
+
+            if ($return_type_candidate->isFalsable()) {
+                $return_type_candidate->ignore_falsable_issues = true;
+            }
+
+            return $return_type_candidate;
         }
 
         $storage = $this->getStorage($declaring_method_id);
