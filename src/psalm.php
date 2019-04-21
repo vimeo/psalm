@@ -747,8 +747,6 @@ if ($type_map_location) {
 
     $type_map_string = json_encode(['files' => $name_file_map, 'references' => $reference_dictionary]);
 
-    var_dump(strlen($type_map_string));
-
     $providers->file_provider->setContents(
         $type_map_location,
         $type_map_string
