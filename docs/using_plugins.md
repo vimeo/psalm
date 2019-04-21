@@ -12,7 +12,7 @@ Composer-based plugins provide an easier way to manage and distribute your plugi
 
 ### Discovering plugins
 
-Plugins can be found on Packagist by `type=psalm-plugin` query: https://packagist.org/packages/list.json?type=psalm-plugin
+Plugins can be found on Packagist by [setting the package type filter to `psalm-plugin`](https://packagist.org/?type=psalm-plugin) or using the `type=psalm-plugin` query: https://packagist.org/packages/list.json?type=psalm-plugin
 
 ### Installing plugins
 
