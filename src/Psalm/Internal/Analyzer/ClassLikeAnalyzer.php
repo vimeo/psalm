@@ -283,6 +283,12 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer implements StatementsSou
         }
 
         foreach ($class_storage->invalid_dependencies as $dependency_class_name) {
+            // if the implemented/extended class is stubbed, it may not yet have
+            // been hydrated
+            if ($codebase->classlike_storage_provider->has($dependency_class_name)) {
+                continue;
+            }
+
             if (IssueBuffer::accepts(
                 new MissingDependency(
                     $fq_class_name . ' depends on class or interface '

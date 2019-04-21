@@ -751,6 +751,42 @@ class StubTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testStubFileWithExtendedStubbedClass()
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/stubs/partial_class.php" />
+                    </stubs>
+                </psalm>'
+            )
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                class Bar extends PartiallyStubbedClass  {}
+
+                new Bar();'
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
      * @expectedException        \Psalm\Exception\CodeException
      * @expectedExceptionMessage TypeCoercion
      *

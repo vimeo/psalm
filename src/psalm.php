@@ -305,8 +305,8 @@ if ($threads > 1) {
 
 $type_map_location = null;
 
-if (isset($options['generate-type-map']) && is_string($options['generate-type-map'])) {
-    $type_map_location = $options['generate-type-map'];
+if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
+    $type_map_location = $options['generate-json-map'];
 }
 
 // If XDebug is enabled, restart without it
@@ -745,9 +745,13 @@ if ($type_map_location) {
         }
     }
 
+    $type_map_string = json_encode(['files' => $name_file_map, 'references' => $reference_dictionary]);
+
+    var_dump(strlen($type_map_string));
+
     $providers->file_provider->setContents(
         $type_map_location,
-        json_encode(['files' => $name_file_map, 'references' => $reference_dictionary])
+        $type_map_string
     );
 }
 
