@@ -50,6 +50,8 @@
         <xs:attribute name="errorBaseline" type="xs:string" />
         <xs:attribute name="findUnusedCode" type="xs:string" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:string" />
+        <xs:attribute name="parseSql" type="xs:string" />
+        <xs:attribute name="maxStringLength" type="xs:string" />
     </xs:complexType>
 
     <xs:complexType name="ProjectFilesType">
