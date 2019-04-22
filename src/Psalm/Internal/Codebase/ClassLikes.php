@@ -811,6 +811,9 @@ class ClassLikes
 
                     $has_parent_references = false;
 
+                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(strtolower($method_name))
+                        || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
+
                     if (isset($classlike_storage->overridden_method_ids[$method_name_lc])) {
                         foreach ($classlike_storage->overridden_method_ids[$method_name_lc] as $parent_method_id) {
                             $parent_method_storage = $methods->getStorage($parent_method_id);
@@ -821,18 +824,22 @@ class ClassLikes
 
                             if (!$parent_method_storage->abstract || $parent_method_referenced) {
                                 $has_parent_references = true;
-                                break;
                             }
                         }
                     }
 
-                    $has_variable_calls = $codebase->analyzer->hasMixedMemberName(strtolower($method_name))
-                        || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
+                    foreach ($classlike_storage->parent_classes as $parent_method_fqcln) {
+                        if ($codebase->analyzer->hasMixedMemberName(
+                            strtolower($parent_method_fqcln) . '::'
+                        )) {
+                            $has_variable_calls = true;
+                        }
+                    }
 
                     foreach ($classlike_storage->class_implements as $fq_interface_name) {
                         $interface_storage = $this->classlike_storage_provider->get($fq_interface_name);
 
-                        if (!$codebase->analyzer->hasMixedMemberName(
+                        if ($codebase->analyzer->hasMixedMemberName(
                             strtolower($fq_interface_name) . '::'
                         )) {
                             $has_variable_calls = true;
@@ -845,7 +852,6 @@ class ClassLikes
 
                             if ($interface_method_referenced) {
                                 $has_parent_references = true;
-                                break;
                             }
                         }
                     }
@@ -882,7 +888,7 @@ class ClassLikes
                 } elseif (!isset($classlike_storage->declaring_method_ids['__call'])) {
                     $has_variable_calls = $codebase->analyzer->hasMixedMemberName(
                         strtolower($classlike_storage->name . '::')
-                    );
+                    ) || $codebase->analyzer->hasMixedMemberName(strtolower($method_name));
 
                     $issue = new UnusedMethod(
                         'Cannot find ' . ($has_variable_calls ? 'explicit' : 'any')
@@ -896,7 +902,7 @@ class ClassLikes
                         if ($method_storage->stmt_location
                             && !$declaring_classlike_storage->is_trait
                             && isset($project_analyzer->getIssuesToFix()['UnusedMethod'])
-                            && !$codebase->analyzer->hasMixedMemberName(strtolower($method_name))
+                            && !$has_variable_calls
                             && !IssueBuffer::isSuppressed($issue, $method_storage->suppressed_issues)
                         ) {
                             FileManipulationBuffer::addForCodeLocation(
@@ -974,8 +980,17 @@ class ClassLikes
                     $has_variable_calls = $codebase->analyzer->hasMixedMemberName('$' . $property_name)
                         || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name) . '::$');
 
+                    foreach ($classlike_storage->parent_classes as $parent_method_fqcln) {
+                        if ($codebase->analyzer->hasMixedMemberName(
+                            strtolower($parent_method_fqcln) . '::$'
+                        )) {
+                            $has_variable_calls = true;
+                            break;
+                        }
+                    }
+
                     foreach ($classlike_storage->class_implements as $fq_interface_name) {
-                        if (!$codebase->analyzer->hasMixedMemberName(
+                        if ($codebase->analyzer->hasMixedMemberName(
                             strtolower($fq_interface_name) . '::$'
                         )) {
                             $has_variable_calls = true;

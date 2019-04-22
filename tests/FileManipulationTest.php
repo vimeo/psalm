@@ -1771,6 +1771,35 @@ class FileManipulationTest extends TestCase
                 ['PossiblyUnusedMethod'],
                 true,
             ],
+            'dontRemovePossiblyUnusedMethodWithVariableCallOnParent' => [
+                '<?php
+                    class A { }
+
+                    class B extends A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var();
+                    }
+
+                    foo(new B);',
+                '<?php
+                    class A { }
+
+                    class B extends A {
+                        public function foo() : void {}
+                    }
+
+                    function foo(A $a, string $var) {
+                        echo $a->$var();
+                    }
+
+                    foo(new B);',
+                '7.1',
+                ['PossiblyUnusedMethod'],
+                true,
+            ],
             'removePossiblyUnusedMethodWithVariableCall' => [
                 '<?php
                     class A {
@@ -1963,7 +1992,7 @@ class FileManipulationTest extends TestCase
                     }
 
                     function foo(I $i, string $var) {
-                        echo $a->$var;
+                        echo $i->$var;
                     }
 
                     foo(new A(), "foo");',
@@ -1975,7 +2004,7 @@ class FileManipulationTest extends TestCase
                     }
 
                     function foo(I $i, string $var) {
-                        echo $a->$var;
+                        echo $i->$var;
                     }
 
                     foo(new A(), "foo");',
@@ -2021,6 +2050,35 @@ class FileManipulationTest extends TestCase
                     function foo(A $a, string $var) {
                         $a->$var = "hello";
                     }',
+                '7.1',
+                ['PossiblyUnusedProperty'],
+                true,
+            ],
+            'dontRemovePossiblyUnusedPropertyWithVariableAssignmentOnParent' => [
+                '<?php
+                    class A {}
+
+                    class B extends A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        $a->$var = "hello";
+                    }
+
+                    foo(new B);',
+                '<?php
+                    class A {}
+
+                    class B extends A {
+                        public $foo = "hello";
+                    }
+
+                    function foo(A $a, string $var) {
+                        $a->$var = "hello";
+                    }
+
+                    foo(new B);',
                 '7.1',
                 ['PossiblyUnusedProperty'],
                 true,
