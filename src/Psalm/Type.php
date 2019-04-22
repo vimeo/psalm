@@ -931,7 +931,9 @@ abstract class Type
         $type = null;
 
         if ($value !== null) {
-            if (stripos($value, 'select ') !== false) {
+            $config = \Psalm\Config::getInstance();
+
+            if ($config->parse_sql && stripos($value, 'select ') !== false) {
                 try {
                     $parser = new \PhpMyAdmin\SqlParser\Parser($value);
 
@@ -939,13 +941,13 @@ abstract class Type
                         $type = new TSqlSelectString($value);
                     }
                 } catch (\Throwable $e) {
-                    if (strlen($value) < 1000) {
+                    if (strlen($value) < $config->max_string_length) {
                         $type = new TLiteralString($value);
                     }
                 }
             }
 
-            if (!$type && strlen($value) < 1000) {
+            if (!$type && strlen($value) < $config->max_string_length) {
                 $type = new TLiteralString($value);
             }
         }

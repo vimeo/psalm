@@ -7,6 +7,27 @@ class ValueTest extends TestCase
     use Traits\ValidCodeAnalysisTestTrait;
 
     /**
+     * @return void
+     */
+    public function setUp()
+    {
+        \Psalm\Internal\Analyzer\FileAnalyzer::clearCache();
+
+        $this->file_provider = new \Psalm\Tests\Internal\Provider\FakeFileProvider();
+
+        $this->project_analyzer = new \Psalm\Internal\Analyzer\ProjectAnalyzer(
+            new TestConfig(),
+            new \Psalm\Internal\Provider\Providers(
+                $this->file_provider,
+                new \Psalm\Tests\Internal\Provider\FakeParserCacheProvider()
+            )
+        );
+
+        $this->project_analyzer->setPhpVersion('7.3');
+        $this->project_analyzer->getCodebase()->config->parse_sql = true;
+    }
+
+    /**
      * @return iterable<string,array{string,assertions?:array<string,string>,error_levels?:string[]}>
      */
     public function providerValidCodeParse()

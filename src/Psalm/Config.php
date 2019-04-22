@@ -375,6 +375,16 @@ class Config
      */
     public $globals = [];
 
+    /**
+     * @var bool
+     */
+    public $parse_sql = false;
+
+    /**
+     * @var int
+     */
+    public $max_string_length = 1000;
+
     protected function __construct()
     {
         self::$instance = $this;
@@ -684,6 +694,16 @@ class Config
         if (isset($config_xml['errorBaseline'])) {
             $attribute_text = (string) $config_xml['errorBaseline'];
             $config->error_baseline = $attribute_text;
+        }
+
+        if (isset($config_xml['maxStringLength'])) {
+            $attribute_text = intval($config_xml['maxStringLength']);
+            $config->max_string_length = $attribute_text;
+        }
+
+        if (isset($config_xml['parseSql'])) {
+            $attribute_text = (string) $config_xml['parseSql'];
+            $config->parse_sql = $attribute_text === 'true' || $attribute_text === '1';
         }
 
         if (isset($config_xml->projectFiles)) {
