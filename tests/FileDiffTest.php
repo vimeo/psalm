@@ -1497,6 +1497,35 @@ class FileDiffTest extends TestCase
                 ['use:Exception'],
                 [[-36, -2]],
             ],
+            'addDocblockToFirstFunctionStatement' => [
+                '<?php
+                    namespace Foo;
+
+                    class C {
+                        public function foo(array $a) : void {
+                            foreach ($a as $b) {
+                                $b->bar();
+                            }
+                        }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class C {
+                        public function foo(array $a) : void {
+                            /**
+                             * @psalm-suppress MixedAssignment
+                             */
+                            foreach ($a as $b) {
+                                $b->bar();
+                            }
+                        }
+                    }',
+                [],
+                ['foo\c::foo'],
+                [],
+                [],
+            ],
             'vimeoDiff' => [
                 '<?php
                     namespace C;

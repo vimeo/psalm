@@ -326,6 +326,48 @@ class ErrorFixTest extends \Psalm\Tests\TestCase
                 ],
                 'error_counts' => [1, 0, 0],
             ],
+            'addSuppressions' => [
+                'start_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        class C {
+                            public function foo(array $a) : void {
+                                foreach ($a as $b) {
+                                    $b->bar();
+                                }
+                            }
+                        }',
+                ],
+                'middle_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        class C {
+                            public function foo(array $a) : void {
+                                /**
+                                 * @psalm-suppress MixedAssignment
+                                 */
+                                foreach ($a as $b) {
+                                    $b->bar();
+                                }
+                            }
+                        }',
+                ],
+                'end_files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        class C {
+                            public function foo(array $a) : void {
+                                /**
+                                 * @psalm-suppress MixedAssignment
+                                 */
+                                foreach ($a as $b) {
+                                    /**
+                                     * @psalm-suppress MixedMethodCall
+                                     */
+                                    $b->bar();
+                                }
+                            }
+                        }',
+                ],
+                'error_counts' => [2, 1, 0],
+            ],
         ];
     }
 }

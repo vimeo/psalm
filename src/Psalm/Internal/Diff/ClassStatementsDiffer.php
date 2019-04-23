@@ -82,7 +82,9 @@ class ClassStatementsDiffer extends AstDiffer
                 $a_size = $a_end - $a_start;
                 $b_size = $b_end - $b_start;
 
-                if (substr($a_code, $a_start, $a_size) === substr($b_code, $b_start, $b_size)) {
+                if ($a_size === $b_size
+                    && substr($a_code, $a_start, $a_size) === substr($b_code, $b_start, $b_size)
+                ) {
                     $start_diff = $b_start - $a_start;
                     $line_diff = $b->getLine() - $a->getLine();
 
@@ -103,11 +105,34 @@ class ClassStatementsDiffer extends AstDiffer
                         return false;
                     }
 
-                    $a_stmts_start = $a->stmts ? (int) $a->stmts[0]->getAttribute('startFilePos') : $a_end;
-                    $b_stmts_start = $b->stmts ? (int) $b->stmts[0]->getAttribute('startFilePos') : $b_end;
+                    if ($a->stmts) {
+                        $first_stmt = $a->stmts[0];
+                        $a_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
 
-                    $body_change = substr($a_code, $a_stmts_start, $a_end - $a_stmts_start)
-                        !== substr($b_code, $b_stmts_start, $b_end - $b_stmts_start);
+                        if ($a_stmt_comments = $first_stmt->getComments()) {
+                            $a_stmts_start = $a_stmt_comments[0]->getFilePos();
+                        }
+                    } else {
+                        $a_stmts_start = $a_end;
+                    }
+
+                    if ($b->stmts) {
+                        $first_stmt = $b->stmts[0];
+                        $b_stmts_start = (int) $first_stmt->getAttribute('startFilePos');
+
+                        if ($b_stmt_comments = $first_stmt->getComments()) {
+                            $b_stmts_start = $b_stmt_comments[0]->getFilePos();
+                        }
+                    } else {
+                        $b_stmts_start = $b_end;
+                    }
+
+                    $a_body_size = $a_end - $a_stmts_start;
+                    $b_body_size = $b_end - $b_stmts_start;
+
+                    $body_change = $a_body_size !== $b_body_size
+                        || substr($a_code, $a_stmts_start, $a_end - $a_stmts_start)
+                            !== substr($b_code, $b_stmts_start, $b_end - $b_stmts_start);
 
                     if (!$signature_change) {
                         $a_signature = substr($a_code, $a_start, $a_stmts_start - $a_start);
